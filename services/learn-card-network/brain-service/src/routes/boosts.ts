@@ -59,6 +59,7 @@ import {
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
     getFrameworkSkillsAvailableForBoost,
+    getFrameworksForBoost,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -229,18 +230,31 @@ export const boostsRouter = t.router({
                 });
             }
 
-            // Verify all skills exist before creating relationships
+            // Verify all skills exist before creating relationships and capture their frameworks
             const result = await neogma.queryRunner.run(
-                'MATCH (s:Skill) WHERE s.id IN $ids RETURN COLLECT(s.id) AS found',
+                'MATCH (s:Skill) WHERE s.id IN $ids RETURN COLLECT({ id: s.id, frameworkId: s.frameworkId }) AS skills',
                 { ids: skillIds }
             );
-            const found = (result.records[0]?.get('found') as string[]) || [];
+            const foundSkills =
+                (result.records[0]?.get('skills') as Array<{ id?: string; frameworkId?: string }>) || [];
+            const found = foundSkills
+                .map(skill => skill.id)
+                .filter((id): id is string => typeof id === 'string');
             const missing = skillIds.filter(id => !found.includes(id));
             if (missing.length > 0) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: `Skill(s) not found: ${missing.join(', ')}`,
                 });
+            }
+
+            const frameworksToAttach = new Set(
+                foundSkills
+                    .map(skill => skill.frameworkId)
+                    .filter((id): id is string => typeof id === 'string')
+            );
+            for (const frameworkId of frameworksToAttach) {
+                await setBoostUsesFramework(boost, frameworkId);
             }
 
             await addAlignedSkillsToBoost(boost, skillIds);
@@ -561,6 +575,47 @@ export const boostsRouter = t.router({
             await injectObv3AlignmentsIntoCredentialForBoost(parsedBoost, boostInstance);
 
             return { ...remaining, boost: parsedBoost, uri: getBoostUri(id, ctx.domain) };
+        }),
+
+    getBoostFrameworks: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/frameworks',
+                tags: ['Boosts'],
+                summary: 'List frameworks used by a boost',
+                description: 'Returns the frameworks aligned to a boost via USES_FRAMEWORK. Requires boost admin.',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(SkillFrameworkValidator.array())
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const decodedUri = decodeURIComponent(input.uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const frameworks = await getFrameworksForBoost(boost);
+
+            return frameworks.map(framework => ({
+                id: framework.id,
+                name: framework.name,
+                description: framework.description ?? undefined,
+                sourceURI: framework.sourceURI ?? undefined,
+                status: (framework.status as any) ?? 'active',
+                createdAt: (framework as any).createdAt,
+                updatedAt: (framework as any).updatedAt,
+            }));
         }),
 
     getBoosts: profileRoute

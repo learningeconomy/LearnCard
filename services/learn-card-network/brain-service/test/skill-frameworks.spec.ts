@@ -5,6 +5,7 @@ import { getUser, getClient } from './helpers/getClient';
 import { Profile, SkillFramework, Skill } from '@models';
 import { __skillsProviderTestUtils } from '@services/skills-provider';
 import { neogma } from '@instance';
+import { testUnsignedBoost } from './helpers/send';
 
 const noAuthClient = getClient();
 
@@ -196,6 +197,15 @@ describe('Skill Frameworks (custom CRUD)', () => {
         return profileId;
     };
 
+    const ensureProfileFor = async (
+        user: Awaited<ReturnType<typeof getUser>>,
+        prefix: string
+    ): Promise<string> => {
+        const profileId = `${prefix}-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+        await user.clients.fullAuth.profile.createProfile({ profileId });
+        return profileId;
+    };
+
     it('creates and retrieves a managed custom framework', async () => {
         await ensureProfile();
         const customFrameworkId = `fw-custom-${crypto.randomUUID()}`;
@@ -247,6 +257,31 @@ describe('Skill Frameworks (custom CRUD)', () => {
         expect(ids).toEqual(expect.arrayContaining([rootSkillId, childSkillId]));
         const child = findSkillById(fetched.skills, childSkillId);
         expect(child?.parentRef).toBe(rootSkillId);
+    });
+
+    it('aligns boost URIs when creating a managed framework', async () => {
+        await ensureProfile();
+        const boostUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+        });
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+        const skillId = `${frameworkId}-seed`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Boost Aligned Framework',
+            skills: [
+                {
+                    id: skillId,
+                    statement: 'Seed Skill',
+                },
+            ],
+            boostUris: [boostUri],
+        });
+
+        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri });
+
+        expect(frameworks.map(fw => fw.id)).toContain(frameworkId);
     });
 
     it('creates multiple frameworks with initial skills in one request', async () => {
@@ -305,6 +340,80 @@ describe('Skill Frameworks (custom CRUD)', () => {
                 expect.arrayContaining(expectedSkillIds)
             );
         }
+    });
+
+    it('aligns boost URIs when creating managed frameworks in batch', async () => {
+        await ensureProfile();
+        const boostUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+        });
+        const frameworkId = `fw-batch-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManagedBatch({
+            frameworks: [
+                {
+                    id: frameworkId,
+                    name: 'Batch Boost Framework',
+                    skills: [
+                        {
+                            id: `${frameworkId}-skill`,
+                            statement: 'Batch Seed Skill',
+                        },
+                    ],
+                    boostUris: [boostUri],
+                },
+            ],
+        });
+
+        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri });
+
+        expect(frameworks.map(fw => fw.id)).toContain(frameworkId);
+    });
+
+    it('manages framework admins', async () => {
+        const ownerProfileId = await ensureProfile();
+        const otherProfileId = await ensureProfileFor(userB, 'userb');
+        const frameworkId = `fw-admin-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Admin Framework',
+        });
+
+        const initialAdmins = await userA.clients.fullAuth.skillFrameworks.listFrameworkAdmins({
+            frameworkId,
+        });
+        expect(initialAdmins.map(admin => admin.profileId)).toContain(ownerProfileId);
+
+        await userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+            frameworkId,
+            profileId: otherProfileId,
+        });
+
+        const afterAdd = await userA.clients.fullAuth.skillFrameworks.listFrameworkAdmins({
+            frameworkId,
+        });
+        expect(afterAdd.map(admin => admin.profileId)).toEqual(
+            expect.arrayContaining([ownerProfileId, otherProfileId])
+        );
+
+        const removeResult = await userA.clients.fullAuth.skillFrameworks.removeFrameworkAdmin({
+            frameworkId,
+            profileId: otherProfileId,
+        });
+        expect(removeResult.success).toBe(true);
+
+        const afterRemove = await userA.clients.fullAuth.skillFrameworks.listFrameworkAdmins({
+            frameworkId,
+        });
+        expect(afterRemove.map(admin => admin.profileId)).not.toContain(otherProfileId);
+
+        await expect(
+            userA.clients.fullAuth.skillFrameworks.removeFrameworkAdmin({
+                frameworkId,
+                profileId: ownerProfileId,
+            })
+        ).rejects.toThrow('Cannot remove the last framework admin');
     });
 
     it('updates metadata for a custom framework I manage', async () => {

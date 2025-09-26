@@ -181,6 +181,7 @@ export type LearnCardNetworkPluginMethods = {
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
+    getBoostFrameworks: (uri: string) => Promise<SkillFrameworkType[]>;
     getSkillsAvailableForBoost: (
         uri: string
     ) => Promise<
@@ -473,6 +474,15 @@ export type LearnCardNetworkPluginMethods = {
     getSkillFrameworkById: (id: string) => Promise<FrameworkWithSkills>;
     updateSkillFramework: (input: UpdateSkillFrameworkInput) => Promise<SkillFrameworkType>;
     deleteSkillFramework: (id: string) => Promise<{ success: boolean }>;
+    getSkillFrameworkAdmins: (frameworkId: string) => Promise<LCNProfile[]>;
+    addSkillFrameworkAdmin: (
+        frameworkId: string,
+        profileId: string
+    ) => Promise<{ success: boolean }>;
+    removeSkillFrameworkAdmin: (
+        frameworkId: string,
+        profileId: string
+    ) => Promise<{ success: boolean }>;
 
     createSkill: (input: CreateSkillInput) => Promise<SkillType>;
     createSkills: (input: CreateSkillsBatchInput) => Promise<SkillType[]>;

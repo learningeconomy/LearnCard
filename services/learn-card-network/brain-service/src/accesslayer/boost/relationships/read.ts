@@ -55,6 +55,13 @@ export const getFrameworkUsedByBoost = async (
     return rel?.target;
 };
 
+export const getFrameworksForBoost = async (
+    boost: BoostInstance
+): Promise<SkillFrameworkInstance[]> => {
+    const rels = await boost.findRelationships({ alias: 'usesFramework' });
+    return rels.map(rel => rel.target).filter(Boolean) as SkillFrameworkInstance[];
+};
+
 /**
  * Returns the list of `Skill` nodes aligned to a given boost via the `ALIGNED_TO` relationship.
  */

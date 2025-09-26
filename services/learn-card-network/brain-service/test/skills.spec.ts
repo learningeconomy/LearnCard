@@ -255,6 +255,55 @@ describe('Skills router', () => {
             return { frameworkId };
         };
 
+        it('allows delegated framework admins to manage skills', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const delegatedProfileId = await createProfileFor(userB, 'userb');
+
+            await userA.clients.fullAuth.skillFrameworks.addFrameworkAdmin({
+                frameworkId,
+                profileId: delegatedProfileId,
+            });
+
+            const delegatedSkillId = `${frameworkId}-delegated`;
+
+            const created = await userB.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: delegatedSkillId,
+                    statement: 'Delegated Skill',
+                },
+            });
+            expect(created.id).toBe(delegatedSkillId);
+
+            const updated = await userB.clients.fullAuth.skills.update({
+                frameworkId,
+                id: delegatedSkillId,
+                statement: 'Delegated Skill Updated',
+            });
+            expect(updated.statement).toBe('Delegated Skill Updated');
+
+            const deleted = await userB.clients.fullAuth.skills.delete({
+                frameworkId,
+                id: delegatedSkillId,
+            });
+            expect(deleted.success).toBe(true);
+
+            await userA.clients.fullAuth.skillFrameworks.removeFrameworkAdmin({
+                frameworkId,
+                profileId: delegatedProfileId,
+            });
+
+            await expect(
+                userB.clients.fullAuth.skills.create({
+                    frameworkId,
+                    skill: {
+                        id: `${frameworkId}-post-removal`,
+                        statement: 'Should fail',
+                    },
+                })
+            ).rejects.toThrow();
+        });
+
         it('creates skills inside a managed framework', async () => {
             const { frameworkId } = await setupManagedFramework();
             const parentSkillId = `${frameworkId}-parent`;

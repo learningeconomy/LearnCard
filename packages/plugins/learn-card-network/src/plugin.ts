@@ -436,6 +436,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getBoost.query({ uri });
             },
+            getBoostFrameworks: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoostFrameworks.query({ uri });
+            },
             getSkillsAvailableForBoost: async (_learnCard, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -1128,6 +1133,18 @@ export const getLearnCardNetworkPlugin = async (
             deleteSkillFramework: async (_learnCard, id) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.delete.mutate({ id });
+            },
+            getSkillFrameworkAdmins: async (_learnCard, frameworkId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.listFrameworkAdmins.query({ frameworkId });
+            },
+            addSkillFrameworkAdmin: async (_learnCard, frameworkId, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.addFrameworkAdmin.mutate({ frameworkId, profileId });
+            },
+            removeSkillFrameworkAdmin: async (_learnCard, frameworkId, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.removeFrameworkAdmin.mutate({ frameworkId, profileId });
             },
             createSkill: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');

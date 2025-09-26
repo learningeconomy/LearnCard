@@ -38,6 +38,214 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         noAuth = await getLearnCard(crypto.randomBytes(32).toString('hex'));
     });
 
+    test('aligns boost frameworks when creating managed frameworks with boostUris', async () => {
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+        const frameworkId = `fw-${crypto.randomUUID()}`;
+        const skillId = `${frameworkId}-skill`;
+
+        await a.invoke.createManagedSkillFrameworks({
+            frameworks: [
+                {
+                    id: frameworkId,
+                    name: `Managed Framework ${frameworkId}`,
+                    description: 'Framework aligned during creation',
+                    boostUris: [boostUri],
+                    skills: [
+                        {
+                            id: skillId,
+                            statement: 'Seed Skill',
+                            status: 'active',
+                        },
+                    ],
+                },
+            ],
+        });
+
+        const frameworks = await a.invoke.getBoostFrameworks(boostUri);
+
+        expect(Array.isArray(frameworks)).toBe(true);
+        expect(frameworks.map(fw => fw.id)).toContain(frameworkId);
+
+        const frameworkAdmins = await a.invoke.getSkillFrameworkAdmins(frameworkId);
+        expect(frameworkAdmins.some(admin => admin.profileId === USERS.a.profileId)).toBe(true);
+    });
+
+    test('allows managing framework admins via plugin', async () => {
+        const frameworkId = `fw-${crypto.randomUUID()}`;
+
+        await a.invoke.createManagedSkillFrameworks({
+            frameworks: [
+                {
+                    id: frameworkId,
+                    name: `Admin Framework ${frameworkId}`,
+                    skills: [],
+                },
+            ],
+        });
+
+        const initialAdmins = await a.invoke.getSkillFrameworkAdmins(frameworkId);
+        expect(initialAdmins.some(admin => admin.profileId === USERS.a.profileId)).toBe(true);
+
+        const addResult = await a.invoke.addSkillFrameworkAdmin(frameworkId, USERS.b.profileId);
+        expect(addResult.success).toBe(true);
+
+        const afterAdd = await a.invoke.getSkillFrameworkAdmins(frameworkId);
+        expect(afterAdd.some(admin => admin.profileId === USERS.b.profileId)).toBe(true);
+
+        const removeResult = await a.invoke.removeSkillFrameworkAdmin(
+            frameworkId,
+            USERS.b.profileId
+        );
+        expect(removeResult.success).toBe(true);
+
+        const afterRemove = await a.invoke.getSkillFrameworkAdmins(frameworkId);
+        expect(afterRemove.some(admin => admin.profileId === USERS.b.profileId)).toBe(false);
+    });
+
+    test('enforces framework admin permissions for skill CRUD via plugin', async () => {
+        const frameworkId = `fw-${crypto.randomUUID()}`;
+        const delegatedSkillId = `${frameworkId}-delegated`;
+
+        await a.invoke.createManagedSkillFrameworks({
+            frameworks: [
+                {
+                    id: frameworkId,
+                    name: `Delegated Framework ${frameworkId}`,
+                },
+            ],
+        });
+
+        await expect(
+            b.invoke.createSkill({
+                frameworkId,
+                skill: {
+                    id: delegatedSkillId,
+                    statement: 'Should fail',
+                },
+            })
+        ).rejects.toThrow();
+
+        await a.invoke.addSkillFrameworkAdmin(frameworkId, USERS.b.profileId);
+
+        const created = await b.invoke.createSkill({
+            frameworkId,
+            skill: {
+                id: delegatedSkillId,
+                statement: 'Delegated Skill',
+            },
+        });
+        expect(created.id).toBe(delegatedSkillId);
+
+        const updated = await b.invoke.updateSkill({
+            frameworkId,
+            id: delegatedSkillId,
+            statement: 'Delegated Skill Updated',
+        });
+        expect(updated.statement).toBe('Delegated Skill Updated');
+
+        const deleted = await b.invoke.deleteSkill({
+            frameworkId,
+            id: delegatedSkillId,
+        });
+        expect(deleted.success).toBe(true);
+
+        await a.invoke.removeSkillFrameworkAdmin(frameworkId, USERS.b.profileId);
+
+        await expect(
+            b.invoke.createSkill({
+                frameworkId,
+                skill: {
+                    id: `${frameworkId}-post-removal`,
+                    statement: 'Should fail again',
+                },
+            })
+        ).rejects.toThrow();
+    });
+
+    test('enforces boost admin permissions when attaching frameworks and aligning skills', async () => {
+        const frameworkId = `fw-${crypto.randomUUID()}`;
+        const skillId = `${frameworkId}-skill`;
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+        await a.invoke.createManagedSkillFrameworks({
+            frameworks: [
+                {
+                    id: frameworkId,
+                    name: `Boost Framework ${frameworkId}`,
+                    skills: [
+                        {
+                            id: skillId,
+                            statement: 'Boost Alignment Skill',
+                        },
+                    ],
+                },
+            ],
+        });
+
+        await expect(b.invoke.attachFrameworkToBoost(boostUri, frameworkId)).rejects.toThrow();
+        await expect(b.invoke.alignBoostSkills(boostUri, [skillId])).rejects.toThrow();
+
+        await a.invoke.addBoostAdmin(boostUri, USERS.b.profileId);
+
+        const attachResult = await b.invoke.attachFrameworkToBoost(boostUri, frameworkId);
+        expect(attachResult).toBe(true);
+
+        const alignResult = await b.invoke.alignBoostSkills(boostUri, [skillId]);
+        expect(alignResult).toBe(true);
+
+        await a.invoke.removeBoostAdmin(boostUri, USERS.b.profileId);
+
+        await expect(b.invoke.alignBoostSkills(boostUri, [skillId])).rejects.toThrow();
+    });
+
+    test('allows child boost admins to align skills from ancestor frameworks', async () => {
+        const frameworkId = `fw-${crypto.randomUUID()}`;
+        const skillId = `${frameworkId}-skill`;
+
+        await a.invoke.createManagedSkillFrameworks({
+            frameworks: [
+                {
+                    id: frameworkId,
+                    name: `Ancestor Framework ${frameworkId}`,
+                    skills: [
+                        {
+                            id: skillId,
+                            statement: 'Ancestor Skill',
+                        },
+                    ],
+                },
+            ],
+        });
+
+        const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+        await a.invoke.attachFrameworkToBoost(parentUri, frameworkId);
+
+        const childUri = await a.invoke.createChildBoost(parentUri, testUnsignedBoost);
+
+        await a.invoke.addBoostAdmin(childUri, USERS.b.profileId);
+
+        await expect(b.invoke.getSkillFrameworkAdmins(frameworkId)).rejects.toThrow(
+            'Profile does not manage this framework'
+        );
+
+        // Sanity check: B should be able to see the skills available even though they are not an admin of the framework
+        const result = await b.invoke.getSkillsAvailableForBoost(childUri);
+        expect(result).toHaveLength(1);
+        expect(result[0]!.framework.id).toBe(frameworkId);
+        expect(result[0]!.skills.some(skill => skill.id === skillId)).toBe(true);
+
+        const aligned = await b.invoke.alignBoostSkills(childUri, [skillId]);
+        expect(aligned).toBe(true);
+
+        const boostRecord = await b.invoke.getBoost(childUri);
+        const boostSubject = Array.isArray(boostRecord.boost.credentialSubject)
+            ? boostRecord.boost.credentialSubject[0]
+            : boostRecord.boost.credentialSubject;
+        const alignment = boostSubject?.achievement?.alignment || boostSubject?.alignment || [];
+        const names = alignment.map((aItem: any) => aItem?.targetName).filter(Boolean);
+        expect(names).toContain('Ancestor Skill');
+    });
+
     test('injects alignments from linked framework + aligned skills into issued VC', async () => {
         const fwId = `fw-${crypto.randomUUID()}`;
         const skill1Id = `${fwId}-S1`;

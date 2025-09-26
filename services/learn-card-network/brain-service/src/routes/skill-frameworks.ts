@@ -11,11 +11,15 @@ import {
     CreateManagedFrameworkBatchInputValidator,
     UpdateFrameworkInputValidator,
     DeleteFrameworkInputValidator,
+    SkillFrameworkAdminInputValidator,
+    SkillFrameworkIdInputValidator,
+    SkillFrameworkAdminsValidator,
 } from '@learncard/types';
 import {
     upsertSkillFrameworkFromProvider,
     createSkillFramework as createSkillFrameworkNode,
 } from '@accesslayer/skill-framework/create';
+import { getBoostsByUri } from '@accesslayer/boost/read';
 import {
     listSkillFrameworksManagedByProfile,
     doesProfileManageFramework,
@@ -31,6 +35,16 @@ import { getSkillsProvider } from '@services/skills-provider';
 import { SkillTreeNodeValidator } from 'types/skill-tree';
 import { createSkill } from '@accesslayer/skill/create';
 import { createSkillTree, type SkillTreeInput } from './skill-inputs';
+import { isProfileBoostAdmin } from '@accesslayer/boost/relationships/read';
+import { getIdFromUri } from '@helpers/uri.helpers';
+import { neogma } from '@instance';
+import {
+    listFrameworkManagers,
+    addFrameworkManager,
+    removeFrameworkManager,
+} from '@accesslayer/skill-framework/relationships';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import type { ProfileType } from 'types/profile';
 
 export const skillFrameworksRouter = t.router({
     create: profileRoute
@@ -78,8 +92,12 @@ export const skillFrameworksRouter = t.router({
         .input(CreateManagedFrameworkInputValidator)
         .output(SkillFrameworkValidator)
         .mutation(async ({ ctx, input }): Promise<SkillFrameworkType> => {
-            const profileId = ctx.user.profile.profileId;
-            const { skills: initialSkills, ...frameworkInput } = input;
+            const { profile } = ctx.user;
+            const profileId = profile.profileId;
+            const { skills: initialSkills, boostUris = [], ...frameworkInput } = input;
+
+            const boostAttachments = await resolveBoostAttachments(profile, boostUris);
+
             const created = await createSkillFrameworkNode(profileId, frameworkInput);
 
             const provider = getSkillsProvider();
@@ -92,6 +110,7 @@ export const skillFrameworksRouter = t.router({
             });
 
             await seedFrameworkSkills(created.id, initialSkills, provider);
+            await attachBoostsToFramework(created.id, boostAttachments);
 
             return created;
         }),
@@ -112,13 +131,17 @@ export const skillFrameworksRouter = t.router({
         .input(CreateManagedFrameworkBatchInputValidator)
         .output(SkillFrameworkValidator.array())
         .mutation(async ({ ctx, input }) => {
-            const profileId = ctx.user.profile.profileId;
+            const { profile } = ctx.user;
+            const profileId = profile.profileId;
             const provider = getSkillsProvider();
 
             const createdFrameworks: SkillFrameworkType[] = [];
 
             for (const frameworkInput of input.frameworks) {
-                const { skills: initialSkills, ...frameworkPayload } = frameworkInput;
+                const { skills: initialSkills, boostUris = [], ...frameworkPayload } = frameworkInput;
+
+                const boostAttachments = await resolveBoostAttachments(profile, boostUris);
+
                 const created = await createSkillFrameworkNode(profileId, frameworkPayload);
 
                 await provider.createFramework?.({
@@ -130,11 +153,131 @@ export const skillFrameworksRouter = t.router({
                 });
 
                 await seedFrameworkSkills(created.id, initialSkills, provider);
+                await attachBoostsToFramework(created.id, boostAttachments);
 
                 createdFrameworks.push(created);
             }
 
             return createdFrameworks;
+        }),
+
+    listFrameworkAdmins: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/skills/frameworks/{frameworkId}/admins',
+                tags: ['Skills'],
+                summary: 'List framework admins',
+                description: 'Returns the profiles that manage the given framework. Requires manager access.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(SkillFrameworkIdInputValidator)
+        .output(SkillFrameworkAdminsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { frameworkId } = input;
+
+            if (!(await doesProfileManageFramework(profile.profileId, frameworkId))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not manage this framework',
+                });
+            }
+
+            return listFrameworkManagers(frameworkId);
+        }),
+
+    addFrameworkAdmin: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/frameworks/{frameworkId}/admins',
+                tags: ['Skills'],
+                summary: 'Add framework admin',
+                description:
+                    'Adds another profile as a manager of the framework. Requires existing manager access.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(SkillFrameworkAdminInputValidator)
+        .output(z.object({ success: z.boolean() }))
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { frameworkId, profileId } = input;
+
+            if (!(await doesProfileManageFramework(profile.profileId, frameworkId))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not manage this framework',
+                });
+            }
+
+            const targetProfile = await getProfileByProfileId(profileId);
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found',
+                });
+            }
+
+            const success = await addFrameworkManager(frameworkId, profileId);
+
+            return { success };
+        }),
+
+    removeFrameworkAdmin: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'DELETE',
+                path: '/skills/frameworks/{frameworkId}/admins/{profileId}',
+                tags: ['Skills'],
+                summary: 'Remove framework admin',
+                description:
+                    'Removes a manager from the framework. Requires manager access and at least one manager must remain.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(SkillFrameworkAdminInputValidator)
+        .output(z.object({ success: z.boolean() }))
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { frameworkId, profileId } = input;
+
+            if (!(await doesProfileManageFramework(profile.profileId, frameworkId))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not manage this framework',
+                });
+            }
+
+            const admins = await listFrameworkManagers(frameworkId);
+            const targetIsAdmin = admins.some(admin => admin.profileId === profileId);
+
+            if (!targetIsAdmin) {
+                return { success: false };
+            }
+
+            if (admins.length <= 1) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Cannot remove the last framework admin',
+                });
+            }
+
+            const success = await removeFrameworkManager(frameworkId, profileId);
+
+            if (!success) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Unable to remove framework admin',
+                });
+            }
+
+            return { success };
         }),
 
     update: profileRoute
@@ -284,6 +427,68 @@ export const skillFrameworksRouter = t.router({
             };
         }),
 });
+
+type BoostAttachment = {
+    id: string;
+    uri: string;
+};
+
+const resolveBoostAttachments = async (
+    profile: ProfileType,
+    boostUris: string[] | undefined
+): Promise<BoostAttachment[]> => {
+    if (!boostUris || boostUris.length === 0) return [];
+
+    const idToUri = new Map<string, string>();
+    for (const uri of boostUris) {
+        idToUri.set(getIdFromUri(uri), uri);
+    }
+
+    const uniqueUris = Array.from(idToUri.values());
+    const boosts = await getBoostsByUri(uniqueUris);
+    const boostById = new Map(boosts.map(boost => [boost.id, boost] as const));
+
+    const missingUris = Array.from(idToUri.entries())
+        .filter(([id]) => !boostById.has(id))
+        .map(([, uri]) => uri);
+
+    if (missingUris.length > 0) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: `Boost(s) not found: ${missingUris.join(', ')}`,
+        });
+    }
+
+    for (const [id, uri] of idToUri.entries()) {
+        const boost = boostById.get(id)!;
+
+        if (!(await isProfileBoostAdmin(profile, boost))) {
+            throw new TRPCError({
+                code: 'UNAUTHORIZED',
+                message: `Profile is not a boost admin for boost ${uri}`,
+            });
+        }
+    }
+
+    return Array.from(idToUri.entries()).map(([id, uri]) => ({ id, uri }));
+};
+
+const attachBoostsToFramework = async (
+    frameworkId: string,
+    attachments: BoostAttachment[]
+): Promise<void> => {
+    if (attachments.length === 0) return;
+
+    const boostIds = Array.from(new Set(attachments.map(({ id }) => id)));
+
+    await neogma.queryRunner.run(
+        `UNWIND $boostIds AS bid
+         MATCH (b:Boost { id: bid })
+         MATCH (f:SkillFramework { id: $frameworkId })
+         MERGE (b)-[:USES_FRAMEWORK]->(f)`,
+        { boostIds, frameworkId }
+    );
+};
 
 const seedFrameworkSkills = async (
     frameworkId: string,

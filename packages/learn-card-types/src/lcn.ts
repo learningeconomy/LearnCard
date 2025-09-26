@@ -1075,6 +1075,7 @@ export const CreateManagedFrameworkInputValidator = z.object({
     sourceURI: z.string().url().optional(),
     status: SkillFrameworkStatusEnum.optional(),
     skills: z.array(SkillTreeNodeInputValidator).optional(),
+    boostUris: z.array(z.string()).optional(),
 });
 
 export type CreateManagedFrameworkInputType = z.infer<typeof CreateManagedFrameworkInputValidator>;
@@ -1130,6 +1131,21 @@ export type CreateManagedFrameworkBatchInputType = z.infer<
 
 // Back-compat alias for plugin naming
 export type CreateManagedSkillFrameworkBatchInput = CreateManagedFrameworkBatchInputType;
+
+export const SkillFrameworkAdminInputValidator = z.object({
+    frameworkId: z.string(),
+    profileId: z.string(),
+});
+
+export type SkillFrameworkAdminInputType = z.infer<typeof SkillFrameworkAdminInputValidator>;
+
+export const SkillFrameworkIdInputValidator = z.object({ frameworkId: z.string() });
+
+export type SkillFrameworkIdInputType = z.infer<typeof SkillFrameworkIdInputValidator>;
+
+export const SkillFrameworkAdminsValidator = LCNProfileValidator.array();
+
+export type SkillFrameworkAdminsType = z.infer<typeof SkillFrameworkAdminsValidator>;
 
 export const SyncFrameworkInputValidator = z.object({ id: z.string() });
 
