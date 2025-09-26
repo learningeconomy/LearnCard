@@ -8,7 +8,9 @@ const INBOX_CLAIM_TOKEN_PREFIX = 'inbox_claim:';
 export const CONTACT_METHOD_SESSION_PREFIX = 'contact_method_session:';
 
 const generate6DigitCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    return (100000 + (array[0] % 900000)).toString();
 };
 
 export const generateContactMethodVerificationToken = async (
