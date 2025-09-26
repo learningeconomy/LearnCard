@@ -10,6 +10,7 @@ import {
     PaginatedInboxCredentialsValidator,
     InboxCredentialQueryValidator,
     ContactMethodQueryValidator,
+    LCNNotificationTypeEnumValidator,
 } from '@learncard/types';
 
 import { issueToInbox } from '@helpers/inbox.helpers';
@@ -23,6 +24,7 @@ import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { updateProfile } from '@accesslayer/profile/update';
 import { getInboxCredentialsForProfile } from '@accesslayer/inbox-credential/read';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
 
 export const inboxRouter = t.router({
     // Request guardian approval via email
@@ -148,6 +150,17 @@ export const inboxRouter = t.router({
                         message: 'Failed to mark profile as approved',
                     });
                 }
+
+                // Notify the user that their account has been approved
+                await addNotificationToQueue({
+                    type: LCNNotificationTypeEnumValidator.enum.PROFILE_PARENT_APPROVED,
+                    to: requester,
+                    from: requester,
+                    message: {
+                        title: 'Account Approved',
+                        body: 'Your account has been approved by your parent or guardian.',
+                    },
+                });
             }
 
             // Mark token as used (idempotent)
@@ -197,6 +210,17 @@ export const inboxRouter = t.router({
                         message: 'Failed to mark profile as approved',
                     });
                 }
+
+                // Notify the user that their account has been approved
+                await addNotificationToQueue({
+                    type: LCNNotificationTypeEnumValidator.enum.PROFILE_PARENT_APPROVED,
+                    to: requester,
+                    from: requester,
+                    message: {
+                        title: 'Account Approved',
+                        body: 'Your account has been approved by your parent or guardian.',
+                    },
+                });
             }
 
             await markGuardianApprovalTokenAsUsed(token);
