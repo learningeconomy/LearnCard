@@ -30,14 +30,14 @@ export const getPendingInboxCredentialsForContactMethod = async (
     );
 };
 
-export const getPendingOrClaimedInboxCredentialsForContactMethodId = async (
+export const getPendingOrIssuedInboxCredentialsForContactMethodId = async (
     contactMethodId: string
 ): Promise<InboxCredentialType[]> => {
     const result = await new QueryBuilder(new BindParam({ contactMethodId }))
         .match({ model: ContactMethod, identifier: 'contactMethod' })
         .where('contactMethod.id = $contactMethodId')
         .match('(inboxCredential:InboxCredential)-[:ADDRESSED_TO]->(contactMethod)')
-        .where(`(inboxCredential.currentStatus = "PENDING" OR inboxCredential.currentStatus = "CLAIMED") AND datetime(inboxCredential.expiresAt) > datetime()`)
+        .where(`(inboxCredential.currentStatus = "PENDING" OR inboxCredential.currentStatus = "ISSUED") AND datetime(inboxCredential.expiresAt) > datetime()`)
         .return('inboxCredential')
         .run();
 
@@ -56,6 +56,42 @@ export const getPendingInboxCredentialsForContactMethodId = async (
         .where('contactMethod.id = $contactMethodId')
         .match('(inboxCredential:InboxCredential)-[:ADDRESSED_TO]->(contactMethod)')
         .where(`inboxCredential.currentStatus = "PENDING" AND datetime(inboxCredential.expiresAt) > datetime()`)
+        .return('inboxCredential')
+        .run();
+
+    return (
+        QueryRunner.getResultProperties<InboxCredentialType[]>(result, 'inboxCredential')?.map(credential =>
+            inflateObject<InboxCredentialType>(credential as any)
+        ) ?? []
+    );
+};
+
+export const getAcceptedPendingInboxCredentialsForContactMethodId = async (
+    contactMethodId: string
+): Promise<InboxCredentialType[]> => {
+    const result = await new QueryBuilder(new BindParam({ contactMethodId }))
+        .match({ model: ContactMethod, identifier: 'contactMethod' })
+        .where('contactMethod.id = $contactMethodId')
+        .match('(inboxCredential:InboxCredential)-[:ADDRESSED_TO]->(contactMethod)')
+        .where(`inboxCredential.currentStatus = "PENDING" AND inboxCredential.isAccepted = true AND datetime(inboxCredential.expiresAt) > datetime()`) // TODO: Add status filter?
+        .return('inboxCredential')
+        .run();
+
+    return (
+        QueryRunner.getResultProperties<InboxCredentialType[]>(result, 'inboxCredential')?.map(credential =>
+            inflateObject<InboxCredentialType>(credential as any)
+        ) ?? []
+    );
+};
+
+export const getInboxCredentialsForContactMethodId = async (
+    contactMethodId: string
+): Promise<InboxCredentialType[]> => {
+    const result = await new QueryBuilder(new BindParam({ contactMethodId }))
+        .match({ model: ContactMethod, identifier: 'contactMethod' })
+        .where('contactMethod.id = $contactMethodId')
+        .match('(inboxCredential:InboxCredential)-[:ADDRESSED_TO]->(contactMethod)')
+        .where(`datetime(inboxCredential.expiresAt) > datetime()`) // TODO: Add status filter?
         .return('inboxCredential')
         .run();
 
