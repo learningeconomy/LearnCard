@@ -87,9 +87,13 @@ export interface Evidence {
     name?: string;
     narrative?: string;
     description?: string;
-    // evidenceDocument?: string; // Added this back - it's in the validator
     genre?: string;
     audience?: string;
+
+    // Extended fields
+    fileName?: string;
+    fileType?: string;
+    fileSize?: string;
 }
 
 export type BoostTemplate = {
