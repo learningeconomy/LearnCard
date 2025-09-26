@@ -10,6 +10,7 @@ export const CONTACT_METHOD_SESSION_PREFIX = 'contact_method_session:';
 const generate6DigitCode = () => {
     const array = new Uint32Array(1);
     crypto.getRandomValues(array);
+    if (!array[0]) throw new Error('Failed to generate random number');
     return (100000 + (array[0] % 900000)).toString();
 };
 
