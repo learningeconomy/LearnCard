@@ -119,7 +119,8 @@
 
   function sendToParent(type, payload) {
     try {
-      window.parent.postMessage({ __lcEmbed: true, type: type, nonce: config.nonce, payload: payload }, config.parentOrigin || '*');
+      if (!config.parentOrigin) { console.error('LearnCard Embed: missing parentOrigin'); return; }
+      window.parent.postMessage({ __lcEmbed: true, type: type, nonce: config.nonce, payload: payload }, config.parentOrigin);
     } catch (e) {}
   }
 
@@ -284,7 +285,8 @@
                   consentGiven: !!state.consent
                 }
               };
-              window.parent.postMessage(payload, config.parentOrigin || '*');
+              if (!config.parentOrigin) { console.error('LearnCard Embed: missing parentOrigin'); return; }
+              window.parent.postMessage(payload, config.parentOrigin);
             }
           }, [text('View My LearnCard')])
         ])
