@@ -1,7 +1,9 @@
 import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile } from '@models';
-import { sendSpy } from './helpers/spies';
+import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
+import * as notifications from '@helpers/notifications.helpers';
 
 vi.mock('@services/delivery/delivery.factory', () => ({
     getDeliveryService: () => ({ send: sendSpy }),
@@ -113,6 +115,35 @@ describe('Guardian Approval', () => {
         await expect(
             noAuthClient.inbox.approveGuardianRequest({ token: token! })
         ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+
+    it('should enqueue a PROFILE_PARENT_APPROVED notification when approval is newly set (POST)', async () => {
+        // Spy on notification queueing
+        vi.spyOn(notifications, 'addNotificationToQueue').mockImplementation(
+            addNotificationToQueueSpy
+        );
+        addNotificationToQueueSpy.mockClear();
+
+        await userA.clients.fullAuth.inbox.sendGuardianApprovalEmail({
+            guardianEmail: 'guardian@test.com',
+        });
+
+        const sendArgs = sendSpy.mock.calls[0][0];
+        const token = sendArgs.templateModel.approvalToken as string | undefined;
+        expect(typeof token).toBe('string');
+
+        await expect(
+            noAuthClient.inbox.approveGuardianRequest({ token: token! })
+        ).resolves.not.toThrow();
+
+        expect(addNotificationToQueueSpy).toHaveBeenCalledOnce();
+        expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: LCNNotificationTypeEnumValidator.enum.PROFILE_PARENT_APPROVED,
+                to: expect.objectContaining({ profileId: 'guardian-user' }),
+                from: expect.objectContaining({ profileId: 'guardian-user' }),
+            })
+        );
     });
 
     it('should return BAD_REQUEST for invalid tokens (GET and POST)', async () => {
