@@ -26,12 +26,19 @@ export async function addNotificationToQueue(notification: LCNNotification) {
         await cache.set(`e2e:notification-queue:${randomUUID()}`, JSON.stringify(notification));
     }
 
-    if (
-        process.env.NODE_ENV === 'test' ||
-        process.env.IS_OFFLINE ||
-        !process.env.NOTIFICATIONS_QUEUE_URL
-    ) {
-        return; // Can not use SQS in test environment or locally
+    // If running unit tests, do not attempt to deliver (keep legacy behavior for tests)
+    if (process.env.NODE_ENV === 'test') {
+        return;
+    }
+
+    // In local development (offline or missing SQS URL), deliver directly via webhook
+    if (process.env.IS_OFFLINE || !process.env.NOTIFICATIONS_QUEUE_URL) {
+        if (process.env.NODE_ENV !== 'test') {
+            console.log(
+                'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
+            );
+        }
+        return sendNotification(notification);
     }
 
     const command = new SendMessageCommand({
