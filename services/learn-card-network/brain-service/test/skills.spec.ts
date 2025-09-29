@@ -608,6 +608,131 @@ describe('Skills router', () => {
         });
     });
 
+    it('searches skills in a framework with regex pattern', async () => {
+        await createProfileFor(userA, 'usera');
+        const frameworkId = `fw-search-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Search Test Framework',
+            skills: [
+                {
+                    id: `${frameworkId}-javascript`,
+                    statement: 'JavaScript Programming',
+                    code: 'JS101',
+                    description: 'Learn JavaScript fundamentals',
+                },
+                {
+                    id: `${frameworkId}-python`,
+                    statement: 'Python Programming',
+                    code: 'PY101',
+                    description: 'Learn Python basics',
+                },
+                {
+                    id: `${frameworkId}-typescript`,
+                    statement: 'TypeScript Development',
+                    code: 'TS101',
+                    description: 'Advanced JavaScript with types',
+                },
+                {
+                    id: `${frameworkId}-database`,
+                    statement: 'Database Design',
+                    code: 'DB101',
+                    description: 'Learn database fundamentals',
+                },
+            ],
+        });
+
+        // Search by description with case-insensitive regex
+        const jsResults = await userA.clients.fullAuth.skills.searchFrameworkSkills({
+            id: frameworkId,
+            query: { description: { $regex: /javascript/i } },
+            limit: 10,
+        });
+        expect(jsResults.records.length).toBe(2); // JavaScript and TypeScript (has "JavaScript with types" in description)
+        expect(jsResults.records.map(s => s.id)).toEqual(
+            expect.arrayContaining([`${frameworkId}-javascript`, `${frameworkId}-typescript`])
+        );
+        expect(jsResults.hasMore).toBe(false);
+
+        // Search by code using $in
+        const codeResults = await userA.clients.fullAuth.skills.searchFrameworkSkills({
+            id: frameworkId,
+            query: { code: { $in: ['JS101', 'TS101'] } },
+            limit: 10,
+        });
+        expect(codeResults.records.length).toBe(2);
+
+        // Search with pagination
+        const page1 = await userA.clients.fullAuth.skills.searchFrameworkSkills({
+            id: frameworkId,
+            query: { statement: { $regex: /.*/ } },
+            limit: 2,
+        });
+        expect(page1.records.length).toBe(2);
+        expect(page1.hasMore).toBe(true);
+        expect(page1.cursor).toBeTruthy();
+
+        const page2 = await userA.clients.fullAuth.skills.searchFrameworkSkills({
+            id: frameworkId,
+            query: { statement: { $regex: /.*/ } },
+            limit: 2,
+            cursor: page1.cursor,
+        });
+        expect(page2.records.length).toBe(2);
+        expect(page2.hasMore).toBe(false);
+
+        // Search with no results
+        const noResults = await userA.clients.fullAuth.skills.searchFrameworkSkills({
+            id: frameworkId,
+            query: { statement: { $regex: /ruby/i } },
+            limit: 10,
+        });
+        expect(noResults.records.length).toBe(0);
+        expect(noResults.hasMore).toBe(false);
+    });
+
+    it('enforces management permissions on framework skill search', async () => {
+        await createProfileFor(userA, 'usera');
+        const frameworkId = `fw-search-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Private Framework',
+            skills: [{ id: `${frameworkId}-skill`, statement: 'Private Skill' }],
+        });
+
+        // User B cannot search in A's framework
+        await createProfileFor(userB, 'userb');
+        await expect(
+            userB.clients.fullAuth.skills.searchFrameworkSkills({
+                id: frameworkId,
+                query: { statement: { $regex: /.*/ } },
+                limit: 10,
+            })
+        ).rejects.toThrow();
+    });
+
+    it('requires skills:read scope for framework search', async () => {
+        await createProfileFor(userWriter, 'writer');
+        const frameworkId = `fw-search-${crypto.randomUUID()}`;
+
+        await userWriter.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Writer Framework',
+            skills: [{ id: `${frameworkId}-skill`, statement: 'Test Skill' }],
+        });
+
+        // Writer has skills:write but not skills:read
+        await expect(
+            userWriter.clients.fullAuth.skills.searchFrameworkSkills({
+                id: frameworkId,
+                query: { statement: { $regex: /.*/ } },
+                limit: 10,
+            })
+        ).rejects.toThrow();
+    });
+
     it('rejects unauthenticated calls', async () => {
         await expect(noAuthClient.skills.syncFrameworkSkills({ id: FW_ID })).rejects.toThrow();
 
@@ -634,6 +759,10 @@ describe('Skills router', () => {
 
         await expect(
             noAuthClient.skills.delete({ frameworkId: FW_ID, id: 'noauth-skill' })
+        ).rejects.toThrow();
+
+        await expect(
+            noAuthClient.skills.searchFrameworkSkills({ id: FW_ID, query: { statement: { $regex: /.*/ } }, limit: 10 })
         ).rejects.toThrow();
     });
 });

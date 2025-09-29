@@ -5,7 +5,7 @@ import { t, profileRoute } from '@routes';
 import { getSkillsProvider } from '@services/skills-provider';
 import { doesProfileManageFramework, getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
-import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged } from '@accesslayer/skill/read';
+import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged, searchSkillsInFramework } from '@accesslayer/skill/read';
 import { createSkill } from '@accesslayer/skill/create';
 import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import { listTagsForSkill, addTagToSkill, removeTagFromSkill } from '@accesslayer/skill/tags';
@@ -13,6 +13,7 @@ import {
     TagValidator,
     type TagType,
     SkillValidator,
+    SkillQueryValidator,
     PaginatedSkillTreeValidator,
     SyncFrameworkInputValidator,
     AddTagInputValidator,
@@ -152,6 +153,61 @@ export const skillsRouter = t.router({
                 hasMore: page.hasMore,
                 cursor: page.cursor,
                 records,
+            };
+        }),
+    searchFrameworkSkills: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/framework/search',
+                tags: ['Skills'],
+                summary: 'Search skills in a framework',
+                description:
+                    'Returns a flattened, paginated list of skills matching the search query. Supports $regex and $in operators. Requires framework management.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(
+            z.object({
+                id: z.string(),
+                query: SkillQueryValidator,
+                limit: z.number().int().min(1).max(200).default(50),
+                cursor: z.string().nullable().optional(),
+            })
+        )
+        .output(
+            z.object({
+                records: z.array(SkillValidator.omit({ createdAt: true, updatedAt: true })),
+                hasMore: z.boolean(),
+                cursor: z.string().nullable(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { id: frameworkId, query, limit, cursor } = input;
+
+            if (!(await doesProfileManageFramework(profile.profileId, frameworkId))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not manage this framework',
+                });
+            }
+
+            const result = await searchSkillsInFramework(frameworkId, query, limit, cursor ?? null);
+
+            return {
+                records: result.records.map(skill => ({
+                    id: skill.id,
+                    statement: skill.statement,
+                    description: skill.description ?? undefined,
+                    code: skill.code ?? undefined,
+                    type: skill.type ?? 'skill',
+                    status: (skill.status as any) ?? 'active',
+                    frameworkId: skill.frameworkId,
+                })),
+                hasMore: result.hasMore,
+                cursor: result.cursor,
             };
         }),
     syncFrameworkSkills: profileRoute

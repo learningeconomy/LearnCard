@@ -22,6 +22,7 @@ import {
     JWE,
     VC,
     PaginatedBoostRecipientsWithChildrenValidator,
+    SkillQueryValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 
@@ -60,6 +61,7 @@ import {
     getBoostByUriWithDefaultClaimPermissions,
     getFrameworkSkillsAvailableForBoost,
     getFrameworksForBoost,
+    searchSkillsAvailableForBoost,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -318,6 +320,66 @@ export const boostsRouter = t.router({
                     status: (skill.status as any) ?? 'active',
                 })),
             }));
+        }),
+
+    searchSkillsAvailableForBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/skills/search',
+                tags: ['Boosts'],
+                summary: 'Search available skills for a boost',
+                description:
+                    'Returns a flattened, paginated list of skills matching the search query. Supports $regex and $in operators. Searches skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: SkillQueryValidator,
+                limit: z.number().int().min(1).max(200).default(50),
+                cursor: z.string().nullable().optional(),
+            })
+        )
+        .output(
+            z.object({
+                records: z.array(SkillValidator.omit({ createdAt: true, updatedAt: true })),
+                hasMore: z.boolean(),
+                cursor: z.string().nullable(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri, query, limit, cursor } = input;
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const result = await searchSkillsAvailableForBoost(boost, query, limit, cursor ?? null);
+
+            return {
+                records: result.records.map(skill => ({
+                    id: skill.id,
+                    statement: skill.statement,
+                    description: skill.description ?? undefined,
+                    code: skill.code ?? undefined,
+                    type: skill.type ?? 'skill',
+                    status: (skill.status as any) ?? 'active',
+                    frameworkId: skill.frameworkId,
+                })),
+                hasMore: result.hasMore,
+                cursor: result.cursor,
+            };
         }),
     sendBoost: profileRoute
         .meta({

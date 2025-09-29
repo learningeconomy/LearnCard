@@ -6207,5 +6207,170 @@ describe('Boosts', () => {
 
             expect(Number(alignment.records[0]?.get('c') ?? 0)).toBe(1);
         });
+
+        it('searches skills available for a boost with regex pattern', async () => {
+            const frameworkId = `fw-search-${crypto.randomUUID()}`;
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Search Framework',
+                skills: [
+                    {
+                        id: `${frameworkId}-react`,
+                        statement: 'React Development',
+                        code: 'REACT101',
+                        description: 'Learn React fundamentals',
+                    },
+                    {
+                        id: `${frameworkId}-vue`,
+                        statement: 'Vue.js Development',
+                        code: 'VUE101',
+                        description: 'Learn Vue.js basics',
+                    },
+                    {
+                        id: `${frameworkId}-angular`,
+                        statement: 'Angular Development',
+                        code: 'ANG101',
+                        description: 'Learn Angular framework',
+                    },
+                ],
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // Search by statement with case-insensitive regex
+            const reactResults = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: boostUri,
+                query: { statement: { $regex: /react/i } },
+                limit: 10,
+            });
+            expect(reactResults.records.length).toBe(1);
+            expect(reactResults.records[0]?.id).toBe(`${frameworkId}-react`);
+            expect(reactResults.hasMore).toBe(false);
+
+            // Search across all skills
+            const allResults = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: boostUri,
+                query: { statement: { $regex: /.*/ } },
+                limit: 10,
+            });
+            expect(allResults.records.length).toBe(3);
+            expect(allResults.hasMore).toBe(false);
+
+            // Search with pagination
+            const page1 = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: boostUri,
+                query: { statement: { $regex: /.*/ } },
+                limit: 2,
+            });
+            expect(page1.records.length).toBe(2);
+            expect(page1.hasMore).toBe(true);
+            expect(page1.cursor).toBeTruthy();
+
+            const page2 = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: boostUri,
+                query: { statement: { $regex: /.*/ } },
+                limit: 2,
+                cursor: page1.cursor,
+            });
+            expect(page2.records.length).toBe(1);
+            expect(page2.hasMore).toBe(false);
+        });
+
+        it('searches skills from parent boost frameworks', async () => {
+            const parentFrameworkId = `fw-parent-${crypto.randomUUID()}`;
+            const childFrameworkId = `fw-child-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: parentFrameworkId,
+                name: 'Parent Framework',
+                skills: [
+                    {
+                        id: `${parentFrameworkId}-parent-skill`,
+                        statement: 'Parent Skill',
+                        code: 'P101',
+                    },
+                ],
+            });
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: childFrameworkId,
+                name: 'Child Framework',
+                skills: [
+                    {
+                        id: `${childFrameworkId}-child-skill`,
+                        statement: 'Child Skill',
+                        code: 'C101',
+                    },
+                ],
+            });
+
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: parentUri,
+                frameworkId: parentFrameworkId,
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost },
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: childUri,
+                frameworkId: childFrameworkId,
+            });
+
+            // Child boost can search skills from both frameworks
+            const results = await userA.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                uri: childUri,
+                query: { statement: { $regex: /.*/ } },
+                limit: 10,
+            });
+
+            expect(results.records.length).toBe(2);
+            expect(results.records.map(s => s.id)).toEqual(
+                expect.arrayContaining([
+                    `${parentFrameworkId}-parent-skill`,
+                    `${childFrameworkId}-child-skill`,
+                ])
+            );
+        });
+
+        it('enforces boost admin permissions for skill search', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Search Framework',
+                skills: [{ id: `${frameworkId}-skill`, statement: 'Test Skill' }],
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // User B is not a boost admin, should be unauthorized
+            await expect(
+                userB.clients.fullAuth.boost.searchSkillsAvailableForBoost({
+                    uri: boostUri,
+                    query: { statement: { $regex: /.*/ } },
+                    limit: 10,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
     });
 });

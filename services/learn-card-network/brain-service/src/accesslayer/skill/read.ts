@@ -1,6 +1,8 @@
 import { neogma } from '@instance';
 import { int } from 'neo4j-driver';
+import { convertObjectRegExpToNeo4j, getMatchQueryWhere } from '@helpers/neo4j.helpers';
 import type { FlatSkillType, SkillType } from 'types/skill';
+import type { SkillQuery } from '@learncard/types';
 
 export const doesProfileManageSkill = async (
     profileId: string,
@@ -117,4 +119,47 @@ export const getChildrenForSkillInFrameworkPaged = async (
     const cursor: string | null = first ? (first.get('_cursor') as string | null) : null;
 
     return { records, hasMore, cursor };
+};
+
+/**
+ * Search skills in a framework using mongo-style query with $regex and $in operators.
+ * Returns a flattened, paginated list of skills.
+ */
+export const searchSkillsInFramework = async (
+    frameworkId: string,
+    searchQuery: SkillQuery,
+    limit: number,
+    cursorId?: string | null
+): Promise<Paginated<FlatSkillType>> => {
+    const matchQuery = convertObjectRegExpToNeo4j(searchQuery);
+    const whereClause = getMatchQueryWhere('s');
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+         WHERE ${whereClause}
+         AND ($cursorId IS NULL OR s.id > $cursorId)
+         RETURN s AS s
+         ORDER BY s.id
+         LIMIT $limitPlusOne`,
+        {
+            frameworkId,
+            matchQuery,
+            cursorId: cursorId ?? null,
+            limitPlusOne: int(limit + 1),
+        }
+    );
+
+    const all = result.records.map(r => {
+        const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
+        return {
+            ...props,
+            type: props.type ?? 'skill',
+        } as FlatSkillType;
+    });
+
+    const hasMore = all.length > limit;
+    const page = all.slice(0, limit);
+    const nextCursor = hasMore ? page[page.length - 1]!.id : null;
+
+    return { records: page, hasMore, cursor: nextCursor };
 };

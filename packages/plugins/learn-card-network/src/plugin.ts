@@ -446,6 +446,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getSkillsAvailableForBoost.query({ uri });
             },
+            searchSkillsAvailableForBoost: async (_learnCard, uri, query, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.searchSkillsAvailableForBoost.query({ uri, query, ...options });
+            },
             getBoosts: async (_learnCard, query) => {
                 console.warn(
                     'The getBoosts method is deprecated! Please use getPaginatedBoosts instead!'
@@ -1137,6 +1142,15 @@ export const getLearnCardNetworkPlugin = async (
                 return client.skills.getSkillChildrenTree.query({
                     frameworkId,
                     id: skillId,
+                    ...options,
+                });
+            },
+            searchFrameworkSkills: async (_learnCard, frameworkId, query, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.searchFrameworkSkills.query({
+                    id: frameworkId,
+                    query,
                     ...options,
                 });
             },

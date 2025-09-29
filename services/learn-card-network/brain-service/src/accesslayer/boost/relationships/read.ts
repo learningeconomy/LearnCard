@@ -1,10 +1,12 @@
 import sift from 'sift';
 import { BindParam, QueryBuilder } from 'neogma';
+import { int } from 'neo4j-driver';
 import {
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
     getMatchQueryWhere,
 } from '@helpers/neo4j.helpers';
+import type { SkillQuery } from '@learncard/types';
 import { BoostRecipientInfo, BoostPermissions, LCNProfileQuery } from '@learncard/types';
 import {
     Boost,
@@ -103,6 +105,59 @@ export const getFrameworkSkillsAvailableForBoost = async (
             };
         })
         .filter(Boolean) as { framework: FlatSkillFrameworkType; skills: FlatSkillType[] }[];
+};
+
+/**
+ * Search skills available for a boost using mongo-style query with $regex and $in operators.
+ * Returns a flattened, paginated list of skills from frameworks attached to the boost or any of its ancestors.
+ */
+export const searchSkillsAvailableForBoost = async (
+    boost: BoostInstance,
+    searchQuery: SkillQuery,
+    limit: number,
+    cursorId?: string | null
+): Promise<{
+    records: FlatSkillType[];
+    hasMore: boolean;
+    cursor: string | null;
+}> => {
+    const matchQuery = convertObjectRegExpToNeo4j(searchQuery);
+    const whereClause = getMatchQueryWhere('skill');
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (target:Boost { id: $boostId })
+         MATCH (ancestor:Boost)-[:PARENT_OF*0..]->(target)
+         MATCH (ancestor)-[:USES_FRAMEWORK]->(framework:SkillFramework)
+         MATCH (framework)-[:CONTAINS]->(skill:Skill)
+         WHERE ${whereClause}
+         AND ($cursorId IS NULL OR skill.id > $cursorId)
+         WITH DISTINCT skill, collect(DISTINCT framework.id)[0] AS frameworkId
+         ORDER BY skill.id
+         LIMIT $limitPlusOne
+         RETURN skill, frameworkId`,
+        {
+            boostId: boost.id,
+            matchQuery,
+            cursorId: cursorId ?? null,
+            limitPlusOne: int(limit + 1),
+        }
+    );
+
+    const all = result.records.map(r => {
+        const props = ((r.get('skill') as any)?.properties ?? {}) as Record<string, any>;
+        const frameworkId = r.get('frameworkId');
+        return {
+            ...props,
+            type: props.type ?? 'skill',
+            frameworkId,
+        } as FlatSkillType;
+    });
+
+    const hasMore = all.length > limit;
+    const page = all.slice(0, limit);
+    const nextCursor = hasMore ? page[page.length - 1]!.id : null;
+
+    return { records: page, hasMore, cursor: nextCursor };
 };
 
 export const getCredentialInstancesOfBoost = async (

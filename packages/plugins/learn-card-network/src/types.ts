@@ -55,6 +55,7 @@ import {
     TagType,
     SkillFrameworkType,
     SkillType,
+    SkillQuery,
     PaginatedSkillTree,
     FrameworkWithSkills,
     SyncFrameworkInput,
@@ -191,6 +192,11 @@ export type LearnCardNetworkPluginMethods = {
             skills: Omit<SkillType, 'createdAt' | 'updatedAt'>[];
         }[]
     >;
+    searchSkillsAvailableForBoost: (
+        uri: string,
+        query: SkillQuery,
+        options?: { limit?: number; cursor?: string | null }
+    ) => Promise<{ records: SkillType[]; hasMore: boolean; cursor: string | null }>;
     /** @deprecated Use getPaginatedBoosts */
     getBoosts: (query?: BoostQuery) => Promise<{ name?: string; uri: string }[]>;
     getPaginatedBoosts: (
@@ -485,6 +491,11 @@ export type LearnCardNetworkPluginMethods = {
         skillId: string,
         options?: { limit?: number; cursor?: string | null }
     ) => Promise<PaginatedSkillTree>;
+    searchFrameworkSkills: (
+        frameworkId: string,
+        query: SkillQuery,
+        options?: { limit?: number; cursor?: string | null }
+    ) => Promise<{ records: SkillType[]; hasMore: boolean; cursor: string | null }>;
     updateSkillFramework: (input: UpdateSkillFrameworkInput) => Promise<SkillFrameworkType>;
     deleteSkillFramework: (id: string) => Promise<{ success: boolean }>;
     getSkillFrameworkAdmins: (frameworkId: string) => Promise<LCNProfile[]>;
