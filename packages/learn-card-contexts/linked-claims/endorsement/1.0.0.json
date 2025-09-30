@@ -1,0 +1,23 @@
+{
+  "@context": {
+    "id": "@id",
+    "type": "@type",
+    "lcn": "https://docs.learncard.com/definitions#",
+    "cred": "https://www.w3.org/2018/credentials#",
+    "xsd": "https://www.w3.org/2001/XMLSchema#",
+    "EndorsementClaim": {
+      "@id": "lcn:EndorsementClaim",
+      "@context": {
+        "endorsedId": { "@id": "lcn:endorsedId", "@type": "@id" },
+        "recommendationText": { "@id": "lcn:endorsementRecommendationText", "@type": "xsd:string" },
+        "rating": { "@id": "lcn:endorsementRating", "@type": "xsd:decimal" },
+        "tags": { "@id": "lcn:endorsementTags", "@container": "@set", "@type": "xsd:string" },
+        "portfolio": { "@id": "lcn:endorsementPortfolio", "@container": "@set", "@type": "@json" },
+        "reference": { "@id": "lcn:endorsementReference", "@type": "xsd:string" },
+        "metadata": { "@id": "lcn:endorsementMetadata", "@type": "@json" },
+        "howKnow": { "@id": "lcn:endorsementHowKnow", "@type": "xsd:string" },
+        "qualifications": { "@id": "lcn:endorsementQualifications", "@container": "@set", "@type": "xsd:string" }
+      }
+    }
+  }
+}

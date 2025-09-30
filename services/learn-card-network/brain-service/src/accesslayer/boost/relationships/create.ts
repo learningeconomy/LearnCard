@@ -79,3 +79,10 @@ export const addAlignedSkillsToBoost = async (
         { boostId: boost.id, skillIds }
     );
 };
+
+export const createAutoConnectRecipientRelationship = async (
+    boost: BoostInstance,
+    recipient: ProfileType
+): Promise<void> => {
+    await boost.relateTo({ alias: 'autoConnectRecipient', where: { profileId: recipient.profileId } });
+};

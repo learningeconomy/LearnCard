@@ -1,0 +1,16 @@
+{
+    "@context": {
+        "lcn": "https://docs.learncard.com/definitions#",
+        "type": "@type",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "LegacyOpenBadgeCredential": {
+            "@id": "lcn:LegacyOpenBadgeCredential",
+            "@context": {
+                "legacyAssertion": {
+                    "@id": "lcn:legacyAssertion",
+                    "@type": "@json"
+                }
+            }
+        }
+    }
+}

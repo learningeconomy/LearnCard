@@ -6038,6 +6038,8 @@ describe('Boosts', () => {
             await cleanupGraph();
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+            await userD.clients.fullAuth.profile.createProfile({ profileId: 'userd' });
         });
 
         afterAll(async () => {
@@ -6281,6 +6283,306 @@ describe('Boosts', () => {
             });
             expect(page2.records.length).toBe(1);
             expect(page2.hasMore).toBe(false);
+        });
+
+        it('searches skills from parent boost frameworks', async () => {
+            const parentFrameworkId = `fw-parent-${crypto.randomUUID()}`;
+            const childFrameworkId = `fw-child-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: parentFrameworkId,
+                name: 'Parent Framework',
+                skills: [
+                    {
+                        id: `${parentFrameworkId}-parent-skill`,
+                        statement: 'Parent Skill',
+                        code: 'P101',
+                    },
+                ],
+            });
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: childFrameworkId,
+                name: 'Child Framework',
+                skills: [
+                    {
+                        id: `${childFrameworkId}-child-skill`,
+                        statement: 'Child Skill',
+                        code: 'C101',
+                    },
+                ],
+            });
+
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: parentUri,
+                frameworkId: parentFrameworkId,
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                childUri
+            );
+
+            const count = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri: parentUri,
+            });
+
+            expect(count).toBe(2);
+        });
+
+        it('should count distinct recipients once when they receive multiple boosts', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Parent',
+            });
+
+            const childUri1 = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child1' },
+            });
+            const childUri2 = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child2' },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                childUri1
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                childUri2
+            );
+
+            const count = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri: parentUri,
+            });
+
+            expect(count).toBe(1);
+        });
+
+        it('should respect numberOfGenerations parameter', async () => {
+            // 3-level hierarchy: parent -> child -> grandchild
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Parent',
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child' },
+            });
+
+            const grandchildUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testUnsignedBoost, category: 'Grandchild' },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                childUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                grandchildUri
+            );
+
+            // Only parent + 1 level (default = 1)
+            const count1 = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri: parentUri,
+                numberOfGenerations: 1,
+            });
+            expect(count1).toBe(2);
+
+            // Include grandchild (2 levels)
+            const count2 = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri: parentUri,
+                numberOfGenerations: 2,
+            });
+            expect(count2).toBe(3);
+        });
+
+        it('should include or exclude unaccepted boosts based on includeUnacceptedBoosts option', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            // Send but do not accept
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri,
+                false
+            );
+
+            const includeCount =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri,
+                    includeUnacceptedBoosts: true,
+                });
+            expect(includeCount).toBe(1);
+
+            const excludeCount =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri,
+                    includeUnacceptedBoosts: false,
+                });
+            expect(excludeCount).toBe(0);
+        });
+
+        it('should support filtering by boost query', async () => {
+            // Create parent and child with different categories
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Badge' },
+            });
+
+            // Send both boosts
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                childUri
+            );
+
+            const achCount = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount(
+                {
+                    uri: parentUri,
+                    boostQuery: { category: 'Achievement' },
+                }
+            );
+            expect(achCount).toBe(1);
+
+            const badgeCount =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri: parentUri,
+                    boostQuery: { category: 'Badge' },
+                });
+            expect(badgeCount).toBe(1);
+        });
+
+        it('should support filtering by profile query', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                uri
+            );
+
+            const onlyUserB =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri,
+                    // Use $in single value to exercise typed map path reliably
+                    profileQuery: { profileId: { $in: ['userb'] } },
+                } as any);
+            expect(onlyUserB).toBe(1);
+
+            const inQuery = await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                uri,
+                profileQuery: { profileId: { $in: ['userb', 'userd'] } },
+            } as any);
+            expect(inQuery).toBe(1);
+        });
+
+        it('should support filtering by profile query with regex', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                uri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                uri
+            );
+
+            const regexCount =
+                await userA.clients.fullAuth.boost.getBoostRecipientsWithChildrenCount({
+                    uri,
+                    // Provide regex pattern. The server supports
+                    // string-form '/pattern/flags' for convenience.
+                    profileQuery: { profileId: { $regex: '/userb/i' } },
+                } as any);
+
+            expect(regexCount).toBe(1);
+        });
+    });
+
+    describe('searches skills from parent boost frameworks', () => {
+        const cleanupGraph = async () => {
+            await Skill.delete({ detach: true, where: {} });
+            await SkillFramework.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+        };
+
+        beforeEach(async () => {
+            await cleanupGraph();
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await cleanupGraph();
         });
 
         it('searches skills from parent boost frameworks', async () => {

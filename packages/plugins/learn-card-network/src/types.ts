@@ -147,8 +147,15 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedLCNProfiles>;
     generateInvite: (
         challenge?: string,
-        expiration?: number
-    ) => Promise<{ profileId: string; challenge: string; experiesIn?: number | null }>;
+        expiration?: number,
+        maxUses?: number
+    ) => Promise<{ profileId: string; challenge: string; expiresIn: number | null }>;
+
+    listInvites: () => Promise<
+        { challenge: string; expiresIn: number | null; usesRemaining: number | null; maxUses: number | null }[]
+    >;
+
+    invalidateInvite: (challenge: string) => Promise<boolean>;
 
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
@@ -270,6 +277,13 @@ export type LearnCardNetworkPluginMethods = {
         profileQuery?: LCNProfileQuery,
         numberOfGenerations?: number
     ) => Promise<PaginatedBoostRecipientsWithChildrenType>;
+    countBoostRecipientsWithChildren: (
+        uri: string,
+        includeUnacceptedBoosts?: boolean,
+        boostQuery?: BoostQuery,
+        profileQuery?: LCNProfileQuery,
+        numberOfGenerations?: number
+    ) => Promise<number>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     getConnectedBoostRecipients: (
         uri: string,
@@ -321,11 +335,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
-    getRegisteredSigningAuthorities: (
-        endpoint: string,
-        name: string,
-        did: string
-    ) => Promise<LCNSigningAuthorityForUserType[]>;
+    getRegisteredSigningAuthorities: () => Promise<LCNSigningAuthorityForUserType[]>;
     getRegisteredSigningAuthority: (
         endpoint: string,
         name: string

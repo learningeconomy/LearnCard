@@ -31,10 +31,10 @@ export type ProfileRelationships = {
     usesSigningAuthority: ModelRelatedNodesI<
         typeof SigningAuthority,
         SigningAuthorityInstance,
-        { name: string; did: string, isPrimary?: boolean },
-        { name: string; did: string, isPrimary?: boolean }
+        { name: string; did: string; isPrimary?: boolean },
+        { name: string; did: string; isPrimary?: boolean }
     >;
-    hasContactMethod: ModelRelatedNodesI<typeof ContactMethod, ContactMethodInstance>; 
+    hasContactMethod: ModelRelatedNodesI<typeof ContactMethod, ContactMethodInstance>;
 };
 
 export type ProfileInstance = NeogmaInstance<FlatProfileType, ProfileRelationships>;
@@ -56,12 +56,15 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
             isServiceProfile: { type: 'boolean', required: false },
             type: { type: 'string', required: false },
             notificationsWebhook: { type: 'string', required: false },
+            highlightedCredentials: { type: 'array', items: { type: 'string' }, required: false },
             dob: { type: 'string', required: false },
+            country: { type: 'string', required: false },
             role: {
                 type: 'string',
                 required: false,
                 enum: Object.values(LearnCardRolesEnum),
             },
+            approved: { type: 'boolean', required: false },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
@@ -93,10 +96,17 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 properties: {
                     name: { property: 'name', schema: { type: 'string', required: true } },
                     did: { property: 'did', schema: { type: 'string', required: true } },
-                    isPrimary: { property: 'isPrimary', schema: { type: 'boolean', required: false } },
+                    isPrimary: {
+                        property: 'isPrimary',
+                        schema: { type: 'boolean', required: false },
+                    },
                 },
             },
-            hasContactMethod: { model: ContactMethod, direction: 'out', name: 'HAS_CONTACT_METHOD' },
+            hasContactMethod: {
+                model: ContactMethod,
+                direction: 'out',
+                name: 'HAS_CONTACT_METHOD',
+            },
         },
         primaryKeyField: 'did',
     },
