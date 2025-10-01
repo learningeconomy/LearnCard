@@ -217,6 +217,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
 
                 <MeritBadgeProfileImageDisplay
                     imageUrl={issuerImage}
+                    userName={issuerName}
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] flex justify-center items-center ${textLightColor}`}
                     size="small"
