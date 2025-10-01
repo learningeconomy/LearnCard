@@ -438,7 +438,15 @@ export type LearnCardNetworkPluginMethods = {
         errors: number;
         verifiableCredentials: VC[];
     }>;
- 
+
+    // Guardian Approval
+    sendGuardianApprovalEmail: (options: {
+        guardianEmail: string;
+        ttlHours?: number;
+        template?: { id?: string; model?: Record<string, unknown> };
+    }) => Promise<{ message: string; approvalUrl: string }>;
+    approveGuardianRequest: (token: string) => Promise<{ message: string }>;
+    approveGuardianRequestByPath: (token: string) => Promise<{ message: string }>;
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;

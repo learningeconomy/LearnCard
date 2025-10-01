@@ -1,5 +1,17 @@
 # @learncard/network-brain-service
 
+## 3.6.5
+
+### Patch Changes
+
+-   [#823](https://github.com/learningeconomy/LearnCard/pull/823) [`05dd394df6e56f066f222748d89c1aa82e47e826`](https://github.com/learningeconomy/LearnCard/commit/05dd394df6e56f066f222748d89c1aa82e47e826) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Add LCN routes for handling account approval via consent email
+
+## 3.6.4
+
+### Patch Changes
+
+-   [#825](https://github.com/learningeconomy/LearnCard/pull/825) [`db6fdcde184dc543f5c1a1428e649f558d780621`](https://github.com/learningeconomy/LearnCard/commit/db6fdcde184dc543f5c1a1428e649f558d780621) Thanks [@goblincore](https://github.com/goblincore)! - fix: Add local dev fallback for notification queue
+
 ## 3.6.3
 
 ### Patch Changes

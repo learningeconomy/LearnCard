@@ -595,7 +595,8 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'CONSENT_FLOW_TRANSACTION',
     'ISSUANCE_CLAIMED',
     'ISSUANCE_DELIVERED',
-    'ISSUANCE_ERROR'
+    'ISSUANCE_ERROR',
+    'PROFILE_PARENT_APPROVED'
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
