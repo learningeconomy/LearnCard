@@ -13,6 +13,7 @@ export const createSkillFramework = async (
     actorProfileId: string,
     input: CreateSkillFrameworkInput
 ): Promise<FlatSkillFrameworkType> => {
+    const now = new Date().toISOString();
     const data: FlatSkillFrameworkType = {
         id: input.id ?? uuid(),
         name: input.name,
@@ -20,6 +21,8 @@ export const createSkillFramework = async (
         image: input.image,
         sourceURI: input.sourceURI,
         status: input.status ?? 'active',
+        createdAt: now,
+        updatedAt: now,
     } as FlatSkillFrameworkType;
 
     await SkillFramework.createOne(data);
@@ -40,6 +43,7 @@ export const upsertSkillFrameworkFromProvider = async (
     actorProfileId: string,
     framework: ProviderFramework
 ): Promise<FlatSkillFrameworkType> => {
+    const now = new Date().toISOString();
     const data: FlatSkillFrameworkType = {
         id: framework.id,
         name: framework.name,
@@ -47,13 +51,15 @@ export const upsertSkillFrameworkFromProvider = async (
         image: framework.image,
         sourceURI: framework.sourceURI,
         status: 'active',
+        createdAt: now,
+        updatedAt: now,
     } as FlatSkillFrameworkType;
 
     // Merge local representation
     await neogma.queryRunner.run(
         `MERGE (f:SkillFramework {id: $id})
-         ON CREATE SET f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.status = $status
-         ON MATCH SET  f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI`,
+         ON CREATE SET f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.status = $status, f.createdAt = $createdAt, f.updatedAt = $updatedAt
+         ON MATCH SET  f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.updatedAt = $updatedAt`,
         data as any
     );
 

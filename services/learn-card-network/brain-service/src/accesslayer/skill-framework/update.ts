@@ -38,6 +38,9 @@ export const updateSkillFramework = async (
         return existing;
     }
 
+    // Always update the updatedAt timestamp
+    updates.updatedAt = new Date().toISOString();
+
     const setClauses = Object.keys(updates)
         .map(key => `f.${key} = $${key}`)
         .join(', ');
