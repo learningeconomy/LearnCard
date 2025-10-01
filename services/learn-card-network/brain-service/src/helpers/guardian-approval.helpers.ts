@@ -73,15 +73,21 @@ export const markGuardianApprovalTokenAsUsed = async (token: string): Promise<bo
 
     if (!data) return false;
 
-    const parsed = JSON.parse(data) as GuardianApprovalTokenData;
-    parsed.used = true;
+    try {
+        const parsed = JSON.parse(data) as GuardianApprovalTokenData;
+        parsed.used = true;
 
-    const ttl = Math.floor((new Date(parsed.expiresAt).getTime() - Date.now()) / 1000);
-    if (ttl > 0) {
-        await cache.set(key, JSON.stringify(parsed), ttl);
+        const ttl = Math.floor((new Date(parsed.expiresAt).getTime() - Date.now()) / 1000);
+        if (ttl > 0) {
+            await cache.set(key, JSON.stringify(parsed), ttl);
+        }
+
+        return true;
+    } catch (error) {
+        // Handle corrupted JSON data by cleaning up the cache entry
+        await cache.delete([key]);
+        return false;
     }
-
-    return true;
 };
 
 export const generateGuardianApprovalUrl = (token: string): string => {
