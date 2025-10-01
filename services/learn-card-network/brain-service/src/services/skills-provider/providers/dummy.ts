@@ -16,6 +16,7 @@ const normalizeFramework = (framework: Framework, existing?: StoredFramework): S
     id: framework.id,
     name: framework.name,
     description: framework.description,
+    image: framework.image,
     sourceURI: framework.sourceURI,
     status: framework.status ?? existing?.status ?? 'active',
     skills: existing?.skills ?? new Map(),
@@ -36,7 +37,7 @@ export function seedSkills(frameworkId: string, skills: Skill[]) {
 export function createDummyProvider(options?: Options): SkillsProvider {
     const baseUrl = options?.baseUrl?.replace(/\/$/, '');
 
-    const getFrameworkById: SkillsProvider['getFrameworkById'] = async (frameworkId) => {
+    const getFrameworkById: SkillsProvider['getFrameworkById'] = async frameworkId => {
         const fw = frameworks.get(frameworkId);
         if (!fw) return null;
         // Drop internal map for external returns
@@ -44,7 +45,7 @@ export function createDummyProvider(options?: Options): SkillsProvider {
         return { ...rest };
     };
 
-    const getSkillsForFramework: SkillsProvider['getSkillsForFramework'] = async (frameworkId) => {
+    const getSkillsForFramework: SkillsProvider['getSkillsForFramework'] = async frameworkId => {
         const fw = frameworks.get(frameworkId);
         if (!fw) return [];
         return Array.from(fw.skills.values()).map(skill => ({
@@ -78,7 +79,9 @@ export function createDummyProvider(options?: Options): SkillsProvider {
             if (!skill) continue;
 
             const targetUrl = baseUrl
-                ? `${baseUrl}/frameworks/${encodeURIComponent(frameworkId)}/skills/${encodeURIComponent(skill.id)}`
+                ? `${baseUrl}/frameworks/${encodeURIComponent(
+                      frameworkId
+                  )}/skills/${encodeURIComponent(skill.id)}`
                 : undefined;
 
             alignments.push({

@@ -13,6 +13,7 @@ export const formatFramework = (framework: any): SkillFrameworkType => ({
     id: framework.id,
     name: framework.name,
     description: framework.description ?? undefined,
+    image: framework.image ?? undefined,
     sourceURI: framework.sourceURI ?? undefined,
     status: (framework.status as any) ?? 'active',
     createdAt: framework.createdAt ?? undefined,

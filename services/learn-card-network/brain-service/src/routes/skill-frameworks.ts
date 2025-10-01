@@ -154,6 +154,7 @@ export const skillFrameworksRouter = t.router({
                     id: created.id,
                     name: created.name,
                     description: created.description,
+                    image: created.image,
                     sourceURI: created.sourceURI,
                     status: created.status,
                 });

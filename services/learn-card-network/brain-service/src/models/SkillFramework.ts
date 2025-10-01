@@ -18,6 +18,7 @@ export const SkillFramework = ModelFactory<FlatSkillFrameworkType, SkillFramewor
             id: { type: 'string', required: true, uniqueItems: true },
             name: { type: 'string', required: true },
             description: { type: 'string', required: false },
+            image: { type: 'string', required: false },
             sourceURI: { type: 'string', required: false },
             status: { type: 'string', required: false },
         },

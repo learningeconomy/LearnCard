@@ -1,4 +1,6 @@
+import { extendZodWithOpenApi } from 'zod-openapi';
 import { z } from 'zod';
+extendZodWithOpenApi(z);
 
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
@@ -1033,6 +1035,7 @@ export const SkillFrameworkValidator = z.object({
     id: z.string(),
     name: z.string(),
     description: z.string().optional(),
+    image: z.string().optional(),
     sourceURI: z.string().url().optional(),
     status: SkillFrameworkStatusEnum.default('active'),
     createdAt: z.string().optional(),
@@ -1095,6 +1098,7 @@ export const CreateManagedFrameworkInputValidator = z.object({
     id: z.string().optional(),
     name: z.string().min(1),
     description: z.string().optional(),
+    image: z.string().optional(),
     sourceURI: z.string().url().optional(),
     status: SkillFrameworkStatusEnum.optional(),
     skills: z.array(SkillTreeNodeInputValidator).optional(),
@@ -1111,6 +1115,7 @@ export const UpdateFrameworkInputValidator = z
         id: z.string(),
         name: z.string().min(1).optional(),
         description: z.string().optional(),
+        image: z.string().optional(),
         sourceURI: z.string().url().optional(),
         status: SkillFrameworkStatusEnum.optional(),
     })
@@ -1118,6 +1123,7 @@ export const UpdateFrameworkInputValidator = z
         data =>
             data.name !== undefined ||
             data.description !== undefined ||
+            data.image !== undefined ||
             data.sourceURI !== undefined ||
             data.status !== undefined,
         {

@@ -17,6 +17,7 @@ export const createSkillFramework = async (
         id: input.id ?? uuid(),
         name: input.name,
         description: input.description,
+        image: input.image,
         sourceURI: input.sourceURI,
         status: input.status ?? 'active',
     } as FlatSkillFrameworkType;
@@ -43,6 +44,7 @@ export const upsertSkillFrameworkFromProvider = async (
         id: framework.id,
         name: framework.name,
         description: framework.description,
+        image: framework.image,
         sourceURI: framework.sourceURI,
         status: 'active',
     } as FlatSkillFrameworkType;
@@ -50,8 +52,8 @@ export const upsertSkillFrameworkFromProvider = async (
     // Merge local representation
     await neogma.queryRunner.run(
         `MERGE (f:SkillFramework {id: $id})
-         ON CREATE SET f.name = $name, f.description = $description, f.sourceURI = $sourceURI, f.status = $status
-         ON MATCH SET  f.name = $name, f.description = $description, f.sourceURI = $sourceURI`,
+         ON CREATE SET f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI, f.status = $status
+         ON MATCH SET  f.name = $name, f.description = $description, f.image = $image, f.sourceURI = $sourceURI`,
         data as any
     );
 

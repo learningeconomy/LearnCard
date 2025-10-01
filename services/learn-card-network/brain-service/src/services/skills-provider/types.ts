@@ -14,6 +14,7 @@ export type Framework = {
     id: string; // provider-native identifier (e.g., OpenSALT CFDocument ID)
     name: string;
     description?: string;
+    image?: string;
     sourceURI?: string;
     status?: string;
 };
