@@ -2,7 +2,7 @@
  Provider-agnostic Skills API types
 */
 
-export type ProviderId = 'opensalt' | 'dummy' | (string & {});
+export type ProviderId = 'neo4j' | 'opensalt' | 'dummy' | (string & {});
 
 export type SkillsProviderOptions = {
     baseUrl?: string;

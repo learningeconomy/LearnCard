@@ -163,3 +163,48 @@ export const searchSkillsInFramework = async (
 
     return { records: page, hasMore, cursor: nextCursor };
 };
+
+/**
+ * Get all skills for a given framework (unpaginated).
+ * Used by the skills provider to fetch skill data.
+ */
+export const getSkillsByFramework = async (frameworkId: string): Promise<FlatSkillType[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+         RETURN s AS s
+         ORDER BY s.id`,
+        { frameworkId }
+    );
+
+    return result.records.map(r => {
+        const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
+        return {
+            ...props,
+            type: props.type ?? 'skill',
+        } as FlatSkillType;
+    });
+};
+
+/**
+ * Get skills by their IDs (unpaginated).
+ * Used by the skills provider to fetch specific skills.
+ */
+export const getSkillsByIds = async (skillIds: string[]): Promise<FlatSkillType[]> => {
+    if (skillIds.length === 0) return [];
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (s:Skill)
+         WHERE s.id IN $skillIds
+         RETURN s AS s
+         ORDER BY s.id`,
+        { skillIds }
+    );
+
+    return result.records.map(r => {
+        const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
+        return {
+            ...props,
+            type: props.type ?? 'skill',
+        } as FlatSkillType;
+    });
+};

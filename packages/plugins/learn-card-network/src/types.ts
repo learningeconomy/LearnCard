@@ -187,7 +187,7 @@ export type LearnCardNetworkPluginMethods = {
     createChildBoost: (
         parentUri: string,
         credential: VC | UnsignedVC,
-        metadata?: Partial<Omit<Boost, 'uri'>>
+        metadata?: Partial<Omit<Boost, 'uri'>> & { skillIds?: string[] }
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
     getBoostFrameworks: (uri: string) => Promise<SkillFrameworkType[]>;

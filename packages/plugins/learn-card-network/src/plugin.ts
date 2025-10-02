@@ -528,9 +528,12 @@ export async function getLearnCardNetworkPlugin(
             createChildBoost: async (_learnCard, parentUri, credential, metadata) => {
                 await ensureUser();
 
+                const { skillIds, ...restMetadata } = metadata || {};
+
                 return client.boost.createChildBoost.mutate({
                     parentUri,
-                    boost: { credential, ...metadata },
+                    boost: { credential, ...restMetadata },
+                    ...(skillIds && skillIds.length > 0 ? { skillIds } : {}),
                 });
             },
             getBoost: async (_learnCard, uri) => {
