@@ -1,6 +1,6 @@
 {
     "name": "learn-card-discord-bot",
-    "version": "1.1.187",
+    "version": "1.1.188",
     "description": "",
     "main": "dist/index.js",
     "bin": "dist/index.js",
