@@ -94,16 +94,6 @@ export type Source = {
         addressRegion?: string;
         addressCountry?: string;
     };
-    otherIdentifier?: {
-        type?: string[];
-        identifier?: string;
-        identifierType?: string;
-    }[];
-    parentOrg?: {
-        type?: string[];
-        name?: string;
-        url?: string;
-    };
 };
 
 export type Alignment = {
