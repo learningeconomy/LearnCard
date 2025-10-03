@@ -135,7 +135,7 @@ export type BoostTemplate = {
     address?: AddressSpec;
     groupID?: string;
     evidence?: Evidence[];
-    alignment?: Alignment;
+    alignment?: Alignment[];
     source?: Source;
 };
 
