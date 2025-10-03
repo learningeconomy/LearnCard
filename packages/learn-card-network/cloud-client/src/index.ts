@@ -19,6 +19,7 @@ export const getClient = async (
                 methodOverride: 'POST',
                 url,
                 maxURLLength: 3072,
+                maxItems: 50,
                 headers: { Authorization: `Bearer ${await didAuthFunction()}` },
             }),
         ],
@@ -40,12 +41,29 @@ export const getClient = async (
             httpBatchLink({
                 methodOverride: 'POST',
                 url,
+                maxItems: 50,
                 maxURLLength: 3072,
                 headers: async () => {
                     if (challenges.length === 0) challenges.push(...(await getChallenges()));
 
                     return { Authorization: `Bearer ${await didAuthFunction(challenges.pop())}` };
                 },
+            }),
+        ],
+    });
+
+    return trpc;
+};
+
+// Create a client that always uses a provided API token and never fetches challenges
+export const getApiTokenClient = async (url: string, apiToken: string): Promise<Client> => {
+    const trpc = createTRPCClient<AppRouter>({
+        links: [
+            httpBatchLink({
+                methodOverride: 'POST',
+                url,
+                maxURLLength: 3072,
+                headers: { Authorization: `Bearer ${apiToken}` },
             }),
         ],
     });

@@ -125,7 +125,7 @@ export const VC_TEMPLATES: {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-            'https://ctx.learncard.com/boosts/1.0.1.json',
+            'https://ctx.learncard.com/boosts/1.0.2.json',
         ],
         type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
         id: `urn:uuid:${crypto.randomUUID()}`,
@@ -208,12 +208,12 @@ export const VC_TEMPLATES: {
         },
         ...(address
             ? {
-                address: {
-                    type: ['Address'],
-                    ...address,
-                    ...(address.geo ? { geo: { type: ['GeoCoordinates'], ...address.geo } } : {}),
-                },
-            }
+                  address: {
+                      type: ['Address'],
+                      ...address,
+                      ...(address.geo ? { geo: { type: ['GeoCoordinates'], ...address.geo } } : {}),
+                  },
+              }
             : {}),
         display,
         familyTitles,

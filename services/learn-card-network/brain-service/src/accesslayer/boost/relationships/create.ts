@@ -54,3 +54,10 @@ export const setBoostAsParent = async (
 ): Promise<boolean> => {
     return Boolean(await parentBoost.relateTo({ alias: 'parentOf', where: { id: childBoost.id } }));
 };
+
+export const createAutoConnectRecipientRelationship = async (
+    boost: BoostInstance,
+    recipient: ProfileType
+): Promise<void> => {
+    await boost.relateTo({ alias: 'autoConnectRecipient', where: { profileId: recipient.profileId } });
+};

@@ -13,6 +13,7 @@ import { authGrantsRouter, AuthGrantsRouter } from '@routes/auth-grants';
 import { workflowsRouter, WorkflowsRouter } from '@routes/workflows';
 import { contactMethodsRouter, ContactMethodsRouter } from '@routes/contact-methods';
 import { inboxRouter, InboxRouter } from '@routes/inbox';
+import { integrationsRouter, IntegrationsRouter } from '@routes/integrations';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -34,6 +35,7 @@ export const appRouter = t.router<{
     workflows: WorkflowsRouter;
     contactMethods: ContactMethodsRouter;
     inbox: InboxRouter;
+    integrations: IntegrationsRouter;
     test?: TestRouter;
 }>({
     boost: boostsRouter,
@@ -50,6 +52,7 @@ export const appRouter = t.router<{
     workflows: workflowsRouter,
     contactMethods: contactMethodsRouter,
     inbox: inboxRouter,
+    integrations: integrationsRouter,
     test: !!process.env.IS_E2E_TEST ? testRouter : undefined,
 });
 

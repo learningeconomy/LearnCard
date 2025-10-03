@@ -11,6 +11,7 @@ export const VerificationMethodValidator = z.string().or(
             controller: z.string(),
             publicKeyJwk: JWKValidator.optional(),
             publicKeyBase58: z.string().optional(),
+            publicKeyMultibase: z.string().optional(),
             blockChainAccountId: z.string().optional(),
         })
         .catchall(z.any())

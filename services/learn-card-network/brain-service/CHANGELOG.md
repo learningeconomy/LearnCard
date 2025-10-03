@@ -1,5 +1,203 @@
 # @learncard/network-brain-service
 
+## 3.6.8
+
+### Patch Changes
+
+-   [#833](https://github.com/learningeconomy/LearnCard/pull/833) [`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959) Thanks [@Custard7](https://github.com/Custard7)! - chore: Bump Versions for Embed SDK PR
+
+-   Updated dependencies [[`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959)]:
+    -   @learncard/types@5.8.11
+    -   @learncard/core@9.3.41
+    -   @learncard/helpers@1.1.29
+    -   @learncard/did-web-plugin@1.0.78
+    -   @learncard/didkey-plugin@1.0.52
+    -   @learncard/didkit-plugin@1.5.34
+    -   @learncard/encryption-plugin@1.0.26
+    -   @learncard/learn-card-plugin@1.1.62
+    -   @learncard/vc-plugin@1.2.4
+    -   @learncard/vc-templates-plugin@1.0.67
+    -   @learncard/expiration-plugin@1.1.65
+    -   @learncard/crypto-plugin@1.0.52
+
+## 3.6.6
+
+### Patch Changes
+
+-   Updated dependencies [[`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e)]:
+    -   @learncard/types@5.8.9
+    -   @learncard/core@9.3.40
+    -   @learncard/helpers@1.1.28
+    -   @learncard/did-web-plugin@1.0.77
+    -   @learncard/didkey-plugin@1.0.51
+    -   @learncard/didkit-plugin@1.5.33
+    -   @learncard/encryption-plugin@1.0.25
+    -   @learncard/learn-card-plugin@1.1.61
+    -   @learncard/vc-plugin@1.2.3
+    -   @learncard/vc-templates-plugin@1.0.66
+    -   @learncard/expiration-plugin@1.1.64
+    -   @learncard/crypto-plugin@1.0.51
+
+## 3.6.5
+
+### Patch Changes
+
+-   [#823](https://github.com/learningeconomy/LearnCard/pull/823) [`05dd394df6e56f066f222748d89c1aa82e47e826`](https://github.com/learningeconomy/LearnCard/commit/05dd394df6e56f066f222748d89c1aa82e47e826) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Add LCN routes for handling account approval via consent email
+
+## 3.6.4
+
+### Patch Changes
+
+-   [#825](https://github.com/learningeconomy/LearnCard/pull/825) [`db6fdcde184dc543f5c1a1428e649f558d780621`](https://github.com/learningeconomy/LearnCard/commit/db6fdcde184dc543f5c1a1428e649f558d780621) Thanks [@goblincore](https://github.com/goblincore)! - fix: Add local dev fallback for notification queue
+
+## 3.6.3
+
+### Patch Changes
+
+-   Updated dependencies [[`fdc014b626700cc1ad85a6cdf809b9066d05f8a3`](https://github.com/learningeconomy/LearnCard/commit/fdc014b626700cc1ad85a6cdf809b9066d05f8a3)]:
+    -   @learncard/didkit-plugin@1.5.32
+    -   @learncard/learn-card-plugin@1.1.60
+    -   @learncard/vc-plugin@1.2.2
+    -   @learncard/expiration-plugin@1.1.63
+
+## 3.6.2
+
+### Patch Changes
+
+-   [#811](https://github.com/learningeconomy/LearnCard/pull/811) [`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1001] Add 'approved' field to user profile
+
+-   Updated dependencies [[`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34)]:
+    -   @learncard/types@5.8.7
+    -   @learncard/core@9.3.39
+    -   @learncard/helpers@1.1.27
+    -   @learncard/did-web-plugin@1.0.76
+    -   @learncard/didkey-plugin@1.0.50
+    -   @learncard/didkit-plugin@1.5.31
+    -   @learncard/encryption-plugin@1.0.24
+    -   @learncard/learn-card-plugin@1.1.59
+    -   @learncard/vc-plugin@1.2.1
+    -   @learncard/vc-templates-plugin@1.0.65
+    -   @learncard/expiration-plugin@1.1.62
+    -   @learncard/crypto-plugin@1.0.50
+
+## 3.6.1
+
+### Patch Changes
+
+-   Updated dependencies [[`15480b7f8ab73d9d5af67e38fd39eb7d0fcb1380`](https://github.com/learningeconomy/LearnCard/commit/15480b7f8ab73d9d5af67e38fd39eb7d0fcb1380)]:
+    -   @learncard/vc-templates-plugin@1.0.64
+
+## 3.6.0
+
+### Minor Changes
+
+-   [#807](https://github.com/learningeconomy/LearnCard/pull/807) [`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add initFromApiKey support
+
+### Patch Changes
+
+-   Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
+    -   @learncard/vc-plugin@1.2.0
+    -   @learncard/expiration-plugin@1.1.61
+
+## 3.5.22
+
+### Patch Changes
+
+-   [#800](https://github.com/learningeconomy/LearnCard/pull/800) [`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3) Thanks [@Custard7](https://github.com/Custard7)! - chore: Add Interop Tests for DCC + Multikey to DID Doc
+
+-   [#805](https://github.com/learningeconomy/LearnCard/pull/805) [`3627c858a339630e4cf033b64cb04564ff78040c`](https://github.com/learningeconomy/LearnCard/commit/3627c858a339630e4cf033b64cb04564ff78040c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [Hotfix] KeyAgreement Backwards Compatibility
+
+-   [#803](https://github.com/learningeconomy/LearnCard/pull/803) [`beb9c54789a2f48b06e1f82082e1dd51eab6b51d`](https://github.com/learningeconomy/LearnCard/commit/beb9c54789a2f48b06e1f82082e1dd51eab6b51d) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Add country to user profile
+
+-   Updated dependencies [[`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3), [`beb9c54789a2f48b06e1f82082e1dd51eab6b51d`](https://github.com/learningeconomy/LearnCard/commit/beb9c54789a2f48b06e1f82082e1dd51eab6b51d)]:
+    -   @learncard/types@5.8.6
+    -   @learncard/didkit-plugin@1.5.30
+    -   @learncard/vc-plugin@1.1.60
+    -   @learncard/core@9.3.38
+    -   @learncard/helpers@1.1.26
+    -   @learncard/did-web-plugin@1.0.75
+    -   @learncard/didkey-plugin@1.0.49
+    -   @learncard/encryption-plugin@1.0.23
+    -   @learncard/learn-card-plugin@1.1.58
+    -   @learncard/vc-templates-plugin@1.0.63
+    -   @learncard/expiration-plugin@1.1.60
+    -   @learncard/crypto-plugin@1.0.49
+
+## 3.5.21
+
+### Patch Changes
+
+-   [#780](https://github.com/learningeconomy/LearnCard/pull/780) [`cd6f8aba37dd67721e10e60c90f65ceb278d4a1e`](https://github.com/learningeconomy/LearnCard/commit/cd6f8aba37dd67721e10e60c90f65ceb278d4a1e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose and validate Profile Connection Invite features end-to-end
+
+    -   Brain Service (profiles routes):
+
+        -   generateInvite: supports multi-use (`maxUses`), including unlimited (`maxUses = 0`), and expiration in seconds (`expiration = 0` = no expiration). Returns `{ profileId, challenge, expiresIn }`.
+        -   listInvites: lists valid invites with `{ challenge, expiresIn, usesRemaining, maxUses }` and omits exhausted invites.
+        -   invalidateInvite: idempotently invalidates a specific invite by `challenge`.
+
+    -   Network Plugin (`@learncard/network-plugin`):
+
+        -   Expose `generateInvite(challenge?, expiration?, maxUses?)`.
+        -   Expose `listInvites()` and `invalidateInvite(challenge)`.
+
+    -   Tests (E2E):
+
+        -   Added `tests/e2e/tests/invites.spec.ts` covering single-use, multi-use, unlimited, and invalidation flows from a client perspective.
+
+    -   Docs:
+
+        -   OpenAPI descriptions updated in `services/learn-card-network/brain-service/src/routes/profiles.ts`.
+        -   Detailed notes in `services/learn-card-network/brain-service/CLAUDE.md`.
+
+    -   Notes:
+        -   No breaking changes; routes remain authenticated and backward compatible with older invite formats.
+
+## 3.5.20
+
+### Patch Changes
+
+-   [#796](https://github.com/learningeconomy/LearnCard/pull/796) [`00c5403c2932185290ae4e226ca4bf446a1d636c`](https://github.com/learningeconomy/LearnCard/commit/00c5403c2932185290ae4e226ca4bf446a1d636c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add AUTO_CONNECT claim hook
+
+-   Updated dependencies [[`00c5403c2932185290ae4e226ca4bf446a1d636c`](https://github.com/learningeconomy/LearnCard/commit/00c5403c2932185290ae4e226ca4bf446a1d636c)]:
+    -   @learncard/types@5.8.5
+    -   @learncard/core@9.3.37
+    -   @learncard/helpers@1.1.25
+    -   @learncard/did-web-plugin@1.0.74
+    -   @learncard/didkey-plugin@1.0.48
+    -   @learncard/didkit-plugin@1.5.29
+    -   @learncard/encryption-plugin@1.0.22
+    -   @learncard/learn-card-plugin@1.1.57
+    -   @learncard/vc-plugin@1.1.59
+    -   @learncard/vc-templates-plugin@1.0.62
+    -   @learncard/expiration-plugin@1.1.59
+    -   @learncard/crypto-plugin@1.0.48
+
+## 3.5.19
+
+### Patch Changes
+
+-   [#794](https://github.com/learningeconomy/LearnCard/pull/794) [`3707252bea0526aed3c17f0501ec3275e162f6bb`](https://github.com/learningeconomy/LearnCard/commit/3707252bea0526aed3c17f0501ec3275e162f6bb) Thanks [@goblincore](https://github.com/goblincore)! - Add highlightedCredentials field on LCNProfile
+
+-   Updated dependencies [[`3707252bea0526aed3c17f0501ec3275e162f6bb`](https://github.com/learningeconomy/LearnCard/commit/3707252bea0526aed3c17f0501ec3275e162f6bb)]:
+    -   @learncard/types@5.8.4
+    -   @learncard/core@9.3.36
+    -   @learncard/helpers@1.1.24
+    -   @learncard/did-web-plugin@1.0.73
+    -   @learncard/didkey-plugin@1.0.47
+    -   @learncard/didkit-plugin@1.5.28
+    -   @learncard/encryption-plugin@1.0.21
+    -   @learncard/learn-card-plugin@1.1.56
+    -   @learncard/vc-plugin@1.1.58
+    -   @learncard/vc-templates-plugin@1.0.61
+    -   @learncard/expiration-plugin@1.1.58
+    -   @learncard/crypto-plugin@1.0.47
+
+## 3.5.18
+
+### Patch Changes
+
+-   [`110f04e2b4687848fee71b315843c746fdff9772`](https://github.com/learningeconomy/LearnCard/commit/110f04e2b4687848fee71b315843c746fdff9772) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix bug with autoConnectRecipients
+
 ## 3.5.17
 
 ### Patch Changes

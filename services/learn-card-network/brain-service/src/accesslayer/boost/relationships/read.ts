@@ -858,7 +858,7 @@ export const getConnectedBoostRecipients = async (
             ],
         })
         .with(
-            'directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
+            'requester, directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
         )
         .match({
             optional: true,
@@ -869,15 +869,93 @@ export const getConnectedBoostRecipients = async (
                 { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
                 { model: Credential },
                 { ...Credential.getRelationshipByAlias('credentialReceived') },
-                { identifier: 'source' },
+                { identifier: 'requester' },
             ],
         })
         .where(`otherOwnedBoostTarget.profileId <> "${requestingProfile.profileId}"`)
         .with(
-            'directlyConnected, receivedBoostTargets, ownedBoostTargets, COLLECT(DISTINCT otherOwnedBoostTarget) AS otherOwnedBoostTargets'
+            'requester, directlyConnected, receivedBoostTargets, ownedBoostTargets, COLLECT(DISTINCT otherOwnedBoostTarget) AS otherOwnedBoostTargets'
+        )
+        // Explicit auto-connect relationships: recipients of boosts owned by requester
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, identifier: 'explicitOwnedBoost' },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
+                { model: Profile, identifier: 'explicitOwnedTarget' },
+            ],
+        })
+        .with(
+            'requester, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, COLLECT(DISTINCT explicitOwnedTarget) AS explicitOwnedTargets'
+        )
+        // Explicit auto-connect relationships: creator of a received explicit auto-connect boost
+        .match({
+            optional: true,
+            related: [
+                { model: Profile, identifier: 'explicitOtherOwnedTarget' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, identifier: 'explicitOtherOwnedBoost' },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
+                { identifier: 'requester' },
+            ],
+        })
+        .where(`explicitOtherOwnedTarget.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'requester, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, COLLECT(DISTINCT explicitOtherOwnedTarget) AS explicitOtherOwnedBoostTargets'
+        )
+        // Explicit co-recipients for the same boost when requester is a credential recipient
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Credential.getRelationshipByAlias('credentialReceived'), direction: 'none' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'none' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
+                { model: Profile, identifier: 'explicitCoRecipientFromCred' },
+            ],
+        })
+        .where(`explicitCoRecipientFromCred.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'requester, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, explicitOtherOwnedBoostTargets, COLLECT(DISTINCT explicitCoRecipientFromCred) AS explicitCoRecipientsFromCred'
+        )
+        // Credential co-recipients for the same boost when requester is an explicit recipient
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Profile, identifier: 'credentialCoRecipientFromExplicit' },
+            ],
+        })
+        .where(`credentialCoRecipientFromExplicit.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'requester, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, explicitOtherOwnedBoostTargets, explicitCoRecipientsFromCred, COLLECT(DISTINCT credentialCoRecipientFromExplicit) AS credentialCoRecipientsFromExplicit'
+        )
+        // Explicit co-recipients for the same boost when requester is an explicit recipient
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
+                { model: Profile, identifier: 'explicitCoRecipientFromExplicit' },
+            ],
+        })
+        .where(`explicitCoRecipientFromExplicit.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'requester, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, explicitOtherOwnedBoostTargets, explicitCoRecipientsFromCred, credentialCoRecipientsFromExplicit, COLLECT(DISTINCT explicitCoRecipientFromExplicit) AS explicitCoRecipientsFromExplicit'
         )
         .with(
-            'directlyConnected + receivedBoostTargets + ownedBoostTargets + otherOwnedBoostTargets AS allConnectedProfiles'
+            'directlyConnected + receivedBoostTargets + ownedBoostTargets + otherOwnedBoostTargets + explicitOwnedTargets + explicitOtherOwnedBoostTargets + explicitCoRecipientsFromCred + credentialCoRecipientsFromExplicit + explicitCoRecipientsFromExplicit AS allConnectedProfiles'
         )
         .unwind('allConnectedProfiles AS conn')
         .with('COLLECT(DISTINCT conn.profileId) AS connectionIds')
@@ -1011,7 +1089,7 @@ export const countConnectedBoostRecipients = async (
             ],
         })
         .with(
-            'directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
+            'requester, directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
         )
         .match({
             optional: true,
@@ -1022,15 +1100,93 @@ export const countConnectedBoostRecipients = async (
                 { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
                 { model: Credential },
                 { ...Credential.getRelationshipByAlias('credentialReceived') },
-                { identifier: 'source' },
+                { identifier: 'requester' },
             ],
         })
         .where(`otherOwnedBoostTarget.profileId <> "${requestingProfile.profileId}"`)
         .with(
-            'directlyConnected, receivedBoostTargets, ownedBoostTargets, COLLECT(DISTINCT otherOwnedBoostTarget) AS otherOwnedBoostTargets'
+            'requester, directlyConnected, receivedBoostTargets, ownedBoostTargets, COLLECT(DISTINCT otherOwnedBoostTarget) AS otherOwnedBoostTargets'
+        )
+        // Explicit auto-connect relationships: recipients of boosts owned by requester
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, identifier: 'explicitOwnedBoost' },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
+                { model: Profile, identifier: 'explicitOwnedTarget' },
+            ],
+        })
+        .with(
+            'requester, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, COLLECT(DISTINCT explicitOwnedTarget) AS explicitOwnedTargets'
+        )
+        // Explicit auto-connect relationships: creator of a received explicit auto-connect boost
+        .match({
+            optional: true,
+            related: [
+                { model: Profile, identifier: 'explicitOtherOwnedTarget' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, identifier: 'explicitOtherOwnedBoost' },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
+                { identifier: 'requester' },
+            ],
+        })
+        .where(`explicitOtherOwnedTarget.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, COLLECT(DISTINCT explicitOtherOwnedTarget) AS explicitOtherOwnedBoostTargets'
+        )
+        // Explicit co-recipients for the same boost when requester is a credential recipient
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Credential.getRelationshipByAlias('credentialReceived'), direction: 'none' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'none' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
+                { model: Profile, identifier: 'explicitCoRecipientFromCred' },
+            ],
+        })
+        .where(`explicitCoRecipientFromCred.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, explicitOtherOwnedBoostTargets, COLLECT(DISTINCT explicitCoRecipientFromCred) AS explicitCoRecipientsFromCred'
+        )
+        // Credential co-recipients for the same boost when requester is an explicit recipient
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Profile, identifier: 'credentialCoRecipientFromExplicit' },
+            ],
+        })
+        .where(`credentialCoRecipientFromExplicit.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, explicitOtherOwnedBoostTargets, explicitCoRecipientsFromCred, COLLECT(DISTINCT credentialCoRecipientFromExplicit) AS credentialCoRecipientsFromExplicit'
+        )
+        // Explicit co-recipients for the same boost when requester is an explicit recipient
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
+                { model: Profile, identifier: 'explicitCoRecipientFromExplicit' },
+            ],
+        })
+        .where(`explicitCoRecipientFromExplicit.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, explicitOtherOwnedBoostTargets, explicitCoRecipientsFromCred, credentialCoRecipientsFromExplicit, COLLECT(DISTINCT explicitCoRecipientFromExplicit) AS explicitCoRecipientsFromExplicit'
         )
         .with(
-            'directlyConnected + receivedBoostTargets + ownedBoostTargets + otherOwnedBoostTargets AS allConnectedProfiles'
+            'directlyConnected + receivedBoostTargets + ownedBoostTargets + otherOwnedBoostTargets + explicitOwnedTargets + explicitOtherOwnedBoostTargets + explicitCoRecipientsFromCred + credentialCoRecipientsFromExplicit + explicitCoRecipientsFromExplicit AS allConnectedProfiles'
         )
         .unwind('allConnectedProfiles AS conn')
         .with('COLLECT(DISTINCT conn.profileId) AS connectionIds')
