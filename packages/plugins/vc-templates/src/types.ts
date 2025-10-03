@@ -80,6 +80,22 @@ export type AddressSpec = {
         longitude?: number | undefined;
     };
 };
+
+export interface Evidence {
+    id?: string;
+    type: [string, ...string[]]; // Changed from string[] to ensure at least one element
+    name?: string;
+    narrative?: string;
+    description?: string;
+    genre?: string;
+    audience?: string;
+
+    // Extended fields
+    fileName?: string;
+    fileType?: string;
+    fileSize?: string;
+}
+
 export type BoostTemplate = {
     did?: string;
     subject?: string;
@@ -101,6 +117,7 @@ export type BoostTemplate = {
     boostID?: BoostID;
     address?: AddressSpec;
     groupID?: string;
+    evidence?: Evidence[];
 };
 
 /** @group VC Templates Plugin */

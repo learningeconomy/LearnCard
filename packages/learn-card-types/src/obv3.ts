@@ -142,10 +142,24 @@ export const ResultDescriptionValidator = z
     .catchall(z.any());
 export type ResultDescription = z.infer<typeof ResultDescriptionValidator>;
 
+export const EvidenceValidator = z
+    .object({
+        id: z.string().optional(),
+        type: z.array(z.string()).nonempty(),
+        name: z.string().optional(),
+        narrative: z.string().optional(),
+        description: z.string().optional(),
+        genre: z.string().optional(),
+        audience: z.string().optional(),
+    })
+    .catchall(z.any());
+
+export type Evidence = z.infer<typeof EvidenceValidator>;
+
 export const AchievementValidator = z
     .object({
         id: z.string().optional(),
-        type: z.string().array().nonempty(),
+        type: z.array(z.string()).nonempty(),
         alignment: AlignmentValidator.array().optional(),
         achievementType: AchievementTypeValidator.optional(),
         creator: ProfileValidator.optional(),
@@ -162,7 +176,7 @@ export const AchievementValidator = z
         related: RelatedValidator.array().optional(),
         resultDescription: ResultDescriptionValidator.array().optional(),
         specialization: z.string().optional(),
-        tag: z.string().array().optional(),
+        tag: z.array(z.string()).optional(),
         version: z.string().optional(),
     })
     .catchall(z.any());
@@ -219,19 +233,6 @@ export const AchievementSubjectValidator = z
     .catchall(z.any());
 export type AchievementSubject = z.infer<typeof AchievementSubjectValidator>;
 
-export const EvidenceValidator = z
-    .object({
-        id: z.string().optional(),
-        type: z.string().or(z.string().array().nonempty()),
-        narrative: z.string().optional(),
-        name: z.string().optional(),
-        description: z.string().optional(),
-        genre: z.string().optional(),
-        audience: z.string().optional(),
-    })
-    .catchall(z.any());
-export type Evidence = z.infer<typeof EvidenceValidator>;
-
 export const UnsignedAchievementCredentialValidator = UnsignedVCValidator.extend({
     name: z.string().optional(),
     description: z.string().optional(),
@@ -242,7 +243,6 @@ export const UnsignedAchievementCredentialValidator = UnsignedVCValidator.extend
         [typeof AchievementSubjectValidator, z.ZodArray<typeof AchievementSubjectValidator>]
     >,
     endorsement: UnsignedVCValidator.array().optional(),
-    evidence: EvidenceValidator.array().optional(),
 });
 export type UnsignedAchievementCredential = z.infer<typeof UnsignedAchievementCredentialValidator>;
 

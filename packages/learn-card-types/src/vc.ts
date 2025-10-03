@@ -122,7 +122,15 @@ export const TermsOfUseValidator = z
 export type TermsOfUse = z.infer<typeof TermsOfUseValidator>;
 
 export const VC2EvidenceValidator = z
-    .object({ type: z.string().or(z.string().array().nonempty()), id: z.string().optional() })
+    .object({
+        id: z.string().optional(),
+        type: z.array(z.string()).nonempty(),
+        name: z.string().optional(),
+        narrative: z.string().optional(),
+        description: z.string().optional(),
+        genre: z.string().optional(),
+        audience: z.string().optional(),
+    })
     .catchall(z.any());
 export type VC2Evidence = z.infer<typeof VC2EvidenceValidator>;
 
@@ -152,7 +160,7 @@ export const UnsignedVCValidator = z
         validUntil: z.string().optional(),
         status: CredentialStatusValidator.or(CredentialStatusValidator.array()).optional(),
         termsOfUse: TermsOfUseValidator.or(TermsOfUseValidator.array()).optional(),
-        evidence: VC2EvidenceValidator.or(VC2EvidenceValidator.array()).optional(),
+        evidence: z.union([VC2EvidenceValidator, z.array(VC2EvidenceValidator)]).optional(),
     })
     .catchall(z.any());
 export type UnsignedVC = z.infer<typeof UnsignedVCValidator>;
