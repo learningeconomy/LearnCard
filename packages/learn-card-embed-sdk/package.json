@@ -1,6 +1,6 @@
 {
   "name": "@learncard/embed-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "LearnCard Embed SDK for credential claim modal (MVP V1)",
   "main": "dist/learncard.js",
   "module": "dist/learncard.esm.js",
