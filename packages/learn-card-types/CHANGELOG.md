@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.8.9
+
+### Patch Changes
+
+-   [#829](https://github.com/learningeconomy/LearnCard/pull/829) [`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Bump learn-card-types
+
 ## 5.8.7
 
 ### Patch Changes
