@@ -9,17 +9,21 @@ import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
+import { ContactMethodType } from '@learncard/types';
 
 import { RegExpTransformer } from '@learncard/helpers';
 
 import { getProfileByDid } from '@accesslayer/profile/read';
-import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
+import { getEmptyLearnCard, isServersDidWebDID } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 import { ProfileType } from 'types/profile';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
 import { isAuthGrantChallengeValidForDID } from '@accesslayer/auth-grant/read';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE, AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';
 import { userHasRequiredScopes } from '@helpers/auth-grant.helpers';
+import { getContactMethodById } from '@accesslayer/contact-method/read';
+import { VC } from '@learncard/types';
+import { CONTACT_METHOD_SESSION_PREFIX } from '@helpers/contact-method.helpers';
 
 export type DidAuthVP = {
     iss: string;
@@ -27,6 +31,7 @@ export type DidAuthVP = {
         '@context': string[];
         type: string[];
         holder: string;
+        verifiableCredential?: VC[];
     };
     nonce?: string;
 };
@@ -37,6 +42,7 @@ export type Context = {
         isChallengeValid: boolean;
         scope?: string;
     };
+    contactMethod?: ContactMethodType;
     domain: string;
 };
 
@@ -101,12 +107,28 @@ export const createContext = async (
 
                 let isChallengeValid = false;
                 let scope = AUTH_GRANT_FULL_ACCESS_SCOPE;
-                if (challenge?.includes(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)) {
+
+                // If the user is using a provisional auth token for a contact method:
+                if (challenge?.includes(CONTACT_METHOD_SESSION_PREFIX)) {
+                    if (isServersDidWebDID(did)) {
+                        const contactMethodId = challenge.split(':')[1];
+                        if (!contactMethodId) throw new TRPCError({ code: 'NOT_FOUND' });
+
+                        const contactMethod = await getContactMethodById(contactMethodId);
+                        if (!contactMethod) throw new TRPCError({ code: 'NOT_FOUND' });
+                        return {
+                            contactMethod,
+                            domain,
+                        };
+                    }
+                // If the user is using a real auth grant i.e. an API Token.
+                } else if (challenge?.includes(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)) {
                     const { isChallengeValid: _isChallengeValid, scope: _scope } =
                         await isAuthGrantChallengeValidForDID(challenge, did);
 
                     isChallengeValid = _isChallengeValid;
                     scope = _scope;
+                // If the user is using a real challenge signed by their private key.
                 } else {
                     const cacheResponse = await isChallengeValidForDid(did, challenge);
                     await invalidateChallengeForDid(did, challenge);
@@ -279,4 +301,10 @@ export const profileManagerRoute = openProfileManagerRoute.use(async ({ ctx, nex
     }
 
     return next({ ctx: { ...ctx, user: { ...ctx.user, manager } } });
+});
+
+export const verifiedContactRoute = openRoute.use(async ({ ctx, next }) => {
+    if (!ctx.contactMethod) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+    return next({ ctx: { ...ctx, contactMethod: ctx.contactMethod } });
 });

@@ -100,6 +100,27 @@ export type NetworkLearnCardFromSeed = InitFunction<
 >;
 
 /** @group Init Functions */
+export type NetworkLearnCardFromApiKey = InitFunction<
+    { apiKey: string; network: true | string; trustedBoostRegistry?: string },
+    'didkit' | 'allowRemoteContexts' | 'debug',
+    LearnCard<
+        [
+            DynamicLoaderPluginType,
+            CryptoPluginType,
+            DIDKitPlugin,
+            VCPlugin,
+            VCTemplatePlugin,
+            ExpirationPlugin,
+            VpqrPlugin,
+            CHAPIPlugin,
+            VerifyBoostPlugin,
+            LearnCardPlugin,
+            LearnCardNetworkPlugin
+        ]
+    >
+>;
+
+/** @group Init Functions */
 export type DidWebLearnCardFromSeed = InitFunction<
     { seed: string; didWeb: string; trustedBoostRegistry?: string },
     keyof LearnCardConfig,
@@ -177,6 +198,7 @@ export type InitLearnCard = GenericInitFunction<
         DidWebLearnCardFromSeed,
         DidWebNetworkLearnCardFromSeed,
         LearnCardFromVcApi,
-        CustomLearnCard
+        CustomLearnCard,
+        NetworkLearnCardFromApiKey
     ]
 >;

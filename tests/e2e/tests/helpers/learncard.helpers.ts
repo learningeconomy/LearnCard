@@ -1,7 +1,11 @@
 import { readFile } from 'fs/promises';
 
 import { AddPlugin } from '@learncard/core';
-import { initLearnCard, NetworkLearnCardFromSeed } from '@learncard/init';
+import {
+    initLearnCard,
+    NetworkLearnCardFromSeed,
+    NetworkLearnCardFromApiKey,
+} from '@learncard/init';
 import { getSimpleSigningPlugin, SimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 
 const didkit = readFile(
@@ -9,6 +13,8 @@ const didkit = readFile(
 );
 
 export type LearnCard = AddPlugin<NetworkLearnCardFromSeed['returnValue'], SimpleSigningPlugin>;
+
+export type ApiKeyLearnCard = NetworkLearnCardFromApiKey['returnValue'];
 
 export const getLearnCard = async (
     seed = 'a'.repeat(64),
@@ -44,14 +50,21 @@ export const getLearnCardForUser = async (userKey: keyof typeof USERS) => {
     const learnCard = await getLearnCard(user.seed);
 
     try {
-        await learnCard.invoke.createProfile({
-            profileId: user.profileId,
-            displayName: user.displayName,
-            bio: '',
-            shortBio: '',
-        });
+        // Avoid creating a duplicate profile if it already exists
+        const existing = await learnCard.invoke.getProfile();
+
+        if (!existing) {
+            await learnCard.invoke.createProfile({
+                profileId: user.profileId,
+                displayName: user.displayName,
+                bio: '',
+                shortBio: '',
+            });
+        }
     } catch (error) {
-        console.error(error);
+        // Swallow only known "already exists" scenarios; rethrow unexpected errors
+        const msg = (error as any)?.message ?? String(error);
+        if (!/already exists/i.test(msg)) throw error;
     }
 
     return learnCard;
@@ -65,4 +78,72 @@ export const getManagedLearnCardForUser = async (
     const user = USERS[userKey];
 
     return getLearnCard(user.seed, managedDid, debug);
+};
+
+/**
+ * Initialize a LearnCard in API-key mode for a given user by:
+ * 1) Creating an auth grant on the user's seed-based LearnCard
+ * 2) Exchanging that grant for an API token
+ * 3) Initializing a LearnCard configured with the API token (no local seed/id plane)
+ */
+export const getApiKeyLearnCardForUser = async (
+    userKey: keyof typeof USERS,
+    scope: string | string[] = 'boosts:write',
+    debug = false
+): Promise<ApiKeyLearnCard> => {
+    // Ensure the user has an account before creating an auth grant
+    const seedLc = await getLearnCardForUser(userKey);
+
+    const grantId = await seedLc.invoke.addAuthGrant({
+        name: 'e2e',
+        scope: Array.isArray(scope) ? scope.join(' ') : scope,
+    });
+
+    const apiToken = await seedLc.invoke.getAPITokenForAuthGrant(grantId);
+
+    const apiLc = await initLearnCard({
+        apiKey: apiToken,
+        didkit,
+        network: 'http://localhost:4000/trpc',
+        ...(debug && { debug: console.log }),
+    });
+
+    try {
+        await apiLc.invoke.getProfile();
+    } catch (error) {
+        console.error(error);
+    }
+
+    return apiLc;
+};
+
+export const createApiTokenForUser = async (
+    userKey: keyof typeof USERS,
+    scope: string | string[] = 'boosts:write',
+    _debug = false
+): Promise<{ seedLc: LearnCard; grantId: string; token: string }> => {
+    const seedLc = await getLearnCardForUser(userKey);
+
+    const grantId = await seedLc.invoke.addAuthGrant({
+        name: 'e2e',
+        scope: Array.isArray(scope) ? scope.join(' ') : scope,
+    });
+
+    const token = await seedLc.invoke.getAPITokenForAuthGrant(grantId);
+
+    return { seedLc, grantId, token };
+};
+
+export const initApiKeyLearnCard = async (
+    apiKey: string,
+    debug = false
+): Promise<ApiKeyLearnCard> => {
+    const apiLc = await initLearnCard({
+        apiKey,
+        didkit,
+        network: 'http://localhost:4000/trpc',
+        ...(debug && { debug: console.log }),
+    });
+
+    return apiLc;
 };

@@ -2,21 +2,31 @@ import React from 'react';
 
 type XProps = {
     className?: string;
+    strokeWidth?: string;
 };
 
-const X: React.FC<XProps> = ({ className = '' }) => {
+const X: React.FC<XProps> = ({ className = '', strokeWidth = '2' }) => {
     return (
         <svg
-            width="11"
-            height="11"
-            viewBox="0 0 11 11"
+            viewBox="0 0 32 32"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             className={className}
+            aria-label="X"
         >
             <path
-                d="M7.47753 10.25C7.20582 9.8045 6.92868 9.37104 6.6461 8.94962C6.37439 8.52218 6.08637 8.09173 5.78206 7.65827C5.49948 8.07969 5.22233 8.50412 4.95062 8.93156C4.67891 9.35298 4.41807 9.78042 4.1681 10.2139L0.5 10.1055C1.15211 9.33492 1.78247 8.57335 2.39111 7.82082C3.01061 7.06828 3.60294 6.3007 4.1681 5.51806C3.5812 4.74747 2.98344 3.98891 2.3748 3.2424C1.77704 2.48986 1.17384 1.73131 0.565211 0.96673L4.38003 0.75C4.77129 1.57478 5.23864 2.3815 5.78206 3.17015C6.01029 2.77883 6.24397 2.38451 6.48307 1.98717C6.73305 1.58983 6.96672 1.17744 7.18409 0.75L10.95 0.912548C10.2979 1.67712 9.67839 2.43267 9.0915 3.17918C8.5046 3.9257 7.92314 4.68124 7.34711 5.44582C7.9014 6.21039 8.46113 6.95691 9.02629 7.68536C9.60231 8.41382 10.1783 9.1513 10.7544 9.89781L7.47753 10.25Z"
-                fill="#FF2C3C"
+                d="M25 7L7 25"
+                stroke="currentColor"
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M25 25L7 7"
+                stroke="currentColor"
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
             />
         </svg>
     );

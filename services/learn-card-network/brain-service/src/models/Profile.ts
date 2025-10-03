@@ -58,11 +58,13 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
             notificationsWebhook: { type: 'string', required: false },
             highlightedCredentials: { type: 'array', items: { type: 'string' }, required: false },
             dob: { type: 'string', required: false },
+            country: { type: 'string', required: false },
             role: {
                 type: 'string',
                 required: false,
                 enum: Object.values(LearnCardRolesEnum),
             },
+            approved: { type: 'boolean', required: false },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },

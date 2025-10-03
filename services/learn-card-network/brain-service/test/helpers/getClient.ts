@@ -18,6 +18,25 @@ export const getClient = (options?: {
     });
 };
 
+export const getVerifiedContactMethodClient = (options?: {
+    domain?: string;
+    contactMethod?: {
+        id: string;
+        createdAt: string;
+        isPrimary: boolean;
+        isVerified: boolean;
+        type: 'email' | 'phone';
+        value: string;
+    };
+}) => {
+    const { domain = 'localhost%3A3000', contactMethod } = options ?? {};
+
+    return appRouter.createCaller({
+        domain,
+        contactMethod,
+    });
+};
+
 export const getUser = async (
     seed?: string,
     scope?: string

@@ -1,5 +1,169 @@
 # learn-card-core
 
+## 2.1.7
+
+### Patch Changes
+
+-   Updated dependencies [[`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959)]:
+    -   @learncard/types@5.8.11
+    -   @learncard/network-plugin@2.6.8
+    -   @learncard/core@9.3.41
+    -   @learncard/helpers@1.1.29
+    -   @learncard/chapi-plugin@1.0.76
+    -   @learncard/did-web-plugin@1.0.78
+    -   @learncard/didkey-plugin@1.0.52
+    -   @learncard/didkit-plugin@1.5.34
+    -   @learncard/encryption-plugin@1.0.26
+    -   @learncard/learn-card-plugin@1.1.62
+    -   @learncard/learn-cloud-plugin@2.2.5
+    -   @learncard/vc-plugin@1.2.4
+    -   @learncard/vc-api-plugin@1.0.52
+    -   @learncard/vc-templates-plugin@1.0.67
+    -   @learncard/vpqr-plugin@1.0.52
+    -   @learncard/expiration-plugin@1.1.65
+    -   @learncard/crypto-plugin@1.0.52
+    -   @learncard/dynamic-loader-plugin@1.0.48
+    -   @learncard/ethereum-plugin@1.0.53
+
+## 2.1.6
+
+### Patch Changes
+
+-   Updated dependencies [[`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e)]:
+    -   @learncard/types@5.8.9
+    -   @learncard/core@9.3.40
+    -   @learncard/helpers@1.1.28
+    -   @learncard/chapi-plugin@1.0.75
+    -   @learncard/did-web-plugin@1.0.77
+    -   @learncard/didkey-plugin@1.0.51
+    -   @learncard/didkit-plugin@1.5.33
+    -   @learncard/encryption-plugin@1.0.25
+    -   @learncard/learn-card-plugin@1.1.61
+    -   @learncard/network-plugin@2.6.6
+    -   @learncard/learn-cloud-plugin@2.2.4
+    -   @learncard/vc-plugin@1.2.3
+    -   @learncard/vc-api-plugin@1.0.51
+    -   @learncard/vc-templates-plugin@1.0.66
+    -   @learncard/vpqr-plugin@1.0.51
+    -   @learncard/expiration-plugin@1.1.64
+    -   @learncard/crypto-plugin@1.0.51
+    -   @learncard/dynamic-loader-plugin@1.0.47
+    -   @learncard/ethereum-plugin@1.0.52
+
+## 2.1.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-plugin@2.6.5
+
+## 2.1.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-plugin@2.6.4
+
+## 2.1.3
+
+### Patch Changes
+
+-   Updated dependencies [[`fdc014b626700cc1ad85a6cdf809b9066d05f8a3`](https://github.com/learningeconomy/LearnCard/commit/fdc014b626700cc1ad85a6cdf809b9066d05f8a3)]:
+    -   @learncard/didkit-plugin@1.5.32
+    -   @learncard/chapi-plugin@1.0.74
+    -   @learncard/learn-card-plugin@1.1.60
+    -   @learncard/network-plugin@2.6.3
+    -   @learncard/learn-cloud-plugin@2.2.3
+    -   @learncard/vc-plugin@1.2.2
+    -   @learncard/expiration-plugin@1.1.63
+
+## 2.1.2
+
+### Patch Changes
+
+-   Updated dependencies [[`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34)]:
+    -   @learncard/types@5.8.7
+    -   @learncard/core@9.3.39
+    -   @learncard/helpers@1.1.27
+    -   @learncard/chapi-plugin@1.0.73
+    -   @learncard/did-web-plugin@1.0.76
+    -   @learncard/didkey-plugin@1.0.50
+    -   @learncard/didkit-plugin@1.5.31
+    -   @learncard/encryption-plugin@1.0.24
+    -   @learncard/learn-card-plugin@1.1.59
+    -   @learncard/network-plugin@2.6.2
+    -   @learncard/learn-cloud-plugin@2.2.2
+    -   @learncard/vc-plugin@1.2.1
+    -   @learncard/vc-api-plugin@1.0.50
+    -   @learncard/vc-templates-plugin@1.0.65
+    -   @learncard/vpqr-plugin@1.0.50
+    -   @learncard/expiration-plugin@1.1.62
+    -   @learncard/crypto-plugin@1.0.50
+    -   @learncard/dynamic-loader-plugin@1.0.46
+    -   @learncard/ethereum-plugin@1.0.51
+
+## 2.1.1
+
+### Patch Changes
+
+-   Updated dependencies [[`15480b7f8ab73d9d5af67e38fd39eb7d0fcb1380`](https://github.com/learningeconomy/LearnCard/commit/15480b7f8ab73d9d5af67e38fd39eb7d0fcb1380)]:
+    -   @learncard/vc-templates-plugin@1.0.64
+    -   @learncard/learn-cloud-plugin@2.2.1
+    -   @learncard/network-plugin@2.6.1
+
+## 2.1.0
+
+### Minor Changes
+
+-   [#807](https://github.com/learningeconomy/LearnCard/pull/807) [`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add initFromApiKey support
+
+### Patch Changes
+
+-   Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
+    -   @learncard/network-plugin@2.6.0
+    -   @learncard/learn-cloud-plugin@2.2.0
+    -   @learncard/vc-plugin@1.2.0
+    -   @learncard/expiration-plugin@1.1.61
+
+## 2.0.47
+
+### Patch Changes
+
+-   Updated dependencies [[`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3), [`beb9c54789a2f48b06e1f82082e1dd51eab6b51d`](https://github.com/learningeconomy/LearnCard/commit/beb9c54789a2f48b06e1f82082e1dd51eab6b51d)]:
+    -   @learncard/types@5.8.6
+    -   @learncard/didkit-plugin@1.5.30
+    -   @learncard/vc-plugin@1.1.60
+    -   @learncard/core@9.3.38
+    -   @learncard/helpers@1.1.26
+    -   @learncard/chapi-plugin@1.0.72
+    -   @learncard/did-web-plugin@1.0.75
+    -   @learncard/didkey-plugin@1.0.49
+    -   @learncard/encryption-plugin@1.0.23
+    -   @learncard/learn-card-plugin@1.1.58
+    -   @learncard/network-plugin@2.5.23
+    -   @learncard/learn-cloud-plugin@2.1.44
+    -   @learncard/vc-api-plugin@1.0.49
+    -   @learncard/vc-templates-plugin@1.0.63
+    -   @learncard/vpqr-plugin@1.0.49
+    -   @learncard/expiration-plugin@1.1.60
+    -   @learncard/crypto-plugin@1.0.49
+    -   @learncard/dynamic-loader-plugin@1.0.45
+    -   @learncard/ethereum-plugin@1.0.50
+
+## 2.0.46
+
+### Patch Changes
+
+-   Updated dependencies [[`cd6f8aba37dd67721e10e60c90f65ceb278d4a1e`](https://github.com/learningeconomy/LearnCard/commit/cd6f8aba37dd67721e10e60c90f65ceb278d4a1e)]:
+    -   @learncard/network-plugin@2.5.22
+
+## 2.0.45
+
+### Patch Changes
+
+-   Updated dependencies [[`53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316`](https://github.com/learningeconomy/LearnCard/commit/53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316)]:
+    -   @learncard/learn-cloud-plugin@2.1.43
+
 ## 2.0.44
 
 ### Patch Changes
