@@ -1168,6 +1168,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.getInboxCredential.query({ credentialId: id });
             },
+            finalizeInboxCredentials: async _learnCard => {
+                await ensureUser();
+                
+                return client.inbox.finalize.mutate();
+            }, 
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();
 
@@ -1201,12 +1206,54 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.contactMethods.verifyContactMethod.mutate({ token });
             },
+            verifyContactMethodWithCredential: async (_learnCard, proofOfLoginJwt) => {
+                await ensureUser();
+
+                return client.contactMethods.verifyWithCredential.mutate({ proofOfLoginJwt });
+            },
             removeContactMethod: async (_learnCard, id) => {
                 await ensureUser();
 
                 return client.contactMethods.removeContactMethod.mutate({ id });
             },
+            
+            // Integrations
+            addIntegration: async (_learnCard, integration) => {
+                await ensureUser()
 
+                return client.integrations.addIntegration.mutate(integration);
+            },
+            getIntegration: async (_learnCard, id) => {
+                await ensureUser()
+
+                return client.integrations.getIntegration.query({ id });
+            },
+            getIntegrations: async (_learnCard, options = {}) => {
+                await ensureUser()
+
+                return client.integrations.getIntegrations.query(options);
+            },
+            countIntegrations: async (_learnCard, options = {}) => {
+                await ensureUser()
+
+                return client.integrations.countIntegrations.query(options);
+            },
+            updateIntegration: async (_learnCard, id, updates) => {
+                await ensureUser()
+
+                return client.integrations.updateIntegration.mutate({ id, updates });
+            },
+            deleteIntegration: async (_learnCard, id) => {
+                await ensureUser()
+
+                return client.integrations.deleteIntegration.mutate({ id });
+            },
+            associateIntegrationWithSigningAuthority: async (_learnCard, integrationId, endpoint, name, did, isPrimary) => {
+                await ensureUser()
+
+                return client.integrations.associateIntegrationWithSigningAuthority.mutate({ integrationId, endpoint, name, did, isPrimary });
+            },
+ 
             resolveFromLCN: async (_learnCard, uri) => {
                 const result = await client.storage.resolve.query({ uri });
 

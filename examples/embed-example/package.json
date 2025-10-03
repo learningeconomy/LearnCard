@@ -1,0 +1,20 @@
+{
+  "name": "@learncard/embed-example",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@learncard/embed-sdk": "workspace:^",
+    "astro": "^4.7.0"
+  },
+  "devDependencies": {
+    "prettier-plugin-astro": "^0.5.4"
+  }
+}
