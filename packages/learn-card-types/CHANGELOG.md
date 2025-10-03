@@ -1,5 +1,17 @@
 # learn-card-types
 
+## 5.8.9
+
+### Patch Changes
+
+-   [#829](https://github.com/learningeconomy/LearnCard/pull/829) [`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Bump learn-card-types
+
+## 5.8.7
+
+### Patch Changes
+
+-   [#811](https://github.com/learningeconomy/LearnCard/pull/811) [`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1001] Add 'approved' field to user profile
+
 ## 5.8.6
 
 ### Patch Changes

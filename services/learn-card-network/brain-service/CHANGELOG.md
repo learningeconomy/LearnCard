@@ -1,5 +1,65 @@
 # @learncard/network-brain-service
 
+## 3.6.6
+
+### Patch Changes
+
+-   Updated dependencies [[`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e)]:
+    -   @learncard/types@5.8.9
+    -   @learncard/core@9.3.40
+    -   @learncard/helpers@1.1.28
+    -   @learncard/did-web-plugin@1.0.77
+    -   @learncard/didkey-plugin@1.0.51
+    -   @learncard/didkit-plugin@1.5.33
+    -   @learncard/encryption-plugin@1.0.25
+    -   @learncard/learn-card-plugin@1.1.61
+    -   @learncard/vc-plugin@1.2.3
+    -   @learncard/vc-templates-plugin@1.0.66
+    -   @learncard/expiration-plugin@1.1.64
+    -   @learncard/crypto-plugin@1.0.51
+
+## 3.6.5
+
+### Patch Changes
+
+-   [#823](https://github.com/learningeconomy/LearnCard/pull/823) [`05dd394df6e56f066f222748d89c1aa82e47e826`](https://github.com/learningeconomy/LearnCard/commit/05dd394df6e56f066f222748d89c1aa82e47e826) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Add LCN routes for handling account approval via consent email
+
+## 3.6.4
+
+### Patch Changes
+
+-   [#825](https://github.com/learningeconomy/LearnCard/pull/825) [`db6fdcde184dc543f5c1a1428e649f558d780621`](https://github.com/learningeconomy/LearnCard/commit/db6fdcde184dc543f5c1a1428e649f558d780621) Thanks [@goblincore](https://github.com/goblincore)! - fix: Add local dev fallback for notification queue
+
+## 3.6.3
+
+### Patch Changes
+
+-   Updated dependencies [[`fdc014b626700cc1ad85a6cdf809b9066d05f8a3`](https://github.com/learningeconomy/LearnCard/commit/fdc014b626700cc1ad85a6cdf809b9066d05f8a3)]:
+    -   @learncard/didkit-plugin@1.5.32
+    -   @learncard/learn-card-plugin@1.1.60
+    -   @learncard/vc-plugin@1.2.2
+    -   @learncard/expiration-plugin@1.1.63
+
+## 3.6.2
+
+### Patch Changes
+
+-   [#811](https://github.com/learningeconomy/LearnCard/pull/811) [`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1001] Add 'approved' field to user profile
+
+-   Updated dependencies [[`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34)]:
+    -   @learncard/types@5.8.7
+    -   @learncard/core@9.3.39
+    -   @learncard/helpers@1.1.27
+    -   @learncard/did-web-plugin@1.0.76
+    -   @learncard/didkey-plugin@1.0.50
+    -   @learncard/didkit-plugin@1.5.31
+    -   @learncard/encryption-plugin@1.0.24
+    -   @learncard/learn-card-plugin@1.1.59
+    -   @learncard/vc-plugin@1.2.1
+    -   @learncard/vc-templates-plugin@1.0.65
+    -   @learncard/expiration-plugin@1.1.62
+    -   @learncard/crypto-plugin@1.0.50
+
 ## 3.6.1
 
 ### Patch Changes

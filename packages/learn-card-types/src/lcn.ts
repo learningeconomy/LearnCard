@@ -62,6 +62,7 @@ export const LCNProfileValidator = z.object({
         .optional()
         .describe('Date of birth of the profile: e.g. "1990-01-01".'),
     country: z.string().optional().describe('Country for the profile.'),
+    approved: z.boolean().optional().describe('Approval status for the profile.'),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 
@@ -594,7 +595,8 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'CONSENT_FLOW_TRANSACTION',
     'ISSUANCE_CLAIMED',
     'ISSUANCE_DELIVERED',
-    'ISSUANCE_ERROR'
+    'ISSUANCE_ERROR',
+    'PROFILE_PARENT_APPROVED'
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;

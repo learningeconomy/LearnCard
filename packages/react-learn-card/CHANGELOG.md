@@ -1,5 +1,42 @@
 # @welibraryos/react-learn-card
 
+## 2.8.50
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.6
+
+## 2.8.49
+
+### Patch Changes
+
+-   [#827](https://github.com/learningeconomy/LearnCard/pull/827) [`55689b35362e4835a2e48059f2c7a594e070d006`](https://github.com/learningeconomy/LearnCard/commit/55689b35362e4835a2e48059f2c7a594e070d006) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1387] Broken image when previewing merit badge
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.5
+
+## 2.8.48
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.4
+
+## 2.8.47
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.3
+
+## 2.8.46
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.2
+
 ## 2.8.45
 
 ### Patch Changes
