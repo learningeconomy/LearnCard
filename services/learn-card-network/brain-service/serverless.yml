@@ -173,6 +173,17 @@ functions:
             - httpApi: GET /docs
             - httpApi: GET /docs/{trpc+}
 
+    skillsViewer:
+        handler: lambda.skillsViewerHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /skills/{skillId}
+            - httpApi: GET /frameworks/{frameworkId}
+
 resources:
     Resources:
         VPC:

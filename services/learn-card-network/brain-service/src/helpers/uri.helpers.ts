@@ -3,11 +3,13 @@ import { getContractByUri } from '@accesslayer/consentflowcontract/read';
 import { getContractTermsByUri } from '@accesslayer/consentflowcontract/relationships/read';
 import { getCredentialByUri } from '@accesslayer/credential/read';
 import { getPresentationByUri } from '@accesslayer/presentation/read';
+import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
+import { getSkillsByIds } from '@accesslayer/skill/read';
 import { isEncrypted } from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import { getLearnCard } from './learnCard.helpers';
 
-export const URI_TYPES = ['credential', 'presentation', 'boost', 'contract', 'terms'] as const;
+export const URI_TYPES = ['credential', 'presentation', 'boost', 'contract', 'terms', 'framework', 'skill'] as const;
 
 export type URIType = (typeof URI_TYPES)[number];
 
@@ -86,5 +88,15 @@ export const resolveUri = async (uri: string) => {
             return await getContractByUri(uri);
         case 'terms':
             return await getContractTermsByUri(uri);
+        case 'framework':
+            return await getSkillFrameworkById(getIdFromUri(uri));
+        case 'skill': {
+            const skillId = getIdFromUri(uri);
+            const skills = await getSkillsByIds([skillId]);
+            if (skills.length === 0) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Skill not found' });
+            }
+            return skills[0];
+        }
     }
 };

@@ -68,7 +68,8 @@ export function createDummyProvider(options?: Options): SkillsProvider {
 
     const buildObv3Alignments: SkillsProvider['buildObv3Alignments'] = async (
         frameworkId,
-        skillIds
+        skillIds,
+        _domain
     ) => {
         const fw = frameworks.get(frameworkId);
         if (!fw) return [];
@@ -82,9 +83,10 @@ export function createDummyProvider(options?: Options): SkillsProvider {
                 ? `${baseUrl}/frameworks/${encodeURIComponent(
                       frameworkId
                   )}/skills/${encodeURIComponent(skill.id)}`
-                : undefined;
+                : '';
 
             alignments.push({
+                type: ['Alignment'],
                 targetCode: skill.code ?? skill.id,
                 targetName: skill.statement,
                 targetDescription: skill.description,

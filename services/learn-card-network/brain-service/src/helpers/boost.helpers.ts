@@ -123,7 +123,7 @@ export const verifyCredentialIsDerivedFromBoost = async (
             const baseExpected = boostCredential as VC | UnsignedVC;
             const expectedWithAlignments = cloneDeep(baseExpected);
 
-            const rawAlignments = await buildObv3AlignmentsForBoost(boost);
+            const rawAlignments = await buildObv3AlignmentsForBoost(boost, domain);
             const jsonLdAlignments = (rawAlignments || []).map(a => ({
                 ...a,
                 type: ['Alignment'],
@@ -450,7 +450,7 @@ export const issueClaimLinkBoost = async (
     }
 
     // Inject OBv3 skill alignments based on boost's framework/skills
-    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost);
+    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
     const vc = await issueCredentialWithSigningAuthority(
         from,

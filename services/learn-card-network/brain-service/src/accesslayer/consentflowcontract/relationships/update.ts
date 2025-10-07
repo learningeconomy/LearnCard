@@ -153,7 +153,7 @@ export const reconsentTerms = async (
 
                     // Issue the credential using contract owner's signing authority
                     // Inject OBv3 skill alignments based on boost's framework/skills
-                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boostRel.target);
+                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boostRel.target, domain);
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,
                         boostCredential,
@@ -360,7 +360,7 @@ export const updateTerms = async (
 
                     // Issue the credential using contract owner's signing authority
                     // Inject OBv3 skill alignments based on boost's framework/skills
-                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost.target);
+                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost.target, domain);
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,
                         boostCredential,

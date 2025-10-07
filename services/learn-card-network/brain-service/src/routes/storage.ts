@@ -60,6 +60,7 @@ const getBoostUriFromCredential = (credential: any): string | undefined => {
 
 const ensureAlignmentsForBoostCredential = async (
     credential: any,
+    domain: string,
     options: { boostInstance?: any; boostUri?: string }
 ): Promise<boolean> => {
     if (!isBoostCredential(credential)) return false;
@@ -68,7 +69,7 @@ const ensureAlignmentsForBoostCredential = async (
     const { boostInstance: providedInstance, boostUri: providedUri } = options;
 
     if (providedInstance) {
-        await injectObv3AlignmentsIntoCredentialForBoost(credential, providedInstance);
+        await injectObv3AlignmentsIntoCredentialForBoost(credential, providedInstance, domain);
         return true;
     }
 
@@ -78,7 +79,7 @@ const ensureAlignmentsForBoostCredential = async (
     const instance = await getBoostByUri(boostUri);
     if (!instance) return false;
 
-    await injectObv3AlignmentsIntoCredentialForBoost(credential, instance);
+    await injectObv3AlignmentsIntoCredentialForBoost(credential, instance, domain);
     return true;
 };
 
@@ -147,8 +148,9 @@ export const storageRouter = t.router({
                 .or(ConsentFlowContractValidator)
                 .or(ConsentFlowTermsValidator)
         )
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
             const { uri } = input;
+            const { domain } = ctx;
 
             const { id, type } = getUriParts(uri);
 
@@ -163,7 +165,7 @@ export const storageRouter = t.router({
                     typeof cachedResponse === 'object' &&
                     !Array.isArray(cachedResponse)
                 ) {
-                    mutated = await ensureAlignmentsForBoostCredential(cachedResponse, {});
+                    mutated = await ensureAlignmentsForBoostCredential(cachedResponse, domain, {});
                 }
 
                 if (
@@ -177,7 +179,7 @@ export const storageRouter = t.router({
                     const boostInstance = await getBoostById(id);
                     if (boostInstance) {
                         mutated =
-                            (await ensureAlignmentsForBoostCredential(cachedResponse, {
+                            (await ensureAlignmentsForBoostCredential(cachedResponse, domain, {
                                 boostInstance,
                             })) || mutated;
                     }
@@ -197,7 +199,7 @@ export const storageRouter = t.router({
 
                 const credential = JSON.parse(instance.credential);
 
-                await ensureAlignmentsForBoostCredential(credential, {});
+                await ensureAlignmentsForBoostCredential(credential, domain, {});
 
                 await setStorageForUri(uri, credential);
 
@@ -228,7 +230,7 @@ export const storageRouter = t.router({
                 const boost = JSON.parse(instance.boost);
 
                 if (isBoostCredential(boost)) {
-                    await ensureAlignmentsForBoostCredential(boost, {
+                    await ensureAlignmentsForBoostCredential(boost, domain, {
                         boostInstance: instance,
                     });
                 }

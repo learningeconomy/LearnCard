@@ -70,9 +70,9 @@ export const upsertSkillsIntoFramework = async (
         `UNWIND $skills AS sk
          WITH sk WHERE sk.parentId IS NOT NULL
          MATCH (f:SkillFramework { id: $frameworkId })
-         MATCH (child:Skill { id: sk.id, frameworkId: $frameworkId })<-[:CONTAINS]-(f)
-         MATCH (parent:Skill { id: sk.parentId, frameworkId: $frameworkId })<-[:CONTAINS]-(f)
-        MERGE (child)-[:IS_CHILD_OF]->(parent)`,
+         MATCH (f)-[:CONTAINS]->(child:Skill { id: sk.id })
+         MATCH (f)-[:CONTAINS]->(parent:Skill { id: sk.parentId })
+         MERGE (child)-[:IS_CHILD_OF]->(parent)`,
         { frameworkId, skills: skillParams }
     );
 

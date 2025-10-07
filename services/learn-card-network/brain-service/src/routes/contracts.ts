@@ -799,7 +799,7 @@ export const contractsRouter = t.router({
                 }
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
                 // Inject OBv3 skill alignments based on boost's framework/skills
-                await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost);
+                await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, ctx.domain);
             } catch (e) {
                 console.error('Failed to parse boost', e);
                 throw new TRPCError({

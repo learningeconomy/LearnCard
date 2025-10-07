@@ -30,6 +30,7 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
             description: skill.description ?? undefined,
             type: skill.type ?? 'skill',
             status: skill.status,
+            parentId: skill.parentId ?? undefined,
         }));
     };
 
@@ -44,12 +45,14 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
             description: skill.description ?? undefined,
             type: skill.type ?? 'skill',
             status: skill.status,
+            parentId: skill.parentId ?? undefined,
         }));
     };
 
     const buildObv3Alignments: SkillsProvider['buildObv3Alignments'] = async (
         frameworkId,
-        skillIds
+        skillIds,
+        domain
     ) => {
         const [framework, skills] = await Promise.all([
             getSkillFrameworkById(frameworkId),
@@ -61,14 +64,19 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
         const alignments: Obv3Alignment[] = [];
 
         for (const skill of skills) {
-            // OBv3 spec requires targetUrl - generate a valid URL even without baseUrl configured
+            // OBv3 spec requires targetUrl - use HTTP endpoint for browser navigation
+            // Falls back to baseUrl if provider is configured with external service (e.g., OpenSalt)
+            // Decode domain since it may be URL-encoded for did:web usage (e.g., localhost%3A4400)
+            const decodedDomain = decodeURIComponent(domain);
+
             const targetUrl = baseUrl
                 ? `${baseUrl}/frameworks/${encodeURIComponent(
                       frameworkId
                   )}/skills/${encodeURIComponent(skill.id)}`
-                : `urn:uuid:framework:${frameworkId}:skill:${skill.id}`;
+                : `https://${decodedDomain}/skills/${encodeURIComponent(skill.id)}`;
 
             alignments.push({
+                type: ['Alignment'],
                 targetCode: skill.code ?? skill.id,
                 targetName: skill.statement,
                 targetDescription: skill.description ?? undefined,

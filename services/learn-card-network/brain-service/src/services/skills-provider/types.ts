@@ -1,6 +1,8 @@
 /*
  Provider-agnostic Skills API types
 */
+// oxlint-disable-next-line no-unused-vars
+import { Alignment } from '@learncard/types';
 
 export type ProviderId = 'neo4j' | 'opensalt' | 'dummy' | (string & {});
 
@@ -32,13 +34,7 @@ export type Skill = {
 
 // Very conservative OBv3 alignment shape (kept optional to remain flexible)
 // Note: We'll finalize the mapping once we confirm the exact OBv3 field name and structure
-export type Obv3Alignment = {
-    targetCode?: string;
-    targetName?: string;
-    targetDescription?: string;
-    targetUrl?: string;
-    targetFramework?: string;
-};
+export type Obv3Alignment = Alignment;
 
 export interface SkillsProvider {
     readonly id: ProviderId;
@@ -53,13 +49,18 @@ export interface SkillsProvider {
     getSkillsForFramework(frameworkId: string): Promise<Skill[]>;
     getSkillsByIds(frameworkId: string, skillIds: string[]): Promise<Skill[]>;
     createSkill?(frameworkId: string, skill: Skill): Promise<Skill>;
-    updateSkill?(frameworkId: string, skillId: string, updates: Partial<Skill>): Promise<Skill | null>;
+    updateSkill?(
+        frameworkId: string,
+        skillId: string,
+        updates: Partial<Skill>
+    ): Promise<Skill | null>;
     deleteSkill?(frameworkId: string, skillId: string): Promise<void>;
 
     // Convenience builder to produce OBv3-compatible alignment entries
     buildObv3Alignments(
         frameworkId: string,
-        skillIds: string[]
+        skillIds: string[],
+        domain: string
     ): Promise<Obv3Alignment[]>;
 }
 

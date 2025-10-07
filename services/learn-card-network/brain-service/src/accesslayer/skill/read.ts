@@ -82,7 +82,7 @@ export const getChildrenForSkillInFrameworkPaged = async (
 }> => {
     const result = await neogma.queryRunner.run(
         `MATCH (f:SkillFramework {id: $frameworkId})
-         MATCH (parent:Skill {id: $parentId, frameworkId: $frameworkId})
+         MATCH (f)-[:CONTAINS]->(parent:Skill {id: $parentId})
          MATCH (f)-[:CONTAINS]->(c:Skill)-[:IS_CHILD_OF]->(parent)
          WHERE ($cursorId IS NULL OR c.id > $cursorId)
          WITH f, c
@@ -171,16 +171,19 @@ export const searchSkillsInFramework = async (
 export const getSkillsByFramework = async (frameworkId: string): Promise<FlatSkillType[]> => {
     const result = await neogma.queryRunner.run(
         `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
-         RETURN s AS s
+         OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
+         RETURN s AS s, parent.id AS parentId
          ORDER BY s.id`,
         { frameworkId }
     );
 
     return result.records.map(r => {
         const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
+        const parentId = r.get('parentId') as string | null;
         return {
             ...props,
             type: props.type ?? 'skill',
+            ...(parentId ? { parentId } : {}),
         } as FlatSkillType;
     });
 };
@@ -195,16 +198,19 @@ export const getSkillsByIds = async (skillIds: string[]): Promise<FlatSkillType[
     const result = await neogma.queryRunner.run(
         `MATCH (s:Skill)
          WHERE s.id IN $skillIds
-         RETURN s AS s
+         OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
+         RETURN s AS s, parent.id AS parentId
          ORDER BY s.id`,
         { skillIds }
     );
 
     return result.records.map(r => {
         const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
+        const parentId = r.get('parentId') as string | null;
         return {
             ...props,
             type: props.type ?? 'skill',
+            ...(parentId ? { parentId } : {}),
         } as FlatSkillType;
     });
 };

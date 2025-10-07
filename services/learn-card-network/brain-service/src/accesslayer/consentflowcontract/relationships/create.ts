@@ -235,7 +235,7 @@ export const consentToContract = async (
                     }
 
                     // Inject OBv3 skill alignments based on boost's framework/skills
-                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost.target);
+                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost.target, domain);
 
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,

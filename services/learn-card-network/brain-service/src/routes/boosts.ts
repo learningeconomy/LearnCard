@@ -164,7 +164,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            return buildObv3AlignmentsForBoost(boost);
+            return buildObv3AlignmentsForBoost(boost, ctx.domain);
         }),
     attachFrameworkToBoost: profileRoute
         .meta({
@@ -239,7 +239,10 @@ export const boostsRouter = t.router({
                 { ids: skillIds }
             );
             const foundSkills =
-                (result.records[0]?.get('skills') as Array<{ id?: string; frameworkId?: string }>) || [];
+                (result.records[0]?.get('skills') as Array<{
+                    id?: string;
+                    frameworkId?: string;
+                }>) || [];
             const found = foundSkills
                 .map(skill => skill.id)
                 .filter((id): id is string => typeof id === 'string');
@@ -682,7 +685,11 @@ export const boostsRouter = t.router({
 
             const { id, boost: _boost, ...remaining } = boost;
             const parsedBoost = JSON.parse(_boost);
-            await injectObv3AlignmentsIntoCredentialForBoost(parsedBoost, boostInstance);
+            await injectObv3AlignmentsIntoCredentialForBoost(
+                parsedBoost,
+                boostInstance,
+                ctx.domain
+            );
 
             return { ...remaining, boost: parsedBoost, uri: getBoostUri(id, ctx.domain) };
         }),
@@ -695,7 +702,8 @@ export const boostsRouter = t.router({
                 path: '/boost/frameworks',
                 tags: ['Boosts'],
                 summary: 'List frameworks used by a boost',
-                description: 'Returns the frameworks aligned to a boost via USES_FRAMEWORK. Requires boost admin.',
+                description:
+                    'Returns the frameworks aligned to a boost via USES_FRAMEWORK. Requires boost admin.',
             },
             requiredScope: 'boosts:read',
         })
@@ -1874,6 +1882,7 @@ export const boostsRouter = t.router({
                         if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
                             try {
                                 JSON.parse(value as string);
+                                // oxlint-disable-next-line no-unused-vars
                             } catch (error) {
                                 throw new TRPCError({
                                     code: 'BAD_REQUEST',
@@ -1963,6 +1972,7 @@ export const boostsRouter = t.router({
                         if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
                             try {
                                 JSON.parse(value as string);
+                                // oxlint-disable-next-line no-unused-vars
                             } catch (error) {
                                 throw new TRPCError({
                                     code: 'BAD_REQUEST',
@@ -2142,6 +2152,7 @@ export const boostsRouter = t.router({
                     console.error('Problem using useClaimLinkForBoost', e);
                 }
                 return sentBoostUri;
+                // oxlint-disable-next-line no-unused-vars
             } catch (e) {
                 console.error('Unable to issueClaimLinkBoost');
                 throw new TRPCError({
@@ -2346,7 +2357,7 @@ export const boostsRouter = t.router({
                 }
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
                 // Inject OBv3 skill alignments based on boost's framework/skills
-                await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost);
+                await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, ctx.domain);
             } catch (e) {
                 console.error('Failed to parse boost', e);
                 throw new TRPCError({

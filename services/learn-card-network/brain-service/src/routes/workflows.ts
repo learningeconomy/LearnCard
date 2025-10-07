@@ -353,7 +353,7 @@ async function handlePresentationForClaim(
         }
 
         // Inject OBv3 skill alignments based on boost's framework/skills
-        await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost);
+        await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
         const vc = await issueCredentialWithSigningAuthority(
             boostOwner,

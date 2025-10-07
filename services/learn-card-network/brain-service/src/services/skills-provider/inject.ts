@@ -29,7 +29,8 @@ const getInjectableSkillIds = (skills: SkillInstance[]): string[] => {
 // Mutates the given credential in-place to add OBv3 alignments, if any exist on the boost.
 export async function injectObv3AlignmentsIntoCredentialForBoost(
     credential: UnsignedVC | VC,
-    boost: BoostInstance
+    boost: BoostInstance,
+    domain: string
 ): Promise<void> {
     try {
         const [framework, skills] = await Promise.all([
@@ -45,7 +46,7 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
         if (!frameworkId || skillIds.length === 0) return;
 
         const provider = getSkillsProvider();
-        const alignments = await provider.buildObv3Alignments(frameworkId, skillIds);
+        const alignments = await provider.buildObv3Alignments(frameworkId, skillIds, domain);
 
         if (!alignments || alignments.length === 0) return;
 
@@ -87,7 +88,10 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
 }
 
 // Returns OBv3 alignments for a given boost without mutating any credential
-export async function buildObv3AlignmentsForBoost(boost: BoostInstance): Promise<Obv3Alignment[]> {
+export async function buildObv3AlignmentsForBoost(
+    boost: BoostInstance,
+    domain: string
+): Promise<Obv3Alignment[]> {
     try {
         const [framework, skills] = await Promise.all([
             getFrameworkUsedByBoost(boost),
@@ -102,7 +106,7 @@ export async function buildObv3AlignmentsForBoost(boost: BoostInstance): Promise
         if (!frameworkId || skillIds.length === 0) return [];
 
         const provider = getSkillsProvider();
-        const alignments = await provider.buildObv3Alignments(frameworkId, skillIds);
+        const alignments = await provider.buildObv3Alignments(frameworkId, skillIds, domain);
         const cleaned = (alignments || []).map(a =>
             Object.fromEntries(Object.entries(a).filter(([, v]) => v !== undefined))
         ) as Obv3Alignment[];
