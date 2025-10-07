@@ -1255,6 +1255,20 @@ export type ReplaceSkillFrameworkSkillsResult = z.infer<
     typeof ReplaceSkillFrameworkSkillsResultValidator
 >;
 
+export const CountSkillsInputValidator = z.object({
+    frameworkId: z.string(),
+    skillId: z.string().optional(),
+    recursive: z.boolean().optional().default(false),
+});
+
+export type CountSkillsInput = z.infer<typeof CountSkillsInputValidator>;
+
+export const CountSkillsResultValidator = z.object({
+    count: z.number().int().min(0),
+});
+
+export type CountSkillsResult = z.infer<typeof CountSkillsResultValidator>;
+
 // Composite return shapes
 export const FrameworkWithSkillsValidator = z.object({
     framework: SkillFrameworkValidator,

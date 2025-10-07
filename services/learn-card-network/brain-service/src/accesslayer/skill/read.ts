@@ -189,6 +189,51 @@ export const getSkillsByFramework = async (frameworkId: string): Promise<FlatSki
 };
 
 /**
+ * Count skills in a framework.
+ * - If skillId is not provided, counts all skills in the framework.
+ * - If skillId is provided and recursive is false, counts direct children only.
+ * - If skillId is provided and recursive is true, counts all descendants recursively.
+ */
+export const countSkillsInFramework = async (
+    frameworkId: string,
+    skillId?: string,
+    recursive: boolean = false
+): Promise<number> => {
+    if (!skillId) {
+        // Count all skills in the framework
+        const result = await neogma.queryRunner.run(
+            `MATCH (:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+             RETURN count(s) AS count`,
+            { frameworkId }
+        );
+        return Number(result.records[0]?.get('count') ?? 0);
+    }
+
+    if (recursive) {
+        // Count all descendants recursively
+        const result = await neogma.queryRunner.run(
+            `MATCH (f:SkillFramework {id: $frameworkId})
+             MATCH (f)-[:CONTAINS]->(parent:Skill {id: $skillId})
+             MATCH (f)-[:CONTAINS]->(descendant:Skill)
+             WHERE (descendant)-[:IS_CHILD_OF*1..]->(parent)
+             RETURN count(descendant) AS count`,
+            { frameworkId, skillId }
+        );
+        return Number(result.records[0]?.get('count') ?? 0);
+    } else {
+        // Count direct children only
+        const result = await neogma.queryRunner.run(
+            `MATCH (f:SkillFramework {id: $frameworkId})
+             MATCH (f)-[:CONTAINS]->(parent:Skill {id: $skillId})
+             MATCH (f)-[:CONTAINS]->(child:Skill)-[:IS_CHILD_OF]->(parent)
+             RETURN count(child) AS count`,
+            { frameworkId, skillId }
+        );
+        return Number(result.records[0]?.get('count') ?? 0);
+    }
+};
+
+/**
  * Get skills by their IDs (unpaginated).
  * Used by the skills provider to fetch specific skills.
  */

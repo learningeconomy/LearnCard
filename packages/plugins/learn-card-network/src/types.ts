@@ -70,6 +70,8 @@ import {
     DeleteSkillInput,
     ReplaceSkillFrameworkSkillsInput,
     ReplaceSkillFrameworkSkillsResult,
+    CountSkillsInput,
+    CountSkillsResult,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -513,6 +515,7 @@ export type LearnCardNetworkPluginMethods = {
     replaceSkillFrameworkSkills: (
         input: ReplaceSkillFrameworkSkillsInput
     ) => Promise<ReplaceSkillFrameworkSkillsResult>;
+    countSkills: (input: CountSkillsInput) => Promise<CountSkillsResult>;
     getSkillFrameworkAdmins: (frameworkId: string) => Promise<LCNProfile[]>;
     addSkillFrameworkAdmin: (
         frameworkId: string,

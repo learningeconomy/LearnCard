@@ -955,4 +955,170 @@ describe('Skills & Frameworks E2E', () => {
         expect(finalFlattened.length).toBe(1);
         expect(finalFlattened[0]?.id).toBe(`${fwId}-skill1`);
     });
+
+    test('can count all skills in a framework', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create framework with 3 skills
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'Skill 1',
+                code: 'S1',
+                type: 'skill',
+                status: 'active',
+            },
+            {
+                id: `${fwId}-skill2`,
+                statement: 'Skill 2',
+                code: 'S2',
+                type: 'skill',
+                status: 'active',
+            },
+            {
+                id: `${fwId}-skill3`,
+                statement: 'Skill 3',
+                code: 'S3',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Count all skills
+        const result = await a.invoke.countSkills({ frameworkId: fwId });
+        expect(result.count).toBe(3);
+    });
+
+    test('can count direct children of a skill', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create hierarchical structure
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-parent`,
+                statement: 'Parent',
+                code: 'P1',
+                type: 'container',
+                status: 'active',
+                children: [
+                    {
+                        id: `${fwId}-child1`,
+                        statement: 'Child 1',
+                        code: 'C1',
+                        type: 'skill',
+                        status: 'active',
+                    },
+                    {
+                        id: `${fwId}-child2`,
+                        statement: 'Child 2',
+                        code: 'C2',
+                        type: 'skill',
+                        status: 'active',
+                        children: [
+                            {
+                                id: `${fwId}-grandchild`,
+                                statement: 'Grandchild',
+                                code: 'GC1',
+                                type: 'skill',
+                                status: 'active',
+                            },
+                        ],
+                    },
+                ],
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Count direct children only
+        const result = await a.invoke.countSkills({
+            frameworkId: fwId,
+            skillId: `${fwId}-parent`,
+            recursive: false,
+        });
+        expect(result.count).toBe(2); // child1 and child2
+    });
+
+    test('can count all descendants recursively', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create hierarchical structure
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-parent`,
+                statement: 'Parent',
+                code: 'P1',
+                type: 'container',
+                status: 'active',
+                children: [
+                    {
+                        id: `${fwId}-child1`,
+                        statement: 'Child 1',
+                        code: 'C1',
+                        type: 'skill',
+                        status: 'active',
+                    },
+                    {
+                        id: `${fwId}-child2`,
+                        statement: 'Child 2',
+                        code: 'C2',
+                        type: 'skill',
+                        status: 'active',
+                        children: [
+                            {
+                                id: `${fwId}-grandchild1`,
+                                statement: 'Grandchild 1',
+                                code: 'GC1',
+                                type: 'skill',
+                                status: 'active',
+                            },
+                            {
+                                id: `${fwId}-grandchild2`,
+                                statement: 'Grandchild 2',
+                                code: 'GC2',
+                                type: 'skill',
+                                status: 'active',
+                            },
+                        ],
+                    },
+                ],
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Count all descendants recursively
+        const result = await a.invoke.countSkills({
+            frameworkId: fwId,
+            skillId: `${fwId}-parent`,
+            recursive: true,
+        });
+        expect(result.count).toBe(4); // child1, child2, grandchild1, grandchild2
+    });
+
+    test('countSkills enforces authorization', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create framework as user A
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'Skill 1',
+                code: 'S1',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // User B should not be able to count skills
+        await expect(
+            b.invoke.countSkills({
+                frameworkId: fwId,
+            })
+        ).rejects.toBeDefined();
+    });
 });

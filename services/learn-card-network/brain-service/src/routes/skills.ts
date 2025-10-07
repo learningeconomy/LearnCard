@@ -5,7 +5,7 @@ import { t, profileRoute } from '@routes';
 import { getSkillsProvider } from '@services/skills-provider';
 import { doesProfileManageFramework, getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
-import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged, searchSkillsInFramework } from '@accesslayer/skill/read';
+import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged, searchSkillsInFramework, countSkillsInFramework } from '@accesslayer/skill/read';
 import { createSkill } from '@accesslayer/skill/create';
 import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import { listTagsForSkill, addTagToSkill, removeTagFromSkill } from '@accesslayer/skill/tags';
@@ -22,6 +22,8 @@ import {
     DeleteSkillInputValidator,
     CreateSkillsBatchInputValidator,
     FrameworkWithSkillsValidator,
+    CountSkillsInputValidator,
+    CountSkillsResultValidator,
 } from '@learncard/types';
 import {
     buildLocalSkillTreePage,
@@ -555,6 +557,38 @@ export const skillsRouter = t.router({
                 });
 
             return removeTagFromSkill(input.id, input.slug);
+        }),
+
+    countSkills: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/skills/frameworks/{frameworkId}/count',
+                tags: ['Skills'],
+                summary: 'Count skills in a framework',
+                description:
+                    'Counts skills in a framework. If skillId is provided, counts children of that skill. If recursive is true, counts all descendants. Requires managing the framework.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(CountSkillsInputValidator)
+        .output(CountSkillsResultValidator)
+        .query(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const { frameworkId, skillId, recursive } = input;
+
+            const manages = await doesProfileManageFramework(profileId, frameworkId);
+            if (!manages) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not manage this framework',
+                });
+            }
+
+            const count = await countSkillsInFramework(frameworkId, skillId, recursive);
+
+            return { count };
         }),
 });
 
