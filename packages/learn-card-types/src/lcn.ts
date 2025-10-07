@@ -1234,6 +1234,27 @@ export const CreateSkillsBatchInputValidator = z.object({
 
 export type CreateSkillsBatchInput = z.infer<typeof CreateSkillsBatchInputValidator>;
 
+export const ReplaceSkillFrameworkSkillsInputValidator = z.object({
+    frameworkId: z.string(),
+    skills: z.array(SkillTreeNodeInputValidator).min(0),
+});
+
+export type ReplaceSkillFrameworkSkillsInput = z.infer<
+    typeof ReplaceSkillFrameworkSkillsInputValidator
+>;
+
+export const ReplaceSkillFrameworkSkillsResultValidator = z.object({
+    created: z.number().int().min(0),
+    updated: z.number().int().min(0),
+    deleted: z.number().int().min(0),
+    unchanged: z.number().int().min(0),
+    total: z.number().int().min(0),
+});
+
+export type ReplaceSkillFrameworkSkillsResult = z.infer<
+    typeof ReplaceSkillFrameworkSkillsResultValidator
+>;
+
 // Composite return shapes
 export const FrameworkWithSkillsValidator = z.object({
     framework: SkillFrameworkValidator,

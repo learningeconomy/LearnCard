@@ -14,6 +14,8 @@ import {
     SkillFrameworkAdminInputValidator,
     SkillFrameworkIdInputValidator,
     SkillFrameworkAdminsValidator,
+    ReplaceSkillFrameworkSkillsInputValidator,
+    ReplaceSkillFrameworkSkillsResultValidator,
 } from '@learncard/types';
 import {
     upsertSkillFrameworkFromProvider,
@@ -32,10 +34,12 @@ import {
 import { getSkillsProvider } from '@services/skills-provider';
 import { PaginatedSkillTreeValidator } from 'types/skill-tree';
 import { createSkill } from '@accesslayer/skill/create';
-import { createSkillTree, type SkillTreeInput } from './skill-inputs';
+import { createSkillTree, type SkillTreeInput, toCreateSkillInput } from './skill-inputs';
 import { isProfileBoostAdmin } from '@accesslayer/boost/relationships/read';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { neogma } from '@instance';
+import { getSkillsByFramework } from '@accesslayer/skill/read';
+import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import {
     listFrameworkManagers,
     addFrameworkManager,
@@ -437,6 +441,189 @@ export const skillFrameworksRouter = t.router({
             return {
                 framework: formatFramework(localFramework),
                 skills,
+            };
+        }),
+
+    replaceSkills: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/frameworks/{frameworkId}/replace',
+                tags: ['Skills'],
+                summary: 'Replace all skills in a framework',
+                description:
+                    'Replaces the entire skill tree of a framework. Skills with matching IDs are updated if changed, skills not in the input are deleted, and new skills are created. Returns statistics about changes made.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(ReplaceSkillFrameworkSkillsInputValidator)
+        .output(ReplaceSkillFrameworkSkillsResultValidator)
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const profileId = profile.profileId;
+            const { frameworkId, skills: newSkills } = input;
+
+            const manages = await doesProfileManageFramework(profileId, frameworkId);
+            if (!manages) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not manage this framework',
+                });
+            }
+
+            const provider = getSkillsProvider();
+
+            // Get all existing skills in the framework
+            const existingSkills = await getSkillsByFramework(frameworkId);
+            const existingSkillsMap = new Map(existingSkills.map(s => [s.id, s]));
+
+            // Flatten the new skill tree to get all skill IDs with their parent relationships
+            const flattenedNew: Array<{
+                skill: SkillTreeInput;
+                parentId?: string;
+            }> = [];
+
+            const flattenTree = (nodes: SkillTreeInput[], parentId?: string) => {
+                for (const node of nodes) {
+                    flattenedNew.push({ skill: node, parentId });
+                    if (node.children && node.children.length > 0) {
+                        flattenTree(node.children, node.id);
+                    }
+                }
+            };
+            flattenTree(newSkills);
+
+            // Convert to map for easy lookup
+            const newSkillsMap = new Map(
+                flattenedNew.map(({ skill }) => {
+                    const input = toCreateSkillInput(skill);
+                    return [input.id!, skill];
+                })
+            );
+
+            let created = 0;
+            let updated = 0;
+            let deleted = 0;
+            let unchanged = 0;
+
+            // Delete skills that are no longer in the new input
+            const skillsToDelete = existingSkills.filter(
+                existing => !newSkillsMap.has(existing.id)
+            );
+            for (const skill of skillsToDelete) {
+                await deleteSkill(frameworkId, skill.id);
+                await provider.deleteSkill?.(frameworkId, skill.id);
+                deleted++;
+            }
+
+            // Process skills in order (parents before children)
+            // This ensures parent relationships can be established correctly
+            for (const { skill, parentId } of flattenedNew) {
+                const input = toCreateSkillInput(skill);
+                const skillId = input.id!;
+
+                const existing = existingSkillsMap.get(skillId);
+
+                if (existing) {
+                    // Check if the skill properties changed
+                    const hasPropertyChanges =
+                        existing.statement !== input.statement ||
+                        existing.description !== input.description ||
+                        existing.code !== input.code ||
+                        existing.type !== input.type ||
+                        existing.status !== input.status;
+
+                    // Check if parent relationship changed
+                    const hasParentChange = existing.parentId !== parentId;
+
+                    if (hasPropertyChanges) {
+                        await updateSkill(frameworkId, skillId, {
+                            statement: input.statement,
+                            description: input.description,
+                            code: input.code,
+                            type: input.type,
+                            status: input.status,
+                        });
+
+                        await provider.updateSkill?.(frameworkId, skillId, {
+                            statement: input.statement,
+                            description: input.description,
+                            code: input.code,
+                            type: input.type,
+                            status: input.status,
+                        });
+                    }
+
+                    // Update parent relationship if it changed
+                    if (hasParentChange) {
+                        // Remove old parent relationship
+                        await neogma.queryRunner.run(
+                            `MATCH (s:Skill {id: $skillId})-[r:IS_CHILD_OF]->(:Skill)
+                             DELETE r`,
+                            { skillId }
+                        );
+
+                        // Add new parent relationship if parentId is provided
+                        if (parentId) {
+                            const parentCheck = await neogma.queryRunner.run(
+                                `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(p:Skill {id: $parentId})
+                                 RETURN p.id AS id`,
+                                { frameworkId, parentId }
+                            );
+
+                            if (parentCheck.records.length === 0) {
+                                throw new TRPCError({
+                                    code: 'BAD_REQUEST',
+                                    message: `Parent skill ${parentId} not found in framework`,
+                                });
+                            }
+
+                            await neogma.queryRunner.run(
+                                `MATCH (s:Skill {id: $skillId}), (p:Skill {id: $parentId})
+                                 MERGE (s)-[:IS_CHILD_OF]->(p)`,
+                                { skillId, parentId }
+                            );
+                        }
+
+                        // Update provider if parent changed
+                        await provider.updateSkill?.(frameworkId, skillId, {
+                            parentId: parentId ?? null,
+                        });
+                    }
+
+                    // Count as updated only if properties changed (not parent relationship)
+                    if (hasPropertyChanges) {
+                        updated++;
+                    } else {
+                        unchanged++;
+                    }
+                } else {
+                    // Create new skill
+                    const createdSkill = await createSkill(frameworkId, input, parentId);
+
+                    await provider.createSkill?.(frameworkId, {
+                        id: createdSkill.id,
+                        statement: createdSkill.statement,
+                        description: createdSkill.description ?? undefined,
+                        code: createdSkill.code ?? undefined,
+                        type: createdSkill.type ?? 'skill',
+                        status: createdSkill.status ?? 'active',
+                        parentId: parentId ?? null,
+                    });
+
+                    created++;
+                }
+            }
+
+            const total = created + updated + deleted + unchanged;
+
+            return {
+                created,
+                updated,
+                deleted,
+                unchanged,
+                total,
             };
         }),
 });

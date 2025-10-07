@@ -708,4 +708,251 @@ describe('Skills & Frameworks E2E', () => {
             [`${parentFwId}-parent-skill`, `${childFwId}-child-skill`].sort()
         );
     });
+
+    test('can replace entire skill tree in a framework with stats', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create initial framework with some skills
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'Skill 1',
+                description: 'Original description 1',
+                code: 'S1',
+                type: 'skill',
+                status: 'active',
+            },
+            {
+                id: `${fwId}-skill2`,
+                statement: 'Skill 2',
+                description: 'Original description 2',
+                code: 'S2',
+                type: 'skill',
+                status: 'active',
+            },
+            {
+                id: `${fwId}-skill3`,
+                statement: 'Skill 3',
+                description: 'Original description 3',
+                code: 'S3',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Verify initial skills exist
+        const initial = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const initialFlattened = flattenSkillTree(initial.skills as any);
+        expect(initialFlattened.length).toBe(3);
+
+        // Replace skills: keep skill1 unchanged, update skill2, delete skill3, add skill4
+        const result = await a.invoke.replaceSkillFrameworkSkills({
+            frameworkId: fwId,
+            skills: [
+                {
+                    id: `${fwId}-skill1`,
+                    statement: 'Skill 1',
+                    description: 'Original description 1',
+                    code: 'S1',
+                    type: 'skill',
+                    status: 'active',
+                },
+                {
+                    id: `${fwId}-skill2`,
+                    statement: 'Skill 2 Updated',
+                    description: 'Updated description 2',
+                    code: 'S2',
+                    type: 'skill',
+                    status: 'active',
+                },
+                {
+                    id: `${fwId}-skill4`,
+                    statement: 'Skill 4',
+                    description: 'New skill 4',
+                    code: 'S4',
+                    type: 'skill',
+                    status: 'active',
+                },
+            ],
+        });
+
+        // Verify stats
+        expect(result.created).toBe(1); // skill4
+        expect(result.updated).toBe(1); // skill2
+        expect(result.deleted).toBe(1); // skill3
+        expect(result.unchanged).toBe(1); // skill1
+        expect(result.total).toBe(4);
+
+        // Verify final state
+        const final = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const finalFlattened = flattenSkillTree(final.skills as any);
+        expect(finalFlattened.length).toBe(3);
+        expect(finalFlattened.map(s => s.id).sort()).toEqual(
+            [`${fwId}-skill1`, `${fwId}-skill2`, `${fwId}-skill4`].sort()
+        );
+
+        // Verify skill2 was updated
+        const skill2 = finalFlattened.find(s => s.id === `${fwId}-skill2`);
+        expect(skill2?.statement).toBe('Skill 2 Updated');
+        expect(skill2?.description).toBe('Updated description 2');
+
+        // Verify skill3 was deleted
+        expect(finalFlattened.find(s => s.id === `${fwId}-skill3`)).toBeUndefined();
+
+        // Verify skill4 was created
+        const skill4 = finalFlattened.find(s => s.id === `${fwId}-skill4`);
+        expect(skill4).toBeDefined();
+        expect(skill4?.statement).toBe('Skill 4');
+    });
+
+    test('can replace skill tree with hierarchical structure', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create initial flat structure
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-parent`,
+                statement: 'Parent Skill',
+                code: 'P1',
+                type: 'container',
+                status: 'active',
+            },
+            {
+                id: `${fwId}-child`,
+                statement: 'Child Skill',
+                code: 'C1',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Replace with hierarchical structure
+        const result = await a.invoke.replaceSkillFrameworkSkills({
+            frameworkId: fwId,
+            skills: [
+                {
+                    id: `${fwId}-parent`,
+                    statement: 'Parent Skill',
+                    code: 'P1',
+                    type: 'container',
+                    status: 'active',
+                    children: [
+                        {
+                            id: `${fwId}-child`,
+                            statement: 'Child Skill',
+                            code: 'C1',
+                            type: 'skill',
+                            status: 'active',
+                        },
+                        {
+                            id: `${fwId}-child2`,
+                            statement: 'Child Skill 2',
+                            code: 'C2',
+                            type: 'skill',
+                            status: 'active',
+                        },
+                    ],
+                },
+            ],
+        });
+
+        expect(result.unchanged).toBe(2); // parent and child
+        expect(result.created).toBe(1); // child2
+        expect(result.deleted).toBe(0);
+
+        // Verify hierarchy
+        const final = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const finalFlattened = flattenSkillTree(final.skills as any);
+        expect(finalFlattened.length).toBe(3);
+
+        const child = finalFlattened.find(s => s.id === `${fwId}-child`);
+        expect(child?.parentRef).toBe(`${fwId}-parent`);
+
+        const child2 = finalFlattened.find(s => s.id === `${fwId}-child2`);
+        expect(child2?.parentRef).toBe(`${fwId}-parent`);
+    });
+
+    test('can replace all skills with empty array', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create framework with skills
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'Skill 1',
+                code: 'S1',
+                type: 'skill',
+                status: 'active',
+            },
+            {
+                id: `${fwId}-skill2`,
+                statement: 'Skill 2',
+                code: 'S2',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Replace with empty array
+        const result = await a.invoke.replaceSkillFrameworkSkills({
+            frameworkId: fwId,
+            skills: [],
+        });
+
+        expect(result.created).toBe(0);
+        expect(result.updated).toBe(0);
+        expect(result.deleted).toBe(2);
+        expect(result.unchanged).toBe(0);
+        expect(result.total).toBe(2);
+
+        // Verify no skills remain
+        const final = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const finalFlattened = flattenSkillTree(final.skills as any);
+        expect(finalFlattened.length).toBe(0);
+    });
+
+    test('replaceSkillFrameworkSkills enforces authorization', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create framework as user A
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'Skill 1',
+                code: 'S1',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // User B should not be able to replace skills
+        await expect(
+            b.invoke.replaceSkillFrameworkSkills({
+                frameworkId: fwId,
+                skills: [
+                    {
+                        id: `${fwId}-skill2`,
+                        statement: 'Skill 2',
+                        code: 'S2',
+                        type: 'skill',
+                        status: 'active',
+                    },
+                ],
+            })
+        ).rejects.toBeDefined();
+
+        // Verify original skills unchanged
+        const final = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const finalFlattened = flattenSkillTree(final.skills as any);
+        expect(finalFlattened.length).toBe(1);
+        expect(finalFlattened[0]?.id).toBe(`${fwId}-skill1`);
+    });
 });

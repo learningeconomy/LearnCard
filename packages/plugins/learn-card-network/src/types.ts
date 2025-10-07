@@ -68,6 +68,8 @@ import {
     CreateSkillsBatchInput,
     UpdateSkillInput,
     DeleteSkillInput,
+    ReplaceSkillFrameworkSkillsInput,
+    ReplaceSkillFrameworkSkillsResult,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -508,6 +510,9 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ records: SkillType[]; hasMore: boolean; cursor: string | null }>;
     updateSkillFramework: (input: UpdateSkillFrameworkInput) => Promise<SkillFrameworkType>;
     deleteSkillFramework: (id: string) => Promise<{ success: boolean }>;
+    replaceSkillFrameworkSkills: (
+        input: ReplaceSkillFrameworkSkillsInput
+    ) => Promise<ReplaceSkillFrameworkSkillsResult>;
     getSkillFrameworkAdmins: (frameworkId: string) => Promise<LCNProfile[]>;
     addSkillFrameworkAdmin: (
         frameworkId: string,

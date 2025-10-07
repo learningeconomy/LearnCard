@@ -1295,6 +1295,10 @@ export async function getLearnCardNetworkPlugin(
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.delete.mutate({ id });
             },
+            replaceSkillFrameworkSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.replaceSkills.mutate(input);
+            },
             getSkillFrameworkAdmins: async (_learnCard, frameworkId) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.listFrameworkAdmins.query({ frameworkId });
