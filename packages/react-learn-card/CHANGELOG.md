@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.52
+
+### Patch Changes
+
+-   [#834](https://github.com/learningeconomy/LearnCard/pull/834) [`56e2abeb9038f5f40b402691492973f32b44ca5e`](https://github.com/learningeconomy/LearnCard/commit/56e2abeb9038f5f40b402691492973f32b44ca5e) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1400] Fix long title for merit badge from running off screen
+
 ## 2.8.51
 
 ### Patch Changes
