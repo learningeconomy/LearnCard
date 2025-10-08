@@ -140,7 +140,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             <div
                 className={`flex flex-col gap-[15px] items-center px-[20px] pt-[92px] pb-[19px] border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
-                <div className="flex flex-col gap-[5px]">
+                <div className="flex flex-col gap-[5px] w-full">
                     <div className="flex flex-col items-center text-grayscale-900">
                         <span className="text-[16px] leading-[150%] font-jacques">
                             {issueeName || <Line width="60" />}
@@ -150,7 +150,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </span>
                     </div>
                     <div className="flex flex-col items-center">
-                        <h1 className="text-grayscale-900 text-center text-[25px] font-jacques">
+                        <h1 className="text-grayscale-900 text-center text-[25px] font-jacques w-full">
                             {title}
                         </h1>
                         <div
