@@ -118,6 +118,7 @@ export const VC_TEMPLATES: {
             display,
             familyTitles,
             skills,
+            alignments,
             groupID = '',
         } = {},
         crypto
@@ -146,6 +147,7 @@ export const VC_TEMPLATES: {
                 criteria: {
                     narrative: achievementNarrative,
                 },
+                ...(alignments && alignments.length ? { alignments } : {}),
             },
         },
         display,
@@ -172,6 +174,7 @@ export const VC_TEMPLATES: {
             address,
             attachments,
             skills,
+            alignments,
             display,
             familyTitles,
             boostID,
@@ -204,6 +207,7 @@ export const VC_TEMPLATES: {
                 criteria: {
                     narrative: achievementNarrative,
                 },
+                ...(alignments && alignments.length ? { alignments } : {}),
             },
         },
         ...(address
