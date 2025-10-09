@@ -1121,4 +1121,113 @@ describe('Skills & Frameworks E2E', () => {
             })
         ).rejects.toBeDefined();
     });
+
+    test('can get full skill tree with complete hierarchy', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create complex hierarchical structure
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-root1`,
+                statement: 'Root 1',
+                code: 'R1',
+                type: 'container',
+                status: 'active',
+                children: [
+                    {
+                        id: `${fwId}-r1-child1`,
+                        statement: 'Root 1 Child 1',
+                        code: 'R1C1',
+                        type: 'skill',
+                        status: 'active',
+                    },
+                    {
+                        id: `${fwId}-r1-child2`,
+                        statement: 'Root 1 Child 2',
+                        code: 'R1C2',
+                        type: 'container',
+                        status: 'active',
+                        children: [
+                            {
+                                id: `${fwId}-r1-c2-grandchild1`,
+                                statement: 'Root 1 Child 2 Grandchild 1',
+                                code: 'R1C2G1',
+                                type: 'skill',
+                                status: 'active',
+                            },
+                            {
+                                id: `${fwId}-r1-c2-grandchild2`,
+                                statement: 'Root 1 Child 2 Grandchild 2',
+                                code: 'R1C2G2',
+                                type: 'skill',
+                                status: 'active',
+                            },
+                        ],
+                    },
+                ],
+            },
+            {
+                id: `${fwId}-root2`,
+                statement: 'Root 2',
+                code: 'R2',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Get full tree
+        const result = await a.invoke.getFullSkillTree({ frameworkId: fwId });
+
+        // Verify structure
+        expect(result.skills.length).toBe(2); // 2 roots
+
+        const root1 = result.skills.find(s => s.id === `${fwId}-root1`);
+        expect(root1).toBeDefined();
+        expect(root1!.children.length).toBe(2);
+
+        const r1c2 = root1!.children.find(c => c.id === `${fwId}-r1-child2`);
+        expect(r1c2).toBeDefined();
+        expect(r1c2!.children.length).toBe(2);
+        expect(r1c2!.children[0]!.id).toBe(`${fwId}-r1-c2-grandchild1`);
+        expect(r1c2!.children[1]!.id).toBe(`${fwId}-r1-c2-grandchild2`);
+
+        const root2 = result.skills.find(s => s.id === `${fwId}-root2`);
+        expect(root2).toBeDefined();
+        expect(root2!.children.length).toBe(0);
+    });
+
+    test('getFullSkillTree returns empty array for framework with no skills', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        await createFrameworkWithSkills(a, fwId, []);
+        await linkFrameworkForUser(a, fwId);
+
+        const result = await a.invoke.getFullSkillTree({ frameworkId: fwId });
+        expect(result.skills).toEqual([]);
+    });
+
+    test('getFullSkillTree enforces authorization', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'Skill 1',
+                code: 'S1',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // User B should not be able to get full tree
+        await expect(
+            b.invoke.getFullSkillTree({
+                frameworkId: fwId,
+            })
+        ).rejects.toBeDefined();
+    });
 });

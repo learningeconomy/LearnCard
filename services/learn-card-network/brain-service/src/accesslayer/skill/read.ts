@@ -234,6 +234,34 @@ export const countSkillsInFramework = async (
 };
 
 /**
+ * Build the full skill tree for a framework (all skills, fully nested).
+ * This recursively fetches all skills and builds the complete hierarchical structure.
+ * Warning: This can be a heavy query for large frameworks.
+ */
+export const getFullSkillTree = async (frameworkId: string): Promise<FlatSkillType[]> => {
+    // Get all skills with their parent relationships
+    const result = await neogma.queryRunner.run(
+        `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+         OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
+         RETURN s AS skill, parent.id AS parentId
+         ORDER BY s.id`,
+        { frameworkId }
+    );
+
+    const allSkills = result.records.map(r => {
+        const props = ((r.get('skill') as any)?.properties ?? {}) as Record<string, any>;
+        const parentId = r.get('parentId') as string | null;
+        return {
+            ...props,
+            type: props.type ?? 'skill',
+            ...(parentId ? { parentId } : {}),
+        } as FlatSkillType;
+    });
+
+    return allSkills;
+};
+
+/**
  * Get skills by their IDs (unpaginated).
  * Used by the skills provider to fetch specific skills.
  */

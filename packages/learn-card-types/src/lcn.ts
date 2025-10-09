@@ -1269,6 +1269,18 @@ export const CountSkillsResultValidator = z.object({
 
 export type CountSkillsResult = z.infer<typeof CountSkillsResultValidator>;
 
+export const GetFullSkillTreeInputValidator = z.object({
+    frameworkId: z.string(),
+});
+
+export type GetFullSkillTreeInput = z.infer<typeof GetFullSkillTreeInputValidator>;
+
+export const GetFullSkillTreeResultValidator = z.object({
+    skills: z.array(SkillTreeNodeValidator),
+});
+
+export type GetFullSkillTreeResult = z.infer<typeof GetFullSkillTreeResultValidator>;
+
 // Composite return shapes
 export const FrameworkWithSkillsValidator = z.object({
     framework: SkillFrameworkValidator,

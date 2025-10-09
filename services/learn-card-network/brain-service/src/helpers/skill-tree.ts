@@ -156,3 +156,42 @@ export function buildProviderSkillTreePage(
         records,
     };
 }
+
+/**
+ * Build a complete skill tree (all skills, fully nested recursively).
+ * Warning: This can be expensive for large frameworks.
+ */
+export function buildFullSkillTree(
+    frameworkId: string,
+    skills: (FlatSkillType | ProviderSkillNode)[]
+): SkillTreeNode[] {
+    const byParent = new Map<string | null | undefined, (FlatSkillType | ProviderSkillNode)[]>();
+
+    for (const skill of skills) {
+        const parentId = (skill as any).parentId ?? null;
+        const list = byParent.get(parentId);
+        if (list) list.push(skill);
+        else byParent.set(parentId, [skill]);
+    }
+
+    const sortById = (nodes: (FlatSkillType | ProviderSkillNode)[]) =>
+        nodes.sort((a, b) => (a.id === b.id ? 0 : a.id < b.id ? -1 : 1));
+
+    const buildNode = (skill: FlatSkillType | ProviderSkillNode): SkillTreeNode => {
+        const childrenAll = byParent.get(skill.id) ? [...byParent.get(skill.id)!] : [];
+        sortById(childrenAll);
+
+        const children = childrenAll.map(child => buildNode(child));
+
+        return {
+            ...baseFromSkill(skill, frameworkId),
+            children,
+            hasChildren: children.length > 0,
+            childrenCursor: null,
+        } as SkillTreeNode;
+    };
+
+    const roots = sortById([...(byParent.get(null) ?? []), ...(byParent.get(undefined) ?? [])]);
+
+    return roots.map(root => buildNode(root));
+}

@@ -5,7 +5,7 @@ import { t, profileRoute } from '@routes';
 import { getSkillsProvider } from '@services/skills-provider';
 import { doesProfileManageFramework, getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
-import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged, searchSkillsInFramework, countSkillsInFramework } from '@accesslayer/skill/read';
+import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged, searchSkillsInFramework, countSkillsInFramework, getFullSkillTree } from '@accesslayer/skill/read';
 import { createSkill } from '@accesslayer/skill/create';
 import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import { listTagsForSkill, addTagToSkill, removeTagFromSkill } from '@accesslayer/skill/tags';
@@ -24,9 +24,12 @@ import {
     FrameworkWithSkillsValidator,
     CountSkillsInputValidator,
     CountSkillsResultValidator,
+    GetFullSkillTreeInputValidator,
+    GetFullSkillTreeResultValidator,
 } from '@learncard/types';
 import {
     buildLocalSkillTreePage,
+    buildFullSkillTree,
     DEFAULT_CHILDREN_LIMIT,
     DEFAULT_ROOTS_LIMIT,
     formatFramework,
@@ -589,6 +592,39 @@ export const skillsRouter = t.router({
             const count = await countSkillsInFramework(frameworkId, skillId, recursive);
 
             return { count };
+        }),
+
+    getFullSkillTree: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/skills/frameworks/{frameworkId}/tree/full',
+                tags: ['Skills'],
+                summary: 'Get complete skill tree for a framework',
+                description:
+                    'Returns all skills in the framework as a fully nested recursive tree structure. Warning: This can be a heavy query for large frameworks. Requires managing the framework.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(GetFullSkillTreeInputValidator)
+        .output(GetFullSkillTreeResultValidator)
+        .query(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const { frameworkId } = input;
+
+            const manages = await doesProfileManageFramework(profileId, frameworkId);
+            if (!manages) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not manage this framework',
+                });
+            }
+
+            const flatSkills = await getFullSkillTree(frameworkId);
+            const skills = buildFullSkillTree(frameworkId, flatSkills);
+
+            return { skills };
         }),
 });
 
