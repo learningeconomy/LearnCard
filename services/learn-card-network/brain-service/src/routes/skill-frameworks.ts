@@ -531,6 +531,7 @@ export const skillFrameworksRouter = t.router({
                         existing.statement !== input.statement ||
                         existing.description !== input.description ||
                         existing.code !== input.code ||
+                        existing.icon !== input.icon ||
                         existing.type !== input.type ||
                         existing.status !== input.status;
 
@@ -542,6 +543,7 @@ export const skillFrameworksRouter = t.router({
                             statement: input.statement,
                             description: input.description,
                             code: input.code,
+                            icon: input.icon,
                             type: input.type,
                             status: input.status,
                         });
@@ -550,6 +552,7 @@ export const skillFrameworksRouter = t.router({
                             statement: input.statement,
                             description: input.description,
                             code: input.code,
+                            icon: input.icon,
                             type: input.type,
                             status: input.status,
                         });
@@ -607,6 +610,7 @@ export const skillFrameworksRouter = t.router({
                         statement: createdSkill.statement,
                         description: createdSkill.description ?? undefined,
                         code: createdSkill.code ?? undefined,
+                        icon: createdSkill.icon ?? undefined,
                         type: createdSkill.type ?? 'skill',
                         status: createdSkill.status ?? 'active',
                         parentId: parentId ?? null,
@@ -707,6 +711,7 @@ const seedFrameworkSkills = async (
                 statement: created.statement,
                 description: created.description ?? undefined,
                 code: created.code ?? undefined,
+                icon: created.icon ?? undefined,
                 type: created.type ?? 'skill',
                 status: created.status ?? 'active',
                 parentId: parentId ?? null,

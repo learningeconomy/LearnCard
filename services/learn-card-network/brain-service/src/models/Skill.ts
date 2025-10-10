@@ -16,6 +16,7 @@ export const Skill = ModelFactory<FlatSkillType, SkillRelationships>(
             statement: { type: 'string', required: true },
             description: { type: 'string', required: false },
             code: { type: 'string', required: false },
+            icon: { type: 'string', required: false },
             type: { type: 'string', required: false },
             status: { type: 'string', required: false },
             frameworkId: { type: 'string', required: false },

@@ -18,6 +18,7 @@ export const createSkill = async (
         statement: input.statement,
         description: input.description,
         code: input.code,
+        icon: input.icon,
         type: input.type ?? 'skill',
         status: input.status ?? 'active',
         frameworkId,

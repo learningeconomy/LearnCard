@@ -15,6 +15,7 @@ const mapRecordToSkill = (record: any): FlatSkillType => {
         statement: rawProps.statement,
         description: rawProps.description ?? undefined,
         code: rawProps.code ?? undefined,
+        icon: rawProps.icon ?? undefined,
         type: rawProps.type ?? 'skill',
         status: rawProps.status ?? 'active',
         parentId: rawProps.parentId ?? undefined,
@@ -56,6 +57,7 @@ export const updateSkill = async (
     if (input.statement !== undefined) updates.statement = input.statement;
     if (input.description !== undefined) updates.description = input.description;
     if (input.code !== undefined) updates.code = input.code;
+    if (input.icon !== undefined) updates.icon = input.icon;
     if (input.type !== undefined) updates.type = input.type;
     if (input.status !== undefined) updates.status = input.status;
 

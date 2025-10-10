@@ -25,6 +25,7 @@ export type ProviderSkillNode = {
     statement: string;
     description?: string | null;
     code?: string | null;
+    icon?: string | null;
     type?: string | null;
     status?: string | null;
     parentId?: string | null;
@@ -43,8 +44,9 @@ const baseFromSkill = (
     statement: skill.statement,
     description: skill.description ?? undefined,
     code: skill.code ?? undefined,
-    type: normalizeType((skill as any).type),
-    status: normalizeStatus((skill as any).status),
+    icon: skill.icon ?? undefined,
+    type: normalizeType(skill.type),
+    status: normalizeStatus(skill.status),
     frameworkId,
     childrenCursor: null,
 });

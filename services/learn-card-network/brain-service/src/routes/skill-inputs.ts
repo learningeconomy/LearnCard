@@ -13,6 +13,7 @@ export interface SkillTreeInput {
     statement: string;
     description?: string;
     code?: string;
+    icon?: string;
     type?: string;
     status?: 'active' | 'archived';
     children?: SkillTreeInput[];
@@ -24,6 +25,7 @@ const RawSkillTreeNodeInputValidator: z.ZodType<SkillTreeInput> = z.lazy(() =>
         statement: z.string(),
         description: z.string().optional(),
         code: z.string().optional(),
+        icon: z.string().optional(),
         type: z.string().optional(),
         status: SkillStatusEnum.optional(),
         children: z.array(SkillTreeNodeInputValidator).optional(),
@@ -44,6 +46,7 @@ export const toCreateSkillInput = (skill: SkillTreeInput): AccessLayerCreateSkil
     statement: skill.statement,
     description: skill.description,
     code: skill.code,
+    icon: skill.icon,
     type: skill.type ?? 'skill',
     status: normalizeSkillStatus(skill.status),
 });

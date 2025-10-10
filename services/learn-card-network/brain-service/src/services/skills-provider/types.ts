@@ -27,6 +27,7 @@ export type Skill = {
     statement: string;
     description?: string;
     code?: string;
+    icon?: string;
     type?: string;
     status?: string;
     parentId?: string | null;

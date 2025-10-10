@@ -13,6 +13,7 @@ type SkillInputNode = {
     statement: string;
     description?: string;
     code?: string;
+    icon?: string;
     type?: string;
     status?: string;
     children?: SkillInputNode[];
@@ -79,6 +80,7 @@ const sanitizeSkillNode = (skill: any): any => ({
     statement: skill.statement,
     description: skill.description,
     code: skill.code,
+    icon: skill.icon,
     type: skill.type,
     status: skill.status === 'archived' ? 'archived' : 'active',
     children: (skill.children ?? []).map((child: any) => sanitizeSkillNode(child)),
@@ -1229,5 +1231,261 @@ describe('Skills & Frameworks E2E', () => {
                 frameworkId: fwId,
             })
         ).rejects.toBeDefined();
+    });
+
+    test('can create skills with icons', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create framework with skills that have icons
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'Problem Solving',
+                code: 'PS1',
+                icon: '🧩',
+                type: 'skill',
+                status: 'active',
+            },
+            {
+                id: `${fwId}-skill2`,
+                statement: 'Critical Thinking',
+                code: 'CT1',
+                icon: '🤔',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Verify icons are stored
+        const result = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const flatSkills = flattenSkillTree(result.skills as any);
+
+        const skill1 = flatSkills.find(s => s.id === `${fwId}-skill1`);
+        const skill2 = flatSkills.find(s => s.id === `${fwId}-skill2`);
+
+        expect(skill1?.icon).toBe('🧩');
+        expect(skill2?.icon).toBe('🤔');
+    });
+
+    test('can update skill icons', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create framework with a skill without an icon
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'Teamwork',
+                code: 'TW1',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Update to add an icon
+        await a.invoke.updateSkill({
+            frameworkId: fwId,
+            id: `${fwId}-skill1`,
+            icon: '🤝',
+        });
+
+        // Verify icon was added
+        const result1 = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const flatSkills1 = flattenSkillTree(result1.skills as any);
+        expect(flatSkills1[0]?.icon).toBe('🤝');
+
+        // Update to change the icon
+        await a.invoke.updateSkill({
+            frameworkId: fwId,
+            id: `${fwId}-skill1`,
+            icon: '👥',
+        });
+
+        // Verify icon was changed
+        const result2 = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const flatSkills2 = flattenSkillTree(result2.skills as any);
+        expect(flatSkills2[0]?.icon).toBe('👥');
+    });
+
+    test('icons are preserved through replaceSkillFrameworkSkills', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create initial framework
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'Leadership',
+                code: 'L1',
+                icon: '👨‍💼',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Replace with new skills including icons
+        await a.invoke.replaceSkillFrameworkSkills({
+            frameworkId: fwId,
+            skills: [
+                {
+                    id: `${fwId}-skill1`,
+                    statement: 'Leadership',
+                    code: 'L1',
+                    icon: '👨‍💼',
+                    type: 'skill',
+                    status: 'active',
+                },
+                {
+                    id: `${fwId}-skill2`,
+                    statement: 'Communication',
+                    code: 'C1',
+                    icon: '💬',
+                    type: 'skill',
+                    status: 'active',
+                },
+            ],
+        });
+
+        // Verify icons are preserved
+        const result = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const flatSkills = flattenSkillTree(result.skills as any);
+
+        expect(flatSkills.length).toBe(2);
+        expect(flatSkills.find(s => s.id === `${fwId}-skill1`)?.icon).toBe('👨‍💼');
+        expect(flatSkills.find(s => s.id === `${fwId}-skill2`)?.icon).toBe('💬');
+    });
+
+    test('icons work with nested skill hierarchies', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create hierarchical structure with icons
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-parent`,
+                statement: 'Technical Skills',
+                code: 'TECH',
+                icon: '💻',
+                type: 'container',
+                status: 'active',
+                children: [
+                    {
+                        id: `${fwId}-child1`,
+                        statement: 'Programming',
+                        code: 'PROG',
+                        icon: '👨‍💻',
+                        type: 'skill',
+                        status: 'active',
+                    },
+                    {
+                        id: `${fwId}-child2`,
+                        statement: 'Database Design',
+                        code: 'DB',
+                        icon: '🗄️',
+                        type: 'skill',
+                        status: 'active',
+                    },
+                ],
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Verify all icons are present in nested structure
+        const result = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const flatSkills = flattenSkillTree(result.skills as any);
+
+        expect(flatSkills.find(s => s.id === `${fwId}-parent`)?.icon).toBe('💻');
+        expect(flatSkills.find(s => s.id === `${fwId}-child1`)?.icon).toBe('👨‍💻');
+        expect(flatSkills.find(s => s.id === `${fwId}-child2`)?.icon).toBe('🗄️');
+    });
+
+    test('icons appear in full skill tree', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create framework with icons
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-root1`,
+                statement: 'Soft Skills',
+                code: 'SOFT',
+                icon: '🌟',
+                type: 'container',
+                status: 'active',
+                children: [
+                    {
+                        id: `${fwId}-child1`,
+                        statement: 'Empathy',
+                        code: 'EMP',
+                        icon: '❤️',
+                        type: 'skill',
+                        status: 'active',
+                    },
+                ],
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Get full tree and verify icons
+        const result = await a.invoke.getFullSkillTree({ frameworkId: fwId });
+
+        expect(result.skills[0]?.icon).toBe('🌟');
+        expect(result.skills[0]?.children[0]?.icon).toBe('❤️');
+    });
+
+    test('can create skills without icons', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create skills without icons (should still work)
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'No Icon Skill',
+                code: 'NI1',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        const result = await a.invoke.syncFrameworkSkills({ id: fwId });
+        const flatSkills = flattenSkillTree(result.skills as any);
+
+        expect(flatSkills[0]?.id).toBe(`${fwId}-skill1`);
+        expect(flatSkills[0]?.icon).toBeUndefined();
+    });
+
+    test('counting skills works regardless of icons', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+
+        // Create mixed skills with and without icons
+        await createFrameworkWithSkills(a, fwId, [
+            {
+                id: `${fwId}-skill1`,
+                statement: 'With Icon',
+                code: 'WI',
+                icon: '✅',
+                type: 'skill',
+                status: 'active',
+            },
+            {
+                id: `${fwId}-skill2`,
+                statement: 'Without Icon',
+                code: 'WO',
+                type: 'skill',
+                status: 'active',
+            },
+        ]);
+
+        await linkFrameworkForUser(a, fwId);
+
+        // Count should work the same
+        const result = await a.invoke.countSkills({ frameworkId: fwId });
+        expect(result.count).toBe(2);
     });
 });

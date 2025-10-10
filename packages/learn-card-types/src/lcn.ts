@@ -1007,6 +1007,7 @@ export const SkillValidator = z.object({
     statement: z.string(),
     description: z.string().optional(),
     code: z.string().optional(),
+    icon: z.string().optional(),
     type: z.string().default('skill'),
     status: SkillStatusEnum.default('active'),
     frameworkId: z.string().optional(),
@@ -1069,6 +1070,7 @@ export interface SkillTreeInput {
     statement: string;
     description?: string;
     code?: string;
+    icon?: string;
     type?: string;
     status?: 'active' | 'archived';
     children?: SkillTreeInput[];
@@ -1081,6 +1083,7 @@ export const SkillTreeNodeInputValidator: z.ZodType<SkillTreeInput> = z
             statement: z.string(),
             description: z.string().optional(),
             code: z.string().optional(),
+            icon: z.string().optional(),
             type: z.string().optional(),
             status: SkillStatusEnum.optional(),
             children: z.array(SkillTreeNodeInputValidator).optional(),
@@ -1202,6 +1205,7 @@ export const UpdateSkillInputValidator = z
         statement: z.string().optional(),
         description: z.string().optional(),
         code: z.string().optional(),
+        icon: z.string().optional(),
         type: z.string().optional(),
         status: SkillStatusEnum.optional(),
     })
@@ -1210,6 +1214,7 @@ export const UpdateSkillInputValidator = z
             data.statement !== undefined ||
             data.description !== undefined ||
             data.code !== undefined ||
+            data.icon !== undefined ||
             data.type !== undefined ||
             data.status !== undefined,
         {

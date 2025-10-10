@@ -28,6 +28,7 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
             code: skill.code ?? undefined,
             statement: skill.statement,
             description: skill.description ?? undefined,
+            icon: skill.icon ?? undefined,
             type: skill.type ?? 'skill',
             status: skill.status,
             parentId: skill.parentId ?? undefined,
@@ -43,6 +44,7 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
             code: skill.code ?? undefined,
             statement: skill.statement,
             description: skill.description ?? undefined,
+            icon: skill.icon ?? undefined,
             type: skill.type ?? 'skill',
             status: skill.status,
             parentId: skill.parentId ?? undefined,
@@ -129,6 +131,7 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
             code: skill.code,
             statement: skill.statement,
             description: skill.description,
+            icon: skill.icon,
             type: skill.type ?? 'skill',
             status: skill.status ?? 'active',
         };
@@ -144,6 +147,7 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
             code: updates?.code ?? skill.code ?? undefined,
             statement: updates?.statement ?? skill.statement,
             description: updates?.description ?? skill.description ?? undefined,
+            icon: updates?.icon ?? skill.icon ?? undefined,
             type: updates?.type ?? skill.type ?? 'skill',
             status: updates?.status ?? skill.status,
         };

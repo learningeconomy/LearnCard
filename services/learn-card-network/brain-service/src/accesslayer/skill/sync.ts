@@ -20,6 +20,7 @@ export const upsertSkillsIntoFramework = async (
         statement: s.statement,
         description: s.description ?? null,
         code: s.code ?? null,
+        icon: s.icon ?? null,
         type: s.type ?? 'skill',
         status: s.status ?? 'active',
         parentId: s.parentId ?? null,
@@ -50,12 +51,14 @@ export const upsertSkillsIntoFramework = async (
          ON CREATE SET s.statement = sk.statement,
                        s.description = sk.description,
                        s.code = sk.code,
+                       s.icon = sk.icon,
                        s.type = sk.type,
                        s.status = sk.status,
                        s.frameworkId = $frameworkId
          ON MATCH SET  s.statement = sk.statement,
                        s.description = sk.description,
                        s.code = sk.code,
+                       s.icon = sk.icon,
                        s.type = sk.type,
                        s.status = sk.status,
                        s.frameworkId = CASE WHEN s.frameworkId IS NULL OR s.frameworkId = $frameworkId THEN $frameworkId ELSE s.frameworkId END
