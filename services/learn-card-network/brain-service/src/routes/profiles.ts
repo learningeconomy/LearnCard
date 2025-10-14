@@ -1102,6 +1102,7 @@ export const profilesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { endpoint, name, did } = input;
+            const normalizedName = name.toLowerCase();
 
             const existingSas = await getSigningAuthoritiesForUser(ctx.user.profile);
             const setAsPrimary = existingSas.length === 0;
@@ -1110,7 +1111,7 @@ export const profilesRouter = t.router({
             await createUseSigningAuthorityRelationship(
                 ctx.user.profile,
                 sa,
-                name,
+                normalizedName,
                 did,
                 setAsPrimary
             );
@@ -1153,7 +1154,12 @@ export const profilesRouter = t.router({
         .input(z.object({ endpoint: z.string(), name: z.string() }))
         .output(SigningAuthorityForUserValidator.or(z.undefined()))
         .query(async ({ ctx, input }) => {
-            return getSigningAuthorityForUserByName(ctx.user.profile, input.endpoint, input.name);
+            const normalizedName = input.name.toLowerCase();
+            return getSigningAuthorityForUserByName(
+                ctx.user.profile,
+                input.endpoint,
+                normalizedName
+            );
         }),
 
     setPrimarySigningAuthority: profileRoute
@@ -1184,8 +1190,13 @@ export const profilesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { endpoint, name } = input;
+            const normalizedName = name.toLowerCase();
 
-            const sa = await getSigningAuthorityForUserByName(ctx.user.profile, endpoint, name);
+            const sa = await getSigningAuthorityForUserByName(
+                ctx.user.profile,
+                endpoint,
+                normalizedName
+            );
 
             if (!sa) {
                 throw new TRPCError({
@@ -1194,7 +1205,7 @@ export const profilesRouter = t.router({
                 });
             }
 
-            await setPrimarySigningAuthority(ctx.user.profile, endpoint, name);
+            await setPrimarySigningAuthority(ctx.user.profile, endpoint, normalizedName);
             await deleteDidDocForProfile(ctx.user.profile.profileId);
             return true;
         }),
