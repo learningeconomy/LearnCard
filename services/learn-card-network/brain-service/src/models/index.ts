@@ -127,7 +127,7 @@ Presentation.addRelationships({
             'CREATE INDEX integration_publishablekey_idx IF NOT EXISTS FOR (i:Integration) ON (i.publishableKey)'
         ),
 
-        // Relationship property indexes - HIGH IMPACT for sorting/pagination performance
+        // Relationship property indexes
         neogma.queryRunner.run(
             'CREATE INDEX has_role_id_idx IF NOT EXISTS FOR ()-[r:HAS_ROLE]-() ON (r.roleId)'
         ),
@@ -179,6 +179,6 @@ export * from './SigningAuthority';
 export * from './ConsentFlowTerms';
 export * from './ConsentFlowContract';
 export * from './ConsentFlowTransaction';
-export * from './ContactMethod';    
+export * from './ContactMethod';
 export * from './InboxCredential';
 export * from './Integration';
