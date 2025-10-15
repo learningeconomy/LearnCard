@@ -59,7 +59,8 @@ class TestContractsConsentToContractRequest(unittest.TestCase):
                         ], ),
                 contract_uri = '',
                 expires_at = '',
-                one_time = True
+                one_time = True,
+                recipient_token = ''
             )
         else:
             return ContractsConsentToContractRequest(
