@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.6.12
+
+### Patch Changes
+
+-   [#841](https://github.com/learningeconomy/LearnCard/pull/841) [`c128a50ca1a6e544010e11009ed5a0b0404a9db5`](https://github.com/learningeconomy/LearnCard/commit/c128a50ca1a6e544010e11009ed5a0b0404a9db5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add more indices
+
 ## 3.6.11
 
 ### Patch Changes
