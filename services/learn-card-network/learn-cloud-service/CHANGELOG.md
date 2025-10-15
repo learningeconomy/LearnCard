@@ -1,5 +1,12 @@
 # @learncard/network-brain-service
 
+## 2.3.25
+
+### Patch Changes
+
+-   Updated dependencies [[`4443d7ac2a3b90da642be905767099e9e59000c8`](https://github.com/learningeconomy/LearnCard/commit/4443d7ac2a3b90da642be905767099e9e59000c8)]:
+    -   @learncard/vc-templates-plugin@1.0.68
+
 ## 2.3.24
 
 ### Patch Changes
