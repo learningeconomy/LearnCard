@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.6.13
+
+### Patch Changes
+
+-   [#839](https://github.com/learningeconomy/LearnCard/pull/839) [`065b250ea165339a6f964ad1b97a352015b28262`](https://github.com/learningeconomy/LearnCard/commit/065b250ea165339a6f964ad1b97a352015b28262) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Automatically lower case Signing Authority names
+
 ## 3.6.12
 
 ### Patch Changes
