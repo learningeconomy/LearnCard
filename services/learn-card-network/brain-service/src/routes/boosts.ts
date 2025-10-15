@@ -1629,6 +1629,10 @@ export const boostsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { boostUri, challenge = uuid(), claimLinkSA, options = {} } = input ?? {};
+            const normalizedClaimLinkSA = {
+                ...claimLinkSA,
+                name: claimLinkSA.name.toLowerCase(),
+            };
 
             const boost = await getBoostByUri(boostUri);
 
@@ -1656,7 +1660,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            await setValidClaimLinkForBoost(boostUri, challenge, claimLinkSA, options);
+            await setValidClaimLinkForBoost(boostUri, challenge, normalizedClaimLinkSA, options);
 
             return { boostUri: boostUri, challenge };
         }),
@@ -1879,6 +1883,10 @@ export const boostsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { profileId, boostUri, signingAuthority, options } = input;
+            const normalizedSigningAuthority = {
+                ...signingAuthority,
+                name: signingAuthority.name.toLowerCase(),
+            };
 
             const boost = await getBoostByUri(boostUri);
 
@@ -1938,8 +1946,8 @@ export const boostsRouter = t.router({
 
             const sa = await getSigningAuthorityForUserByName(
                 profile,
-                signingAuthority.endpoint,
-                signingAuthority.name
+                normalizedSigningAuthority.endpoint,
+                normalizedSigningAuthority.name
             );
             if (!sa) {
                 throw new TRPCError({
