@@ -34,9 +34,10 @@ class DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOf(BaseModel):
     controller: StrictStr
     public_key_jwk: Optional[DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk] = Field(default=None, alias="publicKeyJwk")
     public_key_base58: Optional[StrictStr] = Field(default=None, alias="publicKeyBase58")
+    public_key_multibase: Optional[StrictStr] = Field(default=None, alias="publicKeyMultibase")
     block_chain_account_id: Optional[StrictStr] = Field(default=None, alias="blockChainAccountId")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["@context", "id", "type", "controller", "publicKeyJwk", "publicKeyBase58", "blockChainAccountId"]
+    __properties: ClassVar[List[str]] = ["@context", "id", "type", "controller", "publicKeyJwk", "publicKeyBase58", "publicKeyMultibase", "blockChainAccountId"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -112,6 +113,7 @@ class DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOf(BaseModel):
             "controller": obj.get("controller"),
             "publicKeyJwk": DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk.from_dict(obj["publicKeyJwk"]) if obj.get("publicKeyJwk") is not None else None,
             "publicKeyBase58": obj.get("publicKeyBase58"),
+            "publicKeyMultibase": obj.get("publicKeyMultibase"),
             "blockChainAccountId": obj.get("blockChainAccountId")
         })
         # store additional fields in additional_properties
