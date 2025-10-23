@@ -38,10 +38,11 @@ export const generateGuardianApprovalToken = async (
         used: false,
     };
 
-    // Store token in cache even if expired so it can be validated as 'expired' rather than 'invalid'
-    // Use minimum TTL of 60 seconds for expired tokens to allow proper error messaging
-    const cacheTtl = ttlSeconds > 0 ? ttlSeconds : 60;
-    await cache.set(key, JSON.stringify(data), cacheTtl);
+    // If ttlSeconds <= 0, do not persist the token in cache.
+    // Validation will not find it and will treat it as invalid.
+    if (ttlSeconds > 0) {
+        await cache.set(key, JSON.stringify(data), ttlSeconds);
+    }
 
     return token;
 };
