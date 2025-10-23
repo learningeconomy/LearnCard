@@ -349,7 +349,7 @@ export const skillsRouter = t.router({
                 tags: ['Skills'],
                 summary: 'Create many skills',
                 description:
-                    'Creates multiple skills within a framework managed by the caller in a single request.',
+                    'Creates multiple skills within a framework managed by the caller in a single request. Optionally specify parentId to add all root-level skills as children of an existing skill.',
             },
             requiredScope: 'skills:write',
         })
@@ -357,7 +357,8 @@ export const skillsRouter = t.router({
         .output(SkillValidator.array())
         .mutation(async ({ ctx, input }) => {
             const profileId = ctx.user.profile.profileId;
-            const { frameworkId, skills } = input;
+            const { frameworkId, skills, parentId } = input;
+            const normalizedParentId = parentId ?? undefined;
 
             const manages = await doesProfileManageFramework(profileId, frameworkId);
             if (!manages)
@@ -381,7 +382,8 @@ export const skillsRouter = t.router({
                         status: createdNode.status ?? 'active',
                         parentId: parent ?? null,
                     });
-                }
+                },
+                normalizedParentId
             );
 
             return created.map(skill => {

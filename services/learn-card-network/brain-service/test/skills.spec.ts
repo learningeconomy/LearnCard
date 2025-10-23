@@ -490,6 +490,63 @@ describe('Skills router', () => {
             expect(fetchedChild?.parentRef).toBe(`${frameworkId}-batch-parent`);
         });
 
+        it('creates many skills under an existing parent via parentId parameter', async () => {
+            const { frameworkId } = await setupManagedFramework();
+
+            // Create parent skill first
+            const parentSkill = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: `${frameworkId}-existing-parent`,
+                    statement: 'Existing Parent Skill',
+                    code: 'EP1',
+                },
+            });
+
+            // Create multiple skills under the existing parent
+            const results = await userA.clients.fullAuth.skills.createMany({
+                frameworkId,
+                parentId: parentSkill.id,
+                skills: [
+                    {
+                        id: `${frameworkId}-subskill-1`,
+                        statement: 'Subskill 1',
+                        code: 'SUB1',
+                    },
+                    {
+                        id: `${frameworkId}-subskill-2`,
+                        statement: 'Subskill 2',
+                        code: 'SUB2',
+                        children: [
+                            {
+                                id: `${frameworkId}-subskill-2-child`,
+                                statement: 'Nested Child',
+                            },
+                        ],
+                    },
+                ],
+            });
+
+            expect(results).toHaveLength(3); // 2 root-level + 1 nested child
+            const sub1 = results.find(s => s.id === `${frameworkId}-subskill-1`);
+            const sub2 = results.find(s => s.id === `${frameworkId}-subskill-2`);
+            expect(sub1).toBeDefined();
+            expect(sub2).toBeDefined();
+
+            const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
+            const flattened = flattenSkillTree(fetched.skills.records);
+
+            // Verify both top-level skills are children of the existing parent
+            const fetchedSub1 = flattened.find(s => s.id === `${frameworkId}-subskill-1`);
+            const fetchedSub2 = flattened.find(s => s.id === `${frameworkId}-subskill-2`);
+            expect(fetchedSub1?.parentRef).toBe(parentSkill.id);
+            expect(fetchedSub2?.parentRef).toBe(parentSkill.id);
+
+            // Verify nested child is under subskill-2
+            const fetchedNestedChild = flattened.find(s => s.id === `${frameworkId}-subskill-2-child`);
+            expect(fetchedNestedChild?.parentRef).toBe(`${frameworkId}-subskill-2`);
+        });
+
         it('updates skill metadata for a managed framework', async () => {
             const { frameworkId } = await setupManagedFramework();
             const parentSkillId = `${frameworkId}-parent`;

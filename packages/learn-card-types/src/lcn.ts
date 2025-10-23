@@ -1235,6 +1235,7 @@ export type DeleteSkillInput = z.infer<typeof DeleteSkillInputValidator>;
 export const CreateSkillsBatchInputValidator = z.object({
     frameworkId: z.string(),
     skills: z.array(SkillTreeNodeInputValidator).min(1),
+    parentId: z.string().nullable().optional(),
 });
 
 export type CreateSkillsBatchInput = z.infer<typeof CreateSkillsBatchInputValidator>;
