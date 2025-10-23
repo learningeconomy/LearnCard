@@ -1426,7 +1426,7 @@ describe('Universal Inbox', () => {
                     },
                 },
                 properties: {
-                    name: 'Example',
+                    name: 'example',
                     did: await userA.learnCard.id.did('key'),
                 },
             });
@@ -1449,7 +1449,7 @@ describe('Universal Inbox', () => {
                 credential,
                 recipient: { type: 'email', value: 'userA@test.com' },
                 configuration: {
-                    signingAuthority: { endpoint: 'https://example.com', name: 'Example' },
+                    signingAuthority: { endpoint: 'https://example.com', name: 'example' },
                 },
             });
 
@@ -1551,7 +1551,7 @@ describe('Universal Inbox', () => {
                     target: { endpoint: 'https://example.com' },
                 },
                 properties: {
-                    name: 'Example',
+                    name: 'example',
                     did: await (userA.learnCard as any).id.did('key'),
                 },
             });
@@ -1561,12 +1561,12 @@ describe('Universal Inbox', () => {
             await userA.clients.fullAuth.inbox.issue({
                 credential: vc1,
                 recipient: { type: 'email', value: 'userA@test.com' },
-                configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } },
+                configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'example' } },
             });
             await userA.clients.fullAuth.inbox.issue({
                 credential: vc2,
                 recipient: { type: 'email', value: 'userA@test.com' },
-                configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } },
+                configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'example' } },
             });
 
             // Assume userA accepts the inbox credentials through another flow i.e. an embed

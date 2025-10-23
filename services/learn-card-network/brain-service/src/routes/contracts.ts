@@ -174,6 +174,10 @@ export const contractsRouter = t.router({
             if (autoboosts && autoboosts.length > 0) {
                 for (const autoboost of autoboosts) {
                     const { boostUri, signingAuthority } = autoboost;
+                    const normalizedSigningAuthority = {
+                        ...signingAuthority,
+                        name: signingAuthority.name.toLowerCase(),
+                    };
 
                     const boost = await getBoostByUri(boostUri);
 
@@ -202,8 +206,8 @@ export const contractsRouter = t.router({
                     // Verify the signing authority exists for this user
                     const signingAuthorityExists = await getSigningAuthorityForUserByName(
                         ctx.user.profile,
-                        signingAuthority.endpoint,
-                        signingAuthority.name
+                        normalizedSigningAuthority.endpoint,
+                        normalizedSigningAuthority.name
                     );
 
                     if (!signingAuthorityExists) {
@@ -216,7 +220,7 @@ export const contractsRouter = t.router({
                     await setAutoBoostForContract(
                         createdContract,
                         boost,
-                        signingAuthority,
+                        normalizedSigningAuthority,
                         ctx.user.profile.profileId
                     );
                 }
@@ -686,6 +690,10 @@ export const contractsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { did, contractUri, boostUri, signingAuthority } = input;
+            const normalizedSigningAuthority = {
+                ...signingAuthority,
+                name: signingAuthority.name.toLowerCase(),
+            };
 
             const decodedDid = decodeURIComponent(did);
             const decodedContractUri = decodeURIComponent(contractUri);
@@ -808,8 +816,8 @@ export const contractsRouter = t.router({
             // Get signing authority
             const sa = await getSigningAuthorityForUserByName(
                 profile,
-                signingAuthority.endpoint,
-                signingAuthority.name
+                normalizedSigningAuthority.endpoint,
+                normalizedSigningAuthority.name
             );
             if (!sa) {
                 throw new TRPCError({
@@ -1577,7 +1585,15 @@ export const contractsRouter = t.router({
                 });
             }
 
-            await addAutoBoostsToContractDb(contract.id, autoboosts, profile, ctx.domain);
+            const normalizedAutoboosts = autoboosts.map(ab => ({
+                ...ab,
+                signingAuthority: {
+                    ...ab.signingAuthority,
+                    name: ab.signingAuthority.name.toLowerCase(),
+                },
+            }));
+
+            await addAutoBoostsToContractDb(contract.id, normalizedAutoboosts, profile, ctx.domain);
 
             return true;
         }),

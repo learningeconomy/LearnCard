@@ -124,6 +124,7 @@ jobs:
                 SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
                 SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
                 SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
+                LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
 
 
     deploy-learn-cloud:

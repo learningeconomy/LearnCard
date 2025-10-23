@@ -266,12 +266,23 @@ export const inboxRouter = t.router({
             const { profile } = ctx.user;
             const { recipient, credential, configuration } = input;
 
+            // Normalize signing authority name if provided
+            const normalizedConfiguration = configuration?.signingAuthority
+                ? {
+                      ...configuration,
+                      signingAuthority: {
+                          ...configuration.signingAuthority,
+                          name: configuration.signingAuthority.name.toLowerCase(),
+                      },
+                  }
+                : configuration;
+
             try {
                 const result = await issueToInbox(
                     profile,
                     recipient,
                     credential,
-                    configuration,
+                    normalizedConfiguration,
                     ctx
                 );
 
@@ -328,7 +339,7 @@ export const inboxRouter = t.router({
             const signingAuthorityRel = configuration?.signingAuthorityName
                 ? (await getSigningAuthoritiesForIntegrationByName(
                       integration,
-                      configuration.signingAuthorityName
+                      configuration.signingAuthorityName.toLowerCase()
                   )).at(0)
                 : await getPrimarySigningAuthorityForIntegration(integration);
 
