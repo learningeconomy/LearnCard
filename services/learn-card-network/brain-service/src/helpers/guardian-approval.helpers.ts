@@ -12,7 +12,7 @@ export type GuardianApprovalTokenData = {
     used: boolean;
 };
 
-export type GuardianApprovalValidationResult = 
+export type GuardianApprovalValidationResult =
     | { valid: true; data: GuardianApprovalTokenData }
     | { valid: false; reason: 'invalid' | 'expired' | 'already_used' };
 
@@ -38,11 +38,10 @@ export const generateGuardianApprovalToken = async (
         used: false,
     };
 
-    // If ttlSeconds <= 0, do not persist the token in cache.
-    // Validation will not find it and will treat it as invalid.
-    if (ttlSeconds > 0) {
-        await cache.set(key, JSON.stringify(data), ttlSeconds);
-    }
+    // Store token in cache even if expired so it can be validated as 'expired' rather than 'invalid'
+    // Use minimum TTL of 60 seconds for expired tokens to allow proper error messaging
+    const cacheTtl = ttlSeconds > 0 ? ttlSeconds : 60;
+    await cache.set(key, JSON.stringify(data), cacheTtl);
 
     return token;
 };
@@ -110,9 +109,10 @@ export const markGuardianApprovalTokenAsUsed = async (token: string): Promise<bo
 
 export const generateGuardianApprovalUrl = (token: string): string => {
     const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
-    const domain = !domainName || process.env.IS_OFFLINE
-        ? `localhost:${process.env.PORT || 3000}`
-        : domainName;
+    const domain =
+        !domainName || process.env.IS_OFFLINE
+            ? `localhost:${process.env.PORT || 3000}`
+            : domainName;
 
     const protocol = process.env.IS_OFFLINE ? 'http' : 'https';
 
