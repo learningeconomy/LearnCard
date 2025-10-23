@@ -23,7 +23,7 @@ import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
 import {
     generateGuardianApprovalToken,
     generateGuardianApprovalUrl,
-    validateGuardianApprovalToken,
+    validateGuardianApprovalTokenDetailed,
     markGuardianApprovalTokenAsUsed,
 } from '@helpers/guardian-approval.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
@@ -141,17 +141,22 @@ export const inboxRouter = t.router({
         .mutation(async ({ input }) => {
             const { token } = input;
 
-            // Validate token
-            const tokenData = await validateGuardianApprovalToken(token);
-            if (!tokenData) {
+            // Validate token with detailed result
+            const validation = await validateGuardianApprovalTokenDetailed(token);
+            if (!validation.valid) {
+                const errorMessages = {
+                    invalid: 'Invalid approval token. The token may not exist or has been corrupted.',
+                    expired: 'This approval token has expired. Please request a new approval email.',
+                    already_used: 'This approval token has already been used.',
+                };
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
-                    message: 'Invalid or expired approval token',
+                    message: errorMessages[validation.reason],
                 });
             }
 
             // Fetch requester profile and mark approved
-            const requester = await getProfileByProfileId(tokenData.requesterProfileId);
+            const requester = await getProfileByProfileId(validation.data.requesterProfileId);
             if (!requester) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Requester profile not found' });
             }
@@ -203,15 +208,21 @@ export const inboxRouter = t.router({
         .query(async ({ input }) => {
             const { token } = input;
 
-            const tokenData = await validateGuardianApprovalToken(token);
-            if (!tokenData) {
+            // Validate token with detailed result
+            const validation = await validateGuardianApprovalTokenDetailed(token);
+            if (!validation.valid) {
+                const errorMessages = {
+                    invalid: 'Invalid approval token. The token may not exist or has been corrupted.',
+                    expired: 'This approval token has expired. Please request a new approval email.',
+                    already_used: 'This approval token has already been used.',
+                };
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
-                    message: 'Invalid or expired approval token',
+                    message: errorMessages[validation.reason],
                 });
             }
 
-            const requester = await getProfileByProfileId(tokenData.requesterProfileId);
+            const requester = await getProfileByProfileId(validation.data.requesterProfileId);
             if (!requester) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Requester profile not found' });
             }
