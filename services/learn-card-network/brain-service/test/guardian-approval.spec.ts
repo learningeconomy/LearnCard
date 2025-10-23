@@ -156,6 +156,54 @@ describe('Guardian Approval', () => {
         ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     });
 
+    it('should return specific error messages for different token failure states', async () => {
+        // Test 1: Invalid token (doesn't exist)
+        await expect(
+            noAuthClient.inbox.approveGuardianRequest({ token: 'invalid-token-12345' })
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: expect.stringContaining('Invalid approval token'),
+        });
+
+        // Test 2: Already used token
+        await userA.clients.fullAuth.inbox.sendGuardianApprovalEmail({
+            guardianEmail: 'guardian@test.com',
+        });
+
+        const sendArgs = sendSpy.mock.calls[0][0];
+        const token = sendArgs.templateModel.approvalToken as string | undefined;
+        expect(typeof token).toBe('string');
+
+        // Use the token once successfully
+        await noAuthClient.inbox.approveGuardianRequest({ token: token! });
+
+        // Try to use it again - should get "already used" error
+        await expect(
+            noAuthClient.inbox.approveGuardianRequest({ token: token! })
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: expect.stringContaining('already been used'),
+        });
+
+        // Test 3: Expired token
+        sendSpy.mockClear();
+        await userA.clients.fullAuth.inbox.sendGuardianApprovalEmail({
+            guardianEmail: 'expired@test.com',
+            ttlHours: 0, // Immediately expired
+        });
+
+        const expiredSendArgs = sendSpy.mock.calls[0][0];
+        const expiredToken = expiredSendArgs.templateModel.approvalToken as string | undefined;
+        expect(typeof expiredToken).toBe('string');
+
+        await expect(
+            noAuthClient.inbox.approveGuardianRequest({ token: expiredToken! })
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: expect.stringContaining('expired'),
+        });
+    });
+
     it('should send with a custom template id/model and include core fields', async () => {
         await userA.clients.fullAuth.inbox.sendGuardianApprovalEmail({
             guardianEmail: 'customguardian@test.com',
