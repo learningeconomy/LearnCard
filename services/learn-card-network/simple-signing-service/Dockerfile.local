@@ -3,20 +3,27 @@ FROM node:20.10.0-slim
 # Set working directory to /app
 WORKDIR /app
 
-# Sometimes we need python to build packages
+# Install dependencies for building native packages (including Rust for native DIDKit plugin)
 RUN apt-get update || : && apt-get install -y \
     python3 \
-    build-essential
+    build-essential \
+    curl
+
+# Install Rust and Cargo for building native modules
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install PNPM package manager
 RUN npm install -g pnpm
 
 # Copy everything over from the source directory to the build directory
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
+COPY lib lib
 COPY packages/learn-card-core packages/learn-card-core
 COPY packages/plugins/did-web-plugin packages/plugins/did-web-plugin
 COPY packages/plugins/didkey packages/plugins/didkey
 COPY packages/plugins/didkit packages/plugins/didkit
+COPY packages/plugins/didkit-plugin-node packages/plugins/didkit-plugin-node
 COPY packages/plugins/expiration packages/plugins/expiration
 COPY packages/learn-card-helpers packages/learn-card-helpers
 COPY packages/plugins/learn-card packages/plugins/learn-card

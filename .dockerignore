@@ -1,2 +1,15 @@
-**/*/dist
-**/*/node_modules
+# Exclude Rust build artifacts to save massive amounts of space
+lib/didkit/target
+lib/ssi/target
+
+# Common exclusions
+node_modules
+*.log
+.git
+.github
+docs
+examples
+tests
+*.md
+.vscode
+.idea

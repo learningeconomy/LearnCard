@@ -22,6 +22,6 @@ export default defineConfig({
         env: {
             IS_E2E_TEST: 'true',
             LOGIN_PROVIDER_DID: 'did:key:z6Mko9uYxDPk2BetRRziLz1xHN8nR5zQWdNjytKNDPcygHJP',
-        }
+        },
     },
 });

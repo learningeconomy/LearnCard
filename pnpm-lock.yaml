@@ -644,6 +644,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:*
         version: link:../plugins/didkit
+      '@learncard/didkit-plugin-node':
+        specifier: workspace:*
+        version: link:../plugins/didkit-plugin-node
       '@learncard/dynamic-loader-plugin':
         specifier: workspace:*
         version: link:../plugins/dynamic-loader
@@ -1141,6 +1144,25 @@ importers:
       ts-jest:
         specifier: ^29.0.3
         version: 29.3.0(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.14.54)(jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2)))(typescript@5.6.2)
+
+  packages/plugins/didkit-plugin-node:
+    dependencies:
+      '@learncard/core':
+        specifier: workspace:*
+        version: link:../../learn-card-core
+      '@learncard/didkit-plugin':
+        specifier: workspace:*
+        version: link:../didkit
+      '@learncard/types':
+        specifier: workspace:*
+        version: link:../../learn-card-types
+    devDependencies:
+      '@napi-rs/cli':
+        specifier: ^2.18.0
+        version: 2.18.4
+      typescript:
+        specifier: 5.6.2
+        version: 5.6.2
 
   packages/plugins/dynamic-loader:
     dependencies:
@@ -2024,9 +2046,9 @@ importers:
       '@learncard/didkey-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/didkey
-      '@learncard/didkit-plugin':
-        specifier: workspace:^
-        version: link:../../../packages/plugins/didkit
+      '@learncard/didkit-plugin-node':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/didkit-plugin-node
       '@learncard/encryption-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/encryption
@@ -6130,6 +6152,11 @@ packages:
       nanostores: ^0.5.2
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
+
+  '@napi-rs/cli@2.18.4':
+    resolution: {integrity: sha512-SgJeA4df9DE2iAEpr3M2H0OKl/yjtg1BnRI5/JyowS71tUWhrfSu2LT0V3vlHET+g1hBVlrO60PmEXwUEKp8Mg==}
+    engines: {node: '>= 10'}
+    hasBin: true
 
   '@ndelangen/get-tarball@3.0.9':
     resolution: {integrity: sha512-9JKTEik4vq+yGosHYhZ1tiH/3WpUS0Nh0kej4Agndhox8pAdWhEx5knFVRcb/ya9knCRCs1rPxNrSXTDdfVqpA==}
@@ -27191,6 +27218,8 @@ snapshots:
       nanostores: 0.5.13
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+
+  '@napi-rs/cli@2.18.4': {}
 
   '@ndelangen/get-tarball@3.0.9':
     dependencies:
