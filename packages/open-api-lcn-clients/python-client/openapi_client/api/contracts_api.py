@@ -19,6 +19,7 @@ from typing_extensions import Annotated
 from pydantic import StrictBool, StrictStr
 from typing import Optional
 from openapi_client.models.contracts_add_auto_boosts_to_contract_request import ContractsAddAutoBoostsToContractRequest
+from openapi_client.models.contracts_consent_to_contract200_response import ContractsConsentToContract200Response
 from openapi_client.models.contracts_consent_to_contract_request import ContractsConsentToContractRequest
 from openapi_client.models.contracts_create_consent_flow_contract_request import ContractsCreateConsentFlowContractRequest
 from openapi_client.models.contracts_get_all_credentials_for_terms_request import ContractsGetAllCredentialsForTermsRequest
@@ -362,7 +363,7 @@ class ContractsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> str:
+    ) -> ContractsConsentToContract200Response:
         """Consent To Contract
 
         Consents to a Contract with a hard set of terms
@@ -400,7 +401,7 @@ class ContractsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "str",
+            '200': "ContractsConsentToContract200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -433,7 +434,7 @@ class ContractsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[str]:
+    ) -> ApiResponse[ContractsConsentToContract200Response]:
         """Consent To Contract
 
         Consents to a Contract with a hard set of terms
@@ -471,7 +472,7 @@ class ContractsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "str",
+            '200': "ContractsConsentToContract200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -542,7 +543,7 @@ class ContractsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "str",
+            '200': "ContractsConsentToContract200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",

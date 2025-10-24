@@ -37,17 +37,19 @@ class TestInboxGetMyIssuedCredentials200Response(unittest.TestCase):
             return InboxGetMyIssuedCredentials200Response(
                 has_more = True,
                 records = [
-                    openapi_client.models.inbox_get_my_issued_credentials_200_response_records_inner.inbox_getMyIssuedCredentials_200_response_records_inner(
+                    openapi_client.models.inbox_claim_200_response_inbox_credential.inbox_claim_200_response_inboxCredential(
                         id = '', 
                         credential = '', 
                         is_signed = True, 
                         current_status = 'PENDING', 
+                        is_accepted = True, 
                         expires_at = '', 
                         created_at = '', 
                         issuer_did = '', 
                         webhook_url = '', 
-                        signing_authority/endpoint = '', 
-                        signing_authority/name = '', )
+                        signing_authority = openapi_client.models.inbox_claim_200_response_inbox_credential_signing_authority.inbox_claim_200_response_inboxCredential_signingAuthority(
+                            endpoint = '', 
+                            name = '', ), )
                     ],
                 cursor = ''
             )
@@ -55,17 +57,19 @@ class TestInboxGetMyIssuedCredentials200Response(unittest.TestCase):
             return InboxGetMyIssuedCredentials200Response(
                 has_more = True,
                 records = [
-                    openapi_client.models.inbox_get_my_issued_credentials_200_response_records_inner.inbox_getMyIssuedCredentials_200_response_records_inner(
+                    openapi_client.models.inbox_claim_200_response_inbox_credential.inbox_claim_200_response_inboxCredential(
                         id = '', 
                         credential = '', 
                         is_signed = True, 
                         current_status = 'PENDING', 
+                        is_accepted = True, 
                         expires_at = '', 
                         created_at = '', 
                         issuer_did = '', 
                         webhook_url = '', 
-                        signing_authority/endpoint = '', 
-                        signing_authority/name = '', )
+                        signing_authority = openapi_client.models.inbox_claim_200_response_inbox_credential_signing_authority.inbox_claim_200_response_inboxCredential_signingAuthority(
+                            endpoint = '', 
+                            name = '', ), )
                     ],
         )
         """

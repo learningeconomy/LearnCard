@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **current_status** | **str** |  | [optional] 
 **id** | **str** |  | [optional] 
 **is_signed** | **bool** |  | [optional] 
+**is_accepted** | **bool** |  | [optional] 
 **issuer_did** | **str** |  | [optional] 
 
 ## Example

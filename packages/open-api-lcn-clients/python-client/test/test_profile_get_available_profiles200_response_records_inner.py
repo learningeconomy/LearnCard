@@ -61,8 +61,13 @@ class TestProfileGetAvailableProfiles200ResponseRecordsInner(unittest.TestCase):
                         fade_id_background_image = True, 
                         id_background_color = '', 
                         repeat_id_background_image = True, ), 
+                    highlighted_credentials = [
+                        ''
+                        ], 
                     role = '', 
-                    dob = '', ),
+                    dob = '', 
+                    country = '', 
+                    approved = True, ),
                 manager = openapi_client.models.boost_get_children_profile_managers_200_response_records_inner.boost_getChildrenProfileManagers_200_response_records_inner(
                     id = '', 
                     created = '', 
@@ -102,8 +107,13 @@ class TestProfileGetAvailableProfiles200ResponseRecordsInner(unittest.TestCase):
                         fade_id_background_image = True, 
                         id_background_color = '', 
                         repeat_id_background_image = True, ), 
+                    highlighted_credentials = [
+                        ''
+                        ], 
                     role = '', 
-                    dob = '', ),
+                    dob = '', 
+                    country = '', 
+                    approved = True, ),
         )
         """
 
