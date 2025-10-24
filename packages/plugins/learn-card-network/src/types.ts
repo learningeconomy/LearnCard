@@ -74,6 +74,8 @@ import {
     CountSkillsResult,
     GetFullSkillTreeInput,
     GetFullSkillTreeResult,
+    GetSkillPathInput,
+    GetSkillPathResult,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -519,6 +521,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<ReplaceSkillFrameworkSkillsResult>;
     countSkills: (input: CountSkillsInput) => Promise<CountSkillsResult>;
     getFullSkillTree: (input: GetFullSkillTreeInput) => Promise<GetFullSkillTreeResult>;
+    getSkillPath: (input: GetSkillPathInput) => Promise<GetSkillPathResult>;
     getSkillFrameworkAdmins: (frameworkId: string) => Promise<LCNProfile[]>;
     addSkillFrameworkAdmin: (
         frameworkId: string,

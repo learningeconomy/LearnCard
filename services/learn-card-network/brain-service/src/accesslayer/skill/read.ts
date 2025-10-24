@@ -287,3 +287,40 @@ export const getSkillsByIds = async (skillIds: string[]): Promise<FlatSkillType[
         } as FlatSkillType;
     });
 };
+
+/**
+ * Get the breadcrumb path for a skill - returns the skill and all its ancestors up to the root.
+ * Results are ordered from the skill itself up to the root (reverse hierarchical order).
+ * Useful for rendering breadcrumbs.
+ */
+export const getSkillPath = async (
+    frameworkId: string,
+    skillId: string
+): Promise<SkillType[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+         MATCH path = (s)-[:IS_CHILD_OF*0..]->(root:Skill)
+         WHERE NOT EXISTS { MATCH (f)-[:CONTAINS]->(:Skill)<-[:IS_CHILD_OF]-(root) }
+         WITH path, length(path) AS depth
+         ORDER BY depth DESC
+         LIMIT 1
+         WITH nodes(path) AS skillNodes
+         UNWIND skillNodes AS skill
+         RETURN skill`,
+        { frameworkId, skillId }
+    );
+
+    return result.records.map(r => {
+        const props = ((r.get('skill') as any)?.properties ?? {}) as Record<string, any>;
+        return {
+            id: props.id as string,
+            statement: props.statement as string,
+            description: props.description as string | undefined,
+            code: props.code as string | undefined,
+            icon: props.icon as string | undefined,
+            type: (props.type as string) ?? 'skill',
+            status: (props.status as 'active' | 'archived') ?? 'active',
+            frameworkId: props.frameworkId as string,
+        } as SkillType;
+    });
+};

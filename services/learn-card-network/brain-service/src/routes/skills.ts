@@ -5,7 +5,7 @@ import { t, profileRoute } from '@routes';
 import { getSkillsProvider } from '@services/skills-provider';
 import { doesProfileManageFramework, getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
-import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged, searchSkillsInFramework, countSkillsInFramework, getFullSkillTree } from '@accesslayer/skill/read';
+import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged, searchSkillsInFramework, countSkillsInFramework, getFullSkillTree, getSkillPath } from '@accesslayer/skill/read';
 import { createSkill } from '@accesslayer/skill/create';
 import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import { listTagsForSkill, addTagToSkill, removeTagFromSkill } from '@accesslayer/skill/tags';
@@ -26,6 +26,8 @@ import {
     CountSkillsResultValidator,
     GetFullSkillTreeInputValidator,
     GetFullSkillTreeResultValidator,
+    GetSkillPathInputValidator,
+    GetSkillPathResultValidator,
 } from '@learncard/types';
 import {
     buildLocalSkillTreePage,
@@ -627,6 +629,45 @@ export const skillsRouter = t.router({
             const skills = buildFullSkillTree(frameworkId, flatSkills);
 
             return { skills };
+        }),
+
+    getSkillPath: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/skills/{skillId}/path',
+                tags: ['Skills'],
+                summary: 'Get breadcrumb path for a skill',
+                description:
+                    'Returns the skill and all its ancestors up to the root skill in the framework. Useful for rendering breadcrumbs. Results are ordered from the skill itself up to the root (reverse hierarchical order).',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(GetSkillPathInputValidator)
+        .output(GetSkillPathResultValidator)
+        .query(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const { frameworkId, skillId } = input;
+
+            const manages = await doesProfileManageFramework(profileId, frameworkId);
+            if (!manages) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not manage this framework',
+                });
+            }
+
+            const path = await getSkillPath(frameworkId, skillId);
+
+            if (path.length === 0) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Skill not found in this framework',
+                });
+            }
+
+            return { path };
         }),
 });
 

@@ -1287,6 +1287,19 @@ export const GetFullSkillTreeResultValidator = z.object({
 
 export type GetFullSkillTreeResult = z.infer<typeof GetFullSkillTreeResultValidator>;
 
+export const GetSkillPathInputValidator = z.object({
+    frameworkId: z.string(),
+    skillId: z.string(),
+});
+
+export type GetSkillPathInput = z.infer<typeof GetSkillPathInputValidator>;
+
+export const GetSkillPathResultValidator = z.object({
+    path: z.array(SkillValidator),
+});
+
+export type GetSkillPathResult = z.infer<typeof GetSkillPathResultValidator>;
+
 // Composite return shapes
 export const FrameworkWithSkillsValidator = z.object({
     framework: SkillFrameworkValidator,

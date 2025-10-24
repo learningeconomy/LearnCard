@@ -663,6 +663,63 @@ describe('Skills router', () => {
                 })
             ).rejects.toThrow();
         });
+
+        it('gets breadcrumb path for a skill', async () => {
+            const { frameworkId } = await setupManagedFramework();
+
+            // Create a hierarchy: root -> middle -> leaf
+            const root = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: `${frameworkId}-root`,
+                    statement: 'Root Skill',
+                    code: 'ROOT',
+                },
+            });
+            const middle = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: root.id,
+                skill: {
+                    id: `${frameworkId}-middle`,
+                    statement: 'Middle Skill',
+                    code: 'MID',
+                },
+            });
+            const leaf = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: middle.id,
+                skill: {
+                    id: `${frameworkId}-leaf`,
+                    statement: 'Leaf Skill',
+                    code: 'LEAF',
+                },
+            });
+
+            // Get path for the leaf skill - should return [leaf, middle, root]
+            const result = await userA.clients.fullAuth.skills.getSkillPath({
+                frameworkId,
+                skillId: leaf.id,
+            });
+
+            expect(result.path).toHaveLength(3);
+            expect(result.path[0]?.id).toBe(leaf.id);
+            expect(result.path[0]?.statement).toBe('Leaf Skill');
+            expect(result.path[0]?.code).toBe('LEAF');
+            expect(result.path[1]?.id).toBe(middle.id);
+            expect(result.path[1]?.statement).toBe('Middle Skill');
+            expect(result.path[1]?.code).toBe('MID');
+            expect(result.path[2]?.id).toBe(root.id);
+            expect(result.path[2]?.statement).toBe('Root Skill');
+            expect(result.path[2]?.code).toBe('ROOT');
+
+            // Get path for root skill - should only return [root]
+            const rootPath = await userA.clients.fullAuth.skills.getSkillPath({
+                frameworkId,
+                skillId: root.id,
+            });
+            expect(rootPath.path).toHaveLength(1);
+            expect(rootPath.path[0]?.id).toBe(root.id);
+        });
     });
 
     it('searches skills in a framework with regex pattern', async () => {
