@@ -1,5 +1,14 @@
 # @learncard/cli
 
+## 3.3.144
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.11
+    -   @learncard/learn-cloud-plugin@2.2.7
+    -   @learncard/simple-signing-plugin@1.0.34
+
 ## 3.3.143
 
 ### Patch Changes
