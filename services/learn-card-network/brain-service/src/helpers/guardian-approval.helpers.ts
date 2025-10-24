@@ -12,7 +12,7 @@ export type GuardianApprovalTokenData = {
     used: boolean;
 };
 
-export type GuardianApprovalValidationResult = 
+export type GuardianApprovalValidationResult =
     | { valid: true; data: GuardianApprovalTokenData }
     | { valid: false; reason: 'invalid' | 'expired' | 'already_used' };
 
@@ -109,9 +109,10 @@ export const markGuardianApprovalTokenAsUsed = async (token: string): Promise<bo
 
 export const generateGuardianApprovalUrl = (token: string): string => {
     const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
-    const domain = !domainName || process.env.IS_OFFLINE
-        ? `localhost:${process.env.PORT || 3000}`
-        : domainName;
+    const domain =
+        !domainName || process.env.IS_OFFLINE
+            ? `localhost:${process.env.PORT || 3000}`
+            : domainName;
 
     const protocol = process.env.IS_OFFLINE ? 'http' : 'https';
 
