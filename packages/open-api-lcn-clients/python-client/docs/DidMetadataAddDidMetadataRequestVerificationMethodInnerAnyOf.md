@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **controller** | **str** |  | 
 **public_key_jwk** | [**DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk**](DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk.md) |  | [optional] 
 **public_key_base58** | **str** |  | [optional] 
+**public_key_multibase** | **str** |  | [optional] 
 **block_chain_account_id** | **str** |  | [optional] 
 
 ## Example
