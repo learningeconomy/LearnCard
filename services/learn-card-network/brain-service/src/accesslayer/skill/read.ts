@@ -1,6 +1,6 @@
 import { neogma } from '@instance';
 import { int } from 'neo4j-driver';
-import { convertObjectRegExpToNeo4j, getMatchQueryWhere } from '@helpers/neo4j.helpers';
+import { convertObjectRegExpToNeo4j, buildWhereClause } from '@helpers/neo4j.helpers';
 import type { FlatSkillType, SkillType } from 'types/skill';
 import type { SkillQuery } from '@learncard/types';
 
@@ -131,8 +131,8 @@ export const searchSkillsInFramework = async (
     limit: number,
     cursorId?: string | null
 ): Promise<Paginated<FlatSkillType>> => {
-    const matchQuery = convertObjectRegExpToNeo4j(searchQuery);
-    const whereClause = getMatchQueryWhere('s');
+    const convertedQuery = convertObjectRegExpToNeo4j(searchQuery);
+    const { whereClause, params: queryParams } = buildWhereClause('s', convertedQuery as any);
 
     const result = await neogma.queryRunner.run(
         `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
@@ -143,7 +143,7 @@ export const searchSkillsInFramework = async (
          LIMIT $limitPlusOne`,
         {
             frameworkId,
-            matchQuery,
+            ...queryParams,
             cursorId: cursorId ?? null,
             limitPlusOne: int(limit + 1),
         }

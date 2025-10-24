@@ -4,7 +4,8 @@ import { int } from 'neo4j-driver';
 import {
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
-    getMatchQueryWhere,
+    buildWhereClause,
+    buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
 import type { SkillQuery } from '@learncard/types';
 import { BoostRecipientInfo, BoostPermissions, LCNProfileQuery } from '@learncard/types';
@@ -121,8 +122,8 @@ export const searchSkillsAvailableForBoost = async (
     hasMore: boolean;
     cursor: string | null;
 }> => {
-    const matchQuery = convertObjectRegExpToNeo4j(searchQuery);
-    const whereClause = getMatchQueryWhere('skill');
+    const convertedQuery = convertObjectRegExpToNeo4j(searchQuery);
+    const { whereClause, params: queryParams } = buildWhereClause('skill', convertedQuery as any);
 
     const result = await neogma.queryRunner.run(
         `MATCH (target:Boost { id: $boostId })
@@ -137,7 +138,7 @@ export const searchSkillsAvailableForBoost = async (
          RETURN skill, frameworkId`,
         {
             boostId: boost.id,
-            matchQuery,
+            ...queryParams,
             cursorId: cursorId ?? null,
             limitPlusOne: int(limit + 1),
         }
@@ -224,9 +225,10 @@ export const getBoostRecipients = async (
         domain: string;
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('recipient', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { identifier: 'source', model: Boost, where: { id: boost.id } },
@@ -258,7 +260,7 @@ export const getBoostRecipients = async (
             ],
         })
         .with('sender, sent, received, recipient, credential')
-        .where(getMatchQueryWhere('recipient'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
@@ -924,12 +926,10 @@ export const getConnectedBoostRecipients = async (
         domain: string;
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
-    const _query = new QueryBuilder(
-        new BindParam({
-            matchQuery: convertObjectRegExpToNeo4j(matchQuery),
-            cursor,
-        })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause: recipientWhereClause, params: queryParams } = buildWhereForQueryBuilder('recipient', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         // Build connection list
         .match({
             model: Profile,
@@ -1111,7 +1111,7 @@ export const getConnectedBoostRecipients = async (
             ],
         })
         .with('sender, sent, received, recipient, credential, connectionIds')
-        .where(`sent.to IN connectionIds AND ${getMatchQueryWhere('recipient')}`);
+        .where(`sent.to IN connectionIds AND ${recipientWhereClause}`);
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
@@ -1158,9 +1158,10 @@ export const countConnectedBoostRecipients = async (
         query: matchQuery = {},
     }: { includeUnacceptedBoosts?: boolean; query?: LCNProfileQuery }
 ): Promise<number> => {
-    const countQuery = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause: countRecipientWhereClause, params: countQueryParams } = buildWhereForQueryBuilder('recipient', convertedQuery as any);
+    
+    const countQuery = new QueryBuilder(new BindParam({ ...countQueryParams }))
         // Build connection list
         .match({
             model: Profile,
@@ -1342,7 +1343,7 @@ export const countConnectedBoostRecipients = async (
             ],
         })
         .with('sender, sent, received, recipient, credential, connectionIds')
-        .where(`sent.to IN connectionIds AND ${getMatchQueryWhere('recipient')}`);
+        .where(`sent.to IN connectionIds AND ${countRecipientWhereClause}`);
 
     const result = await countQuery.return('COUNT(DISTINCT sent.to) AS count').run();
 
@@ -1377,13 +1378,15 @@ export const getBoostRecipientsWithChildren = async (
     // Convert queries for Neo4j compatibility
     const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
     const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
+    const { whereClause: boostWhereClause, params: boostQueryParams } = buildWhereForQueryBuilder('relevantBoost', boostQuery_neo4j as any);
+    const { whereClause: profileWhereClause, params: profileQueryParams } = buildWhereForQueryBuilder('recipient', profileQuery_neo4j as any);
 
     // Build the complete query that does everything in Neo4j
     const _query = new QueryBuilder(
         new BindParam({
-            boostQuery: boostQuery_neo4j,
-            profileQuery: profileQuery_neo4j,
             cursor,
+            ...boostQueryParams,
+            ...profileQueryParams,
         })
     )
         // Get parent boost and its children
@@ -1402,7 +1405,7 @@ export const getBoostRecipientsWithChildren = async (
         .with('COLLECT(DISTINCT parentBoost) + COLLECT(DISTINCT childBoost) AS allBoosts')
         .unwind('allBoosts AS relevantBoost')
         .match({ identifier: 'relevantBoost', model: Boost })
-        .where(`relevantBoost IS NOT NULL AND ${getMatchQueryWhere('relevantBoost', 'boostQuery')}`)
+        .where(`relevantBoost IS NOT NULL AND ${boostWhereClause}`)
         // Get recipients for each boost
         .match({
             related: [
@@ -1441,7 +1444,7 @@ export const getBoostRecipientsWithChildren = async (
                COLLECT(DISTINCT {relevantBoost: relevantBoost, sender: sender, sent: sent, received: received, credential: credential}) AS boostData`
         )
         // Apply profile query filtering after grouping
-        .where(getMatchQueryWhere('recipient', 'profileQuery'))
+        .where(profileWhereClause)
         // Add cursor filtering if provided
         .raw(cursor ? 'AND recipient.profileId > $cursor' : '')
         // Order by profileId and limit profiles (not individual boost relationships)
@@ -1542,9 +1545,11 @@ export const countBoostRecipientsWithChildren = async (
 ): Promise<number> => {
     const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
     const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
+    const { whereClause: countBoostWhereClause, params: countBoostQueryParams } = buildWhereForQueryBuilder('relevantBoost', boostQuery_neo4j as any);
+    const { whereClause: countProfileWhereClause, params: countProfileQueryParams } = buildWhereForQueryBuilder('recipient', profileQuery_neo4j as any);
 
     const _query = new QueryBuilder(
-        new BindParam({ boostQuery: boostQuery_neo4j, profileQuery: profileQuery_neo4j })
+        new BindParam({ ...countBoostQueryParams, ...countProfileQueryParams })
     )
         // Get parent boost and its children
         .match({ model: Boost, where: { id: boost.id }, identifier: 'parentBoost' })
@@ -1559,7 +1564,7 @@ export const countBoostRecipientsWithChildren = async (
         .with('COLLECT(DISTINCT parentBoost) + COLLECT(DISTINCT childBoost) AS allBoosts')
         .unwind('allBoosts AS relevantBoost')
         .match({ identifier: 'relevantBoost', model: Boost })
-        .where(`relevantBoost IS NOT NULL AND ${getMatchQueryWhere('relevantBoost', 'boostQuery')}`)
+        .where(`relevantBoost IS NOT NULL AND ${countBoostWhereClause}`)
         // Get recipients for each boost
         .match({
             related: [
@@ -1595,7 +1600,7 @@ export const countBoostRecipientsWithChildren = async (
         // Reduce to recipient before applying filter to ensure it doesn't attach to OPTIONAL MATCH
         .with('recipient')
         // Apply profile query filtering after WITH so it filters rows, not optional pattern
-        .where(getMatchQueryWhere('recipient', 'profileQuery'));
+        .where(countProfileWhereClause);
 
     const result = await _query.return('COUNT(DISTINCT recipient.profileId) AS count').run();
 

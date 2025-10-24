@@ -3,7 +3,7 @@ import { BindParam, QueryBuilder } from 'neogma';
 import {
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
-    getMatchQueryWhere,
+    buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
 import { Boost, ClaimHook, Role } from '@models';
 import { BoostType } from 'types/boost';
@@ -25,9 +25,10 @@ export const getClaimHooksForBoost = async (
         query: matchQuery = {},
     }: { domain: string; limit: number; cursor?: string; query?: ClaimHookQuery }
 ): Promise<FullClaimHook[]> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('hook', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { model: Boost, identifier: 'target' },
@@ -44,7 +45,7 @@ export const getClaimHooksForBoost = async (
                 { model: Role, identifier: 'roleToGrant' },
             ],
         })
-        .where(getMatchQueryWhere('hook'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND hook.updatedAt < $cursor') : _query;
 

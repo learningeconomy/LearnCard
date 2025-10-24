@@ -1017,7 +1017,7 @@ export const SkillValidator = z.object({
 
 export type SkillType = z.infer<typeof SkillValidator>;
 
-export const SkillQueryValidator = z
+const BaseSkillQueryValidator = z
     .object({
         id: StringQuery,
         statement: StringQuery,
@@ -1027,6 +1027,14 @@ export const SkillQueryValidator = z
         status: SkillStatusEnum.or(z.object({ $in: SkillStatusEnum.array() })),
     })
     .partial();
+
+export const SkillQueryValidator = z.union([
+    BaseSkillQueryValidator,
+    z.object({
+        $or: BaseSkillQueryValidator.array(),
+    }),
+]);
+
 export type SkillQuery = z.infer<typeof SkillQueryValidator>;
 
 export const SkillFrameworkStatusEnum = z.enum(['active', 'archived']);

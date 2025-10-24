@@ -457,6 +457,55 @@ describe('Skills & Frameworks E2E', () => {
         ).rejects.toBeDefined();
     });
 
+    test('can search skills using $or operator to combine conditions', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+        await a.invoke.createManagedSkillFramework({
+            id: fwId,
+            name: 'OR Search Test Framework',
+            skills: [
+                {
+                    id: `${fwId}-javascript`,
+                    statement: 'JavaScript Programming',
+                    code: 'JS101',
+                },
+                {
+                    id: `${fwId}-typescript`,
+                    statement: 'TypeScript Development',
+                    code: 'TS101',
+                },
+                {
+                    id: `${fwId}-python`,
+                    statement: 'Python Programming',
+                    code: 'PY101',
+                },
+                {
+                    id: `${fwId}-java`,
+                    statement: 'Java Programming',
+                    code: 'JAVA101',
+                },
+            ],
+        });
+        await a.invoke.syncFrameworkSkills({ id: fwId });
+
+        // Search using $or: match either exact Java statement OR code in list
+        const orResults = await a.invoke.searchFrameworkSkills(fwId, {
+            $or: [
+                { statement: { $regex: /^Java Programming$/i } },
+                { code: { $in: ['JS101', 'TS101', 'PY101'] } },
+            ],
+        }, { limit: 10 });
+
+        // Should match: Java (exact statement) + JavaScript, TypeScript, Python (code $in)
+        expect(orResults.records.length).toBe(4);
+        const resultIds = orResults.records.map((s: any) => s.id).sort();
+        expect(resultIds).toEqual([
+            `${fwId}-java`,
+            `${fwId}-javascript`,
+            `${fwId}-python`,
+            `${fwId}-typescript`,
+        ].sort());
+    });
+
     test('can search skills available for a boost with regex patterns', async () => {
         const fwId = `fw-${crypto.randomUUID()}`;
 

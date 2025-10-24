@@ -806,6 +806,115 @@ describe('Skills router', () => {
         expect(noResults.hasMore).toBe(false);
     });
 
+    it('searches skills using $or operator', async () => {
+        await createProfileFor(userA, 'usera');
+        const frameworkId = `fw-or-search-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'OR Search Framework',
+            skills: [
+                {
+                    id: `${frameworkId}-javascript`,
+                    statement: 'JavaScript Programming',
+                    code: 'JS101',
+                },
+                {
+                    id: `${frameworkId}-typescript`,
+                    statement: 'TypeScript Development',
+                    code: 'TS101',
+                },
+                {
+                    id: `${frameworkId}-python`,
+                    statement: 'Python Programming',
+                    code: 'PY101',
+                },
+                {
+                    id: `${frameworkId}-java`,
+                    statement: 'Java Programming',
+                    code: 'JAVA101',
+                },
+            ],
+        });
+
+        // Search using $or: match either exact Java statement OR code in list
+        const orResults = await userA.clients.fullAuth.skills.searchFrameworkSkills({
+            id: frameworkId,
+            query: {
+                $or: [
+                    { statement: { $regex: /^Java Programming$/i } },
+                    { code: { $in: ['JS101', 'TS101', 'PY101'] } },
+                ],
+            },
+            limit: 10,
+        });
+
+        // Should match: Java (exact statement) + JavaScript, TypeScript, Python (code $in)
+        expect(orResults.records.length).toBe(4);
+        const resultIds = orResults.records.map(s => s.id).sort();
+        expect(resultIds).toEqual([
+            `${frameworkId}-java`,
+            `${frameworkId}-javascript`,
+            `${frameworkId}-python`,
+            `${frameworkId}-typescript`,
+        ].sort());
+    });
+
+    it('searches skills using field-level $or operator', async () => {
+        await createProfileFor(userA, 'usera');
+        const frameworkId = `fw-field-or-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Field OR Search Framework',
+            skills: [
+                {
+                    id: `${frameworkId}-js`,
+                    statement: 'JavaScript',
+                    code: 'JS101',
+                },
+                {
+                    id: `${frameworkId}-ts`,
+                    statement: 'TypeScript',
+                    code: 'TS101',
+                },
+                {
+                    id: `${frameworkId}-py`,
+                    statement: 'Python',
+                    code: 'PY101',
+                },
+                {
+                    id: `${frameworkId}-jsx`,
+                    statement: 'JSX Syntax',
+                    code: 'JSX101',
+                },
+            ],
+        });
+
+        // Search with field-level $or: code matches either regex OR in list
+        const fieldOrResults = await userA.clients.fullAuth.skills.searchFrameworkSkills({
+            id: frameworkId,
+            query: {
+                code: {
+                    $or: [
+                        { $regex: /^JS/i },      // Matches JS101, JSX101
+                        { $in: ['PY101'] },      // Matches PY101
+                    ],
+                },
+            },
+            limit: 10,
+        });
+
+        // Should match: JS101, JSX101, PY101 (not TS101)
+        expect(fieldOrResults.records.length).toBe(3);
+        const resultIds = fieldOrResults.records.map(s => s.id).sort();
+        expect(resultIds).toEqual([
+            `${frameworkId}-js`,
+            `${frameworkId}-jsx`,
+            `${frameworkId}-py`,
+        ].sort());
+    });
+
     it('enforces management permissions on framework skill search', async () => {
         await createProfileFor(userA, 'usera');
         const frameworkId = `fw-search-${crypto.randomUUID()}`;
