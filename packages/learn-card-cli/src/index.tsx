@@ -7,6 +7,7 @@ import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/ini
 import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 import types from '@learncard/types';
+import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
 import { program } from 'commander';
@@ -79,6 +80,11 @@ program
             await getSimpleSigningPlugin(_learnCard, 'https://api.learncard.app/trpc')
         );
 
+        // Add LinkedClaims plugin so endorse/verify/store/getEndorsements are available in the CLI
+        globalThis.learnCard = await globalThis.learnCard.addPlugin(
+            getLinkedClaimsPlugin(globalThis.learnCard)
+        );
+
         // Add OpenBadge v2 wrapper plugin for backwards-compatible OBv2 -> VC wrapping
         globalThis.learnCard = await globalThis.learnCard.addPlugin(
             openBadgeV2Plugin(globalThis.learnCard)
@@ -138,9 +144,6 @@ program
         );
         console.log(
             `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp); │`
-        );
-        console.log(
-            `│ Wrap OpenBadge v2 JSON  │ await ${g.learnCard}.invoke.wrapOpenBadgeV2(urlOrObj); │`
         );
         console.log('└─────────────────────────┴────────────────────────────────────────────────┘');
 
