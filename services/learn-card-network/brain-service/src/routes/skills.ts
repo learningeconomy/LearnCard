@@ -3,9 +3,19 @@ import { z } from 'zod';
 
 import { t, profileRoute } from '@routes';
 import { getSkillsProvider } from '@services/skills-provider';
-import { doesProfileManageFramework, getSkillFrameworkById } from '@accesslayer/skill-framework/read';
+import {
+    doesProfileManageFramework,
+    getSkillFrameworkById,
+} from '@accesslayer/skill-framework/read';
 import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
-import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged, searchSkillsInFramework, countSkillsInFramework, getFullSkillTree, getSkillPath } from '@accesslayer/skill/read';
+import {
+    doesProfileManageSkill,
+    getChildrenForSkillInFrameworkPaged,
+    searchSkillsInFramework,
+    countSkillsInFramework,
+    getFullSkillTree,
+    getSkillPath,
+} from '@accesslayer/skill/read';
 import { createSkill } from '@accesslayer/skill/create';
 import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import { listTagsForSkill, addTagToSkill, removeTagFromSkill } from '@accesslayer/skill/tags';
@@ -60,18 +70,8 @@ export const skillsRouter = t.router({
         .input(
             z.object({
                 id: z.string(),
-                rootsLimit: z
-                    .number()
-                    .int()
-                    .min(1)
-                    .max(200)
-                    .default(DEFAULT_ROOTS_LIMIT),
-                childrenLimit: z
-                    .number()
-                    .int()
-                    .min(1)
-                    .max(200)
-                    .default(DEFAULT_CHILDREN_LIMIT),
+                rootsLimit: z.number().int().min(1).max(200).default(DEFAULT_ROOTS_LIMIT),
+                childrenLimit: z.number().int().min(1).max(200).default(DEFAULT_CHILDREN_LIMIT),
                 cursor: z.string().nullable().optional(),
             })
         )
@@ -87,12 +87,7 @@ export const skillsRouter = t.router({
                     message: 'You do not manage this framework',
                 });
 
-            return buildLocalSkillTreePage(
-                frameworkId,
-                rootsLimit,
-                childrenLimit,
-                cursor ?? null
-            );
+            return buildLocalSkillTreePage(frameworkId, rootsLimit, childrenLimit, cursor ?? null);
         }),
 
     getSkillChildrenTree: profileRoute
@@ -137,7 +132,11 @@ export const skillsRouter = t.router({
             );
 
             const records = page.records.map(child => {
-                const { hasChildren, parentId: _parent, ...rest } = child as typeof child & {
+                const {
+                    hasChildren,
+                    parentId: _parent,
+                    ...rest
+                } = child as typeof child & {
                     hasChildren: boolean;
                     parentId?: string;
                 };
@@ -147,6 +146,7 @@ export const skillsRouter = t.router({
                     statement: rest.statement,
                     description: rest.description ?? undefined,
                     code: rest.code ?? undefined,
+                    icon: rest.icon ?? undefined,
                     type: rest.type ?? 'skill',
                     status: rest.status ?? 'active',
                     frameworkId: rest.frameworkId,
@@ -209,6 +209,7 @@ export const skillsRouter = t.router({
                     statement: skill.statement,
                     description: skill.description ?? undefined,
                     code: skill.code ?? undefined,
+                    icon: skill.icon ?? undefined,
                     type: skill.type ?? 'skill',
                     status: (skill.status as any) ?? 'active',
                     frameworkId: skill.frameworkId,

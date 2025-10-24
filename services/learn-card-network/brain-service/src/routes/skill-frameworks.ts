@@ -148,7 +148,11 @@ export const skillFrameworksRouter = t.router({
             const createdFrameworks: SkillFrameworkType[] = [];
 
             for (const frameworkInput of input.frameworks) {
-                const { skills: initialSkills, boostUris = [], ...frameworkPayload } = frameworkInput;
+                const {
+                    skills: initialSkills,
+                    boostUris = [],
+                    ...frameworkPayload
+                } = frameworkInput;
 
                 const boostAttachments = await resolveBoostAttachments(profile, boostUris);
 
@@ -180,7 +184,8 @@ export const skillFrameworksRouter = t.router({
                 path: '/skills/frameworks/{frameworkId}/admins',
                 tags: ['Skills'],
                 summary: 'List framework admins',
-                description: 'Returns the profiles that manage the given framework. Requires manager access.',
+                description:
+                    'Returns the profiles that manage the given framework. Requires manager access.',
             },
             requiredScope: 'skills:read',
         })
@@ -408,6 +413,7 @@ export const skillFrameworksRouter = t.router({
                     id: skill.id,
                     statement: skill.statement,
                     description: skill.description ?? undefined,
+                    icon: skill.icon ?? undefined,
                     code: skill.code ?? undefined,
                     type: skill.type ?? undefined,
                     status: skill.status ?? undefined,
@@ -431,12 +437,7 @@ export const skillFrameworksRouter = t.router({
             const localFramework = await getSkillFrameworkById(id);
             if (!localFramework) throw new TRPCError({ code: 'NOT_FOUND' });
 
-            const skills = await buildLocalSkillTreePage(
-                id,
-                limit,
-                childrenLimit,
-                cursor ?? null
-            );
+            const skills = await buildLocalSkillTreePage(id, limit, childrenLimit, cursor ?? null);
 
             return {
                 framework: formatFramework(localFramework),
