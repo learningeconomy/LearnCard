@@ -48,7 +48,7 @@ export const upsertSkillFrameworkFromProvider = async (
         id: framework.id,
         name: framework.name,
         description: framework.description,
-        image: framework.image,
+        image: framework.image || '',
         sourceURI: framework.sourceURI,
         status: 'active',
         createdAt: now,

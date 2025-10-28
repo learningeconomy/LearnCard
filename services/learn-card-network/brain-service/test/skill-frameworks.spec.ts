@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { getUser, getClient } from './helpers/getClient';
 import { Profile, SkillFramework, Skill } from '@models';
-import { __skillsProviderTestUtils } from '@services/skills-provider';
+import { __skillsProviderTestUtils, getSkillsProvider } from '@services/skills-provider';
 import { neogma } from '@instance';
 import { testUnsignedBoost } from './helpers/send';
 
@@ -45,11 +45,17 @@ describe('Skill Frameworks (provider-based)', () => {
         prefix: string
     ): Promise<string> => {
         const profileId = `${prefix}-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
-        await user.clients.fullAuth.profile.createProfile({ profileId });
+        await user.clients.fullAuth.profile.createProfile({
+            profileId,
+            image: '',
+        });
         return profileId;
     };
 
     beforeAll(async () => {
+        // Initialize dummy provider for tests
+        getSkillsProvider({ providerId: 'dummy' });
+        
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
         userReader = await getUser('d'.repeat(64), 'skills:read');
