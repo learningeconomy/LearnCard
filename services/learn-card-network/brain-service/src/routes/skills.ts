@@ -38,6 +38,7 @@ import {
     GetFullSkillTreeResultValidator,
     GetSkillPathInputValidator,
     GetSkillPathResultValidator,
+    type SkillDeletionStrategy,
 } from '@learncard/types';
 import {
     buildLocalSkillTreePage,
@@ -460,15 +461,15 @@ export const skillsRouter = t.router({
                 tags: ['Skills'],
                 summary: 'Delete a skill',
                 description:
-                    'Deletes a skill from a framework managed by the caller and detaches any relationships.',
+                    'Deletes a skill from a framework managed by the caller. Strategy options: "reparent" (default) moves children to the deleted skill\'s parent (or makes them root nodes if no parent), "recursive" deletes the skill and all its descendants.',
             },
             requiredScope: 'skills:write',
         })
         .input(DeleteSkillInputValidator)
-        .output(z.object({ success: z.boolean() }))
+        .output(z.object({ success: z.boolean(), deletedCount: z.number() }))
         .mutation(async ({ ctx, input }) => {
             const profileId = ctx.user.profile.profileId;
-            const { frameworkId, id } = input;
+            const { frameworkId, id, strategy } = input;
 
             const manages = await doesProfileManageFramework(profileId, frameworkId);
             if (!manages)
@@ -477,7 +478,7 @@ export const skillsRouter = t.router({
                     message: 'You do not manage this framework',
                 });
 
-            const result = await deleteSkill(frameworkId, id);
+            const result = await deleteSkill(frameworkId, id, strategy as SkillDeletionStrategy);
 
             const provider = getSkillsProvider();
             await provider.deleteSkill?.(frameworkId, id);

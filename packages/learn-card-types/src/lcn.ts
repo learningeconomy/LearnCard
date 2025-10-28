@@ -1233,9 +1233,13 @@ export const UpdateSkillInputValidator = z
 
 export type UpdateSkillInput = z.infer<typeof UpdateSkillInputValidator>;
 
+export const SkillDeletionStrategyValidator = z.enum(['recursive', 'reparent']);
+export type SkillDeletionStrategy = z.infer<typeof SkillDeletionStrategyValidator>;
+
 export const DeleteSkillInputValidator = z.object({
     frameworkId: z.string(),
     id: z.string(),
+    strategy: SkillDeletionStrategyValidator.optional().default('reparent'),
 });
 
 export type DeleteSkillInput = z.infer<typeof DeleteSkillInputValidator>;

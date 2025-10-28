@@ -988,4 +988,156 @@ describe('Skills router', () => {
             noAuthClient.skills.searchFrameworkSkills({ id: FW_ID, query: { statement: { $regex: /.*/ } }, limit: 10 })
         ).rejects.toThrow();
     });
+
+    describe('Skill Deletion Strategies', () => {
+        it('should delete skill and all descendants with recursive strategy', async () => {
+            await createProfileFor(userA, 'usera');
+            const frameworkId = `fw-deletion-${crypto.randomUUID()}`;
+            
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Deletion Test Framework',
+                skills: [],
+            });
+
+            // Create hierarchy: root -> child -> grandchild
+            const root = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: { id: `${frameworkId}-root`, statement: 'Root' },
+            });
+
+            const child = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: root.id,
+                skill: { id: `${frameworkId}-child`, statement: 'Child' },
+            });
+
+            const grandchild = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: child.id,
+                skill: { id: `${frameworkId}-grandchild`, statement: 'Grandchild' },
+            });
+
+            // Delete child with recursive strategy
+            const result = await userA.clients.fullAuth.skills.delete({
+                frameworkId,
+                id: child.id,
+                strategy: 'recursive',
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.deletedCount).toBe(2); // child and grandchild
+
+            // Verify only root remains
+            const tree = await userA.clients.fullAuth.skills.getFrameworkSkillTree({ id: frameworkId });
+            const allIds = tree.records.map(s => s.id);
+            
+            expect(allIds).toContain(root.id);
+            expect(allIds).not.toContain(child.id);
+            expect(allIds).not.toContain(grandchild.id);
+        });
+
+        it('should reparent children to grandparent with reparent strategy', async () => {
+            await createProfileFor(userA, 'usera');
+            const frameworkId = `fw-reparent-${crypto.randomUUID()}`;
+            
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Reparent Test Framework',
+                skills: [],
+            });
+
+            // Create hierarchy: root -> middle -> child1, child2
+            const root = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: { id: `${frameworkId}-root`, statement: 'Root' },
+            });
+
+            const middle = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: root.id,
+                skill: { id: `${frameworkId}-middle`, statement: 'Middle' },
+            });
+
+            const child1 = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: middle.id,
+                skill: { id: `${frameworkId}-child1`, statement: 'Child1' },
+            });
+
+            const child2 = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: middle.id,
+                skill: { id: `${frameworkId}-child2`, statement: 'Child2' },
+            });
+
+            // Delete middle with reparent strategy (default)
+            const result = await userA.clients.fullAuth.skills.delete({
+                frameworkId,
+                id: middle.id,
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.deletedCount).toBe(1); // Only middle deleted
+
+            // Verify children were reparented by checking the tree structure
+            const tree = await userA.clients.fullAuth.skills.getFrameworkSkillTree({ id: frameworkId });
+            
+            // Find root in the tree and verify it has both children
+            const rootInTree = tree.records.find((s: any) => s.id === root.id);
+            expect(rootInTree).toBeDefined();
+            expect(rootInTree!.children).toBeDefined();
+            
+            const childIds = rootInTree!.children?.map((c: any) => c.id) || [];
+            expect(childIds).toContain(child1.id);
+            expect(childIds).toContain(child2.id);
+        });
+
+        it('should make children root nodes when deleting root with reparent', async () => {
+            await createProfileFor(userA, 'usera');
+            const frameworkId = `fw-orphan-${crypto.randomUUID()}`;
+            
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Orphan Test Framework',
+                skills: [],
+            });
+
+            // Create hierarchy: rootToDelete -> child1, child2
+            const rootToDelete = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: { id: `${frameworkId}-root`, statement: 'Root to Delete' },
+            });
+
+            const child1 = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: rootToDelete.id,
+                skill: { id: `${frameworkId}-child1`, statement: 'Child1' },
+            });
+
+            const child2 = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: rootToDelete.id,
+                skill: { id: `${frameworkId}-child2`, statement: 'Child2' },
+            });
+
+            // Delete root with reparent strategy
+            const result = await userA.clients.fullAuth.skills.delete({
+                frameworkId,
+                id: rootToDelete.id,
+                strategy: 'reparent',
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.deletedCount).toBe(1);
+
+            // Verify children became root nodes (appear at top level of tree)
+            const tree = await userA.clients.fullAuth.skills.getFrameworkSkillTree({ id: frameworkId });
+            
+            // Both children should now be root-level nodes
+            const rootIds = tree.records.map((s: any) => s.id);
+            expect(rootIds).toContain(child1.id);
+            expect(rootIds).toContain(child2.id);
+        });
+    });
 });

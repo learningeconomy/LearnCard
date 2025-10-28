@@ -85,11 +85,13 @@ export const updateSkill = async (
 
 export const deleteSkill = async (
     frameworkId: string,
-    skillId: string
-): Promise<{ success: boolean }> => {
+    skillId: string,
+    strategy: 'recursive' | 'reparent' = 'reparent'
+): Promise<{ success: boolean; deletedCount: number }> => {
     const matchResult = await neogma.queryRunner.run(
         `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
-         RETURN s AS s`,
+         OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
+         RETURN s AS s, parent.id AS parentId`,
         { frameworkId, skillId }
     );
 
@@ -100,11 +102,50 @@ export const deleteSkill = async (
         });
     }
 
-    await neogma.queryRunner.run(
-        `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
-         DETACH DELETE s`,
-        { frameworkId, skillId }
-    );
+    const parentId = matchResult.records[0]?.get('parentId') as string | null;
 
-    return { success: true };
+    if (strategy === 'recursive') {
+        // Recursively delete the skill and all its descendants
+        const deleteResult = await neogma.queryRunner.run(
+            `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+             OPTIONAL MATCH (s)<-[:IS_CHILD_OF*1..]-(descendant:Skill)
+             WITH s, COLLECT(DISTINCT descendant) AS descendants
+             WITH [s] + descendants AS nodesToDelete
+             UNWIND nodesToDelete AS node
+             DETACH DELETE node
+             RETURN COUNT(node) AS deletedCount`,
+            { frameworkId, skillId }
+        );
+
+        const deletedCount = deleteResult.records[0]?.get('deletedCount')?.toNumber() ?? 1;
+        return { success: true, deletedCount };
+    } else {
+        // Reparent strategy: move children to the deleted skill's parent
+        if (parentId) {
+            // Skill has a parent - reparent children to grandparent
+            await neogma.queryRunner.run(
+                `MATCH (s:Skill {id: $skillId})<-[oldRel:IS_CHILD_OF]-(child:Skill)
+                 MATCH (parent:Skill {id: $parentId})
+                 DELETE oldRel
+                 CREATE (child)-[:IS_CHILD_OF]->(parent)`,
+                { skillId, parentId }
+            );
+        } else {
+            // Skill is a root node - make children root nodes by removing their parent relationships
+            await neogma.queryRunner.run(
+                `MATCH (s:Skill {id: $skillId})<-[rel:IS_CHILD_OF]-(child:Skill)
+                 DELETE rel`,
+                { skillId }
+            );
+        }
+
+        // Now delete the skill itself
+        await neogma.queryRunner.run(
+            `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+             DETACH DELETE s`,
+            { frameworkId, skillId }
+        );
+
+        return { success: true, deletedCount: 1 };
+    }
 };
