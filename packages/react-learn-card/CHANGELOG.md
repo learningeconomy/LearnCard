@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.8.56
+
+### Patch Changes
+
+-   [#814](https://github.com/learningeconomy/LearnCard/pull/814) [`ff96c92a9066be7d292b7206d3b4285e8612486a`](https://github.com/learningeconomy/LearnCard/commit/ff96c92a9066be7d292b7206d3b4285e8612486a) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1365 - Update verification expiration response
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.11
+
 ## 2.8.55
 
 ### Patch Changes
