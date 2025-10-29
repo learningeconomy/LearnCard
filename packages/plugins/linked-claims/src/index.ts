@@ -108,7 +108,7 @@ export const getLinkedClaimsPlugin = (
 
             const indexName = pickIndexProvider(learnCard, options?.indexName);
             let indexed = false;
-            let id = (endorsement as any).id || `urn:uuid:${(globalThis as any).crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
+            let id = (endorsement as any).id || `urn:uuid:${(globalThis as any).crypto?.randomUUID?.() || (() => { throw new Error('Secure random UUID generation is not available. Please use an environment that supports crypto.randomUUID().'); })()}`;
 
             if (indexName) {
                 const cs: any = (endorsement as any).credentialSubject;
