@@ -181,6 +181,30 @@ export const inboxRouter = t.router({
                         body: 'Your account has been approved by your parent or guardian.',
                     },
                 });
+
+                // Send email notification to the approved user
+                const contactMethods = await getContactMethodsForProfile(requester.did);
+                const emailContact = contactMethods.find(cm => cm.type === 'email' && cm.isVerified) 
+                    || contactMethods.find(cm => cm.type === 'email');
+
+                if (emailContact) {
+                    try {
+                        const deliveryService = getDeliveryService({ type: 'email', value: emailContact.value });
+                        await deliveryService.send({
+                            contactMethod: { type: 'email', value: emailContact.value },
+                            templateId: 'account-approved-email',
+                            templateModel: {
+                                user: {
+                                    displayName: requester.displayName,
+                                    profileId: requester.profileId,
+                                },
+                            },
+                        });
+                    } catch (emailError) {
+                        // Log error but don't fail the approval
+                        console.error('Failed to send account approval email:', emailError);
+                    }
+                }
             }
 
             // Mark token as used (idempotent)
@@ -247,6 +271,30 @@ export const inboxRouter = t.router({
                         body: 'Your account has been approved by your parent or guardian.',
                     },
                 });
+
+                // Send email notification to the approved user
+                const contactMethods = await getContactMethodsForProfile(requester.did);
+                const emailContact = contactMethods.find(cm => cm.type === 'email' && cm.isVerified) 
+                    || contactMethods.find(cm => cm.type === 'email');
+
+                if (emailContact) {
+                    try {
+                        const deliveryService = getDeliveryService({ type: 'email', value: emailContact.value });
+                        await deliveryService.send({
+                            contactMethod: { type: 'email', value: emailContact.value },
+                            templateId: 'account-approved-email',
+                            templateModel: {
+                                user: {
+                                    displayName: requester.displayName,
+                                    profileId: requester.profileId,
+                                },
+                            },
+                        });
+                    } catch (emailError) {
+                        // Log error but don't fail the approval
+                        console.error('Failed to send account approval email:', emailError);
+                    }
+                }
             }
 
             await markGuardianApprovalTokenAsUsed(token);
