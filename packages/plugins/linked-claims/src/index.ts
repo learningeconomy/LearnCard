@@ -103,7 +103,6 @@ export const getLinkedClaimsPlugin = (
         storeEndorsement: async (_learnCard, endorsement, options) => {
             const storeName = pickStoreProvider(learnCard, options?.storeName);
             if (!storeName) throw new Error('No store plane provider available');
-            const uri: string = await (learnCard.store as any)[storeName].uploadEncrypted(endorsement);
             if (!learnCard.store[storeName].uploadEncrypted || typeof learnCard.store[storeName].uploadEncrypted !== 'function') {
                 throw new Error(`Store provider '${storeName}' does not support uploadEncrypted method`);
             }
