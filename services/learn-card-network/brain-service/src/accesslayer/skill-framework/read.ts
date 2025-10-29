@@ -1,6 +1,11 @@
 import { neogma } from '@instance';
+import { int } from 'neo4j-driver';
 import { FlatSkillFrameworkType } from 'types/skill-framework';
 import { SkillTreeNode } from 'types/skill-tree';
+import type { BoostValidator as _BoostValidator, BoostQuery } from '@learncard/types';
+import type { z } from 'zod';
+import { getBoostUri } from '@helpers/boost.helpers';
+import { buildWhereClause, convertObjectRegExpToNeo4j } from '@helpers/neo4j.helpers';
 
 export const getSkillFrameworkById = async (id: string): Promise<FlatSkillFrameworkType | null> => {
     const result = await neogma.queryRunner.run(
@@ -129,4 +134,75 @@ export const getFrameworkWithSkills = async (id: string): Promise<FrameworkWithS
     const skills = buildSkillTree(flatSkills);
 
     return { framework, skills };
+};
+
+/**
+ * Get paginated boosts that use a specific skill framework via the USES_FRAMEWORK relationship.
+ * Paginates first by relationship createdAt, then by boost createdAt, then by boost id.
+ * Supports mongo-style query with $regex, $in, and $or operators.
+ */
+export const getBoostsThatUseFramework = async (
+    frameworkId: string,
+    { limit, cursor, query }: { limit: number; cursor?: string | null; query?: BoostQuery | null },
+    domain: string
+): Promise<{
+    records: Array<z.infer<typeof _BoostValidator>>;
+    hasMore: boolean;
+    cursor?: string;
+}> => {
+    // Build WHERE clause from query if provided
+    let queryWhereClause = 'true';
+    let queryParams = {};
+    
+    if (query) {
+        const convertedQuery = convertObjectRegExpToNeo4j(query);
+        const { whereClause, params } = buildWhereClause('b', convertedQuery as any);
+        queryWhereClause = whereClause;
+        queryParams = params;
+    }
+    
+    const result = await neogma.queryRunner.run(
+        `MATCH (f:SkillFramework {id: $frameworkId})<-[r:USES_FRAMEWORK]-(b:Boost)
+         WHERE ($cursor IS NULL OR 
+               (coalesce(r.createdAt, '1970-01-01T00:00:00.000Z') > $cursorCreatedAt OR 
+                (coalesce(r.createdAt, '1970-01-01T00:00:00.000Z') = $cursorCreatedAt AND (coalesce(b.createdAt, '1970-01-01T00:00:00.000Z') > $cursorBoostCreatedAt OR 
+                 (coalesce(b.createdAt, '1970-01-01T00:00:00.000Z') = $cursorBoostCreatedAt AND b.id > $cursorId)))))
+         AND (${queryWhereClause})
+         WITH b, coalesce(r.createdAt, '1970-01-01T00:00:00.000Z') AS relCreatedAt, coalesce(b.createdAt, '1970-01-01T00:00:00.000Z') AS boostCreatedAt
+         ORDER BY relCreatedAt, boostCreatedAt, b.id
+         LIMIT $limitPlusOne
+         RETURN b, relCreatedAt, boostCreatedAt`,
+        {
+            frameworkId,
+            cursor: cursor ?? null,
+            ...queryParams,
+            cursorCreatedAt: cursor ? cursor.split('|')[0] : null,
+            cursorBoostCreatedAt: cursor ? cursor.split('|')[1] : null,
+            cursorId: cursor ? cursor.split('|')[2] : null,
+            limitPlusOne: int(limit + 1),
+        }
+    );
+
+    const all = result.records.map(r => {
+        const props = ((r.get('b') as any)?.properties ?? {}) as Record<string, any>;
+        // Convert from database format to API format using getBoostUri helper
+        const uri = getBoostUri(props.id, domain);
+        const { id, boost, ...rest } = props;
+        return { uri, ...rest } as z.infer<typeof _BoostValidator>;
+    });
+
+    const hasMore = all.length > limit;
+    const page = all.slice(0, limit);
+    
+    // Create composite cursor: relationshipCreatedAt|boostCreatedAt|boostId
+    const nextCursor = hasMore && page.length > 0 ? (() => {
+        const lastRecord = page[page.length - 1]!;
+        const lastResultRecord = result.records[page.length - 1];
+        const relCreatedAt = lastResultRecord?.get('relCreatedAt');
+        const boostCreatedAt = lastResultRecord?.get('boostCreatedAt');
+        const boostId = lastRecord.uri.split(':').pop();
+        return `${relCreatedAt}|${boostCreatedAt}|${boostId}`;
+    })() : undefined;
+
+    return { records: page, hasMore, cursor: nextCursor };
 };

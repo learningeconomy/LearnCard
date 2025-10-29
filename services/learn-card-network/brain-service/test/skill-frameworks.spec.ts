@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { getUser, getClient } from './helpers/getClient';
-import { Profile, SkillFramework, Skill } from '@models';
+import { Profile, SkillFramework, Skill, Boost } from '@models';
 import { __skillsProviderTestUtils, getSkillsProvider } from '@services/skills-provider';
 import { neogma } from '@instance';
 import { testUnsignedBoost } from './helpers/send';
@@ -19,14 +19,16 @@ const SKILL_IDS = ['s-1', 's-2', 's-3'];
 
 const flattenSkillIds = (skills?: Array<{ id?: string; children?: any[] }>): string[] => {
     if (!skills) return [];
-    return skills.flatMap(skill => [skill.id, ...flattenSkillIds(skill.children)]).filter(Boolean) as string[];
+    return skills
+        .flatMap(skill => [skill.id, ...flattenSkillIds(skill.children)])
+        .filter(Boolean) as string[];
 };
 
 const findSkillById = (
     skills: Array<{ id?: string; children?: any[] }> | undefined,
     id: string,
     parentId?: string
-): ({ id?: string; children?: any[]; parentRef?: string } | undefined) => {
+): { id?: string; children?: any[]; parentRef?: string } | undefined => {
     if (!skills) return undefined;
     for (const skill of skills) {
         if (skill.id === id) {
@@ -55,7 +57,7 @@ describe('Skill Frameworks (provider-based)', () => {
     beforeAll(async () => {
         // Initialize dummy provider for tests
         getSkillsProvider({ providerId: 'dummy' });
-        
+
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
         userReader = await getUser('d'.repeat(64), 'skills:read');
@@ -134,9 +136,7 @@ describe('Skill Frameworks (provider-based)', () => {
         // 2 roots, 3 nodes in total
         expect(result.skills.records.length).toBe(2);
         expect(result.skills.hasMore).toBe(false);
-        expect(flattenSkillIds(result.skills.records)).toEqual(
-            expect.arrayContaining(SKILL_IDS)
-        );
+        expect(flattenSkillIds(result.skills.records)).toEqual(expect.arrayContaining(SKILL_IDS));
         expect(findSkillById(result.skills.records, SKILL_IDS[1])?.type).toBe('container');
         // Verify parent linkage present where provided
         const child = findSkillById(result.skills.records, SKILL_IDS[2]);
@@ -197,6 +197,7 @@ describe('Skill Frameworks (custom CRUD)', () => {
     beforeEach(async () => {
         await Skill.delete({ detach: true, where: {} });
         await SkillFramework.delete({ detach: true, where: {} });
+        await Boost.delete({ detach: true, where: {} });
         await Profile.delete({ detach: true, where: {} });
     });
 
@@ -232,7 +233,9 @@ describe('Skill Frameworks (custom CRUD)', () => {
         const mine = await userA.clients.fullAuth.skillFrameworks.listMine();
         expect(mine.map(fw => fw.id)).toContain(customFrameworkId);
 
-        const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: customFrameworkId });
+        const fetched = await userA.clients.fullAuth.skillFrameworks.getById({
+            id: customFrameworkId,
+        });
         expect(fetched.framework.id).toBe(customFrameworkId);
         expect(fetched.framework.name).toBe('Custom Framework');
         expect(fetched.skills.records).toHaveLength(0);
@@ -339,7 +342,9 @@ describe('Skill Frameworks (custom CRUD)', () => {
         expect(created.map(f => f.id)).toEqual(expect.arrayContaining(fwInputs.map(f => f.id!)));
 
         for (const framework of fwInputs) {
-            const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: framework.id! });
+            const fetched = await userA.clients.fullAuth.skillFrameworks.getById({
+                id: framework.id!,
+            });
             expect(fetched.framework.id).toBe(framework.id);
             expect(fetched.framework.name).toBe(framework.name);
             if (framework.status) {
@@ -505,7 +510,9 @@ describe('Skill Frameworks (custom CRUD)', () => {
         expect(updated.description).toBe('Updated description');
         expect(updated.status).toBe('archived');
 
-        const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: customFrameworkId });
+        const fetched = await userA.clients.fullAuth.skillFrameworks.getById({
+            id: customFrameworkId,
+        });
         expect(fetched.framework.name).toBe('Renamed Framework');
         expect(fetched.framework.status).toBe('archived');
     });
@@ -529,7 +536,9 @@ describe('Skill Frameworks (custom CRUD)', () => {
             },
         });
 
-        const result = await userA.clients.fullAuth.skillFrameworks.delete({ id: customFrameworkId });
+        const result = await userA.clients.fullAuth.skillFrameworks.delete({
+            id: customFrameworkId,
+        });
         expect(result.success).toBe(true);
 
         const mine = await userA.clients.fullAuth.skillFrameworks.listMine();
@@ -583,5 +592,539 @@ describe('Skill Frameworks (custom CRUD)', () => {
         await expect(
             userWriter.clients.fullAuth.skillFrameworks.getById({ id: writerFrameworkId })
         ).rejects.toThrow();
+    });
+
+    it('returns boosts that use a framework', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        // Create framework
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Boosts',
+        });
+
+        // Create boosts
+        const boost1Uri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            name: 'Boost 1',
+        });
+        const boost2Uri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            name: 'Boost 2',
+        });
+        // Create a third boost but don't attach it to the framework
+        await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            name: 'Boost 3',
+        });
+
+        // Attach framework to first two boosts
+        await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+            boostUri: boost1Uri,
+            frameworkId,
+        });
+        await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+            boostUri: boost2Uri,
+            frameworkId,
+        });
+
+        // Get boosts that use the framework
+        const result = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            limit: 10,
+        });
+
+        expect(result.hasMore).toBe(false);
+        expect(result.records).toHaveLength(2);
+
+        // Extract boost IDs from URIs for comparison
+        const resultUris = result.records.map(b => b.uri).sort();
+        const expectedUris = [boost1Uri, boost2Uri].sort();
+
+        // Both should have the same boost IDs (using proper URI parsing)
+        const resultIds = resultUris.map(uri => uri.split(':').pop() || '').sort();
+        const expectedIds = expectedUris.map(uri => uri.split(':').pop() || '').sort();
+
+        expect(resultIds).toEqual(expectedIds);
+
+        // Verify cursor format (should be composite: relCreatedAt|boostCreatedAt|boostId)
+        if (result.cursor) {
+            expect(result.cursor).toMatch(
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\|[a-f0-9-]+$/
+            );
+        }
+    });
+
+    it('paginates boosts that use a framework', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Pagination',
+        });
+
+        // Create 2 boosts and attach them (simple test)
+        const boostUris: string[] = [];
+        for (let i = 0; i < 2; i++) {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name: `Boost ${i}`,
+            });
+            boostUris.push(uri);
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+            // Small delay to ensure different timestamps
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+
+        // Get first page with limit 1
+        const firstPage = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            limit: 1,
+        });
+
+        expect(firstPage.hasMore).toBe(true);
+        expect(firstPage.records).toHaveLength(1);
+        expect(firstPage.cursor).toBeDefined();
+
+        // Verify cursor format includes relationship createdAt
+        expect(firstPage.cursor).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\|/);
+
+        // Get second page
+        const secondPage = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            limit: 1,
+            cursor: firstPage.cursor ?? undefined,
+        });
+
+        expect(secondPage.hasMore).toBe(false);
+        expect(secondPage.records).toHaveLength(1);
+        expect(secondPage.cursor).toBeUndefined();
+
+        // Verify we got different boosts on each page
+        expect(firstPage.records[0]?.uri).not.toBe(secondPage.records[0]?.uri);
+
+        // Verify all our boosts are returned
+        const allReturnedUris = [
+            ...firstPage.records.map(b => b.uri),
+            ...secondPage.records.map(b => b.uri),
+        ];
+
+        const returnedIds = allReturnedUris.map(uri => uri.split(':').pop() || '').sort();
+        const expectedIds = boostUris.map(uri => uri.split(':').pop() || '').sort();
+
+        expect(returnedIds).toEqual(expectedIds);
+    });
+
+    it('returns empty list for framework with no boosts', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Unused Framework',
+        });
+
+        const result = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+        });
+
+        expect(result.hasMore).toBe(false);
+        expect(result.records).toHaveLength(0);
+        expect(result.cursor).toBeUndefined();
+    });
+
+    it('filters boosts by query parameter', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Query',
+        });
+
+        // Create boosts with different names
+        const boost1Uri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            name: 'JavaScript Expert',
+        });
+        const boost2Uri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            name: 'Python Developer',
+        });
+        const boost3Uri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            name: 'Java Programmer',
+        });
+
+        // Attach all to framework
+        await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+            boostUri: boost1Uri,
+            frameworkId,
+        });
+        await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+            boostUri: boost2Uri,
+            frameworkId,
+        });
+        await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+            boostUri: boost3Uri,
+            frameworkId,
+        });
+
+        // Query for 'java' (should match Java and JavaScript) using $regex
+        const javaResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: { name: { $regex: /java/i } },
+        });
+
+        expect(javaResult.records).toHaveLength(2);
+        const javaNames = javaResult.records.map(b => b.name).sort();
+        expect(javaNames).toEqual(['Java Programmer', 'JavaScript Expert']);
+
+        // Query for 'python' using case-insensitive regex
+        const pythonResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework(
+            {
+                id: frameworkId,
+                query: { name: { $regex: /python/i } },
+            }
+        );
+
+        expect(pythonResult.records).toHaveLength(1);
+        expect(pythonResult.records[0]?.name).toBe('Python Developer');
+
+        // Query for 'expert' using $regex
+        const expertResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework(
+            {
+                id: frameworkId,
+                query: { name: { $regex: /expert/i } },
+            }
+        );
+
+        expect(expertResult.records).toHaveLength(1);
+        expect(expertResult.records[0]?.name).toBe('JavaScript Expert');
+
+        // Query for non-existent term
+        const noMatchResult =
+            await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+                id: frameworkId,
+                query: { name: { $regex: /rust/i } },
+            });
+
+        expect(noMatchResult.records).toHaveLength(0);
+
+        // No query should return all
+        const allResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+        });
+
+        expect(allResult.records).toHaveLength(3);
+
+        // Test $or operator - match "Developer" OR "Programmer" (not Expert)
+        const orResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: {
+                $or: [{ name: { $regex: /Developer/i } }, { name: { $regex: /Programmer/i } }],
+            },
+        });
+
+        expect(orResult.records.length).toEqual(2);
+        const orNames = orResult.records
+            .map(b => b.name)
+            .filter(name => name?.includes('Developer') || name?.includes('Programmer'))
+            .sort();
+        expect(orNames).toEqual(['Java Programmer', 'Python Developer']);
+    });
+
+    it('supports complex query combinations with $or, $regex, and $in', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Complex Queries',
+        });
+
+        // Create boosts with different properties
+        const boosts = [
+            { name: 'Senior JavaScript Developer', type: 'certification' },
+            { name: 'Python Expert Badge', type: 'badge' },
+            { name: 'Java Certification', type: 'certification' },
+            { name: 'Ruby on Rails Developer', type: 'skill' },
+            { name: 'TypeScript Guru', type: 'badge' },
+        ];
+
+        const boostUris: string[] = [];
+        for (const boost of boosts) {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name: boost.name,
+                type: boost.type,
+            });
+            boostUris.push(uri);
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+
+        // Test: $or with multiple $regex patterns
+        const multiOrResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: {
+                $or: [
+                    { name: { $regex: /Python/i } },
+                    { name: { $regex: /Ruby/i } },
+                    { name: { $regex: /TypeScript/i } }
+                ]
+            },
+        });
+
+        expect(multiOrResult.records).toHaveLength(3);
+        const multiOrNames = multiOrResult.records.map(b => b.name).sort();
+        expect(multiOrNames).toEqual(['Python Expert Badge', 'Ruby on Rails Developer', 'TypeScript Guru']);
+
+        // Test: $in with type field
+        const inResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: {
+                type: { $in: ['certification', 'badge'] }
+            },
+        });
+
+        expect(inResult.records).toHaveLength(4);
+        const inNames = inResult.records.map(b => b.name).sort();
+        expect(inNames).toEqual([
+            'Java Certification',
+            'Python Expert Badge',
+            'Senior JavaScript Developer',
+            'TypeScript Guru'
+        ]);
+
+        // Test: Combined $or with different fields
+        const combinedOrResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: {
+                $or: [
+                    { type: { $in: ['skill'] } },
+                    { name: { $regex: /Expert/i } }
+                ]
+            },
+        });
+
+        expect(combinedOrResult.records).toHaveLength(2);
+        const combinedNames = combinedOrResult.records.map(b => b.name).sort();
+        expect(combinedNames).toEqual(['Python Expert Badge', 'Ruby on Rails Developer']);
+
+        // Test: Regular AND query (multiple fields)
+        const andResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: {
+                type: 'badge',
+                name: { $regex: /Python/i }
+            },
+        });
+
+        expect(andResult.records).toHaveLength(1);
+        expect(andResult.records[0]?.name).toBe('Python Expert Badge');
+    });
+
+    it('combines query filtering with pagination correctly', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Query Pagination',
+        });
+
+        // Create 5 boosts, 3 matching our query
+        const boosts = [
+            { name: 'Advanced Python Developer', match: true },
+            { name: 'Java Expert', match: false },
+            { name: 'Python Data Scientist', match: true },
+            { name: 'Ruby Programmer', match: false },
+            { name: 'Python Machine Learning Engineer', match: true },
+        ];
+
+        for (const boost of boosts) {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name: boost.name,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+
+        // Get first page with query and limit 2
+        const firstPage = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            limit: 2,
+            query: { name: { $regex: /Python/i } },
+        });
+
+        expect(firstPage.records).toHaveLength(2);
+        expect(firstPage.hasMore).toBe(true);
+        expect(firstPage.cursor).toBeDefined();
+
+        // All returned boosts should match the query
+        firstPage.records.forEach(boost => {
+            expect(boost.name?.toLowerCase()).toContain('python');
+        });
+
+        // Get second page
+        const secondPage = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            limit: 2,
+            query: { name: { $regex: /Python/i } },
+            cursor: firstPage.cursor ?? undefined,
+        });
+
+        expect(secondPage.records).toHaveLength(1);
+        expect(secondPage.hasMore).toBe(false);
+        expect(secondPage.cursor).toBeUndefined();
+
+        secondPage.records.forEach(boost => {
+            expect(boost.name?.toLowerCase()).toContain('python');
+        });
+
+        // Verify all pages together give us exactly 3 Python boosts
+        const allPythonBoosts = [...firstPage.records, ...secondPage.records];
+        expect(allPythonBoosts).toHaveLength(3);
+
+        // Verify we didn't get any duplicates
+        const uniqueUris = new Set(allPythonBoosts.map(b => b.uri));
+        expect(uniqueUris.size).toBe(3);
+    });
+
+    it('handles case-insensitive regex queries correctly', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Case Sensitivity',
+        });
+
+        // Create boosts with various casing
+        const boosts = [
+            'PYTHON Developer',
+            'python expert',
+            'Python Programmer',
+            'PYthon Engineer',
+        ];
+
+        for (const name of boosts) {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+        }
+
+        // Query with lowercase should match all
+        const result = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: { name: { $regex: /python/i } },
+        });
+
+        expect(result.records).toHaveLength(4);
+
+        // Query without case-insensitive flag should only match lowercase
+        const caseSensitiveResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: { name: { $regex: /python/ } },
+        });
+
+        expect(caseSensitiveResult.records).toHaveLength(1);
+        expect(caseSensitiveResult.records[0]?.name).toBe('python expert');
+    });
+
+    it('returns empty results when query matches nothing', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework',
+        });
+
+        // Create some boosts
+        for (let i = 0; i < 3; i++) {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name: `JavaScript Developer ${i}`,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+        }
+
+        // Query for something that doesn't exist
+        const result = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: { name: { $regex: /Golang/i } },
+        });
+
+        expect(result.records).toHaveLength(0);
+        expect(result.hasMore).toBe(false);
+        expect(result.cursor).toBeUndefined();
+    });
+
+    it('handles complex nested $or queries', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Nested Queries',
+        });
+
+        // Create boosts with different combinations
+        const boosts = [
+            { name: 'Senior Python Developer', type: 'certification' },
+            { name: 'Junior JavaScript Engineer', type: 'badge' },
+            { name: 'Python Data Analyst', type: 'skill' },
+            { name: 'JavaScript Architect', type: 'certification' },
+            { name: 'Ruby Developer', type: 'badge' },
+        ];
+
+        for (const boost of boosts) {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name: boost.name,
+                type: boost.type,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+        }
+
+        // Complex OR: (Python AND certification) OR (JavaScript AND badge)
+        const result = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+            id: frameworkId,
+            query: {
+                $or: [
+                    { name: { $regex: /Python/i }, type: 'certification' },
+                    { name: { $regex: /JavaScript/i }, type: 'badge' }
+                ]
+            },
+        });
+
+        expect(result.records).toHaveLength(2);
+        const names = result.records.map(b => b.name).sort();
+        expect(names).toEqual(['Junior JavaScript Engineer', 'Senior Python Developer']);
     });
 });

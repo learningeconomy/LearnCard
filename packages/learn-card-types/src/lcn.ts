@@ -239,7 +239,7 @@ export const BoostValidator = z.object({
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
-export const BoostQueryValidator = z
+const BaseBoostQueryValidator = z
     .object({
         uri: StringQuery,
         name: StringQuery,
@@ -250,6 +250,13 @@ export const BoostQueryValidator = z
         autoConnectRecipients: z.boolean(),
     })
     .partial();
+
+export const BoostQueryValidator = z.union([
+    z.object({
+        $or: BaseBoostQueryValidator.array(),
+    }),
+    BaseBoostQueryValidator,
+]);
 export type BoostQuery = z.infer<typeof BoostQueryValidator>;
 
 export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
@@ -1029,10 +1036,10 @@ const BaseSkillQueryValidator = z
     .partial();
 
 export const SkillQueryValidator = z.union([
-    BaseSkillQueryValidator,
     z.object({
         $or: BaseSkillQueryValidator.array(),
     }),
+    BaseSkillQueryValidator,
 ]);
 
 export type SkillQuery = z.infer<typeof SkillQueryValidator>;

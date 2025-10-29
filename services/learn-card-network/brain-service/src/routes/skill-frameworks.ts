@@ -16,6 +16,8 @@ import {
     SkillFrameworkAdminsValidator,
     ReplaceSkillFrameworkSkillsInputValidator,
     ReplaceSkillFrameworkSkillsResultValidator,
+    PaginatedBoostsValidator,
+    BoostQueryValidator,
 } from '@learncard/types';
 import {
     upsertSkillFrameworkFromProvider,
@@ -26,6 +28,7 @@ import {
     listSkillFrameworksManagedByProfile,
     doesProfileManageFramework,
     getSkillFrameworkById,
+    getBoostsThatUseFramework,
 } from '@accesslayer/skill-framework/read';
 import {
     updateSkillFramework as updateSkillFrameworkNode,
@@ -443,6 +446,37 @@ export const skillFrameworksRouter = t.router({
                 framework: formatFramework(localFramework),
                 skills,
             };
+        }),
+
+    getBoostsThatUseFramework: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/frameworks/{id}/boosts',
+                tags: ['Skills'],
+                summary: 'Get boosts that use a framework',
+                description:
+                    'Returns paginated list of boosts that use this skill framework via USES_FRAMEWORK relationship. Supports filtering with $regex, $in, and $or operators.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(
+            z.object({
+                id: z.string(),
+                limit: z.number().int().min(1).max(100).default(50),
+                cursor: z.string().nullable().optional(),
+                query: BoostQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ input, ctx }) => {
+            const { id, limit, cursor, query } = input;
+            return getBoostsThatUseFramework(
+                id,
+                { limit, cursor: cursor ?? undefined, query: query ?? null },
+                ctx.domain
+            );
         }),
 
     replaceSkills: profileRoute

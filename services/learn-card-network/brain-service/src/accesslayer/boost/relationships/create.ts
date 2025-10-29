@@ -61,7 +61,11 @@ export const setBoostUsesFramework = async (
     boost: BoostInstance,
     frameworkId: string
 ): Promise<void> => {
-    await boost.relateTo({ alias: 'usesFramework', where: { id: frameworkId } });
+    await boost.relateTo({
+        alias: 'usesFramework',
+        where: { id: frameworkId },
+        properties: { createdAt: new Date().toISOString() },
+    });
 };
 
 // Align one or more Skills to a Boost via ALIGNED_TO

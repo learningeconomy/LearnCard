@@ -8,6 +8,7 @@ import {
     SentCredentialInfo,
     JWE,
     Boost,
+    BoostQuery,
     LCNSigningAuthorityForUserType,
     LCNBoostClaimLinkSigningAuthorityType,
     LCNBoostClaimLinkOptionsType,
@@ -29,7 +30,6 @@ import {
     ConsentFlowDataQuery,
     BoostRecipientInfo,
     BoostPermissions,
-    BoostQuery,
     LCNProfileQuery,
     LCNProfileManagerQuery,
     PaginatedLCNProfileManagers,
@@ -500,6 +500,10 @@ export type LearnCardNetworkPluginMethods = {
         id: string,
         options?: { limit?: number; childrenLimit?: number; cursor?: string | null }
     ) => Promise<FrameworkWithSkills>;
+    getBoostsThatUseFramework: (
+        frameworkId: string,
+        options?: { limit?: number; cursor?: string | null; query?: BoostQuery }
+    ) => Promise<PaginatedBoostsType>;
     getFrameworkSkillTree: (
         frameworkId: string,
         options?: { rootsLimit?: number; childrenLimit?: number; cursor?: string | null }

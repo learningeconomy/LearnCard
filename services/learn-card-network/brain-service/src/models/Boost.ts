@@ -25,7 +25,12 @@ export type BoostRelationships = {
         Partial<BoostPermissions> & { roleId: string }
     >;
     claimRole: ModelRelatedNodesI<typeof Role, RoleInstance>;
-    usesFramework: ModelRelatedNodesI<typeof SkillFramework, SkillFrameworkInstance>;
+    usesFramework: ModelRelatedNodesI<
+        typeof SkillFramework,
+        SkillFrameworkInstance,
+        { createdAt: string },
+        { createdAt: string }
+    >;
     alignedTo: ModelRelatedNodesI<typeof Skill, SkillInstance>;
 };
 
