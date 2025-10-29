@@ -38,6 +38,7 @@ type MeritBadgeFrontFaceProps = {
     handleViewBackFace?: () => void;
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
+    customBodyContentSlot?: React.ReactNode;
 };
 
 export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
@@ -54,6 +55,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     handleViewBackFace,
     showDetailsBtn = false,
     formattedDisplayType,
+    customBodyContentSlot,
 }) => {
     const {
         title = '',
@@ -160,7 +162,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </div>
                     </div>
                 </div>
-
                 {customBodyCardComponent}
                 {issueeImageExists && !customBodyCardComponent && (
                     <MeritBadgeProfileImageDisplay
@@ -174,7 +175,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         <Smiley />
                     </div>
                 )}
-
                 <div className="flex flex-col w-full">
                     <div className="text-[14px] text-grayscale-900 flex flex-col items-center w-full mb-[10px]">
                         <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
@@ -214,7 +214,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </div> */}
                     </div>
                 </div>
-
                 <MeritBadgeProfileImageDisplay
                     imageUrl={issuerImage}
                     userName={issuerName}
@@ -223,6 +222,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     size="small"
                     showSeal
                 />
+                {customBodyContentSlot && customBodyContentSlot}
                 <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>
                     {categoryTitle}
                 </div>

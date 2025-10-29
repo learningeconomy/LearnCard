@@ -37,6 +37,7 @@ type CertificateFrontFaceProps = {
     handleViewBackFace?: () => void;
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
+    customBodyContentSlot?: React.ReactNode;
 };
 
 export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
@@ -53,6 +54,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     handleViewBackFace,
     showDetailsBtn = false,
     formattedDisplayType,
+    customBodyContentSlot,
 }) => {
     const {
         title = '',
@@ -214,6 +216,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
                     <VerifierStateBadgeAndText verifierState={verifierState} />
                 </div>
+                {customBodyContentSlot && customBodyContentSlot}
                 <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>
                     {categoryTitle}
                 </div>
