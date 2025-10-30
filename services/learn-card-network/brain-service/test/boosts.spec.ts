@@ -6155,6 +6155,120 @@ describe('Boosts', () => {
             expect(Number(relationships.records[0]?.get('c') ?? 0)).toBe(1);
         });
 
+        it('allows detaching a framework from a boost', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Detach Framework Test',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // Attach framework
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // Verify it's attached
+            const frameworksBefore = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
+            expect((frameworksBefore.records as Array<{ id: string }>).map(f => f.id)).toContain(
+                frameworkId
+            );
+
+            // Detach framework
+            const result = await userA.clients.fullAuth.boost.detachFrameworkFromBoost({
+                boostUri,
+                frameworkId,
+            });
+            expect(result).toBe(true);
+
+            // Verify it's removed
+            const frameworksAfter = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
+            expect((frameworksAfter.records as Array<{ id: string }>).map(f => f.id)).not.toContain(
+                frameworkId
+            );
+
+            // Verify Neo4j relationship is removed
+            const boostId = getIdFromUri(boostUri);
+            const relationships = await neogma.queryRunner.run(
+                `MATCH (:Boost { id: $boostId })-[:USES_FRAMEWORK]->(f:SkillFramework { id: $frameworkId })
+                 RETURN count(f) AS c`,
+                { boostId, frameworkId }
+            );
+
+            expect(Number(relationships.records[0]?.get('c') ?? 0)).toBe(0);
+        });
+
+        it('enforces boost admin permissions when detaching frameworks', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Detach Permissions Framework',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // User B should not be able to detach
+            await expect(
+                userB.clients.fullAuth.boost.detachFrameworkFromBoost({
+                    boostUri,
+                    frameworkId,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            // Add user B as admin
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: 'userb',
+            });
+
+            // Now user B should be able to detach
+            await expect(
+                userB.clients.fullAuth.boost.detachFrameworkFromBoost({
+                    boostUri,
+                    frameworkId,
+                })
+            ).resolves.toBe(true);
+        });
+
+        it('returns false when detaching a framework that is not attached', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Not Attached Framework',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // Try to detach a framework that was never attached
+            const result = await userA.clients.fullAuth.boost.detachFrameworkFromBoost({
+                boostUri,
+                frameworkId,
+            });
+            expect(result).toBe(false);
+        });
+
         it('enforces boost admin permissions when aligning skills', async () => {
             const frameworkId = `fw-${crypto.randomUUID()}`;
             const skillId = `${frameworkId}-skill`;

@@ -755,6 +755,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.boost.attachFrameworkToBoost.mutate({ boostUri, frameworkId });
             },
+            detachFrameworkFromBoost: async (_learnCard, boostUri, frameworkId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.detachFrameworkFromBoost.mutate({ boostUri, frameworkId });
+            },
             alignBoostSkills: async (_learnCard, boostUri, skillIds) => {
                 if (!userData) throw new Error('Please make an account first!');
 

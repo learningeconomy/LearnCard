@@ -115,6 +115,7 @@ import { neogma } from '@instance';
 import {
     removeBoostAsParent,
     removeProfileAsBoostAdmin,
+    removeBoostUsesFramework,
 } from '@accesslayer/boost/relationships/delete';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
@@ -203,6 +204,41 @@ export const boostsRouter = t.router({
             await setBoostUsesFramework(boost, frameworkId);
 
             return true;
+        }),
+    detachFrameworkFromBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/detach-framework',
+                tags: ['Boosts'],
+                summary: 'Detach framework from boost',
+                description:
+                    'Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(z.object({ boostUri: z.string(), frameworkId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, frameworkId } = input;
+
+            const boost = await getBoostByUri(boostUri);
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const framework = await getSkillFrameworkById(frameworkId);
+            if (!framework)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
+
+            return removeBoostUsesFramework(boost, frameworkId);
         }),
 
     alignBoostSkills: profileRoute
