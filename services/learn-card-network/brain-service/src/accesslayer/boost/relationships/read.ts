@@ -65,6 +65,78 @@ export const getFrameworksForBoost = async (
     return rels.map(rel => rel.target).filter(Boolean) as SkillFrameworkInstance[];
 };
 
+export const getFrameworksForBoostPaged = async (
+    boost: BoostInstance,
+    searchQuery: Record<string, any> | null,
+    limit: number,
+    cursor?: string | null
+): Promise<{
+    records: FlatSkillFrameworkType[];
+    hasMore: boolean;
+    cursor: string | null;
+}> => {
+    const convertedQuery = convertObjectRegExpToNeo4j(searchQuery ?? {});
+    const { whereClause, params: queryParams } = buildWhereClause('f', convertedQuery as any);
+
+    let cursorName: string | null = null;
+    let cursorCreated: string | null = null;
+    let cursorId: string | null = null;
+
+    if (cursor) {
+        try {
+            const decoded = JSON.parse(cursor);
+            if (decoded && typeof decoded === 'object') {
+                cursorName = (decoded.n as string) ?? null;
+                cursorCreated = (decoded.c as string) ?? null;
+                cursorId = (decoded.i as string) ?? null;
+            }
+        } catch {
+            cursorId = cursor;
+        }
+    }
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (b:Boost { id: $boostId })-[:USES_FRAMEWORK]->(f:SkillFramework)
+         WHERE ${whereClause}
+         AND (
+            $cursorName IS NULL OR
+            toLower(f.name) > $cursorName OR
+            (toLower(f.name) = $cursorName AND (
+                COALESCE(f.createdAt, "") > COALESCE($cursorCreated, "") OR
+                (COALESCE(f.createdAt, "") = COALESCE($cursorCreated, "") AND f.id > COALESCE($cursorId, ""))
+            ))
+         )
+         RETURN f AS f
+         ORDER BY toLower(f.name) ASC, COALESCE(f.createdAt, "") ASC, f.id ASC
+         LIMIT $limitPlusOne`,
+        {
+            boostId: boost.id,
+            ...queryParams,
+            cursorName,
+            cursorCreated,
+            cursorId,
+            limitPlusOne: int(limit + 1),
+        }
+    );
+
+    const all = result.records.map(r => {
+        const props = ((r.get('f') as any)?.properties ?? {}) as Record<string, any>;
+        return {
+            ...props,
+            status: props.status ?? 'active',
+        } as FlatSkillFrameworkType;
+    });
+
+    const hasMore = all.length > limit;
+    const page = all.slice(0, limit);
+    const last = page[page.length - 1];
+    const nextCursor = hasMore && last
+        ? JSON.stringify({ n: (last.name || '').toLowerCase(), c: (last as any).createdAt || '', i: last.id })
+        : null;
+
+    return { records: page, hasMore, cursor: nextCursor };
+};
+
 /**
  * Returns the list of `Skill` nodes aligned to a given boost via the `ALIGNED_TO` relationship.
  */
