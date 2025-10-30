@@ -1,9 +1,9 @@
 ---
 // Server-side data (if needed for backend integration in the future)
 const config = {
-  learnCardHostOrigin: process.env.LEARNCARD_HOST_ORIGIN || 'http://localhost:3000', // TODO: Update with actual host
-  contractUri: process.env.CONTRACT_URI || 'lc:network:network.learncard.com/trpc:contract:fc430a19-5f0d-46e2-95c5-15fa57f753c9',
-  boostUri: process.env.BOOST_URI || 'lc:network:network.learncard.com/trpc:boost:fbe30973-68b2-4a87-b0ac-80938ff382c4'
+  learnCardHostOrigin: import.meta.env.LEARNCARD_HOST_ORIGIN || 'http://localhost:3000', // TODO: Update with actual host
+  contractUri: import.meta.env.CONTRACT_URI || 'lc:network:network.learncard.com/trpc:contract:fc430a19-5f0d-46e2-95c5-15fa57f753c9',
+  boostUri: import.meta.env.BOOST_URI || 'lc:network:network.learncard.com/trpc:boost:fbe30973-68b2-4a87-b0ac-80938ff382c4'
 };
 ---
 

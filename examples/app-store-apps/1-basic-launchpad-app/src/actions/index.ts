@@ -4,7 +4,7 @@ import { initLearnCard } from '@learncard/init';
 import crypto from 'node:crypto';
 
 // Load issuer seed from environment variable
-const issuerSeed = process.env.LEARNCARD_ISSUER_SEED;
+const issuerSeed = import.meta.env.LEARNCARD_ISSUER_SEED;
 
 if (!issuerSeed) {
   throw new Error('LEARNCARD_ISSUER_SEED environment variable is required');
