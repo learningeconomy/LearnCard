@@ -504,6 +504,10 @@ export type LearnCardNetworkPluginMethods = {
         frameworkId: string,
         options?: { limit?: number; cursor?: string | null; query?: BoostQuery }
     ) => Promise<PaginatedBoostsType>;
+    countBoostsThatUseFramework: (
+        frameworkId: string,
+        options?: { query?: BoostQuery }
+    ) => Promise<{ count: number }>;
     getFrameworkSkillTree: (
         frameworkId: string,
         options?: { rootsLimit?: number; childrenLimit?: number; cursor?: string | null }

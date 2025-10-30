@@ -29,6 +29,7 @@ import {
     doesProfileManageFramework,
     getSkillFrameworkById,
     getBoostsThatUseFramework,
+    countBoostsThatUseFramework,
 } from '@accesslayer/skill-framework/read';
 import {
     updateSkillFramework as updateSkillFrameworkNode,
@@ -477,6 +478,32 @@ export const skillFrameworksRouter = t.router({
                 { limit, cursor: cursor ?? undefined, query: query ?? null },
                 ctx.domain
             );
+        }),
+
+    countBoostsThatUseFramework: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/frameworks/{id}/boosts/count',
+                tags: ['Skills'],
+                summary: 'Count boosts that use a framework',
+                description:
+                    'Returns the total count of boosts that use this skill framework via USES_FRAMEWORK relationship. Supports filtering with $regex, $in, and $or operators.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(
+            z.object({
+                id: z.string(),
+                query: BoostQueryValidator.optional(),
+            })
+        )
+        .output(z.object({ count: z.number() }))
+        .query(async ({ input }) => {
+            const { id, query } = input;
+            const count = await countBoostsThatUseFramework(id, query ?? null);
+            return { count };
         }),
 
     replaceSkills: profileRoute

@@ -1127,4 +1127,182 @@ describe('Skill Frameworks (custom CRUD)', () => {
         const names = result.records.map(b => b.name).sort();
         expect(names).toEqual(['Junior JavaScript Engineer', 'Senior Python Developer']);
     });
+
+    it('counts all boosts without query filter', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Counting',
+        });
+
+        // Create 5 boosts
+        for (let i = 0; i < 5; i++) {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name: `Boost ${i}`,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+        }
+
+        const result = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
+            id: frameworkId,
+        });
+
+        expect(result.count).toBe(5);
+    });
+
+    it('counts boosts with query filter', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Filtered Counting',
+        });
+
+        // Create boosts with different names
+        const boosts = [
+            'Python Developer',
+            'JavaScript Expert',
+            'Python Engineer',
+            'Java Programmer',
+            'Python Scientist',
+        ];
+
+        for (const name of boosts) {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+        }
+
+        // Count all
+        const allResult = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
+            id: frameworkId,
+        });
+        expect(allResult.count).toBe(5);
+
+        // Count only Python-related
+        const pythonResult = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
+            id: frameworkId,
+            query: { name: { $regex: /Python/i } },
+        });
+        expect(pythonResult.count).toBe(3);
+
+        // Count with $or query
+        const orResult = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
+            id: frameworkId,
+            query: {
+                $or: [
+                    { name: { $regex: /Expert/i } },
+                    { name: { $regex: /Programmer/i } }
+                ]
+            },
+        });
+        expect(orResult.count).toBe(2);
+    });
+
+    it('returns 0 count when no boosts match query', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework',
+        });
+
+        // Create some boosts
+        for (let i = 0; i < 3; i++) {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name: `JavaScript Developer ${i}`,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+        }
+
+        // Query for something that doesn't exist
+        const result = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
+            id: frameworkId,
+            query: { name: { $regex: /Rust/i } },
+        });
+
+        expect(result.count).toBe(0);
+    });
+
+    it('returns 0 count for framework with no boosts', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Empty Framework',
+        });
+
+        const result = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
+            id: frameworkId,
+        });
+
+        expect(result.count).toBe(0);
+    });
+
+    it('count matches paginated results total', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Test Framework for Count Verification',
+        });
+
+        // Create 10 boosts, 6 matching our query
+        for (let i = 0; i < 10; i++) {
+            const name = i < 6 ? `Python Developer ${i}` : `JavaScript Developer ${i}`;
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                name,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri: uri,
+                frameworkId,
+            });
+        }
+
+        const query = { name: { $regex: /Python/i } };
+
+        // Get count
+        const countResult = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
+            id: frameworkId,
+            query,
+        });
+
+        // Get all pages
+        const allBoosts = [];
+        let cursor: string | undefined = undefined;
+        do {
+            const page = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+                id: frameworkId,
+                limit: 2,
+                query,
+                cursor,
+            });
+            allBoosts.push(...page.records);
+            cursor = page.cursor ?? undefined;
+        } while (cursor);
+
+        // Count should match total paginated results
+        expect(countResult.count).toBe(6);
+        expect(allBoosts).toHaveLength(6);
+    });
 });

@@ -206,3 +206,35 @@ export const getBoostsThatUseFramework = async (
 
     return { records: page, hasMore, cursor: nextCursor };
 };
+
+/**
+ * Count boosts that use a specific skill framework via the USES_FRAMEWORK relationship.
+ * Supports mongo-style query with $regex, $in, and $or operators.
+ */
+export const countBoostsThatUseFramework = async (
+    frameworkId: string,
+    query?: BoostQuery | null
+): Promise<number> => {
+    // Build WHERE clause from query if provided
+    let queryWhereClause = 'true';
+    let queryParams = {};
+    
+    if (query) {
+        const convertedQuery = convertObjectRegExpToNeo4j(query);
+        const { whereClause, params } = buildWhereClause('b', convertedQuery as any);
+        queryWhereClause = whereClause;
+        queryParams = params;
+    }
+    
+    const result = await neogma.queryRunner.run(
+        `MATCH (f:SkillFramework {id: $frameworkId})<-[r:USES_FRAMEWORK]-(b:Boost)
+         WHERE (${queryWhereClause})
+         RETURN count(b) AS count`,
+        {
+            frameworkId,
+            ...queryParams,
+        }
+    );
+
+    return result.records[0]?.get('count')?.toNumber() ?? 0;
+};
