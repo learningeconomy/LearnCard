@@ -1,17 +1,17 @@
 ---
 // LoreCard - Social-Emotional Learning Badges for Tabletop RPG
+import { actions } from 'astro:actions';
+
+// Fetch boost templates from the backend
+const { data } = await Astro.callAction(actions.getBoostTemplates);
+
+const boostTemplates = data?.boostTemplates || [];
+
+console.log(`Loaded ${boostTemplates.length} boost templates`);
+
 const config = {
   learnCardHostOrigin: import.meta.env.LEARNCARD_HOST_ORIGIN || 'https://learncard.app',
-  badges: {
-    teamwork: import.meta.env.BADGE_TEAMWORK_URI || 'lc:network:network.learncard.com/trpc:boost:teamwork-champion',
-    leadership: import.meta.env.BADGE_LEADERSHIP_URI || 'lc:network:network.learncard.com/trpc:boost:natural-leader',
-    creativity: import.meta.env.BADGE_CREATIVITY_URI || 'lc:network:network.learncard.com/trpc:boost:creative-thinker',
-    problemSolving: import.meta.env.BADGE_PROBLEM_SOLVING_URI || 'lc:network:network.learncard.com/trpc:boost:puzzle-master',
-    empathy: import.meta.env.BADGE_EMPATHY_URI || 'lc:network:network.learncard.com/trpc:boost:empathetic-soul',
-    communication: import.meta.env.BADGE_COMMUNICATION_URI || 'lc:network:network.learncard.com/trpc:boost:eloquent-speaker',
-    courage: import.meta.env.BADGE_COURAGE_URI || 'lc:network:network.learncard.com/trpc:boost:brave-heart',
-    wisdom: import.meta.env.BADGE_WISDOM_URI || 'lc:network:network.learncard.com/trpc:boost:wise-sage',
-  }
+  boostTemplates,
 };
 ---
 
@@ -235,15 +235,6 @@ const config = {
       border-color: var(--badge-color, var(--gold));
     }
 
-    .badge-card.teamwork { --badge-color: #3b82f6; }
-    .badge-card.leadership { --badge-color: #ef4444; }
-    .badge-card.creativity { --badge-color: #a855f7; }
-    .badge-card.problem-solving { --badge-color: #14b8a6; }
-    .badge-card.empathy { --badge-color: #ec4899; }
-    .badge-card.communication { --badge-color: #f59e0b; }
-    .badge-card.courage { --badge-color: #dc2626; }
-    .badge-card.wisdom { --badge-color: #6366f1; }
-
     .badge-icon {
       font-size: 3rem;
       text-align: center;
@@ -340,86 +331,28 @@ const config = {
       <div id="badge-section" class="hidden">
         <h2 class="section-title">Select a Badge to Award</h2>
         
-        <div class="badge-grid">
-          <!-- Teamwork -->
-          <div class="badge-card teamwork" data-badge="teamwork">
-            <div class="badge-icon">🤝</div>
-            <div class="badge-name">Teamwork Champion</div>
-            <div class="badge-description">
-              Demonstrated exceptional collaboration and supported party members in achieving shared goals.
+        <div class="badge-grid" id="badge-grid">
+          {boostTemplates.length === 0 && (
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+              <p style="color: var(--deep-red); font-size: 1.1rem;">
+                Loading badges... Please wait while we set up your LoreCard templates.
+              </p>
             </div>
-            <div class="badge-skill">Social-Emotional Skill: Teamwork</div>
-          </div>
-
-          <!-- Leadership -->
-          <div class="badge-card leadership" data-badge="leadership">
-            <div class="badge-icon">👑</div>
-            <div class="badge-name">Natural Leader</div>
-            <div class="badge-description">
-              Took initiative, made difficult decisions, and guided the party through challenging situations.
+          )}
+          
+          {boostTemplates.map((badge) => (
+            <div 
+              class={`badge-card ${badge.id}`} 
+              data-badge-id={badge.id}
+              data-badge-uri={badge.uri}
+              style={`--badge-color: ${badge.color}`}
+            >
+              <div class="badge-icon">{badge.icon}</div>
+              <div class="badge-name">{badge.name}</div>
+              <div class="badge-description">{badge.description}</div>
+              <div class="badge-skill">Social-Emotional Skill: {badge.skill}</div>
             </div>
-            <div class="badge-skill">Social-Emotional Skill: Leadership</div>
-          </div>
-
-          <!-- Creativity -->
-          <div class="badge-card creativity" data-badge="creativity">
-            <div class="badge-icon">🎨</div>
-            <div class="badge-name">Creative Thinker</div>
-            <div class="badge-description">
-              Found innovative solutions to problems and brought imaginative ideas to the table.
-            </div>
-            <div class="badge-skill">Social-Emotional Skill: Creativity</div>
-          </div>
-
-          <!-- Problem Solving -->
-          <div class="badge-card problem-solving" data-badge="problemSolving">
-            <div class="badge-icon">🧩</div>
-            <div class="badge-name">Puzzle Master</div>
-            <div class="badge-description">
-              Analyzed complex situations, identified patterns, and developed effective strategies.
-            </div>
-            <div class="badge-skill">Social-Emotional Skill: Problem Solving</div>
-          </div>
-
-          <!-- Empathy -->
-          <div class="badge-card empathy" data-badge="empathy">
-            <div class="badge-icon">💝</div>
-            <div class="badge-name">Empathetic Soul</div>
-            <div class="badge-description">
-              Showed understanding and compassion for others' perspectives and feelings.
-            </div>
-            <div class="badge-skill">Social-Emotional Skill: Empathy</div>
-          </div>
-
-          <!-- Communication -->
-          <div class="badge-card communication" data-badge="communication">
-            <div class="badge-icon">💬</div>
-            <div class="badge-name">Eloquent Speaker</div>
-            <div class="badge-description">
-              Communicated clearly, listened actively, and facilitated productive discussions.
-            </div>
-            <div class="badge-skill">Social-Emotional Skill: Communication</div>
-          </div>
-
-          <!-- Courage -->
-          <div class="badge-card courage" data-badge="courage">
-            <div class="badge-icon">🛡️</div>
-            <div class="badge-name">Brave Heart</div>
-            <div class="badge-description">
-              Faced fears, took calculated risks, and stood up for what's right.
-            </div>
-            <div class="badge-skill">Social-Emotional Skill: Courage</div>
-          </div>
-
-          <!-- Wisdom -->
-          <div class="badge-card wisdom" data-badge="wisdom">
-            <div class="badge-icon">📜</div>
-            <div class="badge-name">Wise Sage</div>
-            <div class="badge-description">
-              Applied knowledge thoughtfully, learned from experience, and shared insights with others.
-            </div>
-            <div class="badge-skill">Social-Emotional Skill: Wisdom</div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -441,6 +374,7 @@ const config = {
 
   <script>
     import { createPartnerConnect } from '@learncard/partner-connect';
+    import { actions } from 'astro:actions';
 
     // Configuration
     const CONFIG = window.__LORECARD_CONFIG;
@@ -455,7 +389,7 @@ const config = {
     const statusBox = document.getElementById('status-box');
     const statusText = document.getElementById('status-text');
     const badgeSection = document.getElementById('badge-section');
-    const badgeCards = document.querySelectorAll('.badge-card');
+    const badgeGrid = document.getElementById('badge-grid');
 
     // Update status UI
     function updateStatus(message, type = 'info') {
@@ -477,6 +411,30 @@ const config = {
         const identity = await learnCard.requestIdentity();
         console.log('Game Master authenticated:', identity.user.did);
         
+        // Assign Game Master as admin to all boost templates
+        const profileId = identity.user.profile?.profileId;
+        
+        if (profileId) {
+          console.log('Assigning Game Master as admin to boost templates...');
+          updateStatus('Setting up Game Master permissions...', 'info');
+          
+          try {
+            const { data, error } = await actions.assignAdminToBoostTemplates({ profileId });
+            
+            if (data?.success) {
+              console.log('Successfully assigned admin permissions to Game Master');
+            } else {
+              console.warn('Failed to assign admin permissions:', error);
+              // Continue anyway - this is not a critical error
+            }
+          } catch (adminError) {
+            console.warn('Error assigning admin permissions:', adminError);
+            // Continue anyway - this is not a critical error
+          }
+        } else {
+          console.warn('No profile ID found for Game Master');
+        }
+        
         updateStatus('Welcome, Game Master! Select a badge to award to your players.', 'success');
       } catch (error) {
         if (error.code === 'LC_UNAUTHENTICATED') {
@@ -494,14 +452,11 @@ const config = {
     }
 
     // Award badge to player(s)
-    async function awardBadge(badgeType, badgeName) {
+    async function awardBadge(badgeName, templateUri) {
       updateStatus(`Preparing to award "${badgeName}" badge...`, 'info');
 
-      // Get the template URI for this badge
-      const templateId = CONFIG.badges[badgeType];
-
-      if (!templateId) {
-        updateStatus(`Error: Badge template not configured for ${badgeName}`, 'error');
+      if (!templateUri) {
+        updateStatus(`Error: Badge template URI not found for ${badgeName}`, 'error');
         return;
       }
 
@@ -526,7 +481,7 @@ const config = {
         //   : [];
 
         // Initiate the template issue flow
-        const response = await learnCard.initiateTemplateIssue(templateId);
+        const response = await learnCard.initiateTemplateIssue(templateUri);
 
         console.log('Badge award response:', response);
 
@@ -567,28 +522,18 @@ const config = {
       }
     }
 
-    // Badge names for display
-    const badgeNames = {
-      teamwork: 'Teamwork Champion',
-      leadership: 'Natural Leader',
-      creativity: 'Creative Thinker',
-      problemSolving: 'Puzzle Master',
-      empathy: 'Empathetic Soul',
-      communication: 'Eloquent Speaker',
-      courage: 'Brave Heart',
-      wisdom: 'Wise Sage'
-    };
-
-    // Attach click handlers to all badge cards
-    badgeCards.forEach(card => {
-      card.addEventListener('click', () => {
-        const badgeType = card.dataset.badge;
-        const badgeName = badgeNames[badgeType];
+    // Attach click handler to badge grid (event delegation)
+    badgeGrid.addEventListener('click', (event) => {
+      const badgeCard = event.target.closest('.badge-card');
+      
+      if (badgeCard) {
+        const badgeName = badgeCard.querySelector('.badge-name')?.textContent;
+        const badgeUri = badgeCard.dataset.badgeUri;
         
-        if (badgeType && badgeName) {
-          awardBadge(badgeType, badgeName);
+        if (badgeName && badgeUri) {
+          awardBadge(badgeName, badgeUri);
         }
-      });
+      }
     });
 
     // Initialize on page load
