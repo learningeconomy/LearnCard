@@ -39,7 +39,11 @@ export type * from './types';
  * LearnCard Partner Connect SDK class
  */
 export class PartnerConnect {
-  private hostOrigin: string = 'https://learncard.app';
+  /** Default host origin (security anchor) */
+  public static readonly DEFAULT_HOST_ORIGIN = 'https://learncard.app';
+  
+  private hostOrigins: string[] = ['https://learncard.app'];
+  private activeHostOrigin: string = 'https://learncard.app';
   private protocol: string = 'LEARNCARD_V1';
   private requestTimeout: number = 30000;
   private pendingRequests: Map<string, PendingRequest>;
@@ -47,11 +51,80 @@ export class PartnerConnect {
   private isInitialized = false;
 
   constructor(options: PartnerConnectOptions) {
-    this.hostOrigin = options.hostOrigin || 'https://learncard.app';
+    // Normalize hostOrigin to an array for whitelist validation
+    const hostOrigin = options.hostOrigin || PartnerConnect.DEFAULT_HOST_ORIGIN;
+    this.hostOrigins = Array.isArray(hostOrigin) ? hostOrigin : [hostOrigin];
+    
     this.protocol = options.protocol || 'LEARNCARD_V1';
     this.requestTimeout = options.requestTimeout || 30000;
     this.pendingRequests = new Map();
+    this.configureActiveOrigin();
     this.setupMessageListener();
+  }
+
+  /**
+   * Configure the active host origin using the following hierarchy:
+   * 1. Check for `lc_host_override` query parameter (for staging/testing)
+   * 2. Fall back to first configured origin
+   * 3. Fall back to DEFAULT_HOST_ORIGIN
+   * 
+   * This origin will be used for all outgoing messages and incoming message validation.
+   */
+  private configureActiveOrigin(): void {
+    if (typeof window === 'undefined') {
+      this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+      return;
+    }
+
+    try {
+      // Check for lc_host_override query parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const hostOverride = urlParams.get('lc_host_override');
+
+      if (hostOverride) {
+        // Validate override against whitelist (if provided)
+        if (this.hostOrigins.length > 0 && !this.isOriginInWhitelist(hostOverride)) {
+          console.warn(
+            '[LearnCard SDK] lc_host_override value is not in the configured whitelist:',
+            hostOverride,
+            'Allowed:',
+            this.hostOrigins
+          );
+          this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+        } else {
+          this.activeHostOrigin = hostOverride;
+          console.log('[LearnCard SDK] Using lc_host_override:', hostOverride);
+        }
+      } else {
+        // Use first configured origin or default
+        this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+        console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
+      }
+    } catch (error) {
+      console.error('[LearnCard SDK] Error configuring active origin:', error);
+      this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+    }
+  }
+
+  /**
+   * Check if an origin is in the configured whitelist
+   */
+  private isOriginInWhitelist(origin: string): boolean {
+    return this.hostOrigins.includes(origin);
+  }
+
+  /**
+   * Check if an event origin is valid against the active host origin
+   * 
+   * Security Rule: Incoming messages must exactly match the active host origin.
+   * This prevents malicious actors from spoofing origins via query parameters.
+   * 
+   * @param eventOrigin - The origin from the MessageEvent
+   * @returns true if the origin is valid
+   */
+  private isValidOrigin(eventOrigin: string): boolean {
+    // STRICT: Exact match with active host origin only
+    return eventOrigin === this.activeHostOrigin;
   }
 
   /**
@@ -63,8 +136,9 @@ export class PartnerConnect {
     }
 
     this.messageListener = (event: MessageEvent) => {
-      // SECURITY CHECK 1: Validate origin
-      if (event.origin !== this.hostOrigin) {
+      // SECURITY CHECK 1: Strict origin validation - must exactly match active host origin
+      if (!this.isValidOrigin(event.origin)) {
+        // Silently ignore messages from unauthorized origins
         return;
       }
 
@@ -144,8 +218,8 @@ export class PartnerConnect {
         payload,
       };
 
-      // Send to parent window with explicit origin for security
-      window.parent.postMessage(message, this.hostOrigin);
+      // Send to parent window with the active host origin (configured or overridden)
+      window.parent.postMessage(message, this.activeHostOrigin);
     });
   }
 

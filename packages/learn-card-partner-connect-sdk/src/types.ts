@@ -7,10 +7,44 @@
  */
 export interface PartnerConnectOptions {
   /**
-   * The origin of the LearnCard host (e.g., 'https://learncard.app')
-   * All messages will be validated against this origin for security
+   * The origin(s) of the LearnCard host
+   * 
+   * This can be a single string or an array of strings to serve as a whitelist for
+   * the `lc_host_override` query parameter.
+   * 
+   * **Origin Configuration Hierarchy:**
+   * 1. **Hardcoded Default**: `https://learncard.app` (security anchor)
+   * 2. **Query Parameter Override**: `?lc_host_override=https://staging.learncard.app`
+   *    - Checked against whitelist if `hostOrigin` is provided
+   *    - Used for staging/testing environments
+   * 3. **Configured Origin**: First value in array or single string value
+   * 
+   * **Security Model:**
+   * - The SDK enforces STRICT origin validation
+   * - Incoming messages must EXACTLY match the active host origin
+   * - Prevents origin spoofing: even if malicious query param is added, 
+   *   messages from unauthorized origins are rejected
+   * 
+   * **Examples:**
+   * 
+   * Single origin (production):
+   * ```typescript
+   * hostOrigin: 'https://learncard.app'
+   * // Uses: https://learncard.app
+   * // Override: ?lc_host_override=https://staging.learncard.app (not validated)
+   * ```
+   * 
+   * Multiple origins (whitelist for staging):
+   * ```typescript
+   * hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
+   * // Default: https://learncard.app
+   * // Override: ?lc_host_override=https://staging.learncard.app (validated)
+   * // Invalid: ?lc_host_override=https://evil.com (rejected)
+   * ```
+   * 
+   * @default 'https://learncard.app'
    */
-  hostOrigin?: string;
+  hostOrigin?: string | string[];
 
   /**
    * Protocol identifier (default: 'LEARNCARD_V1')

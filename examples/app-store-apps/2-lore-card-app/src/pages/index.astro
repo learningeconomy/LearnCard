@@ -10,7 +10,9 @@ const boostTemplates = data?.boostTemplates || [];
 console.log(`Loaded ${boostTemplates.length} boost templates`);
 
 const config = {
-  learnCardHostOrigin: import.meta.env.LEARNCARD_HOST_ORIGIN || 'https://learncard.app',
+  //learnCardHostOrigin: import.meta.env.LEARNCARD_HOST_ORIGIN || 'https://learncard.app',
+  learnCardHostOrigin: ['https://learncard.app', 'capacitor://localhost', 'ionic://localhost', 'http://localhost:3000'],
+
   boostTemplates,
 };
 ---

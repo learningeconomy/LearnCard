@@ -74,6 +74,87 @@ interface PartnerConnectOptions {
 }
 ```
 
+### Dynamic Origin Configuration
+
+The SDK uses a hierarchical approach to determine the active host origin:
+
+#### 1. **Hardcoded Default** (Security Anchor)
+```typescript
+PartnerConnect.DEFAULT_HOST_ORIGIN // 'https://learncard.app'
+```
+
+#### 2. **Query Parameter Override** (Staging/Testing)
+```typescript
+// Your app URL: https://partner-app.com/?lc_host_override=https://staging.learncard.app
+
+const learnCard = createPartnerConnect({
+  hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
+});
+// Active origin: https://staging.learncard.app (from query param)
+// ✅ Only accepts messages from: https://staging.learncard.app
+// ✅ Sends messages to: https://staging.learncard.app
+```
+
+**How the LearnCard Host Uses This:**
+- Production: Iframe URL has no `lc_host_override` parameter
+- Staging: Iframe URL includes `?lc_host_override=https://staging.learncard.app`
+- This allows testing against non-production environments without recompiling partner code
+
+#### 3. **Configured Origin** (Fallback)
+```typescript
+const learnCard = createPartnerConnect({
+  hostOrigin: 'https://learncard.app'
+});
+// Active origin: https://learncard.app (configured)
+```
+
+### Origin Whitelist (Security Gate)
+
+When providing multiple origins, they serve as a **whitelist** for the `lc_host_override` parameter:
+
+```typescript
+const learnCard = createPartnerConnect({
+  hostOrigin: [
+    'https://learncard.app',
+    'https://staging.learncard.app',
+    'https://preview.learncard.app'
+  ]
+});
+
+// Scenario 1: No query param
+// → Uses: https://learncard.app (first in array)
+
+// Scenario 2: Valid override
+// URL: ?lc_host_override=https://staging.learncard.app
+// → Uses: https://staging.learncard.app ✅
+
+// Scenario 3: Invalid override (not in whitelist)
+// URL: ?lc_host_override=https://evil.com
+// → Uses: https://learncard.app (falls back to first) ⚠️
+// → Logs warning about unauthorized override
+```
+
+### Security Model
+
+**STRICT Origin Validation:**
+```
+Incoming Message Origin ≡ Configured Host Origin
+```
+
+The SDK enforces an exact match between incoming message origins and the active host origin:
+
+- ✅ **Secure**: Even if a malicious actor adds `?lc_host_override=https://evil.com`, messages from `evil.com` will be rejected
+- ✅ **Cannot be spoofed**: Browser security prevents malicious sites from faking their `event.origin`
+- ✅ **No wildcards**: Only exact matches are accepted
+
+```typescript
+// Active origin: https://staging.learncard.app
+// ✅ Accepts: messages from https://staging.learncard.app
+// ❌ Rejects: messages from https://learncard.app
+// ❌ Rejects: messages from https://evil.com
+// ❌ Rejects: messages from any other origin
+```
+
 ## API Reference
 
 ### `requestIdentity()`
@@ -377,13 +458,50 @@ Requires `postMessage` API and `Promise` support.
 
 ## Security
 
-The SDK implements multiple security checks:
+The SDK implements multiple security layers:
 
-1. **Origin Validation**: All messages must come from the configured `hostOrigin`
-2. **Protocol Validation**: Messages must match the expected protocol
-3. **Request ID Tracking**: Only tracked requests are processed
-4. **Timeout Protection**: Requests automatically timeout to prevent hanging
-5. **Explicit Origin in postMessage**: Never uses `'*'` as target origin
+### 1. **Strict Origin Validation**
+- Messages must come from the **exact** active host origin
+- No wildcards, no pattern matching, no exceptions
+- Mathematical equivalence: `event.origin === activeHostOrigin`
+
+### 2. **Query Parameter Whitelist**
+- `lc_host_override` values are validated against configured `hostOrigin` array
+- Invalid overrides are rejected and logged
+- Falls back to first configured origin on validation failure
+
+### 3. **Anti-Spoofing Protection**
+Even if a malicious actor injects `?lc_host_override=https://evil.com`:
+- The SDK may adopt `evil.com` as the active origin (if not whitelisted)
+- **BUT** messages from `evil.com` will only be accepted if `event.origin === 'evil.com'`
+- Browser security prevents `evil.com` from spoofing another domain's origin
+- Malicious messages are silently rejected
+
+### 4. **Additional Security Layers**
+- **Protocol Validation**: Messages must match the expected protocol identifier
+- **Request ID Tracking**: Only tracked requests with valid IDs are processed
+- **Timeout Protection**: Requests automatically timeout to prevent hanging
+- **Explicit targetOrigin**: Never uses `'*'` in postMessage calls
+
+### Example Attack Scenario (Prevented)
+
+```typescript
+// Attacker adds malicious query param
+// URL: https://partner-app.com/?lc_host_override=https://evil.com
+
+// SDK configuration
+const learnCard = createPartnerConnect({
+  hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
+});
+
+// What happens:
+// 1. SDK detects lc_host_override=https://evil.com
+// 2. Validates against whitelist: NOT FOUND
+// 3. Falls back to: https://learncard.app
+// 4. Sends messages to: https://learncard.app
+// 5. Only accepts messages from: https://learncard.app
+// 6. Attacker's messages from evil.com: REJECTED ❌
+```
 
 ## TypeScript
 
