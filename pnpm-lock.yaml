@@ -157,6 +157,9 @@ importers:
       '@astrojs/netlify':
         specifier: ^6.6.0
         version: 6.6.0(@types/node@22.13.14)(astro@5.15.3(@netlify/blobs@10.3.1)(@types/node@22.13.14)(ioredis@5.6.0)(jiti@2.6.1)(less@4.2.2)(lightningcss@1.27.0)(rollup@4.37.0)(terser@5.39.0)(tsx@4.20.3)(typescript@5.9.3)(yaml@2.8.1))(ioredis@5.6.0)(jiti@2.6.1)(less@4.2.2)(lightningcss@1.27.0)(rollup@4.37.0)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1)
+      '@learncard/init':
+        specifier: ^2.1.9
+        version: 2.1.9(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
       '@learncard/partner-connect':
         specifier: workspace:*
         version: link:../../../packages/learn-card-partner-connect-sdk
@@ -28927,6 +28930,52 @@ snapshots:
       - zod
       - zod-openapi
 
+  '@learncard/init@2.1.9(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
+      '@learncard/chapi-plugin': 1.0.76
+      '@learncard/core': 9.3.41
+      '@learncard/crypto-plugin': 1.0.52
+      '@learncard/did-web-plugin': 1.0.78
+      '@learncard/didkey-plugin': 1.0.52
+      '@learncard/didkit-plugin': 1.5.34
+      '@learncard/dynamic-loader-plugin': 1.0.48
+      '@learncard/encryption-plugin': 1.0.26
+      '@learncard/ethereum-plugin': 1.0.53
+      '@learncard/expiration-plugin': 1.1.65
+      '@learncard/helpers': 1.1.29
+      '@learncard/learn-card-plugin': 1.1.62
+      '@learncard/learn-cloud-plugin': 2.2.6(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
+      '@learncard/network-plugin': 2.6.10(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
+      '@learncard/types': 5.8.11
+      '@learncard/vc-api-plugin': 1.0.52
+      '@learncard/vc-plugin': 1.2.4
+      '@learncard/vc-templates-plugin': 1.0.68
+      '@learncard/vpqr-plugin': 1.0.52
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-providers'
+      - '@mongodb-js/zstd'
+      - '@trpc/server'
+      - '@types/express'
+      - '@types/ioredis-mock'
+      - '@types/node'
+      - aws-crt
+      - bufferutil
+      - debug
+      - encoding
+      - expo
+      - gcp-metadata
+      - kerberos
+      - mongodb-client-encryption
+      - react-native
+      - serverless
+      - snappy
+      - socks
+      - supports-color
+      - typescript
+      - utf-8-validate
+      - zod
+      - zod-openapi
+
   '@learncard/learn-card-plugin@1.1.62':
     dependencies:
       '@learncard/core': 9.3.41
@@ -28966,12 +29015,75 @@ snapshots:
       - zod
       - zod-openapi
 
+  '@learncard/learn-cloud-client@1.5.6(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
+      '@learncard/learn-cloud-service': 2.3.25(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
+      '@trpc/client': 11.3.0(@trpc/server@11.3.0(typescript@5.9.3))(typescript@5.9.3)
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-providers'
+      - '@mongodb-js/zstd'
+      - '@trpc/server'
+      - '@types/express'
+      - '@types/ioredis-mock'
+      - '@types/node'
+      - aws-crt
+      - bufferutil
+      - debug
+      - encoding
+      - expo
+      - gcp-metadata
+      - kerberos
+      - mongodb-client-encryption
+      - react-native
+      - serverless
+      - snappy
+      - socks
+      - supports-color
+      - typescript
+      - utf-8-validate
+      - zod
+      - zod-openapi
+
   '@learncard/learn-cloud-plugin@2.2.6(@trpc/server@11.3.0(typescript@5.6.2))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.6.2)(zod-openapi@4.2.4(zod@3.23.8))(zod@3.23.8)':
     dependencies:
       '@learncard/core': 9.3.41
       '@learncard/didkit-plugin': 1.5.34
       '@learncard/helpers': 1.1.29
       '@learncard/learn-cloud-client': 1.5.6(@trpc/server@11.3.0(typescript@5.6.2))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.6.2)(zod-openapi@4.2.4(zod@3.23.8))(zod@3.23.8)
+      json-stringify-deterministic: 1.0.12
+      lodash: 4.17.21
+      pbkdf2-hmac: 1.2.1
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-providers'
+      - '@mongodb-js/zstd'
+      - '@trpc/server'
+      - '@types/express'
+      - '@types/ioredis-mock'
+      - '@types/node'
+      - aws-crt
+      - bufferutil
+      - debug
+      - encoding
+      - expo
+      - gcp-metadata
+      - kerberos
+      - mongodb-client-encryption
+      - react-native
+      - serverless
+      - snappy
+      - socks
+      - supports-color
+      - typescript
+      - utf-8-validate
+      - zod
+      - zod-openapi
+
+  '@learncard/learn-cloud-plugin@2.2.6(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
+      '@learncard/core': 9.3.41
+      '@learncard/didkit-plugin': 1.5.34
+      '@learncard/helpers': 1.1.29
+      '@learncard/learn-cloud-client': 1.5.6(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
       json-stringify-deterministic: 1.0.12
       lodash: 4.17.21
       pbkdf2-hmac: 1.2.1
@@ -29068,10 +29180,97 @@ snapshots:
       - zod
       - zod-openapi
 
+  '@learncard/learn-cloud-service@2.3.25(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(serverless@3.39.0)(socks@2.8.4)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
+      '@fastify/cors': 9.0.1
+      '@fastify/static': 7.0.4
+      '@learncard/core': 9.3.41
+      '@learncard/crypto-plugin': 1.0.52
+      '@learncard/did-web-plugin': 1.0.78
+      '@learncard/didkey-plugin': 1.0.52
+      '@learncard/didkit-plugin': 1.5.34
+      '@learncard/encryption-plugin': 1.0.26
+      '@learncard/expiration-plugin': 1.1.65
+      '@learncard/helpers': 1.1.29
+      '@learncard/learn-card-plugin': 1.1.62
+      '@learncard/types': 5.8.11
+      '@learncard/vc-plugin': 1.2.4
+      '@learncard/vc-templates-plugin': 1.0.68
+      '@sentry/esbuild-plugin': 2.5.0
+      '@sentry/serverless': 7.61.0
+      '@trpc/server': 11.3.0(typescript@5.9.3)
+      '@types/lodash': 4.17.16
+      '@xapi/xapi': 3.0.1
+      async: 3.2.6
+      bson: 4.7.2
+      cors: 2.8.5
+      dotenv: 16.4.7
+      express: 4.21.2
+      fastify: 4.29.0
+      ioredis: 5.6.0
+      ioredis-mock: 8.9.0(@types/ioredis-mock@8.2.5)(ioredis@5.6.0)
+      json-stringify-deterministic: 1.0.12
+      jsonwebtoken: 9.0.2
+      jwt-decode: 3.1.2
+      libsodium-wrappers: 0.7.15
+      lodash: 4.17.21
+      mongodb: 6.15.0(socks@2.8.4)
+      multiformats: 11.0.2
+      neo4j-driver: 4.4.11
+      neogma: 1.14.1
+      serverless-offline: 12.0.4(serverless@3.39.0)
+      simple-redis-mutex: 1.4.0(ioredis@5.6.0)
+      trpc-openapi: 1.2.0(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/node@22.13.14)(zod@3.25.76)
+      trpc-to-openapi: 2.3.1(@trpc/server@11.3.0(typescript@5.9.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
+      tsc-alias: 1.8.11
+      uuid: 9.0.1
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-providers'
+      - '@mongodb-js/zstd'
+      - '@types/express'
+      - '@types/ioredis-mock'
+      - '@types/node'
+      - aws-crt
+      - bufferutil
+      - debug
+      - encoding
+      - expo
+      - gcp-metadata
+      - kerberos
+      - mongodb-client-encryption
+      - react-native
+      - serverless
+      - snappy
+      - socks
+      - supports-color
+      - typescript
+      - utf-8-validate
+      - zod
+      - zod-openapi
+
   '@learncard/network-brain-client@2.4.9(@trpc/server@11.3.0(typescript@5.6.2))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.6.2)(zod-openapi@4.2.4(zod@3.23.8))(zod@3.23.8)':
     dependencies:
       '@learncard/network-brain-service': 3.6.11(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.6.2)(zod-openapi@4.2.4(zod@3.23.8))(zod@3.23.8)
       '@trpc/client': 11.3.0(@trpc/server@11.3.0(typescript@5.6.2))(typescript@5.6.2)
+    transitivePeerDependencies:
+      - '@trpc/server'
+      - '@types/express'
+      - '@types/ioredis-mock'
+      - '@types/node'
+      - aws-crt
+      - debug
+      - encoding
+      - expo
+      - react-native
+      - supports-color
+      - typescript
+      - zod
+      - zod-openapi
+
+  '@learncard/network-brain-client@2.4.9(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
+      '@learncard/network-brain-service': 3.6.11(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
+      '@trpc/client': 11.3.0(@trpc/server@11.3.0(typescript@5.9.3))(typescript@5.9.3)
     transitivePeerDependencies:
       - '@trpc/server'
       - '@types/express'
@@ -29147,11 +29346,91 @@ snapshots:
       - zod
       - zod-openapi
 
+  '@learncard/network-brain-service@3.6.11(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
+      '@aws-sdk/client-sqs': 3.775.0
+      '@digitalcredentials/issuer-registry-client': 3.2.0-beta.5
+      '@fastify/cors': 9.0.1
+      '@fastify/static': 7.0.4
+      '@fastify/swagger': 8.15.0
+      '@fastify/swagger-ui': 4.2.0
+      '@learncard/core': 9.3.41
+      '@learncard/crypto-plugin': 1.0.52
+      '@learncard/did-web-plugin': 1.0.78
+      '@learncard/didkey-plugin': 1.0.52
+      '@learncard/didkit-plugin': 1.5.34
+      '@learncard/encryption-plugin': 1.0.26
+      '@learncard/expiration-plugin': 1.1.65
+      '@learncard/helpers': 1.1.29
+      '@learncard/learn-card-plugin': 1.1.62
+      '@learncard/types': 5.8.11
+      '@learncard/vc-plugin': 1.2.4
+      '@learncard/vc-templates-plugin': 1.0.68
+      '@sentry/esbuild-plugin': 2.16.0
+      '@sentry/serverless': 7.61.0
+      '@trpc/server': 11.3.0(typescript@5.9.3)
+      '@types/lodash': 4.17.16
+      base64url: 3.0.1
+      cors: 2.8.5
+      dotenv: 16.4.7
+      express: 4.21.2
+      fastify: 4.29.0
+      fastify-plugin: 4.5.1
+      ioredis: 5.6.0
+      ioredis-mock: 8.9.0(@types/ioredis-mock@8.2.5)(ioredis@5.6.0)
+      jwt-decode: 3.1.2
+      libsodium-wrappers: 0.7.15
+      lodash: 4.17.21
+      messagebird: 4.0.1
+      multiformats: 11.0.2
+      neo4j-driver: 5.28.1
+      neogma: 1.14.1
+      postmark: 4.0.5
+      sift: 17.1.3
+      trpc-openapi: 1.2.0(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/node@22.13.14)(zod@3.25.76)
+      trpc-to-openapi: 2.3.1(@trpc/server@11.3.0(typescript@5.9.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
+      tsc-alias: 1.8.11
+      twilio: 5.7.1
+      uuid: 9.0.1
+    transitivePeerDependencies:
+      - '@types/express'
+      - '@types/ioredis-mock'
+      - '@types/node'
+      - aws-crt
+      - debug
+      - encoding
+      - expo
+      - react-native
+      - supports-color
+      - typescript
+      - zod
+      - zod-openapi
+
   '@learncard/network-plugin@2.6.10(@trpc/server@11.3.0(typescript@5.6.2))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.6.2)(zod-openapi@4.2.4(zod@3.23.8))(zod@3.23.8)':
     dependencies:
       '@learncard/core': 9.3.41
       '@learncard/helpers': 1.1.29
       '@learncard/network-brain-client': 2.4.9(@trpc/server@11.3.0(typescript@5.6.2))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.6.2)(zod-openapi@4.2.4(zod@3.23.8))(zod@3.23.8)
+    transitivePeerDependencies:
+      - '@trpc/server'
+      - '@types/express'
+      - '@types/ioredis-mock'
+      - '@types/node'
+      - aws-crt
+      - debug
+      - encoding
+      - expo
+      - react-native
+      - supports-color
+      - typescript
+      - zod
+      - zod-openapi
+
+  '@learncard/network-plugin@2.6.10(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
+      '@learncard/core': 9.3.41
+      '@learncard/helpers': 1.1.29
+      '@learncard/network-brain-client': 2.4.9(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@22.13.14)(typescript@5.9.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
     transitivePeerDependencies:
       - '@trpc/server'
       - '@types/express'
@@ -50013,6 +50292,20 @@ snapshots:
       h3: 1.15.1
       lodash.clonedeep: 4.5.0
       node-mocks-http: 1.16.2(@types/express@4.17.21)(@types/node@18.19.83)
+      openapi-types: 12.1.3
+      zod: 3.25.76
+      zod-to-json-schema: 3.24.5(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@types/express'
+      - '@types/node'
+
+  trpc-openapi@1.2.0(@trpc/server@11.3.0(typescript@5.9.3))(@types/express@4.17.21)(@types/node@22.13.14)(zod@3.25.76):
+    dependencies:
+      '@trpc/server': 11.3.0(typescript@5.9.3)
+      co-body: 6.2.0
+      h3: 1.15.1
+      lodash.clonedeep: 4.5.0
+      node-mocks-http: 1.16.2(@types/express@4.17.21)(@types/node@22.13.14)
       openapi-types: 12.1.3
       zod: 3.25.76
       zod-to-json-schema: 3.24.5(zod@3.25.76)
