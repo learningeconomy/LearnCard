@@ -2,6 +2,7 @@
 dist/
 .output/
 .astro/
+.netlify/
 
 # dependencies
 node_modules/
