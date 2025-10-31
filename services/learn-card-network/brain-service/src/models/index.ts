@@ -14,6 +14,7 @@ Credential.addRelationships({
         properties: {
             from: { property: 'from', schema: { type: 'string', required: true } },
             date: { property: 'date', schema: { type: 'string', required: true } },
+            metadata: { property: 'metadata', schema: { type: 'object', required: false } },
         },
     },
     instanceOf: {
