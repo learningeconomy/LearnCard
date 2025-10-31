@@ -1,0 +1,45 @@
+{
+  "name": "@learncard/partner-connect",
+  "version": "0.1.0",
+  "description": "LearnCard Partner Connect SDK - Promise-based cross-origin messaging for partner apps",
+  "main": "dist/partner-connect.js",
+  "module": "dist/partner-connect.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/partner-connect.esm.js",
+      "require": "./dist/partner-connect.js",
+      "default": "./dist/partner-connect.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "learncard",
+    "partner",
+    "connect",
+    "postmessage",
+    "iframe",
+    "credentials",
+    "sso"
+  ],
+  "license": "MIT",
+  "author": "Learning Economy Foundation (www.learningeconomy.io)",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^22.0.2",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@types/node": "^18.19.64",
+    "rollup": "^2.79.1",
+    "rollup-plugin-dts": "^4.2.2",
+    "rollup-plugin-esbuild": "^4.9.1",
+    "typescript": "^5.4.5"
+  },
+  "files": [
+    "dist/**"
+  ]
+}
