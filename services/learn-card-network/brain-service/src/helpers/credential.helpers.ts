@@ -20,11 +20,12 @@ export const sendCredential = async (
     from: ProfileType,
     to: ProfileType,
     credential: VC | UnsignedVC | JWE,
-    domain: string
+    domain: string,
+    metadata?: Record<string, unknown>
 ): Promise<string> => {
     const credentialInstance = await storeCredential(credential);
 
-    await createSentCredentialRelationship(from, to, credentialInstance);
+    await createSentCredentialRelationship(from, to, credentialInstance, metadata);
 
     let uri = getCredentialUri(credentialInstance.id, domain);
 
@@ -36,7 +37,10 @@ export const sendCredential = async (
             title: 'Credential Received',
             body: `${from.displayName} has sent you a credential`,
         },
-        data: { vcUris: [uri] },
+        data: {
+            vcUris: [uri],
+            ...(metadata ? { metadata } : {}),
+        },
     });
 
     return uri;
@@ -74,7 +78,12 @@ export const acceptCredential = async (
         });
     }
 
-    await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
+    await createReceivedCredentialRelationship(
+        profile,
+        pendingVc.source,
+        pendingVc.target,
+        pendingVc.relationship.metadata
+    );
 
     await processClaimHooks(profile, pendingVc.target);
 

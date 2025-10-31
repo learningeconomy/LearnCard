@@ -139,6 +139,7 @@ export const SentCredentialInfoValidator = z.object({
     from: z.string(),
     sent: z.string().datetime(),
     received: z.string().datetime().optional(),
+    metadata: z.record(z.unknown()).optional(),
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
@@ -635,6 +636,7 @@ export const LCNNotificationDataValidator = z.object({
     vpUris: z.array(z.string()).optional(),
     transaction: ConsentFlowTransactionValidator.optional(),
     inbox: LCNNotificationInboxValidator.optional(),
+    metadata: z.record(z.unknown()).optional(),
 });
 
 export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;

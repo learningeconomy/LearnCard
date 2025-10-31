@@ -149,7 +149,12 @@ export type LearnCardNetworkPluginMethods = {
     unblockProfile: (profileId: string) => Promise<boolean>;
     getBlockedProfiles: () => Promise<LCNProfile[]>;
 
-    sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
+    sendCredential: (
+        profileId: string,
+        vc: UnsignedVC | VC,
+        metadataOrEncrypt?: Record<string, unknown> | boolean,
+        encrypt?: boolean
+    ) => Promise<string>;
     acceptCredential: (
         uri: string,
         options?: {

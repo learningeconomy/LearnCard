@@ -424,11 +424,28 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.blocked.query();
             },
 
-            sendCredential: async (_learnCard, profileId, vc, encrypt = true) => {
+            sendCredential: async (_learnCard, profileId, vc, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
-                if (!encrypt) {
-                    return client.credential.sendCredential.mutate({ profileId, credential: vc });
+                // Handle backward compatibility: if metadataOrEncrypt is a boolean, it's the encrypt flag
+                let metadata: Record<string, unknown> | undefined;
+                let shouldEncrypt = true;
+
+                if (typeof metadataOrEncrypt === 'boolean') {
+                    shouldEncrypt = metadataOrEncrypt;
+                } else if (metadataOrEncrypt !== undefined) {
+                    metadata = metadataOrEncrypt;
+                    shouldEncrypt = encrypt ?? true;
+                } else {
+                    shouldEncrypt = encrypt ?? true;
+                }
+
+                if (!shouldEncrypt) {
+                    return client.credential.sendCredential.mutate({
+                        profileId,
+                        credential: vc,
+                        metadata,
+                    });
                 }
 
                 const target = await _learnCard.invoke.getProfile(profileId);
@@ -440,7 +457,11 @@ export async function getLearnCardNetworkPlugin(
                     target.did,
                 ]);
 
-                return client.credential.sendCredential.mutate({ profileId, credential });
+                return client.credential.sendCredential.mutate({
+                    profileId,
+                    credential,
+                    metadata,
+                });
             },
             acceptCredential: async (_learnCard, uri, options) => {
                 await ensureUser();
