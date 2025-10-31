@@ -292,9 +292,9 @@ describe('Skill Frameworks (custom CRUD)', () => {
             boostUris: [boostUri],
         });
 
-        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri });
+        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri, limit: 10 });
 
-        expect(frameworks.map(fw => fw.id)).toContain(frameworkId);
+        expect(frameworks.records.map(fw => fw.id)).toContain(frameworkId);
     });
 
     it('creates multiple frameworks with initial skills in one request', async () => {
@@ -380,9 +380,9 @@ describe('Skill Frameworks (custom CRUD)', () => {
             ],
         });
 
-        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri });
+        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri, limit: 10 });
 
-        expect(frameworks.map(fw => fw.id)).toContain(frameworkId);
+        expect(frameworks.records.map(fw => fw.id)).toContain(frameworkId);
     });
 
     it('paginates framework skill trees with cursors', async () => {

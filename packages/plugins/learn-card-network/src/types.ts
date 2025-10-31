@@ -47,6 +47,7 @@ import {
     IssueInboxCredentialType,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
+    PaginatedSkillFrameworksType,
     ContactMethodQueryType,
     ContactMethodType,
     InboxCredentialQuery,
@@ -54,6 +55,7 @@ import {
     // Shared Skills/Frameworks/Tags (non-flat)
     TagType,
     SkillFrameworkType,
+    SkillFrameworkQuery,
     SkillType,
     SkillQuery,
     PaginatedSkillTree,
@@ -198,7 +200,10 @@ export type LearnCardNetworkPluginMethods = {
         metadata?: Partial<Omit<Boost, 'uri'>> & { skillIds?: string[] }
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
-    getBoostFrameworks: (uri: string) => Promise<SkillFrameworkType[]>;
+    getBoostFrameworks: (
+        uri: string,
+        options?: { limit?: number; cursor?: string | null; query?: SkillFrameworkQuery }
+    ) => Promise<PaginatedSkillFrameworksType>;
     getSkillsAvailableForBoost: (
         uri: string
     ) => Promise<
@@ -316,6 +321,7 @@ export type LearnCardNetworkPluginMethods = {
         credential?: UnsignedVC | VC
     ) => Promise<boolean>;
     attachFrameworkToBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
+    detachFrameworkFromBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
     alignBoostSkills: (boostUri: string, skillIds: string[]) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (

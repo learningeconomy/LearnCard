@@ -34,6 +34,64 @@ describe('Boosts', () => {
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
 
+        it('paginates and filters frameworks used by a boost via route', async () => {
+            const fw1 = `fw-${crypto.randomUUID()}`;
+            const fw2 = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({ id: fw1, name: 'One' });
+            await userA.clients.fullAuth.skillFrameworks.createManaged({ id: fw2, name: 'Two' });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw1 });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw2 });
+
+            // Filter by id using $in
+            const page1 = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 1,
+                query: { id: { $in: [fw1] } },
+            });
+            expect(page1.hasMore === false || page1.hasMore === true).toBe(true);
+            expect((page1.records as Array<{ id: string }>).map(f => f.id)).toEqual([fw1]);
+
+            // Filter by name using $regex
+            const page2 = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+                query: { name: { $regex: /Two/i } },
+            });
+            const ids2 = (page2.records as Array<{ id: string }>).map(f => f.id).sort();
+            expect(ids2).toEqual([fw2]);
+        });
+
+        it('returns all frameworks used by a boost via route', async () => {
+            const fw1 = `fw-${crypto.randomUUID()}`;
+            const fw2 = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: fw1,
+                name: 'Framework One',
+            });
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: fw2,
+                name: 'Framework Two',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw1 });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw2 });
+
+            const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri, limit: 10 });
+            const ids = (frameworks.records as Array<{ id: string }>).map(f => f.id).sort();
+            expect(ids).toEqual([fw1, fw2].sort());
+        });
+
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
@@ -6082,9 +6140,10 @@ describe('Boosts', () => {
 
             const frameworks = await userB.clients.fullAuth.boost.getBoostFrameworks({
                 uri: boostUri,
+                limit: 10,
             });
 
-            expect(frameworks.map(framework => framework.id)).toContain(frameworkId);
+            expect(frameworks.records.map(framework => framework.id)).toContain(frameworkId);
 
             const boostId = getIdFromUri(boostUri);
             const relationships = await neogma.queryRunner.run(
@@ -6094,6 +6153,120 @@ describe('Boosts', () => {
             );
 
             expect(Number(relationships.records[0]?.get('c') ?? 0)).toBe(1);
+        });
+
+        it('allows detaching a framework from a boost', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Detach Framework Test',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // Attach framework
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // Verify it's attached
+            const frameworksBefore = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
+            expect((frameworksBefore.records as Array<{ id: string }>).map(f => f.id)).toContain(
+                frameworkId
+            );
+
+            // Detach framework
+            const result = await userA.clients.fullAuth.boost.detachFrameworkFromBoost({
+                boostUri,
+                frameworkId,
+            });
+            expect(result).toBe(true);
+
+            // Verify it's removed
+            const frameworksAfter = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
+            expect((frameworksAfter.records as Array<{ id: string }>).map(f => f.id)).not.toContain(
+                frameworkId
+            );
+
+            // Verify Neo4j relationship is removed
+            const boostId = getIdFromUri(boostUri);
+            const relationships = await neogma.queryRunner.run(
+                `MATCH (:Boost { id: $boostId })-[:USES_FRAMEWORK]->(f:SkillFramework { id: $frameworkId })
+                 RETURN count(f) AS c`,
+                { boostId, frameworkId }
+            );
+
+            expect(Number(relationships.records[0]?.get('c') ?? 0)).toBe(0);
+        });
+
+        it('enforces boost admin permissions when detaching frameworks', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Detach Permissions Framework',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId,
+            });
+
+            // User B should not be able to detach
+            await expect(
+                userB.clients.fullAuth.boost.detachFrameworkFromBoost({
+                    boostUri,
+                    frameworkId,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            // Add user B as admin
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: 'userb',
+            });
+
+            // Now user B should be able to detach
+            await expect(
+                userB.clients.fullAuth.boost.detachFrameworkFromBoost({
+                    boostUri,
+                    frameworkId,
+                })
+            ).resolves.toBe(true);
+        });
+
+        it('returns false when detaching a framework that is not attached', async () => {
+            const frameworkId = `fw-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Not Attached Framework',
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // Try to detach a framework that was never attached
+            const result = await userA.clients.fullAuth.boost.detachFrameworkFromBoost({
+                boostUri,
+                frameworkId,
+            });
+            expect(result).toBe(false);
         });
 
         it('enforces boost admin permissions when aligning skills', async () => {
@@ -6193,14 +6366,14 @@ describe('Boosts', () => {
             });
             expect(aligned).toBe(true);
 
-            const childBoostId = getIdFromUri(childUri);
-            const frameworkUsage = await neogma.queryRunner.run(
-                `MATCH (:Boost { id: $boostId })-[:USES_FRAMEWORK]->(:SkillFramework { id: $frameworkId })
-                 RETURN count(*) AS c`,
-                { boostId: childBoostId, frameworkId }
-            );
-            expect(Number(frameworkUsage.records[0]?.get('c') ?? 0)).toBe(1);
+            // Verify frameworks via route (no auto-attach from align)
+            const frameworksForChild = await userB.clients.fullAuth.boost.getBoostFrameworks({
+                uri: childUri,
+                limit: 10,
+            });
+            expect(frameworksForChild.records.length).toBe(0);
 
+            const childBoostId = getIdFromUri(childUri);
             const alignment = await neogma.queryRunner.run(
                 `MATCH (:Boost { id: $boostId })-[:ALIGNED_TO]->(:Skill { id: $skillId })
                  RETURN count(*) AS c`,

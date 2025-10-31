@@ -3,13 +3,12 @@ import { describe, test, expect, beforeEach } from 'vitest';
 import { unwrapBoostCredential } from '@learncard/helpers';
 import { SkillTreeInput } from '@learncard/types';
 
-import { getLearnCardForUser, getLearnCard, LearnCard, USERS } from './helpers/learncard.helpers';
+import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 import { findSkillIdInTree } from './helpers/skill.helpers';
 
 let a: LearnCard;
 let b: LearnCard;
-let noAuth: LearnCard;
 
 // Helper to create a managed framework with skills through the real CRUD routes
 const createFrameworkAndSkills = async (
@@ -35,7 +34,6 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
     beforeEach(async () => {
         a = await getLearnCardForUser('a');
         b = await getLearnCardForUser('b');
-        noAuth = await getLearnCard(crypto.randomBytes(32).toString('hex'));
     });
 
     test('aligns boost frameworks when creating managed frameworks with boostUris', async () => {
@@ -63,8 +61,8 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
 
         const frameworks = await a.invoke.getBoostFrameworks(boostUri);
 
-        expect(Array.isArray(frameworks)).toBe(true);
-        expect(frameworks.map(fw => fw.id)).toContain(frameworkId);
+        expect(Array.isArray(frameworks.records)).toBe(true);
+        expect(frameworks.records.map(fw => fw.id)).toContain(frameworkId);
 
         const frameworkAdmins = await a.invoke.getSkillFrameworkAdmins(frameworkId);
         expect(frameworkAdmins.some(admin => admin.profileId === USERS.a.profileId)).toBe(true);
@@ -146,6 +144,7 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         const deleted = await b.invoke.deleteSkill({
             frameworkId,
             id: delegatedSkillId,
+            strategy: 'reparent',
         });
         expect(deleted.success).toBe(true);
 
@@ -198,7 +197,7 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         await expect(b.invoke.alignBoostSkills(boostUri, [skillId])).rejects.toThrow();
     });
 
-    test('allows child boost admins to align skills from ancestor frameworks', async () => {
+    test('allows child boost admins to align skills from ancestor frameworks (explicit attach required for injection)', async () => {
         const frameworkId = `fw-${crypto.randomUUID()}`;
         const skillId = `${frameworkId}-skill`;
 
@@ -233,6 +232,9 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         expect(result).toHaveLength(1);
         expect(result[0]!.framework.id).toBe(frameworkId);
         expect(result[0]!.skills.some(skill => skill.id === skillId)).toBe(true);
+
+        // Explicitly attach the framework to the child (no auto-attach from skills)
+        await a.invoke.attachFrameworkToBoost(childUri, frameworkId);
 
         const aligned = await b.invoke.alignBoostSkills(childUri, [skillId]);
         expect(aligned).toBe(true);
@@ -300,6 +302,9 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
             skillIds: [parentSkillIdSynced, childSkillIdSynced],
         });
 
+        // Explicitly attach the framework to the boost to enable alignment injection
+        await a.invoke.attachFrameworkToBoost(boostUri, fwId);
+
         // Fetch boost template and ensure alignments injected (container excluded)
         const boostRecord = await a.invoke.getBoost(boostUri);
         const boostSubject = Array.isArray(boostRecord.boost.credentialSubject)
@@ -328,7 +333,7 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         const alignment = subject?.achievement?.alignment || subject?.alignment;
 
         expect(Array.isArray(alignment)).toBe(true);
-        const names = alignment
+        const names = (alignment || [])
             .map((a: any) => a?.targetName)
             .filter(Boolean)
             .sort();
@@ -336,7 +341,7 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         expect(names).not.toContain('Alignment Skill 2');
 
         // Basic shape assertions
-        alignment.forEach((aItem: any) => {
+        (alignment || []).forEach((aItem: any) => {
             expect(aItem).toHaveProperty('targetCode');
             expect(aItem).toHaveProperty('targetName');
             expect(aItem).toHaveProperty('targetFramework');
@@ -393,6 +398,8 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
             skillIds: [parentSkillIdSynced, childSkillIdSynced],
         });
+        // Explicitly attach the framework to the boost to enable alignment injection
+        await a.invoke.attachFrameworkToBoost(boostUri, fwId);
 
         // Register SA and generate claim link
         const sa = await a.invoke.createSigningAuthority('skills');
@@ -425,7 +432,7 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         expect(names).not.toContain('A2');
     });
 
-    test('fails to create a boost when skills span multiple frameworks', async () => {
+    test('creates a boost when skills span multiple frameworks (no auto-attach of frameworks)', async () => {
         const fw1 = `fw-${crypto.randomUUID()}`;
         const fw2 = `fw-${crypto.randomUUID()}`;
         const fw1Skill = `${fw1}-S1`;
@@ -450,9 +457,14 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
             },
         ]);
 
-        await expect(
-            a.invoke.createBoost(testUnsignedBoost, { skillIds: [fw1Skill, fw2Skill] })
-        ).rejects.toThrow(/same framework/i);
+        const uri = await a.invoke.createBoost(testUnsignedBoost, {
+            skillIds: [fw1Skill, fw2Skill],
+        });
+        expect(typeof uri).toBe('string');
+
+        // No frameworks are auto-attached simply by aligning skills
+        const frameworks = await a.invoke.getBoostFrameworks(uri);
+        expect(frameworks.records.length).toBe(0);
     });
 
     test('lists skills from ancestor boost frameworks', async () => {
@@ -474,6 +486,8 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         const rootBoostUri = await a.invoke.createBoost(testUnsignedBoost, {
             skillIds,
         });
+        // Explicitly attach the framework to the root boost
+        await a.invoke.attachFrameworkToBoost(rootBoostUri, fwId);
 
         const childBoostUri = await a.invoke.createChildBoost(rootBoostUri, testUnsignedBoost);
         const grandChildBoostUri = await a.invoke.createChildBoost(
@@ -489,5 +503,68 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
 
         const returnedSkillIds = available[0]!.skills.map(s => s.id).sort();
         expect(returnedSkillIds).toEqual([...skillIds].sort());
+    });
+
+    test('allows detaching a framework from a boost', async () => {
+        const frameworkId = `fw-${crypto.randomUUID()}`;
+        const skillId = `${frameworkId}-skill`;
+
+        await createFrameworkAndSkills(a, frameworkId, [
+            {
+                id: skillId,
+                statement: 'Detach Test Skill',
+                status: 'active',
+            },
+        ]);
+
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+        // Attach framework
+        await a.invoke.attachFrameworkToBoost(boostUri, frameworkId);
+
+        // Verify it's attached
+        const frameworksBefore = await a.invoke.getBoostFrameworks(boostUri);
+        expect(frameworksBefore.records.map(fw => fw.id)).toContain(frameworkId);
+
+        // Detach framework
+        const result = await a.invoke.detachFrameworkFromBoost(boostUri, frameworkId);
+        expect(result).toBe(true);
+
+        // Verify it's removed
+        const frameworksAfter = await a.invoke.getBoostFrameworks(boostUri);
+        expect(frameworksAfter.records.map(fw => fw.id)).not.toContain(frameworkId);
+    });
+
+    test('detaching a framework does not affect aligned skills', async () => {
+        const frameworkId = `fw-${crypto.randomUUID()}`;
+        const skillId = `${frameworkId}-skill`;
+
+        await createFrameworkAndSkills(a, frameworkId, [
+            {
+                id: skillId,
+                statement: 'Detach Skill Test',
+                status: 'active',
+            },
+        ]);
+
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
+            skillIds: [skillId],
+        });
+
+        // Attach framework
+        await a.invoke.attachFrameworkToBoost(boostUri, frameworkId);
+
+        // Detach framework
+        await a.invoke.detachFrameworkFromBoost(boostUri, frameworkId);
+
+        // Skills should still be aligned
+        const available = await a.invoke.getSkillsAvailableForBoost(boostUri);
+        expect(available.length).toBe(0); // No frameworks attached, so no skills available through frameworks
+
+        // Re-attach the framework to verify alignments still work
+        await a.invoke.attachFrameworkToBoost(boostUri, frameworkId);
+        const availableAfterReattach = await a.invoke.getSkillsAvailableForBoost(boostUri);
+        expect(availableAfterReattach.length).toBe(1);
+        expect(availableAfterReattach[0]!.skills.map(s => s.id)).toContain(skillId);
     });
 });

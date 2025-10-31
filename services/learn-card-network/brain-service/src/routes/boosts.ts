@@ -13,8 +13,10 @@ import {
     PaginatedBoostsValidator,
     PaginationOptionsValidator,
     PaginatedLCNProfilesValidator,
+    PaginatedSkillFrameworksValidator,
     BoostPermissions,
     BoostQueryValidator,
+    SkillFrameworkQueryValidator,
     LCNProfileQueryValidator,
     LCNProfileManagerQueryValidator,
     PaginatedLCNProfileManagersValidator,
@@ -61,7 +63,7 @@ import {
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
     getFrameworkSkillsAvailableForBoost,
-    getFrameworksForBoost,
+    getFrameworksForBoostPaged,
     searchSkillsAvailableForBoost,
 } from '@accesslayer/boost/relationships/read';
 
@@ -109,11 +111,11 @@ import {
     addAlignedSkillsToBoost,
 } from '@accesslayer/boost/relationships/create';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
-import { getFrameworkIdsForSkill } from '@accesslayer/skill/read';
 import { neogma } from '@instance';
 import {
     removeBoostAsParent,
     removeProfileAsBoostAdmin,
+    removeBoostUsesFramework,
 } from '@accesslayer/boost/relationships/delete';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
@@ -203,6 +205,41 @@ export const boostsRouter = t.router({
 
             return true;
         }),
+    detachFrameworkFromBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/detach-framework',
+                tags: ['Boosts'],
+                summary: 'Detach framework from boost',
+                description:
+                    'Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(z.object({ boostUri: z.string(), frameworkId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, frameworkId } = input;
+
+            const boost = await getBoostByUri(boostUri);
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const framework = await getSkillFrameworkById(frameworkId);
+            if (!framework)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
+
+            return removeBoostUsesFramework(boost, frameworkId);
+        }),
 
     alignBoostSkills: profileRoute
         .meta({
@@ -233,7 +270,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            // Verify all skills exist before creating relationships and capture their frameworks
+            // Verify all skills exist before creating relationships
             const result = await neogma.queryRunner.run(
                 'MATCH (s:Skill) WHERE s.id IN $ids RETURN COLLECT({ id: s.id, frameworkId: s.frameworkId }) AS skills',
                 { ids: skillIds }
@@ -252,15 +289,6 @@ export const boostsRouter = t.router({
                     code: 'NOT_FOUND',
                     message: `Skill(s) not found: ${missing.join(', ')}`,
                 });
-            }
-
-            const frameworksToAttach = new Set(
-                foundSkills
-                    .map(skill => skill.frameworkId)
-                    .filter((id): id is string => typeof id === 'string')
-            );
-            for (const frameworkId of frameworksToAttach) {
-                await setBoostUsesFramework(boost, frameworkId);
             }
 
             await addAlignedSkillsToBoost(boost, skillIds);
@@ -503,32 +531,6 @@ export const boostsRouter = t.router({
                         message: `Skill(s) not found: ${missing.join(', ')}`,
                     });
                 }
-
-                const frameworkLookups = await Promise.all(
-                    skillIds.map(id => getFrameworkIdsForSkill(id))
-                );
-
-                const frameworks = new Set<string>();
-                frameworkLookups.forEach((frameworkIds, index) => {
-                    if (frameworkIds.length === 0) {
-                        throw new TRPCError({
-                            code: 'BAD_REQUEST',
-                            message: `Skill ${skillIds[index]} is not associated with a framework`,
-                        });
-                    }
-                    frameworkIds.forEach(fid => frameworks.add(fid));
-                });
-
-                if (frameworks.size !== 1) {
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message: 'All skillIds must belong to the same framework',
-                    });
-                }
-
-                const frameworkId = Array.from(frameworks)[0]!;
-
-                await setBoostUsesFramework(boost, frameworkId);
                 await addAlignedSkillsToBoost(boost, skillIds);
             }
 
@@ -613,32 +615,6 @@ export const boostsRouter = t.router({
                         message: `Skill(s) not found: ${missing.join(', ')}`,
                     });
                 }
-
-                const frameworkLookups = await Promise.all(
-                    skillIds.map(id => getFrameworkIdsForSkill(id))
-                );
-
-                const frameworks = new Set<string>();
-                frameworkLookups.forEach((frameworkIds, index) => {
-                    if (frameworkIds.length === 0) {
-                        throw new TRPCError({
-                            code: 'BAD_REQUEST',
-                            message: `Skill ${skillIds[index]} is not associated with a framework`,
-                        });
-                    }
-                    frameworkIds.forEach(fid => frameworks.add(fid));
-                });
-
-                if (frameworks.size !== 1) {
-                    throw new TRPCError({
-                        code: 'BAD_REQUEST',
-                        message: 'All skillIds must belong to the same framework',
-                    });
-                }
-
-                const frameworkId = Array.from(frameworks)[0]!;
-
-                await setBoostUsesFramework(childBoost, frameworkId);
                 await addAlignedSkillsToBoost(childBoost, skillIds);
             }
 
@@ -698,20 +674,28 @@ export const boostsRouter = t.router({
         .meta({
             openapi: {
                 protect: true,
-                method: 'GET',
+                method: 'POST',
                 path: '/boost/frameworks',
                 tags: ['Boosts'],
-                summary: 'List frameworks used by a boost',
+                summary: 'List frameworks used by a boost (paginated)',
                 description:
-                    'Returns the frameworks aligned to a boost via USES_FRAMEWORK. Requires boost admin.',
+                    'Returns frameworks aligned to a boost via USES_FRAMEWORK with pagination and optional query filtering. Requires boost admin.',
             },
             requiredScope: 'boosts:read',
         })
-        .input(z.object({ uri: z.string() }))
-        .output(SkillFrameworkValidator.array())
+        .input(
+            z.object({
+                uri: z.string(),
+                limit: z.number().int().min(1).max(200).default(50),
+                cursor: z.string().nullable().optional(),
+                query: SkillFrameworkQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedSkillFrameworksValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const decodedUri = decodeURIComponent(input.uri);
+            const { uri, limit, cursor, query } = input;
+            const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
@@ -723,17 +707,29 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const frameworks = await getFrameworksForBoost(boost);
+            const page = await getFrameworksForBoostPaged(
+                boost,
+                query ?? null,
+                limit,
+                cursor ?? null
+            );
 
-            return frameworks.map(framework => ({
-                id: framework.id,
-                name: framework.name,
-                description: framework.description ?? undefined,
-                sourceURI: framework.sourceURI ?? undefined,
-                status: (framework.status as any) ?? 'active',
-                createdAt: (framework as any).createdAt,
-                updatedAt: (framework as any).updatedAt,
-            }));
+            const response = {
+                records: page.records.map(framework => ({
+                    id: framework.id,
+                    name: framework.name,
+                    description: framework.description ?? undefined,
+                    sourceURI: framework.sourceURI ?? undefined,
+                    status: framework.status ?? 'active',
+                    createdAt: framework.createdAt,
+                    updatedAt: framework.updatedAt,
+                })),
+                hasMore: page.hasMore,
+            };
+
+            if (page.cursor) (response as any).cursor = page.cursor;
+
+            return response;
         }),
 
     getBoosts: profileRoute

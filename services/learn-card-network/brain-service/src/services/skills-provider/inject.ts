@@ -1,30 +1,11 @@
 import type { UnsignedVC, VC } from '@learncard/types';
-import type { BoostInstance, SkillInstance } from '@models';
+import type { BoostInstance } from '@models';
 import { getSkillsProvider } from './index';
 import {
     getAlignedSkillsForBoost,
-    getFrameworkUsedByBoost,
+    getFrameworksForBoost,
 } from '@accesslayer/boost/relationships/read';
 import type { Obv3Alignment } from './types';
-
-const getInjectableSkillIds = (skills: SkillInstance[]): string[] => {
-    const ids = new Set<string>();
-
-    for (const skill of skills) {
-        const props = ((skill as any)?.dataValues ?? (skill as any)) as Record<string, any> | undefined;
-        if (!props) continue;
-
-        const type = typeof props.type === 'string' ? props.type.toLowerCase() : undefined;
-        if (type === 'container') continue;
-
-        const id = props.id;
-        if (!id) continue;
-
-        ids.add(String(id));
-    }
-
-    return [...ids];
-};
 
 // Mutates the given credential in-place to add OBv3 alignments, if any exist on the boost.
 export async function injectObv3AlignmentsIntoCredentialForBoost(
@@ -33,20 +14,46 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
     domain: string
 ): Promise<void> {
     try {
-        const [framework, skills] = await Promise.all([
-            getFrameworkUsedByBoost(boost),
+        const [frameworks, skills] = await Promise.all([
+            getFrameworksForBoost(boost),
             getAlignedSkillsForBoost(boost),
         ]);
 
-        if (!framework || skills.length === 0) return;
+        if (!frameworks || frameworks.length === 0 || skills.length === 0) return;
 
-        const frameworkId: string | undefined = (framework as any)?.dataValues?.id ?? framework?.id;
-        const skillIds = getInjectableSkillIds(skills);
+        // Group aligned skills by their frameworkId (excluding containers)
+        const byFramework = new Map<string, string[]>();
+        for (const skill of skills) {
+            const props = ((skill as any)?.dataValues ?? (skill as any)) as
+                | Record<string, any>
+                | undefined;
+            if (!props) continue;
 
-        if (!frameworkId || skillIds.length === 0) return;
+            const type = typeof props.type === 'string' ? props.type.toLowerCase() : undefined;
+            if (type === 'container') continue;
+
+            const sid = props.id as string | undefined;
+            const fid = props.frameworkId as string | undefined;
+            if (!sid || !fid) continue;
+
+            const arr = byFramework.get(fid) ?? [];
+            if (!arr.includes(sid)) arr.push(sid);
+            byFramework.set(fid, arr);
+        }
 
         const provider = getSkillsProvider();
-        const alignments = await provider.buildObv3Alignments(frameworkId, skillIds, domain);
+        let alignments: any[] = [];
+
+        for (const fw of frameworks) {
+            const fwId: string | undefined = (fw as any)?.dataValues?.id ?? (fw as any)?.id;
+            if (!fwId) continue;
+
+            const idsForFramework = byFramework.get(fwId) ?? [];
+            if (idsForFramework.length === 0) continue;
+
+            const res = await provider.buildObv3Alignments(fwId, idsForFramework, domain);
+            if (Array.isArray(res) && res.length > 0) alignments = alignments.concat(res);
+        }
 
         if (!alignments || alignments.length === 0) return;
 
@@ -93,23 +100,50 @@ export async function buildObv3AlignmentsForBoost(
     domain: string
 ): Promise<Obv3Alignment[]> {
     try {
-        const [framework, skills] = await Promise.all([
-            getFrameworkUsedByBoost(boost),
+        const [frameworks, skills] = await Promise.all([
+            getFrameworksForBoost(boost),
             getAlignedSkillsForBoost(boost),
         ]);
 
-        if (!framework || skills.length === 0) return [];
+        if (!frameworks || frameworks.length === 0 || skills.length === 0) return [];
 
-        const frameworkId: string | undefined = (framework as any)?.dataValues?.id ?? framework?.id;
-        const skillIds = getInjectableSkillIds(skills);
+        // Group aligned skills by their frameworkId (excluding containers)
+        const byFramework = new Map<string, string[]>();
+        for (const skill of skills) {
+            const props = ((skill as any)?.dataValues ?? (skill as any)) as
+                | Record<string, any>
+                | undefined;
+            if (!props) continue;
 
-        if (!frameworkId || skillIds.length === 0) return [];
+            const type = typeof props.type === 'string' ? props.type.toLowerCase() : undefined;
+            if (type === 'container') continue;
+
+            const sid = props.id as string | undefined;
+            const fid = props.frameworkId as string | undefined;
+            if (!sid || !fid) continue;
+
+            const arr = byFramework.get(fid) ?? [];
+            if (!arr.includes(sid)) arr.push(sid);
+            byFramework.set(fid, arr);
+        }
 
         const provider = getSkillsProvider();
-        const alignments = await provider.buildObv3Alignments(frameworkId, skillIds, domain);
-        const cleaned = (alignments || []).map(a =>
-            Object.fromEntries(Object.entries(a).filter(([, v]) => v !== undefined))
-        ) as Obv3Alignment[];
+        let cleaned: Obv3Alignment[] = [];
+
+        for (const fw of frameworks) {
+            const fwId: string | undefined = (fw as any)?.dataValues?.id ?? (fw as any)?.id;
+            if (!fwId) continue;
+
+            const idsForFramework = byFramework.get(fwId) ?? [];
+            if (idsForFramework.length === 0) continue;
+
+            const alignments = await provider.buildObv3Alignments(fwId, idsForFramework, domain);
+            const cleanedPart = (alignments || []).map(a =>
+                Object.fromEntries(Object.entries(a).filter(([, v]) => v !== undefined))
+            ) as Obv3Alignment[];
+            cleaned = cleaned.concat(cleanedPart);
+        }
+
         return cleaned;
     } catch (e) {
         if (process.env.NODE_ENV !== 'test') {

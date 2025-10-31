@@ -601,6 +601,25 @@ export type PaginatedConsentFlowTransactions = z.infer<
     typeof PaginatedConsentFlowTransactionsValidator
 >;
 
+// Skill Frameworks: Query + Paginated types
+const BaseSkillFrameworkQueryValidator = z
+    .object({
+        id: StringQuery,
+        name: StringQuery,
+        description: StringQuery,
+        sourceURI: StringQuery,
+        status: StringQuery,
+    })
+    .partial();
+
+export const SkillFrameworkQueryValidator = z.union([
+    z.object({ $or: BaseSkillFrameworkQueryValidator.array() }),
+    BaseSkillFrameworkQueryValidator,
+]);
+export type SkillFrameworkQuery = z.infer<typeof SkillFrameworkQueryValidator>;
+
+// moved below SkillFrameworkValidator
+
 export const ContractCredentialValidator = z.object({
     credentialUri: z.string(),
     termsUri: z.string(),
@@ -1059,6 +1078,11 @@ export const SkillFrameworkValidator = z.object({
 });
 
 export type SkillFrameworkType = z.infer<typeof SkillFrameworkValidator>;
+
+export const PaginatedSkillFrameworksValidator = PaginationResponseValidator.extend({
+    records: SkillFrameworkValidator.array(),
+});
+export type PaginatedSkillFrameworksType = z.infer<typeof PaginatedSkillFrameworksValidator>;
 
 export type SkillTreeNode = SkillType & {
     children: SkillTreeNode[];
