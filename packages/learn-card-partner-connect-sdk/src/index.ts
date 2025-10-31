@@ -47,7 +47,7 @@ export class PartnerConnect {
   private isInitialized = false;
 
   constructor(options: PartnerConnectOptions) {
-    this.hostOrigin = options.hostOrigin;
+    this.hostOrigin = options.hostOrigin || 'https://learncard.app';
     this.protocol = options.protocol || 'LEARNCARD_V1';
     this.requestTimeout = options.requestTimeout || 30000;
     this.pendingRequests = new Map();
