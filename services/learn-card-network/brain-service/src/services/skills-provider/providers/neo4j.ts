@@ -2,7 +2,7 @@ import { SkillsProvider, Options, Obv3Alignment } from '../types';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import {
     getSkillsByFramework as getSkillsByFrameworkFromDb,
-    getSkillsByIds as getSkillsByIdsFromDb,
+    getSkillsByIdsForFramework as getSkillsByIdsFromDb,
 } from '@accesslayer/skill/read';
 
 export function createNeo4jProvider(options?: Options): SkillsProvider {
@@ -35,10 +35,8 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
         }));
     };
 
-    const getSkillsByIds: SkillsProvider['getSkillsByIds'] = async (_frameworkId, skillIds) => {
-        const skills = await getSkillsByIdsFromDb(skillIds);
-        // Filter to ensure they belong to the specified framework
-        // (The DB function might not filter by framework, so we do it here for safety)
+    const getSkillsByIds: SkillsProvider['getSkillsByIds'] = async (frameworkId, skillIds) => {
+        const skills = await getSkillsByIdsFromDb(frameworkId, skillIds);
         return skills.map((skill: any) => ({
             id: skill.id,
             code: skill.code ?? undefined,
@@ -58,7 +56,7 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
     ) => {
         const [framework, skills] = await Promise.all([
             getSkillFrameworkById(frameworkId),
-            getSkillsByIdsFromDb(skillIds),
+            getSkillsByIdsFromDb(frameworkId, skillIds),
         ]);
 
         if (!framework) return [];
@@ -75,7 +73,9 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
                 ? `${baseUrl}/frameworks/${encodeURIComponent(
                       frameworkId
                   )}/skills/${encodeURIComponent(skill.id)}`
-                : `https://${decodedDomain}/skills/${encodeURIComponent(skill.id)}`;
+                : `https://${decodedDomain}/frameworks/${encodeURIComponent(
+                      frameworkId
+                  )}/skills/${encodeURIComponent(skill.id)}`;
 
             alignments.push({
                 type: ['Alignment'],
@@ -139,7 +139,7 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
 
     const updateSkill: SkillsProvider['updateSkill'] = async (_frameworkId, skillId, updates) => {
         // No-op: Skill is already updated in Neo4j via accesslayer
-        const skills = await getSkillsByIdsFromDb([skillId]);
+        const skills = await getSkillsByIdsFromDb(_frameworkId, [skillId]);
         const skill = skills[0];
         if (!skill) return null;
         return {

@@ -517,24 +517,21 @@ export async function getLearnCardNetworkPlugin(
 
             createBoost: async (_learnCard, credential, metadata) => {
                 await ensureUser();
-                const { skillIds, ...rest } = metadata ?? {};
+                const { skills, ...rest } = metadata ?? {};
 
-                return client.boost.createBoost.mutate({
-                    credential,
-                    ...rest,
-                    ...(skillIds && skillIds.length > 0 ? { skillIds } : {}),
-                });
+                const payload: any = { credential, ...rest };
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+
+                return client.boost.createBoost.mutate(payload);
             },
             createChildBoost: async (_learnCard, parentUri, credential, metadata) => {
                 await ensureUser();
+                const { skills, ...restMetadata } = metadata || {};
 
-                const { skillIds, ...restMetadata } = metadata || {};
+                const payload: any = { parentUri, boost: { credential, ...restMetadata } };
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
 
-                return client.boost.createChildBoost.mutate({
-                    parentUri,
-                    boost: { credential, ...restMetadata },
-                    ...(skillIds && skillIds.length > 0 ? { skillIds } : {}),
-                });
+                return client.boost.createChildBoost.mutate(payload);
             },
             getBoost: async (_learnCard, uri) => {
                 await ensureUser();
@@ -760,10 +757,10 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.boost.detachFrameworkFromBoost.mutate({ boostUri, frameworkId });
             },
-            alignBoostSkills: async (_learnCard, boostUri, skillIds) => {
+            alignBoostSkills: async (_learnCard, boostUri, skills) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.alignBoostSkills.mutate({ boostUri, skillIds });
+                return client.boost.alignBoostSkills.mutate({ boostUri, skills } as any);
             },
             getBoostAdmins: async (_learnCard, uri, options = {}) => {
                 await ensureUser();
@@ -1239,17 +1236,17 @@ export async function getLearnCardNetworkPlugin(
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skills.syncFrameworkSkills.mutate(input);
             },
-            listSkillTags: async (_learnCard, skillId) => {
+            listSkillTags: async (_learnCard, frameworkId, skillId) => {
                 if (!userData) throw new Error('Please make an account first!');
-                return client.skills.listSkillTags.query({ id: skillId });
+                return client.skills.listSkillTags.query({ frameworkId, id: skillId } as any);
             },
-            addSkillTag: async (_learnCard, skillId, tag) => {
+            addSkillTag: async (_learnCard, frameworkId, skillId, tag) => {
                 if (!userData) throw new Error('Please make an account first!');
-                return client.skills.addSkillTag.mutate({ id: skillId, tag });
+                return client.skills.addSkillTag.mutate({ frameworkId, id: skillId, tag } as any);
             },
-            removeSkillTag: async (_learnCard, skillId, slug) => {
+            removeSkillTag: async (_learnCard, frameworkId, skillId, slug) => {
                 if (!userData) throw new Error('Please make an account first!');
-                return client.skills.removeSkillTag.mutate({ id: skillId, slug });
+                return client.skills.removeSkillTag.mutate({ frameworkId, id: skillId, slug } as any);
             },
             createManagedSkillFramework: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');

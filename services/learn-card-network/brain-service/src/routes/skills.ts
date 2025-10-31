@@ -499,18 +499,19 @@ export const skillsRouter = t.router({
             },
             requiredScope: 'skills:read',
         })
-        .input(z.object({ id: z.string() }))
+        .input(z.object({ frameworkId: z.string(), id: z.string() }))
         .output(TagValidator.array())
         .query(async ({ ctx, input }): Promise<TagType[]> => {
             const profileId = ctx.user.profile.profileId;
-            const allowed = await doesProfileManageSkill(profileId, input.id);
+            const { frameworkId, id } = input;
+            const allowed = await doesProfileManageFramework(profileId, frameworkId);
             if (!allowed)
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'You do not manage a framework containing this skill',
                 });
 
-            return listTagsForSkill(input.id);
+            return listTagsForSkill(frameworkId, id);
         }),
 
     addSkillTag: profileRoute
@@ -526,19 +527,20 @@ export const skillsRouter = t.router({
             },
             requiredScope: 'skills:write',
         })
-        .input(z.object({ id: z.string(), tag: AddTagInputValidator }))
+        .input(z.object({ frameworkId: z.string(), id: z.string(), tag: AddTagInputValidator }))
         .output(TagValidator.array())
         .mutation(async ({ ctx, input }): Promise<TagType[]> => {
             const profileId = ctx.user.profile.profileId;
-            const allowed = await doesProfileManageSkill(profileId, input.id);
+            const { frameworkId, id, tag } = input;
+            const allowed = await doesProfileManageFramework(profileId, frameworkId);
             if (!allowed)
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'You do not manage a framework containing this skill',
                 });
 
-            await addTagToSkill(input.id, input.tag);
-            return listTagsForSkill(input.id);
+            await addTagToSkill(frameworkId, id, tag);
+            return listTagsForSkill(frameworkId, id);
         }),
 
     removeSkillTag: profileRoute
@@ -554,18 +556,19 @@ export const skillsRouter = t.router({
             },
             requiredScope: 'skills:write',
         })
-        .input(z.object({ id: z.string(), slug: z.string().min(1) }))
+        .input(z.object({ frameworkId: z.string(), id: z.string(), slug: z.string().min(1) }))
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ ctx, input }): Promise<{ success: boolean }> => {
             const profileId = ctx.user.profile.profileId;
-            const allowed = await doesProfileManageSkill(profileId, input.id);
+            const { frameworkId, id, slug } = input;
+            const allowed = await doesProfileManageFramework(profileId, frameworkId);
             if (!allowed)
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'You do not manage a framework containing this skill',
                 });
 
-            return removeTagFromSkill(input.id, input.slug);
+            return removeTagFromSkill(frameworkId, id, slug);
         }),
 
     countSkills: profileRoute

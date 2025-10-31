@@ -122,20 +122,24 @@ export const deleteSkill = async (
     } else {
         // Reparent strategy: move children to the deleted skill's parent
         if (parentId) {
-            // Skill has a parent - reparent children to grandparent
+            // Skill has a parent - reparent children to grandparent within the same framework
             await neogma.queryRunner.run(
-                `MATCH (s:Skill {id: $skillId})<-[oldRel:IS_CHILD_OF]-(child:Skill)
-                 MATCH (parent:Skill {id: $parentId})
+                `MATCH (f:SkillFramework {id: $frameworkId})
+                 MATCH (f)-[:CONTAINS]->(s:Skill {id: $skillId})
+                 MATCH (f)-[:CONTAINS]->(parent:Skill {id: $parentId})
+                 MATCH (s)<-[oldRel:IS_CHILD_OF]-(child:Skill)
                  DELETE oldRel
                  CREATE (child)-[:IS_CHILD_OF]->(parent)`,
-                { skillId, parentId }
+                { frameworkId, skillId, parentId }
             );
         } else {
-            // Skill is a root node - make children root nodes by removing their parent relationships
+            // Skill is a root node - make children root nodes by removing their parent relationships (framework-scoped)
             await neogma.queryRunner.run(
-                `MATCH (s:Skill {id: $skillId})<-[rel:IS_CHILD_OF]-(child:Skill)
+                `MATCH (f:SkillFramework {id: $frameworkId})
+                 MATCH (f)-[:CONTAINS]->(s:Skill {id: $skillId})
+                 MATCH (s)<-[rel:IS_CHILD_OF]-(child:Skill)
                  DELETE rel`,
-                { skillId }
+                { frameworkId, skillId }
             );
         }
 

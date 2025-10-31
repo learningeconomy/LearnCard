@@ -26,28 +26,10 @@ export const upsertSkillsIntoFramework = async (
         parentId: s.parentId ?? null,
     }));
 
-    // 0) Pre-check: ensure no skill is already contained by a different framework
-    const conflictCheck = await neogma.queryRunner.run(
-        `UNWIND $skills AS sk
-         MATCH (s:Skill { id: sk.id })<-[:CONTAINS]-(otherF:SkillFramework)
-         WHERE otherF.id <> $frameworkId
-         RETURN collect(DISTINCT sk.id) AS conflicts`,
-        { frameworkId, skills: skillParams }
-    );
-
-    const conflicts: string[] = (conflictCheck.records[0]?.get('conflicts') as string[]) || [];
-    if (conflicts.length > 0) {
-        throw new Error(
-            `Cannot upsert skills because some are already assigned to another framework: ${conflicts.join(
-                ', '
-            )}`
-        );
-    }
-
-    // 1) Merge/Update Skill nodes (recording frameworkId) and connect to this framework
+    // 1) Merge/Update Skill nodes scoped by (id, frameworkId) and connect to this framework
     await neogma.queryRunner.run(
         `UNWIND $skills AS sk
-         MERGE (s:Skill { id: sk.id })
+         MERGE (s:Skill { id: sk.id, frameworkId: $frameworkId })
          ON CREATE SET s.statement = sk.statement,
                        s.description = sk.description,
                        s.code = sk.code,
@@ -60,8 +42,7 @@ export const upsertSkillsIntoFramework = async (
                        s.code = sk.code,
                        s.icon = sk.icon,
                        s.type = sk.type,
-                       s.status = sk.status,
-                       s.frameworkId = CASE WHEN s.frameworkId IS NULL OR s.frameworkId = $frameworkId THEN $frameworkId ELSE s.frameworkId END
+                       s.status = sk.status
          WITH s
          MATCH (f:SkillFramework { id: $frameworkId })
          MERGE (f)-[:CONTAINS]->(s)`,

@@ -6296,7 +6296,7 @@ describe('Boosts', () => {
             await expect(
                 userB.clients.fullAuth.boost.alignBoostSkills({
                     boostUri,
-                    skillIds: [skillId],
+                    skills: [{ frameworkId, id: skillId }],
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 
@@ -6308,7 +6308,7 @@ describe('Boosts', () => {
             await expect(
                 userB.clients.fullAuth.boost.alignBoostSkills({
                     boostUri,
-                    skillIds: [skillId],
+                    skills: [{ frameworkId, id: skillId }],
                 })
             ).resolves.toBe(true);
 
@@ -6362,7 +6362,7 @@ describe('Boosts', () => {
 
             const aligned = await userB.clients.fullAuth.boost.alignBoostSkills({
                 boostUri: childUri,
-                skillIds: [skillId],
+                skills: [{ frameworkId, id: skillId }],
             });
             expect(aligned).toBe(true);
 

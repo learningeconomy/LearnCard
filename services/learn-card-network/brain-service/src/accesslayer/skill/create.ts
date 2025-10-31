@@ -45,9 +45,11 @@ export const createSkill = async (
         }
 
         await neogma.queryRunner.run(
-            `MATCH (s:Skill {id: $skillId}), (p:Skill {id: $parentId})
+            `MATCH (f:SkillFramework {id: $frameworkId})
+             MATCH (f)-[:CONTAINS]->(s:Skill {id: $skillId})
+             MATCH (f)-[:CONTAINS]->(p:Skill {id: $parentId})
              MERGE (s)-[:IS_CHILD_OF]->(p)`,
-            { skillId: data.id, parentId }
+            { frameworkId, skillId: data.id, parentId }
         );
     }
 

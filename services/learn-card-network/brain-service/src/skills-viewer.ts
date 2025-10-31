@@ -1,7 +1,7 @@
 import express from 'express';
 import { FastifyPluginAsync } from 'fastify';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
-import { getSkillsByIds } from '@accesslayer/skill/read';
+import { getSkillsByIds, getSkillByFrameworkAndId } from '@accesslayer/skill/read';
 
 // Express app for Lambda
 export const app = express();
@@ -27,6 +27,30 @@ app.get('/skills/:skillId', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching skill:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// New compound route: framework-scoped skill
+app.get('/frameworks/:frameworkId/skills/:skillId', async (req, res) => {
+    try {
+        const { frameworkId, skillId } = req.params as { frameworkId: string; skillId: string };
+        const skill = await getSkillByFrameworkAndId(frameworkId, skillId);
+
+        if (!skill) {
+            return res.status(404).json({ error: 'Skill not found' });
+        }
+
+        return res.json({
+            id: skill.id,
+            code: skill.code,
+            statement: skill.statement,
+            description: skill.description,
+            type: skill.type,
+            status: skill.status,
+        });
+    } catch (error) {
+        console.error('Error fetching skill by framework/id:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -77,6 +101,30 @@ export const skillsViewerFastifyPlugin: FastifyPluginAsync = async fastify => {
             });
         } catch (error) {
             console.error('Error fetching skill:', error);
+            return reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
+
+    // New compound route for framework-scoped skill
+    fastify.get('/frameworks/:frameworkId/skills/:skillId', async (request, reply) => {
+        try {
+            const { frameworkId, skillId } = request.params as { frameworkId: string; skillId: string };
+            const skill = await getSkillByFrameworkAndId(frameworkId, skillId);
+
+            if (!skill) {
+                return reply.status(404).send({ error: 'Skill not found' });
+            }
+
+            return reply.send({
+                id: skill.id,
+                code: skill.code,
+                statement: skill.statement,
+                description: skill.description,
+                type: skill.type,
+                status: skill.status,
+            });
+        } catch (error) {
+            console.error('Error fetching skill by framework/id:', error);
             return reply.status(500).send({ error: 'Internal server error' });
         }
     });

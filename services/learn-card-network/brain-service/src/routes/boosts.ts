@@ -254,11 +254,16 @@ export const boostsRouter = t.router({
             },
             requiredScope: 'boosts:write',
         })
-        .input(z.object({ boostUri: z.string(), skillIds: z.array(z.string()).min(1) }))
+        .input(
+            z.object({
+                boostUri: z.string(),
+                skills: z.array(z.object({ frameworkId: z.string(), id: z.string() })).min(1),
+            })
+        )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, skillIds } = input;
+            const { boostUri, skills } = input;
 
             const boost = await getBoostByUri(boostUri);
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
@@ -270,28 +275,26 @@ export const boostsRouter = t.router({
                 });
             }
 
-            // Verify all skills exist before creating relationships
-            const result = await neogma.queryRunner.run(
-                'MATCH (s:Skill) WHERE s.id IN $ids RETURN COLLECT({ id: s.id, frameworkId: s.frameworkId }) AS skills',
-                { ids: skillIds }
+            // Verify all framework+id pairs exist
+            const verify = await neogma.queryRunner.run(
+                `UNWIND $refs AS sr
+                 MATCH (f:SkillFramework { id: sr.frameworkId })-[:CONTAINS]->(s:Skill { id: sr.id })
+                 RETURN collect({ frameworkId: f.id, id: s.id }) AS found`,
+                { refs: skills }
             );
-            const foundSkills =
-                (result.records[0]?.get('skills') as Array<{
-                    id?: string;
-                    frameworkId?: string;
-                }>) || [];
-            const found = foundSkills
-                .map(skill => skill.id)
-                .filter((id): id is string => typeof id === 'string');
-            const missing = skillIds.filter(id => !found.includes(id));
-            if (missing.length > 0) {
+            const foundPairs = (verify.records[0]?.get('found') as Array<{ frameworkId?: string; id?: string }>) || [];
+            const foundSet = new Set(foundPairs.map(p => `${p.frameworkId}:${p.id}`));
+            const missingPairs = skills.filter(sr => !foundSet.has(`${sr.frameworkId}:${sr.id}`));
+            if (missingPairs.length > 0) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
-                    message: `Skill(s) not found: ${missing.join(', ')}`,
+                    message: `Skill(s) not found: ${missingPairs
+                        .map(p => `${p.frameworkId}:${p.id}`)
+                        .join(', ')}`,
                 });
             }
 
-            await addAlignedSkillsToBoost(boost, skillIds);
+            await addAlignedSkillsToBoost(boost, skills);
 
             return true;
         }),
@@ -505,33 +508,21 @@ export const boostsRouter = t.router({
                 .extend({
                     credential: VCValidator.or(UnsignedVCValidator),
                     claimPermissions: BoostPermissionsValidator.partial().optional(),
-                    skillIds: z.array(z.string()).min(1).optional(),
+                    skills: z
+                        .array(z.object({ frameworkId: z.string(), id: z.string() }))
+                        .min(1)
+                        .optional(),
                 })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { credential, claimPermissions, skillIds: incomingSkillIds, ...metadata } = input;
+            const { credential, claimPermissions, skills, ...metadata } = input;
 
             const boost = await createBoost(credential, profile, metadata, ctx.domain);
 
-            const skillIds = incomingSkillIds ? Array.from(new Set(incomingSkillIds)) : undefined;
-
-            if (skillIds && skillIds.length > 0) {
-                const verification = await neogma.queryRunner.run(
-                    'MATCH (s:Skill) WHERE s.id IN $ids RETURN COLLECT(s.id) AS found',
-                    { ids: skillIds }
-                );
-
-                const found = (verification.records[0]?.get('found') as string[]) || [];
-                const missing = skillIds.filter(id => !found.includes(id));
-                if (missing.length > 0) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: `Skill(s) not found: ${missing.join(', ')}`,
-                    });
-                }
-                await addAlignedSkillsToBoost(boost, skillIds);
+            if (Array.isArray(skills) && skills.length > 0) {
+                await addAlignedSkillsToBoost(boost, skills);
             }
 
             if (claimPermissions) {
@@ -565,7 +556,7 @@ export const boostsRouter = t.router({
                         credential: VCValidator.or(UnsignedVCValidator),
                         claimPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
-                skillIds: z.array(z.string()).min(1).optional(),
+                skills: z.array(z.object({ frameworkId: z.string(), id: z.string() })).min(1).optional(),
             })
         )
         .output(z.string())
@@ -574,7 +565,7 @@ export const boostsRouter = t.router({
             const {
                 parentUri,
                 boost: { credential, claimPermissions, ...metadata },
-                skillIds: incomingSkillIds,
+                skills,
             } = input;
 
             const parentBoost = await getBoostByUri(parentUri);
@@ -599,23 +590,8 @@ export const boostsRouter = t.router({
 
             await setBoostAsParent(parentBoost, childBoost);
 
-            const skillIds = incomingSkillIds ? Array.from(new Set(incomingSkillIds)) : undefined;
-
-            if (skillIds && skillIds.length > 0) {
-                const verification = await neogma.queryRunner.run(
-                    'MATCH (s:Skill) WHERE s.id IN $ids RETURN COLLECT(s.id) AS found',
-                    { ids: skillIds }
-                );
-
-                const found = (verification.records[0]?.get('found') as string[]) || [];
-                const missing = skillIds.filter(id => !found.includes(id));
-                if (missing.length > 0) {
-                    throw new TRPCError({
-                        code: 'NOT_FOUND',
-                        message: `Skill(s) not found: ${missing.join(', ')}`,
-                    });
-                }
-                await addAlignedSkillsToBoost(childBoost, skillIds);
+            if (Array.isArray(skills) && skills.length > 0) {
+                await addAlignedSkillsToBoost(childBoost, skills);
             }
 
             if (claimPermissions) {

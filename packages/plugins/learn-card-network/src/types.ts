@@ -192,12 +192,16 @@ export type LearnCardNetworkPluginMethods = {
 
     createBoost: (
         credential: VC | UnsignedVC,
-        metadata?: Partial<Omit<Boost, 'uri'>> & { skillIds?: string[] }
+        metadata?: Partial<Omit<Boost, 'uri'>> & {
+            skills?: { frameworkId: string; id: string }[];
+        }
     ) => Promise<string>;
     createChildBoost: (
         parentUri: string,
         credential: VC | UnsignedVC,
-        metadata?: Partial<Omit<Boost, 'uri'>> & { skillIds?: string[] }
+        metadata?: Partial<Omit<Boost, 'uri'>> & {
+            skills?: { frameworkId: string; id: string }[];
+        }
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
     getBoostFrameworks: (
@@ -322,7 +326,10 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
     attachFrameworkToBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
     detachFrameworkFromBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
-    alignBoostSkills: (boostUri: string, skillIds: string[]) => Promise<boolean>;
+    alignBoostSkills: (
+        boostUri: string,
+        skills: { frameworkId: string; id: string }[]
+    ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (
         uri: string,
@@ -488,9 +495,13 @@ export type LearnCardNetworkPluginMethods = {
 
     // Skills & Skill Frameworks
     syncFrameworkSkills: (input: SyncFrameworkInput) => Promise<FrameworkWithSkills>;
-    listSkillTags: (skillId: string) => Promise<TagType[]>;
-    addSkillTag: (skillId: string, tag: AddTagInput) => Promise<TagType[]>;
-    removeSkillTag: (skillId: string, slug: string) => Promise<{ success: boolean }>;
+    listSkillTags: (frameworkId: string, skillId: string) => Promise<TagType[]>;
+    addSkillTag: (frameworkId: string, skillId: string, tag: AddTagInput) => Promise<TagType[]>;
+    removeSkillTag: (
+        frameworkId: string,
+        skillId: string,
+        slug: string
+    ) => Promise<{ success: boolean }>;
 
     createManagedSkillFramework: (
         input: CreateManagedSkillFrameworkInput

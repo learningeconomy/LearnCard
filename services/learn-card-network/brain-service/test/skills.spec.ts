@@ -261,11 +261,12 @@ describe('Skills router', () => {
         await userA.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID });
 
         // Initially empty
-        let tags = await userA.clients.fullAuth.skills.listSkillTags({ id: SKILL_IDS[0]! });
+        let tags = await userA.clients.fullAuth.skills.listSkillTags({ frameworkId: FW_ID, id: SKILL_IDS[0]! });
         expect(tags).toEqual([]);
 
         // Add tag
         tags = await userA.clients.fullAuth.skills.addSkillTag({
+            frameworkId: FW_ID,
             id: SKILL_IDS[0]!,
             tag: { slug: 'core', name: 'Core' },
         });
@@ -274,6 +275,7 @@ describe('Skills router', () => {
 
         // Add same slug with new name -> updates name, still one tag
         tags = await userA.clients.fullAuth.skills.addSkillTag({
+            frameworkId: FW_ID,
             id: SKILL_IDS[0]!,
             tag: { slug: 'core', name: 'Core Updated' },
         });
@@ -282,16 +284,18 @@ describe('Skills router', () => {
 
         // Remove
         const removed = await userA.clients.fullAuth.skills.removeSkillTag({
+            frameworkId: FW_ID,
             id: SKILL_IDS[0]!,
             slug: 'core',
         });
         expect(removed.success).toBe(true);
 
-        tags = await userA.clients.fullAuth.skills.listSkillTags({ id: SKILL_IDS[0]! });
+        tags = await userA.clients.fullAuth.skills.listSkillTags({ frameworkId: FW_ID, id: SKILL_IDS[0]! });
         expect(tags).toEqual([]);
 
         // Removing again should be a no-op success
         const removedAgain = await userA.clients.fullAuth.skills.removeSkillTag({
+            frameworkId: FW_ID,
             id: SKILL_IDS[0]!,
             slug: 'core',
         });
@@ -306,6 +310,7 @@ describe('Skills router', () => {
 
         // Can add (write)
         const afterAdd = await userWriter.clients.fullAuth.skills.addSkillTag({
+            frameworkId: FW_ID,
             id: SKILL_IDS[1]!,
             tag: { slug: 'tag1', name: 'Tag 1' },
         });
@@ -313,22 +318,23 @@ describe('Skills router', () => {
 
         // Cannot list (requires read scope)
         await expect(
-            userWriter.clients.fullAuth.skills.listSkillTags({ id: SKILL_IDS[1]! })
+            userWriter.clients.fullAuth.skills.listSkillTags({ frameworkId: FW_ID, id: SKILL_IDS[1]! })
         ).rejects.toThrow();
 
         // Another user without management cannot add/list/remove
         await createProfileFor(userB, 'userb');
         await expect(
             userB.clients.fullAuth.skills.addSkillTag({
+                frameworkId: FW_ID,
                 id: SKILL_IDS[1]!,
                 tag: { slug: 'x', name: 'X' },
             })
         ).rejects.toThrow();
         await expect(
-            userB.clients.fullAuth.skills.listSkillTags({ id: SKILL_IDS[1]! })
+            userB.clients.fullAuth.skills.listSkillTags({ frameworkId: FW_ID, id: SKILL_IDS[1]! })
         ).rejects.toThrow();
         await expect(
-            userB.clients.fullAuth.skills.removeSkillTag({ id: SKILL_IDS[1]!, slug: 'tag1' })
+            userB.clients.fullAuth.skills.removeSkillTag({ frameworkId: FW_ID, id: SKILL_IDS[1]!, slug: 'tag1' })
         ).rejects.toThrow();
     });
 
@@ -970,13 +976,13 @@ describe('Skills router', () => {
         await expect(noAuthClient.skills.syncFrameworkSkills({ id: FW_ID })).rejects.toThrow();
 
         await expect(
-            noAuthClient.skills.addSkillTag({ id: SKILL_IDS[0]!, tag: { slug: 't', name: 'T' } })
+            noAuthClient.skills.addSkillTag({ frameworkId: FW_ID, id: SKILL_IDS[0]!, tag: { slug: 't', name: 'T' } })
         ).rejects.toThrow();
 
-        await expect(noAuthClient.skills.listSkillTags({ id: SKILL_IDS[0]! })).rejects.toThrow();
+        await expect(noAuthClient.skills.listSkillTags({ frameworkId: FW_ID, id: SKILL_IDS[0]! })).rejects.toThrow();
 
         await expect(
-            noAuthClient.skills.removeSkillTag({ id: SKILL_IDS[0]!, slug: 't' })
+            noAuthClient.skills.removeSkillTag({ frameworkId: FW_ID, id: SKILL_IDS[0]!, slug: 't' })
         ).rejects.toThrow();
 
         await expect(

@@ -19,6 +19,23 @@ export const doesProfileManageSkill = async (
     return count > 0;
 };
 
+// Stricter check: profile manages the specified framework AND the framework contains the skill id
+export const doesProfileManageSkillInFramework = async (
+    profileId: string,
+    frameworkId: string,
+    skillId: string
+): Promise<boolean> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (p:Profile {profileId: $profileId})-[:MANAGES]->(f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+         RETURN count(s) AS c`,
+        { profileId, frameworkId, skillId }
+    );
+
+    const count = Number(result.records[0]?.get('c') ?? 0);
+
+    return count > 0;
+};
+
 export const getFrameworkIdsForSkill = async (skillId: string): Promise<string[]> => {
     const result = await neogma.queryRunner.run(
         `MATCH (f:SkillFramework)-[:CONTAINS]->(s:Skill {id: $skillId})
@@ -299,6 +316,58 @@ export const getSkillsByIds = async (skillIds: string[]): Promise<FlatSkillType[
             ...(parentId ? { parentId } : {}),
         } as FlatSkillType;
     });
+};
+
+// Framework-scoped variant: fetch skills by ids but only within the specified framework
+export const getSkillsByIdsForFramework = async (
+    frameworkId: string,
+    skillIds: string[]
+): Promise<FlatSkillType[]> => {
+    if (skillIds.length === 0) return [];
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill)
+         WHERE s.id IN $skillIds
+         OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
+         RETURN s AS s, parent.id AS parentId
+         ORDER BY s.id`,
+        { frameworkId, skillIds }
+    );
+
+    return result.records.map(r => {
+        const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
+        const parentId = r.get('parentId') as string | null;
+        return {
+            ...props,
+            type: props.type ?? 'skill',
+            ...(parentId ? { parentId } : {}),
+        } as FlatSkillType;
+    });
+};
+
+// Single fetch by framework+id (returns null if missing)
+export const getSkillByFrameworkAndId = async (
+    frameworkId: string,
+    skillId: string
+): Promise<FlatSkillType | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+         OPTIONAL MATCH (s)-[:IS_CHILD_OF]->(parent:Skill)
+         RETURN s AS s, parent.id AS parentId
+         LIMIT 1`,
+        { frameworkId, skillId }
+    );
+
+    const r = result.records[0];
+    if (!r) return null;
+
+    const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
+    const parentId = r.get('parentId') as string | null;
+    return {
+        ...props,
+        type: props.type ?? 'skill',
+        ...(parentId ? { parentId } : {}),
+    } as FlatSkillType;
 };
 
 /**

@@ -12,7 +12,7 @@ export const Skill = ModelFactory<FlatSkillType, SkillRelationships>(
     {
         label: 'Skill',
         schema: {
-            id: { type: 'string', required: true, uniqueItems: true },
+            id: { type: 'string', required: true },
             statement: { type: 'string', required: true },
             description: { type: 'string', required: false },
             code: { type: 'string', required: false },

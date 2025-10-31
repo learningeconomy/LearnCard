@@ -68,19 +68,19 @@ export const setBoostUsesFramework = async (
     });
 };
 
-// Align one or more Skills to a Boost via ALIGNED_TO
+// Align one or more Skills to a Boost via ALIGNED_TO (framework-scoped)
 export const addAlignedSkillsToBoost = async (
     boost: BoostInstance,
-    skillIds: string[]
+    skillRefs: { frameworkId: string; id: string }[]
 ): Promise<void> => {
-    if (skillIds.length === 0) return;
+    if (skillRefs.length === 0) return;
 
-    // Use a single query for efficiency
     await neogma.queryRunner.run(
-        `UNWIND $skillIds AS sid
-         MATCH (b:Boost { id: $boostId }), (s:Skill { id: sid })
+        `UNWIND $skillRefs AS sr
+         MATCH (b:Boost { id: $boostId })
+         MATCH (f:SkillFramework { id: sr.frameworkId })-[:CONTAINS]->(s:Skill { id: sr.id })
          MERGE (b)-[:ALIGNED_TO]->(s)`,
-        { boostId: boost.id, skillIds }
+        { boostId: boost.id, skillRefs }
     );
 };
 
