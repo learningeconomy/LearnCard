@@ -281,7 +281,9 @@ export type BoostRecipientWithChildrenInfo = z.infer<typeof BoostRecipientWithCh
 export const PaginatedBoostRecipientsWithChildrenValidator = PaginationResponseValidator.extend({
     records: BoostRecipientWithChildrenValidator.array(),
 });
-export type PaginatedBoostRecipientsWithChildrenType = z.infer<typeof PaginatedBoostRecipientsWithChildrenValidator>;
+export type PaginatedBoostRecipientsWithChildrenType = z.infer<
+    typeof PaginatedBoostRecipientsWithChildrenValidator
+>;
 
 export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
     endpoint: z.string(),
@@ -336,17 +338,39 @@ export const ConsentFlowContractValidator = z.object({
         .object({
             anonymize: z.boolean().optional(),
             credentials: z
-                .object({ categories: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}) })
+                .object({
+                    categories: z
+                        .record(
+                            z.object({
+                                required: z.boolean(),
+                                defaultEnabled: z.boolean().optional(),
+                            })
+                        )
+                        .default({}),
+                })
                 .default({}),
-            personal: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}),
+            personal: z
+                .record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() }))
+                .default({}),
         })
         .default({}),
     write: z
         .object({
             credentials: z
-                .object({ categories: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}) })
+                .object({
+                    categories: z
+                        .record(
+                            z.object({
+                                required: z.boolean(),
+                                defaultEnabled: z.boolean().optional(),
+                            })
+                        )
+                        .default({}),
+                })
                 .default({}),
-            personal: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}),
+            personal: z
+                .record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() }))
+                .default({}),
         })
         .default({}),
 });
@@ -597,7 +621,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'ISSUANCE_CLAIMED',
     'ISSUANCE_DELIVERED',
     'ISSUANCE_ERROR',
-    'PROFILE_PARENT_APPROVED'
+    'PROFILE_PARENT_APPROVED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -616,7 +640,13 @@ export const LCNInboxContactMethodValidator = z.object({
 
 export type LCNInboxContactMethod = z.infer<typeof LCNInboxContactMethodValidator>;
 
-export const LCNInboxStatusEnumValidator = z.enum(['PENDING', 'ISSUED', 'EXPIRED', /* DEPRECATED — use ISSUED */'DELIVERED', /* DEPRECATED — use ISSUED */'CLAIMED']);
+export const LCNInboxStatusEnumValidator = z.enum([
+    'PENDING',
+    'ISSUED',
+    'EXPIRED',
+    /* DEPRECATED — use ISSUED */ 'DELIVERED',
+    /* DEPRECATED — use ISSUED */ 'CLAIMED',
+]);
 export type LCNInboxStatusEnum = z.infer<typeof LCNInboxStatusEnumValidator>;
 
 export const LCNNotificationInboxValidator = z.object({
@@ -631,14 +661,15 @@ export const LCNNotificationInboxValidator = z.object({
 
 export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>;
 
-export const LCNNotificationDataValidator = z.object({
-    vcUris: z.array(z.string()).optional(),
-    vpUris: z.array(z.string()).optional(),
-    transaction: ConsentFlowTransactionValidator.optional(),
-    inbox: LCNNotificationInboxValidator.optional(),
-    metadata: z.record(z.unknown()).optional(),
-});
-
+export const LCNNotificationDataValidator = z
+    .object({
+        vcUris: z.array(z.string()).optional(),
+        vpUris: z.array(z.string()).optional(),
+        transaction: ConsentFlowTransactionValidator.optional(),
+        inbox: LCNNotificationInboxValidator.optional(),
+        metadata: z.record(z.unknown()).optional(),
+    })
+    .passthrough();
 export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 
 export const LCNNotificationValidator = z.object({
@@ -698,7 +729,6 @@ export const AuthGrantQueryValidator = z
 
 export type AuthGrantQuery = z.infer<typeof AuthGrantQueryValidator>;
 
-
 // Contact Methods
 const contactMethodBase = z.object({
     id: z.string(),
@@ -709,14 +739,18 @@ const contactMethodBase = z.object({
 });
 
 export const ContactMethodValidator = z.discriminatedUnion('type', [
-    z.object({
-        type: z.literal('email'),
-        value: z.string().email(),
-    }).merge(contactMethodBase),
-    z.object({
-        type: z.literal('phone'),
-        value: z.string(), // Can be improved with a regex later
-    }).merge(contactMethodBase),
+    z
+        .object({
+            type: z.literal('email'),
+            value: z.string().email(),
+        })
+        .merge(contactMethodBase),
+    z
+        .object({
+            type: z.literal('phone'),
+            value: z.string(), // Can be improved with a regex later
+        })
+        .merge(contactMethodBase),
 ]);
 
 export type ContactMethodType = z.infer<typeof ContactMethodValidator>;
@@ -727,14 +761,18 @@ const createContactMethodBase = z.object({
 });
 
 export const ContactMethodCreateValidator = z.discriminatedUnion('type', [
-    z.object({
-        type: z.literal('email'),
-        value: z.string().email(),
-    }).merge(createContactMethodBase),
-    z.object({
-        type: z.literal('phone'),
-        value: z.string(),
-    }).merge(createContactMethodBase),
+    z
+        .object({
+            type: z.literal('email'),
+            value: z.string().email(),
+        })
+        .merge(createContactMethodBase),
+    z
+        .object({
+            type: z.literal('phone'),
+            value: z.string(),
+        })
+        .merge(createContactMethodBase),
 ]);
 
 export type ContactMethodCreateType = z.infer<typeof ContactMethodCreateValidator>;
@@ -800,10 +838,12 @@ export const InboxCredentialValidator = z.object({
     createdAt: z.string(),
     issuerDid: z.string(),
     webhookUrl: z.string().optional(),
-    signingAuthority: z.object({
-        endpoint: z.string().optional(),
-        name: z.string().optional(),
-    }).optional(),
+    signingAuthority: z
+        .object({
+            endpoint: z.string().optional(),
+            name: z.string().optional(),
+        })
+        .optional(),
 });
 
 export type InboxCredentialType = z.infer<typeof InboxCredentialValidator>;
@@ -835,12 +875,16 @@ export const IssueInboxSigningAuthorityValidator = z.object({
 
 export type IssueInboxSigningAuthority = z.infer<typeof IssueInboxSigningAuthorityValidator>;
 
-
 export const IssueInboxCredentialValidator = z.object({
     // === CORE DATA (Required) ===
     // WHAT is being sent and WHO is it for?
     recipient: ContactMethodQueryValidator.describe('The recipient of the credential'),
-    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()).describe('The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'), 
+    credential: VCValidator.passthrough()
+        .or(VPValidator.passthrough())
+        .or(UnsignedVCValidator.passthrough())
+        .describe(
+            'The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'
+        ),
 
     // === OPTIONAL FEATURES ===
     // Add major, distinct features at the top level.
@@ -848,31 +892,102 @@ export const IssueInboxCredentialValidator = z.object({
 
     // === PROCESS CONFIGURATION (Optional) ===
     // HOW should this issuance be handled?
-    configuration: z.object({
-        signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe('The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'),
-        webhookUrl: z.string().url().optional().describe('The webhook URL to receive credential issuance events.'),
-        expiresInDays: z.number().min(1).max(365).optional().describe('The number of days the credential will be valid for.'),
-        // --- For User-Facing Delivery (Email/SMS) ---
-        delivery: z.object({
-            suppress: z.boolean().optional().default(false).describe('Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users.'),
-            template: z.object({
-                id: z.enum(['universal-inbox-claim']).optional().describe('The template ID to use for the credential delivery. If not provided, the default template will be used.'),
-                model: z.object({
-                    issuer: z.object({
-                        name: z.string().optional().describe('The name of the organization (e.g., "State University").'),
-                        logoUrl: z.string().url().optional().describe('The URL of the organization\'s logo.'),
-                    }).optional(),
-                    credential: z.object({
-                        name: z.string().optional().describe('The name of the credential (e.g., "Bachelor of Science").'),
-                        type: z.string().optional().describe('The type of the credential (e.g., "degree", "certificate").'),
-                    }).optional(),
-                    recipient: z.object({
-                        name: z.string().optional().describe('The name of the recipient (e.g., "John Doe").')
-                    }).optional(),
-                }).describe('The template model to use for the credential delivery. Injects via template variables into email/sms templates. If not provided, the default template will be used.'),
-            }).optional().describe('The template to use for the credential delivery. If not provided, the default template will be used.'),
-        }).optional().describe('Configuration for the credential delivery i.e. email or SMS. When credentials are sent to a user who has a verified email or phone associated with their account, delivery is skipped, and the credential will be sent using in-app notifications. If not provided, the default configuration will be used.'),
-    }).optional().describe('Configuration for the credential issuance. If not provided, the default configuration will be used.'),
+    configuration: z
+        .object({
+            signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
+                'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
+            ),
+            webhookUrl: z
+                .string()
+                .url()
+                .optional()
+                .describe('The webhook URL to receive credential issuance events.'),
+            expiresInDays: z
+                .number()
+                .min(1)
+                .max(365)
+                .optional()
+                .describe('The number of days the credential will be valid for.'),
+            // --- For User-Facing Delivery (Email/SMS) ---
+            delivery: z
+                .object({
+                    suppress: z
+                        .boolean()
+                        .optional()
+                        .default(false)
+                        .describe(
+                            'Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users.'
+                        ),
+                    template: z
+                        .object({
+                            id: z
+                                .enum(['universal-inbox-claim'])
+                                .optional()
+                                .describe(
+                                    'The template ID to use for the credential delivery. If not provided, the default template will be used.'
+                                ),
+                            model: z
+                                .object({
+                                    issuer: z
+                                        .object({
+                                            name: z
+                                                .string()
+                                                .optional()
+                                                .describe(
+                                                    'The name of the organization (e.g., "State University").'
+                                                ),
+                                            logoUrl: z
+                                                .string()
+                                                .url()
+                                                .optional()
+                                                .describe("The URL of the organization's logo."),
+                                        })
+                                        .optional(),
+                                    credential: z
+                                        .object({
+                                            name: z
+                                                .string()
+                                                .optional()
+                                                .describe(
+                                                    'The name of the credential (e.g., "Bachelor of Science").'
+                                                ),
+                                            type: z
+                                                .string()
+                                                .optional()
+                                                .describe(
+                                                    'The type of the credential (e.g., "degree", "certificate").'
+                                                ),
+                                        })
+                                        .optional(),
+                                    recipient: z
+                                        .object({
+                                            name: z
+                                                .string()
+                                                .optional()
+                                                .describe(
+                                                    'The name of the recipient (e.g., "John Doe").'
+                                                ),
+                                        })
+                                        .optional(),
+                                })
+                                .describe(
+                                    'The template model to use for the credential delivery. Injects via template variables into email/sms templates. If not provided, the default template will be used.'
+                                ),
+                        })
+                        .optional()
+                        .describe(
+                            'The template to use for the credential delivery. If not provided, the default template will be used.'
+                        ),
+                })
+                .optional()
+                .describe(
+                    'Configuration for the credential delivery i.e. email or SMS. When credentials are sent to a user who has a verified email or phone associated with their account, delivery is skipped, and the credential will be sent using in-app notifications. If not provided, the default configuration will be used.'
+                ),
+        })
+        .optional()
+        .describe(
+            'Configuration for the credential issuance. If not provided, the default configuration will be used.'
+        ),
 });
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;
@@ -885,15 +1000,21 @@ export const IssueInboxCredentialResponseValidator = z.object({
     recipientDid: z.string().optional(),
 });
 
-export type IssueInboxCredentialResponseType = z.infer<typeof IssueInboxCredentialResponseValidator>;
-
+export type IssueInboxCredentialResponseType = z.infer<
+    typeof IssueInboxCredentialResponseValidator
+>;
 
 export const ClaimInboxCredentialValidator = z.object({
-    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()).describe('The credential to issue.'),
-    configuration: z.object({
-        publishableKey: z.string(),
-        signingAuthorityName: z.string().optional(),
-    }).optional(),
+    credential: VCValidator.passthrough()
+        .or(VPValidator.passthrough())
+        .or(UnsignedVCValidator.passthrough())
+        .describe('The credential to issue.'),
+    configuration: z
+        .object({
+            publishableKey: z.string(),
+            signingAuthorityName: z.string().optional(),
+        })
+        .optional(),
 });
 
 export type ClaimInboxCredentialType = z.infer<typeof ClaimInboxCredentialValidator>;
