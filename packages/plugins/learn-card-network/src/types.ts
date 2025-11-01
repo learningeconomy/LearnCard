@@ -140,7 +140,12 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ profileId: string; challenge: string; expiresIn: number | null }>;
 
     listInvites: () => Promise<
-        { challenge: string; expiresIn: number | null; usesRemaining: number | null; maxUses: number | null }[]
+        {
+            challenge: string;
+            expiresIn: number | null;
+            usesRemaining: number | null;
+            maxUses: number | null;
+        }[]
     >;
 
     invalidateInvite: (challenge: string) => Promise<boolean>;
@@ -465,7 +470,7 @@ export type LearnCardNetworkPluginMethods = {
         proofOfLoginJwt: string
     ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
     removeContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
- 
+
     // Integrations
     addIntegration: (integration: LCNIntegrationCreateType) => Promise<string>;
     getIntegration: (id: string) => Promise<LCNIntegration | undefined>;
@@ -475,8 +480,14 @@ export type LearnCardNetworkPluginMethods = {
     countIntegrations: (options?: { query?: LCNIntegrationQueryType }) => Promise<number>;
     updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
     deleteIntegration: (id: string) => Promise<boolean>;
-    associateIntegrationWithSigningAuthority: (integrationId: string, endpoint: string, name: string, did: string, isPrimary?: boolean) => Promise<boolean>;
- 
+    associateIntegrationWithSigningAuthority: (
+        integrationId: string,
+        endpoint: string,
+        name: string,
+        did: string,
+        isPrimary?: boolean
+    ) => Promise<boolean>;
+
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
