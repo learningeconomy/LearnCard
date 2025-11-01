@@ -7,7 +7,10 @@ import {
     createSentCredentialRelationship,
     setDefaultClaimedRole,
 } from '@accesslayer/credential/relationships/create';
-import { getCredentialSentToProfile, getCredentialReceivedByProfile } from '@accesslayer/credential/relationships/read';
+import {
+    getCredentialSentToProfile,
+    getCredentialReceivedByProfile,
+} from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
 import { ProfileType } from 'types/profile';
@@ -21,7 +24,7 @@ export const sendCredential = async (
     to: ProfileType,
     credential: VC | UnsignedVC | JWE,
     domain: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown> | undefined
 ): Promise<string> => {
     const credentialInstance = await storeCredential(credential);
 
@@ -29,13 +32,21 @@ export const sendCredential = async (
 
     let uri = getCredentialUri(credentialInstance.id, domain);
 
+    const isEndorsement = metadata?.type === 'endorsement';
+
+    const notificationTitle = isEndorsement ? 'New Endorsement Received' : 'Credential Received';
+
+    const notificationBody = isEndorsement
+        ? `${from.displayName} has endorsed your credential`
+        : `${from.displayName} has sent you a credential`;
+
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
         to,
         from,
         message: {
-            title: 'Credential Received',
-            body: `${from.displayName} has sent you a credential`,
+            title: notificationTitle,
+            body: notificationBody,
         },
         data: {
             vcUris: [uri],
