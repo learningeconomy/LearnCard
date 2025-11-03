@@ -215,7 +215,7 @@ export const countSkillsInFramework = async (
     frameworkId: string,
     skillId?: string,
     recursive: boolean = false,
-    onlyCountCompetencies: boolean = true
+    onlyCountCompetencies: boolean = false
 ): Promise<number> => {
     const typeFilter = onlyCountCompetencies ? `{type: 'competency'}` : '';
 

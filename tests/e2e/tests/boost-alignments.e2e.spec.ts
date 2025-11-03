@@ -182,19 +182,19 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         });
 
         await expect(b.invoke.attachFrameworkToBoost(boostUri, frameworkId)).rejects.toThrow();
-        await expect(b.invoke.alignBoostSkills(boostUri, [skillId])).rejects.toThrow();
+        await expect(b.invoke.alignBoostSkills(boostUri, [{ frameworkId, id: skillId }])).rejects.toThrow();
 
         await a.invoke.addBoostAdmin(boostUri, USERS.b.profileId);
 
         const attachResult = await b.invoke.attachFrameworkToBoost(boostUri, frameworkId);
         expect(attachResult).toBe(true);
 
-        const alignResult = await b.invoke.alignBoostSkills(boostUri, [skillId]);
+        const alignResult = await b.invoke.alignBoostSkills(boostUri, [{ frameworkId, id: skillId }]);
         expect(alignResult).toBe(true);
 
         await a.invoke.removeBoostAdmin(boostUri, USERS.b.profileId);
 
-        await expect(b.invoke.alignBoostSkills(boostUri, [skillId])).rejects.toThrow();
+        await expect(b.invoke.alignBoostSkills(boostUri, [{ frameworkId, id: skillId }])).rejects.toThrow();
     });
 
     test('allows child boost admins to align skills from ancestor frameworks (explicit attach required for injection)', async () => {
@@ -236,7 +236,7 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         // Explicitly attach the framework to the child (no auto-attach from skills)
         await a.invoke.attachFrameworkToBoost(childUri, frameworkId);
 
-        const aligned = await b.invoke.alignBoostSkills(childUri, [skillId]);
+        const aligned = await b.invoke.alignBoostSkills(childUri, [{ frameworkId, id: skillId }]);
         expect(aligned).toBe(true);
 
         const boostRecord = await b.invoke.getBoost(childUri);
@@ -299,7 +299,10 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
 
         // 3) Create a boost with skill attachments in a single call
         const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
-            skillIds: [parentSkillIdSynced, childSkillIdSynced],
+            skills: [
+                { frameworkId: fwId, id: parentSkillIdSynced },
+                { frameworkId: fwId, id: childSkillIdSynced },
+            ],
         });
 
         // Explicitly attach the framework to the boost to enable alignment injection
@@ -396,7 +399,10 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
             skill2Id;
 
         const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
-            skillIds: [parentSkillIdSynced, childSkillIdSynced],
+            skills: [
+                { frameworkId: fwId, id: parentSkillIdSynced },
+                { frameworkId: fwId, id: childSkillIdSynced },
+            ],
         });
         // Explicitly attach the framework to the boost to enable alignment injection
         await a.invoke.attachFrameworkToBoost(boostUri, fwId);

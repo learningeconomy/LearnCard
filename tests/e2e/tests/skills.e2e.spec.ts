@@ -86,12 +86,18 @@ const sanitizeSkillNode = (skill: any): any => ({
     children: (skill.children ?? []).map((child: any) => sanitizeSkillNode(child)),
 });
 
-// Helper to create/link a framework to a user profile
+// Helper to ensure a framework is linked to a user profile
+// For managed frameworks created with createManagedSkillFrameworks, the user is already a manager
+// For provider frameworks, this will link them
 const linkFrameworkForUser = async (lc: LearnCard, frameworkId: string) => {
+    // Check if already managed
     const mine = await lc.invoke.listMySkillFrameworks();
     const existing = mine.find(f => f.id === frameworkId);
-    if (existing) return existing;
+    if (existing) {
+        return existing;
+    }
 
+    // Not found - try to link as a provider framework
     const linked = await lc.invoke.createSkillFramework({ frameworkId });
     expect(linked).toBeDefined();
     expect(linked.id).toBe(frameworkId);
@@ -191,20 +197,20 @@ describe('Skills & Frameworks E2E', () => {
         const targetSkillId = flattened.find(s => s.id === skill1Id)?.id ?? skill1Id;
 
         // Initially no tags
-        let tags = await a.invoke.listSkillTags(targetSkillId);
+        let tags = await a.invoke.listSkillTags(fwId, targetSkillId);
         expect(tags).toHaveLength(0);
 
         // Add a tag
         const tag = { slug: `subject:${fwId}`, name: 'Subject' };
-        tags = await a.invoke.addSkillTag(targetSkillId, tag);
+        tags = await a.invoke.addSkillTag(fwId, targetSkillId, tag);
         expect(tags.map(t => t.slug)).toContain(tag.slug);
 
         // Remove the tag
-        const removeRes = await a.invoke.removeSkillTag(targetSkillId, tag.slug);
+        const removeRes = await a.invoke.removeSkillTag(fwId, targetSkillId, tag.slug);
         expect(removeRes.success).toBe(true);
 
         // Verify tag removed
-        tags = await a.invoke.listSkillTags(targetSkillId);
+        tags = await a.invoke.listSkillTags(fwId, targetSkillId);
         expect(tags).toHaveLength(0);
     });
 
@@ -251,11 +257,11 @@ describe('Skills & Frameworks E2E', () => {
         await expect(b.invoke.getSkillFrameworkById(fwId)).rejects.toBeDefined();
 
         // User B unauthorized for tags on A-managed skill
-        await expect(b.invoke.listSkillTags(targetSkillId)).rejects.toBeDefined();
+        await expect(b.invoke.listSkillTags(fwId, targetSkillId)).rejects.toBeDefined();
         await expect(
-            b.invoke.addSkillTag(targetSkillId, { slug: 'unauth', name: 'Unauth' })
+            b.invoke.addSkillTag(fwId, targetSkillId, { slug: 'unauth', name: 'Unauth' })
         ).rejects.toBeDefined();
-        await expect(b.invoke.removeSkillTag(targetSkillId, 'unauth')).rejects.toBeDefined();
+        await expect(b.invoke.removeSkillTag(fwId, targetSkillId, 'unauth')).rejects.toBeDefined();
 
         // User B should not list A's frameworks
         const bMine = await b.invoke.listMySkillFrameworks();
@@ -1035,10 +1041,10 @@ describe('Skills & Frameworks E2E', () => {
             },
         ]);
 
-        await linkFrameworkForUser(a, fwId);
+        // No need to call linkFrameworkForUser - createManagedSkillFrameworks already made us a manager
 
         // Count all skills
-        const result = await a.invoke.countSkills({ frameworkId: fwId });
+        const result = await a.invoke.countSkills({ frameworkId: fwId, recursive: true });
         expect(result.count).toBe(3);
     });
 
@@ -1080,8 +1086,6 @@ describe('Skills & Frameworks E2E', () => {
                 ],
             },
         ]);
-
-        await linkFrameworkForUser(a, fwId);
 
         // Count direct children only
         const result = await a.invoke.countSkills({
@@ -1138,8 +1142,6 @@ describe('Skills & Frameworks E2E', () => {
             },
         ]);
 
-        await linkFrameworkForUser(a, fwId);
-
         // Count all descendants recursively
         const result = await a.invoke.countSkills({
             frameworkId: fwId,
@@ -1169,6 +1171,7 @@ describe('Skills & Frameworks E2E', () => {
         await expect(
             b.invoke.countSkills({
                 frameworkId: fwId,
+                recursive: false,
             })
         ).rejects.toBeDefined();
     });
@@ -1531,10 +1534,8 @@ describe('Skills & Frameworks E2E', () => {
             },
         ]);
 
-        await linkFrameworkForUser(a, fwId);
-
         // Count should work the same
-        const result = await a.invoke.countSkills({ frameworkId: fwId });
+        const result = await a.invoke.countSkills({ frameworkId: fwId, recursive: true });
         expect(result.count).toBe(2);
     });
 });
