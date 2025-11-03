@@ -60,6 +60,7 @@ export function createNeo4jProvider(options?: Options): SkillsProvider {
         ]);
 
         if (!framework) return [];
+        if (!skills || skills.length === 0) return [];
 
         const alignments: Obv3Alignment[] = [];
 

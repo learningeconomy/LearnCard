@@ -1,10 +1,8 @@
 import type { UnsignedVC, VC } from '@learncard/types';
 import type { BoostInstance } from '@models';
 import { getSkillsProvider } from './index';
-import {
-    getAlignedSkillsForBoost,
-    getFrameworksForBoost,
-} from '@accesslayer/boost/relationships/read';
+import { getAlignedSkillsForBoost } from '@accesslayer/boost/relationships/read';
+import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import type { Obv3Alignment } from './types';
 
 // Mutates the given credential in-place to add OBv3 alignments, if any exist on the boost.
@@ -14,12 +12,8 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
     domain: string
 ): Promise<void> {
     try {
-        const [frameworks, skills] = await Promise.all([
-            getFrameworksForBoost(boost),
-            getAlignedSkillsForBoost(boost),
-        ]);
-
-        if (!frameworks || frameworks.length === 0 || skills.length === 0) return;
+        const skills = await getAlignedSkillsForBoost(boost);
+        if (!skills || skills.length === 0) return;
 
         // Group aligned skills by their frameworkId (excluding containers)
         const byFramework = new Map<string, string[]>();
@@ -44,12 +38,17 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
         const provider = getSkillsProvider();
         let alignments: any[] = [];
 
-        for (const fw of frameworks) {
-            const fwId: string | undefined = (fw as any)?.dataValues?.id ?? (fw as any)?.id;
-            if (!fwId) continue;
+        // Get unique framework IDs from the aligned skills
+        const uniqueFrameworkIds = [...byFramework.keys()];
 
+        // Look up each framework and build alignments
+        for (const fwId of uniqueFrameworkIds) {
             const idsForFramework = byFramework.get(fwId) ?? [];
             if (idsForFramework.length === 0) continue;
+
+            // Verify framework exists before building alignments
+            const framework = await getSkillFrameworkById(fwId);
+            if (!framework) continue;
 
             const res = await provider.buildObv3Alignments(fwId, idsForFramework, domain);
             if (Array.isArray(res) && res.length > 0) alignments = alignments.concat(res);
@@ -100,12 +99,8 @@ export async function buildObv3AlignmentsForBoost(
     domain: string
 ): Promise<Obv3Alignment[]> {
     try {
-        const [frameworks, skills] = await Promise.all([
-            getFrameworksForBoost(boost),
-            getAlignedSkillsForBoost(boost),
-        ]);
-
-        if (!frameworks || frameworks.length === 0 || skills.length === 0) return [];
+        const skills = await getAlignedSkillsForBoost(boost);
+        if (!skills || skills.length === 0) return [];
 
         // Group aligned skills by their frameworkId (excluding containers)
         const byFramework = new Map<string, string[]>();
@@ -130,12 +125,17 @@ export async function buildObv3AlignmentsForBoost(
         const provider = getSkillsProvider();
         let cleaned: Obv3Alignment[] = [];
 
-        for (const fw of frameworks) {
-            const fwId: string | undefined = (fw as any)?.dataValues?.id ?? (fw as any)?.id;
-            if (!fwId) continue;
+        // Get unique framework IDs from the aligned skills
+        const uniqueFrameworkIds = [...byFramework.keys()];
 
+        // Look up each framework and build alignments
+        for (const fwId of uniqueFrameworkIds) {
             const idsForFramework = byFramework.get(fwId) ?? [];
             if (idsForFramework.length === 0) continue;
+
+            // Verify framework exists before building alignments
+            const framework = await getSkillFrameworkById(fwId);
+            if (!framework) continue;
 
             const alignments = await provider.buildObv3Alignments(fwId, idsForFramework, domain);
             const cleanedPart = (alignments || []).map(a =>
