@@ -588,7 +588,7 @@ export const skillsRouter = t.router({
         .output(CountSkillsResultValidator)
         .query(async ({ ctx, input }) => {
             const profileId = ctx.user.profile.profileId;
-            const { frameworkId, skillId, recursive } = input;
+            const { frameworkId, skillId, recursive, onlyCountCompetencies } = input;
 
             const manages = await doesProfileManageFramework(profileId, frameworkId);
             if (!manages) {
@@ -598,7 +598,12 @@ export const skillsRouter = t.router({
                 });
             }
 
-            const count = await countSkillsInFramework(frameworkId, skillId, recursive);
+            const count = await countSkillsInFramework(
+                frameworkId,
+                skillId,
+                recursive,
+                onlyCountCompetencies
+            );
 
             return { count };
         }),

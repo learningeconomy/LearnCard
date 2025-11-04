@@ -1308,6 +1308,7 @@ export const CountSkillsInputValidator = z.object({
     frameworkId: z.string(),
     skillId: z.string().optional(),
     recursive: z.boolean().optional().default(false),
+    onlyCountCompetencies: z.boolean().optional().default(false),
 });
 
 export type CountSkillsInput = z.infer<typeof CountSkillsInputValidator>;

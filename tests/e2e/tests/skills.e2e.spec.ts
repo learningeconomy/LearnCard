@@ -324,11 +324,15 @@ describe('Skills & Frameworks E2E', () => {
         await a.invoke.syncFrameworkSkills({ id: fwId });
 
         // Test 1: Case-insensitive partial match using $regex
-        const jsResults = await a.invoke.searchFrameworkSkills(fwId, {
-            statement: { $regex: /script/i },
-        }, {
-            limit: 10,
-        });
+        const jsResults = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                statement: { $regex: /script/i },
+            },
+            {
+                limit: 10,
+            }
+        );
         expect(jsResults.records.length).toBe(2); // JavaScript and TypeScript
         expect(jsResults.records.map(s => s.id).sort()).toEqual(
             [`${fwId}-javascript`, `${fwId}-typescript`].sort()
@@ -336,31 +340,43 @@ describe('Skills & Frameworks E2E', () => {
         expect(jsResults.hasMore).toBe(false);
 
         // Test 2: Exact match on statement
-        const exactMatch = await a.invoke.searchFrameworkSkills(fwId, {
-            statement: { $regex: /^Java Programming$/i },
-        }, {
-            limit: 10,
-        });
+        const exactMatch = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                statement: { $regex: /^Java Programming$/i },
+            },
+            {
+                limit: 10,
+            }
+        );
         expect(exactMatch.records.length).toBe(1);
         expect(exactMatch.records[0]?.id).toBe(`${fwId}-java`);
 
         // Test 3: Search by code using $in operator
-        const codeResults = await a.invoke.searchFrameworkSkills(fwId, {
-            code: { $in: ['JS101', 'TS101', 'PY101'] },
-        }, {
-            limit: 10,
-        });
+        const codeResults = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                code: { $in: ['JS101', 'TS101', 'PY101'] },
+            },
+            {
+                limit: 10,
+            }
+        );
         expect(codeResults.records.length).toBe(3);
         expect(codeResults.records.map((s: any) => s.code).sort()).toEqual(
             ['JS101', 'PY101', 'TS101'].sort()
         );
 
         // Test 4: Search ending with specific word using $regex
-        const endingResults = await a.invoke.searchFrameworkSkills(fwId, {
-            statement: { $regex: /Programming$/i },
-        }, {
-            limit: 10,
-        });
+        const endingResults = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                statement: { $regex: /Programming$/i },
+            },
+            {
+                limit: 10,
+            }
+        );
         expect(endingResults.records.length).toBe(4); // JavaScript, Python, Java, Rust
         expect(endingResults.hasMore).toBe(false);
 
@@ -370,12 +386,16 @@ describe('Skills & Frameworks E2E', () => {
         let hasMore = true;
 
         while (hasMore) {
-            const page = await a.invoke.searchFrameworkSkills(fwId, {
-                statement: { $regex: /.*/ },
-            }, {
-                limit: 1,
-                cursor: currentCursor,
-            });
+            const page = await a.invoke.searchFrameworkSkills(
+                fwId,
+                {
+                    statement: { $regex: /.*/ },
+                },
+                {
+                    limit: 1,
+                    cursor: currentCursor,
+                }
+            );
             allPages.push(...page.records);
             currentCursor = page.cursor;
             hasMore = page.hasMore;
@@ -388,72 +408,104 @@ describe('Skills & Frameworks E2E', () => {
         expect(currentCursor).toBeNull(); // Should be null on last page
 
         // Test 6: Pagination with limit of 2
-        const page1 = await a.invoke.searchFrameworkSkills(fwId, {
-            statement: { $regex: /.*/ },
-        }, { limit: 2 });
+        const page1 = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                statement: { $regex: /.*/ },
+            },
+            { limit: 2 }
+        );
         expect(page1.records.length).toBe(2);
         expect(page1.hasMore).toBe(true);
         expect(page1.cursor).toBeTruthy();
 
-        const page2 = await a.invoke.searchFrameworkSkills(fwId, {
-            statement: { $regex: /.*/ },
-        }, {
-            limit: 2,
-            cursor: page1.cursor,
-        });
+        const page2 = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                statement: { $regex: /.*/ },
+            },
+            {
+                limit: 2,
+                cursor: page1.cursor,
+            }
+        );
         expect(page2.records.length).toBe(2);
         expect(page2.hasMore).toBe(true);
         expect(page2.cursor).toBeTruthy();
 
-        const page3 = await a.invoke.searchFrameworkSkills(fwId, {
-            statement: { $regex: /.*/ },
-        }, {
-            limit: 2,
-            cursor: page2.cursor,
-        });
+        const page3 = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                statement: { $regex: /.*/ },
+            },
+            {
+                limit: 2,
+                cursor: page2.cursor,
+            }
+        );
         expect(page3.records.length).toBe(2);
         expect(page3.hasMore).toBe(false);
         expect(page3.cursor).toBeNull();
 
         // Test 7: Pagination with filtered results
-        const filteredPage1 = await a.invoke.searchFrameworkSkills(fwId, {
-            code: { $regex: /101$/i },
-        }, {
-            limit: 3,
-        });
+        const filteredPage1 = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                code: { $regex: /101$/i },
+            },
+            {
+                limit: 3,
+            }
+        );
         expect(filteredPage1.records.length).toBe(3);
         expect(filteredPage1.hasMore).toBe(true);
 
-        const filteredPage2 = await a.invoke.searchFrameworkSkills(fwId, {
-            code: { $regex: /101$/i },
-        }, {
-            limit: 3,
-            cursor: filteredPage1.cursor,
-        });
+        const filteredPage2 = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                code: { $regex: /101$/i },
+            },
+            {
+                limit: 3,
+                cursor: filteredPage1.cursor,
+            }
+        );
         expect(filteredPage2.records.length).toBe(3);
         expect(filteredPage2.hasMore).toBe(false);
 
         // Test 8: Search with word boundary
-        const reactResults = await a.invoke.searchFrameworkSkills(fwId, {
-            statement: { $regex: /\bReact\b/i },
-        }, {
-            limit: 10,
-        });
+        const reactResults = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                statement: { $regex: /\bReact\b/i },
+            },
+            {
+                limit: 10,
+            }
+        );
         expect(reactResults.records.length).toBe(1);
         expect(reactResults.records[0]?.id).toBe(`${fwId}-react`);
 
         // Test 9: Search with no results
-        const noResults = await a.invoke.searchFrameworkSkills(fwId, {
-            statement: { $regex: /ruby/i },
-        }, { limit: 10 });
+        const noResults = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                statement: { $regex: /ruby/i },
+            },
+            { limit: 10 }
+        );
         expect(noResults.records.length).toBe(0);
         expect(noResults.hasMore).toBe(false);
         expect(noResults.cursor).toBeNull();
 
         // Test 10: Empty cursor at end of results
-        const lastPage = await a.invoke.searchFrameworkSkills(fwId, {
-            statement: { $regex: /.*/ },
-        }, { limit: 100 });
+        const lastPage = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                statement: { $regex: /.*/ },
+            },
+            { limit: 100 }
+        );
         expect(lastPage.hasMore).toBe(false);
         expect(lastPage.cursor).toBeNull();
 
@@ -494,22 +546,23 @@ describe('Skills & Frameworks E2E', () => {
         await a.invoke.syncFrameworkSkills({ id: fwId });
 
         // Search using $or: match either exact Java statement OR code in list
-        const orResults = await a.invoke.searchFrameworkSkills(fwId, {
-            $or: [
-                { statement: { $regex: /^Java Programming$/i } },
-                { code: { $in: ['JS101', 'TS101', 'PY101'] } },
-            ],
-        }, { limit: 10 });
+        const orResults = await a.invoke.searchFrameworkSkills(
+            fwId,
+            {
+                $or: [
+                    { statement: { $regex: /^Java Programming$/i } },
+                    { code: { $in: ['JS101', 'TS101', 'PY101'] } },
+                ],
+            },
+            { limit: 10 }
+        );
 
         // Should match: Java (exact statement) + JavaScript, TypeScript, Python (code $in)
         expect(orResults.records.length).toBe(4);
         const resultIds = orResults.records.map((s: any) => s.id).sort();
-        expect(resultIds).toEqual([
-            `${fwId}-java`,
-            `${fwId}-javascript`,
-            `${fwId}-python`,
-            `${fwId}-typescript`,
-        ].sort());
+        expect(resultIds).toEqual(
+            [`${fwId}-java`, `${fwId}-javascript`, `${fwId}-python`, `${fwId}-typescript`].sort()
+        );
     });
 
     test('can search skills available for a boost with regex patterns', async () => {
@@ -581,11 +634,15 @@ describe('Skills & Frameworks E2E', () => {
         expect(reactResults.hasMore).toBe(false);
 
         // Test 2: Search across all skills
-        const allResults = await a.invoke.searchSkillsAvailableForBoost(boostUri, {
-            statement: { $regex: /.*/ },
-        }, {
-            limit: 10,
-        });
+        const allResults = await a.invoke.searchSkillsAvailableForBoost(
+            boostUri,
+            {
+                statement: { $regex: /.*/ },
+            },
+            {
+                limit: 10,
+            }
+        );
         expect(allResults.records.length).toBe(5);
         expect(allResults.hasMore).toBe(false);
 
@@ -619,12 +676,16 @@ describe('Skills & Frameworks E2E', () => {
         let hasMore = true;
 
         while (hasMore) {
-            const page = await a.invoke.searchSkillsAvailableForBoost(boostUri, {
-                statement: { $regex: /.*/ },
-            }, {
-                limit: 2,
-                cursor,
-            });
+            const page = await a.invoke.searchSkillsAvailableForBoost(
+                boostUri,
+                {
+                    statement: { $regex: /.*/ },
+                },
+                {
+                    limit: 2,
+                    cursor,
+                }
+            );
             allPaginatedPages.push(...page.records);
             cursor = page.cursor;
             hasMore = page.hasMore;
@@ -640,28 +701,40 @@ describe('Skills & Frameworks E2E', () => {
         expect(new Set(ids).size).toBe(ids.length);
 
         // Test 6: Standard pagination
-        const page1 = await a.invoke.searchSkillsAvailableForBoost(boostUri, {
-            statement: { $regex: /.*/ },
-        }, { limit: 2 });
+        const page1 = await a.invoke.searchSkillsAvailableForBoost(
+            boostUri,
+            {
+                statement: { $regex: /.*/ },
+            },
+            { limit: 2 }
+        );
         expect(page1.records.length).toBe(2);
         expect(page1.hasMore).toBe(true);
         expect(page1.cursor).toBeTruthy();
 
-        const page2 = await a.invoke.searchSkillsAvailableForBoost(boostUri, {
-            statement: { $regex: /.*/ },
-        }, {
-            limit: 2,
-            cursor: page1.cursor,
-        });
+        const page2 = await a.invoke.searchSkillsAvailableForBoost(
+            boostUri,
+            {
+                statement: { $regex: /.*/ },
+            },
+            {
+                limit: 2,
+                cursor: page1.cursor,
+            }
+        );
         expect(page2.records.length).toBe(2);
         expect(page2.hasMore).toBe(true);
 
-        const page3 = await a.invoke.searchSkillsAvailableForBoost(boostUri, {
-            statement: { $regex: /.*/ },
-        }, {
-            limit: 2,
-            cursor: page2.cursor,
-        });
+        const page3 = await a.invoke.searchSkillsAvailableForBoost(
+            boostUri,
+            {
+                statement: { $regex: /.*/ },
+            },
+            {
+                limit: 2,
+                cursor: page2.cursor,
+            }
+        );
         expect(page3.records.length).toBe(1);
         expect(page3.hasMore).toBe(false);
         expect(page3.cursor).toBeNull();
@@ -684,11 +757,15 @@ describe('Skills & Frameworks E2E', () => {
         expect(filteredPage2.hasMore).toBe(false);
 
         // Test 8: No results
-        const noResults = await a.invoke.searchSkillsAvailableForBoost(boostUri, {
-            statement: { $regex: /ember/i },
-        }, {
-            limit: 10,
-        });
+        const noResults = await a.invoke.searchSkillsAvailableForBoost(
+            boostUri,
+            {
+                statement: { $regex: /ember/i },
+            },
+            {
+                limit: 10,
+            }
+        );
         expect(noResults.records.length).toBe(0);
         expect(noResults.hasMore).toBe(false);
         expect(noResults.cursor).toBeNull();
@@ -705,7 +782,11 @@ describe('Skills & Frameworks E2E', () => {
 
         // Test 10: Authorization - User B (not a boost admin) cannot search skills
         await expect(
-            b.invoke.searchSkillsAvailableForBoost(boostUri, { statement: { $regex: /.*/ } }, { limit: 10 })
+            b.invoke.searchSkillsAvailableForBoost(
+                boostUri,
+                { statement: { $regex: /.*/ } },
+                { limit: 10 }
+            )
         ).rejects.toBeDefined();
     });
 
@@ -756,9 +837,13 @@ describe('Skills & Frameworks E2E', () => {
         await a.invoke.attachFrameworkToBoost(childUri, childFwId);
 
         // Child boost can search skills from both frameworks
-        const results = await a.invoke.searchSkillsAvailableForBoost(childUri, {
-            statement: { $regex: /.*/ },
-        }, { limit: 10 });
+        const results = await a.invoke.searchSkillsAvailableForBoost(
+            childUri,
+            {
+                statement: { $regex: /.*/ },
+            },
+            { limit: 10 }
+        );
 
         expect(results.records.length).toBe(2);
         expect(results.records.map((s: any) => s.id).sort()).toEqual(
@@ -1044,7 +1129,11 @@ describe('Skills & Frameworks E2E', () => {
         // No need to call linkFrameworkForUser - createManagedSkillFrameworks already made us a manager
 
         // Count all skills
-        const result = await a.invoke.countSkills({ frameworkId: fwId, recursive: true });
+        const result = await a.invoke.countSkills({
+            frameworkId: fwId,
+            recursive: true,
+            onlyCountCompetencies: false,
+        });
         expect(result.count).toBe(3);
     });
 
@@ -1092,6 +1181,7 @@ describe('Skills & Frameworks E2E', () => {
             frameworkId: fwId,
             skillId: `${fwId}-parent`,
             recursive: false,
+            onlyCountCompetencies: false,
         });
         expect(result.count).toBe(2); // child1 and child2
     });
@@ -1147,6 +1237,7 @@ describe('Skills & Frameworks E2E', () => {
             frameworkId: fwId,
             skillId: `${fwId}-parent`,
             recursive: true,
+            onlyCountCompetencies: false,
         });
         expect(result.count).toBe(4); // child1, child2, grandchild1, grandchild2
     });
@@ -1172,6 +1263,7 @@ describe('Skills & Frameworks E2E', () => {
             b.invoke.countSkills({
                 frameworkId: fwId,
                 recursive: false,
+                onlyCountCompetencies: false,
             })
         ).rejects.toBeDefined();
     });
@@ -1535,7 +1627,11 @@ describe('Skills & Frameworks E2E', () => {
         ]);
 
         // Count should work the same
-        const result = await a.invoke.countSkills({ frameworkId: fwId, recursive: true });
+        const result = await a.invoke.countSkills({
+            frameworkId: fwId,
+            recursive: true,
+            onlyCountCompetencies: false,
+        });
         expect(result.count).toBe(2);
     });
 });
