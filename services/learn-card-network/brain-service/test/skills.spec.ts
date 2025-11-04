@@ -736,6 +736,172 @@ describe('Skills router', () => {
             expect(rootPath.path).toHaveLength(1);
             expect(rootPath.path[0]?.id).toBe(root.id);
         });
+
+        it('prevents duplicate skill IDs within the same framework', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const duplicateId = `${frameworkId}-duplicate`;
+
+            // Create first skill with custom ID
+            const skill1 = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: duplicateId,
+                    statement: 'First Skill',
+                    code: 'FIRST',
+                },
+            });
+
+            expect(skill1.id).toBe(duplicateId);
+            expect(skill1.statement).toBe('First Skill');
+
+            // Attempt to create second skill with same ID - should fail
+            await expect(
+                userA.clients.fullAuth.skills.create({
+                    frameworkId,
+                    skill: {
+                        id: duplicateId,
+                        statement: 'Second Skill (should fail)',
+                        code: 'SECOND',
+                    },
+                })
+            ).rejects.toThrow(/already exists/i);
+
+            // Verify only one skill exists
+            const tree = await userA.clients.fullAuth.skillFrameworks.getById({
+                id: frameworkId,
+                limit: 100,
+                childrenLimit: 100,
+            });
+            const allSkills = flattenSkillTree(tree.skills.records);
+            const duplicates = allSkills.filter(s => s.id === duplicateId);
+
+            expect(duplicates.length).toBe(1);
+            expect(duplicates[0]?.statement).toBe('First Skill');
+        });
+
+        it('allows same skill ID in different frameworks', async () => {
+            const sharedSkillId = 'shared-skill-123';
+
+            // Create first framework with the skill ID
+            const framework1Id = `fw-first-${crypto.randomUUID()}`;
+            await createProfileFor(userA, 'usera');
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: framework1Id,
+                name: 'First Framework',
+            });
+
+            await userA.clients.fullAuth.skills.create({
+                frameworkId: framework1Id,
+                skill: {
+                    id: sharedSkillId,
+                    statement: 'Skill in Framework 1',
+                },
+            });
+
+            // Create second framework with the same skill ID - should succeed
+            const framework2Id = `fw-second-${crypto.randomUUID()}`;
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: framework2Id,
+                name: 'Second Framework',
+            });
+
+            const skill2 = await userA.clients.fullAuth.skills.create({
+                frameworkId: framework2Id,
+                skill: {
+                    id: sharedSkillId,
+                    statement: 'Skill in Framework 2',
+                },
+            });
+
+            expect(skill2.id).toBe(sharedSkillId);
+            expect(skill2.statement).toBe('Skill in Framework 2');
+
+            // Verify both skills exist in their respective frameworks
+            const tree1 = await userA.clients.fullAuth.skillFrameworks.getById({
+                id: framework1Id,
+                limit: 100,
+            });
+            const tree2 = await userA.clients.fullAuth.skillFrameworks.getById({
+                id: framework2Id,
+                limit: 100,
+            });
+
+            const skills1 = flattenSkillTree(tree1.skills.records);
+            const skills2 = flattenSkillTree(tree2.skills.records);
+
+            expect(skills1.find(s => s.id === sharedSkillId)?.statement).toBe('Skill in Framework 1');
+            expect(skills2.find(s => s.id === sharedSkillId)?.statement).toBe('Skill in Framework 2');
+        });
+
+        it('prevents duplicate skill IDs via batch creation', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const duplicateId = `${frameworkId}-duplicate-batch`;
+
+            // Create first skill
+            await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: duplicateId,
+                    statement: 'Existing Skill',
+                },
+            });
+
+            // Attempt batch creation with duplicate ID - should fail
+            await expect(
+                userA.clients.fullAuth.skills.createMany({
+                    frameworkId,
+                    skills: [
+                        {
+                            id: duplicateId,
+                            statement: 'Duplicate in batch',
+                        },
+                    ],
+                })
+            ).rejects.toThrow(/already exist/i);
+
+            // Verify only original skill exists
+            const tree = await userA.clients.fullAuth.skillFrameworks.getById({
+                id: frameworkId,
+                limit: 100,
+            });
+            const allSkills = flattenSkillTree(tree.skills.records);
+            const duplicates = allSkills.filter(s => s.id === duplicateId);
+
+            expect(duplicates.length).toBe(1);
+            expect(duplicates[0]?.statement).toBe('Existing Skill');
+        });
+
+        it('prevents duplicate skill IDs within batch itself', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const duplicateId = `${frameworkId}-internal-duplicate`;
+
+            // Attempt batch with duplicate IDs within same batch - should fail
+            await expect(
+                userA.clients.fullAuth.skills.createMany({
+                    frameworkId,
+                    skills: [
+                        {
+                            id: duplicateId,
+                            statement: 'First in batch',
+                        },
+                        {
+                            id: duplicateId,
+                            statement: 'Second in batch (duplicate)',
+                        },
+                    ],
+                })
+            ).rejects.toThrow(/duplicate/i);
+
+            // Verify no skills with that ID exist (entire batch should fail)
+            const tree = await userA.clients.fullAuth.skillFrameworks.getById({
+                id: frameworkId,
+                limit: 100,
+            });
+            const allSkills = flattenSkillTree(tree.skills.records);
+            const duplicates = allSkills.filter(s => s.id === duplicateId);
+
+            expect(duplicates.length).toBe(0);
+        });
     });
 
     it('searches skills in a framework with regex pattern', async () => {

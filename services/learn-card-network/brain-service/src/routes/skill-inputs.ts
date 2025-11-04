@@ -85,6 +85,29 @@ export const createSkillTree = async (
     ) => Promise<void> | void,
     rootParentId?: string
 ): Promise<FlatSkillType[]> => {
+    // Collect all IDs in the tree to check for duplicates before creating anything
+    const collectIds = (nodes: SkillTreeInput[]): string[] => {
+        const ids: string[] = [];
+        for (const node of nodes) {
+            const input = toCreateSkillInput(node);
+            ids.push(input.id!);
+            if (node.children && node.children.length > 0) {
+                ids.push(...collectIds(node.children));
+            }
+        }
+        return ids;
+    };
+
+    const allIds = collectIds(skills);
+
+    // Check for duplicates within the tree
+    const duplicatesWithinTree = allIds.filter((id, index) => allIds.indexOf(id) !== index);
+    if (duplicatesWithinTree.length > 0) {
+        throw new Error(
+            `Duplicate skill IDs within skill tree: ${duplicatesWithinTree.join(', ')}`
+        );
+    }
+
     const createdSkills: FlatSkillType[] = [];
 
     const visit = async (nodes: SkillTreeInput[], inheritedParentId?: string) => {

@@ -46,6 +46,21 @@ export const getFrameworkIdsForSkill = async (skillId: string): Promise<string[]
     return result.records.map(r => String(r.get('id')));
 };
 
+export const doesSkillExistInFramework = async (
+    frameworkId: string,
+    skillId: string
+): Promise<boolean> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+         RETURN count(s) AS c`,
+        { frameworkId, skillId }
+    );
+
+    const count = Number(result.records[0]?.get('c') ?? 0);
+
+    return count > 0;
+};
+
 export type Paginated<T> = {
     records: T[];
     hasMore: boolean;

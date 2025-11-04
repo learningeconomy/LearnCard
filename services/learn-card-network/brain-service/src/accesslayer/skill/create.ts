@@ -2,6 +2,7 @@ import { neogma } from '@instance';
 import { Skill } from '@models';
 import { FlatSkillType } from 'types/skill';
 import { v4 as uuid } from 'uuid';
+import { doesSkillExistInFramework } from './read';
 
 export type CreateSkillInput = Omit<
     FlatSkillType,
@@ -13,8 +14,18 @@ export const createSkill = async (
     input: CreateSkillInput,
     parentId?: string
 ): Promise<FlatSkillType> => {
+    const skillId = input.id ?? uuid();
+
+    // Check for duplicate skill ID within this framework
+    const exists = await doesSkillExistInFramework(frameworkId, skillId);
+    if (exists) {
+        throw new Error(
+            `Skill with ID "${skillId}" already exists in framework "${frameworkId}"`
+        );
+    }
+
     const data: FlatSkillType = {
-        id: input.id ?? uuid(),
+        id: skillId,
         statement: input.statement,
         description: input.description,
         code: input.code,
@@ -67,10 +78,36 @@ export const createSkillsBatch = async (
 ): Promise<FlatSkillType[]> => {
     if (items.length === 0) return [];
 
+    // Collect all skill IDs (generate UUIDs for those without IDs)
+    const skillIds = items.map(item => item.input.id ?? uuid());
+
+    // Check for duplicates within the batch itself
+    const duplicatesWithinBatch = skillIds.filter((id, index) => skillIds.indexOf(id) !== index);
+    if (duplicatesWithinBatch.length > 0) {
+        throw new Error(
+            `Duplicate skill IDs within batch: ${duplicatesWithinBatch.join(', ')}`
+        );
+    }
+
+    // Check for duplicates against existing skills in the framework
+    const existenceChecks = await Promise.all(
+        skillIds.map(id => doesSkillExistInFramework(frameworkId, id))
+    );
+
+    const existingIds = skillIds.filter((_, index) => existenceChecks[index]);
+    if (existingIds.length > 0) {
+        throw new Error(
+            `Skills with IDs already exist in framework "${frameworkId}": ${existingIds.join(', ')}`
+        );
+    }
+
     const created: FlatSkillType[] = [];
 
-    for (const { input, parentId } of items) {
-        const skill = await createSkill(frameworkId, input, parentId);
+    for (let i = 0; i < items.length; i++) {
+        const { input, parentId } = items[i]!;
+        // Use the pre-generated ID
+        const inputWithId = { ...input, id: skillIds[i] };
+        const skill = await createSkill(frameworkId, inputWithId, parentId);
         created.push(skill);
     }
 
