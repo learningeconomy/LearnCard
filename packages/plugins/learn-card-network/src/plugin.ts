@@ -1367,6 +1367,10 @@ export async function getLearnCardNetworkPlugin(
                     profileId,
                 });
             },
+            getSkill: async (_learnCard, frameworkId, skillId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.getSkill.query({ frameworkId, id: skillId });
+            },
             createSkill: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skills.create.mutate(input);

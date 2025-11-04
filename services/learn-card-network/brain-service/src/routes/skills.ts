@@ -11,6 +11,7 @@ import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
 import {
     doesProfileManageSkillInFramework,
     getChildrenForSkillInFrameworkPaged,
+    getSkillById,
     searchSkillsInFramework,
     countSkillsInFramework,
     getFullSkillTree,
@@ -118,7 +119,11 @@ export const skillsRouter = t.router({
             const { id: parentId, frameworkId, limit, cursor } = input;
 
             // Require that the caller manages the specified framework and it contains this skill
-            const allowed = await doesProfileManageSkillInFramework(profileId, frameworkId, parentId);
+            const allowed = await doesProfileManageSkillInFramework(
+                profileId,
+                frameworkId,
+                parentId
+            );
             if (!allowed)
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -268,6 +273,41 @@ export const skillsRouter = t.router({
                 framework: formatFramework(localFramework),
                 skills,
             };
+        }),
+
+    getSkill: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/skills/{id}',
+                tags: ['Skills'],
+                summary: 'Get a skill by ID',
+                description: 'Retrieves a skill by its ID within a specific framework.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(z.object({ frameworkId: z.string(), id: z.string() }))
+        .output(SkillValidator)
+        .query(async ({ input }) => {
+            const { frameworkId, id } = input;
+
+            const skill = await getSkillById(frameworkId, id);
+            if (!skill) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Skill not found in this framework',
+                });
+            }
+
+            return {
+                id: skill.id,
+                statement: skill.statement,
+                description: skill.description ?? undefined,
+                code: skill.code ?? undefined,
+                type: skill.type ?? 'skill',
+                status: skill.status ?? 'active',
+            } as any;
         }),
 
     create: profileRoute

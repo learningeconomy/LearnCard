@@ -439,6 +439,121 @@ describe('Skills router', () => {
             expect(fetchedParent?.children?.some((c: any) => c.id === childSkillId)).toBe(true);
         });
 
+        it('retrieves a skill by ID and framework ID', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const skillId = `${frameworkId}-retrievable`;
+
+            await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: skillId,
+                    statement: 'Skill to retrieve',
+                    code: 'RET1',
+                    description: 'A skill for testing retrieval',
+                    type: 'skill',
+                    status: 'active',
+                },
+            });
+
+            const retrieved = await userA.clients.fullAuth.skills.getSkill({
+                frameworkId,
+                id: skillId,
+            });
+
+            expect(retrieved.id).toBe(skillId);
+            expect(retrieved.statement).toBe('Skill to retrieve');
+            expect(retrieved.code).toBe('RET1');
+            expect(retrieved.description).toBe('A skill for testing retrieval');
+            expect(retrieved.type).toBe('skill');
+            expect(retrieved.status).toBe('active');
+        });
+
+        it('allows retrieving skills without managing the framework', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const skillId = `${frameworkId}-public-read`;
+
+            await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: skillId,
+                    statement: 'Publicly readable skill',
+                },
+            });
+
+            // UserB doesn't manage the framework but should still be able to retrieve the skill
+            await createProfileFor(userB, 'userb');
+            const retrieved = await userB.clients.fullAuth.skills.getSkill({
+                frameworkId,
+                id: skillId,
+            });
+
+            expect(retrieved.id).toBe(skillId);
+            expect(retrieved.statement).toBe('Publicly readable skill');
+        });
+
+        it('throws 404 when skill does not exist in framework', async () => {
+            const { frameworkId } = await setupManagedFramework();
+
+            await expect(
+                userA.clients.fullAuth.skills.getSkill({
+                    frameworkId,
+                    id: 'nonexistent-skill-id',
+                })
+            ).rejects.toThrow(/not found/i);
+        });
+
+        it('throws 404 when skill exists in different framework', async () => {
+            const framework1Id = `fw-get-${crypto.randomUUID()}`;
+            const framework2Id = `fw-get-${crypto.randomUUID()}`;
+            const skillId = `skill-${crypto.randomUUID()}`;
+
+            await createProfileFor(userA, 'usera');
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: framework1Id,
+                name: 'First Framework',
+            });
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: framework2Id,
+                name: 'Second Framework',
+            });
+
+            // Create skill in framework1
+            await userA.clients.fullAuth.skills.create({
+                frameworkId: framework1Id,
+                skill: {
+                    id: skillId,
+                    statement: 'Skill in first framework',
+                },
+            });
+
+            // Try to retrieve from framework2 - should fail
+            await expect(
+                userA.clients.fullAuth.skills.getSkill({
+                    frameworkId: framework2Id,
+                    id: skillId,
+                })
+            ).rejects.toThrow(/not found/i);
+        });
+
+        it('requires authentication to retrieve skill', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const skillId = `${frameworkId}-auth-required`;
+
+            await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: skillId,
+                    statement: 'Auth required skill',
+                },
+            });
+
+            await expect(
+                noAuthClient.skills.getSkill({ frameworkId, id: skillId })
+            ).rejects.toThrow();
+        });
+
         it('creates nested skills in a single create call', async () => {
             const { frameworkId } = await setupManagedFramework();
             const rootSkillId = `${frameworkId}-root`;

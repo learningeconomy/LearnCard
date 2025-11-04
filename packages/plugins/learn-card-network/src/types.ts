@@ -580,6 +580,7 @@ export type LearnCardNetworkPluginMethods = {
         profileId: string
     ) => Promise<{ success: boolean }>;
 
+    getSkill: (frameworkId: string, skillId: string) => Promise<SkillType>;
     createSkill: (input: CreateSkillInput) => Promise<SkillType>;
     createSkills: (input: CreateSkillsBatchInput) => Promise<SkillType[]>;
     updateSkill: (input: UpdateSkillInput) => Promise<SkillType>;
