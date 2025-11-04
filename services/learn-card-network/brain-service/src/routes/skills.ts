@@ -307,6 +307,7 @@ export const skillsRouter = t.router({
                 code: skill.code ?? undefined,
                 type: skill.type ?? 'skill',
                 status: skill.status ?? 'active',
+                icon: skill.icon ?? undefined,
             } as any;
         }),
 
