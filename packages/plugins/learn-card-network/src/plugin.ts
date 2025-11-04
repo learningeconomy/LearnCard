@@ -1205,6 +1205,24 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.getInboxCredential.query({ credentialId: id });
             },
+            finalizeInboxCredentials: async _learnCard => {
+                await ensureUser();
+                
+                return client.inbox.finalize.mutate();
+            }, 
+            sendGuardianApprovalEmail: async (_learnCard, options) => {
+                await ensureUser();
+
+                return client.inbox.sendGuardianApprovalEmail.mutate(options);
+            },
+            approveGuardianRequest: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.approveGuardianRequest.mutate({ token });
+            },
+            approveGuardianRequestByPath: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.approveGuardianRequestByPath.query({ token });
+            },
             addContactMethod: async (_learnCard, contactMethod) => {
                 await ensureUser();
 
@@ -1224,6 +1242,11 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.contactMethods.verifyContactMethod.mutate({ token });
+            },
+            verifyContactMethodWithCredential: async (_learnCard, proofOfLoginJwt) => {
+                await ensureUser();
+
+                return client.contactMethods.verifyWithCredential.mutate({ proofOfLoginJwt });
             },
             removeContactMethod: async (_learnCard, id) => {
                 await ensureUser();
@@ -1359,6 +1382,43 @@ export async function getLearnCardNetworkPlugin(
             deleteSkill: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skills.delete.mutate(input);
+            },
+
+            // Integrations
+            addIntegration: async (_learnCard, integration) => {
+                await ensureUser();
+
+                return client.integrations.addIntegration.mutate(integration);
+            },
+            getIntegration: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.integrations.getIntegration.query({ id });
+            },
+            getIntegrations: async (_learnCard, options = {}) => {
+                await ensureUser();
+
+                return client.integrations.getIntegrations.query(options);
+            },
+            countIntegrations: async (_learnCard, options = {}) => {
+                await ensureUser();
+
+                return client.integrations.countIntegrations.query(options);
+            },
+            updateIntegration: async (_learnCard, id, updates) => {
+                await ensureUser();
+
+                return client.integrations.updateIntegration.mutate({ id, updates });
+            },
+            deleteIntegration: async (_learnCard, id) => {
+                await ensureUser();
+
+                return client.integrations.deleteIntegration.mutate({ id });
+            },
+            associateIntegrationWithSigningAuthority: async (_learnCard, integrationId, endpoint, name, did, isPrimary) => {
+                await ensureUser();
+
+                return client.integrations.associateIntegrationWithSigningAuthority.mutate({ integrationId, endpoint, name, did, isPrimary });
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

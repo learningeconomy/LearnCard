@@ -1,5 +1,64 @@
 # @welibraryos/react-learn-card
 
+## 2.8.56
+
+### Patch Changes
+
+-   [#814](https://github.com/learningeconomy/LearnCard/pull/814) [`ff96c92a9066be7d292b7206d3b4285e8612486a`](https://github.com/learningeconomy/LearnCard/commit/ff96c92a9066be7d292b7206d3b4285e8612486a) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1365 - Update verification expiration response
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.11
+
+## 2.8.55
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.10
+
+## 2.8.54
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.9
+
+## 2.8.53
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.8
+
+## 2.8.52
+
+### Patch Changes
+
+-   [#834](https://github.com/learningeconomy/LearnCard/pull/834) [`56e2abeb9038f5f40b402691492973f32b44ca5e`](https://github.com/learningeconomy/LearnCard/commit/56e2abeb9038f5f40b402691492973f32b44ca5e) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1400] Fix long title for merit badge from running off screen
+
+## 2.8.51
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.7
+
+## 2.8.50
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.6
+
+## 2.8.49
+
+### Patch Changes
+
+-   [#827](https://github.com/learningeconomy/LearnCard/pull/827) [`55689b35362e4835a2e48059f2c7a594e070d006`](https://github.com/learningeconomy/LearnCard/commit/55689b35362e4835a2e48059f2c7a594e070d006) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1387] Broken image when previewing merit badge
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.5
+
 ## 2.8.48
 
 ### Patch Changes

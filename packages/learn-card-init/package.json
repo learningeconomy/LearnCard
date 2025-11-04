@@ -1,6 +1,6 @@
 {
     "name": "@learncard/init",
-    "version": "2.1.4",
+    "version": "2.1.11",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",

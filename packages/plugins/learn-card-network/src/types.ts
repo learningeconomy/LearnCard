@@ -78,6 +78,12 @@ import {
     GetFullSkillTreeResult,
     GetSkillPathInput,
     GetSkillPathResult,
+    // Integrations
+    LCNIntegration,
+    LCNIntegrationCreateType,
+    LCNIntegrationUpdateType,
+    LCNIntegrationQueryType,
+    PaginatedLCNIntegrationsType,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -481,7 +487,21 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedInboxCredentialsType>;
 
     getInboxCredential: (id: string) => Promise<InboxCredentialType | null>;
+    finalizeInboxCredentials: () => Promise<{
+        processed: number;
+        claimed: number;
+        errors: number;
+        verifiableCredentials: VC[];
+    }>;
 
+    // Guardian Approval
+    sendGuardianApprovalEmail: (options: {
+        guardianEmail: string;
+        ttlHours?: number;
+        template?: { id?: string; model?: Record<string, unknown> };
+    }) => Promise<{ message: string; approvalUrl: string }>;
+    approveGuardianRequest: (token: string) => Promise<{ message: string }>;
+    approveGuardianRequestByPath: (token: string) => Promise<{ message: string }>;
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
@@ -490,6 +510,9 @@ export type LearnCardNetworkPluginMethods = {
     setPrimaryContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
     verifyContactMethod: (
         token: string
+    ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
+    verifyContactMethodWithCredential: (
+        proofOfLoginJwt: string
     ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
     removeContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
 
@@ -561,6 +584,17 @@ export type LearnCardNetworkPluginMethods = {
     createSkills: (input: CreateSkillsBatchInput) => Promise<SkillType[]>;
     updateSkill: (input: UpdateSkillInput) => Promise<SkillType>;
     deleteSkill: (input: DeleteSkillInput) => Promise<{ success: boolean }>;
+
+    // Integrations
+    addIntegration: (integration: LCNIntegrationCreateType) => Promise<string>;
+    getIntegration: (id: string) => Promise<LCNIntegration | undefined>;
+    getIntegrations: (
+        options?: Partial<PaginationOptionsType> & { query?: LCNIntegrationQueryType }
+    ) => Promise<PaginatedLCNIntegrationsType>;
+    countIntegrations: (options?: { query?: LCNIntegrationQueryType }) => Promise<number>;
+    updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
+    deleteIntegration: (id: string) => Promise<boolean>;
+    associateIntegrationWithSigningAuthority: (integrationId: string, endpoint: string, name: string, did: string, isPrimary?: boolean) => Promise<boolean>;
 
     resolveFromLCN: (
         uri: string

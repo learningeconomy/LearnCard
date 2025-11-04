@@ -1,5 +1,72 @@
 # @learncard/cli
 
+## 3.3.144
+
+### Patch Changes
+
+-   [#789](https://github.com/learningeconomy/LearnCard/pull/789) [`26014ad0da2b91c7078f3e2149a9d0f89b6d2e97`](https://github.com/learningeconomy/LearnCard/commit/26014ad0da2b91c7078f3e2149a9d0f89b6d2e97) Thanks [@Custard7](https://github.com/Custard7)! - Feat: LinkedClaims Plugin - Endorsements
+
+-   Updated dependencies [[`26014ad0da2b91c7078f3e2149a9d0f89b6d2e97`](https://github.com/learningeconomy/LearnCard/commit/26014ad0da2b91c7078f3e2149a9d0f89b6d2e97)]:
+    -   @learncard/linked-claims-plugin@0.1.1
+    -   @learncard/init@2.1.11
+    -   @learncard/learn-cloud-plugin@2.2.7
+    -   @learncard/simple-signing-plugin@1.0.34
+
+## 3.3.143
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.10
+
+## 3.3.142
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.9
+    -   @learncard/learn-cloud-plugin@2.2.6
+
+## 3.3.141
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.8
+
+## 3.3.140
+
+### Patch Changes
+
+-   Updated dependencies [[`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959)]:
+    -   @learncard/types@5.8.11
+    -   @learncard/core@9.3.41
+    -   @learncard/init@2.1.7
+    -   @learncard/didkit-plugin@1.5.34
+    -   @learncard/learn-cloud-plugin@2.2.5
+    -   @learncard/open-badge-v2-plugin@1.0.9
+    -   @learncard/simple-signing-plugin@1.0.33
+
+## 3.3.139
+
+### Patch Changes
+
+-   Updated dependencies [[`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e)]:
+    -   @learncard/types@5.8.9
+    -   @learncard/core@9.3.40
+    -   @learncard/init@2.1.6
+    -   @learncard/didkit-plugin@1.5.33
+    -   @learncard/learn-cloud-plugin@2.2.4
+    -   @learncard/open-badge-v2-plugin@1.0.8
+    -   @learncard/simple-signing-plugin@1.0.32
+
+## 3.3.138
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.5
+
 ## 3.3.137
 
 ### Patch Changes

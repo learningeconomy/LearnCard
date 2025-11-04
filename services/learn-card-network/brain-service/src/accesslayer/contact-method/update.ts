@@ -35,6 +35,13 @@ export const verifyContactMethod = async (id: string): Promise<ContactMethodType
     });
 };
 
+export const unverifyContactMethod = async (id: string): Promise<ContactMethodType | null> => {
+    return updateContactMethod(id, {
+        isVerified: false,
+        verifiedAt: undefined,
+    });
+};
+
 export const setPrimaryContactMethod = async (
     profileDid: string,
     contactMethodId: string

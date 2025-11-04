@@ -1,5 +1,17 @@
 # learn-card-types
 
+## 5.8.11
+
+### Patch Changes
+
+-   [#833](https://github.com/learningeconomy/LearnCard/pull/833) [`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959) Thanks [@Custard7](https://github.com/Custard7)! - chore: Bump Versions for Embed SDK PR
+
+## 5.8.9
+
+### Patch Changes
+
+-   [#829](https://github.com/learningeconomy/LearnCard/pull/829) [`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Bump learn-card-types
+
 ## 5.8.7
 
 ### Patch Changes

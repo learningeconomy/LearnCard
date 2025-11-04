@@ -37,6 +37,57 @@ describe('Consent Flow Contracts', () => {
         userD = await getUser('d'.repeat(64));
     });
 
+    describe('writeCredentialToContractViaSigningAuthority', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        it('should accept mixed-case signingAuthority.name when writing via signing authority', async () => {
+            // Register SA with lowercase name
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            // Create a boost with a category allowed by normalFullTerms
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'SA Boost',
+            });
+
+            // Create a contract and have userB consent with write permissions for Achievement
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Case Test Contract',
+            });
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const result = await userA.clients.fullAuth.contracts.writeCredentialToContractViaSigningAuthority({
+                did: userBProfile!.did,
+                contractUri,
+                boostUri,
+                signingAuthority: { endpoint: 'http://localhost:5000/api', name: 'MySA' },
+            });
+
+            expect(result).toBeDefined();
+            expect(typeof result).toBe('string');
+        });
+    });
+
     describe('createConsentFlowContract', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });

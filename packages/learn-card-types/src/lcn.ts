@@ -648,6 +648,10 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'ISSUANCE_CLAIMED',
     'ISSUANCE_DELIVERED',
     'ISSUANCE_ERROR',
+<<<<<<< HEAD
+=======
+    'PROFILE_PARENT_APPROVED'
+>>>>>>> main
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -666,7 +670,7 @@ export const LCNInboxContactMethodValidator = z.object({
 
 export type LCNInboxContactMethod = z.infer<typeof LCNInboxContactMethodValidator>;
 
-export const LCNInboxStatusEnumValidator = z.enum(['PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED']);
+export const LCNInboxStatusEnumValidator = z.enum(['PENDING', 'ISSUED', 'EXPIRED', /* DEPRECATED — use ISSUED */'DELIVERED', /* DEPRECATED — use ISSUED */'CLAIMED']);
 export type LCNInboxStatusEnum = z.infer<typeof LCNInboxStatusEnumValidator>;
 
 export const LCNNotificationInboxValidator = z.object({
@@ -829,12 +833,29 @@ export const SetPrimaryContactMethodValidator = z.object({
 
 export type SetPrimaryContactMethodType = z.infer<typeof SetPrimaryContactMethodValidator>;
 
+// Create Inbox Claim Session for a Contact Method
+export const CreateContactMethodSessionValidator = z.object({
+    contactMethod: ContactMethodVerificationRequestValidator,
+    otpChallenge: z.string(),
+});
+
+export type CreateContactMethodSessionType = z.infer<typeof CreateContactMethodSessionValidator>;
+
+export const CreateContactMethodSessionResponseValidator = z.object({
+    sessionJwt: z.string(),
+});
+
+export type CreateContactMethodSessionResponseType = z.infer<
+    typeof CreateContactMethodSessionResponseValidator
+>;
+
 // Inbox Credentials
 export const InboxCredentialValidator = z.object({
     id: z.string(),
     credential: z.string(),
     isSigned: z.boolean(),
     currentStatus: LCNInboxStatusEnumValidator,
+    isAccepted: z.boolean().optional(),
     expiresAt: z.string(),
     createdAt: z.string(),
     issuerDid: z.string(),
@@ -862,6 +883,7 @@ export const InboxCredentialQueryValidator = z
         currentStatus: LCNInboxStatusEnumValidator,
         id: z.string(),
         isSigned: z.boolean(),
+        isAccepted: z.boolean().optional(),
         issuerDid: z.string(),
     })
     .partial();
@@ -1003,6 +1025,79 @@ export const IssueInboxCredentialResponseValidator = z.object({
 export type IssueInboxCredentialResponseType = z.infer<
     typeof IssueInboxCredentialResponseValidator
 >;
+
+
+export const ClaimInboxCredentialValidator = z.object({
+    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()).describe('The credential to issue.'),
+    configuration: z.object({
+        publishableKey: z.string(),
+        signingAuthorityName: z.string().optional(),
+    }).optional(),
+});
+
+export type ClaimInboxCredentialType = z.infer<typeof ClaimInboxCredentialValidator>;
+
+// Integrations
+export const LCNDomainOrOriginValidator = z.union([
+    z
+        .string()
+        .regex(
+            /^(?:(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}|localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d{1,5})?$/,
+            {
+                message:
+                    'Must be a valid domain (incl. subdomains), localhost, or IPv4, optionally with port',
+            }
+        ),
+    z
+        .string()
+        .regex(
+            /^https?:\/\/(?:(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}|localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d{1,5})?$/,
+            { message: 'Must be a valid http(s) origin' }
+        ),
+]);
+
+export const LCNIntegrationValidator = z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().optional(),
+    publishableKey: z.string(),
+    whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+});
+
+export type LCNIntegration = z.infer<typeof LCNIntegrationValidator>;
+
+export const LCNIntegrationCreateValidator = z.object({
+    name: z.string(),
+    description: z.string().optional(),
+    whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+});
+
+export type LCNIntegrationCreateType = z.infer<typeof LCNIntegrationCreateValidator>;
+
+export const LCNIntegrationUpdateValidator = z.object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    whitelistedDomains: z.array(LCNDomainOrOriginValidator).optional(),
+    rotatePublishableKey: z.boolean().optional(),
+});
+
+export type LCNIntegrationUpdateType = z.infer<typeof LCNIntegrationUpdateValidator>;
+
+export const LCNIntegrationQueryValidator = z
+    .object({
+        id: StringQuery,
+        name: StringQuery,
+        description: StringQuery,
+    })
+    .partial();
+
+export type LCNIntegrationQueryType = z.infer<typeof LCNIntegrationQueryValidator>;
+
+export const PaginatedLCNIntegrationsValidator = PaginationResponseValidator.extend({
+    records: LCNIntegrationValidator.array(),
+});
+
+export type PaginatedLCNIntegrationsType = z.infer<typeof PaginatedLCNIntegrationsValidator>;
 
 export const ClaimTokenValidator = z.object({
     token: z.string(),

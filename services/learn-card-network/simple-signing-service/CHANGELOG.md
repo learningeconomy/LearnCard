@@ -1,5 +1,42 @@
 # @welibraryos/lca-api-service
 
+## 1.0.34
+
+### Patch Changes
+
+-   Updated dependencies [[`ff96c92a9066be7d292b7206d3b4285e8612486a`](https://github.com/learningeconomy/LearnCard/commit/ff96c92a9066be7d292b7206d3b4285e8612486a)]:
+    -   @learncard/learn-card-plugin@1.1.63
+
+## 1.0.33
+
+### Patch Changes
+
+-   Updated dependencies [[`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959)]:
+    -   @learncard/types@5.8.11
+    -   @learncard/core@9.3.41
+    -   @learncard/helpers@1.1.29
+    -   @learncard/did-web-plugin@1.0.78
+    -   @learncard/didkey-plugin@1.0.52
+    -   @learncard/didkit-plugin@1.5.34
+    -   @learncard/learn-card-plugin@1.1.62
+    -   @learncard/vc-plugin@1.2.4
+    -   @learncard/expiration-plugin@1.1.65
+
+## 1.0.32
+
+### Patch Changes
+
+-   Updated dependencies [[`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e)]:
+    -   @learncard/types@5.8.9
+    -   @learncard/core@9.3.40
+    -   @learncard/helpers@1.1.28
+    -   @learncard/did-web-plugin@1.0.77
+    -   @learncard/didkey-plugin@1.0.51
+    -   @learncard/didkit-plugin@1.5.33
+    -   @learncard/learn-card-plugin@1.1.61
+    -   @learncard/vc-plugin@1.2.3
+    -   @learncard/expiration-plugin@1.1.64
+
 ## 1.0.31
 
 ### Patch Changes

@@ -1,5 +1,83 @@
 # @learncard/network-brain-service
 
+## 3.6.13
+
+### Patch Changes
+
+-   [#844](https://github.com/learningeconomy/LearnCard/pull/844) [`c00f3e3cceed125aa77bbca7d70c99cacfaae830`](https://github.com/learningeconomy/LearnCard/commit/c00f3e3cceed125aa77bbca7d70c99cacfaae830) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Iterations: Add more granular approval token tracking and error behavior
+
+-   [#846](https://github.com/learningeconomy/LearnCard/pull/846) [`56bcdc004441a84c8045a007944a394f48cb4bbc`](https://github.com/learningeconomy/LearnCard/commit/56bcdc004441a84c8045a007944a394f48cb4bbc) Thanks [@goblincore](https://github.com/goblincore)! - Send user notification email upon account approval
+
+-   [#839](https://github.com/learningeconomy/LearnCard/pull/839) [`065b250ea165339a6f964ad1b97a352015b28262`](https://github.com/learningeconomy/LearnCard/commit/065b250ea165339a6f964ad1b97a352015b28262) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Automatically lower case Signing Authority names
+
+-   [#844](https://github.com/learningeconomy/LearnCard/pull/844) [`c00f3e3cceed125aa77bbca7d70c99cacfaae830`](https://github.com/learningeconomy/LearnCard/commit/c00f3e3cceed125aa77bbca7d70c99cacfaae830) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Iterations: Add more granular approval token tracking and error behavior
+
+-   Updated dependencies [[`ff96c92a9066be7d292b7206d3b4285e8612486a`](https://github.com/learningeconomy/LearnCard/commit/ff96c92a9066be7d292b7206d3b4285e8612486a)]:
+    -   @learncard/learn-card-plugin@1.1.63
+
+## 3.6.12
+
+### Patch Changes
+
+-   [#841](https://github.com/learningeconomy/LearnCard/pull/841) [`c128a50ca1a6e544010e11009ed5a0b0404a9db5`](https://github.com/learningeconomy/LearnCard/commit/c128a50ca1a6e544010e11009ed5a0b0404a9db5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add more indices
+
+## 3.6.11
+
+### Patch Changes
+
+-   Updated dependencies [[`4443d7ac2a3b90da642be905767099e9e59000c8`](https://github.com/learningeconomy/LearnCard/commit/4443d7ac2a3b90da642be905767099e9e59000c8)]:
+    -   @learncard/vc-templates-plugin@1.0.68
+
+## 3.6.10
+
+### Patch Changes
+
+-   [#837](https://github.com/learningeconomy/LearnCard/pull/837) [`473099d69384e393e485e75a2dd0362236ba6b2d`](https://github.com/learningeconomy/LearnCard/commit/473099d69384e393e485e75a2dd0362236ba6b2d) Thanks [@Custard7](https://github.com/Custard7)! - Bump LCN
+
+## 3.6.8
+
+### Patch Changes
+
+-   [#833](https://github.com/learningeconomy/LearnCard/pull/833) [`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959) Thanks [@Custard7](https://github.com/Custard7)! - chore: Bump Versions for Embed SDK PR
+
+-   Updated dependencies [[`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959)]:
+    -   @learncard/types@5.8.11
+    -   @learncard/core@9.3.41
+    -   @learncard/helpers@1.1.29
+    -   @learncard/did-web-plugin@1.0.78
+    -   @learncard/didkey-plugin@1.0.52
+    -   @learncard/didkit-plugin@1.5.34
+    -   @learncard/encryption-plugin@1.0.26
+    -   @learncard/learn-card-plugin@1.1.62
+    -   @learncard/vc-plugin@1.2.4
+    -   @learncard/vc-templates-plugin@1.0.67
+    -   @learncard/expiration-plugin@1.1.65
+    -   @learncard/crypto-plugin@1.0.52
+
+## 3.6.6
+
+### Patch Changes
+
+-   Updated dependencies [[`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e)]:
+    -   @learncard/types@5.8.9
+    -   @learncard/core@9.3.40
+    -   @learncard/helpers@1.1.28
+    -   @learncard/did-web-plugin@1.0.77
+    -   @learncard/didkey-plugin@1.0.51
+    -   @learncard/didkit-plugin@1.5.33
+    -   @learncard/encryption-plugin@1.0.25
+    -   @learncard/learn-card-plugin@1.1.61
+    -   @learncard/vc-plugin@1.2.3
+    -   @learncard/vc-templates-plugin@1.0.66
+    -   @learncard/expiration-plugin@1.1.64
+    -   @learncard/crypto-plugin@1.0.51
+
+## 3.6.5
+
+### Patch Changes
+
+-   [#823](https://github.com/learningeconomy/LearnCard/pull/823) [`05dd394df6e56f066f222748d89c1aa82e47e826`](https://github.com/learningeconomy/LearnCard/commit/05dd394df6e56f066f222748d89c1aa82e47e826) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Add LCN routes for handling account approval via consent email
+
 ## 3.6.4
 
 ### Patch Changes
