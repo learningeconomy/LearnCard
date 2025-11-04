@@ -9,7 +9,7 @@ import {
 } from '@accesslayer/skill-framework/read';
 import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
 import {
-    doesProfileManageSkill,
+    doesProfileManageSkillInFramework,
     getChildrenForSkillInFrameworkPaged,
     searchSkillsInFramework,
     countSkillsInFramework,
@@ -117,12 +117,12 @@ export const skillsRouter = t.router({
             const profileId = ctx.user.profile.profileId;
             const { id: parentId, frameworkId, limit, cursor } = input;
 
-            // Require that the caller manages a framework containing this skill
-            const allowed = await doesProfileManageSkill(profileId, parentId);
+            // Require that the caller manages the specified framework and it contains this skill
+            const allowed = await doesProfileManageSkillInFramework(profileId, frameworkId, parentId);
             if (!allowed)
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'You do not manage a framework containing this skill',
+                    message: 'You do not manage this framework or it does not contain this skill',
                 });
 
             const page = await getChildrenForSkillInFrameworkPaged(
