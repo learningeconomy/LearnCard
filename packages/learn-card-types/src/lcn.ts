@@ -648,10 +648,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'ISSUANCE_CLAIMED',
     'ISSUANCE_DELIVERED',
     'ISSUANCE_ERROR',
-<<<<<<< HEAD
-=======
-    'PROFILE_PARENT_APPROVED'
->>>>>>> main
+    'PROFILE_PARENT_APPROVED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -670,7 +667,13 @@ export const LCNInboxContactMethodValidator = z.object({
 
 export type LCNInboxContactMethod = z.infer<typeof LCNInboxContactMethodValidator>;
 
-export const LCNInboxStatusEnumValidator = z.enum(['PENDING', 'ISSUED', 'EXPIRED', /* DEPRECATED — use ISSUED */'DELIVERED', /* DEPRECATED — use ISSUED */'CLAIMED']);
+export const LCNInboxStatusEnumValidator = z.enum([
+    'PENDING',
+    'ISSUED',
+    'EXPIRED',
+    /* DEPRECATED — use ISSUED */ 'DELIVERED',
+    /* DEPRECATED — use ISSUED */ 'CLAIMED',
+]);
 export type LCNInboxStatusEnum = z.infer<typeof LCNInboxStatusEnumValidator>;
 
 export const LCNNotificationInboxValidator = z.object({
@@ -1026,13 +1029,17 @@ export type IssueInboxCredentialResponseType = z.infer<
     typeof IssueInboxCredentialResponseValidator
 >;
 
-
 export const ClaimInboxCredentialValidator = z.object({
-    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()).describe('The credential to issue.'),
-    configuration: z.object({
-        publishableKey: z.string(),
-        signingAuthorityName: z.string().optional(),
-    }).optional(),
+    credential: VCValidator.passthrough()
+        .or(VPValidator.passthrough())
+        .or(UnsignedVCValidator.passthrough())
+        .describe('The credential to issue.'),
+    configuration: z
+        .object({
+            publishableKey: z.string(),
+            signingAuthorityName: z.string().optional(),
+        })
+        .optional(),
 });
 
 export type ClaimInboxCredentialType = z.infer<typeof ClaimInboxCredentialValidator>;
