@@ -61,6 +61,26 @@ export const doesSkillExistInFramework = async (
     return count > 0;
 };
 
+export const getSkillById = async (
+    frameworkId: string,
+    skillId: string
+): Promise<FlatSkillType | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (:SkillFramework {id: $frameworkId})-[:CONTAINS]->(s:Skill {id: $skillId})
+         RETURN s AS s`,
+        { frameworkId, skillId }
+    );
+
+    const record = result.records[0];
+    if (!record) return null;
+
+    const props = ((record.get('s') as any)?.properties ?? {}) as Record<string, any>;
+    return {
+        ...props,
+        type: props.type ?? 'skill',
+    } as FlatSkillType;
+};
+
 export type Paginated<T> = {
     records: T[];
     hasMore: boolean;
