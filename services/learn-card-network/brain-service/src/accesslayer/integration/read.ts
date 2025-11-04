@@ -1,4 +1,5 @@
 import { BindParam, QueryBuilder } from 'neogma';
+import { int } from 'neo4j-driver';
 
 import { inflateObject } from '@helpers/objects.helpers';
 import { Integration } from '@models';
@@ -75,7 +76,7 @@ export const getIntegrationsForProfile = async (
             profileId: profile.profileId,
             ...queryParams,
             cursor: cursor ?? null,
-            limit,
+            limit: int(limit),
         }
     );
 
