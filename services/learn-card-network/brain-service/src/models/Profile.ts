@@ -13,7 +13,12 @@ import { LearnCardRolesEnum } from 'types/profile';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
-    connectedWith: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    connectedWith: ModelRelatedNodesI<
+        typeof Profile,
+        ProfileInstance,
+        { sources?: string[] },
+        { sources?: string[] }
+    >;
     blocked: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     managedBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     credentialSent: ModelRelatedNodesI<
@@ -68,7 +73,17 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
-            connectedWith: { model: 'self', direction: 'out', name: 'CONNECTED_WITH' },
+            connectedWith: {
+                model: 'self',
+                direction: 'out',
+                name: 'CONNECTED_WITH',
+                properties: {
+                    sources: {
+                        property: 'sources',
+                        schema: { type: 'array', items: { type: 'string' }, required: false },
+                    },
+                },
+            },
             blocked: { model: 'self', direction: 'out', name: 'BLOCKED' },
             managedBy: { model: 'self', direction: 'out', name: 'MANAGED_BY' },
             credentialSent: {

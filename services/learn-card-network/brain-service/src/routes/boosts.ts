@@ -123,6 +123,7 @@ import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissi
 import { updateBoost } from '@accesslayer/boost/update';
 import { addClaimPermissionsForBoost } from '@accesslayer/role/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 
 export const boostsRouter = t.router({
     getBoostAlignments: profileRoute
@@ -1550,7 +1551,14 @@ export const boostsRouter = t.router({
                 });
             }
 
+            const togglingOff =
+                typeof updates.autoConnectRecipients !== 'undefined' &&
+                Boolean(boost.autoConnectRecipients) === true &&
+                updates.autoConnectRecipients === false;
+
             const result = await updateBoost(boost, actualUpdates);
+
+            if (togglingOff) await removeConnectionsForBoost(boost.id);
 
             if (actualUpdates.boost) await setStorageForUri(uri, JSON.parse(actualUpdates.boost));
 
