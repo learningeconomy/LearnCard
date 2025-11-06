@@ -44,19 +44,21 @@ export class PartnerConnect {
   
   private hostOrigins: string[] = ['https://learncard.app'];
   private activeHostOrigin: string = 'https://learncard.app';
+  private allowNativeAppOrigins: boolean = true;
   private protocol: string = 'LEARNCARD_V1';
   private requestTimeout: number = 30000;
   private pendingRequests: Map<string, PendingRequest>;
   private messageListener: ((event: MessageEvent) => void) | null = null;
   private isInitialized = false;
 
-  constructor(options: PartnerConnectOptions) {
+  constructor(options?: PartnerConnectOptions) {
     // Normalize hostOrigin to an array for whitelist validation
-    const hostOrigin = options.hostOrigin || PartnerConnect.DEFAULT_HOST_ORIGIN;
+    const hostOrigin = options?.hostOrigin || PartnerConnect.DEFAULT_HOST_ORIGIN;
     this.hostOrigins = Array.isArray(hostOrigin) ? hostOrigin : [hostOrigin];
     
-    this.protocol = options.protocol || 'LEARNCARD_V1';
-    this.requestTimeout = options.requestTimeout || 30000;
+    this.protocol = options?.protocol || 'LEARNCARD_V1';
+    this.requestTimeout = options?.requestTimeout || 30000;
+    this.allowNativeAppOrigins = options?.allowNativeAppOrigins ?? true;
     this.pendingRequests = new Map();
     this.configureActiveOrigin();
     this.setupMessageListener();
@@ -106,11 +108,15 @@ export class PartnerConnect {
     }
   }
 
+  private isOriginNativeApp(origin: string): boolean {
+    return origin.startsWith('capacitor://') || origin.startsWith('ionic://') || origin.startsWith('https://localhost') || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.startsWith('http://192.168.1.164')
+  }
+
   /**
    * Check if an origin is in the configured whitelist
    */
   private isOriginInWhitelist(origin: string): boolean {
-    return this.hostOrigins.includes(origin);
+    return this.hostOrigins.includes(origin) || (this.allowNativeAppOrigins && this.isOriginNativeApp(origin));
   }
 
   /**

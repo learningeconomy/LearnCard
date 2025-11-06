@@ -1,6 +1,6 @@
 {
   "name": "@learncard/partner-connect",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "LearnCard Partner Connect SDK - Promise-based cross-origin messaging for partner apps",
   "main": "dist/partner-connect.js",
   "module": "dist/partner-connect.esm.js",

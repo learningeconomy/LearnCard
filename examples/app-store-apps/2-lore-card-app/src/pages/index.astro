@@ -10,9 +10,6 @@ const boostTemplates = data?.boostTemplates || [];
 console.log(`Loaded ${boostTemplates.length} boost templates`);
 
 const config = {
-  //learnCardHostOrigin: import.meta.env.LEARNCARD_HOST_ORIGIN || 'https://learncard.app',
-  learnCardHostOrigin: ['https://learncard.app', 'capacitor://localhost', 'ionic://localhost', 'http://localhost:3000'],
-
   boostTemplates,
 };
 ---
@@ -378,14 +375,8 @@ const config = {
     import { createPartnerConnect } from '@learncard/partner-connect';
     import { actions } from 'astro:actions';
 
-    // Configuration
-    const CONFIG = window.__LORECARD_CONFIG;
-    const LEARNCARD_HOST_ORIGIN = CONFIG.learnCardHostOrigin;
-
     // Initialize the LearnCard Partner Connect SDK
-    const learnCard = createPartnerConnect({
-      hostOrigin: LEARNCARD_HOST_ORIGIN
-    });
+    const learnCard = createPartnerConnect();
 
     // DOM Elements
     const statusBox = document.getElementById('status-box');

@@ -47,6 +47,13 @@ export interface PartnerConnectOptions {
   hostOrigin?: string | string[];
 
   /**
+   * Whether to allow native app origins (default: true)
+   * 
+   * @default true
+   */
+  allowNativeAppOrigins?: boolean;
+
+  /**
    * Protocol identifier (default: 'LEARNCARD_V1')
    */
   protocol?: string;
