@@ -1,5 +1,20 @@
 # learn-card-core
 
+## 1.1.64
+
+### Patch Changes
+
+-   Updated dependencies [[`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357)]:
+    -   @learncard/types@5.9.0
+    -   @learncard/core@9.3.42
+    -   @learncard/didkit-plugin@1.5.35
+
+## 1.1.63
+
+### Patch Changes
+
+-   [#814](https://github.com/learningeconomy/LearnCard/pull/814) [`ff96c92a9066be7d292b7206d3b4285e8612486a`](https://github.com/learningeconomy/LearnCard/commit/ff96c92a9066be7d292b7206d3b4285e8612486a) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1365 - Update verification expiration response
+
 ## 1.1.62
 
 ### Patch Changes

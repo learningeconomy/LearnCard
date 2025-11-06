@@ -5,6 +5,9 @@ import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
 import { ConsentFlowTransaction } from './ConsentFlowTransaction';
+import { SkillFramework } from './SkillFramework';
+import { Skill } from './Skill';
+import { Tag } from './Tag';
 
 Credential.addRelationships({
     credentialReceived: {
@@ -38,6 +41,17 @@ Presentation.addRelationships({
             date: { property: 'date', schema: { type: 'string', required: true } },
         },
     },
+});
+
+// Skills Graph relationships
+SkillFramework.addRelationships({
+    managedBy: { model: Profile, direction: 'in', name: 'MANAGES' },
+    contains: { model: Skill, direction: 'out', name: 'CONTAINS' },
+});
+
+Skill.addRelationships({
+    childOf: { model: Skill, direction: 'out', name: 'IS_CHILD_OF' },
+    hasTag: { model: Tag, direction: 'out', name: 'HAS_TAG' },
 });
 
 // Use an IIFE to create indices without top-level await
@@ -127,6 +141,26 @@ Presentation.addRelationships({
             'CREATE INDEX integration_publishablekey_idx IF NOT EXISTS FOR (i:Integration) ON (i.publishableKey)'
         ),
 
+        // Skills Graph indices/constraints
+        neogma.queryRunner.run(
+            'CREATE INDEX skill_framework_id_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.id)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE TEXT INDEX skill_framework_name_text_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.name)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX skill_id_idx IF NOT EXISTS FOR (s:Skill) ON (s.id)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE TEXT INDEX skill_statement_text_idx IF NOT EXISTS FOR (s:Skill) ON (s.statement)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE CONSTRAINT tag_slug_unique IF NOT EXISTS FOR (t:Tag) REQUIRE (t.slug) IS UNIQUE'
+        ),
+        neogma.queryRunner.run(
+            'CREATE TEXT INDEX tag_name_text_idx IF NOT EXISTS FOR (t:Tag) ON (t.name)'
+        ),
+
         // Relationship property indexes
         neogma.queryRunner.run(
             'CREATE INDEX has_role_id_idx IF NOT EXISTS FOR ()-[r:HAS_ROLE]-() ON (r.roleId)'
@@ -181,4 +215,7 @@ export * from './ConsentFlowContract';
 export * from './ConsentFlowTransaction';
 export * from './ContactMethod';
 export * from './InboxCredential';
+export * from './SkillFramework';
+export * from './Skill';
+export * from './Tag';
 export * from './Integration';

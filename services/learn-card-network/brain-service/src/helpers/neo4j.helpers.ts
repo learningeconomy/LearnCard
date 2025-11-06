@@ -1,20 +1,101 @@
 import { QueryResult } from 'neo4j-driver';
 
-export const getMatchQueryWhere = (identifierToFilter: string, matchQueryKey = 'matchQuery') => `
-all(key IN keys($${matchQueryKey}) 
-    WHERE CASE 
-        WHEN $${matchQueryKey}[key] IS TYPED MAP 
-        THEN
-            CASE
-                WHEN $${matchQueryKey}[key]['$in'] IS NOT NULL
-                THEN ${identifierToFilter}[key] IN $${matchQueryKey}[key]['$in']
-                WHEN $${matchQueryKey}[key]['$regex'] IS NOT NULL
-                THEN ${identifierToFilter}[key] =~ $${matchQueryKey}[key]['$regex']
-            END
-        ELSE ${identifierToFilter}[key] = $${matchQueryKey}[key]
-    END
-)
-`;
+type QueryValue =
+    | string
+    | number
+    | boolean
+    | { $in: any[] }
+    | { $regex: string }
+    | { $or: QueryValue[] };
+
+type QueryCondition = Record<string, QueryValue>;
+
+let paramCounter = 0;
+
+/**
+ * Builds a WHERE clause condition for a single field
+ */
+const buildFieldCondition = (
+    identifier: string,
+    field: string,
+    value: QueryValue,
+    params: Record<string, any>
+): string => {
+    // Handle $or at field level
+    if (typeof value === 'object' && value !== null && '$or' in value) {
+        const orConditions = value.$or.map(orValue =>
+            buildFieldCondition(identifier, field, orValue, params)
+        );
+        return `(${orConditions.join(' OR ')})`;
+    }
+
+    // Handle $in operator
+    if (typeof value === 'object' && value !== null && '$in' in value) {
+        const paramName = `param_${paramCounter++}`;
+        params[paramName] = value.$in;
+        return `${identifier}.${field} IN $${paramName}`;
+    }
+
+    // Handle $regex operator
+    if (typeof value === 'object' && value !== null && '$regex' in value) {
+        const paramName = `param_${paramCounter++}`;
+        params[paramName] = value.$regex;
+        return `${identifier}.${field} =~ $${paramName}`;
+    }
+
+    // Handle direct equality
+    const paramName = `param_${paramCounter++}`;
+    params[paramName] = value;
+    return `${identifier}.${field} = $${paramName}`;
+};
+
+/**
+ * Builds WHERE clause from query object, expanding operators in JavaScript
+ * Returns both the WHERE clause string and the parameters object
+ */
+export const buildWhereClause = (
+    identifier: string,
+    query: QueryCondition | { $or: QueryCondition[] }
+): { whereClause: string; params: Record<string, any> } => {
+    paramCounter = 0; // Reset counter for each query
+    const params: Record<string, any> = {};
+
+    // Handle document-level $or
+    if ('$or' in query && Array.isArray(query.$or)) {
+        const orConditions = (query.$or as QueryCondition[]).map(orQuery => {
+            const conditions = Object.entries(orQuery).map(([field, value]) =>
+                buildFieldCondition(identifier, field, value, params)
+            );
+            return conditions.length > 1 ? `(${conditions.join(' AND ')})` : conditions[0];
+        });
+        return {
+            whereClause: `(${orConditions.join(' OR ')})`,
+            params,
+        };
+    }
+
+    // Handle regular AND query
+    const conditions = Object.entries(query).map(([field, value]) =>
+        buildFieldCondition(identifier, field, value, params)
+    );
+
+    return {
+        whereClause: conditions.length > 0 ? conditions.join(' AND ') : 'true',
+        params,
+    };
+};
+
+/**
+ * Helper function to build WHERE clause for use with neogma's QueryBuilder
+ * Returns both the WHERE clause string and the params object that should be merged
+ * into the BindParam constructor
+ */
+export const buildWhereForQueryBuilder = (
+    identifier: string,
+    query: QueryCondition | { $or: QueryCondition[] }
+): { whereClause: string; params: Record<string, any> } => {
+    return buildWhereClause(identifier, query);
+};
 
 export const convertQueryResultToPropertiesObjectArray = <Properties extends Record<string, any>>(
     results: QueryResult
@@ -94,8 +175,8 @@ export const convertObjectRegExpToNeo4j = (obj: Record<string, any>): Record<str
             isRegExp(item) || isRegExpValue(item)
                 ? convertRegExpToNeo4j(item)
                 : typeof item === 'object' && item !== null
-                    ? convertObjectRegExpToNeo4j(item)
-                    : item
+                ? convertObjectRegExpToNeo4j(item)
+                : item
         );
     }
 

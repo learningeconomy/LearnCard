@@ -34,7 +34,14 @@ export const RegExpValidator = z.instanceof(RegExp).or(
         })
 );
 
-export const StringQuery = z
+const BaseStringQuery = z
     .string()
     .or(z.object({ $in: z.string().array() }))
     .or(z.object({ $regex: RegExpValidator }));
+
+export const StringQuery = z.union([
+    BaseStringQuery,
+    z.object({
+        $or: BaseStringQuery.array(),
+    }),
+]);
