@@ -1,6 +1,6 @@
 import type { LearnCard } from '@learncard/core';
 import type { VC, UnsignedVC } from '@learncard/types';
-import type { LinkedClaimsPlugin, EndorsementDetails, LinkedClaimsPluginDependentMethods } from './types';
+import type { LinkedClaimsPlugin, LinkedClaimsPluginDependentMethods } from './types';
 
 export * from './types';
 
@@ -45,7 +45,8 @@ export const getLinkedClaimsPlugin = (
             const originalId: string | undefined = (original as any).id;
             const subjectIds = getSubjectIds(original);
             const targetId = originalId || subjectIds[0];
-            if (!targetId) throw new Error('Original credential must have either id or credentialSubject.id');
+            if (!targetId)
+                throw new Error('Original credential must have either id or credentialSubject.id');
 
             const context: (string | Record<string, any>)[] = [
                 'https://www.w3.org/ns/credentials/v2',
@@ -68,6 +69,7 @@ export const getLinkedClaimsPlugin = (
                 },
                 ...(details.name ? { name: details.name } : { name: `Endorsement of ${targetId}` }),
                 ...(details.description ? { description: details.description } : {}),
+                ...(details.evidence && { evidence: details.evidence }),
             };
 
             return learnCard.invoke.issueCredential(unsigned);
@@ -79,7 +81,10 @@ export const getLinkedClaimsPlugin = (
             const ctx = ensureArray((endorsement as any)['@context']);
             const types = ensureArray((endorsement as any)['type']);
 
-            if (!ctx.some((c: string) => c === 'https://www.w3.org/ns/credentials/v2') || !ctx.some((c: string) => c === ENDORSEMENT_CONTEXT)) {
+            if (
+                !ctx.some((c: string) => c === 'https://www.w3.org/ns/credentials/v2') ||
+                !ctx.some((c: string) => c === ENDORSEMENT_CONTEXT)
+            ) {
                 check.errors.push('linked-claims error: missing VCv2 or OBv3 context');
             }
             if (!types.includes('EndorsementCredential')) {
@@ -90,7 +95,9 @@ export const getLinkedClaimsPlugin = (
             const csObj = Array.isArray(cs) ? cs[0] : cs;
             const csTypes = ensureArray<string>(csObj?.type);
             if (!csTypes.includes('EndorsementSubject')) {
-                check.errors.push('linked-claims error: credentialSubject.type must include EndorsementSubject');
+                check.errors.push(
+                    'linked-claims error: credentialSubject.type must include EndorsementSubject'
+                );
             }
             if (!csObj?.id) {
                 check.errors.push('linked-claims error: credentialSubject.id missing');
@@ -103,14 +110,30 @@ export const getLinkedClaimsPlugin = (
         storeEndorsement: async (_learnCard, endorsement, options) => {
             const storeName = pickStoreProvider(learnCard, options?.storeName);
             if (!storeName) throw new Error('No store plane provider available');
-            if (!learnCard.store[storeName].uploadEncrypted || typeof learnCard.store[storeName].uploadEncrypted !== 'function') {
-                throw new Error(`Store provider '${storeName}' does not support uploadEncrypted method`);
+            if (
+                !learnCard.store[storeName].uploadEncrypted ||
+                typeof learnCard.store[storeName].uploadEncrypted !== 'function'
+            ) {
+                throw new Error(
+                    `Store provider '${storeName}' does not support uploadEncrypted method`
+                );
             }
-            const uri: string = await (learnCard.store as any)[storeName].uploadEncrypted(endorsement);
+            const uri: string = await (learnCard.store as any)[storeName].uploadEncrypted(
+                endorsement
+            );
 
             const indexName = pickIndexProvider(learnCard, options?.indexName);
             let indexed = false;
-            let id = (endorsement as any).id || `urn:uuid:${(globalThis as any).crypto?.randomUUID?.() || (() => { throw new Error('Secure random UUID generation is not available. Please use an environment that supports crypto.randomUUID().'); })()}`;
+            let id =
+                (endorsement as any).id ||
+                `urn:uuid:${
+                    (globalThis as any).crypto?.randomUUID?.() ||
+                    (() => {
+                        throw new Error(
+                            'Secure random UUID generation is not available. Please use an environment that supports crypto.randomUUID().'
+                        );
+                    })()
+                }`;
 
             if (indexName) {
                 const cs: any = (endorsement as any).credentialSubject;
@@ -124,6 +147,10 @@ export const getLinkedClaimsPlugin = (
                     originalCredentialId: csObj?.id,
                     issuedOn: (endorsement as any).validFrom || (endorsement as any).issuanceDate,
                     category: 'Endorsement',
+                    credentialId: options?.credentialId, // original credential id
+                    sharedUri: options?.sharedUri, // original credential shared uri
+                    relationship: options?.relationship,
+                    visibility: options?.visibility ?? 'public',
                 };
                 indexed = await (learnCard.index as any)[indexName].add(record);
             }
@@ -138,7 +165,9 @@ export const getLinkedClaimsPlugin = (
             const subjectIds = getSubjectIds(original);
             const originalId = (original as any).id;
 
-            const query = originalId ? { originalCredentialId: originalId } : { endorsedId: subjectIds[0] };
+            const query = originalId
+                ? { originalCredentialId: originalId }
+                : { endorsedId: subjectIds[0] };
             const records = await (learnCard.index as any)[indexName].get(query);
 
             const results: VC[] = [];

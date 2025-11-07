@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.9.1
+
+### Patch Changes
+
+-   [#851](https://github.com/learningeconomy/LearnCard/pull/851) [`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2) Thanks [@gerardopar](https://github.com/gerardopar)! - Add arbitrary metadata support when sending credentials that gets plumbed through to the notification payload
+
 ## 5.9.0
 
 ### Minor Changes
