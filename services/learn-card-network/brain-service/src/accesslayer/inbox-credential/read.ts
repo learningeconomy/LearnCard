@@ -4,7 +4,7 @@ import { InboxCredentialType, InboxCredentialQuery } from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
 import {
     convertObjectRegExpToNeo4j,
-    getMatchQueryWhere,
+    buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
 
 export const getInboxCredentialById = async (id: string): Promise<InboxCredentialInstance | null> => {
@@ -116,19 +116,20 @@ export const getInboxCredentialsForProfile = async (
         recipient?: { type: string; value: string };
     }
 ): Promise<InboxCredentialType[]> => {
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('inboxCredential', convertedQuery as any);
+    
+    const queryClause = whereClause !== 'true' ? ` AND ${whereClause}` : '';
+    const cursorClause = cursor ? ` AND inboxCredential.createdAt < $cursor` : '';
 
-    const cursorQuery = cursor ? `AND inboxCredential.createdAt < $cursor` : '';
-
-    const _query = new QueryBuilder(
-        new BindParam({
-            profileId,
-            matchQuery: convertObjectRegExpToNeo4j(matchQuery),
-            cursor,
-            recipient,
-        })
-    )
+    const _query = new QueryBuilder(new BindParam({
+        profileId,
+        cursor,
+        recipient,
+        ...queryParams,
+    }))
         .match('(profile)-[:CREATED_INBOX_CREDENTIAL]->(inboxCredential:InboxCredential)')
-        .where(`profile.profileId = $profileId AND ${getMatchQueryWhere('inboxCredential')}${cursorQuery}`);
+        .where(`profile.profileId = $profileId${queryClause}${cursorClause}`);
 
     if (recipient) {
         _query

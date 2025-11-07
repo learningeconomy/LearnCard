@@ -538,21 +538,43 @@ export async function getLearnCardNetworkPlugin(
 
             createBoost: async (_learnCard, credential, metadata) => {
                 await ensureUser();
+                const { skills, ...rest } = metadata ?? {};
 
-                return client.boost.createBoost.mutate({ credential, ...metadata });
+                const payload: any = { credential, ...rest };
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+
+                return client.boost.createBoost.mutate(payload);
             },
             createChildBoost: async (_learnCard, parentUri, credential, metadata) => {
                 await ensureUser();
+                const { skills, ...restMetadata } = metadata || {};
 
-                return client.boost.createChildBoost.mutate({
-                    parentUri,
-                    boost: { credential, ...metadata },
-                });
+                const payload: any = { parentUri, boost: { credential, ...restMetadata } };
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+
+                return client.boost.createChildBoost.mutate(payload);
             },
             getBoost: async (_learnCard, uri) => {
                 await ensureUser();
 
                 return client.boost.getBoost.query({ uri });
+            },
+            getBoostFrameworks: async (_learnCard, uri, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const { limit, cursor, query } = options ?? {};
+
+                return client.boost.getBoostFrameworks.query({ uri, limit, cursor, query });
+            },
+            getSkillsAvailableForBoost: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getSkillsAvailableForBoost.query({ uri });
+            },
+            searchSkillsAvailableForBoost: async (_learnCard, uri, query, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.searchSkillsAvailableForBoost.query({ uri, query, ...options });
             },
             getBoosts: async (_learnCard, query) => {
                 console.warn(
@@ -745,6 +767,21 @@ export async function getLearnCardNetworkPlugin(
                     uri,
                     updates: { ...(credential && { credential }), ...updates },
                 });
+            },
+            attachFrameworkToBoost: async (_learnCard, boostUri, frameworkId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.attachFrameworkToBoost.mutate({ boostUri, frameworkId });
+            },
+            detachFrameworkFromBoost: async (_learnCard, boostUri, frameworkId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.detachFrameworkFromBoost.mutate({ boostUri, frameworkId });
+            },
+            alignBoostSkills: async (_learnCard, boostUri, skills) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.alignBoostSkills.mutate({ boostUri, skills } as any);
             },
             getBoostAdmins: async (_learnCard, uri, options = {}) => {
                 await ensureUser();
@@ -1237,44 +1274,178 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.contactMethods.removeContactMethod.mutate({ id });
             },
-            
+
+            // Skills & Skill Frameworks
+            syncFrameworkSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.syncFrameworkSkills.mutate(input);
+            },
+            listSkillTags: async (_learnCard, frameworkId, skillId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.listSkillTags.query({ frameworkId, id: skillId } as any);
+            },
+            addSkillTag: async (_learnCard, frameworkId, skillId, tag) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.addSkillTag.mutate({ frameworkId, id: skillId, tag } as any);
+            },
+            removeSkillTag: async (_learnCard, frameworkId, skillId, slug) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.removeSkillTag.mutate({ frameworkId, id: skillId, slug } as any);
+            },
+            createManagedSkillFramework: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.createManaged.mutate(input);
+            },
+            createManagedSkillFrameworks: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.createManagedBatch.mutate(input);
+            },
+            createSkillFramework: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.create.mutate(input);
+            },
+            listMySkillFrameworks: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.listMine.query();
+            },
+            getSkillFrameworkById: async (_learnCard, id, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.getById.query({ id, ...options });
+            },
+            getBoostsThatUseFramework: async (_learnCard, frameworkId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.getBoostsThatUseFramework.query({
+                    id: frameworkId,
+                    ...options,
+                });
+            },
+            countBoostsThatUseFramework: async (_learnCard, frameworkId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.countBoostsThatUseFramework.query({
+                    id: frameworkId,
+                    ...options,
+                });
+            },
+            getFrameworkSkillTree: async (_learnCard, frameworkId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.getFrameworkSkillTree.query({ id: frameworkId, ...options });
+            },
+            getSkillChildren: async (_learnCard, frameworkId, skillId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.getSkillChildrenTree.query({
+                    frameworkId,
+                    id: skillId,
+                    ...options,
+                });
+            },
+            searchFrameworkSkills: async (_learnCard, frameworkId, query, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.searchFrameworkSkills.query({
+                    id: frameworkId,
+                    query,
+                    ...options,
+                });
+            },
+            updateSkillFramework: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.update.mutate(input);
+            },
+            deleteSkillFramework: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.delete.mutate({ id });
+            },
+            replaceSkillFrameworkSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.replaceSkills.mutate(input);
+            },
+            countSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.countSkills.query(input);
+            },
+            getFullSkillTree: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.getFullSkillTree.query(input);
+            },
+            getSkillPath: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.getSkillPath.query(input);
+            },
+            getSkillFrameworkAdmins: async (_learnCard, frameworkId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.listFrameworkAdmins.query({ frameworkId });
+            },
+            addSkillFrameworkAdmin: async (_learnCard, frameworkId, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.addFrameworkAdmin.mutate({ frameworkId, profileId });
+            },
+            removeSkillFrameworkAdmin: async (_learnCard, frameworkId, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.removeFrameworkAdmin.mutate({
+                    frameworkId,
+                    profileId,
+                });
+            },
+            getSkill: async (_learnCard, frameworkId, skillId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.getSkill.query({ frameworkId, id: skillId });
+            },
+            createSkill: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.create.mutate(input);
+            },
+            createSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.createMany.mutate(input);
+            },
+            updateSkill: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.update.mutate(input);
+            },
+            deleteSkill: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.delete.mutate(input);
+            },
+
             // Integrations
             addIntegration: async (_learnCard, integration) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.addIntegration.mutate(integration);
             },
             getIntegration: async (_learnCard, id) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.getIntegration.query({ id });
             },
             getIntegrations: async (_learnCard, options = {}) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.getIntegrations.query(options);
             },
             countIntegrations: async (_learnCard, options = {}) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.countIntegrations.query(options);
             },
             updateIntegration: async (_learnCard, id, updates) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.updateIntegration.mutate({ id, updates });
             },
             deleteIntegration: async (_learnCard, id) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.deleteIntegration.mutate({ id });
             },
             associateIntegrationWithSigningAuthority: async (_learnCard, integrationId, endpoint, name, did, isPrimary) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.associateIntegrationWithSigningAuthority.mutate({ integrationId, endpoint, name, did, isPrimary });
             },
- 
+
             resolveFromLCN: async (_learnCard, uri) => {
                 const result = await client.storage.resolve.query({ uri });
 
