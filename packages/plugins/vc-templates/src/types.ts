@@ -111,6 +111,11 @@ export interface Evidence {
     description?: string;
     genre?: string;
     audience?: string;
+
+    // Extended fields
+    fileName?: string;
+    fileType?: string;
+    fileSize?: string;
 }
 
 export type BoostTemplate = {
