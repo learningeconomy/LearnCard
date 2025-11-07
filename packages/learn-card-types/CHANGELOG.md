@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.9.2
+
+### Patch Changes
+
+-   [#824](https://github.com/learningeconomy/LearnCard/pull/824) [`cb518c2f15b8257eb07fa2c606f52dd3304bc9ea`](https://github.com/learningeconomy/LearnCard/commit/cb518c2f15b8257eb07fa2c606f52dd3304bc9ea) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1310 - Add Evidence Support
+
 ## 5.9.1
 
 ### Patch Changes
