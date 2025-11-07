@@ -17,96 +17,72 @@ const BADGE_DEFINITIONS = [
     name: 'Teamwork Champion',
     icon: '🤝',
     color: '#3b82f6',
-    skill: 'Teamwork',
-    skillCategory: 'social',
     description: 'Demonstrated exceptional collaboration and supported party members in achieving shared goals.',
     narrative: 'Earn this boost by consistently demonstrating exceptional abilities in collaborating with others, supporting teammates, and significantly contributing to achieving shared goals in projects or group activities.',
-    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt',
-    subskills: ['communication', 'cooperation', 'roleUnderstanding', 'strategy', 'sportsmanship']
+    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt'
   },
   {
     id: 'leadership',
     name: 'Natural Leader',
     icon: '👑',
     color: '#ef4444',
-    skill: 'Leadership',
-    skillCategory: 'social',
     description: 'Took initiative, made difficult decisions, and guided the party through challenging situations.',
     narrative: 'Earn this boost by demonstrating strong leadership qualities, taking initiative in group settings, making difficult decisions under pressure, and effectively guiding others through challenging situations.',
-    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt',
-    subskills: ['decisionMaking', 'delegation', 'motivation', 'vision', 'accountability']
+    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt'
   },
   {
     id: 'creativity',
     name: 'Creative Thinker',
     icon: '🎨',
     color: '#a855f7',
-    skill: 'Creativity',
-    skillCategory: 'cognitive',
     description: 'Found innovative solutions to problems and brought imaginative ideas to the table.',
     narrative: 'Earn this boost by consistently thinking outside the box, proposing innovative solutions to complex problems, and bringing fresh, imaginative ideas that enhance group outcomes.',
-    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt',
-    subskills: ['innovation', 'imagination', 'flexibility', 'originality', 'experimentation']
+    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt'
   },
   {
     id: 'problemSolving',
     name: 'Puzzle Master',
     icon: '🧩',
     color: '#14b8a6',
-    skill: 'Problem Solving',
-    skillCategory: 'cognitive',
     description: 'Analyzed complex situations, identified patterns, and developed effective strategies.',
     narrative: 'Earn this boost by demonstrating exceptional analytical skills, identifying patterns in complex situations, and developing effective strategies to overcome challenges.',
-    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt',
-    subskills: ['analysis', 'criticalThinking', 'patternRecognition', 'strategy', 'resourcefulness']
+    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt'
   },
   {
     id: 'empathy',
     name: 'Empathetic Soul',
     icon: '💝',
     color: '#ec4899',
-    skill: 'Empathy',
-    skillCategory: 'emotional',
     description: 'Showed understanding and compassion for others\' perspectives and feelings.',
     narrative: 'Earn this boost by consistently demonstrating deep understanding and compassion for others\' perspectives, feelings, and experiences, creating a supportive and inclusive environment.',
-    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt',
-    subskills: ['compassion', 'activeListening', 'perspectiveTaking', 'emotionalIntelligence', 'support']
+    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt'
   },
   {
     id: 'communication',
     name: 'Eloquent Speaker',
     icon: '💬',
     color: '#f59e0b',
-    skill: 'Communication',
-    skillCategory: 'social',
     description: 'Communicated clearly, listened actively, and facilitated productive discussions.',
     narrative: 'Earn this boost by demonstrating clear and effective communication, active listening skills, and the ability to facilitate productive discussions that move groups forward.',
-    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt',
-    subskills: ['clarity', 'activeListening', 'articulation', 'facilitation', 'persuasion']
+    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt'
   },
   {
     id: 'courage',
     name: 'Brave Heart',
     icon: '🛡️',
     color: '#dc2626',
-    skill: 'Courage',
-    skillCategory: 'emotional',
     description: 'Faced fears, took calculated risks, and stood up for what\'s right.',
     narrative: 'Earn this boost by demonstrating bravery in the face of challenges, taking calculated risks when necessary, and standing up for principles and others even when difficult.',
-    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt',
-    subskills: ['bravery', 'resilience', 'integrity', 'riskTaking', 'advocacy']
+    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt'
   },
   {
     id: 'wisdom',
     name: 'Wise Sage',
     icon: '📜',
     color: '#6366f1',
-    skill: 'Wisdom',
-    skillCategory: 'cognitive',
     description: 'Applied knowledge thoughtfully, learned from experience, and shared insights with others.',
     narrative: 'Earn this boost by thoughtfully applying knowledge and experience, demonstrating sound judgment, learning from past situations, and generously sharing insights with others.',
-    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt',
-    subskills: ['judgment', 'reflection', 'knowledge', 'mentorship', 'discernment']
+    image: 'https://cdn.filestackcontent.com/resize=width:400,height:400,fit:crop/KCEJO5PlQSCtZOSytMgt'
   }
 ];
 
@@ -166,7 +142,7 @@ export const server = {
               const credential = createCredentialTemplate(badge, issuerDid);
               const boostUri = await learnCard.invoke.createBoost(credential, {
                 name: badge.name,
-                category: 'LoreCard Social-Emotional Badge',
+                category: 'Social Badge',
               });
 
               console.log(`Created boost for ${badge.name}: ${boostUri}`);
@@ -264,6 +240,31 @@ export const server = {
             };
         }
     }
+  }),
+  getBoostRecipients: defineAction({
+    input: z.object({
+      boostUri: z.string(),
+    }),
+    handler: async (input) => {
+      try {
+        const learnCard = await initLearnCard({ seed: issuerSeed, network: true });
+        await ensureLearnCardIssuerProfileExists(learnCard);
+
+        const recipients = await learnCard.invoke.getBoostRecipients(input.boostUri, 100);
+
+        return {
+          recipients,
+          success: true,
+        };
+      } catch (error) {
+        console.error('Error in getBoostRecipients:', error);
+        return {
+          recipients: [],
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    }
   })
 };
 
@@ -280,7 +281,7 @@ function createCredentialTemplate(badge: typeof BADGE_DEFINITIONS[0], issuerDid:
     attachments: [],
     credentialSubject: {
       achievement: {
-        achievementType: `ext:LCA_CUSTOM:Social Badge:${badge.skill}`,
+        achievementType: "ext:LCA_CUSTOM:Social Badge",
         criteria: {
           narrative: badge.narrative
         },
@@ -310,13 +311,6 @@ function createCredentialTemplate(badge: typeof BADGE_DEFINITIONS[0], issuerDid:
     image: badge.image,
     issuer: issuerDid,
     name: badge.name,
-    skills: [
-      {
-        category: badge.skillCategory,
-        skill: badge.skill.toLowerCase().replace(/\s+/g, ''),
-        subskills: badge.subskills
-      }
-    ],
     type: ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"]
   };
 }

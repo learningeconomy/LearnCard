@@ -267,6 +267,206 @@ const config = {
       letter-spacing: 1px;
     }
 
+    .badge-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .badge-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: 2px solid var(--badge-color, var(--gold));
+      background: white;
+      color: var(--ink);
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Cinzel', serif;
+    }
+
+    .badge-btn:hover {
+      background: var(--badge-color, var(--gold));
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .badge-btn.secondary {
+      border-color: #999;
+      font-size: 0.75rem;
+    }
+
+    .badge-btn.secondary:hover {
+      background: #666;
+      border-color: #666;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: var(--parchment);
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      border: 3px solid var(--gold);
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--dark-parchment);
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      color: var(--deep-red);
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      color: var(--ink);
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease;
+    }
+
+    .modal-close:hover {
+      transform: rotate(90deg);
+    }
+
+    .recipients-summary {
+      background: white;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      border-left: 4px solid var(--gold);
+      font-size: 0.95rem;
+      color: var(--ink);
+    }
+
+    .recipients-list {
+      max-height: 450px;
+      overflow-y: auto;
+    }
+
+    .recipients-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .recipients-list::-webkit-scrollbar-track {
+      background: #f0f0f0;
+      border-radius: 4px;
+    }
+
+    .recipients-list::-webkit-scrollbar-thumb {
+      background: var(--gold);
+      border-radius: 4px;
+    }
+
+    .recipient-item {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .recipient-item:hover {
+      border-color: var(--gold);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .recipient-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .recipient-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .recipient-info {
+      min-width: 0;
+    }
+
+    .recipient-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .recipient-id {
+      font-size: 0.85rem;
+      color: #666;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .loading-spinner {
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 1.5rem;
+    }
+
     .hidden {
       display: none;
     }
@@ -349,7 +549,10 @@ const config = {
               <div class="badge-icon">{badge.icon}</div>
               <div class="badge-name">{badge.name}</div>
               <div class="badge-description">{badge.description}</div>
-              <div class="badge-skill">Social-Emotional Skill: {badge.skill}</div>
+              <div class="badge-actions">
+                <button class="badge-btn award-btn" data-badge-uri={badge.uri}>Award Badge</button>
+                <button class="badge-btn secondary view-recipients-btn" data-badge-uri={badge.uri}>👥 Recipients</button>
+              </div>
             </div>
           ))}
         </div>
@@ -362,6 +565,19 @@ const config = {
         <p style="margin-top: 8px; font-size: 0.85rem;">
           Badges are issued as secure, portable verifiable credentials that players own forever.
         </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recipients Modal -->
+  <div id="recipients-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-badge-name">Recipients</h2>
+        <button class="modal-close" id="close-modal">&times;</button>
+      </div>
+      <div id="recipients-container">
+        <div class="loading-spinner">⏳</div>
       </div>
     </div>
   </div>
@@ -383,6 +599,10 @@ const config = {
     const statusText = document.getElementById('status-text');
     const badgeSection = document.getElementById('badge-section');
     const badgeGrid = document.getElementById('badge-grid');
+    const recipientsModal = document.getElementById('recipients-modal');
+    const modalBadgeName = document.getElementById('modal-badge-name');
+    const recipientsContainer = document.getElementById('recipients-container');
+    const closeModal = document.getElementById('close-modal');
 
     // Update status UI
     function updateStatus(message, type = 'info') {
@@ -515,16 +735,114 @@ const config = {
       }
     }
 
+    // View recipients for a badge
+    async function viewRecipients(badgeName, badgeUri) {
+      // Show modal with loading state
+      modalBadgeName.textContent = `Recipients: ${badgeName}`;
+      recipientsContainer.innerHTML = '<div class="loading-spinner">⏳ Loading recipients...</div>';
+      recipientsModal.classList.remove('hidden');
+
+      const identity = await learnCard.requestIdentity();
+      console.log('Game Master authenticated:', identity.user.did);
+      const gameMasterProfileId = identity?.user?.profile?.profileId;
+      if (!gameMasterProfileId) {
+        updateStatus('Failed to load recipients: Game Master profile ID not found.', 'error');
+        setTimeout(() => {
+          updateStatus('Welcome, Game Master! Select a badge to award to your players.', 'success');
+        }, 2000);
+        return;
+      }
+
+      try {
+        const { data, error } = await actions.getBoostRecipients({ boostUri: badgeUri });
+
+        if (error || !data?.success) {
+          recipientsContainer.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">⚠️</div>
+              <p>Error loading recipients: ${error?.message || 'Unknown error'}</p>
+            </div>
+          `;
+          return;
+        }
+
+        const recipients = data.recipients?.filter(recipient => recipient.from == gameMasterProfileId) || [];
+
+        if (recipients.length === 0) {
+          recipientsContainer.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📭</div>
+              <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">No recipients yet</p>
+              <p style="font-size: 0.9rem; color: #888;">This badge hasn't been awarded to anyone yet.<br>Award your first badge to see recipients here!</p>
+            </div>
+          `;
+        } else {
+          const recipientsList = recipients.map(recipient => {
+            const displayName = recipient.to.displayName || 'Unknown Player';
+            const profileId = recipient.to.profileId || '';
+            const didPreview = recipient.to.did ? `${recipient.to.did.substring(0, 30)}...` : 'No ID';
+            const avatar = recipient.to.image ? 
+              `<img src="${recipient.to.image}" alt="${displayName}">` :
+              '👤';
+            
+            return `
+              <div class="recipient-item">
+                <image style="width: 20px; height: 20px; border-radius: 50%; overflow: hidden;" src="${recipient.to.image}"></image>
+                ${displayName} • ${profileId ? '@' + profileId : didPreview}
+              </div>
+            `;
+          }).join('');
+
+          recipientsContainer.innerHTML = `
+            <div class="recipients-summary" style="margin-bottom: 16px;">
+              <strong>${recipients.length}</strong> ${recipients.length === 1 ? 'player has' : 'players have'} received this badge
+            </div>
+            <div class="recipients-list">
+              ${recipientsList}
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Error viewing recipients:', error);
+        recipientsContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <p>Error loading recipients: ${error.message || 'Unknown error'}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Close modal handlers
+    closeModal.addEventListener('click', () => {
+      recipientsModal.classList.add('hidden');
+    });
+
+    recipientsModal.addEventListener('click', (event) => {
+      if (event.target === recipientsModal) {
+        recipientsModal.classList.add('hidden');
+      }
+    });
+
     // Attach click handler to badge grid (event delegation)
     badgeGrid.addEventListener('click', (event) => {
+      const awardBtn = event.target.closest('.award-btn');
+      const viewRecipientsBtn = event.target.closest('.view-recipients-btn');
       const badgeCard = event.target.closest('.badge-card');
       
-      if (badgeCard) {
+      if (awardBtn && badgeCard) {
         const badgeName = badgeCard.querySelector('.badge-name')?.textContent;
         const badgeUri = badgeCard.dataset.badgeUri;
         
         if (badgeName && badgeUri) {
           awardBadge(badgeName, badgeUri);
+        }
+      } else if (viewRecipientsBtn && badgeCard) {
+        const badgeName = badgeCard.querySelector('.badge-name')?.textContent;
+        const badgeUri = badgeCard.dataset.badgeUri;
+        
+        if (badgeName && badgeUri) {
+          viewRecipients(badgeName, badgeUri);
         }
       }
     });
