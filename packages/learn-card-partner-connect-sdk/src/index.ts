@@ -109,7 +109,7 @@ export class PartnerConnect {
   }
 
   private isOriginNativeApp(origin: string): boolean {
-    return origin.startsWith('capacitor://') || origin.startsWith('ionic://') || origin.startsWith('https://localhost') || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.startsWith('http://192.168.1.164')
+    return origin.startsWith('capacitor://') || origin.startsWith('ionic://') || origin.startsWith('https://localhost') || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')
   }
 
   /**
