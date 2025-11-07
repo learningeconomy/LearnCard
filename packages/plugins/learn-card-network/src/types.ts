@@ -168,7 +168,12 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ profileId: string; challenge: string; expiresIn: number | null }>;
 
     listInvites: () => Promise<
-        { challenge: string; expiresIn: number | null; usesRemaining: number | null; maxUses: number | null }[]
+        {
+            challenge: string;
+            expiresIn: number | null;
+            usesRemaining: number | null;
+            maxUses: number | null;
+        }[]
     >;
 
     invalidateInvite: (challenge: string) => Promise<boolean>;
@@ -177,7 +182,12 @@ export type LearnCardNetworkPluginMethods = {
     unblockProfile: (profileId: string) => Promise<boolean>;
     getBlockedProfiles: () => Promise<LCNProfile[]>;
 
-    sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
+    sendCredential: (
+        profileId: string,
+        vc: UnsignedVC | VC,
+        metadataOrEncrypt?: Record<string, unknown> | boolean,
+        encrypt?: boolean
+    ) => Promise<string>;
     acceptCredential: (
         uri: string,
         options?: {
@@ -214,9 +224,7 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: { limit?: number; cursor?: string | null; query?: SkillFrameworkQuery }
     ) => Promise<PaginatedSkillFrameworksType>;
-    getSkillsAvailableForBoost: (
-        uri: string
-    ) => Promise<
+    getSkillsAvailableForBoost: (uri: string) => Promise<
         {
             framework: SkillFrameworkType;
             skills: Omit<SkillType, 'createdAt' | 'updatedAt'>[];
@@ -532,9 +540,7 @@ export type LearnCardNetworkPluginMethods = {
     createManagedSkillFrameworks: (
         input: CreateManagedSkillFrameworkBatchInput
     ) => Promise<SkillFrameworkType[]>;
-    createSkillFramework: (
-        input: LinkProviderFrameworkInputType
-    ) => Promise<SkillFrameworkType>;
+    createSkillFramework: (input: LinkProviderFrameworkInputType) => Promise<SkillFrameworkType>;
     listMySkillFrameworks: () => Promise<SkillFrameworkType[]>;
     getSkillFrameworkById: (
         id: string,
@@ -595,7 +601,13 @@ export type LearnCardNetworkPluginMethods = {
     countIntegrations: (options?: { query?: LCNIntegrationQueryType }) => Promise<number>;
     updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
     deleteIntegration: (id: string) => Promise<boolean>;
-    associateIntegrationWithSigningAuthority: (integrationId: string, endpoint: string, name: string, did: string, isPrimary?: boolean) => Promise<boolean>;
+    associateIntegrationWithSigningAuthority: (
+        integrationId: string,
+        endpoint: string,
+        name: string,
+        did: string,
+        isPrimary?: boolean
+    ) => Promise<boolean>;
 
     resolveFromLCN: (
         uri: string

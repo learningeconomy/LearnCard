@@ -7,7 +7,10 @@ import {
     createSentCredentialRelationship,
     setDefaultClaimedRole,
 } from '@accesslayer/credential/relationships/create';
-import { getCredentialSentToProfile, getCredentialReceivedByProfile } from '@accesslayer/credential/relationships/read';
+import {
+    getCredentialSentToProfile,
+    getCredentialReceivedByProfile,
+} from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
 import { ProfileType } from 'types/profile';
@@ -20,23 +23,35 @@ export const sendCredential = async (
     from: ProfileType,
     to: ProfileType,
     credential: VC | UnsignedVC | JWE,
-    domain: string
+    domain: string,
+    metadata?: Record<string, unknown> | undefined
 ): Promise<string> => {
     const credentialInstance = await storeCredential(credential);
 
-    await createSentCredentialRelationship(from, to, credentialInstance);
+    await createSentCredentialRelationship(from, to, credentialInstance, metadata);
 
     let uri = getCredentialUri(credentialInstance.id, domain);
+
+    const isEndorsement = metadata?.type === 'endorsement';
+
+    const notificationTitle = isEndorsement ? 'New Endorsement Received' : 'Credential Received';
+
+    const notificationBody = isEndorsement
+        ? `${from.displayName} has endorsed your credential`
+        : `${from.displayName} has sent you a credential`;
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
         to,
         from,
         message: {
-            title: 'Credential Received',
-            body: `${from.displayName} has sent you a credential`,
+            title: notificationTitle,
+            body: notificationBody,
         },
-        data: { vcUris: [uri] },
+        data: {
+            vcUris: [uri],
+            ...(metadata ? { metadata } : {}),
+        },
     });
 
     return uri;
@@ -74,7 +89,12 @@ export const acceptCredential = async (
         });
     }
 
-    await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
+    await createReceivedCredentialRelationship(
+        profile,
+        pendingVc.source,
+        pendingVc.target,
+        pendingVc.relationship.metadata
+    );
 
     await processClaimHooks(profile, pendingVc.target);
 

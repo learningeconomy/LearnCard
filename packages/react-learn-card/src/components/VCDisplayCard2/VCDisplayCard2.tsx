@@ -76,6 +76,8 @@ export type VCDisplayCard2Props = {
     hideGradientBackground?: boolean;
     formattedDisplayType?: string;
     customLinkedCredentialsComponent?: React.ReactNode;
+    customContentSlot?: React.ReactNode;
+    customBodyContentSlot?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -120,6 +122,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     hideGradientBackground = false,
     formattedDisplayType,
     customLinkedCredentialsComponent,
+    customContentSlot,
+    customBodyContentSlot,
 }) => {
     const {
         title = '',
@@ -211,6 +215,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 showDetailsBtn={showDetailsBtn}
                 formattedDisplayType={formattedDisplayType}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                customBodyContentSlot={customBodyContentSlot}
             />
         );
     }
@@ -241,6 +246,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 showDetailsBtn={showDetailsBtn}
                 formattedDisplayType={formattedDisplayType}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                customBodyContentSlot={customBodyContentSlot}
             />
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
@@ -377,6 +383,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     createdAt={createdAt ?? ''}
                                     imageUrl={imageUrl}
                                     knownDIDRegistry={knownDIDRegistry}
+                                    customBodyContentSlot={customBodyContentSlot}
                                 />
                             )}
                             {!isFront && (

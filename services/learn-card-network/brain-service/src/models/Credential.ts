@@ -7,12 +7,14 @@ import { Boost, BoostInstance } from './Boost';
 import { ConsentFlowTransaction, ConsentFlowTransactionInstance } from './ConsentFlowTransaction';
 import { CredentialType } from 'types/credential';
 
+type CredentialReceivedProps = { from: string; date: string } & Record<string, unknown>;
+
 export type CredentialRelationships = {
     credentialReceived: ModelRelatedNodesI<
         { createOne: (typeof Profile)['createOne'] },
         ProfileInstance,
-        { from: string; date: string },
-        { from: string; date: string }
+        CredentialReceivedProps,
+        CredentialReceivedProps
     >;
     instanceOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
     issuedViaTransaction: ModelRelatedNodesI<
