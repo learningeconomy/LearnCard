@@ -30,6 +30,7 @@ type VC2FrontFaceInfoProps = {
     customBodyCardComponent?: React.ReactNode;
     customThumbComponent?: React.ReactNode;
     knownDIDRegistry?: KnownDIDRegistryType;
+    customBodyContentSlot?: React.ReactNode;
 };
 
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
@@ -44,6 +45,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     imageUrl,
     customThumbComponent,
     knownDIDRegistry,
+    customBodyContentSlot,
 }) => {
     const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 20);
     const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
@@ -148,6 +150,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                             </div>
                         </>
                     )}
+
+                    {customBodyContentSlot && customBodyContentSlot}
                 </div>
             </section>
         </Flipped>

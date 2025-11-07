@@ -8,6 +8,7 @@ import {
     SentCredentialInfo,
     JWE,
     Boost,
+    BoostQuery,
     LCNSigningAuthorityForUserType,
     LCNBoostClaimLinkSigningAuthorityType,
     LCNBoostClaimLinkOptionsType,
@@ -29,7 +30,6 @@ import {
     ConsentFlowDataQuery,
     BoostRecipientInfo,
     BoostPermissions,
-    BoostQuery,
     LCNProfileQuery,
     LCNProfileManagerQuery,
     PaginatedLCNProfileManagers,
@@ -47,10 +47,43 @@ import {
     IssueInboxCredentialType,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
+    PaginatedSkillFrameworksType,
     ContactMethodQueryType,
     ContactMethodType,
     InboxCredentialQuery,
     IssueInboxCredentialResponseType,
+    // Shared Skills/Frameworks/Tags (non-flat)
+    TagType,
+    SkillFrameworkType,
+    SkillFrameworkQuery,
+    SkillType,
+    SkillQuery,
+    PaginatedSkillTree,
+    FrameworkWithSkills,
+    SyncFrameworkInput,
+    AddTagInput,
+    LinkProviderFrameworkInputType,
+    CreateManagedSkillFrameworkInput,
+    CreateManagedSkillFrameworkBatchInput,
+    UpdateSkillFrameworkInput,
+    CreateSkillInput,
+    CreateSkillsBatchInput,
+    UpdateSkillInput,
+    DeleteSkillInput,
+    ReplaceSkillFrameworkSkillsInput,
+    ReplaceSkillFrameworkSkillsResult,
+    CountSkillsInput,
+    CountSkillsResult,
+    GetFullSkillTreeInput,
+    GetFullSkillTreeResult,
+    GetSkillPathInput,
+    GetSkillPathResult,
+    // Integrations
+    LCNIntegration,
+    LCNIntegrationCreateType,
+    LCNIntegrationUpdateType,
+    LCNIntegrationQueryType,
+    PaginatedLCNIntegrationsType,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -135,7 +168,12 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ profileId: string; challenge: string; expiresIn: number | null }>;
 
     listInvites: () => Promise<
-        { challenge: string; expiresIn: number | null; usesRemaining: number | null; maxUses: number | null }[]
+        {
+            challenge: string;
+            expiresIn: number | null;
+            usesRemaining: number | null;
+            maxUses: number | null;
+        }[]
     >;
 
     invalidateInvite: (challenge: string) => Promise<boolean>;
@@ -144,7 +182,12 @@ export type LearnCardNetworkPluginMethods = {
     unblockProfile: (profileId: string) => Promise<boolean>;
     getBlockedProfiles: () => Promise<LCNProfile[]>;
 
-    sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
+    sendCredential: (
+        profileId: string,
+        vc: UnsignedVC | VC,
+        metadataOrEncrypt?: Record<string, unknown> | boolean,
+        encrypt?: boolean
+    ) => Promise<string>;
     acceptCredential: (
         uri: string,
         options?: {
@@ -165,14 +208,33 @@ export type LearnCardNetworkPluginMethods = {
 
     createBoost: (
         credential: VC | UnsignedVC,
-        metadata?: Partial<Omit<Boost, 'uri'>>
+        metadata?: Partial<Omit<Boost, 'uri'>> & {
+            skills?: { frameworkId: string; id: string }[];
+        }
     ) => Promise<string>;
     createChildBoost: (
         parentUri: string,
         credential: VC | UnsignedVC,
-        metadata?: Partial<Omit<Boost, 'uri'>>
+        metadata?: Partial<Omit<Boost, 'uri'>> & {
+            skills?: { frameworkId: string; id: string }[];
+        }
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
+    getBoostFrameworks: (
+        uri: string,
+        options?: { limit?: number; cursor?: string | null; query?: SkillFrameworkQuery }
+    ) => Promise<PaginatedSkillFrameworksType>;
+    getSkillsAvailableForBoost: (uri: string) => Promise<
+        {
+            framework: SkillFrameworkType;
+            skills: Omit<SkillType, 'createdAt' | 'updatedAt'>[];
+        }[]
+    >;
+    searchSkillsAvailableForBoost: (
+        uri: string,
+        query: SkillQuery,
+        options?: { limit?: number; cursor?: string | null }
+    ) => Promise<{ records: SkillType[]; hasMore: boolean; cursor: string | null }>;
     /** @deprecated Use getPaginatedBoosts */
     getBoosts: (query?: BoostQuery) => Promise<{ name?: string; uri: string }[]>;
     getPaginatedBoosts: (
@@ -275,6 +337,12 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,
         credential?: UnsignedVC | VC
+    ) => Promise<boolean>;
+    attachFrameworkToBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
+    detachFrameworkFromBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
+    alignBoostSkills: (
+        boostUri: string,
+        skills: { frameworkId: string; id: string }[]
     ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (
@@ -427,6 +495,12 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedInboxCredentialsType>;
 
     getInboxCredential: (id: string) => Promise<InboxCredentialType | null>;
+    finalizeInboxCredentials: () => Promise<{
+        processed: number;
+        claimed: number;
+        errors: number;
+        verifiableCredentials: VC[];
+    }>;
 
     // Guardian Approval
     sendGuardianApprovalEmail: (options: {
@@ -436,7 +510,6 @@ export type LearnCardNetworkPluginMethods = {
     }) => Promise<{ message: string; approvalUrl: string }>;
     approveGuardianRequest: (token: string) => Promise<{ message: string }>;
     approveGuardianRequestByPath: (token: string) => Promise<{ message: string }>;
-
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
@@ -446,7 +519,95 @@ export type LearnCardNetworkPluginMethods = {
     verifyContactMethod: (
         token: string
     ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
+    verifyContactMethodWithCredential: (
+        proofOfLoginJwt: string
+    ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
     removeContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
+
+    // Skills & Skill Frameworks
+    syncFrameworkSkills: (input: SyncFrameworkInput) => Promise<FrameworkWithSkills>;
+    listSkillTags: (frameworkId: string, skillId: string) => Promise<TagType[]>;
+    addSkillTag: (frameworkId: string, skillId: string, tag: AddTagInput) => Promise<TagType[]>;
+    removeSkillTag: (
+        frameworkId: string,
+        skillId: string,
+        slug: string
+    ) => Promise<{ success: boolean }>;
+
+    createManagedSkillFramework: (
+        input: CreateManagedSkillFrameworkInput
+    ) => Promise<SkillFrameworkType>;
+    createManagedSkillFrameworks: (
+        input: CreateManagedSkillFrameworkBatchInput
+    ) => Promise<SkillFrameworkType[]>;
+    createSkillFramework: (input: LinkProviderFrameworkInputType) => Promise<SkillFrameworkType>;
+    listMySkillFrameworks: () => Promise<SkillFrameworkType[]>;
+    getSkillFrameworkById: (
+        id: string,
+        options?: { limit?: number; childrenLimit?: number; cursor?: string | null }
+    ) => Promise<FrameworkWithSkills>;
+    getBoostsThatUseFramework: (
+        frameworkId: string,
+        options?: { limit?: number; cursor?: string | null; query?: BoostQuery }
+    ) => Promise<PaginatedBoostsType>;
+    countBoostsThatUseFramework: (
+        frameworkId: string,
+        options?: { query?: BoostQuery }
+    ) => Promise<{ count: number }>;
+    getFrameworkSkillTree: (
+        frameworkId: string,
+        options?: { rootsLimit?: number; childrenLimit?: number; cursor?: string | null }
+    ) => Promise<PaginatedSkillTree>;
+    getSkillChildren: (
+        frameworkId: string,
+        skillId: string,
+        options?: { limit?: number; cursor?: string | null }
+    ) => Promise<PaginatedSkillTree>;
+    searchFrameworkSkills: (
+        frameworkId: string,
+        query: SkillQuery,
+        options?: { limit?: number; cursor?: string | null }
+    ) => Promise<{ records: SkillType[]; hasMore: boolean; cursor: string | null }>;
+    updateSkillFramework: (input: UpdateSkillFrameworkInput) => Promise<SkillFrameworkType>;
+    deleteSkillFramework: (id: string) => Promise<{ success: boolean }>;
+    replaceSkillFrameworkSkills: (
+        input: ReplaceSkillFrameworkSkillsInput
+    ) => Promise<ReplaceSkillFrameworkSkillsResult>;
+    countSkills: (input: CountSkillsInput) => Promise<CountSkillsResult>;
+    getFullSkillTree: (input: GetFullSkillTreeInput) => Promise<GetFullSkillTreeResult>;
+    getSkillPath: (input: GetSkillPathInput) => Promise<GetSkillPathResult>;
+    getSkillFrameworkAdmins: (frameworkId: string) => Promise<LCNProfile[]>;
+    addSkillFrameworkAdmin: (
+        frameworkId: string,
+        profileId: string
+    ) => Promise<{ success: boolean }>;
+    removeSkillFrameworkAdmin: (
+        frameworkId: string,
+        profileId: string
+    ) => Promise<{ success: boolean }>;
+
+    getSkill: (frameworkId: string, skillId: string) => Promise<SkillType>;
+    createSkill: (input: CreateSkillInput) => Promise<SkillType>;
+    createSkills: (input: CreateSkillsBatchInput) => Promise<SkillType[]>;
+    updateSkill: (input: UpdateSkillInput) => Promise<SkillType>;
+    deleteSkill: (input: DeleteSkillInput) => Promise<{ success: boolean }>;
+
+    // Integrations
+    addIntegration: (integration: LCNIntegrationCreateType) => Promise<string>;
+    getIntegration: (id: string) => Promise<LCNIntegration | undefined>;
+    getIntegrations: (
+        options?: Partial<PaginationOptionsType> & { query?: LCNIntegrationQueryType }
+    ) => Promise<PaginatedLCNIntegrationsType>;
+    countIntegrations: (options?: { query?: LCNIntegrationQueryType }) => Promise<number>;
+    updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
+    deleteIntegration: (id: string) => Promise<boolean>;
+    associateIntegrationWithSigningAuthority: (
+        integrationId: string,
+        endpoint: string,
+        name: string,
+        did: string,
+        isPrimary?: boolean
+    ) => Promise<boolean>;
 
     resolveFromLCN: (
         uri: string

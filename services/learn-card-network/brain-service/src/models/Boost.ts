@@ -6,6 +6,8 @@ import { neogma } from '@instance';
 import { Profile, ProfileInstance } from './Profile';
 import { FlatBoostType, BoostStatus } from 'types/boost';
 import { Role, RoleInstance } from './Role';
+import { SkillFramework, SkillFrameworkInstance } from './SkillFramework';
+import { Skill, SkillInstance } from './Skill';
 
 export type BoostRelationships = {
     createdBy: ModelRelatedNodesI<
@@ -23,6 +25,13 @@ export type BoostRelationships = {
         Partial<BoostPermissions> & { roleId: string }
     >;
     claimRole: ModelRelatedNodesI<typeof Role, RoleInstance>;
+    usesFramework: ModelRelatedNodesI<
+        typeof SkillFramework,
+        SkillFrameworkInstance,
+        { createdAt: string },
+        { createdAt: string }
+    >;
+    alignedTo: ModelRelatedNodesI<typeof Skill, SkillInstance>;
 };
 
 export type BoostInstance = NeogmaInstance<FlatBoostType, BoostRelationships>;
@@ -103,6 +112,8 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                 },
             },
             claimRole: { model: Role, direction: 'out', name: 'CLAIM_ROLE' },
+            usesFramework: { model: SkillFramework, direction: 'out', name: 'USES_FRAMEWORK' },
+            alignedTo: { model: Skill, direction: 'out', name: 'ALIGNED_TO' },
         },
     },
     neogma

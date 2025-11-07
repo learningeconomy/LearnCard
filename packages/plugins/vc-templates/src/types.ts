@@ -81,6 +81,28 @@ export type AddressSpec = {
     };
 };
 
+export type Source = {
+    type: string[];
+    id?: string;
+    name?: string;
+    description?: string;
+    url?: string;
+    image?: string;
+    address?: {
+        type?: string[];
+        addressLocality?: string;
+        addressRegion?: string;
+        addressCountry?: string;
+    };
+};
+
+export type Alignment = {
+    type: string[];
+    targetName?: string; // https://purl.imsglobal.org/spec/vc/ob/vocab.html#targetName
+    targetType?: string; // https://purl.imsglobal.org/spec/vc/ob/vocab.html#targetType
+    targetFramework?: string; // https://purl.imsglobal.org/spec/vc/ob/vocab.html#targetFramework
+};
+
 export interface Evidence {
     id?: string;
     type: [string, ...string[]]; // Changed from string[] to ensure at least one element
@@ -118,6 +140,8 @@ export type BoostTemplate = {
     address?: AddressSpec;
     groupID?: string;
     evidence?: Evidence[];
+    alignment?: Alignment[];
+    source?: Source;
 };
 
 /** @group VC Templates Plugin */

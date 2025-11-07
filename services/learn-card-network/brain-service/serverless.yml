@@ -120,6 +120,7 @@ provider:
         SMART_RESUME_CLIENT_ID: ${env:SMART_RESUME_CLIENT_ID, ""}
         SMART_RESUME_ACCESS_KEY: ${env:SMART_RESUME_ACCESS_KEY, ""}
         SMART_RESUME_CONTRACT_URI: ${env:SMART_RESUME_CONTRACT_URI, ""}
+        LOGIN_PROVIDER_DID: ${env:LOGIN_PROVIDER_DID, ""}
     tracing:
         apiGateway: true
         lambda: true
@@ -172,6 +173,17 @@ functions:
         events:
             - httpApi: GET /docs
             - httpApi: GET /docs/{trpc+}
+
+    skillsViewer:
+        handler: lambda.skillsViewerHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /skills/{skillId}
+            - httpApi: GET /frameworks/{frameworkId}
 
 resources:
     Resources:

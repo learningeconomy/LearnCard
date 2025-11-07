@@ -46,3 +46,16 @@ export const removeAutoConnectRecipientRelationshipsForBoost = async (
         where: { source: { id: boost.id } },
     });
 };
+
+/** Remove a USES_FRAMEWORK relationship between a boost and a skill framework */
+export const removeBoostUsesFramework = async (
+    boost: BoostInstance,
+    frameworkId: string
+): Promise<boolean> => {
+    return Boolean(
+        await Boost.deleteRelationships({
+            alias: 'usesFramework',
+            where: { source: { id: boost.id }, target: { id: frameworkId } },
+        })
+    );
+};

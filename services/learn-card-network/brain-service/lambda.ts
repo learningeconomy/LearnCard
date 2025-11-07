@@ -13,6 +13,7 @@ import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-htt
 import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
+import skillsViewerApp from './src/skills-viewer';
 import { appRouter, createContext } from './src/app';
 import { sendNotification } from './src/helpers/notifications.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
@@ -30,6 +31,8 @@ Sentry.AWSLambda.init({
 });
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
+
+export const skillsViewerHandler = serverlessHttp(skillsViewerApp);
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,

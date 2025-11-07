@@ -4,7 +4,7 @@ import { getIdFromUri } from '@helpers/uri.helpers';
 import {
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
-    getMatchQueryWhere,
+    buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
 import { Boost, Profile, BoostInstance, ProfileManager } from '@models';
 import { BoostType } from 'types/boost';
@@ -37,9 +37,10 @@ export const getBoostsForProfile = async (
         query: matchQuery = {},
     }: { limit: number; cursor?: string; query?: BoostQuery }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
@@ -54,7 +55,7 @@ export const getBoostsForProfile = async (
                 { model: Profile },
             ],
         })
-        .where(getMatchQueryWhere('boost'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -79,9 +80,10 @@ export const countBoostsForProfile = async (
     profile: ProfileType,
     { query: matchQuery = {} }: { query?: BoostQuery }
 ): Promise<number> => {
-    const query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const query = new QueryBuilder(new BindParam({ ...queryParams }))
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
@@ -89,7 +91,7 @@ export const countBoostsForProfile = async (
                 { model: Profile, where: { profileId: profile.profileId } },
             ],
         })
-        .where(getMatchQueryWhere('boost'));
+        .where(whereClause);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -110,9 +112,10 @@ export const getChildrenBoosts = async (
         numberOfGenerations?: number;
     }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { model: Boost, where: { id: boost.id } },
@@ -130,7 +133,7 @@ export const getChildrenBoosts = async (
                 { model: Profile },
             ],
         })
-        .where(getMatchQueryWhere('boost'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -158,9 +161,10 @@ export const countBoostChildren = async (
         numberOfGenerations = 1,
     }: { query?: BoostQuery; numberOfGenerations?: number }
 ): Promise<number> => {
-    const query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const query = new QueryBuilder(new BindParam({ ...queryParams }))
         .match({
             related: [
                 { model: Boost, where: { id: boost.id } },
@@ -171,7 +175,7 @@ export const countBoostChildren = async (
                 { identifier: 'boost', model: Boost },
             ],
         })
-        .where(getMatchQueryWhere('boost'));
+        .where(whereClause);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -190,9 +194,10 @@ export const getSiblingBoosts = async (
         query?: BoostQuery;
     }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { model: Boost, where: { id: boost.id } },
@@ -209,7 +214,7 @@ export const getSiblingBoosts = async (
                 { model: Profile },
             ],
         })
-        .where(getMatchQueryWhere('boost'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -234,9 +239,10 @@ export const countBoostSiblings = async (
     boost: BoostInstance,
     { query: matchQuery = {} }: { query?: BoostQuery }
 ): Promise<number> => {
-    const query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const query = new QueryBuilder(new BindParam({ ...queryParams }))
         .match({
             related: [
                 { model: Boost, where: { id: boost.id } },
@@ -246,7 +252,7 @@ export const countBoostSiblings = async (
                 { identifier: 'boost', model: Boost },
             ],
         })
-        .where(getMatchQueryWhere('boost'));
+        .where(whereClause);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -279,9 +285,10 @@ export const getFamilialBoosts = async (
         );
     }
 
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({ model: Boost, where: { id: boost.id }, identifier: 'start' })
         .match({ model: Boost, identifier: 'boost' })
         .where(
@@ -295,7 +302,7 @@ export const getFamilialBoosts = async (
                 ? `*1..${Number.isFinite(childGenerations) ? childGenerations : ''}`
                 : ''
             }]->(boost) AND boost <> start)
-AND ${getMatchQueryWhere('boost')}`
+AND ${whereClause}`
         )
         .match({
             related: [
@@ -346,9 +353,10 @@ export const countFamilialBoosts = async (
         );
     }
 
-    const query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const query = new QueryBuilder(new BindParam({ ...queryParams }))
         .match({ model: Boost, where: { id: boost.id }, identifier: 'start' })
         .match({ model: Boost, identifier: 'boost' })
         .where(
@@ -362,7 +370,7 @@ export const countFamilialBoosts = async (
                 ? `*1..${Number.isFinite(childGenerations) ? childGenerations : ''}`
                 : ''
             }]->(boost) AND boost <> start)
-AND ${getMatchQueryWhere('boost')}`
+AND ${whereClause}`
         );
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
@@ -384,9 +392,10 @@ export const getParentBoosts = async (
         numberOfGenerations?: number;
     }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
@@ -404,7 +413,7 @@ export const getParentBoosts = async (
                 { model: Profile },
             ],
         })
-        .where(getMatchQueryWhere('boost'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -432,9 +441,10 @@ export const countBoostParents = async (
         numberOfGenerations = 1,
     }: { query?: BoostQuery; numberOfGenerations?: number }
 ): Promise<number> => {
-    const query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('boost', convertedQuery as any);
+    
+    const query = new QueryBuilder(new BindParam({ ...queryParams }))
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
@@ -445,7 +455,7 @@ export const countBoostParents = async (
                 { model: Boost, where: { id: boost.id } },
             ],
         })
-        .where(getMatchQueryWhere('boost'));
+        .where(whereClause);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -464,9 +474,10 @@ export const getChildrenProfileManagers = async (
         query?: LCNProfileManagerQuery;
     }
 ): Promise<Array<LCNProfileManager>> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('manager', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { identifier: 'manager', model: ProfileManager },
@@ -474,7 +485,7 @@ export const getChildrenProfileManagers = async (
                 { model: Boost, where: { id: boost.id } },
             ],
         })
-        .where(getMatchQueryWhere('manager'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND manager.created < $cursor') : _query;
 

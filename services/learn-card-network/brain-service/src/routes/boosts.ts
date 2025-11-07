@@ -13,8 +13,10 @@ import {
     PaginatedBoostsValidator,
     PaginationOptionsValidator,
     PaginatedLCNProfilesValidator,
+    PaginatedSkillFrameworksValidator,
     BoostPermissions,
     BoostQueryValidator,
+    SkillFrameworkQueryValidator,
     LCNProfileQueryValidator,
     LCNProfileManagerQueryValidator,
     PaginatedLCNProfileManagersValidator,
@@ -22,6 +24,7 @@ import {
     JWE,
     VC,
     PaginatedBoostRecipientsWithChildrenValidator,
+    SkillQueryValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 
@@ -59,6 +62,9 @@ import {
     canProfileEditBoost,
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
+    getFrameworkSkillsAvailableForBoost,
+    getFrameworksForBoostPaged,
+    searchSkillsAvailableForBoost,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -78,7 +84,13 @@ import {
     BoostType,
     BoostWithClaimPermissionsValidator,
 } from 'types/boost';
+import { SkillFrameworkValidator } from 'types/skill-framework';
+import { SkillValidator } from 'types/skill';
 import { deleteBoost } from '@accesslayer/boost/delete';
+import {
+    injectObv3AlignmentsIntoCredentialForBoost,
+    buildObv3AlignmentsForBoost,
+} from '@services/skills-provider/inject';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
@@ -92,10 +104,18 @@ import {
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
-import { setBoostAsParent, setProfileAsBoostAdmin } from '@accesslayer/boost/relationships/create';
+import {
+    setBoostAsParent,
+    setProfileAsBoostAdmin,
+    setBoostUsesFramework,
+    addAlignedSkillsToBoost,
+} from '@accesslayer/boost/relationships/create';
+import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
+import { neogma } from '@instance';
 import {
     removeBoostAsParent,
     removeProfileAsBoostAdmin,
+    removeBoostUsesFramework,
 } from '@accesslayer/boost/relationships/delete';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
@@ -105,6 +125,297 @@ import { addClaimPermissionsForBoost } from '@accesslayer/role/relationships/cre
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 
 export const boostsRouter = t.router({
+    getBoostAlignments: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/alignments',
+                tags: ['Boosts'],
+                summary: 'Get OBv3 alignments for a boost',
+                description:
+                    "Returns OBv3 alignment entries based on the boost's linked framework and aligned skills. Requires issue permission.",
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(
+            z
+                .object({
+                    targetCode: z.string().optional(),
+                    targetName: z.string().optional(),
+                    targetDescription: z.string().optional(),
+                    targetUrl: z.string().optional(),
+                    targetFramework: z.string().optional(),
+                })
+                .array()
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri } = input;
+
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await canProfileIssueBoost(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permissions to issue boost',
+                });
+            }
+
+            return buildObv3AlignmentsForBoost(boost, ctx.domain);
+        }),
+    attachFrameworkToBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/attach-framework',
+                tags: ['Boosts'],
+                summary: 'Attach framework to boost',
+                description:
+                    'Ensures a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(z.object({ boostUri: z.string(), frameworkId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, frameworkId } = input;
+
+            const boost = await getBoostByUri(boostUri);
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const framework = await getSkillFrameworkById(frameworkId);
+            if (!framework)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
+
+            await setBoostUsesFramework(boost, frameworkId);
+
+            return true;
+        }),
+    detachFrameworkFromBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/detach-framework',
+                tags: ['Boosts'],
+                summary: 'Detach framework from boost',
+                description:
+                    'Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(z.object({ boostUri: z.string(), frameworkId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, frameworkId } = input;
+
+            const boost = await getBoostByUri(boostUri);
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const framework = await getSkillFrameworkById(frameworkId);
+            if (!framework)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
+
+            return removeBoostUsesFramework(boost, frameworkId);
+        }),
+
+    alignBoostSkills: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/align-skills',
+                tags: ['Boosts'],
+                summary: 'Align skills to boost',
+                description:
+                    'Ensures ALIGNED_TO relationships from a boost to Skill nodes. Requires boost admin.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                boostUri: z.string(),
+                skills: z.array(z.object({ frameworkId: z.string(), id: z.string() })).min(1),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, skills } = input;
+
+            const boost = await getBoostByUri(boostUri);
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            // Verify all framework+id pairs exist
+            const verify = await neogma.queryRunner.run(
+                `UNWIND $refs AS sr
+                 MATCH (f:SkillFramework { id: sr.frameworkId })-[:CONTAINS]->(s:Skill { id: sr.id })
+                 RETURN collect({ frameworkId: f.id, id: s.id }) AS found`,
+                { refs: skills }
+            );
+            const foundPairs = (verify.records[0]?.get('found') as Array<{ frameworkId?: string; id?: string }>) || [];
+            const foundSet = new Set(foundPairs.map(p => `${p.frameworkId}:${p.id}`));
+            const missingPairs = skills.filter(sr => !foundSet.has(`${sr.frameworkId}:${sr.id}`));
+            if (missingPairs.length > 0) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: `Skill(s) not found: ${missingPairs
+                        .map(p => `${p.frameworkId}:${p.id}`)
+                        .join(', ')}`,
+                });
+            }
+
+            await addAlignedSkillsToBoost(boost, skills);
+
+            return true;
+        }),
+    getSkillsAvailableForBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/skills/available',
+                tags: ['Boosts'],
+                summary: 'List available skills for a boost',
+                description:
+                    'Returns skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(
+            z
+                .object({
+                    framework: SkillFrameworkValidator,
+                    skills: z.array(SkillValidator.omit({ createdAt: true, updatedAt: true })),
+                })
+                .array()
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const decodedUri = decodeURIComponent(input.uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const data = await getFrameworkSkillsAvailableForBoost(boost);
+
+            return data.map(({ framework, skills }) => ({
+                framework: {
+                    id: framework.id,
+                    name: framework.name,
+                    description: framework.description,
+                    sourceURI: framework.sourceURI,
+                    status: (framework.status as any) ?? 'active',
+                    createdAt: (framework as any).createdAt,
+                    updatedAt: (framework as any).updatedAt,
+                },
+                skills: skills.map(skill => ({
+                    id: skill.id,
+                    statement: skill.statement,
+                    description: skill.description ?? undefined,
+                    code: skill.code ?? undefined,
+                    type: skill.type ?? 'skill',
+                    status: (skill.status as any) ?? 'active',
+                })),
+            }));
+        }),
+
+    searchSkillsAvailableForBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/skills/search',
+                tags: ['Boosts'],
+                summary: 'Search available skills for a boost',
+                description:
+                    'Returns a flattened, paginated list of skills matching the search query. Supports $regex and $in operators. Searches skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: SkillQueryValidator,
+                limit: z.number().int().min(1).max(200).default(50),
+                cursor: z.string().nullable().optional(),
+            })
+        )
+        .output(
+            z.object({
+                records: z.array(SkillValidator.omit({ createdAt: true, updatedAt: true })),
+                hasMore: z.boolean(),
+                cursor: z.string().nullable(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri, query, limit, cursor } = input;
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const result = await searchSkillsAvailableForBoost(boost, query, limit, cursor ?? null);
+
+            return {
+                records: result.records.map(skill => ({
+                    id: skill.id,
+                    statement: skill.statement,
+                    description: skill.description ?? undefined,
+                    code: skill.code ?? undefined,
+                    type: skill.type ?? 'skill',
+                    status: (skill.status as any) ?? 'active',
+                    frameworkId: skill.frameworkId,
+                })),
+                hasMore: result.hasMore,
+                cursor: result.cursor,
+            };
+        }),
     sendBoost: profileRoute
         .meta({
             openapi: {
@@ -197,14 +508,22 @@ export const boostsRouter = t.router({
                 .extend({
                     credential: VCValidator.or(UnsignedVCValidator),
                     claimPermissions: BoostPermissionsValidator.partial().optional(),
+                    skills: z
+                        .array(z.object({ frameworkId: z.string(), id: z.string() }))
+                        .min(1)
+                        .optional(),
                 })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { credential, claimPermissions, ...metadata } = input;
+            const { credential, claimPermissions, skills, ...metadata } = input;
 
             const boost = await createBoost(credential, profile, metadata, ctx.domain);
+
+            if (Array.isArray(skills) && skills.length > 0) {
+                await addAlignedSkillsToBoost(boost, skills);
+            }
 
             if (claimPermissions) {
                 await addClaimPermissionsForBoost(boost, {
@@ -237,6 +556,7 @@ export const boostsRouter = t.router({
                         credential: VCValidator.or(UnsignedVCValidator),
                         claimPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
+                skills: z.array(z.object({ frameworkId: z.string(), id: z.string() })).min(1).optional(),
             })
         )
         .output(z.string())
@@ -245,6 +565,7 @@ export const boostsRouter = t.router({
             const {
                 parentUri,
                 boost: { credential, claimPermissions, ...metadata },
+                skills,
             } = input;
 
             const parentBoost = await getBoostByUri(parentUri);
@@ -268,6 +589,10 @@ export const boostsRouter = t.router({
             const childBoost = await createBoost(credential, profile, metadata, ctx.domain);
 
             await setBoostAsParent(parentBoost, childBoost);
+
+            if (Array.isArray(skills) && skills.length > 0) {
+                await addAlignedSkillsToBoost(childBoost, skills);
+            }
 
             if (claimPermissions) {
                 await addClaimPermissionsForBoost(childBoost, {
@@ -302,13 +627,85 @@ export const boostsRouter = t.router({
             const { uri } = input;
 
             const decodedUri = decodeURIComponent(uri);
-            const boost = await getBoostByUriWithDefaultClaimPermissions(decodedUri);
+            const [boost, boostInstance] = await Promise.all([
+                getBoostByUriWithDefaultClaimPermissions(decodedUri),
+                getBoostByUri(decodedUri),
+            ]);
+
+            if (!boost || !boostInstance)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const { id, boost: _boost, ...remaining } = boost;
+            const parsedBoost = JSON.parse(_boost);
+            await injectObv3AlignmentsIntoCredentialForBoost(
+                parsedBoost,
+                boostInstance,
+                ctx.domain
+            );
+
+            return { ...remaining, boost: parsedBoost, uri: getBoostUri(id, ctx.domain) };
+        }),
+
+    getBoostFrameworks: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/frameworks',
+                tags: ['Boosts'],
+                summary: 'List frameworks used by a boost (paginated)',
+                description:
+                    'Returns frameworks aligned to a boost via USES_FRAMEWORK with pagination and optional query filtering. Requires boost admin.',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                limit: z.number().int().min(1).max(200).default(50),
+                cursor: z.string().nullable().optional(),
+                query: SkillFrameworkQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedSkillFrameworksValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri, limit, cursor, query } = input;
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            const { id, boost: _boost, ...remaining } = boost;
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
 
-            return { ...remaining, boost: JSON.parse(_boost), uri: getBoostUri(id, ctx.domain) };
+            const page = await getFrameworksForBoostPaged(
+                boost,
+                query ?? null,
+                limit,
+                cursor ?? null
+            );
+
+            const response = {
+                records: page.records.map(framework => ({
+                    id: framework.id,
+                    name: framework.name,
+                    description: framework.description ?? undefined,
+                    sourceURI: framework.sourceURI ?? undefined,
+                    status: framework.status ?? 'active',
+                    createdAt: framework.createdAt,
+                    updatedAt: framework.updatedAt,
+                })),
+                hasMore: page.hasMore,
+            };
+
+            if (page.cursor) (response as any).cursor = page.cursor;
+
+            return response;
         }),
 
     getBoosts: profileRoute
@@ -1457,6 +1854,7 @@ export const boostsRouter = t.router({
                         if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
                             try {
                                 JSON.parse(value as string);
+                                // oxlint-disable-next-line no-unused-vars
                             } catch (error) {
                                 throw new TRPCError({
                                     code: 'BAD_REQUEST',
@@ -1546,6 +1944,7 @@ export const boostsRouter = t.router({
                         if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
                             try {
                                 JSON.parse(value as string);
+                                // oxlint-disable-next-line no-unused-vars
                             } catch (error) {
                                 throw new TRPCError({
                                     code: 'BAD_REQUEST',
@@ -1629,6 +2028,10 @@ export const boostsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { boostUri, challenge = uuid(), claimLinkSA, options = {} } = input ?? {};
+            const normalizedClaimLinkSA = {
+                ...claimLinkSA,
+                name: claimLinkSA.name.toLowerCase(),
+            };
 
             const boost = await getBoostByUri(boostUri);
 
@@ -1656,7 +2059,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            await setValidClaimLinkForBoost(boostUri, challenge, claimLinkSA, options);
+            await setValidClaimLinkForBoost(boostUri, challenge, normalizedClaimLinkSA, options);
 
             return { boostUri: boostUri, challenge };
         }),
@@ -1725,6 +2128,7 @@ export const boostsRouter = t.router({
                     console.error('Problem using useClaimLinkForBoost', e);
                 }
                 return sentBoostUri;
+                // oxlint-disable-next-line no-unused-vars
             } catch (e) {
                 console.error('Unable to issueClaimLinkBoost');
                 throw new TRPCError({
@@ -1879,6 +2283,10 @@ export const boostsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { profileId, boostUri, signingAuthority, options } = input;
+            const normalizedSigningAuthority = {
+                ...signingAuthority,
+                name: signingAuthority.name.toLowerCase(),
+            };
 
             const boost = await getBoostByUri(boostUri);
 
@@ -1928,6 +2336,8 @@ export const boostsRouter = t.router({
                     };
                 }
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
+                // Inject OBv3 skill alignments based on boost's framework/skills
+                await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, ctx.domain);
             } catch (e) {
                 console.error('Failed to parse boost', e);
                 throw new TRPCError({
@@ -1938,8 +2348,8 @@ export const boostsRouter = t.router({
 
             const sa = await getSigningAuthorityForUserByName(
                 profile,
-                signingAuthority.endpoint,
-                signingAuthority.name
+                normalizedSigningAuthority.endpoint,
+                normalizedSigningAuthority.name
             );
             if (!sa) {
                 throw new TRPCError({

@@ -120,6 +120,8 @@ export const VC_TEMPLATES: {
             skills,
             groupID = '',
             evidence = [],
+            alignment,
+            source,
         } = {},
         crypto
     ) => ({
@@ -147,7 +149,9 @@ export const VC_TEMPLATES: {
                 criteria: {
                     narrative: achievementNarrative,
                 },
+                ...(alignment && { alignment }),
             },
+            ...(source && { source }),
         },
         ...(Array.isArray(evidence) &&
             evidence.length > 0 && {
@@ -191,6 +195,8 @@ export const VC_TEMPLATES: {
             boostID,
             groupID = '',
             evidence = [],
+            alignment,
+            source,
         } = {},
         crypto
     ) => ({
@@ -219,8 +225,11 @@ export const VC_TEMPLATES: {
                 criteria: {
                     narrative: achievementNarrative,
                 },
+                ...(alignment && { alignment }),
             },
+            ...(source && { source }),
         },
+        ...(Array.isArray(evidence) && evidence.length > 0 && { evidence }),
         ...(address
             ? {
                   address: {

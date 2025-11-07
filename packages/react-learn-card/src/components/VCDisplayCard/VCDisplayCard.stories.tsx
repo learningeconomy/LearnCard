@@ -135,7 +135,7 @@ VCDisplayCardTest.args = {
         {
             check: 'proof',
             status: VerificationStatusEnum.Success,
-            message: 'Valid • Does Not Expire',
+            message: 'Does Not Expire',
         },
     ],
 };
