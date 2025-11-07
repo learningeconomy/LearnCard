@@ -1,5 +1,16 @@
 # @learncard/network-brain-service
 
+## 3.7.2
+
+### Patch Changes
+
+-   [#850](https://github.com/learningeconomy/LearnCard/pull/850) [`3c10bbf4677e783fb8080f5aea1370eb7459f088`](https://github.com/learningeconomy/LearnCard/commit/3c10bbf4677e783fb8080f5aea1370eb7459f088) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Improve auto-connect behavior and fix Cypher aggregation
+
+    -   Connect recipients across descendant boosts when a parent boost has `autoConnectRecipients` enabled.
+    -   Fix Cypher aggregation in write-time connection computation by splitting collection steps.
+    -   Store `CONNECTED_WITH` sources as `boost:<parentId>` so toggling `autoConnectRecipients` off removes only those edges.
+    -   Slightly more work at write-time to simplify and speed up read-time connections.
+
 ## 3.7.1
 
 ### Patch Changes
