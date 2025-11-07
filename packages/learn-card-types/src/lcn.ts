@@ -141,6 +141,7 @@ export const SentCredentialInfoValidator = z.object({
     from: z.string(),
     sent: z.string().datetime(),
     received: z.string().datetime().optional(),
+    metadata: z.record(z.unknown()).optional(),
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
@@ -688,13 +689,15 @@ export const LCNNotificationInboxValidator = z.object({
 
 export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>;
 
-export const LCNNotificationDataValidator = z.object({
-    vcUris: z.array(z.string()).optional(),
-    vpUris: z.array(z.string()).optional(),
-    transaction: ConsentFlowTransactionValidator.optional(),
-    inbox: LCNNotificationInboxValidator.optional(),
-});
-
+export const LCNNotificationDataValidator = z
+    .object({
+        vcUris: z.array(z.string()).optional(),
+        vpUris: z.array(z.string()).optional(),
+        transaction: ConsentFlowTransactionValidator.optional(),
+        inbox: LCNNotificationInboxValidator.optional(),
+        metadata: z.record(z.unknown()).optional(),
+    })
+    .passthrough();
 export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 
 export const LCNNotificationValidator = z.object({

@@ -36,7 +36,11 @@ export const getCredentialSentToProfile = async (
 
     if (!data) return undefined;
 
-    return { ...data, source: inflateObject(data.source.dataValues as any) };
+    return {
+        ...data,
+        source: inflateObject(data.source.dataValues as any),
+        relationship: inflateObject((data.relationship as any)?.dataValues ?? data.relationship),
+    };
 };
 
 export const getCredentialOwner = async (

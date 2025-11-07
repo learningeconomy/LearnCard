@@ -11,6 +11,12 @@ import { FlatProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
 import { LearnCardRolesEnum } from 'types/profile';
 
+type CredentialRelationshipProps = {
+    to: string;
+    date: string;
+    metadata?: Record<string, unknown>;
+} & Record<string, unknown>;
+
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     connectedWith: ModelRelatedNodesI<
@@ -24,8 +30,8 @@ export type ProfileRelationships = {
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
         CredentialInstance,
-        { to: string; date: string },
-        { to: string; date: string }
+        CredentialRelationshipProps,
+        CredentialRelationshipProps
     >;
     presentationSent: ModelRelatedNodesI<
         typeof Presentation,

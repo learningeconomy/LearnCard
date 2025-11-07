@@ -2,6 +2,8 @@ import { vi } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { testVc, sendCredential } from './helpers/send';
 import { Profile, Credential } from '@models';
+import * as Notifications from '@helpers/notifications.helpers';
+import { addNotificationToQueueSpy } from './helpers/spies';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -13,6 +15,10 @@ describe('Credentials', () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
         userC = await getUser('c'.repeat(64));
+
+        vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
+            addNotificationToQueueSpy
+        );
     });
 
     describe('sendCredential', () => {
@@ -21,6 +27,8 @@ describe('Credentials', () => {
             await Credential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            addNotificationToQueueSpy.mockReset();
         });
 
         afterAll(async () => {
@@ -61,6 +69,49 @@ describe('Credentials', () => {
                     credential: encryptedVc,
                 })
             ).resolves.not.toThrow();
+        });
+
+        it('should persist metadata on credential relationships', async () => {
+            const metadata = { some: 'value', nested: { answer: 42 } };
+
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+                metadata,
+            });
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri });
+
+            const received = await userB.clients.fullAuth.credential.receivedCredentials();
+
+            expect(received).toHaveLength(1);
+            expect(received[0]?.metadata).toEqual(metadata);
+
+            const sent = await userA.clients.fullAuth.credential.sentCredentials();
+
+            expect(sent).toHaveLength(1);
+            expect(sent[0]?.metadata).toEqual(metadata);
+
+            const incoming = await userB.clients.fullAuth.credential.incomingCredentials();
+            expect(incoming).toHaveLength(0);
+        });
+
+        it('should include metadata in credential notifications', async () => {
+            addNotificationToQueueSpy.mockResolvedValueOnce(undefined);
+
+            const metadata = { reason: 'test', values: { score: 99 } };
+
+            await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+                metadata,
+            });
+
+            expect(addNotificationToQueueSpy).toHaveBeenCalled();
+
+            const notificationCall = addNotificationToQueueSpy.mock.calls.pop();
+
+            expect(notificationCall?.[0]?.data?.metadata).toEqual(metadata);
         });
     });
 

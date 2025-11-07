@@ -1,5 +1,12 @@
 # @learncard/network-brain-client
 
+## 2.4.13
+
+### Patch Changes
+
+-   Updated dependencies [[`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2)]:
+    -   @learncard/network-brain-service@3.7.1
+
 ## 2.4.12
 
 ### Patch Changes
