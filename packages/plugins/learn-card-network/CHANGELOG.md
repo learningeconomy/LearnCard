@@ -1,5 +1,23 @@
 # learn-card-core
 
+## 2.7.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.14
+
+## 2.7.1
+
+### Patch Changes
+
+-   [#851](https://github.com/learningeconomy/LearnCard/pull/851) [`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2) Thanks [@gerardopar](https://github.com/gerardopar)! - Add arbitrary metadata support when sending credentials that gets plumbed through to the notification payload
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.13
+    -   @learncard/core@9.3.43
+    -   @learncard/helpers@1.1.31
+
 ## 2.7.0
 
 ### Minor Changes
