@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 2.7.4
+
+### Patch Changes
+
+-   [#855](https://github.com/learningeconomy/LearnCard/pull/855) [`6d2769d0a864cac2d664657a5d78f743641e67ec`](https://github.com/learningeconomy/LearnCard/commit/6d2769d0a864cac2d664657a5d78f743641e67ec) Thanks [@gerardopar](https://github.com/gerardopar)! - Add metadata support on acceptCredential
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.16
+
 ## 2.7.3
 
 ### Patch Changes
