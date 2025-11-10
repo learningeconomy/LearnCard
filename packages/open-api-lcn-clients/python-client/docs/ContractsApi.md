@@ -109,7 +109,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **contracts_consent_to_contract**
-> str contracts_consent_to_contract(contracts_consent_to_contract_request)
+> ContractsConsentToContract200Response contracts_consent_to_contract(contracts_consent_to_contract_request)
 
 Consent To Contract
 
@@ -121,6 +121,7 @@ Consents to a Contract with a hard set of terms
 
 ```python
 import openapi_client
+from openapi_client.models.contracts_consent_to_contract200_response import ContractsConsentToContract200Response
 from openapi_client.models.contracts_consent_to_contract_request import ContractsConsentToContractRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
@@ -167,7 +168,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-**str**
+[**ContractsConsentToContract200Response**](ContractsConsentToContract200Response.md)
 
 ### Authorization
 

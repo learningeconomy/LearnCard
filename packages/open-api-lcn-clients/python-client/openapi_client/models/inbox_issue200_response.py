@@ -37,8 +37,8 @@ class InboxIssue200Response(BaseModel):
     @field_validator('status')
     def status_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED']):
-            raise ValueError("must be one of enum values ('PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED')")
+        if value not in set(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']):
+            raise ValueError("must be one of enum values ('PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED')")
         return value
 
     model_config = ConfigDict(

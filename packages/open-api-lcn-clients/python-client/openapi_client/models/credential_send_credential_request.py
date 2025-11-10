@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.credential_send_credential_request_credential import CredentialSendCredentialRequestCredential
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,7 +28,8 @@ class CredentialSendCredentialRequest(BaseModel):
     CredentialSendCredentialRequest
     """ # noqa: E501
     credential: CredentialSendCredentialRequestCredential
-    __properties: ClassVar[List[str]] = ["credential"]
+    metadata: Optional[Dict[str, Any]] = None
+    __properties: ClassVar[List[str]] = ["credential", "metadata"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -84,7 +85,8 @@ class CredentialSendCredentialRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "credential": CredentialSendCredentialRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None
+            "credential": CredentialSendCredentialRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
+            "metadata": obj.get("metadata")
         })
         return _obj
 
