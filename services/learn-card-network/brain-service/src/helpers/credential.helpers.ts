@@ -64,7 +64,9 @@ export const sendCredential = async (
 export const acceptCredential = async (
     profile: ProfileType,
     uri: string,
-    options: { skipNotification?: boolean } = { skipNotification: false }
+    options: { skipNotification?: boolean; metadata?: Record<string, unknown> } = {
+        skipNotification: false,
+    }
 ): Promise<boolean> => {
     const { id, type } = getUriParts(uri);
 
@@ -113,7 +115,7 @@ export const acceptCredential = async (
                 title: 'Boost Accepted',
                 body: `${profile.displayName} has accepted your boost!`,
             },
-            data: { vcUris: [uri] },
+            data: { vcUris: [uri], ...(options?.metadata ? { metadata: options.metadata } : {}) },
         });
     }
 

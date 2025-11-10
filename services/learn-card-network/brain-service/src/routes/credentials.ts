@@ -80,6 +80,7 @@ export const credentialsRouter = t.router({
                 options: z
                     .object({
                         skipNotification: z.boolean().default(false).optional(),
+                        metadata: z.record(z.unknown()).optional(),
                     })
                     .optional(),
             })
