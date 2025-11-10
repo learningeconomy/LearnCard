@@ -19,6 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
+from openapi_client.models.boost_align_boost_skills_request_skills_inner import BoostAlignBoostSkillsRequestSkillsInner
 from openapi_client.models.boost_create_boost_request_claim_permissions import BoostCreateBoostRequestClaimPermissions
 from openapi_client.models.boost_create_boost_request_credential import BoostCreateBoostRequestCredential
 from typing import Optional, Set
@@ -37,7 +39,8 @@ class BoostCreateBoostRequest(BaseModel):
     allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     credential: BoostCreateBoostRequestCredential
     claim_permissions: Optional[BoostCreateBoostRequestClaimPermissions] = Field(default=None, alias="claimPermissions")
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "credential", "claimPermissions"]
+    skills: Optional[Annotated[List[BoostAlignBoostSkillsRequestSkillsInner], Field(min_length=1)]] = None
+    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "credential", "claimPermissions", "skills"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -94,6 +97,13 @@ class BoostCreateBoostRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of claim_permissions
         if self.claim_permissions:
             _dict['claimPermissions'] = self.claim_permissions.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in skills (list)
+        _items = []
+        if self.skills:
+            for _item_skills in self.skills:
+                if _item_skills:
+                    _items.append(_item_skills.to_dict())
+            _dict['skills'] = _items
         return _dict
 
     @classmethod
@@ -114,7 +124,8 @@ class BoostCreateBoostRequest(BaseModel):
             "meta": obj.get("meta"),
             "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
             "credential": BoostCreateBoostRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
-            "claimPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None
+            "claimPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
+            "skills": [BoostAlignBoostSkillsRequestSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None
         })
         return _obj
 

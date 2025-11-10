@@ -36,7 +36,7 @@ class TestBoostCreateChildBoostRequest(unittest.TestCase):
         if include_optional:
             return BoostCreateChildBoostRequest(
                 parent_uri = '',
-                boost = openapi_client.models.boost_create_boost_request.boost_createBoost_request(
+                boost = openapi_client.models.boost_create_child_boost_request_boost.boost_createChildBoost_request_boost(
                     name = '', 
                     type = '', 
                     category = '', 
@@ -59,12 +59,17 @@ class TestBoostCreateChildBoostRequest(unittest.TestCase):
                         can_revoke_children = '', 
                         can_manage_children_permissions = '', 
                         can_manage_children_profiles = True, 
-                        can_view_analytics = True, ), )
+                        can_view_analytics = True, ), ),
+                skills = [
+                    openapi_client.models.boost_align_boost_skills_request_skills_inner.boost_alignBoostSkills_request_skills_inner(
+                        framework_id = '', 
+                        id = '', )
+                    ]
             )
         else:
             return BoostCreateChildBoostRequest(
                 parent_uri = '',
-                boost = openapi_client.models.boost_create_boost_request.boost_createBoost_request(
+                boost = openapi_client.models.boost_create_child_boost_request_boost.boost_createChildBoost_request_boost(
                     name = '', 
                     type = '', 
                     category = '', 

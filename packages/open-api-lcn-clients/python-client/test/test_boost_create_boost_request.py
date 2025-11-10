@@ -57,7 +57,12 @@ class TestBoostCreateBoostRequest(unittest.TestCase):
                     can_revoke_children = '', 
                     can_manage_children_permissions = '', 
                     can_manage_children_profiles = True, 
-                    can_view_analytics = True, )
+                    can_view_analytics = True, ),
+                skills = [
+                    openapi_client.models.boost_align_boost_skills_request_skills_inner.boost_alignBoostSkills_request_skills_inner(
+                        framework_id = '', 
+                        id = '', )
+                    ]
             )
         else:
             return BoostCreateBoostRequest(

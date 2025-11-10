@@ -8,9 +8,11 @@ from openapi_client.api.contact_methods_api import ContactMethodsApi
 from openapi_client.api.contracts_api import ContractsApi
 from openapi_client.api.credentials_api import CredentialsApi
 from openapi_client.api.did_metadata_api import DIDMetadataApi
+from openapi_client.api.integrations_api import IntegrationsApi
 from openapi_client.api.presentations_api import PresentationsApi
 from openapi_client.api.profile_managers_api import ProfileManagersApi
 from openapi_client.api.profiles_api import ProfilesApi
+from openapi_client.api.skills_api import SkillsApi
 from openapi_client.api.storage_api import StorageApi
 from openapi_client.api.universal_inbox_api import UniversalInboxApi
 from openapi_client.api.utilities_api import UtilitiesApi
