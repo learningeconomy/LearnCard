@@ -119,7 +119,7 @@ export const VC_TEMPLATES: {
             familyTitles,
             skills,
             groupID = '',
-            evidence,
+            evidence = [],
             alignment,
             source,
         } = {},
@@ -128,7 +128,7 @@ export const VC_TEMPLATES: {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-            'https://ctx.learncard.com/boosts/1.0.2.json',
+            'https://ctx.learncard.com/boosts/1.0.3.json',
         ],
         type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
         id: `urn:uuid:${crypto.randomUUID()}`,
@@ -153,7 +153,19 @@ export const VC_TEMPLATES: {
             },
             ...(source && { source }),
         },
-        ...(Array.isArray(evidence) && evidence.length > 0 && { evidence }),
+        ...(Array.isArray(evidence) &&
+            evidence.length > 0 && {
+                evidence: evidence.map(e => ({
+                    ...e,
+                    type: e.type?.includes('EvidenceFile')
+                        ? e.type
+                        : [
+                              'Evidence',
+                              'EvidenceFile',
+                              ...(e.type?.filter(t => t !== 'Evidence') || []),
+                          ],
+                })),
+            }),
         display,
         familyTitles,
         image: boostImage,
@@ -182,7 +194,7 @@ export const VC_TEMPLATES: {
             familyTitles,
             boostID,
             groupID = '',
-            evidence,
+            evidence = [],
             alignment,
             source,
         } = {},
@@ -191,7 +203,7 @@ export const VC_TEMPLATES: {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-            'https://ctx.learncard.com/boosts/1.0.1.json',
+            'https://ctx.learncard.com/boosts/1.0.3.json',
             'https://ctx.learncard.com/boostIDs/1.0.0.json',
         ],
         type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential', 'BoostID'],
@@ -227,6 +239,19 @@ export const VC_TEMPLATES: {
                   },
               }
             : {}),
+        ...(Array.isArray(evidence) &&
+            evidence.length > 0 && {
+                evidence: evidence.map(e => ({
+                    ...e,
+                    type: e.type?.includes('EvidenceFile')
+                        ? e.type
+                        : [
+                              'Evidence',
+                              'EvidenceFile',
+                              ...(e.type?.filter(t => t !== 'Evidence') || []),
+                          ],
+                })),
+            }),
         display,
         familyTitles,
         image: boostImage,

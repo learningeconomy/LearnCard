@@ -192,6 +192,7 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: {
             skipNotification?: boolean;
+            metadata?: Record<string, unknown>;
         }
     ) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;

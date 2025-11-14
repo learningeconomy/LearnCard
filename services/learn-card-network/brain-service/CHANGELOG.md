@@ -1,5 +1,40 @@
 # @learncard/network-brain-service
 
+## 3.7.4
+
+### Patch Changes
+
+-   [#855](https://github.com/learningeconomy/LearnCard/pull/855) [`6d2769d0a864cac2d664657a5d78f743641e67ec`](https://github.com/learningeconomy/LearnCard/commit/6d2769d0a864cac2d664657a5d78f743641e67ec) Thanks [@gerardopar](https://github.com/gerardopar)! - Add metadata support on acceptCredential
+
+## 3.7.3
+
+### Patch Changes
+
+-   Updated dependencies [[`cb518c2f15b8257eb07fa2c606f52dd3304bc9ea`](https://github.com/learningeconomy/LearnCard/commit/cb518c2f15b8257eb07fa2c606f52dd3304bc9ea)]:
+    -   @learncard/types@5.9.2
+    -   @learncard/vc-templates-plugin@1.0.71
+    -   @learncard/core@9.3.44
+    -   @learncard/helpers@1.1.32
+    -   @learncard/did-web-plugin@1.0.81
+    -   @learncard/didkey-plugin@1.0.55
+    -   @learncard/didkit-plugin@1.5.37
+    -   @learncard/encryption-plugin@1.0.29
+    -   @learncard/learn-card-plugin@1.1.66
+    -   @learncard/vc-plugin@1.2.7
+    -   @learncard/expiration-plugin@1.1.68
+    -   @learncard/crypto-plugin@1.0.55
+
+## 3.7.2
+
+### Patch Changes
+
+-   [#850](https://github.com/learningeconomy/LearnCard/pull/850) [`3c10bbf4677e783fb8080f5aea1370eb7459f088`](https://github.com/learningeconomy/LearnCard/commit/3c10bbf4677e783fb8080f5aea1370eb7459f088) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Improve auto-connect behavior and fix Cypher aggregation
+
+    -   Connect recipients across descendant boosts when a parent boost has `autoConnectRecipients` enabled.
+    -   Fix Cypher aggregation in write-time connection computation by splitting collection steps.
+    -   Store `CONNECTED_WITH` sources as `boost:<parentId>` so toggling `autoConnectRecipients` off removes only those edges.
+    -   Slightly more work at write-time to simplify and speed up read-time connections.
+
 ## 3.7.1
 
 ### Patch Changes

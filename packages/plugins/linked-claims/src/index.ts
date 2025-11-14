@@ -69,7 +69,7 @@ export const getLinkedClaimsPlugin = (
                 },
                 ...(details.name ? { name: details.name } : { name: `Endorsement of ${targetId}` }),
                 ...(details.description ? { description: details.description } : {}),
-                ...(details.evidence && { evidence: details.evidence }),
+                ...(details.evidence && { evidence: details.evidence as any }),
             };
 
             return learnCard.invoke.issueCredential(unsigned);
@@ -126,13 +126,12 @@ export const getLinkedClaimsPlugin = (
             let indexed = false;
             let id =
                 (endorsement as any).id ||
-                `urn:uuid:${
-                    (globalThis as any).crypto?.randomUUID?.() ||
-                    (() => {
-                        throw new Error(
-                            'Secure random UUID generation is not available. Please use an environment that supports crypto.randomUUID().'
-                        );
-                    })()
+                `urn:uuid:${(globalThis as any).crypto?.randomUUID?.() ||
+                (() => {
+                    throw new Error(
+                        'Secure random UUID generation is not available. Please use an environment that supports crypto.randomUUID().'
+                    );
+                })()
                 }`;
 
             if (indexName) {
