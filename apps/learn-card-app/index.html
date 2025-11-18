@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>LearnCard</title>
+
+        <base href="/" />
+
+        <meta name="color-scheme" content="light dark" />
+        <meta
+            name="viewport"
+            content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="msapplication-tap-highlight" content="no" />
+
+        <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+
+        <link rel="shortcut icon" type="image/png" href="/assets/icon/favicon.png" />
+
+        <!-- add to homescreen for ios -->
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Ionic App" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+        <script type="module">
+            import { Buffer } from 'buffer';
+            import process from 'process';
+
+            window.Buffer = Buffer;
+            window.process = process;
+            window.global = globalThis;
+        </script>
+
+        <script
+            type="module"
+            src="https://cdn.jsdelivr.net/npm/jeep-sqlite@2.5.8/dist/jeep-sqlite/jeep-sqlite.esm.js"
+        ></script>
+
+        <script>
+            (function () {
+                var s = document.createElement('script');
+                var h = document.querySelector('head') || document.body;
+                s.src = 'https://acsbapp.com/apps/app/dist/js/app.js';
+                s.async = true;
+                s.onload = function () {
+                    acsbJS.init({
+                        statementLink: '',
+                        footerHtml: '',
+                        hideMobile: false,
+                        hideTrigger: false,
+                        disableBgProcess: false,
+                        language: 'en',
+                        position: 'left',
+                        leadColor: '#146ff8',
+                        triggerColor: '#146ff8',
+                        triggerRadius: '50%',
+                        triggerPositionX: 'right',
+                        triggerPositionY: 'bottom',
+                        triggerIcon: 'people',
+                        triggerSize: 'medium',
+                        triggerOffsetX: 20,
+                        triggerOffsetY: 20,
+                        mobile: {
+                            triggerSize: 'small',
+                            triggerPositionX: 'right',
+                            triggerPositionY: 'bottom',
+                            triggerOffsetX: 10,
+                            triggerOffsetY: 10,
+                            triggerRadius: '50%',
+                        },
+                    });
+                };
+                h.appendChild(s);
+            })();
+        </script>
+    </head>
+
+    <body>
+        <div id="root"></div>
+        <div id="modal-mid-root"></div>
+
+        <script type="module" src="/src/index"></script>
+    </body>
+</html>

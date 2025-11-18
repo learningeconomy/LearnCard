@@ -1,0 +1,147 @@
+@mixin MobileTextSmall {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 14px;
+    line-height: 17px;
+    // letter-spacing: 0.75px;
+}
+
+@mixin MobileTextMedium {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 17px;
+    line-height: 20px;
+    // letter-spacing: 0.75px;
+}
+
+@mixin MobileTextLarge {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 32px;
+    letter-spacing: 0.75px;
+}
+
+@mixin MobileDisplaySmall {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 24px;
+    line-height: 27px;
+}
+
+@mixin MobileText20 {
+    font-style: normal;
+    font-weight: normal;
+    font-size: 20px;
+    letter-spacing: normal;
+    line-height: normal;
+}
+
+@mixin MobileTextNormal {
+    font-size: 1em;
+}
+
+@mixin MobileDisplaySmallBold {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 32px;
+}
+
+@mixin MobileLinkXSmall {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 22px;
+}
+
+@mixin MobileLinkSmall {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 17px;
+}
+
+@mixin MobileLinkMedium {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 20px;
+}
+
+@mixin MobileLinkLarge {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 22px;
+    line-height: 24px;
+}
+
+@mixin MobileDisplayMedium {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 32px;
+    line-height: 36px;
+    text-align: center;
+}
+
+@mixin DesktopLinkXSmall {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: 0.75px;
+}
+
+@mixin DesktopLinkSmall {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 28px;
+    letter-spacing: 0.75px;
+    text-align: center;
+}
+
+@mixin DesktopTextSmall {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 16px;
+    line-height: 28px;
+    letter-spacing: 0.75px;
+}
+
+@mixin DesktopTextMedium {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 34px;
+    letter-spacing: 0.75px;
+    text-align: center;
+}
+
+@mixin DesktopDisplaySmall {
+    font-family: Poppins;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 32px;
+    line-height: 34px;
+    letter-spacing: 1px;
+}
+
+.small-600 {
+    font-size: 14px;
+    font-weight: 600;
+}

@@ -1,0 +1,256 @@
+services:
+    app:
+        build:
+            context: ../../
+            dockerfile: apps/scouts/Dockerfile.local
+        container_name: 'scouts-app'
+        expose:
+            - 3000
+        ports:
+            - '3000:3000'
+        depends_on:
+            - brain
+            - cloud
+            - api
+            - delete-service
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        environment:
+            LCN_URL: http://localhost:4000/trpc
+            LCN_API_URL: http://localhost:4000/api
+            CLOUD_URL: http://localhost:4100/trpc
+            API_URL: http://localhost:5100/trpc
+        volumes:
+            - ./src:/app/apps/scouts/src
+            - ../../packages/learn-card-base/src:/app/packages/learn-card-base/src
+
+    delete-service:
+        build: ../../services/playwright-delete-service
+        ports:
+            - '3100:3100'
+        depends_on:
+            - neo4j
+            - mongodb
+            - redis
+            - redis2
+            - redis3
+        extra_hosts:
+            - 'localhost:host-gateway'
+        networks:
+            - learn-card
+        volumes:
+            - ../../services/playwright-delete-service/index.js:/app/index.js
+        environment:
+            PORT: 3100
+            __DELETE_SERVICE__NEO4J_URI: bolt://neo4j:7687
+            __DELETE_SERVICE__NEO4J_USERNAME: neo4j
+            __DELETE_SERVICE__NEO4J_PASSWORD: this-is-the-password
+            __DELETE_SERVICE__MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
+            __DELETE_SERVICE__MONGO_DB_NAME1: learn-cloud
+            __DELETE_SERVICE__MONGO_DB_NAME2: lca-api
+            __DELETE_SERVICE__REDIS1_HOST: redis
+            __DELETE_SERVICE__REDIS1_PORT: 6379
+            __DELETE_SERVICE__REDIS2_HOST: redis2
+            __DELETE_SERVICE__REDIS2_PORT: 6379
+            __DELETE_SERVICE__REDIS3_HOST: redis3
+            __DELETE_SERVICE__REDIS3_PORT: 6379
+
+    brain:
+        image: welibrary/lcn-brain-service
+        build:
+            context: ../../
+            dockerfile: services/learn-card-network/brain-service/Dockerfile.local
+        container_name: 'lcn-brain-service'
+        expose:
+            - 4000
+        ports:
+            - '4000:4000'
+        depends_on:
+            neo4j:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            elasticmq:
+                condition: service_started
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        volumes:
+            - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
+        environment:
+            IS_OFFLINE: true
+            PORT: 4000
+            SEED: a
+            DOMAIN_NAME: 'localhost%3A4000'
+            NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
+            NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+            NEO4J_PASSWORD: ${NEO4J_PASSWORD:-this-is-the-password}
+            REDIS_HOST: ${REDIS_URL:-redis}
+            REDIS_PORT: ${REDIS_PORT:-6379}
+            AWS_REGION: ${AWS_REGION:-us-east-1}
+            AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-notARealKey}
+            AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-notARealSecretKey}
+            NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
+            NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
+
+    cloud:
+        image: welibrary/lcn-cloud-service
+        build:
+            context: ../../
+            dockerfile: services/learn-card-network/learn-cloud-service/Dockerfile.local
+        container_name: 'lcn-cloud-service'
+        expose:
+            - 4100
+        ports:
+            - '4100:4100'
+        depends_on:
+            - mongodb
+            - redis2
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        volumes:
+            - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
+        environment:
+            IS_OFFLINE: true
+            PORT: 4100
+            LEARN_CLOUD_SEED: b
+            LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
+            LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
+            REDIS_HOST: redis2
+            REDIS_PORT: 6379
+
+    api:
+        image: lca-api-service
+        build:
+            context: ../../
+            dockerfile: services/lca-api/Dockerfile.local
+        container_name: 'lcn-api-service'
+        expose:
+            - 5100
+        ports:
+            - '5100:5100'
+        depends_on:
+            - mongodb
+            - redis3
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        volumes:
+            - ../../services/lca-api/src:/app/services/lca-api/src
+        environment:
+            IS_OFFLINE: true
+            PORT: 5100
+            SEED: c
+            AUTHORIZED_DIDS: did:web:localhost%3A4000
+            MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
+            MONGO_DB_NAME: ${MONGO_DB_NAME:-lca-api}
+            REDIS_HOST: redis3
+            REDIS_PORT: 6379
+            METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
+
+    neo4j:
+        image: neo4j:latest
+        container_name: 'lcn-neo4j'
+        ports:
+            - '7687:7687'
+            - '7474:7474'
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1',
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+        environment:
+            NEO4J_AUTH: none
+        networks:
+            - learn-card
+
+    redis:
+        image: redis:alpine
+        container_name: 'lcn-redis'
+        environment:
+            - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+            - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+        ports:
+            - '6379:${REDIS_PORT:-6379}'
+        networks:
+            - learn-card
+
+    redis2:
+        image: redis:alpine
+        container_name: 'lcn-redis2'
+        environment:
+            - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+            - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+        ports:
+            - '6380:6379'
+        networks:
+            - learn-card
+
+    redis3:
+        image: redis:alpine
+        container_name: 'lcn-redis3'
+        environment:
+            - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+            - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+        ports:
+            - '6381:6379'
+        networks:
+            - learn-card
+
+    mongodb:
+        command:
+            [
+                '--replSet',
+                'rs0',
+                '--bind_ip_all',
+                '--port',
+                '27017',
+                '--quiet',
+                '--logpath',
+                '/var/log/mongodb/mongod.log',
+            ]
+        container_name: 'lcn-mongodb'
+        image: mongo:latest
+        expose:
+            - 27017
+        ports:
+            - 27017:27017
+        extra_hosts:
+            - 'localhost:host-gateway'
+        healthcheck:
+            test: >
+                mongosh --host localhost --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
+            interval: 5s
+            timeout: 30s
+            start_period: 0s
+            start_interval: 1s
+            retries: 30
+        networks:
+            - learn-card
+
+    elasticmq:
+        image: softwaremill/elasticmq-native
+        container_name: 'lcn-elasticmq'
+        depends_on:
+            - api
+        expose:
+            - 9324
+        ports:
+            - '9324:9324'
+        networks:
+            - learn-card
+
+networks:
+    learn-card:
+        driver: bridge

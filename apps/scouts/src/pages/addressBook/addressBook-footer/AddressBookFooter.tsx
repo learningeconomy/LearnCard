@@ -1,0 +1,137 @@
+import React, { useRef } from 'react';
+import { useHistory } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+
+import { IonFooter, IonToolbar, IonGrid, IonRow, IonCol, useIonModal } from '@ionic/react';
+
+import User from '../../../components/svgs/User';
+import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
+
+import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
+import BoostUserOptions from '../../../components/boost/boost-options/boostUserOptions/BoostUserOptions';
+import BoostSelectMenu from '../../../components/boost/boost-select-menu/BoostSelectMenu';
+import keyboardStore from 'learn-card-base/stores/keyboardStore';
+
+import { useIsCurrentUserLCNUser } from 'learn-card-base';
+import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
+import useBoostModal from '../../../components/boost/hooks/useBoostModal';
+import { BoostCategoryOptionsEnum } from '../../../components/boost/boost-options/boostOptions';
+
+export const AddressBookFooter: React.FC<{
+    showSearch?: boolean;
+    handleShowSearch?: () => void;
+}> = ({ showSearch, handleShowSearch }) => {
+    const history = useHistory();
+    const bottomBarRef = useRef<HTMLDivElement>();
+
+    const { handlePresentBoostModal } = useBoostModal(
+        history,
+        BoostCategoryOptionsEnum.socialBadge
+    );
+
+    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+
+    keyboardStore.store.subscribe(({ isOpen }) => {
+        if (isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
+            bottomBarRef.current.className = `hidden`;
+        }
+        if (!isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
+            bottomBarRef.current.className = `flex`;
+        }
+    });
+
+    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookContactOptions, {
+        handleCloseModal: () => dismissCenterModal(),
+        showSearch,
+        handleShowSearch,
+    });
+
+    const [presentBoostOptionsCenterModal, dismissBoostOptionsCenterModal] = useIonModal(
+        BoostSelectMenu,
+        {
+            handleCloseModal: () => dismissBoostOptionsCenterModal(),
+            showCloseButton: true,
+            title: (
+                <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
+                    Who do you want to send to?
+                </p>
+            ),
+            history: history,
+        }
+    );
+
+    const [presentBoostOptionsSheetModal, dismissBoostOptionsSheetModal] = useIonModal(
+        BoostSelectMenu,
+        {
+            handleCloseModal: () => dismissBoostOptionsSheetModal(),
+            showCloseButton: false,
+            title: (
+                <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
+                    Who do you want to send to?
+                </p>
+            ),
+            history: history,
+        }
+    );
+
+    return (
+        <IonFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
+            <IonToolbar className="ion-no-border" color="light">
+                <IonGrid className="bg-white">
+                    <IonRow className="w-full mt-4 flex items-center justify-center">
+                        <IonCol className="flex items-center justify-between max-w-[600px]">
+                            <button
+                                onClick={() => {
+                                    if (!currentLCNUser && !currentLCNUserLoading) {
+                                        handlePresentJoinNetworkModal();
+                                        return;
+                                    }
+                                    if (currentLCNUser) {
+                                        presentCenterModal({
+                                            cssClass:
+                                                'generic-modal show-modal ion-disable-focus-trap',
+                                            backdropDismiss: true,
+                                            showBackdrop: false,
+                                        });
+                                    }
+                                }}
+                                className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-1/2 shadow-lg font-medium"
+                            >
+                                <User className="ml-[5px] h-[30px] w-[30px] mr-2" /> Connect
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!currentLCNUser && !currentLCNUserLoading) {
+                                        handlePresentJoinNetworkModal();
+                                        return;
+                                    }
+
+                                    handlePresentBoostModal();
+                                }}
+                                className="modal-btn-desktop flex items-center justify-center bg-sp-purple-base rounded-full font-medium px-[18px] py-[12px] text-white text-2xl w-1/2 ml-3 shadow-lg"
+                            >
+                                <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Send
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!currentLCNUser && !currentLCNUserLoading) {
+                                        handlePresentJoinNetworkModal();
+                                        return;
+                                    }
+
+                                    handlePresentBoostModal();
+                                }}
+                                className="modal-btn-mobile flex items-center justify-center bg-sp-purple-base rounded-full px-[18px] py-[12px] text-white text-2xl font-medium w-1/2 ml-3 shadow-lg"
+                            >
+                                <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Send
+                            </button>
+                        </IonCol>
+                    </IonRow>
+                </IonGrid>
+            </IonToolbar>
+        </IonFooter>
+    );
+};
+
+export default AddressBookFooter;

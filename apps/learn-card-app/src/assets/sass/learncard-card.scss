@@ -1,0 +1,370 @@
+.ios .learn-card-bubble-underlay {
+  border-top-left-radius: 120px;
+  border-top-right-radius: 120px;
+  height: 75%;
+  width: 100%;
+}
+
+.md .learn-card-bubble-underlay {
+  border-top-left-radius: 120px;
+  border-top-right-radius: 120px;
+  height: 75%;
+  width: 100%;
+}
+
+.learn-card-front-face {
+  background-color: #fff;
+
+  &>.credit-card-front-face {
+    &>div {
+      &>.credit-card-qr-code-container {
+        &>.qr-code-container {
+          &>svg {
+            max-width: 128px;
+            max-height: 128px;
+          }
+        }
+      }
+    }
+  }
+
+  &.preview-card {
+    position: relative;
+
+    .opaque-pane {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+
+      background: linear-gradient(214.64deg, rgba(251, 251, 252, 0.9) 26.11%, rgba(231, 249, 253, 0.64) 60.05%, rgba(231, 249, 253, 0.6) 80.81%);
+      backdrop-filter: blur(2px);
+      margin: 8px;
+      padding: 36px 25px;
+      border-radius: 20px;
+
+      text-align: center;
+      color: #18224E;
+      font-weight: 700;
+
+      &>.preview-main-text {
+        font-size: 25px;
+        line-height: 120%;
+        margin-bottom: 10px;
+      }
+
+      &>.preview-sub-text {
+        font-size: 18px;
+        width: 252px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+    }
+
+    .credit-card-bubble {
+      background-color: rgb(65 206 242 / var(--tw-bg-opacity));
+    }
+
+    .learn-card-mastercard-logo {
+      display: none;
+    }
+  }
+}
+
+
+.learn-card-balance-big {
+  font-size: 36px;
+
+  @media (max-width: 479px) {
+    font-size: 48px;
+  }
+}
+
+.learn-card-balance-small {
+  font-size: 24px;
+
+  @media (max-width: 479px) {
+    font-size: 30px;
+  }
+}
+
+.qr-code-user-card-content {
+  --background: rgb(255, 255, 255, 0.7)
+}
+
+.qr-code-user-card-toolbar {
+  background-color: rgb(255, 255, 255, 0.7);
+  --background: rgb(255, 255, 255, 0.7) --border-color: #ffffff;
+}
+
+.full-opacity {
+  opacity: 1 !important;
+}
+
+
+.ion-toast-bottom-nav-offset {
+  transform: translateY(-115px);
+}
+
+.toast-custom-class {
+  --color: #ffffff;
+  --border-color: #18224E;
+  --border-radius: 20px;
+  --border-style: solid;
+  --border-width: 3px;
+  --background: #18224E;
+  --button-color: #ffffff;
+}
+
+.vc-list-btn {
+  --color: #ffffff;
+  --border-color: #18224E;
+  --border-radius: 20px;
+  --border-style: solid;
+  --border-width: 0px;
+  --background: #18224E !important;
+  --ion-color-base: #18224E !important;
+  --button-color: #ffffff;
+  --background-hover: #5364b0;
+}
+
+.vc-template-creator {
+  width: 100%;
+  max-width: 600px;
+  margin: auto;
+}
+
+ion-button {
+  span {
+    text-align: left;
+    justify-content: flex-start;
+  }
+}
+
+.credential-details-container {
+  .vc-verification-full-wrapper {
+    display: none;
+  }
+
+  .credential-details-info {
+    min-height: 280px;
+  }
+
+  .checklist-container {
+    max-height: 190px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+}
+
+.card-slider {
+  .swiper-wrapper {
+    padding: 10px;
+  }
+
+  .swiper-slide {
+    width: 190px !important;
+  }
+}
+
+.round-bottom-shadow-btn {
+  background: #ffffff;
+  box-shadow: 0px 4px 0px rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+}
+
+.vc-display-card {
+  width: 100%;
+  margin: auto;
+  max-width: 400px;
+}
+
+.certificate-display-zoom, .boost-preview-display {
+  zoom: 140%;
+
+  @media (max-width: 479px) {
+    zoom: 94%;
+  }
+}
+
+.vc-card-back-button {
+  font-family: 'Poppins';
+}
+
+.vc-back-face {
+  &>div {
+    &>h3 {
+      font-family: 'Poppins';
+      font-size: 22px;
+    }
+  }
+}
+
+.vc-toggle-side-button {
+  font-family: 'Poppins';
+  background-color: #18224E;
+
+  &>span {
+    font-family: 'Poppins';
+  }
+}
+
+.vc-issue-info-box {
+  h3 {
+    font-family: 'Poppins';
+    font-size: 17px;
+    font-weight: 600;
+  }
+}
+
+.description-box,
+.criteria-box,
+.media-attachments-box,
+.verifications-box,
+.vc-back-face {
+  h2 {
+    font-family: 'Poppins';
+    font-size: 20px !important;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-family: 'Poppins';
+    font-size: 17px !important;
+    font-weight: 600;
+  }
+}
+
+.vc-card-header-main-title span {
+  font-family: 'Poppins';
+  font-size: 28px;
+  font-weight: 600;
+}
+
+
+.small-boost-title {
+  padding: 0px 5px;
+}
+
+.vc-card-background-hider {
+  display: none;
+}
+
+
+
+.boost-confirmation-alert {
+  .alert-wrapper {
+    border-radius: 15px;
+  }
+
+  .alert-title {
+    font-size: 16px;
+    line-height: 150%;
+  }
+}
+
+.boost-small-card {
+  .check-btn-overlay {
+    z-index: 99 !important;
+  }
+}
+
+.notification-cred-badge-ribbon {
+  transform: scale(0.6);
+  left: 25%;
+  bottom: -20px;
+}
+
+.notifications-list-container {
+  display: flex;
+  justify-content: center;
+}
+
+.alert-indicator-dot {
+  position: absolute;
+  inset: 0% auto auto 0%;
+  z-index: 4;
+  display: flex;
+  height: 20px;
+  min-width: 20px;
+  margin-top: -3px;
+  margin-bottom: -3px;
+  margin-left: 17px;
+  padding-top: 1px;
+  padding-right: 5px;
+  padding-left: 5px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  background-color: #ff0047;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.notification-count-mobile.alert-indicator-dot {
+  inset: 0% 0% auto 52%;
+  width: 20px;
+  height: 20px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  margin-left: 0px;
+}
+
+.alert-indicator-dot.hidden {
+  background-color: #ffffff;
+  display: none;
+}
+
+.unread-indicator-dot {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  height: 10px;
+  min-width: 10px;
+  top: 2px;
+  left: 0px;
+  margin-top: 10px;
+  margin-bottom: -3px;
+  margin-left: 10px;
+  padding-top: 1px;
+  padding-right: 5px;
+  padding-left: 5px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  background-color: #F43F5E;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+
+/* HTML: <div class="loader"></div> */
+.loader {
+  width: fit-content;
+  font-weight: bold;
+  font-size: 16px;
+  padding-bottom: 8px;
+  background: linear-gradient(currentColor 0 0) 0 100%/0% 3px no-repeat;
+  animation: l2 2s linear infinite;
+}
+
+.loader:before {
+  content: "Loading..."
+}
+
+@keyframes l2 {
+  to {
+    background-size: 100% 3px
+  }
+}
+
+.safe-area-bottom-padding {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 70px);
+}
+

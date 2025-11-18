@@ -1,0 +1,19 @@
+{
+    "name": "@shared/delete-service",
+    "type": "module",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "nodemon index.js"
+    },
+    "dependencies": {
+        "fastify": "^5.0.0",
+        "ioredis": "^5.2.2",
+        "mongodb": "^6.2.0",
+        "neo4j-driver": "^4.4.5"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.7"
+    }
+}

@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jacques+Francois&display=swap');
+
+* {
+    font-family: 'Rubik', 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
+        'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+
+body.scanner-active > * {
+    display: none;
+}
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import './assets/sass/modals.scss';
+@import './assets/sass/header.scss';
+@import './assets/sass/notification.scss';
+@import './assets/sass/nav.scss';
+@import './assets/sass/learncard-card.scss';
+@import './assets/sass/learncard-page.scss';
+@import './assets/sass/wallet-page.scss';
+@import './assets/sass//login.scss';
+@import './assets/sass/sidemenu.scss';
+@import './assets/sass/credential-storage.scss';
+@import './assets/sass/delete-user-prompt.scss';
+@import './assets//sass/user-profle.scss';
+@import './assets/sass/boost-cms.scss';
+@import './assets/sass/launchpad.scss';
+@import './assets/sass/intro-slides.scss';
+@import './assets/sass/qr-code-scanner.scss';
+@import './assets/sass//idPage.scss';
+@import './assets/sass/share-page.scss';
+@import './assets/sass/credentialPage.scss';
+@import '../../../packages/learn-card-base/src/assets/styles/modal.scss';
+@import './assets/sass/troops-cms.scss';

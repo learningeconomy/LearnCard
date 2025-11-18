@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
+
+import { useModal } from 'learn-card-base';
+import { IonPage, IonContent, IonToast } from '@ionic/react';
+
+import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
+import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
+
+interface EmbedIframeModalProps {
+    embedUrl: string;
+    appId?: string | number;
+    appName?: string;
+}
+
+export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
+    embedUrl,
+    appId,
+    appName = 'Partner App',
+}) => {
+    const { closeModal } = useModal();
+    const history = useHistory();
+    const [showErrorToast, setShowErrorToast] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
+    const handleFullScreen = () => {
+        // Close the modal first
+        closeModal();
+        
+        // Navigate to the full-screen route with state
+        history.push(`/apps/${appId || 'preview'}`, {
+            embedUrl,
+            appName,
+        });
+    };
+
+    // Extract origin from embedUrl for security
+    const embedOrigin = React.useMemo(() => {
+        try {
+            const url = new URL(embedUrl);
+            return url.origin;
+        } catch (error) {
+            console.error('[PostMessage] Invalid embedUrl:', embedUrl);
+            setErrorMessage(`Invalid embed URL: ${embedUrl}`);
+            setShowErrorToast(true);
+            return '';
+        }
+    }, [embedUrl]);
+
+    // Use shared handlers
+    const handlers = useLearnCardMessageHandlers({
+        embedOrigin,
+        onNavigate: closeModal,
+    });
+
+    // Initialize the PostMessage listener with trusted origins
+    useLearnCardPostMessage({
+        trustedOrigins: embedOrigin ? [embedOrigin] : [],
+        handlers,
+        debug: true, // Enable detailed logging
+    });
+
+    return (
+        <IonPage className="h-full w-full">
+            <IonContent fullscreen>
+                <div className="w-full h-full flex flex-col">
+                    <div className="flex items-center justify-between p-4 bg-white border-b">
+                        <h2 className="text-xl font-semibold">{appName}</h2>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleFullScreen}
+                                className="px-4 py-2 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium flex items-center gap-2"
+                                title="Open in full screen"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                                    />
+                                </svg>
+                                Full Screen
+                            </button>
+                            <button
+                                onClick={closeModal}
+                                className="px-4 py-2 rounded-full bg-gray-200 hover:bg-gray-300 font-medium"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                    <iframe
+                        src={embedUrl}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            border: 'none',
+                            flex: 1,
+                        }}
+                        title={`${appName} - Modal View`}
+                    />
+                </div>
+            </IonContent>
+            <IonToast
+                isOpen={showErrorToast}
+                onDidDismiss={() => setShowErrorToast(false)}
+                message={errorMessage}
+                duration={5000}
+                position="bottom"
+                color="danger"
+            />
+        </IonPage>
+    );
+};
+
+export default EmbedIframeModal;

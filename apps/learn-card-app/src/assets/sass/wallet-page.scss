@@ -1,0 +1,227 @@
+.wallet-squares-wrapper {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.wallet-squares-container {
+    max-width: 1000px;
+    margin: 0 auto; /* centers the grid container */
+    justify-content: center; /* centers the grid tracks if there's space */
+
+    padding-bottom: 40px !important;
+
+    &.grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); // 3 columns for desktop
+        gap: 20px;
+    }
+
+    &.list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 0;
+    }
+
+    @media (max-width: 586px) {
+        &.grid {
+            grid-template-columns: repeat(2, 1fr); // 2 columns for mobile
+        }
+    }
+
+    & > button {
+        h3 {
+            text-align: left;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        & > div {
+            & > div {
+                & > img {
+                    width: 180px;
+
+                    @media (max-width: 479px) {
+                        max-width: 100px;
+                        max-height: 100px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.flippy-wrapper-container {
+    display: flex;
+    width: 100%;
+    margin-top: 15px;
+    justify-content: center;
+    .credential-details-container {
+        width: 100%;
+    }
+}
+
+.vc-card-issued-to-info {
+    text-overflow: ellipsis;
+    max-width: 295px;
+    p {
+        font-size: 11px !important;
+    }
+}
+
+.achievements-list-container {
+    justify-content: center;
+
+    @media (max-width: 479px) {
+        justify-content: center;
+    }
+
+    .achievement-card-date {
+        display: none;
+    }
+    & > button {
+        max-height: 190px;
+        display: flex;
+        background-color: white;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        width: 40%;
+
+        @media (max-width: 479px) {
+            width: 45%;
+        }
+    }
+}
+
+.credential-thumb-img {
+    height: 100%;
+    .flex.flex-row.w-full.line-clamp-2 {
+        display: flex;
+        flex-direction: column !important;
+    }
+}
+
+.flippy-wrapper-container {
+    padding: 0px 18px;
+}
+
+.achievements-page {
+    --ion-background-color: #f97316;
+}
+
+.accomplishments-page {
+    --ion-background-color: #84cc16;
+}
+
+.accommodations-page {
+    --ion-background-color: #d97706;
+}
+
+.job-history-page {
+    --ion-background-color: #2563eb;
+}
+
+.wallet-ids-page {
+    --ion-background-color: #facc15;
+}
+
+.learning-history-page {
+    --ion-background-color: #fb7185;
+}
+
+.title-headline-container h3 {
+    font-size: 16px;
+    font-weight: 600;
+    @media (max-width: 479px) {
+        font-size: 14px;
+    }
+}
+
+.card-face--front {
+    h3 {
+        color: #18224e !important;
+        font-weight: 500;
+    }
+    transform: rotateY(180deg) scaleX(-1) translateZ(-1px) !important;
+    -webkit-transform: rotateY(180deg) scaleX(-1) translateZ(-1px) !important;
+}
+.card-face--back {
+    transform: scaleX(-1) translateZ(-1px) !important;
+    -webkit-transform: scaleX(-1) translateZ(-1px) !important;
+}
+
+.course-card-detail-info,
+.job-history-card {
+    text-align: left;
+}
+
+.job-history-card {
+    width: 100%;
+    max-width: 400px;
+}
+
+.skill-vert-card-title-container {
+    padding: 10px;
+    overflow: hidden;
+
+    h3 {
+        padding: 10px;
+        max-height: 60px;
+        overflow: hidden;
+    }
+}
+
+.lc-id-card {
+    .barcode-container {
+        display: none;
+    }
+}
+
+.full-id-card-view {
+    p {
+        font-weight: 600;
+        font-size: 17px;
+        line-height: 150%;
+    }
+
+    p,
+    h3 {
+        margin-left: 10px;
+        color: white !important;
+        transform: translateY(-10px);
+    }
+
+    span {
+        color: white !important;
+    }
+}
+
+.generic-lc-thumb {
+    width: 85%;
+    .generic-display-card-img {
+        object-fit: contain;
+    }
+}
+
+.vc-flippy-display-container {
+    .flippy-wrapper-container {
+        transform: translateY(-100px);
+    }
+}
+
+.header-mask {
+    -webkit-mask-image: url('/src/assets/images/bg_curve_mask.svg');
+    mask-image: url('/src/assets/images/bg_curve_mask.svg');
+    -webkit-mask-position: bottom;
+    mask-position: bottom;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    position: absolute;
+    bottom: -40px;
+    left: 0;
+    width: 100%;
+    height: calc(100% + 80px);
+}

@@ -1,0 +1,363 @@
+.login-terms-span,
+.login-start-over-span {
+    color: #6366f1;
+}
+
+.login-reset-btn {
+    color: #6366f1;
+}
+
+.react-code-input:not(.small) {
+    & > input {
+        margin: 4px;
+        width: 14%;
+        border-radius: 12px;
+        font-size: 24px;
+        height: 100px;
+        padding-left: 24px;
+        background-color: #20c397;
+        color: #000000;
+        border: 1px solid #20c397;
+        outline: none;
+        transition: background-color 0.3s ease-out;
+
+        &:focus {
+            border: none;
+            background-color: white;
+        }
+
+        @media (max-width: 479px) {
+            padding-left: 18px;
+            width: 14%;
+        }
+
+        @media (max-width: 380px) {
+            padding-left: 12px;
+            width: 12.25%;
+        }
+    }
+}
+
+.react-code-input:not(.small) > input:not([value='']) {
+    background-color: white;
+    transition: background-color 0.3s ease-in;
+}
+
+.react-code-input.small {
+    display: flex !important;
+    justify-content: space-between;
+    padding-left: 2px;
+    padding-right: 2px;
+
+    & > input {
+        width: 14%;
+        border-radius: 12px;
+        font-size: 24px;
+        height: 60px;
+        background-color: #20c397;
+        color: #000000;
+        border: 1px solid #20c397;
+        outline: none;
+        transition: background-color 0.3s ease-out;
+
+        text-align: center;
+
+        &:focus {
+            border: none;
+            background-color: white;
+        }
+
+        @media (max-width: 479px) {
+            width: 14%;
+        }
+
+        @media (max-width: 380px) {
+            width: 12.25%;
+        }
+    }
+}
+
+.react-code-input.small > input:not([value='']) {
+    background-color: white;
+    transition: background-color 0.3s ease-in;
+}
+
+.react-code-input-error {
+    & > input {
+        border: 1px solid red;
+
+        &:focus {
+            border: 1px solid red;
+            background-color: white;
+        }
+    }
+}
+
+.PhoneInput.login-phone-input {
+    width: 100%;
+    margin-top: 0;
+
+    .PhoneInputInput {
+        background-color: #20c397;
+        border: none;
+        border-radius: 15px;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 16px;
+        letter-spacing: 0.1em;
+        width: 85%;
+        outline: none;
+
+        &::placeholder {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+    }
+
+    .PhoneInputCountry {
+        display: flex;
+        border: none;
+        border-radius: 15px;
+        background-color: #20c397;
+        align-items: center;
+        justify-content: center;
+        width: 20%;
+
+        & > select {
+            appearance: none;
+        }
+
+        & > .PhoneInputCountrySelect {
+            appearance: none;
+        }
+
+        .PhoneInputCountryIcon {
+            background: none;
+            border: solid 1px white;
+            width: 30px;
+            height: 30px;
+            outline: none;
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        .PhoneInputCountryIconImg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        & > .PhoneInputCountryIcon--border {
+            background-color: none;
+            box-shadow: none;
+        }
+    }
+}
+
+.PhoneInput.login-phone-input-error {
+    .PhoneInputInput {
+        border: solid 1px red;
+
+        &::placeholder {
+            color: red;
+        }
+    }
+
+    .PhoneInputCountry {
+        border: solid 1px red;
+    }
+}
+
+.login-input-email-error {
+    border: solid 1px red;
+
+    &::placeholder {
+        color: red;
+    }
+}
+
+.login-input-error-msg {
+    color: red;
+    font-weight: 500;
+    padding-left: 6px;
+    margin-top: 2px;
+}
+
+ion-toast.login-link-success-toast {
+    --background: white;
+    --color: #000000;
+    --border-radius: 14px;
+}
+
+ion-toast.login-link-success-toast::part(button) {
+    color: #00ba88 !important;
+}
+
+ion-toast.login-link-warning-toast {
+    --background: #e11d48;
+    --color: #fff;
+    --border-radius: 14px;
+}
+
+ion-toast.login-link-warning-toast::part(button) {
+    color: #fff !important;
+}
+
+.social-logins-wrap {
+    & > .social-logins-title-wrap {
+        text-align: left;
+    }
+}
+
+@media (min-width: 480px) {
+    .social-logins-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        & > .social-logins-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            // min-width: 490px;
+            max-width: 600px;
+
+            & > .social-logins-title-wrap {
+                text-align: center;
+            }
+
+            & > .social-logins-btns-wrap {
+                align-items: center;
+                justify-content: center;
+            }
+
+            & > .social-logins-btns-wrap-alt {
+                align-items: center;
+                justify-content: center;
+                padding-right: 80px;
+            }
+        }
+
+        & > .mv-social-logins-wrap {
+            & > .mv-social-logins-title-wrap {
+                text-align: center;
+            }
+
+            & > .mv-social-logins-btns-wrap {
+                align-items: center;
+                display: flex;
+                justify-content: center;
+                text-align: center;
+            }
+        }
+    }
+
+    .login-footer-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        & > .login-footer-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            max-width: 600px;
+
+            & > .login-footer-title-wrap {
+                & > p,
+                .login-footer-web3-link {
+                    align-items: center;
+                    display: flex;
+                    text-align: center;
+                    justify-content: center;
+                }
+            }
+
+            & > .login-footer-links-wrap {
+                justify-content: center;
+            }
+        }
+    }
+
+    .login-existing-account {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+@media (max-width: 375px) {
+    // .social-logins-btn-icon {
+    //     height: 40px;
+    //     width: 40px;
+    //     margin-right: 20px;
+    // }
+
+    .social-logins-more-btn {
+        height: 40px;
+        width: 40px;
+        margin-left: 5px;
+    }
+
+    .react-code-input {
+        & > input {
+            margin: 7px;
+        }
+    }
+}
+
+@media (max-width: 709px) {
+    .social-logins-btns-container {
+        width: 100%;
+        justify-content: center;
+
+        & > button:first-child {
+            margin-right: 4px;
+        }
+
+        & > button {
+            margin-bottom: 6px;
+
+            @media (max-width: 475px) {
+                width: 80%;
+            }
+        }
+    }
+}
+
+ion-toast.network-online-toast {
+    --background: #eff0f5;
+    --color: #00ba88;
+    --border-radius: 14px;
+}
+
+ion-toast.network-online-toast::part(button) {
+    color: #00ba88 !important;
+}
+
+ion-toast.network-offline-toast {
+    --background: #e11d48;
+    --color: #fff;
+    --border-radius: 14px;
+}
+
+ion-toast.network-offline-toast::part(button) {
+    color: #fff !important;
+}
+
+.white-placeholder::part(native)::placeholder {
+    color: white !important;
+    opacity: 1 !important;
+}
+
+.white-placeholder::part(native)::-webkit-input-placeholder {
+    color: white !important;
+    opacity: 1 !important;
+}
