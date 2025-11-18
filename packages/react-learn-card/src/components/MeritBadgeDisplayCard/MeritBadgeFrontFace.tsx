@@ -38,6 +38,7 @@ type MeritBadgeFrontFaceProps = {
     handleViewBackFace?: () => void;
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
+    customBodyContentSlot?: React.ReactNode;
 };
 
 export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
@@ -54,6 +55,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     handleViewBackFace,
     showDetailsBtn = false,
     formattedDisplayType,
+    customBodyContentSlot,
 }) => {
     const {
         title = '',
@@ -140,7 +142,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             <div
                 className={`flex flex-col gap-[15px] items-center px-[20px] pt-[92px] pb-[19px] border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
-                <div className="flex flex-col gap-[5px]">
+                <div className="flex flex-col gap-[5px] w-full">
                     <div className="flex flex-col items-center text-grayscale-900">
                         <span className="text-[16px] leading-[150%] font-jacques">
                             {issueeName || <Line width="60" />}
@@ -150,7 +152,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </span>
                     </div>
                     <div className="flex flex-col items-center">
-                        <h1 className="text-grayscale-900 text-center text-[25px] font-jacques">
+                        <h1 className="text-grayscale-900 text-center text-[25px] font-jacques w-full">
                             {title}
                         </h1>
                         <div
@@ -160,7 +162,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </div>
                     </div>
                 </div>
-
                 {customBodyCardComponent}
                 {issueeImageExists && !customBodyCardComponent && (
                     <MeritBadgeProfileImageDisplay
@@ -174,7 +175,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         <Smiley />
                     </div>
                 )}
-
                 <div className="flex flex-col w-full">
                     <div className="text-[14px] text-grayscale-900 flex flex-col items-center w-full mb-[10px]">
                         <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
@@ -214,14 +214,15 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </div> */}
                     </div>
                 </div>
-
                 <MeritBadgeProfileImageDisplay
                     imageUrl={issuerImage}
+                    userName={issuerName}
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] flex justify-center items-center ${textLightColor}`}
                     size="small"
                     showSeal
                 />
+                {customBodyContentSlot && customBodyContentSlot}
                 <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>
                     {categoryTitle}
                 </div>

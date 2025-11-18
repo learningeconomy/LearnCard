@@ -86,7 +86,12 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .input(
+            LCNProfileValidator.omit({
+                did: true,
+                isServiceProfile: true,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const profileExists = await checkIfProfileExists({
@@ -208,7 +213,6 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to grab the profile of the current user',
             },
-            requiredScope: 'profiles:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.optional())
@@ -227,7 +231,6 @@ export const profilesRouter = t.router({
                 description:
                     'This route grabs the profile information of any user, using their profileId',
             },
-            requiredScope: 'profiles:read',
         })
         .input(z.object({ profileId: z.string() }))
         .output(LCNProfileValidator.optional())
@@ -349,7 +352,6 @@ export const profilesRouter = t.router({
                 summary: 'Search profiles',
                 description: 'This route searches for profiles based on their profileId',
             },
-            requiredScope: 'profiles:read',
         })
         .input(
             z.object({
@@ -444,6 +446,7 @@ export const profilesRouter = t.router({
                 dob,
                 country,
                 highlightedCredentials,
+                approved,
             } = input;
 
             const actualUpdates: Partial<ProfileType> = {};
@@ -491,6 +494,7 @@ export const profilesRouter = t.router({
             if (country) actualUpdates.country = country;
             if (highlightedCredentials)
                 actualUpdates.highlightedCredentials = highlightedCredentials;
+            if (typeof approved === 'boolean') actualUpdates.approved = approved;
 
             return updateProfile(profile, actualUpdates);
         }),
@@ -586,7 +590,6 @@ export const profilesRouter = t.router({
                 path: '/profile/{profileId}/connect/{challenge}',
                 tags: ['Profiles'],
                 summary: 'Connect using an invitation',
-                description: 'Connects with another profile using an invitation challenge. Respects invite usage and expiration; succeeds while the invite is valid (usesRemaining is null or > 0) and not expired. Returns 404 if the invite is invalid or expired.',
             },
             requiredScope: 'profiles:write',
         })
@@ -883,12 +886,7 @@ export const profilesRouter = t.router({
                         .optional()
                         .default(30 * 24 * 3600), // Default to 30 days in seconds
                     challenge: z.string().optional(),
-                    maxUses: z
-                        .number()
-                        .int()
-                        .min(0)
-                        .optional()
-                        .default(1) // Default single-use invites
+                    maxUses: z.number().int().min(0).optional().default(1), // Default single-use invites
                 })
                 .optional()
                 .default({})
@@ -926,7 +924,12 @@ export const profilesRouter = t.router({
             let expiresIn: number | null = expiration === 0 ? null : expiration;
 
             // Set the invite with the calculated expiration time and usage limits
-            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ?? null, maxUses);
+            await setValidInviteForProfile(
+                profile.profileId,
+                challenge,
+                expiresIn ?? null,
+                maxUses
+            );
 
             return { profileId: profile.profileId, challenge, expiresIn };
         }),
@@ -940,7 +943,8 @@ export const profilesRouter = t.router({
                 path: '/profile/invites',
                 tags: ['Profiles'],
                 summary: 'List valid connection invitations',
-                description: "List all valid connection invitation links you've created. Each item includes: challenge, expiresIn (seconds or null), usesRemaining (number or null), and maxUses (number or null). Exhausted invites are omitted.",
+                description:
+                    "List all valid connection invitation links you've created. Each item includes: challenge, expiresIn (seconds or null), usesRemaining (number or null), and maxUses (number or null). Exhausted invites are omitted.",
             },
             requiredScope: 'connections:read',
         })
@@ -970,7 +974,8 @@ export const profilesRouter = t.router({
                 path: '/profile/invite/{challenge}/invalidate',
                 tags: ['Profiles'],
                 summary: 'Invalidate an invitation',
-                description: 'Invalidate a specific connection invitation by its challenge string. Idempotent: returns true even if the invite was already invalid or missing.',
+                description:
+                    'Invalidate a specific connection invitation by its challenge string. Idempotent: returns true even if the invite was already invalid or missing.',
             },
             requiredScope: 'connections:write',
         })
@@ -1097,12 +1102,19 @@ export const profilesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { endpoint, name, did } = input;
+            const normalizedName = name.toLowerCase();
 
             const existingSas = await getSigningAuthoritiesForUser(ctx.user.profile);
             const setAsPrimary = existingSas.length === 0;
 
             const sa = await upsertSigningAuthority(endpoint);
-            await createUseSigningAuthorityRelationship(ctx.user.profile, sa, name, did, setAsPrimary);
+            await createUseSigningAuthorityRelationship(
+                ctx.user.profile,
+                sa,
+                normalizedName,
+                did,
+                setAsPrimary
+            );
             await deleteDidDocForProfile(ctx.user.profile.profileId);
             return true;
         }),
@@ -1142,7 +1154,12 @@ export const profilesRouter = t.router({
         .input(z.object({ endpoint: z.string(), name: z.string() }))
         .output(SigningAuthorityForUserValidator.or(z.undefined()))
         .query(async ({ ctx, input }) => {
-            return getSigningAuthorityForUserByName(ctx.user.profile, input.endpoint, input.name);
+            const normalizedName = input.name.toLowerCase();
+            return getSigningAuthorityForUserByName(
+                ctx.user.profile,
+                input.endpoint,
+                normalizedName
+            );
         }),
 
     setPrimarySigningAuthority: profileRoute
@@ -1154,7 +1171,7 @@ export const profilesRouter = t.router({
                 tags: ['Profiles'],
                 summary: 'Set Primary Signing Authority',
                 description:
-                    "This route is used to set a signing authority as the primary one for the current user",
+                    'This route is used to set a signing authority as the primary one for the current user',
             },
             requiredScope: 'signingAuthorities:write',
         })
@@ -1173,8 +1190,13 @@ export const profilesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { endpoint, name } = input;
+            const normalizedName = name.toLowerCase();
 
-            const sa = await getSigningAuthorityForUserByName(ctx.user.profile, endpoint, name);
+            const sa = await getSigningAuthorityForUserByName(
+                ctx.user.profile,
+                endpoint,
+                normalizedName
+            );
 
             if (!sa) {
                 throw new TRPCError({
@@ -1183,7 +1205,7 @@ export const profilesRouter = t.router({
                 });
             }
 
-            await setPrimarySigningAuthority(ctx.user.profile, endpoint, name);
+            await setPrimarySigningAuthority(ctx.user.profile, endpoint, normalizedName);
             await deleteDidDocForProfile(ctx.user.profile.profileId);
             return true;
         }),

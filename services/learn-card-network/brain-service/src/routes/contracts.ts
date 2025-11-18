@@ -28,6 +28,7 @@ import {
     AutoBoostConfigValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
+import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getAutoBoostsForContract,
@@ -174,6 +175,10 @@ export const contractsRouter = t.router({
             if (autoboosts && autoboosts.length > 0) {
                 for (const autoboost of autoboosts) {
                     const { boostUri, signingAuthority } = autoboost;
+                    const normalizedSigningAuthority = {
+                        ...signingAuthority,
+                        name: signingAuthority.name.toLowerCase(),
+                    };
 
                     const boost = await getBoostByUri(boostUri);
 
@@ -202,8 +207,8 @@ export const contractsRouter = t.router({
                     // Verify the signing authority exists for this user
                     const signingAuthorityExists = await getSigningAuthorityForUserByName(
                         ctx.user.profile,
-                        signingAuthority.endpoint,
-                        signingAuthority.name
+                        normalizedSigningAuthority.endpoint,
+                        normalizedSigningAuthority.name
                     );
 
                     if (!signingAuthorityExists) {
@@ -216,7 +221,7 @@ export const contractsRouter = t.router({
                     await setAutoBoostForContract(
                         createdContract,
                         boost,
-                        signingAuthority,
+                        normalizedSigningAuthority,
                         ctx.user.profile.profileId
                     );
                 }
@@ -686,6 +691,10 @@ export const contractsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { did, contractUri, boostUri, signingAuthority } = input;
+            const normalizedSigningAuthority = {
+                ...signingAuthority,
+                name: signingAuthority.name.toLowerCase(),
+            };
 
             const decodedDid = decodeURIComponent(did);
             const decodedContractUri = decodeURIComponent(contractUri);
@@ -797,6 +806,8 @@ export const contractsRouter = t.router({
                     };
                 }
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
+                // Inject OBv3 skill alignments based on boost's framework/skills
+                await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, ctx.domain);
             } catch (e) {
                 console.error('Failed to parse boost', e);
                 throw new TRPCError({
@@ -808,8 +819,8 @@ export const contractsRouter = t.router({
             // Get signing authority
             const sa = await getSigningAuthorityForUserByName(
                 profile,
-                signingAuthority.endpoint,
-                signingAuthority.name
+                normalizedSigningAuthority.endpoint,
+                normalizedSigningAuthority.name
             );
             if (!sa) {
                 throw new TRPCError({
@@ -1298,7 +1309,6 @@ export const contractsRouter = t.router({
                 summary: 'Verifies that a profile has consented to a contract',
                 description: 'Checks if a profile has consented to the specified contract',
             },
-            requiredScope: 'contracts:read',
         })
         .input(z.object({ uri: z.string(), profileId: z.string() }))
         .output(z.boolean())
@@ -1578,7 +1588,15 @@ export const contractsRouter = t.router({
                 });
             }
 
-            await addAutoBoostsToContractDb(contract.id, autoboosts, profile, ctx.domain);
+            const normalizedAutoboosts = autoboosts.map(ab => ({
+                ...ab,
+                signingAuthority: {
+                    ...ab.signingAuthority,
+                    name: ab.signingAuthority.name.toLowerCase(),
+                },
+            }));
+
+            await addAutoBoostsToContractDb(contract.id, normalizedAutoboosts, profile, ctx.domain);
 
             return true;
         }),

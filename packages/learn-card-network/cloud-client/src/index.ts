@@ -55,4 +55,20 @@ export const getClient = async (
     return trpc;
 };
 
+// Create a client that always uses a provided API token and never fetches challenges
+export const getApiTokenClient = async (url: string, apiToken: string): Promise<Client> => {
+    const trpc = createTRPCClient<AppRouter>({
+        links: [
+            httpBatchLink({
+                methodOverride: 'POST',
+                url,
+                maxURLLength: 3072,
+                headers: { Authorization: `Bearer ${apiToken}` },
+            }),
+        ],
+    });
+
+    return trpc;
+};
+
 export default getClient;

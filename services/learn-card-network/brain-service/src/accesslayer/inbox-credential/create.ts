@@ -1,8 +1,8 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { v4 as uuid } from 'uuid';
 
-import { InboxCredential } from '@models';
-import { InboxCredentialType, ContactMethodQueryType } from '@learncard/types';
+import { InboxCredential, InboxCredentialInstance } from '@models';
+import { ContactMethodQueryType } from '@learncard/types';
 import { flattenObject } from '@helpers/objects.helpers';
 import { getInboxCredentialById } from './read';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
@@ -12,12 +12,13 @@ import { ProfileType } from 'types/profile';
 export const createInboxCredential = async (input: {
     credential: string;
     isSigned: boolean;
+    isAccepted?: boolean;
     recipient: ContactMethodQueryType;
     issuerProfile: ProfileType;
     webhookUrl?: string;
     signingAuthority?: { endpoint: string; name: string };
     expiresInDays?: number;
-}): Promise<InboxCredentialType> => {
+}): Promise<InboxCredentialInstance> => {
 
     const id = uuid();
     const expiresAt = new Date();
@@ -28,6 +29,7 @@ export const createInboxCredential = async (input: {
         credential: input.credential,
         isSigned: input.isSigned,
         currentStatus: 'PENDING' as const,
+        isAccepted: input.isAccepted ?? false,
         expiresAt: expiresAt.toISOString(),
         createdAt: new Date().toISOString(),
         issuerDid: input.issuerProfile.did,

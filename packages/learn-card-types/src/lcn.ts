@@ -1,4 +1,6 @@
+import { extendZodWithOpenApi } from 'zod-openapi';
 import { z } from 'zod';
+extendZodWithOpenApi(z);
 
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
@@ -62,6 +64,7 @@ export const LCNProfileValidator = z.object({
         .optional()
         .describe('Date of birth of the profile: e.g. "1990-01-01".'),
     country: z.string().optional().describe('Country for the profile.'),
+    approved: z.boolean().optional().describe('Approval status for the profile.'),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 
@@ -138,6 +141,7 @@ export const SentCredentialInfoValidator = z.object({
     from: z.string(),
     sent: z.string().datetime(),
     received: z.string().datetime().optional(),
+    metadata: z.record(z.unknown()).optional(),
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
@@ -236,7 +240,7 @@ export const BoostValidator = z.object({
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
-export const BoostQueryValidator = z
+const BaseBoostQueryValidator = z
     .object({
         uri: StringQuery,
         name: StringQuery,
@@ -247,6 +251,13 @@ export const BoostQueryValidator = z
         autoConnectRecipients: z.boolean(),
     })
     .partial();
+
+export const BoostQueryValidator = z.union([
+    z.object({
+        $or: BaseBoostQueryValidator.array(),
+    }),
+    BaseBoostQueryValidator,
+]);
 export type BoostQuery = z.infer<typeof BoostQueryValidator>;
 
 export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
@@ -279,7 +290,9 @@ export type BoostRecipientWithChildrenInfo = z.infer<typeof BoostRecipientWithCh
 export const PaginatedBoostRecipientsWithChildrenValidator = PaginationResponseValidator.extend({
     records: BoostRecipientWithChildrenValidator.array(),
 });
-export type PaginatedBoostRecipientsWithChildrenType = z.infer<typeof PaginatedBoostRecipientsWithChildrenValidator>;
+export type PaginatedBoostRecipientsWithChildrenType = z.infer<
+    typeof PaginatedBoostRecipientsWithChildrenValidator
+>;
 
 export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
     endpoint: z.string(),
@@ -334,17 +347,39 @@ export const ConsentFlowContractValidator = z.object({
         .object({
             anonymize: z.boolean().optional(),
             credentials: z
-                .object({ categories: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}) })
+                .object({
+                    categories: z
+                        .record(
+                            z.object({
+                                required: z.boolean(),
+                                defaultEnabled: z.boolean().optional(),
+                            })
+                        )
+                        .default({}),
+                })
                 .default({}),
-            personal: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}),
+            personal: z
+                .record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() }))
+                .default({}),
         })
         .default({}),
     write: z
         .object({
             credentials: z
-                .object({ categories: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}) })
+                .object({
+                    categories: z
+                        .record(
+                            z.object({
+                                required: z.boolean(),
+                                defaultEnabled: z.boolean().optional(),
+                            })
+                        )
+                        .default({}),
+                })
                 .default({}),
-            personal: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}),
+            personal: z
+                .record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() }))
+                .default({}),
         })
         .default({}),
 });
@@ -567,6 +602,25 @@ export type PaginatedConsentFlowTransactions = z.infer<
     typeof PaginatedConsentFlowTransactionsValidator
 >;
 
+// Skill Frameworks: Query + Paginated types
+const BaseSkillFrameworkQueryValidator = z
+    .object({
+        id: StringQuery,
+        name: StringQuery,
+        description: StringQuery,
+        sourceURI: StringQuery,
+        status: StringQuery,
+    })
+    .partial();
+
+export const SkillFrameworkQueryValidator = z.union([
+    z.object({ $or: BaseSkillFrameworkQueryValidator.array() }),
+    BaseSkillFrameworkQueryValidator,
+]);
+export type SkillFrameworkQuery = z.infer<typeof SkillFrameworkQueryValidator>;
+
+// moved below SkillFrameworkValidator
+
 export const ContractCredentialValidator = z.object({
     credentialUri: z.string(),
     termsUri: z.string(),
@@ -594,7 +648,8 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'CONSENT_FLOW_TRANSACTION',
     'ISSUANCE_CLAIMED',
     'ISSUANCE_DELIVERED',
-    'ISSUANCE_ERROR'
+    'ISSUANCE_ERROR',
+    'PROFILE_PARENT_APPROVED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -613,7 +668,13 @@ export const LCNInboxContactMethodValidator = z.object({
 
 export type LCNInboxContactMethod = z.infer<typeof LCNInboxContactMethodValidator>;
 
-export const LCNInboxStatusEnumValidator = z.enum(['PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED']);
+export const LCNInboxStatusEnumValidator = z.enum([
+    'PENDING',
+    'ISSUED',
+    'EXPIRED',
+    /* DEPRECATED — use ISSUED */ 'DELIVERED',
+    /* DEPRECATED — use ISSUED */ 'CLAIMED',
+]);
 export type LCNInboxStatusEnum = z.infer<typeof LCNInboxStatusEnumValidator>;
 
 export const LCNNotificationInboxValidator = z.object({
@@ -628,13 +689,15 @@ export const LCNNotificationInboxValidator = z.object({
 
 export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>;
 
-export const LCNNotificationDataValidator = z.object({
-    vcUris: z.array(z.string()).optional(),
-    vpUris: z.array(z.string()).optional(),
-    transaction: ConsentFlowTransactionValidator.optional(),
-    inbox: LCNNotificationInboxValidator.optional(),
-});
-
+export const LCNNotificationDataValidator = z
+    .object({
+        vcUris: z.array(z.string()).optional(),
+        vpUris: z.array(z.string()).optional(),
+        transaction: ConsentFlowTransactionValidator.optional(),
+        inbox: LCNNotificationInboxValidator.optional(),
+        metadata: z.record(z.unknown()).optional(),
+    })
+    .passthrough();
 export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 
 export const LCNNotificationValidator = z.object({
@@ -694,7 +757,6 @@ export const AuthGrantQueryValidator = z
 
 export type AuthGrantQuery = z.infer<typeof AuthGrantQueryValidator>;
 
-
 // Contact Methods
 const contactMethodBase = z.object({
     id: z.string(),
@@ -705,14 +767,18 @@ const contactMethodBase = z.object({
 });
 
 export const ContactMethodValidator = z.discriminatedUnion('type', [
-    z.object({
-        type: z.literal('email'),
-        value: z.string().email(),
-    }).merge(contactMethodBase),
-    z.object({
-        type: z.literal('phone'),
-        value: z.string(), // Can be improved with a regex later
-    }).merge(contactMethodBase),
+    z
+        .object({
+            type: z.literal('email'),
+            value: z.string().email(),
+        })
+        .merge(contactMethodBase),
+    z
+        .object({
+            type: z.literal('phone'),
+            value: z.string(), // Can be improved with a regex later
+        })
+        .merge(contactMethodBase),
 ]);
 
 export type ContactMethodType = z.infer<typeof ContactMethodValidator>;
@@ -723,14 +789,18 @@ const createContactMethodBase = z.object({
 });
 
 export const ContactMethodCreateValidator = z.discriminatedUnion('type', [
-    z.object({
-        type: z.literal('email'),
-        value: z.string().email(),
-    }).merge(createContactMethodBase),
-    z.object({
-        type: z.literal('phone'),
-        value: z.string(),
-    }).merge(createContactMethodBase),
+    z
+        .object({
+            type: z.literal('email'),
+            value: z.string().email(),
+        })
+        .merge(createContactMethodBase),
+    z
+        .object({
+            type: z.literal('phone'),
+            value: z.string(),
+        })
+        .merge(createContactMethodBase),
 ]);
 
 export type ContactMethodCreateType = z.infer<typeof ContactMethodCreateValidator>;
@@ -769,20 +839,39 @@ export const SetPrimaryContactMethodValidator = z.object({
 
 export type SetPrimaryContactMethodType = z.infer<typeof SetPrimaryContactMethodValidator>;
 
+// Create Inbox Claim Session for a Contact Method
+export const CreateContactMethodSessionValidator = z.object({
+    contactMethod: ContactMethodVerificationRequestValidator,
+    otpChallenge: z.string(),
+});
+
+export type CreateContactMethodSessionType = z.infer<typeof CreateContactMethodSessionValidator>;
+
+export const CreateContactMethodSessionResponseValidator = z.object({
+    sessionJwt: z.string(),
+});
+
+export type CreateContactMethodSessionResponseType = z.infer<
+    typeof CreateContactMethodSessionResponseValidator
+>;
+
 // Inbox Credentials
 export const InboxCredentialValidator = z.object({
     id: z.string(),
     credential: z.string(),
     isSigned: z.boolean(),
     currentStatus: LCNInboxStatusEnumValidator,
+    isAccepted: z.boolean().optional(),
     expiresAt: z.string(),
     createdAt: z.string(),
     issuerDid: z.string(),
     webhookUrl: z.string().optional(),
-    signingAuthority: z.object({
-        endpoint: z.string().optional(),
-        name: z.string().optional(),
-    }).optional(),
+    signingAuthority: z
+        .object({
+            endpoint: z.string().optional(),
+            name: z.string().optional(),
+        })
+        .optional(),
 });
 
 export type InboxCredentialType = z.infer<typeof InboxCredentialValidator>;
@@ -800,6 +889,7 @@ export const InboxCredentialQueryValidator = z
         currentStatus: LCNInboxStatusEnumValidator,
         id: z.string(),
         isSigned: z.boolean(),
+        isAccepted: z.boolean().optional(),
         issuerDid: z.string(),
     })
     .partial();
@@ -813,12 +903,16 @@ export const IssueInboxSigningAuthorityValidator = z.object({
 
 export type IssueInboxSigningAuthority = z.infer<typeof IssueInboxSigningAuthorityValidator>;
 
-
 export const IssueInboxCredentialValidator = z.object({
     // === CORE DATA (Required) ===
     // WHAT is being sent and WHO is it for?
     recipient: ContactMethodQueryValidator.describe('The recipient of the credential'),
-    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()).describe('The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'), 
+    credential: VCValidator.passthrough()
+        .or(VPValidator.passthrough())
+        .or(UnsignedVCValidator.passthrough())
+        .describe(
+            'The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'
+        ),
 
     // === OPTIONAL FEATURES ===
     // Add major, distinct features at the top level.
@@ -826,31 +920,102 @@ export const IssueInboxCredentialValidator = z.object({
 
     // === PROCESS CONFIGURATION (Optional) ===
     // HOW should this issuance be handled?
-    configuration: z.object({
-        signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe('The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'),
-        webhookUrl: z.string().url().optional().describe('The webhook URL to receive credential issuance events.'),
-        expiresInDays: z.number().min(1).max(365).optional().describe('The number of days the credential will be valid for.'),
-        // --- For User-Facing Delivery (Email/SMS) ---
-        delivery: z.object({
-            suppress: z.boolean().optional().default(false).describe('Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users.'),
-            template: z.object({
-                id: z.enum(['universal-inbox-claim']).optional().describe('The template ID to use for the credential delivery. If not provided, the default template will be used.'),
-                model: z.object({
-                    issuer: z.object({
-                        name: z.string().optional().describe('The name of the organization (e.g., "State University").'),
-                        logoUrl: z.string().url().optional().describe('The URL of the organization\'s logo.'),
-                    }).optional(),
-                    credential: z.object({
-                        name: z.string().optional().describe('The name of the credential (e.g., "Bachelor of Science").'),
-                        type: z.string().optional().describe('The type of the credential (e.g., "degree", "certificate").'),
-                    }).optional(),
-                    recipient: z.object({
-                        name: z.string().optional().describe('The name of the recipient (e.g., "John Doe").')
-                    }).optional(),
-                }).describe('The template model to use for the credential delivery. Injects via template variables into email/sms templates. If not provided, the default template will be used.'),
-            }).optional().describe('The template to use for the credential delivery. If not provided, the default template will be used.'),
-        }).optional().describe('Configuration for the credential delivery i.e. email or SMS. When credentials are sent to a user who has a verified email or phone associated with their account, delivery is skipped, and the credential will be sent using in-app notifications. If not provided, the default configuration will be used.'),
-    }).optional().describe('Configuration for the credential issuance. If not provided, the default configuration will be used.'),
+    configuration: z
+        .object({
+            signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
+                'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
+            ),
+            webhookUrl: z
+                .string()
+                .url()
+                .optional()
+                .describe('The webhook URL to receive credential issuance events.'),
+            expiresInDays: z
+                .number()
+                .min(1)
+                .max(365)
+                .optional()
+                .describe('The number of days the credential will be valid for.'),
+            // --- For User-Facing Delivery (Email/SMS) ---
+            delivery: z
+                .object({
+                    suppress: z
+                        .boolean()
+                        .optional()
+                        .default(false)
+                        .describe(
+                            'Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users.'
+                        ),
+                    template: z
+                        .object({
+                            id: z
+                                .enum(['universal-inbox-claim'])
+                                .optional()
+                                .describe(
+                                    'The template ID to use for the credential delivery. If not provided, the default template will be used.'
+                                ),
+                            model: z
+                                .object({
+                                    issuer: z
+                                        .object({
+                                            name: z
+                                                .string()
+                                                .optional()
+                                                .describe(
+                                                    'The name of the organization (e.g., "State University").'
+                                                ),
+                                            logoUrl: z
+                                                .string()
+                                                .url()
+                                                .optional()
+                                                .describe("The URL of the organization's logo."),
+                                        })
+                                        .optional(),
+                                    credential: z
+                                        .object({
+                                            name: z
+                                                .string()
+                                                .optional()
+                                                .describe(
+                                                    'The name of the credential (e.g., "Bachelor of Science").'
+                                                ),
+                                            type: z
+                                                .string()
+                                                .optional()
+                                                .describe(
+                                                    'The type of the credential (e.g., "degree", "certificate").'
+                                                ),
+                                        })
+                                        .optional(),
+                                    recipient: z
+                                        .object({
+                                            name: z
+                                                .string()
+                                                .optional()
+                                                .describe(
+                                                    'The name of the recipient (e.g., "John Doe").'
+                                                ),
+                                        })
+                                        .optional(),
+                                })
+                                .describe(
+                                    'The template model to use for the credential delivery. Injects via template variables into email/sms templates. If not provided, the default template will be used.'
+                                ),
+                        })
+                        .optional()
+                        .describe(
+                            'The template to use for the credential delivery. If not provided, the default template will be used.'
+                        ),
+                })
+                .optional()
+                .describe(
+                    'Configuration for the credential delivery i.e. email or SMS. When credentials are sent to a user who has a verified email or phone associated with their account, delivery is skipped, and the credential will be sent using in-app notifications. If not provided, the default configuration will be used.'
+                ),
+        })
+        .optional()
+        .describe(
+            'Configuration for the credential issuance. If not provided, the default configuration will be used.'
+        ),
 });
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;
@@ -863,7 +1028,86 @@ export const IssueInboxCredentialResponseValidator = z.object({
     recipientDid: z.string().optional(),
 });
 
-export type IssueInboxCredentialResponseType = z.infer<typeof IssueInboxCredentialResponseValidator>;
+export type IssueInboxCredentialResponseType = z.infer<
+    typeof IssueInboxCredentialResponseValidator
+>;
+
+export const ClaimInboxCredentialValidator = z.object({
+    credential: VCValidator.passthrough()
+        .or(VPValidator.passthrough())
+        .or(UnsignedVCValidator.passthrough())
+        .describe('The credential to issue.'),
+    configuration: z
+        .object({
+            publishableKey: z.string(),
+            signingAuthorityName: z.string().optional(),
+        })
+        .optional(),
+});
+
+export type ClaimInboxCredentialType = z.infer<typeof ClaimInboxCredentialValidator>;
+
+// Integrations
+export const LCNDomainOrOriginValidator = z.union([
+    z
+        .string()
+        .regex(
+            /^(?:(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}|localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d{1,5})?$/,
+            {
+                message:
+                    'Must be a valid domain (incl. subdomains), localhost, or IPv4, optionally with port',
+            }
+        ),
+    z
+        .string()
+        .regex(
+            /^https?:\/\/(?:(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}|localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d{1,5})?$/,
+            { message: 'Must be a valid http(s) origin' }
+        ),
+]);
+
+export const LCNIntegrationValidator = z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().optional(),
+    publishableKey: z.string(),
+    whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+});
+
+export type LCNIntegration = z.infer<typeof LCNIntegrationValidator>;
+
+export const LCNIntegrationCreateValidator = z.object({
+    name: z.string(),
+    description: z.string().optional(),
+    whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+});
+
+export type LCNIntegrationCreateType = z.infer<typeof LCNIntegrationCreateValidator>;
+
+export const LCNIntegrationUpdateValidator = z.object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    whitelistedDomains: z.array(LCNDomainOrOriginValidator).optional(),
+    rotatePublishableKey: z.boolean().optional(),
+});
+
+export type LCNIntegrationUpdateType = z.infer<typeof LCNIntegrationUpdateValidator>;
+
+export const LCNIntegrationQueryValidator = z
+    .object({
+        id: StringQuery,
+        name: StringQuery,
+        description: StringQuery,
+    })
+    .partial();
+
+export type LCNIntegrationQueryType = z.infer<typeof LCNIntegrationQueryValidator>;
+
+export const PaginatedLCNIntegrationsValidator = PaginationResponseValidator.extend({
+    records: LCNIntegrationValidator.array(),
+});
+
+export type PaginatedLCNIntegrationsType = z.infer<typeof PaginatedLCNIntegrationsValidator>;
 
 export const ClaimTokenValidator = z.object({
     token: z.string(),
@@ -875,3 +1119,343 @@ export const ClaimTokenValidator = z.object({
 });
 
 export type ClaimTokenType = z.infer<typeof ClaimTokenValidator>;
+
+export const TagValidator = z.object({
+    id: z.string(),
+    name: z.string().min(1),
+    slug: z.string().min(1),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+});
+
+export type TagType = z.infer<typeof TagValidator>;
+
+export const SkillStatusEnum = z.enum(['active', 'archived']);
+export type SkillStatus = z.infer<typeof SkillStatusEnum>;
+
+export const SkillValidator = z.object({
+    id: z.string(),
+    statement: z.string(),
+    description: z.string().optional(),
+    code: z.string().optional(),
+    icon: z.string().optional(),
+    type: z.string().default('skill'),
+    status: SkillStatusEnum.default('active'),
+    frameworkId: z.string().optional(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+});
+
+export type SkillType = z.infer<typeof SkillValidator>;
+
+const BaseSkillQueryValidator = z
+    .object({
+        id: StringQuery,
+        statement: StringQuery,
+        description: StringQuery,
+        code: StringQuery,
+        type: StringQuery,
+        status: SkillStatusEnum.or(z.object({ $in: SkillStatusEnum.array() })),
+    })
+    .partial();
+
+export const SkillQueryValidator = z.union([
+    z.object({
+        $or: BaseSkillQueryValidator.array(),
+    }),
+    BaseSkillQueryValidator,
+]);
+
+export type SkillQuery = z.infer<typeof SkillQueryValidator>;
+
+export const SkillFrameworkStatusEnum = z.enum(['active', 'archived']);
+export type SkillFrameworkStatus = z.infer<typeof SkillFrameworkStatusEnum>;
+
+export const SkillFrameworkValidator = z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().optional(),
+    image: z.string().optional(),
+    sourceURI: z.string().url().optional(),
+    status: SkillFrameworkStatusEnum.default('active'),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+});
+
+export type SkillFrameworkType = z.infer<typeof SkillFrameworkValidator>;
+
+export const PaginatedSkillFrameworksValidator = PaginationResponseValidator.extend({
+    records: SkillFrameworkValidator.array(),
+});
+export type PaginatedSkillFrameworksType = z.infer<typeof PaginatedSkillFrameworksValidator>;
+
+export type SkillTreeNode = SkillType & {
+    children: SkillTreeNode[];
+    hasChildren: boolean;
+    childrenCursor?: string | null;
+};
+
+export const SkillTreeNodeValidator: z.ZodType<SkillTreeNode> = SkillValidator.extend({
+    children: z.array(z.lazy(() => SkillTreeNodeValidator)),
+    hasChildren: z.boolean(),
+    childrenCursor: z.string().nullable().optional(),
+}).openapi({ ref: 'SkillTreeNode' }) as any;
+
+export const PaginatedSkillTreeValidator = z.object({
+    hasMore: z.boolean(),
+    cursor: z.string().nullable(),
+    records: z.array(SkillTreeNodeValidator),
+});
+
+export type PaginatedSkillTree = z.infer<typeof PaginatedSkillTreeValidator>;
+
+export interface SkillTreeInput {
+    id?: string;
+    statement: string;
+    description?: string;
+    code?: string;
+    icon?: string;
+    type?: string;
+    status?: 'active' | 'archived';
+    children?: SkillTreeInput[];
+}
+
+export const SkillTreeNodeInputValidator: z.ZodType<SkillTreeInput> = z
+    .lazy(() =>
+        z.object({
+            id: z.string().optional(),
+            statement: z.string(),
+            description: z.string().optional(),
+            code: z.string().optional(),
+            icon: z.string().optional(),
+            type: z.string().optional(),
+            status: SkillStatusEnum.optional(),
+            children: z.array(SkillTreeNodeInputValidator).optional(),
+        })
+    )
+    .openapi({ ref: 'SkillTreeNodeInput' });
+
+export const LinkProviderFrameworkInputValidator = z.object({
+    frameworkId: z.string(),
+});
+
+export type LinkProviderFrameworkInputType = z.infer<typeof LinkProviderFrameworkInputValidator>;
+
+export const CreateManagedFrameworkInputValidator = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1),
+    description: z.string().optional(),
+    image: z.string().optional(),
+    sourceURI: z.string().url().optional(),
+    status: SkillFrameworkStatusEnum.optional(),
+    skills: z.array(SkillTreeNodeInputValidator).optional(),
+    boostUris: z.array(z.string()).optional(),
+});
+
+export type CreateManagedFrameworkInputType = z.infer<typeof CreateManagedFrameworkInputValidator>;
+
+// Back-compat alias for plugin naming
+export type CreateManagedSkillFrameworkInput = CreateManagedFrameworkInputType;
+
+export const UpdateFrameworkInputValidator = z
+    .object({
+        id: z.string(),
+        name: z.string().min(1).optional(),
+        description: z.string().optional(),
+        image: z.string().optional(),
+        sourceURI: z.string().url().optional(),
+        status: SkillFrameworkStatusEnum.optional(),
+    })
+    .refine(
+        data =>
+            data.name !== undefined ||
+            data.description !== undefined ||
+            data.image !== undefined ||
+            data.sourceURI !== undefined ||
+            data.status !== undefined,
+        {
+            message: 'At least one field must be provided to update',
+            path: ['name'],
+        }
+    );
+
+export type UpdateFrameworkInputType = z.infer<typeof UpdateFrameworkInputValidator>;
+
+// Back-compat alias for plugin naming
+export type UpdateSkillFrameworkInput = UpdateFrameworkInputType;
+
+export const DeleteFrameworkInputValidator = z.object({ id: z.string() });
+
+export type DeleteFrameworkInputType = z.infer<typeof DeleteFrameworkInputValidator>;
+
+// Back-compat alias for plugin naming
+export type DeleteSkillFrameworkInput = DeleteFrameworkInputType;
+
+export const CreateManagedFrameworkBatchInputValidator = z.object({
+    frameworks: z
+        .array(
+            CreateManagedFrameworkInputValidator.extend({
+                skills: z.array(SkillTreeNodeInputValidator).optional(),
+            })
+        )
+        .min(1),
+});
+
+export type CreateManagedFrameworkBatchInputType = z.infer<
+    typeof CreateManagedFrameworkBatchInputValidator
+>;
+
+// Back-compat alias for plugin naming
+export type CreateManagedSkillFrameworkBatchInput = CreateManagedFrameworkBatchInputType;
+
+export const SkillFrameworkAdminInputValidator = z.object({
+    frameworkId: z.string(),
+    profileId: z.string(),
+});
+
+export type SkillFrameworkAdminInputType = z.infer<typeof SkillFrameworkAdminInputValidator>;
+
+export const SkillFrameworkIdInputValidator = z.object({ frameworkId: z.string() });
+
+export type SkillFrameworkIdInputType = z.infer<typeof SkillFrameworkIdInputValidator>;
+
+export const SkillFrameworkAdminsValidator = LCNProfileValidator.array();
+
+export type SkillFrameworkAdminsType = z.infer<typeof SkillFrameworkAdminsValidator>;
+
+export const SyncFrameworkInputValidator = z.object({ id: z.string() });
+
+export type SyncFrameworkInput = z.infer<typeof SyncFrameworkInputValidator>;
+
+export const AddTagInputValidator = z.object({
+    slug: z.string().min(1),
+    name: z.string().min(1),
+});
+
+export type AddTagInput = z.infer<typeof AddTagInputValidator>;
+
+export const CreateSkillInputValidator = z.object({
+    frameworkId: z.string(),
+    skill: SkillTreeNodeInputValidator,
+    parentId: z.string().nullable().optional(),
+});
+
+export type CreateSkillInput = z.infer<typeof CreateSkillInputValidator>;
+
+export const UpdateSkillInputValidator = z
+    .object({
+        frameworkId: z.string(),
+        id: z.string(),
+        statement: z.string().optional(),
+        description: z.string().optional(),
+        code: z.string().optional(),
+        icon: z.string().optional(),
+        type: z.string().optional(),
+        status: SkillStatusEnum.optional(),
+    })
+    .refine(
+        data =>
+            data.statement !== undefined ||
+            data.description !== undefined ||
+            data.code !== undefined ||
+            data.icon !== undefined ||
+            data.type !== undefined ||
+            data.status !== undefined,
+        {
+            message: 'At least one field must be provided to update a skill',
+            path: ['statement'],
+        }
+    );
+
+export type UpdateSkillInput = z.infer<typeof UpdateSkillInputValidator>;
+
+export const SkillDeletionStrategyValidator = z.enum(['recursive', 'reparent']);
+export type SkillDeletionStrategy = z.infer<typeof SkillDeletionStrategyValidator>;
+
+export const DeleteSkillInputValidator = z.object({
+    frameworkId: z.string(),
+    id: z.string(),
+    strategy: SkillDeletionStrategyValidator.optional().default('reparent'),
+});
+
+export type DeleteSkillInput = z.infer<typeof DeleteSkillInputValidator>;
+
+export const CreateSkillsBatchInputValidator = z.object({
+    frameworkId: z.string(),
+    skills: z.array(SkillTreeNodeInputValidator).min(1),
+    parentId: z.string().nullable().optional(),
+});
+
+export type CreateSkillsBatchInput = z.infer<typeof CreateSkillsBatchInputValidator>;
+
+export const ReplaceSkillFrameworkSkillsInputValidator = z.object({
+    frameworkId: z.string(),
+    skills: z.array(SkillTreeNodeInputValidator).min(0),
+});
+
+export type ReplaceSkillFrameworkSkillsInput = z.infer<
+    typeof ReplaceSkillFrameworkSkillsInputValidator
+>;
+
+export const ReplaceSkillFrameworkSkillsResultValidator = z.object({
+    created: z.number().int().min(0),
+    updated: z.number().int().min(0),
+    deleted: z.number().int().min(0),
+    unchanged: z.number().int().min(0),
+    total: z.number().int().min(0),
+});
+
+export type ReplaceSkillFrameworkSkillsResult = z.infer<
+    typeof ReplaceSkillFrameworkSkillsResultValidator
+>;
+
+export const CountSkillsInputValidator = z.object({
+    frameworkId: z.string(),
+    skillId: z.string().optional(),
+    recursive: z.boolean().optional().default(false),
+    onlyCountCompetencies: z.boolean().optional().default(false),
+});
+
+export type CountSkillsInput = z.infer<typeof CountSkillsInputValidator>;
+
+export const CountSkillsResultValidator = z.object({
+    count: z.number().int().min(0),
+});
+
+export type CountSkillsResult = z.infer<typeof CountSkillsResultValidator>;
+
+export const GetFullSkillTreeInputValidator = z.object({
+    frameworkId: z.string(),
+});
+
+export type GetFullSkillTreeInput = z.infer<typeof GetFullSkillTreeInputValidator>;
+
+export const GetFullSkillTreeResultValidator = z.object({
+    skills: z.array(SkillTreeNodeValidator),
+});
+
+export type GetFullSkillTreeResult = z.infer<typeof GetFullSkillTreeResultValidator>;
+
+export const GetSkillPathInputValidator = z.object({
+    frameworkId: z.string(),
+    skillId: z.string(),
+});
+
+export type GetSkillPathInput = z.infer<typeof GetSkillPathInputValidator>;
+
+export const GetSkillPathResultValidator = z.object({
+    path: z.array(SkillValidator),
+});
+
+export type GetSkillPathResult = z.infer<typeof GetSkillPathResultValidator>;
+
+// Composite return shapes
+export const FrameworkWithSkillsValidator = z.object({
+    framework: SkillFrameworkValidator,
+    skills: PaginatedSkillTreeValidator,
+});
+
+export type FrameworkWithSkills = z.infer<typeof FrameworkWithSkillsValidator>;
+
+// Aliases used by the plugin type definitions
+export type CreateSkillTreeInput = SkillTreeInput;

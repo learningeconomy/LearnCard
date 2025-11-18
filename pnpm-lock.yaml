@@ -126,7 +126,7 @@ importers:
         version: 2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1)
       eslint-plugin-import:
         specifier: ^2.27.5
-        version: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1)
+        version: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1)
       eslint-plugin-prettier:
         specifier: ^4.2.1
         version: 4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8)
@@ -951,6 +951,19 @@ importers:
         specifier: ^0.5.4
         version: 0.5.5
 
+  examples/embed-example:
+    dependencies:
+      '@learncard/embed-sdk':
+        specifier: workspace:^
+        version: link:../../packages/learn-card-embed-sdk
+      astro:
+        specifier: ^4.7.0
+        version: 4.16.18(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(rollup@4.37.0)(sass@1.94.0)(terser@5.39.0)(typescript@5.6.2)
+    devDependencies:
+      prettier-plugin-astro:
+        specifier: ^0.5.4
+        version: 0.5.5
+
   examples/snap-chapi-example:
     dependencies:
       '@astrojs/react':
@@ -1381,6 +1394,9 @@ importers:
       '@learncard/learn-cloud-plugin':
         specifier: workspace:*
         version: link:../plugins/learn-cloud
+      '@learncard/linked-claims-plugin':
+        specifier: workspace:*
+        version: link:../plugins/linked-claims
       '@learncard/open-badge-v2-plugin':
         specifier: workspace:*
         version: link:../plugins/open-badge-v2
@@ -1482,6 +1498,39 @@ importers:
       tsc-alias:
         specifier: ^1.8.10
         version: 1.8.11
+
+  packages/learn-card-embed-sdk:
+    devDependencies:
+      '@rollup/plugin-commonjs':
+        specifier: ^22.0.2
+        version: 22.0.2(rollup@2.79.2)
+      '@rollup/plugin-node-resolve':
+        specifier: ^13.3.0
+        version: 13.3.0(rollup@2.79.2)
+      '@rollup/plugin-replace':
+        specifier: ^5.0.2
+        version: 5.0.7(rollup@2.79.2)
+      '@types/node':
+        specifier: ^18.19.64
+        version: 18.19.83
+      rollup:
+        specifier: ^2.79.1
+        version: 2.79.2
+      rollup-plugin-delete:
+        specifier: ^2.0.0
+        version: 2.2.0(rollup@2.79.2)
+      rollup-plugin-dts:
+        specifier: ^4.2.2
+        version: 4.2.3(rollup@2.79.2)(typescript@5.6.2)
+      rollup-plugin-esbuild:
+        specifier: ^4.9.1
+        version: 4.10.3(esbuild@0.25.11)(rollup@2.79.2)
+      rollup-plugin-string:
+        specifier: ^3.0.0
+        version: 3.0.0
+      typescript:
+        specifier: 5.6.2
+        version: 5.6.2
 
   packages/learn-card-helpers:
     dependencies:
@@ -2313,9 +2362,6 @@ importers:
       ts-jest:
         specifier: ^29.0.3
         version: 29.3.0(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.14.54)(jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@swc/core@1.15.1(@swc/helpers@0.5.17))(@types/node@17.0.45)(typescript@5.6.2)))(typescript@5.6.2)
-      typescript:
-        specifier: 5.6.2
-        version: 5.6.2
 
   packages/plugins/learn-card:
     dependencies:
@@ -2448,6 +2494,49 @@ importers:
       '@types/lodash':
         specifier: ^4.14.191
         version: 4.17.16
+      '@types/node':
+        specifier: ^17.0.31
+        version: 17.0.45
+      aqu:
+        specifier: 0.4.3
+        version: 0.4.3(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(@types/node@17.0.45)(babel-jest@29.7.0(@babel/core@7.26.10))(ts-node@10.9.2(@swc/core@1.15.1(@swc/helpers@0.5.17))(@types/node@17.0.45)(typescript@5.6.2))
+      esbuild:
+        specifier: ^0.14.38
+        version: 0.14.54
+      esbuild-jest:
+        specifier: ^0.5.0
+        version: 0.5.0(esbuild@0.14.54)
+      esbuild-plugin-copy:
+        specifier: ^1.3.0
+        version: 1.6.0(esbuild@0.14.54)
+      jest:
+        specifier: ^29.3.0
+        version: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@swc/core@1.15.1(@swc/helpers@0.5.17))(@types/node@17.0.45)(typescript@5.6.2))
+      shx:
+        specifier: ^0.3.4
+        version: 0.3.4
+      ts-jest:
+        specifier: ^29.0.3
+        version: 29.3.0(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.14.54)(jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@swc/core@1.15.1(@swc/helpers@0.5.17))(@types/node@17.0.45)(typescript@5.6.2)))(typescript@5.6.2)
+
+  packages/plugins/linked-claims:
+    dependencies:
+      '@learncard/core':
+        specifier: workspace:*
+        version: link:../../learn-card-core
+      '@learncard/types':
+        specifier: workspace:*
+        version: link:../../learn-card-types
+      '@learncard/vc-plugin':
+        specifier: workspace:^
+        version: link:../vc
+      why-is-node-running:
+        specifier: ^2.2.2
+        version: 2.3.0
+    devDependencies:
+      '@types/jest':
+        specifier: ^29.2.2
+        version: 29.5.14
       '@types/node':
         specifier: ^17.0.31
         version: 17.0.45
@@ -3089,7 +3178,7 @@ importers:
         version: 2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1)
       eslint-plugin-import:
         specifier: ^2.26.0
-        version: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1)
+        version: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1)
       eslint-plugin-prettier:
         specifier: ^4.2.1
         version: 4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8)
@@ -3681,13 +3770,13 @@ importers:
         version: 2.6.1
       '@metamask/eslint-config':
         specifier: ^10.0.0
-        version: 10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)
+        version: 10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)
       '@metamask/eslint-config-jest':
         specifier: ^10.0.0
-        version: 10.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@18.19.83)(ts-node@10.9.2(@swc/core@1.15.1(@swc/helpers@0.5.17))(@types/node@18.19.83)(typescript@5.6.2)))(typescript@5.6.2))(eslint@8.57.1)
+        version: 10.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@18.19.83)(ts-node@10.9.2(@swc/core@1.15.1(@swc/helpers@0.5.17))(@types/node@18.19.83)(typescript@5.6.2)))(typescript@5.6.2))(eslint@8.57.1)
       '@metamask/eslint-config-nodejs':
         specifier: ^8.0.0
-        version: 8.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-node@11.1.0(eslint@8.57.1))(eslint@8.57.1)
+        version: 8.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-node@11.1.0(eslint@8.57.1))(eslint@8.57.1)
       '@metamask/providers':
         specifier: ^9.1.0
         version: 9.1.0
@@ -3784,8 +3873,8 @@ importers:
         version: 8.14.1
     devDependencies:
       '@digitalcredentials/verifier-core':
-        specifier: ^0.0.1-beta.2
-        version: 0.0.1-beta.2(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(bufferutil@4.0.9)(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(web-streams-polyfill@3.3.3)
+        specifier: ^1.0.0-beta.8
+        version: 1.0.0-beta.8(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(bufferutil@4.0.9)(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))
       '@types/pg':
         specifier: ^8.11.10
         version: 8.11.11
@@ -4262,6 +4351,10 @@ packages:
     resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/code-frame@7.27.1':
+    resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/compat-data@7.26.8':
     resolution: {integrity: sha512-oH5UPLMWR3L2wEFLnFJ1TZXqHufiTKAiLfqw5zkhS4dKXLJ10yVztfil/twG8EDTA4F/tvVNw9nOl4ZMslB8rQ==}
     engines: {node: '>=6.9.0'}
@@ -4350,6 +4443,10 @@ packages:
 
   '@babel/helper-validator-identifier@7.25.9':
     resolution: {integrity: sha512-Ed61U6XJc3CVRfkERJWDz4dJwKe7iLmmJsbOGu9wSloNSFttHV0I8g6UAgb7qnK5ly5bGLPd4oXZlxCdANBOWQ==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/helper-validator-identifier@7.27.1':
+    resolution: {integrity: sha512-D2hP9eA+Sqx1kBZgzxZh0y1trbuU+JoDkiEwqhQ36nodYqJwyEIhPSdMNd7lOm/4io72luTPWH20Yda0xOuUow==}
     engines: {node: '>=6.9.0'}
 
   '@babel/helper-validator-option@7.25.9':
@@ -5336,22 +5433,6 @@ packages:
     resolution: {integrity: sha512-XpXUzId6ZIEaNq9R+Fv3LrArj1bRj0QX3yfYgxi2bGZGIMs8EkdwsQdzTq38cmHXBQz4DASVun7mBtwrEqjf3g==}
     engines: {node: '>=18'}
 
-  '@digitalbazaar/data-integrity@2.5.0':
-    resolution: {integrity: sha512-ohIieLfgtPQU9BYfj0eKNiz55/ZDOk5YSE9FN/Hn0eXzI8WQzLkzRvC8pvBnzuzXDgCsjPdSqYvzok5PoClMBQ==}
-    engines: {node: '>=18'}
-
-  '@digitalbazaar/ed25519-multikey@1.3.1':
-    resolution: {integrity: sha512-55qIbOaAyswVCFfZ70ap7SN2bDSwYmcVbUtGCrpVF/CjuJ8IPqf6z8fDPJzB+CE7Q896SaZlcDukz4LOwIRCPA==}
-    engines: {node: '>=16'}
-
-  '@digitalbazaar/eddsa-rdfc-2022-cryptosuite@1.2.0':
-    resolution: {integrity: sha512-a3PyICe1SI55SgHXgtPRYpzmZ2FMtloQDkVcbhUZ9dpoLcZg5TqsS4U7ap2ggCD4MUXz7uz6ErikJf76Iwyd0g==}
-    engines: {node: '>=18'}
-
-  '@digitalbazaar/http-client@3.4.1':
-    resolution: {integrity: sha512-Ahk1N+s7urkgj7WvvUND5f8GiWEPfUw0D41hdElaqLgu8wZScI8gdI0q+qWw5N1d35x7GCRH2uk9mi+Uzo9M3g==}
-    engines: {node: '>=14.0'}
-
   '@digitalbazaar/security-context@1.0.1':
     resolution: {integrity: sha512-0WZa6tPiTZZF8leBtQgYAfXQePFQp2z5ivpCEN/iZguYYZ0TB9qRmWtan5XH6mNFuusHtMcyIzAcReyE6rZPhA==}
 
@@ -5378,17 +5459,21 @@ packages:
     resolution: {integrity: sha512-ixe9f8RbnmaZ9XP0cnjKlEhSytWerk1CKseYS8XtF3wOsT/fhzdIRtZP8iL6oDiFijsBLsnvxosgWTgltK/k8A==}
     engines: {node: '>=16'}
 
-  '@digitalcredentials/bnid@3.0.1':
-    resolution: {integrity: sha512-okw9d94w09LIDz1ahwW+N5WB/4jhotH0K4+VepooA7scCcv6kyyMMcVPTsEKqxGhY88EiCYoFoL/T4kz6k6JnQ==}
-    engines: {node: '>=18'}
-
   '@digitalcredentials/credentials-v2-context@0.0.1-beta.0':
     resolution: {integrity: sha512-i0AQXFnMeOqf2uKNBUcnN78mO8L9H91QKMdpDqsgDYzTIKGLnNCOOxbRbrJOimhR+soYO64xn54U8/R7Qx0nyA==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/credentials-v2-context@1.0.0':
+    resolution: {integrity: sha512-n+zBS+fYlKfvDmt8jdpB6n6p2JRLo6v6A2BGLVmbqzHFvfdQZXS+t489TWipFmi5g3FV12/bDCILUpCrqswDvg==}
     engines: {node: '>=18'}
 
   '@digitalcredentials/crypto-ld@7.0.6':
     resolution: {integrity: sha512-wxgjiU08rIMUaPhaOOVUjcdWZoL1FVfzGuX9ADHiyx0O34lJ4wdXnGk5QMYgwpl7B4gy1vDDp5VVHpO8l+aVFQ==}
     engines: {node: '>=16'}
+
+  '@digitalcredentials/data-integrity@2.6.0':
+    resolution: {integrity: sha512-vk8nFmkdQfOf6VvJk2lw6tIdORI8r4rOrxYZvb1pBh/1d+IJ7O6csnXJUmmQA2UJ6dwfxFuFyADORgc2ZYb4iA==}
+    engines: {node: '>=18'}
 
   '@digitalcredentials/dcc-context@1.0.0':
     resolution: {integrity: sha512-iun3HTqOqcAoG0lz5GWx/fJYxpbKjzqq866dBo0osxs+pj/CwZDNHKXVC6sdd662tXg9EF0r4YdZ/AW6DOnS6A==}
@@ -5397,24 +5482,32 @@ packages:
     resolution: {integrity: sha512-z6lLRe4drHYwtfxbySQJZZl2YbCPvG5UDkh/H3kAK2NSZY9GaIm9iz9A6E/J5Lu6rct/BOj1XQhtEJnzRdB8wQ==}
     engines: {node: '>=12'}
 
-  '@digitalcredentials/did-method-key@2.0.3':
-    resolution: {integrity: sha512-b31TOIKJm+qcay7m9kxV6TDNyJwdb/XZIS/OjHarONlXGB3k0M38NXmbRDI95FTmy3GhYCFSJ3VEikqNKTXU2A==}
-    engines: {node: '>=12'}
+  '@digitalcredentials/did-method-key@3.0.0':
+    resolution: {integrity: sha512-Cq75fbUkDed1O3TPFY89xlqq+oCKvBCMjDJz8KIVx75eZCnxhcE9h/a4t9yW0FRnp0LBrV9HDoSPNyN9P6dr1A==}
+    engines: {node: '>=16'}
 
-  '@digitalcredentials/ed25519-signature-2020@6.0.0':
-    resolution: {integrity: sha512-ncjJxGxMRtm7ooR1XdUT2dgXrGnFa4oAG1WMShBi93N5I1OUdUlNUtKrMiMzp6PlhVD+4x7VMuOA4oRM8adEgw==}
-    engines: {node: '>=14'}
+  '@digitalcredentials/did-method-web@1.1.0':
+    resolution: {integrity: sha512-FgsCNGz6Iniy1fR5G8wcT1EMfQzVPJUhz3ei9Ha0aavN3K3dD2XTIKG83vAV3L9tpmtcQhdwcIG+2JaBO1PBYQ==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/ed25519-multikey@1.4.0':
+    resolution: {integrity: sha512-BXgNEX42a1EwnUantP6Po7yt43BamajrzVIvips6/egcQIFfXFHwl8yBvmPndsNY1Q9HKv/b743Nl5C3HEt8PA==}
+    engines: {node: '>=16'}
+
+  '@digitalcredentials/ed25519-signature-2020@7.0.0':
+    resolution: {integrity: sha512-Q0HdBdYKfg6yiPMJ1NlZMbUslSAVVwet/WhA/8emddb7W9lmmAtPJv3f9AuMfLFhY70z29Iedc5KWxqqbkMHbA==}
+    engines: {node: '>=18'}
 
   '@digitalcredentials/ed25519-verification-key-2020@3.2.2':
     resolution: {integrity: sha512-ZfxNFZlA379MZpf+gV2tUYyiZ15eGVgjtCQLWlyu3frWxsumUgv++o0OJlMnrDsWGwzFMRrsXcosd5+752rLOA==}
     engines: {node: '>=14'}
 
+  '@digitalcredentials/eddsa-rdfc-2022-cryptosuite@1.3.0':
+    resolution: {integrity: sha512-tLebsSZGTqGu6VxGjxv8g18NuBmRxew20WgaIxaBoWpLr2cbWDKKkTs40nWWLQPhm/UPC7x4XWkkIWZq33K4eg==}
+    engines: {node: '>=18'}
+
   '@digitalcredentials/http-client@5.0.4':
     resolution: {integrity: sha512-TbbfFauhd5fUAcZ/6TDenTuYqkzqdEhxYk1Rqicxcz33B9rzvJcmT+/81KF9DrUXmu6gpoqCranT2UkZftsxZA==}
-    engines: {node: '>=18.0'}
-
-  '@digitalcredentials/issuer-registry-client@3.1.0':
-    resolution: {integrity: sha512-RY5F9aCx1MU/Iw2fW/CzMEAF1AMbWXyVb8E52kUlwfCqqfIQdG+5nzYK3HGlcHGZgexkQyQOcg2HtaLE9s8WSg==}
     engines: {node: '>=18.0'}
 
   '@digitalcredentials/issuer-registry-client@3.2.0-beta.5':
@@ -5440,24 +5533,27 @@ packages:
   '@digitalcredentials/open-badges-context@2.1.0':
     resolution: {integrity: sha512-VK7X5u6OoBFxkyIFplNqUPVbo+8vFSAEoam8tSozpj05KPfcGw41Tp5p9fqMnY38oPfwtZR2yDNSctj/slrE0A==}
 
-  '@digitalcredentials/security-document-loader@6.0.1':
-    resolution: {integrity: sha512-u3NereDzc5Wp7LwAGq4r7pKe1FzoOc4z5vB6a0gFtte/PR0S3qIbymNFy3sscztWeadkbCzfJRE0YmRt6fA8xg==}
+  '@digitalcredentials/open-badges-context@3.0.0':
+    resolution: {integrity: sha512-pyXirpq29gy+NIaTBozDEm7nk1Oh8Yqie2WR0JuIqRX0ePCbiFeMv2uPEP3TXzyh1Jz++28fD+qjNojlhUmiIw==}
+
+  '@digitalcredentials/security-document-loader@8.0.0':
+    resolution: {integrity: sha512-0rURdip0S/L4aegONkef5yzaGqQ35n7TXE0RhtEJa6scEaZssazaADgg9ApMA47kiGRjCn30yKrds9YULwoltA==}
     engines: {node: '>=16.0'}
 
   '@digitalcredentials/vc-bitstring-status-list@1.0.0':
     resolution: {integrity: sha512-07CZVU3cH1rwLJ5a1DzUT4vBvbYZKtX8l2au9e3wd21iSRXCwzCOVtPy496JjEWnmstyUJCIskAeyfv6MS4H2A==}
     engines: {node: '>=18'}
 
+  '@digitalcredentials/vc@10.0.0':
+    resolution: {integrity: sha512-yHSE2iJy/uhdboa7ybO+emGMiKAlhq4iRXvsteUWSoBtNE20CoBeSKJ1Fh06EhbzlOyLJSBg2s54C9dParehdw==}
+    engines: {node: '>=18'}
+
   '@digitalcredentials/vc@8.0.1':
     resolution: {integrity: sha512-QbfdAo4czT4gqCyS9c+YMMw8Vy5h1/pVmjpRrsTPGfBjWudHoT8OAa5VCfxdsiCFFdXZnGSqruPslt1W8RC/hw==}
     engines: {node: '>=18'}
 
-  '@digitalcredentials/vc@9.0.1':
-    resolution: {integrity: sha512-oqwOq2mJqvrFabc/89jupkNkhhmFrOe93efSjCMmtd4XnM0Tcj3PYOq/ptmyXKpj8+vEqzeGxqF7AXiCMh3dig==}
-    engines: {node: '>=18'}
-
-  '@digitalcredentials/verifier-core@0.0.1-beta.2':
-    resolution: {integrity: sha512-KMX47yoUnTuGKE1OfvHOeo+BM73TPVc6l/Z3LTu9mNMf94J31l7FJbqm1iUpsakr8BvUL6ncCtxZsFp73GWd6w==}
+  '@digitalcredentials/verifier-core@1.0.0-beta.8':
+    resolution: {integrity: sha512-vsmDwcSZHxac6oMy33a8rUoUy3vTM6yKyZFJNH4adwy/hiQjBMY5yDV9aBorHi5K21z6kTWAT9oGx5ElArlHAA==}
     engines: {node: '>=18.0'}
 
   '@digitalcredentials/x25519-key-agreement-key-2020@2.0.2':
@@ -7467,10 +7563,6 @@ packages:
   '@import-maps/resolve@2.0.0':
     resolution: {integrity: sha512-RwzRTpmrrS6Q1ZhQExwuxJGK1Wqhv4stt+OF2JzS+uawewpwNyU7EJL1WpBex7aDiiGLs4FsXGkfUBdYuX7xiQ==}
 
-  '@interop/did-web-resolver@5.0.0':
-    resolution: {integrity: sha512-Gvv13DtUYFjkSx00ioq4A7dZd8B/0ETOaqYymBgFHvNH7DCBm5v1gyqax/4MBOeSBwf6KTrQWmvqaGYbE9P4Bw==}
-    engines: {node: '>=18.0'}
-
   '@ionic/cli-framework-output@2.2.5':
     resolution: {integrity: sha512-YeDLTnTaE6V4IDUxT8GDIep0GuRIFaR7YZDLANMuuWJZDmnTku6DP+MmQoltBeLmVvz1BAAZgk41xzxdq6H2FQ==}
     engines: {node: '>=10.3.0'}
@@ -9287,6 +9379,15 @@ packages:
     peerDependencies:
       rollup: ^2.42.0
 
+  '@rollup/plugin-replace@5.0.7':
+    resolution: {integrity: sha512-PqxSfuorkHz/SPpyngLyg5GCEkOcee9M1bkxiVDr41Pd61mqP1PLOoDPbpl44SB2mQGKwV/In74gqQmGITOhEQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+
   '@rollup/pluginutils@3.1.0':
     resolution: {integrity: sha512-GksZ6pr6TpIjHm8h9lSQ8pi8BE9VeubNT0OMJ3B5uZJ8pz73NPiqOtCog/x2/QzM1ENChPKxMDhiQuRHsqc+lg==}
     engines: {node: '>= 8.0.0'}
@@ -10094,6 +10195,9 @@ packages:
   '@stablelib/binary@1.0.1':
     resolution: {integrity: sha512-ClJWvmL6UBM/wjkvv/7m5VP3GMr9t0osr4yVgLZsLCOz4hGN9gIAFEqnJ0TsSMAN+n840nf2cHZnA5/KFqHC7Q==}
 
+  '@stablelib/binary@2.0.1':
+    resolution: {integrity: sha512-U9iAO8lXgEDONsA0zPPSgcf3HUBNAqHiJmSHgZz62OvC3Hi2Bhc5kTnQ3S1/L+sthDTHtCMhcEiklmIly6uQ3w==}
+
   '@stablelib/bytes@1.0.1':
     resolution: {integrity: sha512-Kre4Y4kdwuqL8BR2E9hV/R5sOrUj6NanZaZis0V6lX5yzqC3hBuVSDXUIBqQv/sCpmuWRiHLwqiT1pqqjuBXoQ==}
 
@@ -10109,11 +10213,20 @@ packages:
   '@stablelib/ed25519@1.0.3':
     resolution: {integrity: sha512-puIMWaX9QlRsbhxfDc5i+mNPMY+0TmQEskunY1rZEBPi1acBCVQAhnsk/1Hk50DGPtVsZtAWQg4NHGlVaO9Hqg==}
 
+  '@stablelib/ed25519@2.0.2':
+    resolution: {integrity: sha512-d/lJ5sgzhtmpMIbKFWfev+i6WebBdIzzBpMzXtZdvUijoksjXosYFNqytoMj7cRshNj+/XTLYnnVMdZfd+penw==}
+
   '@stablelib/hash@1.0.1':
     resolution: {integrity: sha512-eTPJc/stDkdtOcrNMZ6mcMK1e6yBbqRBaNW55XA1jU8w/7QdnCF0CmMmOD1m7VSkBR44PWrMHU2l6r8YEQHMgg==}
 
+  '@stablelib/hash@2.0.0':
+    resolution: {integrity: sha512-u3WPSqGido8lwJuMcrBgM5K54LrPGhkWAdtsyccf7dGsLixAZUds77zOAbu7bvKPwQlmoByH0txBi5rTmEKuHg==}
+
   '@stablelib/int@1.0.1':
     resolution: {integrity: sha512-byr69X/sDtDiIjIV6m4roLVWnNNlRGzsvxw+agj8CIEazqWGOQp2dTYgQhtyVXV9wpO6WyXRQUzLV/JRNumT2w==}
+
+  '@stablelib/int@2.0.1':
+    resolution: {integrity: sha512-Ht63fQp3wz/F8U4AlXEPb7hfJOIILs8Lq55jgtD7KueWtyjhVuzcsGLSTAWtZs3XJDZYdF1WcSKn+kBtbzupww==}
 
   '@stablelib/keyagreement@1.0.1':
     resolution: {integrity: sha512-VKL6xBwgJnI6l1jKrBAfn265cspaWBPAPEc62VBQrWHLqVgNRE09gQ/AnOEyKUWrrqfD+xSQ3u42gJjLDdMDQg==}
@@ -10124,14 +10237,23 @@ packages:
   '@stablelib/random@1.0.2':
     resolution: {integrity: sha512-rIsE83Xpb7clHPVRlBj8qNe5L8ISQOzjghYQm/dZ7VaM2KHYwMW5adjQjrzTZCchFnNCNhkwtnOBa9HTMJCI8w==}
 
+  '@stablelib/random@2.0.1':
+    resolution: {integrity: sha512-W6GAtXEEs7r+dSbuBsvoFmlyL3gLxle41tQkjKu17dDWtDdjhVUbtRfRCQcCUeczwkgjQxMPopgwYEvxXtHXGw==}
+
   '@stablelib/sha256@1.0.1':
     resolution: {integrity: sha512-GIIH3e6KH+91FqGV42Kcj71Uefd/QEe7Dy42sBTeqppXV95ggCcxLTk39bEr+lZfJmp+ghsR07J++ORkRELsBQ==}
 
   '@stablelib/sha512@1.0.1':
     resolution: {integrity: sha512-13gl/iawHV9zvDKciLo1fQ8Bgn2Pvf7OV6amaRVKiq3pjQ3UmEpXxWiAfV8tYjUpeZroBxtyrwtdooQT/i3hzw==}
 
+  '@stablelib/sha512@2.0.1':
+    resolution: {integrity: sha512-DUNe5cbnoH3sSIN+MG04RvTCLXtkbyy/SnQxiNO+GgF/KSXkkUSlF6mUVvCUdZBZ2X3NgogR+tAvaRSn8wxnLw==}
+
   '@stablelib/wipe@1.0.1':
     resolution: {integrity: sha512-WfqfX/eXGiAd3RJe4VU2snh/ZPwtSjLG4ynQ/vYzvghTh7dHFcI1wl+nrkWG6lGhukOxOsUHfv8dUXr58D0ayg==}
+
+  '@stablelib/wipe@2.0.1':
+    resolution: {integrity: sha512-1eU2K9EgOcV4qc9jcP6G72xxZxEm5PfeI5H55l08W95b4oRJaqhmlWRc4xZAm6IVSKhVNxMi66V67hCzzuMTAg==}
 
   '@stablelib/x25519@1.0.3':
     resolution: {integrity: sha512-KnTbKmUhPhHavzobclVJQG5kuivH+qDLpe84iRqX3CLrKp881cF160JvXJ+hjn1aMyCwYOKeIZefIH/P5cJoRw==}
@@ -18600,14 +18722,6 @@ packages:
     resolution: {integrity: sha512-CtFyIBZApeVvs6QgyS7Gcp8h1dUs+1XNHcV4Sr6O9ItPaL0hVgqe47Tgs3RNH0A5Bc4p3UFPKAJVHKSOQq4mhQ==}
     engines: {node: '>=12'}
 
-  jsonld-signatures@11.5.0:
-    resolution: {integrity: sha512-Kdto+e8uvY/5u3HYkmAbpy52bplWX9uqS8fmqdCv6oxnCFwCTM0hMt6r4rWqlhw5/aHoCHJIRxwYb4QKGC69Jw==}
-    engines: {node: '>=18'}
-
-  jsonld@8.3.3:
-    resolution: {integrity: sha512-9YcilrF+dLfg9NTEof/mJLMtbdX1RJ8dbWtJgE00cMOIohb1lIyJl710vFiTaiHTl6ZYODJuBd32xFvUhmv3kg==}
-    engines: {node: '>=14'}
-
   jsonparse@1.3.1:
     resolution: {integrity: sha512-POQXvpdL69+CluYsillJ7SUhKvytYjW9vG/GKpnf+xP8UWgYEM/RaMzHHofbALDiKbbP1W8UEYmgGl39WkPZsg==}
     engines: {'0': node >= 0.2.0}
@@ -18715,20 +18829,6 @@ packages:
   klona@2.0.6:
     resolution: {integrity: sha512-dhG34DXATL5hSxJbIexCft8FChFXtmskoZYnoPWjXQuebWYCNkVeV3KkGegCK9CP1oswI/vQibS2GY7Em/sJJA==}
     engines: {node: '>= 8'}
-
-  ky-universal@0.11.0:
-    resolution: {integrity: sha512-65KyweaWvk+uKKkCrfAf+xqN2/epw1IJDtlyCPxYffFCMR8u1sp2U65NtWpnozYfZxQ6IUzIlvUcw+hQ82U2Xw==}
-    engines: {node: '>=14.16'}
-    peerDependencies:
-      ky: '>=0.31.4'
-      web-streams-polyfill: '>=3.2.1'
-    peerDependenciesMeta:
-      web-streams-polyfill:
-        optional: true
-
-  ky@0.33.3:
-    resolution: {integrity: sha512-CasD9OCEQSFIam2U8efFK81Yeg8vNMTBUqtMOHlrcWQHqUX3HeCl9Dr31u4toV7emlH8Mymk5+9p0lL6mKb/Xw==}
-    engines: {node: '>=14.16'}
 
   ky@1.8.1:
     resolution: {integrity: sha512-7Bp3TpsE+L+TARSnnDpk3xg8Idi8RwSLdj6CMbNWoOARIrGrbuLGusV0dYwbZOm4bB3jHNxSw8Wk/ByDqJEnDw==}
@@ -21939,7 +22039,6 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
-
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qrcode-reader@1.0.4:
@@ -22901,6 +23000,9 @@ packages:
     resolution: {integrity: sha512-Y/gD3abliw3F20uY6ILpmH6sokXKntuTFKvDdLEJxHFcyQRsTb12u2KbsapqPZDa4JN/Nxx7BslYlZ/KmYAtPg==}
     peerDependencies:
       rollup: '>0.60'
+
+  rollup-plugin-string@3.0.0:
+    resolution: {integrity: sha512-vqyzgn9QefAgeKi+Y4A7jETeIAU1zQmS6VotH6bzm/zmUQEnYkpIGRaOBPY41oiWYV4JyBoGAaBjYMYuv+6wVw==}
 
   rollup-plugin-styles@4.0.0:
     resolution: {integrity: sha512-A2K2sao84OsTmDxXG83JTCdXWrmgvQkkI38XDat46rdtpGMRm9tSYqeCdlwwGDJF4kKIafhV1mUidqu8MxUGig==}
@@ -27577,6 +27679,13 @@ snapshots:
       js-tokens: 4.0.0
       picocolors: 1.1.1
 
+  '@babel/code-frame@7.27.1':
+    dependencies:
+      '@babel/helper-validator-identifier': 7.27.1
+      js-tokens: 4.0.0
+      picocolors: 1.1.1
+    optional: true
+
   '@babel/compat-data@7.26.8': {}
 
   '@babel/core@7.12.9':
@@ -27740,6 +27849,9 @@ snapshots:
 
   '@babel/helper-validator-identifier@7.25.9': {}
 
+  '@babel/helper-validator-identifier@7.27.1':
+    optional: true
+
   '@babel/helper-validator-option@7.25.9': {}
 
   '@babel/helper-wrap-function@7.25.9':
@@ -27757,7 +27869,7 @@ snapshots:
 
   '@babel/highlight@7.25.9':
     dependencies:
-      '@babel/helper-validator-identifier': 7.25.9
+      '@babel/helper-validator-identifier': 7.27.1
       chalk: 2.4.2
       js-tokens: 4.0.0
       picocolors: 1.1.1
@@ -27824,6 +27936,7 @@ snapshots:
     dependencies:
       '@babel/core': 7.26.10
       '@babel/helper-plugin-utils': 7.26.5
+    optional: true
 
   '@babel/plugin-proposal-nullish-coalescing-operator@7.18.6(@babel/core@7.26.10)':
     dependencies:
@@ -27895,6 +28008,7 @@ snapshots:
     dependencies:
       '@babel/core': 7.26.10
       '@babel/helper-plugin-utils': 7.26.5
+    optional: true
 
   '@babel/plugin-syntax-flow@7.26.0(@babel/core@7.26.10)':
     dependencies:
@@ -29107,36 +29221,6 @@ snapshots:
 
   '@digitalbazaar/data-integrity-context@2.0.1': {}
 
-  '@digitalbazaar/data-integrity@2.5.0(web-streams-polyfill@3.3.3)':
-    dependencies:
-      base58-universal: 2.0.0
-      base64url-universal: 2.0.0
-      jsonld-signatures: 11.5.0(web-streams-polyfill@3.3.3)
-    transitivePeerDependencies:
-      - web-streams-polyfill
-
-  '@digitalbazaar/ed25519-multikey@1.3.1':
-    dependencies:
-      '@noble/ed25519': 1.7.5
-      base58-universal: 2.0.0
-      base64url-universal: 2.0.0
-
-  '@digitalbazaar/eddsa-rdfc-2022-cryptosuite@1.2.0(web-streams-polyfill@3.3.3)':
-    dependencies:
-      '@digitalbazaar/ed25519-multikey': 1.3.1
-      jsonld: 8.3.3(web-streams-polyfill@3.3.3)
-      rdf-canonize: 4.0.1
-    transitivePeerDependencies:
-      - web-streams-polyfill
-
-  '@digitalbazaar/http-client@3.4.1(web-streams-polyfill@3.3.3)':
-    dependencies:
-      ky: 0.33.3
-      ky-universal: 0.11.0(ky@0.33.3)(web-streams-polyfill@3.3.3)
-      undici: 5.29.0
-    transitivePeerDependencies:
-      - web-streams-polyfill
-
   '@digitalbazaar/security-context@1.0.1': {}
 
   '@digitalbazaar/vc-bitstring-status-list-context@1.1.0': {}
@@ -29161,16 +29245,18 @@ snapshots:
       '@digitalcredentials/base64url-universal': 2.0.6
       pako: 2.1.0
 
-  '@digitalcredentials/bnid@3.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))':
-    dependencies:
-      base-x: 4.0.1
-      react-native-securerandom: 1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))
-    transitivePeerDependencies:
-      - react-native
-
   '@digitalcredentials/credentials-v2-context@0.0.1-beta.0': {}
 
+  '@digitalcredentials/credentials-v2-context@1.0.0': {}
+
   '@digitalcredentials/crypto-ld@7.0.6': {}
+
+  '@digitalcredentials/data-integrity@2.6.0':
+    dependencies:
+      '@digitalcredentials/jsonld-signatures': 12.0.1
+      base58-universal: 2.0.0
+      base64url-universal: 2.0.0
+      fast-text-encoding: 1.0.6
 
   '@digitalcredentials/dcc-context@1.0.0': {}
 
@@ -29178,15 +29264,29 @@ snapshots:
     dependencies:
       '@digitalcredentials/lru-memoize': 2.1.4
 
-  '@digitalcredentials/did-method-key@2.0.3':
+  '@digitalcredentials/did-method-key@3.0.0':
     dependencies:
       '@digitalcredentials/did-io': 1.0.2
-      '@digitalcredentials/ed25519-verification-key-2020': 3.2.2
       '@digitalcredentials/x25519-key-agreement-key-2020': 2.0.2
 
-  '@digitalcredentials/ed25519-signature-2020@6.0.0':
+  '@digitalcredentials/did-method-web@1.1.0':
+    dependencies:
+      '@digitalcredentials/did-io': 1.0.2
+      '@digitalcredentials/did-method-key': 3.0.0
+      '@digitalcredentials/http-client': 5.0.4
+      klona: 2.0.6
+
+  '@digitalcredentials/ed25519-multikey@1.4.0':
+    dependencies:
+      '@noble/ed25519': 1.7.5
+      '@stablelib/ed25519': 2.0.2
+      base58-universal: 2.0.0
+      base64url-universal: 2.0.0
+
+  '@digitalcredentials/ed25519-signature-2020@7.0.0':
     dependencies:
       '@digitalcredentials/base58-universal': 1.0.1
+      '@digitalcredentials/ed25519-multikey': 1.4.0
       '@digitalcredentials/ed25519-verification-key-2020': 3.2.2
       '@digitalcredentials/jsonld-signatures': 12.0.1
       ed25519-signature-2018-context: 1.1.0
@@ -29199,14 +29299,16 @@ snapshots:
       base64url-universal: 1.1.0
       crypto-ld: 6.0.0
 
+  '@digitalcredentials/eddsa-rdfc-2022-cryptosuite@1.3.0':
+    dependencies:
+      '@digitalcredentials/ed25519-multikey': 1.4.0
+      '@digitalcredentials/jsonld': 9.0.0
+      rdf-canonize: 4.0.1
+
   '@digitalcredentials/http-client@5.0.4':
     dependencies:
       ky: 1.8.1
       undici: 6.21.2
-
-  '@digitalcredentials/issuer-registry-client@3.1.0':
-    dependencies:
-      '@digitalcredentials/http-client': 5.0.4
 
   '@digitalcredentials/issuer-registry-client@3.2.0-beta.5':
     dependencies:
@@ -29248,29 +29350,30 @@ snapshots:
 
   '@digitalcredentials/open-badges-context@2.1.0': {}
 
-  '@digitalcredentials/security-document-loader@6.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))':
+  '@digitalcredentials/open-badges-context@3.0.0': {}
+
+  '@digitalcredentials/security-document-loader@8.0.0':
     dependencies:
       '@digitalbazaar/data-integrity-context': 2.0.1
       '@digitalbazaar/vc-bitstring-status-list-context': 1.1.0
       '@digitalbazaar/vc-status-list-context': 3.1.1
-      '@digitalcredentials/credentials-v2-context': 0.0.1-beta.0
+      '@digitalcredentials/credentials-v2-context': 1.0.0
       '@digitalcredentials/crypto-ld': 7.0.6
       '@digitalcredentials/dcc-context': 1.0.0
       '@digitalcredentials/did-io': 1.0.2
-      '@digitalcredentials/did-method-key': 2.0.3
+      '@digitalcredentials/did-method-key': 3.0.0
+      '@digitalcredentials/did-method-web': 1.1.0
+      '@digitalcredentials/ed25519-multikey': 1.4.0
       '@digitalcredentials/ed25519-verification-key-2020': 3.2.2
       '@digitalcredentials/http-client': 5.0.4
-      '@digitalcredentials/open-badges-context': 2.1.0
+      '@digitalcredentials/open-badges-context': 3.0.0
       '@digitalcredentials/x25519-key-agreement-key-2020': 3.0.0
-      '@interop/did-web-resolver': 5.0.0(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))
       credentials-context: 2.0.0
       did-context: 3.1.1
       ed25519-signature-2020-context: 1.1.0
       html-entities: 2.5.3
       jsonld-document-loader: 1.2.1
       x25519-key-agreement-2020-context: 1.0.0
-    transitivePeerDependencies:
-      - react-native
 
   '@digitalcredentials/vc-bitstring-status-list@1.0.0(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(bufferutil@4.0.9)(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))':
     dependencies:
@@ -29285,6 +29388,15 @@ snapshots:
       - msrcrypt
       - msrcrypto
       - react-native-securerandom
+
+  '@digitalcredentials/vc@10.0.0':
+    dependencies:
+      '@digitalcredentials/credentials-v2-context': 0.0.1-beta.0
+      '@digitalcredentials/jsonld': 9.0.0
+      '@digitalcredentials/jsonld-signatures': 12.0.1
+      '@digitalcredentials/open-badges-context': 2.1.0
+      credentials-context: 2.0.0
+      ed25519-signature-2018-context: 1.1.0
 
   '@digitalcredentials/vc@8.0.1(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(bufferutil@4.0.9)(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))':
     dependencies:
@@ -29301,33 +29413,22 @@ snapshots:
       - msrcrypto
       - react-native-securerandom
 
-  '@digitalcredentials/vc@9.0.1':
+  '@digitalcredentials/verifier-core@1.0.0-beta.8(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(bufferutil@4.0.9)(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))':
     dependencies:
-      '@digitalcredentials/credentials-v2-context': 0.0.1-beta.0
-      '@digitalcredentials/jsonld': 9.0.0
+      '@digitalcredentials/data-integrity': 2.6.0
+      '@digitalcredentials/ed25519-signature-2020': 7.0.0
+      '@digitalcredentials/eddsa-rdfc-2022-cryptosuite': 1.3.0
+      '@digitalcredentials/issuer-registry-client': 3.2.0-beta.5
       '@digitalcredentials/jsonld-signatures': 12.0.1
-      '@digitalcredentials/open-badges-context': 2.1.0
-      credentials-context: 2.0.0
-      ed25519-signature-2018-context: 1.1.0
-
-  '@digitalcredentials/verifier-core@0.0.1-beta.2(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(bufferutil@4.0.9)(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(web-streams-polyfill@3.3.3)':
-    dependencies:
-      '@digitalbazaar/data-integrity': 2.5.0(web-streams-polyfill@3.3.3)
-      '@digitalbazaar/eddsa-rdfc-2022-cryptosuite': 1.2.0(web-streams-polyfill@3.3.3)
-      '@digitalcredentials/ed25519-signature-2020': 6.0.0
-      '@digitalcredentials/issuer-registry-client': 3.1.0
-      '@digitalcredentials/jsonld-signatures': 12.0.1
-      '@digitalcredentials/security-document-loader': 6.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))
-      '@digitalcredentials/vc': 9.0.1
+      '@digitalcredentials/security-document-loader': 8.0.0
+      '@digitalcredentials/vc': 10.0.0
       '@digitalcredentials/vc-bitstring-status-list': 1.0.0(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(bufferutil@4.0.9)(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)))
     transitivePeerDependencies:
       - expo
       - expo-crypto
       - msrcrypt
       - msrcrypto
-      - react-native
       - react-native-securerandom
-      - web-streams-polyfill
 
   '@digitalcredentials/x25519-key-agreement-key-2020@2.0.2':
     dependencies:
@@ -32266,18 +32367,6 @@ snapshots:
 
   '@import-maps/resolve@2.0.0': {}
 
-  '@interop/did-web-resolver@5.0.0(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))':
-    dependencies:
-      '@digitalcredentials/bnid': 3.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))
-      '@digitalcredentials/did-io': 1.0.2
-      '@digitalcredentials/http-client': 5.0.4
-      did-context: 3.1.1
-      ed25519-signature-2020-context: 1.1.0
-      whatwg-url: 14.2.0
-      x25519-key-agreement-2020-context: 1.0.0
-    transitivePeerDependencies:
-      - react-native
-
   '@ionic/cli-framework-output@2.2.5':
     dependencies:
       '@ionic/utils-terminal': 2.3.3
@@ -32604,7 +32693,8 @@ snapshots:
     dependencies:
       minipass: 7.1.2
 
-  '@isaacs/ttlcache@1.4.1': {}
+  '@isaacs/ttlcache@1.4.1':
+    optional: true
 
   '@istanbuljs/load-nyc-config@1.1.0':
     dependencies:
@@ -32777,6 +32867,7 @@ snapshots:
   '@jest/create-cache-key-function@29.7.0':
     dependencies:
       '@jest/types': 29.6.3
+    optional: true
 
   '@jest/environment@28.1.3':
     dependencies:
@@ -33473,23 +33564,23 @@ snapshots:
 
   '@metamask/detect-provider@1.2.0': {}
 
-  '@metamask/eslint-config-jest@10.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@18.19.83)(ts-node@10.9.2(@swc/core@1.15.1(@swc/helpers@0.5.17))(@types/node@18.19.83)(typescript@5.6.2)))(typescript@5.6.2))(eslint@8.57.1)':
+  '@metamask/eslint-config-jest@10.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@18.19.83)(ts-node@10.9.2(@swc/core@1.15.1(@swc/helpers@0.5.17))(@types/node@18.19.83)(typescript@5.6.2)))(typescript@5.6.2))(eslint@8.57.1)':
     dependencies:
-      '@metamask/eslint-config': 10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)
+      '@metamask/eslint-config': 10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)
       eslint: 8.57.1
       eslint-plugin-jest: 26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@18.19.83)(ts-node@10.9.2(@swc/core@1.15.1(@swc/helpers@0.5.17))(@types/node@18.19.83)(typescript@5.6.2)))(typescript@5.6.2)
 
-  '@metamask/eslint-config-nodejs@8.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-node@11.1.0(eslint@8.57.1))(eslint@8.57.1)':
+  '@metamask/eslint-config-nodejs@8.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-node@11.1.0(eslint@8.57.1))(eslint@8.57.1)':
     dependencies:
-      '@metamask/eslint-config': 10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)
+      '@metamask/eslint-config': 10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)
       eslint: 8.57.1
       eslint-plugin-node: 11.1.0(eslint@8.57.1)
 
-  '@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)':
+  '@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)':
     dependencies:
       eslint: 8.57.1
       eslint-config-prettier: 8.10.0(eslint@8.57.1)
-      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1)
       eslint-plugin-jsdoc: 39.9.1(eslint@8.57.1)
       eslint-plugin-prettier: 4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8)
       prettier: 2.8.8
@@ -34826,7 +34917,8 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@react-native/assets-registry@0.78.1': {}
+  '@react-native/assets-registry@0.78.1':
+    optional: true
 
   '@react-native/babel-plugin-codegen@0.76.7(@babel/preset-env@7.26.9(@babel/core@7.26.10))':
     dependencies:
@@ -34843,6 +34935,7 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/preset-env'
       - supports-color
+    optional: true
 
   '@react-native/babel-preset@0.76.7(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))':
     dependencies:
@@ -34946,6 +35039,7 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/preset-env'
       - supports-color
+    optional: true
 
   '@react-native/codegen@0.76.7(@babel/preset-env@7.26.9(@babel/core@7.26.10))':
     dependencies:
@@ -34974,6 +35068,7 @@ snapshots:
       yargs: 17.7.2
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   '@react-native/community-cli-plugin@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
@@ -34993,11 +35088,13 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   '@react-native/debugger-frontend@0.76.7':
     optional: true
 
-  '@react-native/debugger-frontend@0.78.1': {}
+  '@react-native/debugger-frontend@0.78.1':
+    optional: true
 
   '@react-native/dev-middleware@0.76.7(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
@@ -35037,10 +35134,13 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
-  '@react-native/gradle-plugin@0.78.1': {}
+  '@react-native/gradle-plugin@0.78.1':
+    optional: true
 
-  '@react-native/js-polyfills@0.78.1': {}
+  '@react-native/js-polyfills@0.78.1':
+    optional: true
 
   '@react-native/metro-babel-transformer@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))':
     dependencies:
@@ -35051,11 +35151,13 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/preset-env'
       - supports-color
+    optional: true
 
   '@react-native/normalize-colors@0.76.7':
     optional: true
 
-  '@react-native/normalize-colors@0.78.1': {}
+  '@react-native/normalize-colors@0.78.1':
+    optional: true
 
   '@react-native/virtualized-lists@0.78.1(@types/react@18.3.26)(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)':
     dependencies:
@@ -35065,6 +35167,7 @@ snapshots:
       react-native: 0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)
     optionalDependencies:
       '@types/react': 18.3.26
+    optional: true
 
   '@react-stately/flags@3.1.2':
     dependencies:
@@ -35105,6 +35208,13 @@ snapshots:
       is-builtin-module: 3.2.1
       is-module: 1.0.0
       resolve: 1.22.10
+      rollup: 2.79.2
+
+  '@rollup/plugin-replace@5.0.7(rollup@2.79.2)':
+    dependencies:
+      '@rollup/pluginutils': 5.1.4(rollup@2.79.2)
+      magic-string: 0.30.17
+    optionalDependencies:
       rollup: 2.79.2
 
   '@rollup/pluginutils@3.1.0(rollup@2.79.2)':
@@ -36233,6 +36343,10 @@ snapshots:
     dependencies:
       '@stablelib/int': 1.0.1
 
+  '@stablelib/binary@2.0.1':
+    dependencies:
+      '@stablelib/int': 2.0.1
+
   '@stablelib/bytes@1.0.1': {}
 
   '@stablelib/chacha20poly1305@1.0.1':
@@ -36257,9 +36371,19 @@ snapshots:
       '@stablelib/sha512': 1.0.1
       '@stablelib/wipe': 1.0.1
 
+  '@stablelib/ed25519@2.0.2':
+    dependencies:
+      '@stablelib/random': 2.0.1
+      '@stablelib/sha512': 2.0.1
+      '@stablelib/wipe': 2.0.1
+
   '@stablelib/hash@1.0.1': {}
 
+  '@stablelib/hash@2.0.0': {}
+
   '@stablelib/int@1.0.1': {}
+
+  '@stablelib/int@2.0.1': {}
 
   '@stablelib/keyagreement@1.0.1':
     dependencies:
@@ -36275,6 +36399,11 @@ snapshots:
       '@stablelib/binary': 1.0.1
       '@stablelib/wipe': 1.0.1
 
+  '@stablelib/random@2.0.1':
+    dependencies:
+      '@stablelib/binary': 2.0.1
+      '@stablelib/wipe': 2.0.1
+
   '@stablelib/sha256@1.0.1':
     dependencies:
       '@stablelib/binary': 1.0.1
@@ -36287,7 +36416,15 @@ snapshots:
       '@stablelib/hash': 1.0.1
       '@stablelib/wipe': 1.0.1
 
+  '@stablelib/sha512@2.0.1':
+    dependencies:
+      '@stablelib/binary': 2.0.1
+      '@stablelib/hash': 2.0.0
+      '@stablelib/wipe': 2.0.1
+
   '@stablelib/wipe@1.0.1': {}
+
+  '@stablelib/wipe@2.0.1': {}
 
   '@stablelib/x25519@1.0.3':
     dependencies:
@@ -39643,7 +39780,8 @@ snapshots:
 
   amp@0.3.1: {}
 
-  anser@1.4.10: {}
+  anser@1.4.10:
+    optional: true
 
   ansi-align@3.0.1:
     dependencies:
@@ -40567,6 +40705,7 @@ snapshots:
   babel-plugin-syntax-hermes-parser@0.25.1:
     dependencies:
       hermes-parser: 0.25.1
+    optional: true
 
   babel-plugin-syntax-jsx@6.18.0: {}
 
@@ -40575,6 +40714,7 @@ snapshots:
       '@babel/plugin-syntax-flow': 7.26.0(@babel/core@7.26.10)
     transitivePeerDependencies:
       - '@babel/core'
+    optional: true
 
   babel-preset-current-node-syntax@1.1.0(@babel/core@7.26.10):
     dependencies:
@@ -41280,14 +41420,17 @@ snapshots:
   caller-callsite@2.0.0:
     dependencies:
       callsites: 2.0.0
+    optional: true
 
   caller-path@2.0.0:
     dependencies:
       caller-callsite: 2.0.0
+    optional: true
 
   callsite@1.0.0: {}
 
-  callsites@2.0.0: {}
+  callsites@2.0.0:
+    optional: true
 
   callsites@3.1.0: {}
 
@@ -41535,6 +41678,7 @@ snapshots:
       lighthouse-logger: 1.4.2
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   chrome-trace-event@1.0.4: {}
 
@@ -41548,6 +41692,7 @@ snapshots:
       rimraf: 3.0.2
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   ci-info@2.0.0: {}
 
@@ -41974,6 +42119,7 @@ snapshots:
       utils-merge: 1.0.1
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   consola@2.15.3: {}
 
@@ -42266,6 +42412,7 @@ snapshots:
       is-directory: 0.3.1
       js-yaml: 3.14.1
       parse-json: 4.0.0
+    optional: true
 
   cosmiconfig@6.0.0:
     dependencies:
@@ -43457,6 +43604,7 @@ snapshots:
   error-stack-parser@2.1.4:
     dependencies:
       stackframe: 1.3.4
+    optional: true
 
   es-abstract@1.23.9:
     dependencies:
@@ -44016,7 +44164,7 @@ snapshots:
     dependencies:
       confusing-browser-globals: 1.0.11
       eslint: 8.57.1
-      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1)
       object.assign: 4.1.7
       object.entries: 1.1.9
       semver: 6.3.1
@@ -44027,7 +44175,7 @@ snapshots:
       '@typescript-eslint/parser': 5.62.0(eslint@8.57.1)(typescript@5.6.2)
       eslint: 8.57.1
       eslint-config-airbnb-base: 15.0.0(eslint-plugin-import@2.31.0)(eslint@8.57.1)
-      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1)
 
   eslint-config-prettier@8.10.0(eslint@8.57.1):
     dependencies:
@@ -44045,7 +44193,7 @@ snapshots:
     dependencies:
       debug: 4.4.0(supports-color@5.5.0)
       eslint: 8.57.1
-      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1)
       glob: 7.2.3
       is-glob: 4.0.3
       resolve: 1.22.10
@@ -44053,7 +44201,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1):
+  eslint-module-utils@2.12.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1):
     dependencies:
       debug: 3.2.7(supports-color@5.5.0)
     optionalDependencies:
@@ -44070,7 +44218,7 @@ snapshots:
       eslint-utils: 2.1.0
       regexpp: 3.2.0
 
-  eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1):
+  eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.8
@@ -44081,7 +44229,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1)
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@2.7.1)(eslint@8.57.1)
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -44625,7 +44773,8 @@ snapshots:
       - utf-8-validate
     optional: true
 
-  exponential-backoff@3.1.2: {}
+  exponential-backoff@3.1.2:
+    optional: true
 
   express@4.21.2:
     dependencies:
@@ -45070,6 +45219,7 @@ snapshots:
       unpipe: 1.0.0
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   finalhandler@1.3.1:
     dependencies:
@@ -45232,7 +45382,8 @@ snapshots:
     dependencies:
       rematrix: 0.2.2
 
-  flow-enums-runtime@0.0.6: {}
+  flow-enums-runtime@0.0.6:
+    optional: true
 
   flow-parser@0.265.3: {}
 
@@ -46297,7 +46448,8 @@ snapshots:
   hermes-estree@0.23.1:
     optional: true
 
-  hermes-estree@0.25.1: {}
+  hermes-estree@0.25.1:
+    optional: true
 
   hermes-parser@0.23.1:
     dependencies:
@@ -46307,6 +46459,7 @@ snapshots:
   hermes-parser@0.25.1:
     dependencies:
       hermes-estree: 0.25.1
+    optional: true
 
   hex-lite@1.5.0: {}
 
@@ -46615,6 +46768,7 @@ snapshots:
     dependencies:
       caller-path: 2.0.0
       resolve-from: 3.0.0
+    optional: true
 
   import-fresh@3.3.1:
     dependencies:
@@ -46989,7 +47143,8 @@ snapshots:
       is-accessor-descriptor: 1.0.1
       is-data-descriptor: 1.0.1
 
-  is-directory@0.3.1: {}
+  is-directory@0.3.1:
+    optional: true
 
   is-docker@2.2.1: {}
 
@@ -48469,7 +48624,8 @@ snapshots:
 
   jsbn@1.1.0: {}
 
-  jsc-safe-url@0.2.4: {}
+  jsc-safe-url@0.2.4:
+    optional: true
 
   jscodeshift@0.14.0(@babel/preset-env@7.26.9(@babel/core@7.26.10)):
     dependencies:
@@ -48548,6 +48704,7 @@ snapshots:
       '@babel/preset-env': 7.26.9(@babel/core@7.26.10)
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   jsdoc-type-pratt-parser@3.1.0: {}
 
@@ -48758,24 +48915,6 @@ snapshots:
 
   jsonld-document-loader@1.2.1: {}
 
-  jsonld-signatures@11.5.0(web-streams-polyfill@3.3.3):
-    dependencies:
-      '@digitalbazaar/security-context': 1.0.1
-      jsonld: 8.3.3(web-streams-polyfill@3.3.3)
-      rdf-canonize: 4.0.1
-      serialize-error: 8.1.0
-    transitivePeerDependencies:
-      - web-streams-polyfill
-
-  jsonld@8.3.3(web-streams-polyfill@3.3.3):
-    dependencies:
-      '@digitalbazaar/http-client': 3.4.1(web-streams-polyfill@3.3.3)
-      canonicalize: 1.0.8
-      lru-cache: 6.0.0
-      rdf-canonize: 3.4.0
-    transitivePeerDependencies:
-      - web-streams-polyfill
-
   jsonparse@1.3.1: {}
 
   jsonpath-plus@10.3.0:
@@ -48913,16 +49052,6 @@ snapshots:
 
   klona@2.0.6: {}
 
-  ky-universal@0.11.0(ky@0.33.3)(web-streams-polyfill@3.3.3):
-    dependencies:
-      abort-controller: 3.0.0
-      ky: 0.33.3
-      node-fetch: 3.3.2
-    optionalDependencies:
-      web-streams-polyfill: 3.3.3
-
-  ky@0.33.3: {}
-
   ky@1.8.1: {}
 
   labeled-stream-splicer@2.0.2:
@@ -49047,6 +49176,7 @@ snapshots:
       marky: 1.2.5
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   lightningcss-darwin-arm64@1.27.0:
     optional: true
@@ -49327,7 +49457,8 @@ snapshots:
 
   lodash.startcase@4.4.0: {}
 
-  lodash.throttle@4.1.1: {}
+  lodash.throttle@4.1.1:
+    optional: true
 
   lodash.union@4.6.0: {}
 
@@ -49541,7 +49672,8 @@ snapshots:
 
   marked@4.3.0: {}
 
-  marky@1.2.5: {}
+  marky@1.2.5:
+    optional: true
 
   matcher@3.0.0:
     dependencies:
@@ -49897,7 +50029,8 @@ snapshots:
     dependencies:
       fs-monkey: 1.0.6
 
-  memoize-one@5.2.1: {}
+  memoize-one@5.2.1:
+    optional: true
 
   memoizee@0.4.17:
     dependencies:
@@ -49966,16 +50099,19 @@ snapshots:
       nullthrows: 1.1.1
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   metro-cache-key@0.81.4:
     dependencies:
       flow-enums-runtime: 0.0.6
+    optional: true
 
   metro-cache@0.81.4:
     dependencies:
       exponential-backoff: 3.1.2
       flow-enums-runtime: 0.0.6
       metro-core: 0.81.4
+    optional: true
 
   metro-config@0.81.4(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
@@ -49991,12 +50127,14 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   metro-core@0.81.4:
     dependencies:
       flow-enums-runtime: 0.0.6
       lodash.throttle: 4.1.1
       metro-resolver: 0.81.4
+    optional: true
 
   metro-file-map@0.81.4:
     dependencies:
@@ -50011,20 +50149,24 @@ snapshots:
       walker: 1.0.8
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   metro-minify-terser@0.81.4:
     dependencies:
       flow-enums-runtime: 0.0.6
       terser: 5.39.0
+    optional: true
 
   metro-resolver@0.81.4:
     dependencies:
       flow-enums-runtime: 0.0.6
+    optional: true
 
   metro-runtime@0.81.4:
     dependencies:
       '@babel/runtime': 7.27.0
       flow-enums-runtime: 0.0.6
+    optional: true
 
   metro-source-map@0.81.4:
     dependencies:
@@ -50040,6 +50182,7 @@ snapshots:
       vlq: 1.0.1
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   metro-symbolicate@0.81.4:
     dependencies:
@@ -50051,6 +50194,7 @@ snapshots:
       vlq: 1.0.1
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   metro-transform-plugins@0.81.4:
     dependencies:
@@ -50062,6 +50206,7 @@ snapshots:
       nullthrows: 1.1.1
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   metro-transform-worker@0.81.4(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
@@ -50082,10 +50227,11 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   metro@0.81.4(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
-      '@babel/code-frame': 7.26.2
+      '@babel/code-frame': 7.27.1
       '@babel/core': 7.26.10
       '@babel/generator': 7.27.0
       '@babel/parser': 7.27.0
@@ -50129,6 +50275,7 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   micro-ftch@0.3.1: {}
 
@@ -51447,7 +51594,8 @@ snapshots:
     dependencies:
       boolbase: 1.0.0
 
-  nullthrows@1.1.1: {}
+  nullthrows@1.1.1:
+    optional: true
 
   number-is-nan@1.0.1: {}
 
@@ -51517,6 +51665,7 @@ snapshots:
   ob1@0.81.4:
     dependencies:
       flow-enums-runtime: 0.0.6
+    optional: true
 
   obj-case@0.2.1: {}
 
@@ -51614,6 +51763,7 @@ snapshots:
   on-finished@2.3.0:
     dependencies:
       ee-first: 1.1.1
+    optional: true
 
   on-finished@2.4.1:
     dependencies:
@@ -53011,6 +53161,7 @@ snapshots:
   promise@8.3.0:
     dependencies:
       asap: 2.0.6
+    optional: true
 
   promptly@2.2.0:
     dependencies:
@@ -53376,6 +53527,7 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    optional: true
 
   react-docgen-typescript@2.2.2(typescript@5.6.2):
     dependencies:
@@ -53538,6 +53690,7 @@ snapshots:
     dependencies:
       base64-js: 1.5.1
       react-native: 0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10)
+    optional: true
 
   react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.26)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10):
     dependencies:
@@ -53587,6 +53740,7 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   react-oauth2-code-pkce@1.23.2(react@18.3.1):
     dependencies:
@@ -53840,7 +53994,8 @@ snapshots:
 
   readline-sync@1.4.10: {}
 
-  readline@1.3.0: {}
+  readline@1.3.0:
+    optional: true
 
   real-require@0.2.0: {}
 
@@ -54248,7 +54403,8 @@ snapshots:
       expand-tilde: 1.2.2
       global-modules: 0.2.3
 
-  resolve-from@3.0.0: {}
+  resolve-from@3.0.0:
+    optional: true
 
   resolve-from@4.0.0: {}
 
@@ -54537,6 +54693,10 @@ snapshots:
       mime: 2.6.0
       mkdirp: 1.0.4
       rollup: 2.79.2
+      rollup-pluginutils: 2.8.2
+
+  rollup-plugin-string@3.0.0:
+    dependencies:
       rollup-pluginutils: 2.8.2
 
   rollup-plugin-styles@4.0.0(rollup@2.79.2):
@@ -54890,7 +55050,8 @@ snapshots:
       tslib: 2.8.1
       upper-case-first: 2.0.2
 
-  serialize-error@2.1.0: {}
+  serialize-error@2.1.0:
+    optional: true
 
   serialize-error@7.0.1:
     dependencies:
@@ -55863,11 +56024,13 @@ snapshots:
 
   stackback@0.0.2: {}
 
-  stackframe@1.3.4: {}
+  stackframe@1.3.4:
+    optional: true
 
   stacktrace-parser@0.1.11:
     dependencies:
       type-fest: 0.7.1
+    optional: true
 
   standard-as-callback@2.1.0: {}
 
@@ -57162,7 +57325,8 @@ snapshots:
 
   type-fest@0.6.0: {}
 
-  type-fest@0.7.1: {}
+  type-fest@0.7.1:
+    optional: true
 
   type-fest@0.8.1: {}
 
@@ -58090,7 +58254,8 @@ snapshots:
       ini: 1.3.8
       js-git: 0.7.8
 
-  vlq@1.0.1: {}
+  vlq@1.0.1:
+    optional: true
 
   vm-browserify@1.1.2: {}
 
@@ -58813,7 +58978,7 @@ snapshots:
   yup@0.32.11:
     dependencies:
       '@babel/runtime': 7.27.0
-      '@types/lodash': 4.17.16
+      '@types/lodash': 4.17.20
       lodash: 4.17.21
       lodash-es: 4.17.21
       nanoclone: 0.2.1

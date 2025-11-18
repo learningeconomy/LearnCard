@@ -19,8 +19,8 @@ import {
 import {
     validateInboxClaimToken,
 } from '@helpers/contact-method.helpers';
-import { getPendingOrClaimedInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
-import { markInboxCredentialAsClaimed } from '@accesslayer/inbox-credential/update';
+import { getPendingOrIssuedInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
+import { markInboxCredentialAsIsAccepted, markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import {
     getContactMethodById,
@@ -31,6 +31,7 @@ import { getProfileByDid } from '@accesslayer/profile/read';
 import { getBoostUri, isDraftBoost } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
@@ -351,6 +352,9 @@ async function handlePresentationForClaim(
             boostCredential.boostId = boostURI;
         }
 
+        // Inject OBv3 skill alignments based on boost's framework/skills
+        await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
+
         const vc = await issueCredentialWithSigningAuthority(
             boostOwner,
             boostCredential,
@@ -392,7 +396,7 @@ async function handleInboxClaimInitiation(
     }
 
     // Verify there are pending credentials for this contact method
-    const pendingCredentials = await getPendingOrClaimedInboxCredentialsForContactMethodId(
+    const pendingCredentials = await getPendingOrIssuedInboxCredentialsForContactMethodId(
         claimTokenData.contactMethodId
     );
     if (pendingCredentials.length === 0) {
@@ -525,7 +529,7 @@ async function handleInboxClaimPresentation(
     }
 
     // Get pending credentials for this contact method
-    const pendingCredentials = await getPendingOrClaimedInboxCredentialsForContactMethodId(
+    const pendingCredentials = await getPendingOrIssuedInboxCredentialsForContactMethodId(
         contactMethod.id
     );
 
@@ -604,7 +608,8 @@ async function handleInboxClaimPresentation(
                 )) as VC;
             }
 
-            await markInboxCredentialAsClaimed(inboxCredential.id);
+            await markInboxCredentialAsIssued(inboxCredential.id);
+            await markInboxCredentialAsIsAccepted(inboxCredential.id);
 
             // Create claimed relationship if holder has a profile
             if (holderProfile) {
@@ -626,7 +631,7 @@ async function handleInboxClaimPresentation(
                     data: {
                         inbox: {
                             issuanceId: inboxCredential.id,
-                            status: LCNInboxStatusEnumValidator.enum.CLAIMED,
+                            status: LCNInboxStatusEnumValidator.enum.ISSUED,
                             recipient: {
                                 contactMethod: { type: contactMethod.type, value: contactMethod.value },
                                 learnCardId: holderProfile?.did || holderDid,

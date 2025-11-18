@@ -41,12 +41,13 @@ export const credentialsRouter = t.router({
             z.object({
                 profileId: z.string(),
                 credential: UnsignedVCValidator.or(VCValidator).or(JWEValidator),
+                metadata: z.record(z.unknown()).optional(),
             })
         )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, credential } = input;
+            const { profileId, credential, metadata } = input;
 
             const targetProfile = await getProfileByProfileId(profileId);
 
@@ -58,7 +59,7 @@ export const credentialsRouter = t.router({
                 });
             }
 
-            return sendCredential(profile, targetProfile, credential, ctx.domain);
+            return sendCredential(profile, targetProfile, credential, ctx.domain, metadata);
         }),
 
     acceptCredential: profileRoute
@@ -79,6 +80,7 @@ export const credentialsRouter = t.router({
                 options: z
                     .object({
                         skipNotification: z.boolean().default(false).optional(),
+                        metadata: z.record(z.unknown()).optional(),
                     })
                     .optional(),
             })

@@ -106,6 +106,139 @@ describe('Credentials', () => {
         expect(receivedCredsAfter).toHaveLength(1);
     });
 
+    describe('Credential Metadata', () => {
+        test('Users can send credentials with metadata', async () => {
+            const unsignedVc = a.invoke.getTestVc(b.id.did());
+            const vc = await a.invoke.issueCredential(unsignedVc);
+
+            const metadata = {
+                reason: 'Completion of Course 101',
+                score: 95,
+                notes: 'Excellent performance',
+            };
+
+            const uri = await a.invoke.sendCredential('testb', vc, metadata);
+
+            // Verify credential was sent
+            expect(uri).toBeDefined();
+            expect(uri).toContain('credential');
+        });
+
+        test('Metadata persists through send/accept flow', async () => {
+            const unsignedVc = a.invoke.getTestVc(b.id.did());
+            const vc = await a.invoke.issueCredential(unsignedVc);
+
+            const metadata = {
+                reason: 'Achievement Award',
+                details: {
+                    category: 'Excellence',
+                    date: '2024-01-15',
+                },
+            };
+
+            const uri = await a.invoke.sendCredential('testb', vc, metadata);
+
+            // Accept the credential
+            await b.invoke.acceptCredential(uri);
+
+            // Verify metadata appears in received credentials
+            const receivedCreds = await b.invoke.getReceivedCredentials();
+            expect(receivedCreds).toHaveLength(1);
+            expect(receivedCreds[0].metadata).toEqual(metadata);
+
+            // Verify metadata appears in sent credentials
+            const sentCreds = await a.invoke.getSentCredentials();
+            expect(sentCreds).toHaveLength(1);
+            expect(sentCreds[0].metadata).toEqual(metadata);
+        });
+
+        test('Nested metadata structures are preserved', async () => {
+            const unsignedVc = a.invoke.getTestVc(b.id.did());
+            const vc = await a.invoke.issueCredential(unsignedVc);
+
+            const metadata = {
+                assessment: {
+                    type: 'Final Exam',
+                    subject: 'Mathematics',
+                    scores: {
+                        written: 92,
+                        practical: 88,
+                        overall: 90,
+                    },
+                },
+                instructor: {
+                    name: 'Dr. Smith',
+                    department: 'Math Department',
+                },
+            };
+
+            const uri = await a.invoke.sendCredential('testb', vc, metadata);
+            await b.invoke.acceptCredential(uri);
+
+            const receivedCreds = await b.invoke.getReceivedCredentials();
+            expect(receivedCreds[0].metadata).toEqual(metadata);
+        });
+
+        test('Credentials without metadata work correctly', async () => {
+            const unsignedVc = a.invoke.getTestVc(b.id.did());
+            const vc = await a.invoke.issueCredential(unsignedVc);
+
+            // Send without metadata
+            const uri = await a.invoke.sendCredential('testb', vc);
+            await b.invoke.acceptCredential(uri);
+
+            const receivedCreds = await b.invoke.getReceivedCredentials();
+            expect(receivedCreds).toHaveLength(1);
+            expect(receivedCreds[0].metadata).toBeUndefined();
+        });
+
+        test('Incoming credentials show metadata before acceptance', async () => {
+            const unsignedVc = a.invoke.getTestVc(b.id.did());
+            const vc = await a.invoke.issueCredential(unsignedVc);
+
+            const metadata = {
+                preview: 'Badge for completion',
+                level: 'Advanced',
+            };
+
+            const uri = await a.invoke.sendCredential('testb', vc, metadata);
+
+            // Check incoming credentials before acceptance
+            const incomingCreds = await b.invoke.getIncomingCredentials();
+            expect(incomingCreds).toHaveLength(1);
+            expect(incomingCreds[0].metadata).toEqual(metadata);
+
+            // Accept and verify it moves to received
+            await b.invoke.acceptCredential(uri);
+
+            const receivedCreds = await b.invoke.getReceivedCredentials();
+            expect(receivedCreds).toHaveLength(1);
+            expect(receivedCreds[0].metadata).toEqual(metadata);
+
+            const incomingAfter = await b.invoke.getIncomingCredentials();
+            expect(incomingAfter).toHaveLength(0);
+        });
+
+        test('Multiple credentials with different metadata', async () => {
+            const vc1 = await a.invoke.issueCredential(a.invoke.getTestVc(b.id.did()));
+            const vc2 = await a.invoke.issueCredential(a.invoke.getTestVc(b.id.did()));
+
+            const metadata1 = { type: 'Certificate', level: 'Beginner' };
+            const metadata2 = { type: 'Badge', level: 'Expert' };
+
+            await a.invoke.sendCredential('testb', vc1, metadata1);
+            await a.invoke.sendCredential('testb', vc2, metadata2);
+
+            const incomingCreds = await b.invoke.getIncomingCredentials();
+            expect(incomingCreds).toHaveLength(2);
+
+            // Verify each credential has its own metadata
+            const metadataList = incomingCreds.map((cred: any) => cred.metadata);
+            expect(metadataList).toContainEqual(metadata1);
+            expect(metadataList).toContainEqual(metadata2);
+        });
+    });
+
     describe('DataIntegrity Proofs', () => {
         test('Users can issue credentials with DataIntegrity proof', async () => {
             const c = await getLearnCardForUser('c');
