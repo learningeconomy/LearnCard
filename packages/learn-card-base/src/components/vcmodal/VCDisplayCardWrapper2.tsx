@@ -54,6 +54,7 @@ type VCDisplayCardWrapper2Props = {
     categoryType?: BoostCategoryOptionsEnum;
     customLinkedCredentialsComponent?: React.ReactNode;
     useCurrentUserName?: boolean;
+    customBodyContentSlot?: React.ReactNode;
 };
 
 export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
@@ -82,6 +83,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     categoryType,
     customLinkedCredentialsComponent,
     useCurrentUserName,
+    customBodyContentSlot,
 }) => {
     const currentUser = useCurrentUser();
 
@@ -300,6 +302,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             enableLightbox={true}
             bottomButton={bottomButton}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+            customBodyContentSlot={customBodyContentSlot}
         />
     );
 };

@@ -18,6 +18,7 @@ const TroopIDTypeSelectorModal: React.FC<{
     isLoading?: boolean;
     onSuccess?: (boostUri?: string) => void;
 }> = ({ handleCloseModal, earnedBoostIDs = [], isLoading, onSuccess }) => {
+    // oxlint-disable-next-line no-unused-vars
     const flags = useFlags();
     const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
 

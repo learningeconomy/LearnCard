@@ -14,7 +14,6 @@ import {
 // import MainHeader from '../../components/main-header/MainHeader';
 import X from 'learn-card-base/svgs/X';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
-import LaunchPad from '../launchPad/LaunchPad';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import ViewTroopIdModal from '../troop/ViewTroopIdModal';
 import ClaimBoostLoading from './ClaimBoostLoading';
@@ -23,7 +22,7 @@ import ClaimBoostLoggedOutPrompt from '../../components/boost/logged-out-claim-b
 
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import useJoinLCNetworkModal from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
+import { useCheckIfUserInNetwork } from '../../components/network-prompts/hooks/useCheckIfUserInNetwork';
 import { useAddCredentialToWallet } from '../../components/boost/mutations';
 import {
     useModal,
@@ -31,7 +30,6 @@ import {
     usePathQuery,
     useIsLoggedIn,
     useGetProfile,
-    useIsCurrentUserLCNUser,
     redirectStore,
     UserProfilePicture,
     ProfilePicture,
@@ -117,7 +115,7 @@ export const ClaimBoostModal: React.FC<{
     uri?: string;
     claimChallenge?: string;
     dismissClaimModal?: () => void;
-}> = ({ uri, claimChallenge, dismissClaimModal = () => { } }) => {
+}> = ({ uri, claimChallenge, dismissClaimModal = () => {} }) => {
     const history = useHistory();
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
@@ -125,8 +123,7 @@ export const ClaimBoostModal: React.FC<{
     const [presentAlert, dismissAlert] = useIonAlert();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const checkIfUserInNetwork = useCheckIfUserInNetwork();
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
     const boostUri = query.get('boostUri') || uri;
     const challenge = query.get('challenge') || claimChallenge;
@@ -182,10 +179,7 @@ export const ClaimBoostModal: React.FC<{
         if (isClaimed) return;
         const wallet = await initWallet();
 
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
+        if (!checkIfUserInNetwork()) return;
 
         try {
             setIsClaimLoading(true);
@@ -375,12 +369,24 @@ const ClaimBoost: React.FC = () => {
         mobile: ModalTypes.FullScreen,
     });
 
+    const query = usePathQuery();
+    const uriParam = query.get('boostUri') || undefined;
+    const challengeParam = query.get('challenge') || undefined;
+
     useEffect(() => {
         // opens 2 modals for some reason, but looks fine...
-        newModal(<ClaimBoostModal dismissClaimModal={closeAllModals} />);
+        newModal(
+            <ClaimBoostModal
+                uri={uriParam}
+                claimChallenge={challengeParam}
+                dismissClaimModal={closeAllModals}
+            />
+        );
+        // only open once per route load
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    return <LaunchPad />;
+    return <IonPage className="bg-grayscale-100" />;
 };
 
 export default ClaimBoost;

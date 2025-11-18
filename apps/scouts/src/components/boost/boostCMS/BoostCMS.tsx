@@ -1,3 +1,4 @@
+// oxlint-disable-next-line no-unused-vars
 import React, { useEffect, useState, useMemo } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -31,7 +32,11 @@ import BoostPreviewBody from './BoostPreview/BoostPreviewBody';
 import BoostCMSIDAppearanceController from './boostCMSForms/boostCMSAppearance/BoostCMSIDAppearanceController';
 import BoostCMSIDCard from '../boost-id-card/BoostIDCard';
 import BoostCMSCustomTypeForm from './boostCMSForms/boostCMSTitleForm/BoostCMSCustomTypeForm';
+// Legacy skill selector (hardcoded skills)
+// oxlint-disable-next-line no-unused-vars
 import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
+// New framework-based skill selector (Neo4j backend)
+import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
 
 import { useAddCredentialToWallet } from '../mutations';
 
@@ -61,6 +66,7 @@ import {
     sendBoostCredential,
     addFallbackNameToCMSState,
 } from '../boostHelpers';
+import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
 import {
     BrandingEnum,
     BoostCMSState,
@@ -86,8 +92,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { useGetBoostPermissions } from 'learn-card-base';
+// oxlint-disable-next-line no-unused-vars
 import { BadgePackOptionsEnum } from '../boost-select-menu/badge-pack.helper';
-import boostSearchStore from '../../../stores/boostSearchStore';
+import boostSearchStore from 'apps/scouts/src/stores/boostSearchStore';
 
 const BoostCMS: React.FC<{
     category?: BoostCategoryOptionsEnum;
@@ -118,6 +125,7 @@ const BoostCMS: React.FC<{
 
     const { data: boostPermissionData } = useGetBoostPermissions(parentUri);
 
+    // oxlint-disable-next-line no-unused-vars
     const { data: myTroopIdData, isLoading: troopIdDataLoading } = useGetCurrentUserTroopIds();
 
     let overrideCustomize = boostPermissionData?.canCreateChildren ? true : false;
@@ -224,6 +232,7 @@ const BoostCMS: React.FC<{
                 return {
                     ...prevState,
                     [_boostCategoryType]: [
+                        // oxlint-disable-next-line no-unsafe-optional-chaining
                         ...prevState?.[_boostCategoryType],
                         {
                             title: customTypeTitle,
@@ -363,6 +372,7 @@ const BoostCMS: React.FC<{
     };
 
     const handleAddAdmin = async (wallet: BespokeLearnCard, boostUri: string) => {
+        // oxlint-disable-next-line no-unused-vars
         const adminForVC = await Promise.all(
             state?.admins.map(async issuee => {
                 const adminForBoost = await addAdmin(wallet, boostUri, issuee?.profileId);
@@ -371,6 +381,7 @@ const BoostCMS: React.FC<{
         );
     };
 
+    // oxlint-disable-next-line no-unused-vars
     const handleSaveAndQuit = async (goBack: boolean = false) => {
         const wallet = await initWallet();
 
@@ -378,10 +389,13 @@ const BoostCMS: React.FC<{
             setIsSaveLoading(true);
             dismissModal();
 
+            const skillIds = extractSkillIdsFromAlignments(state?.alignments ?? []);
+
             const { boostUri } = await createBoost({
                 parentUri,
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.draft,
+                skillIds,
             });
 
             queryClient.invalidateQueries({ queryKey: ['boosts', state.basicInfo.type] });
@@ -451,10 +465,14 @@ const BoostCMS: React.FC<{
         try {
             setIsPublishLoading(true);
             dismissModal();
+
+            const skillIds = extractSkillIdsFromAlignments(state?.alignments ?? []);
+
             const { boostUri } = await createBoost({
                 parentUri,
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.live,
+                skillIds,
             });
             queryClient.invalidateQueries({
                 queryKey: ['useCountFamilialBoosts', parentUri],
@@ -504,6 +522,9 @@ const BoostCMS: React.FC<{
                     state?.issueTo.map(async issuee => {
                         // handle self boosting
                         if (issuee?.profileId === profile?.profileId) {
+                            console.log('boostUri', boostUri);
+                            console.log('boost', await wallet.invoke.resolveFromLCN(boostUri));
+                            // oxlint-disable-next-line no-unused-vars
                             const { sentBoost, sentBoostUri } = await sendBoostCredential(
                                 wallet,
                                 profile?.profileId,
@@ -694,9 +715,9 @@ const BoostCMS: React.FC<{
                     />
                 )}
 
-                {!flags?.disableCmsCustomization && (
-                    <BoostCMSSkillsAttachmentForm state={state} setState={setState} />
-                )}
+                {/* Legacy skill selector (old - commented out)
+                <BoostCMSSkillsAttachmentForm state={state} setState={setState} />
+                */}
                 {!flags?.disableCmsCustomization && (
                     <BoostCMSMediaForm state={state} setState={setState} />
                 )}
@@ -706,6 +727,10 @@ const BoostCMS: React.FC<{
                     setState={setState}
                     overrideCustomize={overrideCustomize}
                 />
+
+                {/* Framework-based skill selector (new) */}
+                <BoostFrameworkSkillSelector state={state} setState={setState} />
+
                 {/* {isMembership && <BoostIDCardCMSMembersForm state={state} setState={setState} />} */}
                 {/* <BoostCMSAdvancedSettingsForm state={state} setState={setState} />
                 <BoostCMSAIMissionForm state={state} setState={setState} />

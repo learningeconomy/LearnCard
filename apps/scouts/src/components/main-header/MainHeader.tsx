@@ -37,6 +37,7 @@ type MainHeaderProps = {
     plusButtonOverride?: React.ReactNode;
     count?: number;
     countLoading?: boolean;
+    hidePlusBtn?: boolean;
 };
 
 export const MainHeader: React.FC<MainHeaderProps> = ({
@@ -51,6 +52,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     plusButtonOverride,
     count,
     countLoading,
+    hidePlusBtn,
 }) => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation();
@@ -69,6 +71,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                 plusButtonOverride={plusButtonOverride}
                 count={count}
                 countLoading={countLoading}
+                hidePlusBtn={hidePlusBtn}
             />
         );
     }

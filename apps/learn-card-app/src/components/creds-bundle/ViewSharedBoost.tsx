@@ -20,6 +20,7 @@ import SharedBoostVerificationBlock, {
 import Lottie from 'react-lottie-player';
 import HourGlass from '../../assets/lotties/hourglass.json';
 import MainHeader from '../main-header/MainHeader';
+import EndorsementRequestModal from '../boost-endorsements/EndorsementRequestModal/EndorsementRequestModal';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import SharedBoostPageFooter from './SharedBoostPageFooter';
@@ -27,24 +28,41 @@ import SharedBoostPageFooter from './SharedBoostPageFooter';
 import { VC, VerificationItem, VP } from '@learncard/types';
 import {
     getDefaultCategoryForCredential,
+    getEndorsementsFromPresentations,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { BrandingEnum, useGetCredentialWithEdits, useIsLoggedIn } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import endorsementsRequestStore from '../../stores/endorsementsRequestStore';
+import EndorsementDraftRequestSuccess from '../boost-endorsements/EndorsementRequestForm/EndorsementDraftRequestSuccess';
 
 const websiteLink = 'https://learncard.app/login';
 
-const ViewSharedBoost: React.FC = () => {
+const ViewSharedBoost: React.FC<{
+    showEndorsementRequest?: boolean;
+    showDraftSuccess?: boolean;
+}> = ({ showEndorsementRequest, showDraftSuccess }) => {
     const history = useHistory();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
-    const { uri, seed, pin } = queryString.parse(location.search);
+    const { uri: _uri, seed: _seed, pin: _pin } = queryString.parse(location.search);
     const [isFront, setIsFront] = useState(true);
     const [vc, setVC] = useState<VP>();
     const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
     const [tryRefetch, setTryRefetch] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
+
+    // endorsements data
+    const [shareLinkInfo, setShareLinkInfo] = useState<string>('');
+    const [existingEndorsements, setExistingEndorsements] = useState<VC[] | null>(null);
+
+    const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
+    const draftEndorseRequestVC = endorsementsRequestStore.useTracked.credentialInfo();
+
+    const uri = draftEndorseRequestVC?.uri || _uri;
+    const seed = draftEndorseRequestVC?.seed || _seed;
+    const pin = draftEndorseRequestVC?.pin || _pin;
 
     const [presentAlert] = useIonAlert();
 
@@ -66,10 +84,10 @@ const ViewSharedBoost: React.FC = () => {
             setWallet(wallet);
             const resolvedVc = await wallet.read.get(uri);
 
-            console.log({ resolvedVc, uri });
-
             const verifications = await wallet?.invoke?.verifyCredential(
-                resolvedVc?.verifiableCredential,
+                Array.isArray(resolvedVc?.verifiableCredential)
+                    ? resolvedVc?.verifiableCredential[0]
+                    : resolvedVc?.verifiableCredential,
                 {},
                 true
             );
@@ -79,11 +97,19 @@ const ViewSharedBoost: React.FC = () => {
             setVC(resolvedVc);
             if (resolvedVc?.verifiableCredential) {
                 // From array of credentials, sort them by type
-                const unwrappedVc = unwrapBoostCredential(resolvedVc.verifiableCredential);
+                const credential = Array.isArray(resolvedVc?.verifiableCredential)
+                    ? resolvedVc?.verifiableCredential[0]
+                    : resolvedVc?.verifiableCredential;
+
+                const endorsements = getEndorsementsFromPresentations(
+                    resolvedVc?.verifiableCredential
+                );
+                const unwrappedVc = unwrapBoostCredential(credential);
                 const category = getDefaultCategoryForCredential(unwrappedVc);
 
                 setBoost(unwrappedVc);
                 setCategory(category);
+                setExistingEndorsements(endorsements);
             }
             setLoading(false);
             return vc;
@@ -120,6 +146,7 @@ const ViewSharedBoost: React.FC = () => {
     useEffect(() => {
         if (pin && uri) {
             fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
+            setShareLinkInfo(`uri=${uri}&seed=${seed}&pin=${pin}`);
         }
     }, [pin, tryRefetch]);
 
@@ -139,6 +166,20 @@ const ViewSharedBoost: React.FC = () => {
     };
 
     const redirectHome = () => history.push('/');
+
+    if (showEndorsementRequest) {
+        return (
+            <EndorsementRequestModal
+                credential={_boost}
+                shareLinkInfo={shareLinkInfo}
+                existingEndorsements={existingEndorsements}
+            />
+        );
+    }
+
+    if (showDraftSuccess) {
+        return <EndorsementDraftRequestSuccess credential={_boost} categoryType={category} />;
+    }
 
     return (
         <IonPage>

@@ -33,6 +33,7 @@ import {
     SubheaderTypeEnum,
 } from '../../components/main-subheader/MainSubHeader.types';
 import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { useSyncMembershipHighlights } from '../../hooks/useSyncMembershipHighlights';
 
 const WAITLIST_FORM_LINK = 'https://r18y4ggjlxv.typeform.com/to/TKCrkKW5';
 
@@ -55,6 +56,7 @@ export const SignUpForWaitList: React.FC = () => {
 };
 
 const MembershipPage: React.FC = () => {
+    useSyncMembershipHighlights(true);
     const flags = useFlags();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -66,6 +68,7 @@ const MembershipPage: React.FC = () => {
     });
 
     const {
+        // oxlint-disable-next-line no-unused-vars
         data: credentials,
         isLoading: credentialsLoading,
         isFetching: credentialsFetching,
@@ -74,6 +77,7 @@ const MembershipPage: React.FC = () => {
     // logic to show the plus button
     const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
     const { data: earnedBoostIDs, isLoading: earnedBoostIDsLoading } = useGetIDs();
+    // oxlint-disable-next-line no-unused-vars
     const { data: troopIds, isLoading: troopIdsLoading } = useGetCurrentUserTroopIds();
 
     const hasGlobalAdminID = troopIds?.isScoutGlobalAdmin;

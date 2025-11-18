@@ -8,11 +8,16 @@ import GenericDocumentIcon from 'apps/learn-card-app/src/components/svgs/Generic
 
 import { getMediaBaseUrl } from 'learn-card-base/helpers/urlHelpers';
 import { Lightbox, LightboxItem } from '@learncard/react';
+import { getVideoMetadata as parseVideoMetadata } from 'learn-card-base';
+
 import {
-    getCoverImageUrl,
-    isYoutubeUrl,
-    getVideoMetadata as parseVideoMetadata,
-} from 'learn-card-base';
+    getFileMetadata as getFileMetadataHelper,
+    getVideoMetadata as getVideoMetadataHelper,
+} from 'learn-card-base/helpers/attachment.helpers';
+import {
+    getEvidenceAttachments,
+    getEvidenceAttachmentType,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 
@@ -57,57 +62,11 @@ type MediaAttachmentsBoxProps = {
     getVideoMetadata?: (url: string) => VideoMetadata;
 };
 
-const defaultGetFileMetadata = async (url: string) => {
-    const isFilestack = url.includes('filestack');
-    if (!isFilestack) return;
-
-    const urlParams = url.split('.com/')[1]?.split('/');
-    if (!urlParams) return;
-    const handle = urlParams[urlParams.length - 1];
-
-    let fetchFailed = false;
-    const data = await fetch(`https://cdn.filestackcontent.com/${handle}/metadata`)
-        .then(res => res.json())
-        .catch(() => (fetchFailed = true));
-
-    if (fetchFailed) return;
-
-    const fileExtension = data.filename.split('.')[1];
-
-    return {
-        fileExtension,
-        sizeInBytes: data.size,
-        numberOfPages: undefined,
-    };
-};
-
-const defaultGetVideoMetadata = async (url: string) => {
-    const isYoutube = isYoutubeUrl(url);
-    if (!isYoutube) return;
-
-    const metadataUrl = `http://youtube.com/oembed?url=${url}&format=json`;
-
-    let fetchFailed = false;
-    const metadata = await fetch(metadataUrl)
-        .then(res => res.json())
-        .catch(() => (fetchFailed = true));
-
-    const coverImageUrl = getCoverImageUrl(url);
-
-    if (fetchFailed) return { imageUrl: coverImageUrl };
-
-    return {
-        title: metadata.title,
-        imageUrl: coverImageUrl,
-        videoLength: '', // TODO figure out how to get this
-    };
-};
-
 const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     attachments,
     evidence,
-    getFileMetadata = defaultGetFileMetadata,
-    getVideoMetadata = defaultGetVideoMetadata,
+    getFileMetadata = getFileMetadataHelper,
+    getVideoMetadata = getVideoMetadataHelper,
 }) => {
     const [documentMetadata, setDocumentMetadata] = useState<{
         [documentUrl: string]: MediaMetadata | undefined;
@@ -122,46 +81,35 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const getEvidenceAttachmentType = async (url: string) => {
-        const videoMetadata = await getVideoMetadata(url);
-        const docMetadata = await getFileMetadata(url);
-
-        if (docMetadata && !videoMetadata) {
-            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(docMetadata.fileExtension)) {
-                return 'photo';
-            }
-            if (['docx', 'doc', 'ppt', 'pptx', 'pdf'].includes(docMetadata.fileExtension)) {
-                return 'document';
-            }
-        }
-        if (videoMetadata && !docMetadata) {
-            return 'video';
-        }
-        if (url.includes('data:application/pdf;base64,')) {
-            return 'document';
-        }
-        return 'text';
-    };
-
     useEffect(() => {
         const getEvidenceAttachments = async () => {
             if (!evidence) return;
 
+            // Filter out CourseSyllabus and Textbook attachments as they are not attachments
+            const _evidence = evidence.filter(ev => {
+                if (ev.genre === 'CourseSyllabus' || ev.genre === 'Textbook') {
+                    return false;
+                }
+                return true;
+            });
+
             const result = await Promise.all(
-                evidence.map(async ev => ({
-                    title: ev.name,
-                    url:
-                        ev.url ??
-                        (typeof ev.id === 'string' &&
-                        ev.id.startsWith('data:application/pdf;base64,')
-                            ? ev.id
-                            : null),
-                    description: ev.description,
-                    narrative: ev.narrative ?? '',
-                    type: ev.url
-                        ? await getEvidenceAttachmentType(ev.url)
-                        : await getEvidenceAttachmentType(ev.id),
-                }))
+                _evidence.map(async ev => {
+                    const type = await getEvidenceAttachmentType(ev.url ?? ev.id);
+
+                    return {
+                        title: ev.name,
+                        url:
+                            ev.url ??
+                            (typeof ev.id === 'string' &&
+                            ev.id.startsWith('data:application/pdf;base64,')
+                                ? ev.id
+                                : null),
+                        description: ev.description,
+                        narrative: ev.narrative ?? '',
+                        type,
+                    };
+                })
             );
 
             setEvidenceAttachments(result);
@@ -246,6 +194,8 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
         }
     };
 
+    if (combinedAttachments.length === 0) return null;
+
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
             <h3 className="text-[17px] text-grayscale-900 font-poppins">Attachments</h3>
@@ -297,8 +247,6 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             );
                         }
 
-                        const className = `media-attachment ${media.type} w-[49%] pt-[49%] overflow-hidden relative`;
-
                         return (
                             <button
                                 key={index}
@@ -313,12 +261,12 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 </div>
                                 <div>
                                     {title && (
-                                        <div className="text-[12px] text-grayscale-900 font-poppins px-[10px] line-clamp-3">
+                                        <div className="text-left text-[12px] text-grayscale-900 font-poppins px-[10px] line-clamp-3">
                                             {title}
                                         </div>
                                     )}
                                     {media?.description && (
-                                        <span className="text-grayscale-900 text-[12px] px-[10px] line-clamp-3">
+                                        <span className="text-left text-grayscale-900 text-[12px] px-[10px] line-clamp-3">
                                             {media.description ?? ''}
                                         </span>
                                     )}

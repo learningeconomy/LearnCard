@@ -40,6 +40,21 @@ export enum BoostMediaOptionsEnum {
     link = 'link',
 }
 
+export type BoostEvidenceSpec = {
+    id?: string;
+    type: [string, ...string[]]; // Changed from string[] to ensure at least one element
+    name?: string;
+    narrative?: string;
+    description?: string;
+    // evidenceDocument?: string; // Added this back - it's in the validator
+    genre?: string;
+    audience?: string;
+
+    fileName?: string;
+    fileType?: string;
+    fileSize?: string;
+};
+
 export const boostMediaOptions = [
     {
         id: 1,
@@ -161,6 +176,7 @@ export type ShortBoostState = {
 
 export type BoostCMSAppearance = {
     displayType: BoostCMSAppearanceDisplayTypeEnum | undefined;
+    previewType: BoostCMSAppearancePreviewTypeEnum | undefined;
 
     // Troops 2.0 fields
     fadeBackgroundImage?: boolean;
@@ -198,6 +214,11 @@ export enum BoostCMSAppearanceDisplayTypeEnum {
     Media = 'media',
 }
 
+export enum BoostCMSAppearancePreviewTypeEnum {
+    Default = 'default', // defaults to display type
+    Media = 'media',
+}
+
 export type BoostCMSSkill = {
     category: string;
     skill: string;
@@ -223,6 +244,17 @@ export type BoostCMSState = {
     notes: string;
     address: AddressSpec;
     memberOptions: BoostCMSMemberOptions;
+    alignments?: BoostCMSAlignment[];
+};
+
+export type BoostCMSAlignment = {
+    type: 'Alignment';
+    targetName: string; // e.g., Skill or Subskill name
+    targetFramework?: string; // e.g., Category or Skill grouping
+    targetUrl?: string;
+    targetDescription?: string;
+    targetCode?: string;
+    targetType?: string;
 };
 
 export type BoostCMSMemberOptions = {
@@ -298,4 +330,24 @@ export const getAttachmentFileInfo = (file: File) => {
 
 export const getMediaAttachments = (mediaAttachments: BoostCMSMediaAttachment[]) => {
     return mediaAttachments.filter(attachment => attachment.type === BoostMediaOptionsEnum.photo);
+};
+
+export const convertAttachmentsToEvidence = (
+    attachments: BoostCMSMediaAttachment[] = []
+): BoostEvidenceSpec[] => {
+    return attachments
+        .filter(att => att.url && att.type)
+        .map(att => {
+            const evidence: BoostEvidenceSpec = {
+                id: att.url || undefined,
+                type: ['Evidence', 'EvidenceFile'] as [string, ...string[]], // Ensure non-empty array
+                name: att.title || att.fileName || undefined,
+                genre: att.type || undefined,
+                fileName: att.fileName || undefined,
+                fileType: att.fileType || undefined,
+                fileSize: att.fileSize || undefined,
+            };
+
+            return evidence;
+        });
 };

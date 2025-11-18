@@ -1,6 +1,14 @@
 import React from 'react';
+import VideoOutlinedIcon from './VideoOutlinedIcon';
 
-const Video: React.FC<{ className?: string }> = ({ className = '' }) => {
+const Video: React.FC<{ className?: string; version?: 'filled' | 'outlined' }> = ({
+    className = '',
+    version = 'filled',
+}) => {
+    if (version === 'outlined') {
+        return <VideoOutlinedIcon className={className} />;
+    }
+
     return (
         <svg viewBox="0 0 43 32" fill="none" className={className}>
             <path

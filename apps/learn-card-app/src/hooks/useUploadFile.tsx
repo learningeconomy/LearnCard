@@ -14,6 +14,7 @@ import {
     CredentialCategory,
     useToast,
     ToastTypeEnum,
+    getCategoryForCredential,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { useUploadVcFromText } from './useUploadVcFromText';
@@ -325,12 +326,27 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             await saveFile(rawArtifactCredential, fileType);
 
             if (vcs?.vcs?.length > 0) {
-                await Promise.all(
+                const issuedVCs = await Promise.all(
                     vcs.vcs.map(async ({ vc }) => {
                         const issuedVc = await wallet.invoke.issueCredential(vc);
                         return (await storeAndAddVCToWallet(issuedVc)).result;
                     })
                 );
+
+                // Group VCs by category and update the store
+                const recordsByCategory = issuedVCs.reduce<
+                    Partial<Record<CredentialCategory, string[]>>
+                >((records, { category, uri }) => {
+                    if (!uri) return records;
+
+                    const key = category;
+                    const existing = records[key] ?? [];
+                    records[key] = [...existing, uri];
+                    return records;
+                }, {});
+
+                // Update the store with the new credentials
+                newCredsStore.set.addNewCreds(recordsByCategory);
             }
 
             await refetchCheckListStatus();
@@ -359,15 +375,31 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         file: rawVC?.rawArtifact?.data ?? '',
                         fileType,
                     });
+
                     await saveFile(rawVC, fileType);
 
                     if (vcs?.vcs?.length > 0) {
-                        await Promise.all(
+                        const issuedVCs = await Promise.all(
                             vcs.vcs.map(async ({ vc }) => {
                                 const issuedVc = await wallet.invoke.issueCredential(vc);
                                 return (await storeAndAddVCToWallet(issuedVc)).result;
                             })
                         );
+
+                        // Group VCs by category and update the store
+                        const recordsByCategory = issuedVCs.reduce<
+                            Partial<Record<CredentialCategory, string[]>>
+                        >((records, { category, uri }) => {
+                            if (!uri) return records;
+
+                            const key = category;
+                            const existing = records[key] ?? [];
+                            records[key] = [...existing, uri];
+                            return records;
+                        }, {});
+
+                        // Update the store with the new credentials
+                        newCredsStore.set.addNewCreds(recordsByCategory);
                     }
                 } catch (error) {
                     console.error('Error processing file:', error);

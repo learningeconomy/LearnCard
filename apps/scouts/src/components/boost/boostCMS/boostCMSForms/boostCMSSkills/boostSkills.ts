@@ -2183,3 +2183,1997 @@ export const SKILLS_TO_SUBSKILLS = {
         },
     ],
 };
+
+/**
+ * A flat list of all skills with category, type, title, and description.
+ */
+export const SKILLS: {
+    category: BoostCMSSKillsCategoryEnum;
+    type: BoostCMSCategorySkillEnum;
+    title: string;
+    description: string;
+}[] = [
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        type: BoostCMSCategorySkillEnum.Adaptability,
+        title: 'Adaptability',
+        description: 'Ability to adjust to new conditions and environments.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        type: BoostCMSCategorySkillEnum.Perseverance,
+        title: 'Perseverance',
+        description: 'Persistent effort in spite of obstacles or discouragement.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        type: BoostCMSCategorySkillEnum.MentalToughness,
+        title: 'Mental Toughness',
+        description: 'Strength of mind to endure challenges and pressure.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        type: BoostCMSCategorySkillEnum.PhysicalEndurance,
+        title: 'Physical Endurance',
+        description: 'Capacity to sustain prolonged physical effort.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        type: BoostCMSCategorySkillEnum.LifelongLearning,
+        title: 'Lifelong Learning',
+        description: 'Ongoing pursuit and improvement of knowledge and skills.',
+    },
+
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        type: BoostCMSCategorySkillEnum.Mathematics,
+        title: 'Mathematics',
+        description: 'Understanding and working with numbers, equations, and formulas.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        type: BoostCMSCategorySkillEnum.Science,
+        title: 'Science',
+        description: 'Exploration and understanding of the natural and physical world.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        type: BoostCMSCategorySkillEnum.Technology,
+        title: 'Technology',
+        description: 'Use of tools, machines, and systems to solve problems.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        type: BoostCMSCategorySkillEnum.Engineering,
+        title: 'Engineering',
+        description:
+            'Application of science and math to design and build structures, systems, and devices.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        type: BoostCMSCategorySkillEnum.Research,
+        title: 'Research',
+        description: 'Systematic investigation to establish facts and reach new conclusions.',
+    },
+
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        type: BoostCMSCategorySkillEnum.SportSpecificSkills,
+        title: 'Sport Specific Skills',
+        description: 'Techniques and abilities unique to a particular sport.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        type: BoostCMSCategorySkillEnum.StrengthAndConditioning,
+        title: 'Strength and Conditioning',
+        description: 'Training to improve muscular strength and physical fitness.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        type: BoostCMSCategorySkillEnum.Coordination,
+        title: 'Coordination',
+        description: 'Ability to use different parts of the body smoothly and efficiently.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        type: BoostCMSCategorySkillEnum.MentalFocus,
+        title: 'Mental Focus',
+        description: 'Concentration and mental clarity during performance.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        type: BoostCMSCategorySkillEnum.Teamwork,
+        title: 'Teamwork',
+        description: 'Collaborative effort to achieve common goals.',
+    },
+
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        type: BoostCMSCategorySkillEnum.VisualArts,
+        title: 'Visual Arts',
+        description:
+            'Creative expression through visual media like drawing, painting, and sculpture.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        type: BoostCMSCategorySkillEnum.PerformingArts,
+        title: 'Performing Arts',
+        description: 'Art forms such as music, dance, and theater performed live.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        type: BoostCMSCategorySkillEnum.Writing,
+        title: 'Writing',
+        description: 'Creative and technical composition of text.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        type: BoostCMSCategorySkillEnum.Design,
+        title: 'Design',
+        description: 'Planning and creating visual and functional solutions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        type: BoostCMSCategorySkillEnum.Ideation,
+        title: 'Ideation',
+        description: 'Generation and development of new ideas.',
+    },
+
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        type: BoostCMSCategorySkillEnum.Management,
+        title: 'Management',
+        description: 'Planning, organizing, and supervising resources to achieve objectives.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        type: BoostCMSCategorySkillEnum.Finance,
+        title: 'Finance',
+        description: 'Management of money, investments, and financial planning.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        type: BoostCMSCategorySkillEnum.Marketing,
+        title: 'Marketing',
+        description: 'Promotion and selling of products or services.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        type: BoostCMSCategorySkillEnum.Operations,
+        title: 'Operations',
+        description: 'Efficient execution of business processes and workflows.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        type: BoostCMSCategorySkillEnum.Entrepreneurship,
+        title: 'Entrepreneurship',
+        description: 'Initiating and growing new business ventures.',
+    },
+
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        type: BoostCMSCategorySkillEnum.Construction,
+        title: 'Construction',
+        description: 'Building structures and infrastructure.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        type: BoostCMSCategorySkillEnum.Mechanics,
+        title: 'Mechanics',
+        description: 'Maintenance and repair of machines and vehicles.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        type: BoostCMSCategorySkillEnum.Manufacturing,
+        title: 'Manufacturing',
+        description: 'Production of goods using machinery and labor.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        type: BoostCMSCategorySkillEnum.Cosmetology,
+        title: 'Cosmetology',
+        description: 'Art and science of beauty treatments.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        type: BoostCMSCategorySkillEnum.CulinaryArts,
+        title: 'Culinary Arts',
+        description: 'Preparation and presentation of food.',
+    },
+
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        type: BoostCMSCategorySkillEnum.History,
+        title: 'History',
+        description: 'Study of past events and societies.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        type: BoostCMSCategorySkillEnum.Psychology,
+        title: 'Psychology',
+        description: 'Science of mind and behavior.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        type: BoostCMSCategorySkillEnum.Sociology,
+        title: 'Sociology',
+        description: 'Study of social behavior and institutions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        type: BoostCMSCategorySkillEnum.Economics,
+        title: 'Economics',
+        description: 'Study of production, consumption, and distribution of goods.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        type: BoostCMSCategorySkillEnum.PoliticalScience,
+        title: 'Political Science',
+        description: 'Study of governments, policies, and political behavior.',
+    },
+
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        type: BoostCMSCategorySkillEnum.BasicComputerSkills,
+        title: 'Basic Computer Skills',
+        description: 'Fundamental use of computers and software applications.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        type: BoostCMSCategorySkillEnum.InformationLiteracy,
+        title: 'Information Literacy',
+        description: 'Ability to locate, evaluate, and use information effectively.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        type: BoostCMSCategorySkillEnum.SoftwareProficiency,
+        title: 'Software Proficiency',
+        description: 'Skillful use of specialized software tools.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        type: BoostCMSCategorySkillEnum.OnlineCommunication,
+        title: 'Online Communication',
+        description: 'Effective digital interaction and collaboration.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        type: BoostCMSCategorySkillEnum.Cybersecurity,
+        title: 'Cybersecurity',
+        description: 'Protection of systems and data from digital threats.',
+    },
+
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        type: BoostCMSCategorySkillEnum.ClinicalSkills,
+        title: 'Clinical Skills',
+        description: 'Practical skills for patient assessment and care.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        type: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
+        title: 'Anatomy and Physiology',
+        description: 'Study of body structures and functions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        type: BoostCMSCategorySkillEnum.PatientCare,
+        title: 'Patient Care',
+        description: 'Compassionate and ethical support for patients.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        type: BoostCMSCategorySkillEnum.MedicalSpecialties,
+        title: 'Medical Specialties',
+        description: 'Expertise in specific areas of medicine.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        type: BoostCMSCategorySkillEnum.HealthcareAdministration,
+        title: 'Healthcare Administration',
+        description: 'Management of healthcare facilities and systems.',
+    },
+];
+
+/**
+ * Flat list of all subskills with their category, parent skill, type, title, and description.
+ */
+export const SUBSKILLS: {
+    category: BoostCMSSKillsCategoryEnum;
+    skill: BoostCMSCategorySkillEnum;
+    type: BoostCMSSubSkillEnum;
+    title: string;
+    description: string;
+}[] = [
+    // Durable > Adaptability
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Adaptability,
+        type: BoostCMSSubSkillEnum.flexibility,
+        title: 'Flexibility',
+        description:
+            'The ability to adjust to new conditions and environments with ease and grace.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Adaptability,
+        type: BoostCMSSubSkillEnum.resilience,
+        title: 'Resilience',
+        description: 'The capacity to recover quickly from difficulties and bounce back stronger.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Adaptability,
+        type: BoostCMSSubSkillEnum.problemSolving,
+        title: 'Problem Solving',
+        description: 'Identifying, analyzing, and resolving issues efficiently and effectively.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Adaptability,
+        type: BoostCMSSubSkillEnum.resourcefulness,
+        title: 'Resourcefulness',
+        description:
+            'Finding quick and clever ways to overcome challenges using available resources.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Adaptability,
+        type: BoostCMSSubSkillEnum.stressManagement,
+        title: 'Stress Management',
+        description:
+            'Maintaining composure and effectiveness under pressure or challenging situations.',
+    },
+
+    // Durable > Perseverance
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Perseverance,
+        type: BoostCMSSubSkillEnum.discipline,
+        title: 'Discipline',
+        description: 'Consistently applying effort and focus toward goals over time.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Perseverance,
+        type: BoostCMSSubSkillEnum.focus,
+        title: 'Focus',
+        description: 'The ability to concentrate on tasks without getting distracted.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Perseverance,
+        type: BoostCMSSubSkillEnum.commitment,
+        title: 'Commitment',
+        description: 'Staying dedicated to goals or responsibilities despite difficulties.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Perseverance,
+        type: BoostCMSSubSkillEnum.grit,
+        title: 'Grit',
+        description:
+            'Sustained effort and passion for long-term goals, especially in the face of adversity.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.Perseverance,
+        type: BoostCMSSubSkillEnum.tenacity,
+        title: 'Tenacity',
+        description: 'Persistent determination in achieving objectives, no matter the obstacles.',
+    },
+
+    // Durable > Mental Toughness
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.MentalToughness,
+        type: BoostCMSSubSkillEnum.optimism,
+        title: 'Optimism',
+        description: 'Maintaining a positive outlook and expecting good outcomes.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.MentalToughness,
+        type: BoostCMSSubSkillEnum.selfConfidence,
+        title: 'Self Confidence',
+        description: 'Trust in one’s abilities and judgment, even under stress or criticism.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.MentalToughness,
+        type: BoostCMSSubSkillEnum.emotionalRegulation,
+        title: 'Emotional Regulation',
+        description: 'Managing emotions to stay calm and effective in various situations.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.MentalToughness,
+        type: BoostCMSSubSkillEnum.growthMindset,
+        title: 'Growth Mindset',
+        description:
+            'Belief in the ability to develop skills and intelligence through effort and learning.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.MentalToughness,
+        type: BoostCMSSubSkillEnum.positiveSelfTalk,
+        title: 'Positive Self-Talk',
+        description:
+            'Encouraging and constructive internal dialogue that boosts confidence and motivation.',
+    },
+
+    // Durable > Physical Endurance
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
+        type: BoostCMSSubSkillEnum.strength,
+        title: 'Strength',
+        description: 'Physical power and capability to perform demanding tasks or movements.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
+        type: BoostCMSSubSkillEnum.stamina,
+        title: 'Stamina',
+        description: 'The ability to sustain prolonged physical or mental effort.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
+        type: BoostCMSSubSkillEnum.cardiovascularFitness,
+        title: 'Cardiovascular Fitness',
+        description: 'Efficiency of the heart and lungs in delivering oxygen during activity.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
+        type: BoostCMSSubSkillEnum.painTolerance,
+        title: 'Pain Tolerance',
+        description: 'The ability to endure discomfort or pain while continuing to function.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.PhysicalEndurance,
+        type: BoostCMSSubSkillEnum.injuryPrevention,
+        title: 'Injury Prevention',
+        description: 'Practices that reduce the risk of harm during physical activity or effort.',
+    },
+
+    // Durable > Lifelong Learning
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.LifelongLearning,
+        type: BoostCMSSubSkillEnum.curiosity,
+        title: 'Curiosity',
+        description: 'A strong desire to explore, learn, and understand new things.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.LifelongLearning,
+        type: BoostCMSSubSkillEnum.openMindedness,
+        title: 'Open Mindedness',
+        description: 'Willingness to consider different ideas, perspectives, and experiences.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.LifelongLearning,
+        type: BoostCMSSubSkillEnum.criticalThinking,
+        title: 'Critical Thinking',
+        description: 'Analyzing facts and forming reasoned judgments with clarity and logic.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.LifelongLearning,
+        type: BoostCMSSubSkillEnum.selfDirectedLearning,
+        title: 'Self-Directed Learning',
+        description: 'Taking initiative in identifying and pursuing learning opportunities.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Durable,
+        skill: BoostCMSCategorySkillEnum.LifelongLearning,
+        type: BoostCMSSubSkillEnum.knowledgeRetention,
+        title: 'Knowledge Retention',
+        description: 'Effectively storing and recalling information over time.',
+    },
+    // STEM > Mathematics
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Mathematics,
+        type: BoostCMSSubSkillEnum.algebra,
+        title: 'Algebra',
+        description:
+            'Manipulating symbols and solving equations involving variables and constants.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Mathematics,
+        type: BoostCMSSubSkillEnum.geometry,
+        title: 'Geometry',
+        description: 'Studying shapes, sizes, and the properties of space and position.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Mathematics,
+        type: BoostCMSSubSkillEnum.trigonometry,
+        title: 'Trigonometry',
+        description: 'Exploring the relationships between the angles and sides of triangles.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Mathematics,
+        type: BoostCMSSubSkillEnum.calculus,
+        title: 'Calculus',
+        description: 'Analyzing change through derivatives and integrals of functions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Mathematics,
+        type: BoostCMSSubSkillEnum.statistics,
+        title: 'Statistics',
+        description: 'Collecting, analyzing, and interpreting data to draw conclusions.',
+    },
+
+    // STEM > Science
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Science,
+        type: BoostCMSSubSkillEnum.physics,
+        title: 'Physics',
+        description: 'Understanding the fundamental principles of matter, energy, and motion.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Science,
+        type: BoostCMSSubSkillEnum.chemistry,
+        title: 'Chemistry',
+        description: 'Investigating the properties, composition, and reactions of substances.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Science,
+        type: BoostCMSSubSkillEnum.biology,
+        title: 'Biology',
+        description: 'Studying living organisms, their structure, function, and interactions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Science,
+        type: BoostCMSSubSkillEnum.earthScience,
+        title: 'Earth Science',
+        description: 'Exploring Earth’s physical structure, processes, and systems.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Science,
+        type: BoostCMSSubSkillEnum.environmentalScience,
+        title: 'Environmental Science',
+        description: 'Examining human impact on ecosystems and ways to protect natural resources.',
+    },
+
+    // STEM > Technology
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Technology,
+        type: BoostCMSSubSkillEnum.coding,
+        title: 'Coding',
+        description: 'Writing and understanding instructions that computers can execute.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Technology,
+        type: BoostCMSSubSkillEnum.softwareDevelopment,
+        title: 'Software Development',
+        description: 'Designing, building, and maintaining applications and systems.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Technology,
+        type: BoostCMSSubSkillEnum.dataAnalysis,
+        title: 'Data Analysis',
+        description:
+            'Extracting insights and patterns from datasets using statistical and computational tools.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Technology,
+        type: BoostCMSSubSkillEnum.robotics,
+        title: 'Robotics',
+        description:
+            'Designing, building, and programming machines that perform tasks autonomously.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Technology,
+        type: BoostCMSSubSkillEnum.cybersecurity,
+        title: 'Cybersecurity',
+        description:
+            'Protecting systems and networks from digital attacks and unauthorized access.',
+    },
+
+    // STEM > Engineering
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Engineering,
+        type: BoostCMSSubSkillEnum.mechanicalEngineering,
+        title: 'Mechanical Engineering',
+        description: 'Applying physics and materials science to design mechanical systems.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Engineering,
+        type: BoostCMSSubSkillEnum.electricalEngineering,
+        title: 'Electrical Engineering',
+        description: 'Designing and working with electrical systems, circuits, and devices.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Engineering,
+        type: BoostCMSSubSkillEnum.civilEngineering,
+        title: 'Civil Engineering',
+        description:
+            'Planning, designing, and constructing infrastructure such as roads and bridges.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Engineering,
+        type: BoostCMSSubSkillEnum.chemicalEngineering,
+        title: 'Chemical Engineering',
+        description:
+            'Combining chemistry and engineering to develop processes for producing materials.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Engineering,
+        type: BoostCMSSubSkillEnum.computerEngineering,
+        title: 'Computer Engineering',
+        description: 'Developing computer hardware and integrating it with software systems.',
+    },
+
+    // STEM > Research
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Research,
+        type: BoostCMSSubSkillEnum.hypothesisDevelopment,
+        title: 'Hypothesis Development',
+        description: 'Formulating testable explanations based on observations and prior knowledge.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Research,
+        type: BoostCMSSubSkillEnum.experimentalDesign,
+        title: 'Experimental Design',
+        description: 'Creating structured methods to investigate scientific questions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Research,
+        type: BoostCMSSubSkillEnum.dataCollection,
+        title: 'Data Collection',
+        description: 'Gathering accurate information for analysis through various methods.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Research,
+        type: BoostCMSSubSkillEnum.analysis,
+        title: 'Analysis',
+        description: 'Interpreting collected data to find meaning, trends, or results.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Stem,
+        skill: BoostCMSCategorySkillEnum.Research,
+        type: BoostCMSSubSkillEnum.presentation,
+        title: 'Presentation',
+        description: 'Communicating research findings clearly and effectively to others.',
+    },
+
+    // Athletic > Sport Specific Skills
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
+        type: BoostCMSSubSkillEnum.ballHandling,
+        title: 'Ball Handling',
+        description: 'Controlling, dribbling, and maneuvering a ball effectively during gameplay.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
+        type: BoostCMSSubSkillEnum.runningTechnique,
+        title: 'Running Technique',
+        description: 'Using efficient form and movement patterns to improve speed and endurance.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
+        type: BoostCMSSubSkillEnum.swingMechanics,
+        title: 'Swing Mechanics',
+        description:
+            'Optimizing movement for powerful and accurate swings in sports like baseball, golf, or tennis.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
+        type: BoostCMSSubSkillEnum.tackling,
+        title: 'Tackling',
+        description: 'Safely and effectively stopping an opponent’s progress in contact sports.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.SportSpecificSkills,
+        type: BoostCMSSubSkillEnum.swimmingStrokes,
+        title: 'Swimming Strokes',
+        description:
+            'Executing different stroke techniques such as freestyle, backstroke, breaststroke, and butterfly.',
+    },
+
+    // Athletic > Strength and Conditioning
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
+        type: BoostCMSSubSkillEnum.weightLifting,
+        title: 'Weight Lifting',
+        description: 'Building muscle strength and endurance through resistance training.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
+        type: BoostCMSSubSkillEnum.speedTraining,
+        title: 'Speed Training',
+        description:
+            'Improving acceleration, stride length, and stride frequency for faster performance.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
+        type: BoostCMSSubSkillEnum.agility,
+        title: 'Agility',
+        description: 'Moving quickly and easily while maintaining balance and control.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
+        type: BoostCMSSubSkillEnum.lexibility,
+        title: 'Flexibility',
+        description:
+            'Enhancing range of motion in muscles and joints to improve performance and prevent injury.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.StrengthAndConditioning,
+        type: BoostCMSSubSkillEnum.injuryPrevention,
+        title: 'Injury Prevention',
+        description:
+            'Developing safe training habits and strengthening key areas to reduce risk of injury.',
+    },
+
+    // Athletic > Coordination
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Coordination,
+        type: BoostCMSSubSkillEnum.handEyeCoordination,
+        title: 'Hand-Eye Coordination',
+        description: 'Synchronizing hand movement with visual input to perform tasks effectively.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Coordination,
+        type: BoostCMSSubSkillEnum.footwork,
+        title: 'Footwork',
+        description:
+            'Executing precise and efficient foot movements to enhance positioning and performance.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Coordination,
+        type: BoostCMSSubSkillEnum.balance,
+        title: 'Balance',
+        description: 'Maintaining body control and stability in dynamic or static positions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Coordination,
+        type: BoostCMSSubSkillEnum.reactionTime,
+        title: 'Reaction Time',
+        description: 'Responding quickly and appropriately to external stimuli during play.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Coordination,
+        type: BoostCMSSubSkillEnum.spatialAwareness,
+        title: 'Spatial Awareness',
+        description:
+            'Understanding and navigating the space around oneself relative to others and objects.',
+    },
+
+    // Athletic > Mental Focus
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.MentalFocus,
+        type: BoostCMSSubSkillEnum.visualization,
+        title: 'Visualization',
+        description:
+            'Mentally rehearsing movements and outcomes to improve confidence and execution.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.MentalFocus,
+        type: BoostCMSSubSkillEnum.goalSetting,
+        title: 'Goal Setting',
+        description:
+            'Creating specific and measurable targets to drive motivation and improvement.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.MentalFocus,
+        type: BoostCMSSubSkillEnum.competitiveness,
+        title: 'Competitiveness',
+        description:
+            'Channeling the desire to excel and outperform others in a healthy and focused way.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.MentalFocus,
+        type: BoostCMSSubSkillEnum.resilience,
+        title: 'Resilience',
+        description:
+            'Maintaining mental toughness and bouncing back from setbacks in training or competition.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.MentalFocus,
+        type: BoostCMSSubSkillEnum.handlingPressure,
+        title: 'Handling Pressure',
+        description: 'Performing effectively under high-stress, high-stakes scenarios.',
+    },
+
+    // Athletic > Teamwork
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Teamwork,
+        type: BoostCMSSubSkillEnum.communication,
+        title: 'Communication',
+        description: 'Clearly sharing ideas, strategies, and feedback with teammates.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Teamwork,
+        type: BoostCMSSubSkillEnum.cooperation,
+        title: 'Cooperation',
+        description: 'Working collaboratively with others to achieve team objectives.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Teamwork,
+        type: BoostCMSSubSkillEnum.roleUnderstanding,
+        title: 'Role Understanding',
+        description: 'Knowing and fulfilling one’s responsibilities within a team structure.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Teamwork,
+        type: BoostCMSSubSkillEnum.strategy,
+        title: 'Strategy',
+        description: 'Planning and executing coordinated tactics to achieve victory or success.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Athletic,
+        skill: BoostCMSCategorySkillEnum.Teamwork,
+        type: BoostCMSSubSkillEnum.sportsmanship,
+        title: 'Sportsmanship',
+        description: 'Demonstrating fairness, respect, and gracious behavior in competition.',
+    },
+    // Creative > Visual Arts
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.VisualArts,
+        type: BoostCMSSubSkillEnum.drawing,
+        title: 'Drawing',
+        description:
+            'The art or skill of making marks on a surface to represent objects, actions, or ideas.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.VisualArts,
+        type: BoostCMSSubSkillEnum.painting,
+        title: 'Painting',
+        description:
+            'Applying pigment to a surface to create an expressive or representational image.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.VisualArts,
+        type: BoostCMSSubSkillEnum.sculpture,
+        title: 'Sculpture',
+        description: 'Creating three-dimensional forms by shaping or combining materials.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.VisualArts,
+        type: BoostCMSSubSkillEnum.graphicDesign,
+        title: 'Graphic Design',
+        description:
+            'Visual communication using typography, imagery, and layout to convey messages.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.VisualArts,
+        type: BoostCMSSubSkillEnum.photography,
+        title: 'Photography',
+        description: 'Capturing images through cameras to express ideas or document moments.',
+    },
+
+    // Creative > Performing Arts
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.PerformingArts,
+        type: BoostCMSSubSkillEnum.acting,
+        title: 'Acting',
+        description:
+            'Performing roles in plays, films, or other productions to portray characters.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.PerformingArts,
+        type: BoostCMSSubSkillEnum.dance,
+        title: 'Dance',
+        description:
+            'Artistic movement of the body, often set to music, to express emotions or tell stories.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.PerformingArts,
+        type: BoostCMSSubSkillEnum.singing,
+        title: 'Singing',
+        description:
+            'Producing musical tones with the voice to perform songs or vocal compositions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.PerformingArts,
+        type: BoostCMSSubSkillEnum.instrumental,
+        title: 'Instrumental',
+        description: 'Performing music using instruments, either solo or in ensembles.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.PerformingArts,
+        type: BoostCMSSubSkillEnum.theaterProduction,
+        title: 'Theater Production',
+        description:
+            'Coordinating and managing stage performances, including sets, lighting, and direction.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.PerformingArts,
+        type: BoostCMSSubSkillEnum.costumeDesign,
+        title: 'Costume Design',
+        description: 'Creating clothing and outfits for characters in performances.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.PerformingArts,
+        type: BoostCMSSubSkillEnum.directing,
+        title: 'Directing',
+        description: 'Overseeing the creative vision and execution of a performance or production.',
+    },
+
+    // Creative > Writing
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Writing,
+        type: BoostCMSSubSkillEnum.poetry,
+        title: 'Poetry',
+        description: 'Writing that emphasizes the aesthetic and rhythmic qualities of language.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Writing,
+        type: BoostCMSSubSkillEnum.fiction,
+        title: 'Fiction',
+        description: 'Creating imaginative stories that are not based on real events.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Writing,
+        type: BoostCMSSubSkillEnum.nonfiction,
+        title: 'Nonfiction',
+        description: 'Writing based on factual information and real events.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Writing,
+        type: BoostCMSSubSkillEnum.scriptWriting,
+        title: 'Script Writing',
+        description:
+            'Creating scripts for plays, films, or broadcasts including dialogue and directions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Writing,
+        type: BoostCMSSubSkillEnum.copyWriting,
+        title: 'Copy Writing',
+        description: 'Crafting persuasive and engaging content for marketing or advertising.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Writing,
+        type: BoostCMSSubSkillEnum.journalism,
+        title: 'Journalism',
+        description: 'Reporting and writing news stories for media outlets.',
+    },
+
+    // Creative > Design
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Design,
+        type: BoostCMSSubSkillEnum.fashionDesign,
+        title: 'Fashion Design',
+        description:
+            'Creating clothing and accessories with attention to style, color, and trends.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Design,
+        type: BoostCMSSubSkillEnum.interiorDesign,
+        title: 'Interior Design',
+        description: 'Planning and designing functional and aesthetic indoor spaces.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Design,
+        type: BoostCMSSubSkillEnum.webDesign,
+        title: 'Web Design',
+        description: 'Creating user-friendly and visually appealing websites.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Design,
+        type: BoostCMSSubSkillEnum.productDesign,
+        title: 'Product Design',
+        description: 'Designing functional and marketable physical or digital products.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Design,
+        type: BoostCMSSubSkillEnum.gameDesign,
+        title: 'Game Design',
+        description: 'Creating rules, structure, and content for video or physical games.',
+    },
+
+    // Creative > Ideation
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Ideation,
+        type: BoostCMSSubSkillEnum.brainstorming,
+        title: 'Brainstorming',
+        description:
+            'Generating a large number of ideas to solve a problem or explore opportunities.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Ideation,
+        type: BoostCMSSubSkillEnum.conceptDevelopment,
+        title: 'Concept Development',
+        description: 'Refining and building out ideas into viable projects or products.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Ideation,
+        type: BoostCMSSubSkillEnum.innovation,
+        title: 'Innovation',
+        description: 'Creating and implementing new and effective solutions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Creative,
+        skill: BoostCMSCategorySkillEnum.Ideation,
+        type: BoostCMSSubSkillEnum.outOfTheBoxThinking,
+        title: 'Out-of-the-Box Thinking',
+        description: 'Approaching problems in unconventional and creative ways.',
+    },
+
+    // Business > Management
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Management,
+        type: BoostCMSSubSkillEnum.leadership,
+        title: 'Leadership',
+        description: 'Inspiring and guiding individuals or teams toward a shared goal or vision.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Management,
+        type: BoostCMSSubSkillEnum.strategicPlanning,
+        title: 'Strategic Planning',
+        description: 'Developing long-term objectives and actionable steps for business growth.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Management,
+        type: BoostCMSSubSkillEnum.teamBuilding,
+        title: 'Team Building',
+        description: 'Creating a cohesive, collaborative team through trust and shared goals.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Management,
+        type: BoostCMSSubSkillEnum.delegation,
+        title: 'Delegation',
+        description:
+            'Assigning responsibilities effectively based on individual strengths and roles.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Management,
+        type: BoostCMSSubSkillEnum.conflictResolution,
+        title: 'Conflict Resolution',
+        description:
+            'Addressing and resolving disagreements to maintain a productive work environment.',
+    },
+
+    // Business > Finance
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Finance,
+        type: BoostCMSSubSkillEnum.accounting,
+        title: 'Accounting',
+        description: 'Tracking and reporting financial transactions for budgeting and compliance.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Finance,
+        type: BoostCMSSubSkillEnum.budgeting,
+        title: 'Budgeting',
+        description: 'Planning and managing financial resources to meet organizational goals.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Finance,
+        type: BoostCMSSubSkillEnum.financialAnalysis,
+        title: 'Financial Analysis',
+        description:
+            'Interpreting financial data to assess performance and inform decision-making.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Finance,
+        type: BoostCMSSubSkillEnum.investment,
+        title: 'Investment',
+        description: 'Allocating resources to assets or ventures for potential returns.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Finance,
+        type: BoostCMSSubSkillEnum.riskManagement,
+        title: 'Risk Management',
+        description: 'Identifying and mitigating potential financial or operational risks.',
+    },
+
+    // Business > Marketing
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Marketing,
+        type: BoostCMSSubSkillEnum.marketResearch,
+        title: 'Market Research',
+        description: 'Gathering insights on customer needs, trends, and competitors.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Marketing,
+        type: BoostCMSSubSkillEnum.branding,
+        title: 'Branding',
+        description: 'Shaping the identity and perception of a business or product.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Marketing,
+        type: BoostCMSSubSkillEnum.advertising,
+        title: 'Advertising',
+        description: 'Promoting products or services through various media channels.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Marketing,
+        type: BoostCMSSubSkillEnum.sales,
+        title: 'Sales',
+        description: 'Converting leads into customers by understanding and meeting their needs.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Marketing,
+        type: BoostCMSSubSkillEnum.customerRelationshipManagement,
+        title: 'Customer Relationship Management',
+        description: 'Building and maintaining strong relationships with clients or customers.',
+    },
+
+    // Business > Operations
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Operations,
+        type: BoostCMSSubSkillEnum.logistics,
+        title: 'Logistics',
+        description: 'Coordinating the movement of goods, services, and information efficiently.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Operations,
+        type: BoostCMSSubSkillEnum.supplyChainManagement,
+        title: 'Supply Chain Management',
+        description: 'Overseeing all steps in sourcing, production, and delivery processes.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Operations,
+        type: BoostCMSSubSkillEnum.processImprovement,
+        title: 'Process Improvement',
+        description: 'Streamlining operations to boost productivity and reduce waste.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Operations,
+        type: BoostCMSSubSkillEnum.projectManagement,
+        title: 'Project Management',
+        description: 'Planning, executing, and closing projects to meet defined goals.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Operations,
+        type: BoostCMSSubSkillEnum.qualityControl,
+        title: 'Quality Control',
+        description: 'Ensuring products and services meet standards and specifications.',
+    },
+
+    // Business > Entrepreneurship
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Entrepreneurship,
+        type: BoostCMSSubSkillEnum.opportunityRecognition,
+        title: 'Opportunity Recognition',
+        description: 'Identifying unmet needs or gaps in the market for innovation.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Entrepreneurship,
+        type: BoostCMSSubSkillEnum.businessPlanning,
+        title: 'Business Planning',
+        description:
+            'Outlining strategies, goals, and resources for starting or growing a business.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Entrepreneurship,
+        type: BoostCMSSubSkillEnum.fundraising,
+        title: 'Fundraising',
+        description: 'Securing capital or investments to finance business operations or expansion.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Entrepreneurship,
+        type: BoostCMSSubSkillEnum.networking,
+        title: 'Networking',
+        description:
+            'Building professional relationships to support business growth and opportunities.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Business,
+        skill: BoostCMSCategorySkillEnum.Entrepreneurship,
+        type: BoostCMSSubSkillEnum.decisionMaking,
+        title: 'Decision Making',
+        description: 'Evaluating options and making informed choices under uncertainty.',
+    },
+
+    // Trade > Construction
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Construction,
+        type: BoostCMSSubSkillEnum.carpentry,
+        title: 'Carpentry',
+        description:
+            'Building and repairing structures and frameworks using wood and other materials.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Construction,
+        type: BoostCMSSubSkillEnum.electricalWork,
+        title: 'Electrical Work',
+        description: 'Installing, maintaining, and repairing electrical systems and wiring.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Construction,
+        type: BoostCMSSubSkillEnum.plumbing,
+        title: 'Plumbing',
+        description: 'Installing and repairing water supply, drainage, and piping systems.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Construction,
+        type: BoostCMSSubSkillEnum.masonry,
+        title: 'Masonry',
+        description: 'Constructing structures using brick, stone, or concrete blocks.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Construction,
+        type: BoostCMSSubSkillEnum.HVAC,
+        title: 'HVAC',
+        description: 'Installing and servicing heating, ventilation, and air conditioning systems.',
+    },
+
+    // Trade > Mechanics
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Mechanics,
+        type: BoostCMSSubSkillEnum.automotiveRepair,
+        title: 'Automotive Repair',
+        description: 'Diagnosing and fixing issues in cars and other vehicles.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Mechanics,
+        type: BoostCMSSubSkillEnum.dieselEngineRepair,
+        title: 'Diesel Engine Repair',
+        description:
+            'Servicing and maintaining diesel engines used in trucks, buses, and equipment.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Mechanics,
+        type: BoostCMSSubSkillEnum.smallEngineRepair,
+        title: 'Small Engine Repair',
+        description: 'Repairing engines found in lawnmowers, generators, and similar equipment.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Mechanics,
+        type: BoostCMSSubSkillEnum.aircraftMaintenance,
+        title: 'Aircraft Maintenance',
+        description: 'Inspecting and repairing airplane mechanical and electronic systems.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Mechanics,
+        type: BoostCMSSubSkillEnum.heavyEquipmentOperation,
+        title: 'Heavy Equipment Operation',
+        description:
+            'Operating large machinery like bulldozers and excavators safely and efficiently.',
+    },
+
+    // Trade > Manufacturing
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Manufacturing,
+        type: BoostCMSSubSkillEnum.welding,
+        title: 'Welding',
+        description: 'Joining metal parts together using heat and pressure.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Manufacturing,
+        type: BoostCMSSubSkillEnum.machining,
+        title: 'Machining',
+        description: 'Shaping parts using lathes, mills, and other cutting tools.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Manufacturing,
+        type: BoostCMSSubSkillEnum.assembly,
+        title: 'Assembly',
+        description: 'Putting together components to create finished products or systems.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Manufacturing,
+        type: BoostCMSSubSkillEnum.fabrication,
+        title: 'Fabrication',
+        description:
+            'Constructing metal structures through cutting, bending, and assembling processes.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Manufacturing,
+        type: BoostCMSSubSkillEnum.qualityAssurance,
+        title: 'Quality Assurance',
+        description: 'Ensuring manufactured goods meet required standards and specifications.',
+    },
+
+    // Trade > Cosmetology
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Cosmetology,
+        type: BoostCMSSubSkillEnum.hairstyling,
+        title: 'Hairstyling',
+        description: 'Cutting, coloring, and styling hair to enhance appearance.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Cosmetology,
+        type: BoostCMSSubSkillEnum.barbering,
+        title: 'Barbering',
+        description: 'Providing grooming services including haircuts, shaving, and beard care.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Cosmetology,
+        type: BoostCMSSubSkillEnum.nailTechnology,
+        title: 'Nail Technology',
+        description: 'Performing manicures, pedicures, and nail art treatments.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Cosmetology,
+        type: BoostCMSSubSkillEnum.makeupArtistry,
+        title: 'Makeup Artistry',
+        description: 'Applying makeup to enhance or transform appearance for various occasions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Trade,
+        skill: BoostCMSCategorySkillEnum.Cosmetology,
+        type: BoostCMSSubSkillEnum.esthetics,
+        title: 'Esthetics',
+        description:
+            'Caring for the skin through treatments like facials, waxing, and exfoliation.',
+    },
+    // Social > History
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.History,
+        type: BoostCMSSubSkillEnum.researchMethods,
+        title: 'Research Methods',
+        description: 'Using scholarly techniques to gather and evaluate historical information.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.History,
+        type: BoostCMSSubSkillEnum.analysisOfPrimarySources,
+        title: 'Analysis of Primary Sources',
+        description:
+            'Interpreting original historical documents and artifacts to understand the past.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.History,
+        type: BoostCMSSubSkillEnum.chronologicalReasoning,
+        title: 'Chronological Reasoning',
+        description: 'Understanding cause and effect through the sequence of historical events.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.History,
+        type: BoostCMSSubSkillEnum.comparativeHistory,
+        title: 'Comparative History',
+        description:
+            'Analyzing similarities and differences across historical contexts or cultures.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.History,
+        type: BoostCMSSubSkillEnum.historiography,
+        title: 'Historiography',
+        description: 'Studying how history is written and interpreted over time.',
+    },
+
+    // Social > Psychology
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Psychology,
+        type: BoostCMSSubSkillEnum.cognitivePsychology,
+        title: 'Cognitive Psychology',
+        description: 'Exploring mental processes such as memory, perception, and decision-making.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Psychology,
+        type: BoostCMSSubSkillEnum.developmentalPsychology,
+        title: 'Developmental Psychology',
+        description: 'Studying psychological growth and changes across the lifespan.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Psychology,
+        type: BoostCMSSubSkillEnum.socialPsychology,
+        title: 'Social Psychology',
+        description: 'Examining how individuals think, feel, and behave in social contexts.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Psychology,
+        type: BoostCMSSubSkillEnum.experimentalMethods,
+        title: 'Experimental Methods',
+        description: 'Designing and conducting psychological experiments to test hypotheses.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Psychology,
+        type: BoostCMSSubSkillEnum.clinicalPsychology,
+        title: 'Clinical Psychology',
+        description: 'Assessing and treating mental, emotional, and behavioral disorders.',
+    },
+
+    // Social > Sociology
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Sociology,
+        type: BoostCMSSubSkillEnum.socialInequality,
+        title: 'Social Inequality',
+        description: 'Understanding disparities in wealth, status, and power across social groups.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Sociology,
+        type: BoostCMSSubSkillEnum.socialInstitutions,
+        title: 'Social Institutions',
+        description: 'Studying structures like family, religion, and education that shape society.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Sociology,
+        type: BoostCMSSubSkillEnum.socialChange,
+        title: 'Social Change',
+        description: 'Analyzing shifts in societal norms, values, and behaviors over time.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Sociology,
+        type: BoostCMSSubSkillEnum.socialMovements,
+        title: 'Social Movements',
+        description: 'Exploring collective efforts to promote or resist social change.',
+    },
+
+    // Social > Economics
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Economics,
+        type: BoostCMSSubSkillEnum.microeconomics,
+        title: 'Microeconomics',
+        description: 'Studying individual economic units like consumers and businesses.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Economics,
+        type: BoostCMSSubSkillEnum.macroeconomics,
+        title: 'Macroeconomics',
+        description: 'Analyzing economy-wide phenomena like inflation, GDP, and unemployment.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Economics,
+        type: BoostCMSSubSkillEnum.econometrics,
+        title: 'Econometrics',
+        description: 'Applying statistical methods to test economic theories and forecasts.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Economics,
+        type: BoostCMSSubSkillEnum.economicPolicy,
+        title: 'Economic Policy',
+        description: 'Formulating and analyzing decisions that influence a nation’s economy.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.Economics,
+        type: BoostCMSSubSkillEnum.internationalEconomics,
+        title: 'International Economics',
+        description: 'Examining trade, finance, and economic interactions between countries.',
+    },
+
+    // Social > Political Science
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.PoliticalScience,
+        type: BoostCMSSubSkillEnum.governmentSystems,
+        title: 'Government Systems',
+        description: 'Understanding how different forms of government function and operate.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.PoliticalScience,
+        type: BoostCMSSubSkillEnum.politicalTheory,
+        title: 'Political Theory',
+        description: 'Exploring ideas about power, governance, justice, and rights.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.PoliticalScience,
+        type: BoostCMSSubSkillEnum.internationalRelations,
+        title: 'International Relations',
+        description: 'Analyzing political relationships and diplomacy between nations.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.PoliticalScience,
+        type: BoostCMSSubSkillEnum.comparativePolitics,
+        title: 'Comparative Politics',
+        description: 'Comparing political systems and institutions across different countries.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Social,
+        skill: BoostCMSCategorySkillEnum.PoliticalScience,
+        type: BoostCMSSubSkillEnum.publicPolicy,
+        title: 'Public Policy',
+        description: 'Developing and evaluating laws and regulations to address public issues.',
+    },
+
+    // Digital > Basic Computer Skills
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
+        type: BoostCMSSubSkillEnum.typing,
+        title: 'Typing',
+        description: 'Entering text efficiently using a keyboard with speed and accuracy.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
+        type: BoostCMSSubSkillEnum.fileManagement,
+        title: 'File Management',
+        description: 'Organizing, storing, and retrieving digital files and folders effectively.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
+        type: BoostCMSSubSkillEnum.internetNavigation,
+        title: 'Internet Navigation',
+        description: 'Using web browsers and online tools to find and interact with websites.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
+        type: BoostCMSSubSkillEnum.email,
+        title: 'Email',
+        description: 'Using email platforms to send, receive, and manage electronic communication.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.BasicComputerSkills,
+        type: BoostCMSSubSkillEnum.wordProcessing,
+        title: 'Word Processing',
+        description: 'Creating and editing text documents using word processing software.',
+    },
+
+    // Digital > Information Literacy
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.InformationLiteracy,
+        type: BoostCMSSubSkillEnum.searchEngineProficiency,
+        title: 'Search Engine Proficiency',
+        description:
+            'Using search engines effectively to locate accurate and relevant information.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.InformationLiteracy,
+        type: BoostCMSSubSkillEnum.evaluatingSources,
+        title: 'Evaluating Sources',
+        description: 'Assessing the reliability and credibility of online content and information.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.InformationLiteracy,
+        type: BoostCMSSubSkillEnum.factChecking,
+        title: 'Fact Checking',
+        description: 'Verifying the truthfulness and accuracy of information before accepting it.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.InformationLiteracy,
+        type: BoostCMSSubSkillEnum.criticalMediaAnalysis,
+        title: 'Critical Media Analysis',
+        description: 'Understanding and analyzing media messages and their impact on society.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.InformationLiteracy,
+        type: BoostCMSSubSkillEnum.understandingBias,
+        title: 'Understanding Bias',
+        description: 'Recognizing and accounting for bias in media and information sources.',
+    },
+
+    // Digital > Software Proficiency
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
+        type: BoostCMSSubSkillEnum.productivitySuites,
+        title: 'Productivity Suites',
+        description: 'Using software like Microsoft Office or Google Workspace to complete tasks.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
+        type: BoostCMSSubSkillEnum.specializedSoftware,
+        title: 'Specialized Software',
+        description:
+            'Using industry-specific programs tailored to particular job functions or fields.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
+        type: BoostCMSSubSkillEnum.designSoftware,
+        title: 'Design Software',
+        description: 'Utilizing tools like Adobe Creative Suite or Figma for visual design work.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
+        type: BoostCMSSubSkillEnum.programmingBasics,
+        title: 'Programming Basics',
+        description: 'Understanding fundamental coding concepts and writing basic code.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.SoftwareProficiency,
+        type: BoostCMSSubSkillEnum.dataVisualizationTools,
+        title: 'Data Visualization Tools',
+        description:
+            'Creating visual representations of data using software like Tableau or Excel.',
+    },
+
+    // Digital > Online Communication
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.OnlineCommunication,
+        type: BoostCMSSubSkillEnum.netiquette,
+        title: 'Netiquette',
+        description: 'Demonstrating respectful and appropriate behavior in digital communication.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.OnlineCommunication,
+        type: BoostCMSSubSkillEnum.effectiveEmailAndMessaging,
+        title: 'Effective Email and Messaging',
+        description: 'Communicating clearly and professionally through email and chat platforms.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.OnlineCommunication,
+        type: BoostCMSSubSkillEnum.socialMediaPlatforms,
+        title: 'Social Media Platforms',
+        description:
+            'Using platforms like Twitter, Instagram, or LinkedIn for communication and networking.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.OnlineCommunication,
+        type: BoostCMSSubSkillEnum.videoConferencing,
+        title: 'Video Conferencing',
+        description:
+            'Participating in and hosting virtual meetings using tools like Zoom or Teams.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.OnlineCommunication,
+        type: BoostCMSSubSkillEnum.collaborationTools,
+        title: 'Collaboration Tools',
+        description: 'Using apps like Slack, Trello, or Notion for teamwork and coordination.',
+    },
+
+    // Digital > Cyber Security
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.Cybersecurity,
+        type: BoostCMSSubSkillEnum.passwordManagement,
+        title: 'Password Management',
+        description: 'Creating and storing strong, secure passwords to protect online accounts.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.Cybersecurity,
+        type: BoostCMSSubSkillEnum.phishingAwareness,
+        title: 'Phishing Awareness',
+        description: 'Recognizing and avoiding scams that try to steal personal information.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.Cybersecurity,
+        type: BoostCMSSubSkillEnum.dataPrivacy,
+        title: 'Data Privacy',
+        description: 'Protecting sensitive personal and organizational information online.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.Cybersecurity,
+        type: BoostCMSSubSkillEnum.safeOnlinePractices,
+        title: 'Safe Online Practices',
+        description: 'Following behaviors that reduce risk while using the internet.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Digital,
+        skill: BoostCMSCategorySkillEnum.Cybersecurity,
+        type: BoostCMSSubSkillEnum.protectingDevices,
+        title: 'Protecting Devices',
+        description: 'Securing computers and mobile devices against threats and malware.',
+    },
+
+    // Medical > Clinical Skills
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.ClinicalSkills,
+        type: BoostCMSSubSkillEnum.patientAssessment,
+        title: 'Patient Assessment',
+        description:
+            'Evaluating a patient’s physical and emotional condition to inform care decisions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.ClinicalSkills,
+        type: BoostCMSSubSkillEnum.diagnosticProcedures,
+        title: 'Diagnostic Procedures',
+        description: 'Conducting tests to identify diseases or medical conditions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.ClinicalSkills,
+        type: BoostCMSSubSkillEnum.medicationAdministration,
+        title: 'Medication Administration',
+        description: 'Safely delivering prescribed medications to patients via appropriate routes.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.ClinicalSkills,
+        type: BoostCMSSubSkillEnum.woundCare,
+        title: 'Wound Care',
+        description: 'Treating and managing open wounds to promote healing and prevent infection.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.ClinicalSkills,
+        type: BoostCMSSubSkillEnum.basicLifeSupport,
+        title: 'Basic Life Support',
+        description: 'Providing immediate care in life-threatening emergencies, including CPR.',
+    },
+
+    // Medical > Anatomy and Physiology
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
+        type: BoostCMSSubSkillEnum.bodySystems,
+        title: 'Body Systems',
+        description: 'Understanding the structure and function of the human body systems.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
+        type: BoostCMSSubSkillEnum.medicalTerminology,
+        title: 'Medical Terminology',
+        description: 'Using the language of medicine to accurately describe patient conditions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
+        type: BoostCMSSubSkillEnum.diseaseProcesses,
+        title: 'Disease Processes',
+        description: 'Studying how diseases develop and affect the body.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
+        type: BoostCMSSubSkillEnum.pharmacology,
+        title: 'Pharmacology',
+        description: 'Learning how drugs affect biological systems to treat conditions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.AnatomyAndPhysiology,
+        type: BoostCMSSubSkillEnum.pathophysiology,
+        title: 'Pathophysiology',
+        description: 'Understanding the altered physiological processes associated with disease.',
+    },
+
+    // Medical > Patient Care
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.PatientCare,
+        type: BoostCMSSubSkillEnum.bedsideManner,
+        title: 'Bedside Manner',
+        description: 'Demonstrating empathy and professionalism in patient interactions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.PatientCare,
+        type: BoostCMSSubSkillEnum.empathy,
+        title: 'Empathy',
+        description:
+            'Understanding and sharing the feelings of patients to provide compassionate care.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.PatientCare,
+        type: BoostCMSSubSkillEnum.culturalSensitivity,
+        title: 'Cultural Sensitivity',
+        description: 'Respecting diverse cultural backgrounds and practices in medical care.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.PatientCare,
+        type: BoostCMSSubSkillEnum.ethics,
+        title: 'Ethics',
+        description: 'Applying moral principles to medical decision-making and patient treatment.',
+    },
+
+    // Medical > Medical Specialties
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
+        type: BoostCMSSubSkillEnum.surgery,
+        title: 'Surgery',
+        description: 'Performing operative procedures to treat injuries, diseases, or deformities.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
+        type: BoostCMSSubSkillEnum.emergencyMedicine,
+        title: 'Emergency Medicine',
+        description: 'Providing immediate medical care for acute illnesses and injuries.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
+        type: BoostCMSSubSkillEnum.pediatrics,
+        title: 'Pediatrics',
+        description: 'Specializing in medical care for infants, children, and adolescents.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
+        type: BoostCMSSubSkillEnum.radiology,
+        title: 'Radiology',
+        description: 'Using imaging technologies to diagnose and monitor medical conditions.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
+        type: BoostCMSSubSkillEnum.diagnosticReasoning,
+        title: 'Diagnostic Reasoning',
+        description: 'Synthesizing clinical data to identify the most likely medical diagnosis.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
+        type: BoostCMSSubSkillEnum.treatmentPlanning,
+        title: 'Treatment Planning',
+        description: 'Developing personalized care strategies to address patient needs.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.MedicalSpecialties,
+        type: BoostCMSSubSkillEnum.interdisciplinaryCollaboration,
+        title: 'Interdisciplinary Collaboration',
+        description: 'Working with professionals across specialties to provide comprehensive care.',
+    },
+
+    // Medical > Healthcare Administration
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
+        type: BoostCMSSubSkillEnum.insuranceAndBilling,
+        title: 'Insurance and Billing',
+        description:
+            'Managing financial processes related to patient insurance and medical services.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
+        type: BoostCMSSubSkillEnum.medicalRecords,
+        title: 'Medical Records',
+        description: 'Documenting and maintaining accurate and confidential patient information.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
+        type: BoostCMSSubSkillEnum.patientScheduling,
+        title: 'Patient Scheduling',
+        description: 'Coordinating appointments and procedures to ensure timely care.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
+        type: BoostCMSSubSkillEnum.regulatoryCompliance,
+        title: 'Regulatory Compliance',
+        description: 'Following healthcare laws, policies, and ethical standards.',
+    },
+    {
+        category: BoostCMSSKillsCategoryEnum.Medical,
+        skill: BoostCMSCategorySkillEnum.HealthcareAdministration,
+        type: BoostCMSSubSkillEnum.facilityManagement,
+        title: 'Facility Management',
+        description: 'Overseeing the operations and maintenance of medical facilities.',
+    },
+];

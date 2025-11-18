@@ -26,7 +26,6 @@ import UserProfileSetup from '../user-profile/UserProfileSetup';
 import { useWeb3AuthSFA } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
-import { useJoinLCNetworkModal } from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
 import authStore from 'learn-card-base/stores/authStore';
 
@@ -37,6 +36,7 @@ import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import ShareModal from '../share/ShareModal';
 import ScannerPermissionsPrompt from '../scanner-permissions-prompt/ScannerPermissionsPrompt';
 import ModalLayout from '../../layout/ModalLayout';
+import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
 
 const QrCodeUserCard: React.FC<{
     handleQRCodeCardModal: () => void;
@@ -55,7 +55,7 @@ const QrCodeUserCard: React.FC<{
     const { data: isCurrentUserLCNUser, isLoading: isCurrentLCNUserLoading } =
         useIsCurrentUserLCNUser();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useGetProfile();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const checkIfUserInNetwork = useCheckIfUserInNetwork();
 
     const [photo, setPhoto] = useState<string | undefined>(currentUser?.profileImage);
 
@@ -339,10 +339,8 @@ const QrCodeUserCard: React.FC<{
                         onClick={e => {
                             e.preventDefault();
 
-                            if (!isCurrentUserLCNUser && !isCurrentLCNUserLoading) {
-                                handlePresentJoinNetworkModal();
-                                return;
-                            }
+                            if (!checkIfUserInNetwork()) return;
+
                             if (isCurrentUserLCNUser) {
                                 handleShare();
                             }

@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { IonPage } from '@ionic/react';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
+import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 
@@ -42,6 +43,8 @@ type NonBoostPreviewProps = {
     qrCodeOnClick?: () => void;
     handleShareBoost?: () => void;
     customLinkedCredentialsComponent?: React.ReactNode;
+    showEndorsementBadge?: boolean;
+    existingEndorsements?: VC[];
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -68,6 +71,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     qrCodeOnClick,
     handleShareBoost,
     customLinkedCredentialsComponent,
+    showEndorsementBadge,
+    existingEndorsements,
 }) => {
     const { initWallet } = useWallet();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
@@ -112,6 +117,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 categoryType={categoryType}
                 verificationItems={verifications}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                existingEndorsements={existingEndorsements}
             />,
             {
                 className: '!bg-transparent',
@@ -120,6 +126,18 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
+
+    const endorsementBadge = showEndorsementBadge ? (
+        <EndorsementBadge
+            credential={credential}
+            categoryType={categoryType}
+            onClick={() => {
+                if (isMobile) {
+                    openDetailsSideModal();
+                }
+            }}
+        />
+    ) : null;
 
     const verifications =
         showVerifications && verificationItems && verificationItems.length > 0
@@ -172,6 +190,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                                 // isFrontOverride={isFront}
                                 setIsFrontOverride={setIsFront}
                                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                                customBodyContentSlot={endorsementBadge}
                             />
                         </section>
                     </div>
@@ -195,6 +214,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         categoryType={categoryType}
                         verificationItems={verifications}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                        existingEndorsements={existingEndorsements}
                     />
                 )}
             </div>

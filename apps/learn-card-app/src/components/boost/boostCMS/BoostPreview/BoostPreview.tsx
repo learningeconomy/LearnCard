@@ -6,6 +6,7 @@ import { VCDisplayCard2 } from '@learncard/react';
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
+import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 
 import { VC, VerificationItem } from '@learncard/types';
@@ -16,6 +17,7 @@ import {
     useDeviceTypeByWidth,
     useGetCredentialWithEdits,
     DisplayTypeEnum,
+    PreviewTypeEnum,
 } from 'learn-card-base';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 
@@ -58,6 +60,9 @@ export type BoostPreviewProps = {
     skipVerification?: boolean;
     customLinkedCredentialsComponent?: React.ReactNode;
     displayType?: DisplayTypeEnum;
+    showEndorsementBadge?: boolean;
+    existingEndorsements?: VC[];
+    previewType?: PreviewTypeEnum;
 };
 
 export const useVerification = (credential: VC) => {
@@ -121,7 +126,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     formattedDisplayType,
     skipVerification = false,
     customLinkedCredentialsComponent,
+    showEndorsementBadge,
     displayType,
+    existingEndorsements,
+    previewType,
 }) => {
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
@@ -173,6 +181,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 verificationItems={verifications}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 displayType={displayType}
+                existingEndorsements={existingEndorsements}
             />,
             {
                 className: '!bg-transparent',
@@ -182,7 +191,19 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         );
     };
 
-    if (displayType === DisplayTypeEnum.Media) {
+    const endorsementBadge = showEndorsementBadge ? (
+        <EndorsementBadge
+            credential={_credential}
+            categoryType={categoryType}
+            onClick={() => {
+                if (isMobile) {
+                    openDetailsSideModal();
+                }
+            }}
+        />
+    ) : null;
+
+    if (displayType === DisplayTypeEnum.Media || previewType === PreviewTypeEnum.Media) {
         return (
             <BoostMediaPreview
                 credential={credential}
@@ -190,6 +211,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 handleShareBoost={handleShareBoost}
                 onDotsClick={onDotsClick}
                 verifications={verifications}
+                handleCloseModal={handleCloseModal}
             />
         );
     }
@@ -239,6 +261,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                                 hideQRCode={hideQRCode}
                                 formattedDisplayType={formattedDisplayType}
                                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                                customBodyContentSlot={endorsementBadge}
                             />
                         </section>
                     </div>
@@ -263,6 +286,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         verificationItems={verifications}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                         displayType={displayType}
+                        existingEndorsements={existingEndorsements}
                     />
                 )}
             </div>

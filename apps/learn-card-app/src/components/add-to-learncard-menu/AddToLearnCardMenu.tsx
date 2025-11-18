@@ -2,7 +2,7 @@ import React from 'react';
 import { Capacitor } from '@capacitor/core';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import useJoinLCNetworkModal from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
+import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AiWandIcon from 'learn-card-base/svgs/AiWandIcon';
@@ -23,7 +23,6 @@ import {
     ChecklistEnum,
     QRCodeScannerStore,
     useGetCredentialList,
-    useIsCurrentUserLCNUser,
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
@@ -46,20 +45,16 @@ export const AddToLearnCardMenu: React.FC = () => {
     const flags = useFlags();
     const { isDesktop } = useDeviceTypeByWidth();
     const { newModal, closeModal } = useModal();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
-
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const { gate } = useLCNGatedAction();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
     const existingTopics = topics?.pages?.[0]?.records || [];
 
-    const handleNewSession = (showAiAppSelector?: boolean) => {
+    const handleNewSession = async (showAiAppSelector?: boolean) => {
         closeModal();
 
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
+        const { prompted } = await gate();
+        if (prompted) return;
 
         newModal(
             <NewAiSessionContainer
@@ -81,11 +76,6 @@ export const AddToLearnCardMenu: React.FC = () => {
 
     const handleNewBoostModal = () => {
         closeModal();
-
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
         handlePresentBoostModal();
     };
 

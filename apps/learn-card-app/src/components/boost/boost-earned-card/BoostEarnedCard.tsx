@@ -10,9 +10,11 @@ import {
     DisplayTypeEnum,
     CredentialSubjectDisplay,
     resetIonicModalBackground,
+    CredentialCategoryEnum,
 } from 'learn-card-base';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
+import { useTheme } from '../../../theme/hooks/useTheme';
 import { IonCol } from '@ionic/react';
 import {
     BoostPageViewMode,
@@ -21,27 +23,27 @@ import {
     CredentialCategory,
     useGetResolvedCredential,
     ModalTypes,
+    newCredsStore,
 } from 'learn-card-base';
 
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import CustomIssuerName from './helpers/CustomIssuerName';
 import FamilyCard from '../../familyCMS/FamilyCard/FamilyCard';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
+import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
+import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
+import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
-import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
-import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
-import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
-import CustomIssuerName from './helpers/CustomIssuerName';
 
 import {
     CATEGORY_TO_WALLET_SUBTYPE,
     getClrLinkedCredentials,
 } from 'learn-card-base/helpers/credentialHelpers';
-
+import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import {
     unwrapBoostCredential,
     isBoostCredential,
@@ -143,6 +145,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
         // VC Display Metadata
         displayType,
+        previewType,
         idBackgroundImage,
         idDimBackgroundImage,
         idFontColor,
@@ -165,8 +168,15 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         onDelete: closeAllModals,
     });
 
+    const newCreds = newCredsStore.use.newCreds();
+    const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
+    const showNewItemIndicator = newCredsForCategory?.includes(record?.uri) ?? false;
+
     const color = boostCategoryOptions?.[categoryType as any]?.color;
     const darkColor = boostCategoryOptions?.[categoryType as any]?.darkColor;
+    const { getThemedCategory } = useTheme();
+    const colors = (getThemedCategory(categoryType as CredentialCategoryEnum))?.colors;
+    const indicatorColor = colors?.indicatorColor;
 
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
@@ -292,6 +302,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             ),
             formattedDisplayType: formattedAchievementType,
             customLinkedCredentialsComponent,
+            previewType,
             displayType: displayType,
         };
 
@@ -299,10 +310,19 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
         const props = isID ? earnedBoostIdCardProps : earnedBoostModalProps;
 
+        if (record?.uri) {
+            // clear credential from new creds store if it is viewed
+            newCredsStore.set.removeCreds([record?.uri]);
+        }
+
         if (isBoost) {
-            newModal(<BoostPreview {...props} />, { backgroundImage: bgImage });
+            newModal(<BoostPreview {...props} showEndorsementBadge />, {
+                backgroundImage: bgImage,
+            });
         } else {
-            newModal(<NonBoostPreview {...props} />, { backgroundImage: bgImage });
+            newModal(<NonBoostPreview {...props} showEndorsementBadge />, {
+                backgroundImage: bgImage,
+            });
         }
     };
 
@@ -324,9 +344,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 title={title}
                 formattedDisplayType={formattedAchievementType}
                 textColor={darkColor}
+                indicatorColor={indicatorColor}
                 credential={cred}
                 mediaTitleContainerClassName="!mt-[14px]"
                 isEarnedBoost
+                showNewItemIndicator={showNewItemIndicator}
             />
         );
     }
@@ -545,6 +567,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                             ? getDefaultDisplayType(categoryType as string)
                             : displayType
                     }
+                    uri={record?.uri}
+                    indicatorColor={indicatorColor}
                 />
             </IonCol>
         </ErrorBoundary>

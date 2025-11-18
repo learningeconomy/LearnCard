@@ -9,6 +9,8 @@ export const POSTMARK_BRAND_NAME = process.env.POSTMARK_BRAND_NAME!;
 
 // templates
 export const LOGIN_VERIFICATION_CODE_TEMPLATE_ID = process.env.POSTMARK_LOGIN_CODE_TEMPLATE_ID!;
+export const POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID =
+    process.env.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID!;
 
 export const sendEmailWithTemplate = async (
     to: string,

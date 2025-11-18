@@ -13,7 +13,7 @@ import BoostSelectMenu from '../../../components/boost/boost-select-menu/BoostSe
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
-import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
+import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import useBoostModal from '../../../components/boost/hooks/useBoostModal';
 import { BoostCategoryOptionsEnum } from '../../../components/boost/boost-options/boostOptions';
 
@@ -30,7 +30,7 @@ export const AddressBookFooter: React.FC<{
     );
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const checkIfUserInNetwork = useCheckIfUserInNetwork();
 
     keyboardStore.store.subscribe(({ isOpen }) => {
         if (isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
@@ -83,10 +83,8 @@ export const AddressBookFooter: React.FC<{
                         <IonCol className="flex items-center justify-between max-w-[600px]">
                             <button
                                 onClick={() => {
-                                    if (!currentLCNUser && !currentLCNUserLoading) {
-                                        handlePresentJoinNetworkModal();
-                                        return;
-                                    }
+                                    if (!checkIfUserInNetwork()) return;
+
                                     if (currentLCNUser) {
                                         presentCenterModal({
                                             cssClass:
@@ -102,10 +100,7 @@ export const AddressBookFooter: React.FC<{
                             </button>
                             <button
                                 onClick={() => {
-                                    if (!currentLCNUser && !currentLCNUserLoading) {
-                                        handlePresentJoinNetworkModal();
-                                        return;
-                                    }
+                                    if (!checkIfUserInNetwork()) return;
 
                                     handlePresentBoostModal();
                                 }}
@@ -115,10 +110,7 @@ export const AddressBookFooter: React.FC<{
                             </button>
                             <button
                                 onClick={() => {
-                                    if (!currentLCNUser && !currentLCNUserLoading) {
-                                        handlePresentJoinNetworkModal();
-                                        return;
-                                    }
+                                    if (!checkIfUserInNetwork()) return;
 
                                     handlePresentBoostModal();
                                 }}

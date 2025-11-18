@@ -156,6 +156,46 @@ export type BoostCMSSkill = {
     subskills: string[];
 };
 
+// Open Badge v3 Alignment type
+export type BoostCMSAlignment = {
+    type: 'Alignment';
+    targetName: string; // e.g., Skill or Subskill name
+    targetFramework?: string; // e.g., Category or Skill grouping
+    targetUrl?: string;
+    targetDescription?: string;
+    targetCode?: string;
+    targetType?: string;
+    frameworkId?: string; // Neo4j framework ID for backend skill linking
+};
+
+export enum FrameworkNodeRole {
+    competency = 'competency',
+    tier = 'tier',
+}
+
+export type SkillFrameworkNode = BoostCMSAlignment & {
+    id?: string;
+    role: FrameworkNodeRole;
+    icon?: string;
+    subskills?: SkillFrameworkNode[];
+};
+
+export type SkillFrameworkNodeWithSearchInfo = SkillFrameworkNode & {
+    path: SkillFrameworkNode[];
+    numberOfSkills: number;
+};
+
+export type SkillFramework = {
+    id: string;
+    name: string;
+    image?: string;
+    description?: string;
+    networks?: any[];
+    admins?: any[];
+
+    skills: SkillFrameworkNode[];
+};
+
 export type BoostCMSMediaAttachment = {
     title: string | null;
     url: string | null;
@@ -172,6 +212,7 @@ export type BoostCMSState = {
     notes: string;
     address: AddressSpec;
     memberOptions: BoostCMSMemberOptions;
+    alignments?: BoostCMSAlignment[];
 };
 
 export type BoostCMSMemberOptions = {
@@ -209,6 +250,7 @@ export const initialBoostCMSState: BoostCMSState = {
         showIdIssuerImage: false,
     },
     skills: [],
+    alignments: [],
     mediaAttachments: [], // Prepared to handle multiple attachments
     notes: '',
     address: {

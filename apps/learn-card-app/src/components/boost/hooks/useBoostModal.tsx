@@ -1,16 +1,16 @@
 import React from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 
-import useJoinLCNetworkModal from '../../network-prompts/hooks/useJoinLCNetworkModal';
+import useLCNGatedAction from '../../network-prompts/hooks/useLCNGatedAction';
 import BoostVCTypeOptions from '../boost-options/boostVCTypeOptions/BoostVCTypeOptions';
 
 import {
     useModal,
     ModalTypes,
-    useIsCurrentUserLCNUser,
     BoostCategoryOptionsEnum,
     CredentialCategoryEnum,
 } from 'learn-card-base';
+import { BoostUserTypeEnum } from '../boost-options/boostOptions';
 
 const useBoostModal = (
     _history?: RouteComponentProps['history'] | undefined,
@@ -23,18 +23,15 @@ const useBoostModal = (
     hideAiBoostWizard?: boolean
 ) => {
     const { newModal } = useModal();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
 
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-
-    const handlePresentBoostModal = () => {
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
+    const handlePresentBoostModal = async () => {
+        const { prompted } = await gate();
+        if (prompted) return;
 
         newModal(
             <BoostVCTypeOptions
+                boostUserType={BoostUserTypeEnum.someone}
                 boostCategoryType={boostCategoryType}
                 hideBackButton={hideBackButton}
                 showCloseButton={showCloseButton}
@@ -59,3 +56,4 @@ const useBoostModal = (
 };
 
 export default useBoostModal;
+

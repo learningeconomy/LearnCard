@@ -1,12 +1,16 @@
 import React from 'react';
+import DocumentOutlinedIcon from './DocumentOutlinedIcon';
 
-const Document: React.FC<{ className?: string }> = ({ className = '' }) => {
+const Document: React.FC<{ className?: string; version?: 'outlined' | 'filled' }> = ({
+    className = '',
+    version = 'filled',
+}) => {
+    if (version === 'outlined') {
+        return <DocumentOutlinedIcon className={className} />;
+    }
+
     return (
-        <svg
-            viewBox="0 0 38 42"
-            fill="none"
-            className={className}
-        >
+        <svg viewBox="0 0 38 42" fill="none" className={className}>
             <path
                 fillRule="evenodd"
                 clipRule="evenodd"

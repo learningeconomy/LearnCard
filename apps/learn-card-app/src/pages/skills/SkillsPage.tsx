@@ -4,7 +4,6 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import TotalSkillsCount from './TotalSkillsCount';
 import { IonContent, IonPage } from '@ionic/react';
 import SkillsInsightCard from './SkillsInsightCard';
-import { ErrorBoundary } from 'react-error-boundary';
 import SkillsCategoryList from './SkillsCategoryList';
 import MainHeader from '../../components/main-header/MainHeader';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';

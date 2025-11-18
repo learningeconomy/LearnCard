@@ -20,7 +20,6 @@ import {
     usePathQuery,
     useIsLoggedIn,
     redirectStore,
-    useIsCurrentUserLCNUser,
     ProfilePicture,
     LEARNCARD_NETWORK_API_URL,
     CredentialCategoryEnum,
@@ -33,8 +32,8 @@ import {
 
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
+import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
-import useJoinLCNetworkModal from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
@@ -129,8 +128,7 @@ const ClaimBoost: React.FC<{
     const { isMobile } = useDeviceTypeByWidth();
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
 
     const boostUri = (query.get('boostUri') || uri)?.replace('localhost:', 'localhost%3A');
     const challenge = query.get('challenge') || claimChallenge;
@@ -198,10 +196,8 @@ const ClaimBoost: React.FC<{
         if (isClaimed) return;
         const wallet = await initWallet();
 
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
+        const { prompted } = await gate();
+        if (prompted) return;
 
         try {
             setIsClaimLoading(true);
@@ -269,10 +265,8 @@ const ClaimBoost: React.FC<{
     const handleClaimRawCredential = async () => {
         if (isClaimed || !vc) return;
 
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
+        const { prompted } = await gate();
+        if (prompted) return;
 
         try {
             setIsClaimLoading(true);

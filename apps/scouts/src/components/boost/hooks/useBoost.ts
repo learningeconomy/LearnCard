@@ -1,3 +1,4 @@
+// oxlint-disable-next-line no-unused-vars
 import React, { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { LCNProfile } from '@learncard/types';
@@ -14,6 +15,7 @@ import {
 import { useAddCredentialToWallet } from '../mutations';
 import { LCNBoostStatusEnum } from '../boost';
 
+// oxlint-disable-next-line no-unused-vars
 const useBoost = (history: RouteComponentProps['history']) => {
     const { initWallet } = useWallet();
     const [presentToast] = useIonToast();
@@ -25,9 +27,12 @@ const useBoost = (history: RouteComponentProps['history']) => {
             setIsLoading(true);
 
             if (boostUri) {
+                // oxlint-disable-next-line no-unused-vars
                 const uris = await Promise.all(
                     issueTo.map(async issuee => {
                         const otherProfileId = issuee?.profileId;
+                        console.log('boostUri', boostUri);
+                        console.log('boost', await wallet.invoke.getBoost(boostUri));
                         const issuedVc = await addBoostSomeone(wallet, otherProfileId, boostUri);
 
                         return issuedVc;

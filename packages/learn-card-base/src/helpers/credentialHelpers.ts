@@ -35,6 +35,9 @@ import { CredentialCategoryEnum } from 'learn-card-base/types/credentials';
 import { VerifierState } from '@learncard/react';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { VERIFIER_STATES } from '@learncard/react';
+import { BoostCMSMediaAttachment, BoostEvidenceSpec } from 'learn-card-base/components/boost/boost';
+import { getVideoMetadata } from './video.helpers';
+import { getFileMetadata } from './attachment.helpers';
 
 type CredentialType = 'MovieTicketCredential' | 'AlumniCredential' | 'PermanentResidentCard';
 
@@ -373,6 +376,9 @@ export const isBoostCredential = (vc: VC | UnsignedVC) => {
 export const isClrCredential = (vc: VC | UnsignedVC) => {
     return vc?.type?.includes('ClrCredential');
 };
+export const isEndorsementCredential = (vc: VC | UnsignedVC) => {
+    return vc?.type?.includes('EndorsementCredential');
+};
 
 export const getClrLinkedCredentials = (vc: any) => {
     return vc?.credentialSubject?.verifiableCredential || [];
@@ -428,7 +434,9 @@ export const getImageFromProfile = (profile: Profile): string => {
 
 export const getVerifierState = (credential: VC | UnsignedVC) => {
     const {
+        // oxlint-disable-next-line no-unused-vars
         title = '',
+        // oxlint-disable-next-line no-unused-vars
         createdAt,
         issuer: _issuer = '',
         issuee: _issuee = '',
@@ -735,6 +743,7 @@ export const getPotentialNameFieldsFromType = (credentialTypes: string[], creden
     const credentialSubject = getCredentialSubject(credential);
     if (credentialTypes?.includes(CREDENTIAL_TYPES.MOVIE_TICKET)) {
         name =
+            // oxlint-disable-next-line no-constant-binary-expression
             `${credentialSubject?.owns?.type} ${credentialSubject?.owns?.ticketNumber}` ||
             credential?.description;
     }
@@ -907,6 +916,7 @@ export const getAllSortedCredentials = async (credentials: VC[]) => {
 
 export const isCourseMetaVC = (vc: UnsignedVC): vc is CourseMetaVC => {
     if (!vc?.credentialSubject) return false;
+    // oxlint-disable-next-line no-unsafe-optional-chaining
     return 'potentialVCs' in vc?.credentialSubject;
 };
 
@@ -1097,4 +1107,147 @@ export const getCategoryDarkColor = (category = CredentialCategoryEnum.achieveme
     }
 
     return `${getCategoryPrimaryColor(category)}-700`;
+};
+
+// (Owner POV)
+export const getEndorsements = async (wallet = walletStore.get.wallet(), vc: VC) => {
+    if (!vc?.id) return [];
+    const idxEndorsements = await wallet?.index.LearnCloud.get({ credentialId: vc?.id });
+
+    if (!idxEndorsements || idxEndorsements.length === 0) return [];
+
+    const endorsementPromises = idxEndorsements.map(async endorsement => {
+        const resolvedEndorsement = await wallet?.read?.get(endorsement.uri);
+        return { endorsement: resolvedEndorsement, metadata: endorsement };
+    });
+
+    return Promise.all(endorsementPromises);
+};
+
+// (Owner POV)
+export const getEndorsementsForVC = async (
+    wallet = walletStore.get.wallet(),
+    vc: VC,
+    visibility: 'public' | 'private' = 'public'
+): Promise<VC[]> => {
+    const idxEndorsements = await wallet?.index.LearnCloud.get({
+        credentialId: vc?.id,
+    });
+    if (!idxEndorsements || idxEndorsements.length === 0) return [];
+
+    // TODO: handle this server side ^^ filtering is not working above
+    const filteredEndorsements = idxEndorsements.filter(r => r.visibility === visibility);
+
+    const endorsementPromises = filteredEndorsements.map(async endorsement => {
+        return wallet?.read?.get(endorsement.uri);
+    });
+
+    return Promise.all(endorsementPromises);
+};
+
+export const getEndorsementsFromPresentations = (VCs: VC[]) => {
+    if (!Array.isArray(VCs)) return [];
+
+    const endorsements = VCs.filter(vc => vc.type.includes('EndorsementCredential')) as VC[];
+
+    return endorsements;
+};
+
+export const hasEndorsedCredential = (endorsements: VC[], currentUserDid: string): boolean => {
+    return endorsements?.some(endorsement => endorsement?.issuer === currentUserDid);
+};
+
+export const parseShareLinkParams = (shareLink: string) => {
+    const params = new URLSearchParams(shareLink);
+    return {
+        seed: params.get('seed'),
+        pin: params.get('pin'),
+        uri: params.get('uri'),
+    };
+};
+export const getEvidenceAttachmentType = async (url: string) => {
+    const videoMetadata = await getVideoMetadata(url);
+    const docMetadata = await getFileMetadata(url);
+
+    if (docMetadata && !videoMetadata) {
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(docMetadata?.fileExtension)) {
+            return 'photo';
+        }
+        if (['docx', 'doc', 'ppt', 'pptx', 'pdf'].includes(docMetadata?.fileExtension)) {
+            return 'document';
+        }
+    }
+    if (videoMetadata && !docMetadata) {
+        return 'video';
+    }
+    if (url.includes('data:application/pdf;base64,')) {
+        return 'document';
+    }
+    return 'text';
+};
+
+export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {
+    if (!evidence) return;
+
+    const result = await Promise.all(
+        evidence.map(async ev => {
+            let url;
+            let type;
+
+            if (ev?.url) {
+                url = ev?.url;
+                type = await getEvidenceAttachmentType(ev?.url);
+            } else if (
+                typeof ev?.id === 'string' &&
+                ev?.id?.startsWith('data:application/pdf;base64,')
+            ) {
+                url = ev?.id;
+                type = 'document';
+            } else if (ev?.type?.includes('EvidenceFile')) {
+                url = ev?.id;
+                type = ev?.genre;
+            } else {
+                url = ev?.id;
+                type = await getEvidenceAttachmentType(ev?.id);
+            }
+
+            return {
+                title: ev?.name ?? '',
+                url,
+                description: ev?.description ?? '',
+                narrative: ev?.narrative ?? '',
+                type,
+            };
+        })
+    );
+
+    return result;
+};
+
+export const convertEvidenceToAttachments = (evidence: BoostEvidenceSpec[]): BoostAttachment[] => {
+    return evidence.map(evidence => {
+        return {
+            type: evidence?.genre ?? '',
+            title: evidence?.name ?? '',
+            url: evidence?.id,
+            fileName: evidence?.fileName ?? '',
+            fileSize: evidence?.fileSize ?? '',
+            fileType: evidence?.fileType ?? '',
+        };
+    });
+};
+
+// ! small helper to handle the transition from attachments to evidence
+// ! existing attachments will take higher precedence over evidence
+export const getExistingAttachmentsOrEvidence = (
+    attachments: BoostCMSMediaAttachment[],
+    evidence: BoostEvidenceSpec[]
+): BoostCMSMediaAttachment[] => {
+    const existingAttachments = attachments?.length > 0;
+    const existingEvidence = evidence?.length > 0;
+
+    if (existingAttachments) return attachments;
+    if (!existingAttachments && existingEvidence) return convertEvidenceToAttachments(evidence);
+
+    return [];
 };

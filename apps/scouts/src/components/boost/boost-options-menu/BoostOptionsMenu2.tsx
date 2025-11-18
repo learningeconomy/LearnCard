@@ -2,6 +2,7 @@ import React from 'react';
 
 import CopyStack from '../../svgs/CopyStack';
 import ShareBoostLink from './ShareBoostLink';
+import ShareTroopIdModal from '../../../pages/troop/ShareTroopIdModal';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import ViewJsonModal from './ViewJsonModal';
@@ -9,6 +10,8 @@ import ViewJsonModal from './ViewJsonModal';
 import { Boost, VC } from '@learncard/types';
 import { BoostMenuType } from '../hooks/useBoostMenu';
 import { ModalTypes, useModal, useConfirmation } from 'learn-card-base';
+import { isTroopCategory } from '../../../helpers/troop.helpers';
+import { BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
 
 type BoostOptionsMenuProps = {
     handleCloseModal: () => void;
@@ -46,12 +49,26 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     };
 
     const presentShareBoostLink = () => {
+        const isTroop = isTroopCategory(categoryType as BoostCategoryOptionsEnum);
+
+        if (isTroop) {
+            const troopCredential = (boost as any)?.boostCredential ?? boost;
+            const troopUri = (boost as any)?.boostId ?? boostUri;
+
+            newModal(
+                <ShareTroopIdModal credential={troopCredential} uri={troopUri} />,
+                { sectionClassName: '!bg-transparent !shadow-none !max-w-[355px]' },
+                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            );
+            return;
+        }
+
         newModal(
             <ShareBoostLink
                 handleClose={closeModal}
                 boost={boost}
                 boostUri={boostUri}
-                categoryType={categoryType}
+                categoryType={(categoryType as string) || BoostCategoryOptionsEnum.achievement}
             />,
             {},
             { mobile: ModalTypes.FullScreen, desktop: ModalTypes.FullScreen }

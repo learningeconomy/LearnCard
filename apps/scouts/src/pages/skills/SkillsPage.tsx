@@ -1,200 +1,129 @@
 import React, { useState } from 'react';
-import { IonCol, IonContent, IonPage, IonGrid, IonRow } from '@ionic/react';
-import BoostManagedCard from '../../components/boost/boost-managed-card/BoostManagedCard';
-import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
-import { ErrorBoundary } from 'react-error-boundary';
-import {
-    CurvedBackdropEl,
-    EarnedAndManagedTabs,
-    CredentialListTabEnum,
-    CredentialCategoryEnum,
-    useGetBoosts,
-    useGetCredentials,
-    VC_WITH_URI,
-    useIsCurrentUserLCNUser,
-    BrandingEnum,
-} from 'learn-card-base';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import TotalSkillsCount from './TotalSkillsCount';
+import { IonContent, IonPage } from '@ionic/react';
+import SkillsInsightCard from './SkillsInsightCard';
+import SkillsCategoryList from './SkillsCategoryList';
 import MainHeader from '../../components/main-header/MainHeader';
-import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
-import { usePathQuery } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
-
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../assets/lotties/hourglass.json';
-
+import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
-import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
+
+import { useLoadingLine } from '../../stores/loadingStore';
+import { CredentialCategoryEnum, useGetCredentialsForSkills } from 'learn-card-base';
+
+import {
+    aggregateCategorizedEntries,
+    mapBoostsToSkills,
+    RawCategorizedEntry,
+} from './skills.helpers';
+import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
+
+import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
+import SkillsMyHub from './SkillsMyHub';
+import SkillsAdminPanel from './SkillsAdminPanel';
+import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
+import { SkillFramework } from '../../components/boost/boost';
+
+enum TabEnum {
+    MY_HUB = 'My Hub',
+    ADMIN_PANEL = 'Admin Panel',
+}
 
 const SkillsPage: React.FC = () => {
-    const query = usePathQuery();
-
-    const _activeTab = query.get('managed')
-        ? CredentialListTabEnum.Managed
-        : CredentialListTabEnum.Earned;
-
-    //Query gets 'managed' boosts
     const {
-        data: boosts,
-        isLoading: boostsLoading,
-        refetch: managedBoostRefetch,
-        error: managedBoostsError,
-    } = useGetBoosts(CredentialCategoryEnum.skill);
+        data: allResolvedCreds,
+        isFetching: credentialsFetching,
+        isLoading: allResolvedBoostsLoading,
+        error: allResolvedCredsError,
+        refetch,
+    } = useGetCredentialsForSkills();
 
-    const {
-        data: vcs,
-        isLoading: loading,
-        refetch: earnedBoostsRefetch,
-        error: earnedBoostsError,
-    } = useGetCredentials('Skill', undefined, true);
+    const [selectedTab, setSelectedTab] = useState<TabEnum>(TabEnum.ADMIN_PANEL);
+    const [frameworkToBrowse, setFrameworkToBrowse] = useState<SkillFramework | null>(null);
 
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    // const flags = useFlags();
+    // const showAiInsights = flags?.showAiInsights;
 
-    const [activeTab, setActiveTab] = useState<CredentialListTabEnum | string>(
-        _activeTab ?? CredentialListTabEnum.Earned
+    const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
+
+    useLoadingLine(credentialsBackgroundFetching);
+
+    let isBoostsEmpty = false;
+    if ((!allResolvedBoostsLoading && allResolvedCreds?.length === 0) || allResolvedBoostsLoading) {
+        isBoostsEmpty = true;
+    } else {
+        isBoostsEmpty = false;
+    }
+
+    const skillsMap = mapBoostsToSkills(allResolvedCreds);
+
+    // Calculate total count of skills and subskills
+    const totalSkills = Object.values(skillsMap).reduce(
+        (total, category) => total + (category?.length || 0),
+        0
+    );
+    const totalSubskills = Object.values(skillsMap).reduce(
+        (total, category) => total + (category?.totalSubskills || 0),
+        0
     );
 
-    const imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.SKILLS];
+    const total = (totalSkills || 0) + (totalSubskills || 0);
 
-    /* the filtering step is to handle old wallets that may have different VCs on their index that have the same uri */
-    const credentials = vcs
-        ?.filter(
-            (v: VC_WITH_URI, i: number, a: VC_WITH_URI[]) =>
-                a?.findIndex((v2: VC_WITH_URI) => v2?.uri === v?.uri) === i
-        )
-        ?.map((vcWithUri: VC_WITH_URI, index: number) => {
-            return (
-                <BoostEarnedCard
-                    key={vcWithUri?.uri || index}
-                    credential={vcWithUri?.vc}
-                    uri={vcWithUri?.uri}
-                    defaultImg={imgSrc}
-                    categoryType={BoostCategoryOptionsEnum.skill}
-                />
-            );
-        });
+    const isHub = selectedTab === TabEnum.MY_HUB;
 
-    const renderBoostsList = boosts?.map((boost, index: number) => {
-        if (!boost) return <></>;
-
+    if (frameworkToBrowse) {
+        // could remove this if we want to use the modal instead (which we're currently doing)
         return (
-            <BoostManagedCard
-                key={boost?.uri || index}
-                boost={boost}
-                defaultImg={imgSrc}
-                categoryType={BoostCategoryOptionsEnum.skill}
+            <BrowseFrameworkPage
+                frameworkInfo={frameworkToBrowse}
+                handleClose={() => setFrameworkToBrowse(null)}
             />
         );
-    });
+    }
 
-    const boostError = managedBoostsError || earnedBoostsError ? true : false;
-
-    const handleRefetch = async () => {
-        try {
-            await earnedBoostsRefetch?.();
-            await managedBoostRefetch?.();
-        } catch (e) {
-            throw new Error('There was an error, please try again.');
-        }
-    };
     return (
-        <IonPage className="bg-white">
-            <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <MainHeader showBackButton subheaderType={SubheaderTypeEnum.Skill} branding={BrandingEnum.scoutPass}>
-                    {currentLCNUser && (
-                        <EarnedAndManagedTabs
-                            handleActiveTab={setActiveTab}
-                            activeTab={activeTab}
-                            className="bg-indigo-300"
-                        />
-                    )}
-                </MainHeader>
-                <IonContent fullscreen className="skills-page" color="indigo-500">
-                    <CurvedBackdropEl className="bg-indigo-300" />
-                    {loading && activeTab === CredentialListTabEnum.Earned && !boostError && (
-                        <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <div className="max-w-[280px] mt-[-40px]">
-                                <Lottie
-                                    loop
-                                    animationData={HourGlass}
-                                    play
-                                    style={{ width: '100%', height: '100%' }}
-                                />
-                            </div>
-                        </section>
-                    )}
-                    {!loading &&
-                        vcs &&
-                        !boostError &&
-                        vcs?.length > 0 &&
-                        activeTab === CredentialListTabEnum.Earned && (
-                            <>
-                                <IonCol className="flex m-auto relative items-center flex-wrap  w-full achievements-list-container">
-                                    <IonGrid className="max-w-[600px]">
-                                        <IonRow> {credentials}</IonRow>
-                                    </IonGrid>
-                                    <div className="bg-filler bg-indigo-300 absolute h-full top-[0px] left-[0px] w-full mt-[200px]" />
-                                </IonCol>
-                            </>
-                        )}
-                    {!loading &&
-                        vcs &&
-                        vcs?.length === 0 &&
-                        !boostError &&
-                        activeTab === CredentialListTabEnum.Earned && (
-                            <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                                <img
-                                    src={imgSrc}
-                                    alt="currencies"
-                                    className="w-[250px] h-[250px] m-auto"
-                                />
-                                <strong>No skills yet</strong>
-                            </section>
-                        )}
+        <IonPage className="bg-violet-200">
+            <GenericErrorBoundary category={CredentialCategoryEnum.skill}>
+                <MainHeader
+                    showBackButton
+                    subheaderType={SubheaderTypeEnum.Skill}
+                    hidePlusBtn={true}
+                />
+                <IonContent fullscreen className="skills-page" color="violet-200">
+                    <div className="flex relative justify-center items-center w-full pb-[30px]">
+                        <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] px-[20px]">
+                            {/* {showAiInsights && <SkillsInsightCard />} */}
+                            {/* <TotalSkillsCount total={total} /> */}
 
-                    {boostsLoading && activeTab === CredentialListTabEnum.Managed && !boostError && (
-                        <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <div className="max-w-[280px] mt-[-40px]">
-                                <Lottie
-                                    loop
-                                    animationData={HourGlass}
-                                    play
-                                    style={{ width: '100%', height: '100%' }}
-                                />
+                            <div
+                                className={`flex items-center justify-start w-full ${
+                                    isHub ? 'mb-[10px]' : 'mb-[15px]'
+                                }`}
+                            >
+                                {Object.values(TabEnum).map(tab => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setSelectedTab(tab)}
+                                        className={`px-[14px] py-[7px] rounded-[5px] font-[500] font-poppins text-[14px] ${
+                                            tab === selectedTab
+                                                ? 'bg-violet-100 text-grayscale-900'
+                                                : 'text-grayscale-600'
+                                        }`}
+                                    >
+                                        {tab}
+                                    </button>
+                                ))}
                             </div>
-                        </section>
-                    )}
-                    {!boostsLoading &&
-                        boosts?.length > 0 &&
-                        !boostError &&
-                        activeTab === CredentialListTabEnum.Managed && (
-                            <>
-                                <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
-                                    <IonGrid className="max-w-[600px]">
-                                        <IonRow>{renderBoostsList}</IonRow>
-                                    </IonGrid>
-                                    <div className="bg-filler bg-indigo-300 absolute h-full top-[0px] left-[0px] w-full mt-[110px]" />
-                                </IonCol>
-                            </>
-                        )}
-                    {!boostsLoading &&
-                        boosts?.length === 0 &&
-                        !boostError &&
-                        activeTab === CredentialListTabEnum.Managed && (
-                            <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                                <img
-                                    src={imgSrc}
-                                    alt="Work History"
-                                    className="w-[250px] h-[250px] m-auto"
-                                />
-                                <strong>No boosts to manage yet</strong>
-                            </section>
-                        )}
 
-                    {(boostError as Boolean) && <BoostErrorsDisplay refetch={handleRefetch} />}
+                            {selectedTab === TabEnum.MY_HUB && <SkillsMyHub />}
+                            {selectedTab === TabEnum.ADMIN_PANEL && (
+                                <SkillsAdminPanel setFrameworkToBrowse={setFrameworkToBrowse} />
+                            )}
+                        </div>
+                    </div>
                 </IonContent>
-            </ErrorBoundary>
+            </GenericErrorBoundary>
         </IonPage>
     );
 };

@@ -22,7 +22,7 @@ export const AddressBookFooter: React.FC<{
     const { newModal } = useModal({ desktop: ModalTypes.Cancel });
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
 
     keyboardStore.store.subscribe(({ isOpen }) => {
         if (isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
@@ -46,11 +46,10 @@ export const AddressBookFooter: React.FC<{
                     <IonRow className="w-full mt-4 flex items-center justify-center">
                         <IonCol className="flex items-center justify-between max-w-[600px]">
                             <button
-                                onClick={() => {
-                                    if (!currentLCNUser && !currentLCNUserLoading) {
-                                        handlePresentJoinNetworkModal();
-                                        return;
-                                    }
+                                onClick={async () => {
+                                    const { prompted } = await gate();
+                                    if (prompted) return;
+
                                     if (currentLCNUser) {
                                         presentCenterModal({
                                             cssClass:
@@ -65,11 +64,9 @@ export const AddressBookFooter: React.FC<{
                                 Connect <User className="ml-[5px] h-[30px] w-[30px] ml-2" />
                             </button>
                             <button
-                                onClick={() => {
-                                    if (!currentLCNUser && !currentLCNUserLoading) {
-                                        handlePresentJoinNetworkModal();
-                                        return;
-                                    }
+                                onClick={async () => {
+                                    const { prompted } = await gate();
+                                    if (prompted) return;
 
                                     newModal(
                                         <BoostTemplateSelector />,

@@ -4,8 +4,8 @@ import Trophy from 'learn-card-base/svgs/Trophy';
 import Coins from 'learn-card-base/svgs/Coins';
 import IDIcon from 'learn-card-base/svgs/IDIcon';
 import Briefcase from 'learn-card-base/svgs/Briefcase';
-import Lightbulb from 'learn-card-base/svgs/Lightbulb';
 import Graduation from 'learn-card-base/svgs/Graduation';
+import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
@@ -73,6 +73,17 @@ export const SubheaderContentType: Record<
         helperTextClickable: 'scouting achievements',
     },
 
+    // Scouts - Skills
+    [SubheaderTypeEnum.Skill]: {
+        title: 'Skills Hub',
+        IconComponent: SkillsIconWithShape,
+        iconColor: 'text-indigo-500',
+        textColor: 'text-grayscale-900',
+        bgColor: 'bg-white',
+        helperText: 'Your',
+        helperTextClickable: 'skill roadmap.',
+    },
+
     // Not currently used in Scouts
     [SubheaderTypeEnum.Currency]: {
         title: 'Currencies',
@@ -94,13 +105,6 @@ export const SubheaderContentType: Record<
         iconColor: 'text-spice-400',
         textColor: 'text-white',
         bgColor: 'bg-spice-400',
-    },
-    [SubheaderTypeEnum.Skill]: {
-        title: 'Skills',
-        IconComponent: Lightbulb,
-        iconColor: 'text-indigo-500',
-        textColor: 'text-white',
-        bgColor: 'bg-indigo-500',
     },
     [SubheaderTypeEnum.Job]: {
         title: 'Work History',

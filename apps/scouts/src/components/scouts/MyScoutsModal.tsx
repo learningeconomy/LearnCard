@@ -10,13 +10,16 @@ import IdViewDivetFrame from '../svgs/IdViewDivetFrame';
 import SignOutIcon from 'learn-card-base/svgs/SignOutIcon';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import UserProfileSetup from '../user-profile/UserProfileSetup';
+// oxlint-disable-next-line no-unused-vars
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import BluePaintBrush from 'learn-card-base/svgs/BluePaintBrush';
 import ScoutsGlobe2Colored from 'learn-card-base/svgs/ScoutsGlobe2Colored';
 import QrCodeUserCardModal from '../qrcode-user-card/QRCodeUserCard';
 import OrangeProfileIcon from 'learn-card-base/svgs/OrangeProfileIcon';
+// oxlint-disable-next-line no-unused-vars
 import ConnectedAppsIcon from 'learn-card-base/svgs/ConnectedAppsIcon';
 import ScoutPassIDCMS, { ScoutPassIdCMSEditorModeEnum } from '../scoutsID-CMS/ScoutPassIDCMS';
+import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
 
 import {
     useModal,
@@ -38,6 +41,8 @@ import {
 
 import { UserCMSAppearance } from '../scoutsID-CMS/scouts-cms.helpers';
 import { LCNProfile } from '@learncard/types';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
 
 type MyScoutsModalProps = {
     branding: BrandingEnum;
@@ -54,7 +59,12 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     hideEdit = false,
     hideShare = false,
 }) => {
+    // oxlint-disable-next-line no-unused-vars
     const [user, setUser] = useState(_user);
+
+    // oxlint-disable-next-line no-unused-vars
+    const flags = useFlags();
+    const enableAdminTools = flags.enableAdminTools;
 
     const { initWallet } = useWallet();
     const history = useHistory();
@@ -68,6 +78,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     const notInNetwork = isNetworkUser === false;
 
     const { data: connections } = useGetConnections();
+    // oxlint-disable-next-line no-unused-vars
     const numConnectedApps = connections?.filter(c => c.isServiceProfile)?.length;
 
     const description = user?.bio ?? user?.shortBio;
@@ -77,6 +88,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     const handleUpdateMyScoutPassID = async (scoutPassIDUpdates: UserCMSAppearance) => {
         const wallet = await initWallet();
 
+        // oxlint-disable-next-line no-unused-vars
         const updatedProfile = await wallet?.invoke?.updateProfile({
             display: {
                 // container styles
@@ -188,6 +200,21 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                     />,
                     {},
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                );
+            },
+        });
+    }
+
+    if (enableAdminTools) {
+        rows.push({
+            title: 'Admin Tools',
+            Icon: WrenchColorFillIcon,
+            caretText: '',
+            onClick: () => {
+                newModal(
+                    <AdminToolsModal />,
+                    {},
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                 );
             },
         });

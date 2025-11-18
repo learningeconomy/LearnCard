@@ -216,7 +216,7 @@ const ShortBoostUserOptions: React.FC<{
     }
 
     const category = boost?.category as BoostCategoryOptionsEnum;
-    const { color } = boostCategoryOptions[category];
+    const color = boostCategoryOptions[category]?.color;
 
     if (page === ShortBoostStepsEnum.boostUserTypeOptions) {
         const boostName = boost?.name || boostCredential?.name || 'Boost';

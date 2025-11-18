@@ -18,7 +18,7 @@ export const VC_TYPE = {
     SKILL: 'skills',
 } as const;
 
-export type VcType = typeof VC_TYPE[keyof typeof VC_TYPE];
+export type VcType = (typeof VC_TYPE)[keyof typeof VC_TYPE];
 
 export const useShareCredentials = (
     preSelectedCredentials?: VC[],

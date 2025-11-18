@@ -1,16 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import {
-    IonCol,
-    IonContent,
-    IonGrid,
-    IonPage,
-    IonRow,
-    useIonModal,
-    useIonToast,
-} from '@ionic/react';
+import { IonCol, IonContent, IonGrid, IonPage, IonRow, useIonToast } from '@ionic/react';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
 import BoostAddressBook, {
     BoostAddressBookEditMode,
@@ -31,6 +24,7 @@ import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessCon
 import BoostCMSIDAppearanceController from './boostCMSForms/boostCMSAppearance/BoostCMSIDAppearanceController';
 import BoostCMSIDCard from '../boost-id-card/BoostIDCard';
 import BoostCMSCustomTypeForm from './boostCMSForms/boostCMSTitleForm/BoostCMSCustomTypeForm';
+import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
 
 import { useAddCredentialToWallet } from '../mutations';
 
@@ -71,6 +65,8 @@ import {
     replaceUnderscoresWithWhiteSpace,
     resetIonicModalBackground,
     setIonicModalBackground,
+    ModalTypes,
+    useModal,
     useGetBoostRecipients,
     useGetProfile,
     useGetSearchProfiles,
@@ -78,8 +74,7 @@ import {
     useGetBoostPermissions,
 } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
-
-import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
+import { VC } from '@learncard/types';
 
 type UpdateBoostCMSProps = {
     boostCategoryType?: BoostCategoryOptionsEnum;
@@ -165,6 +160,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
             const boostVC: VC = await wallet?.invoke?.resolveFromLCN(uri);
             const _boostVC = unwrapBoostCredential(boostVC);
+
             const admin = await getBoostAdmin(wallet, _boostUri);
             const filteredAdmin = admin?.records?.filter(
                 record => record.profileId !== profile.profileId
@@ -181,13 +177,16 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
             const boostVcAttachments = _boostVC?.attachments
                 ? boostVC?.attachments?.map((attachment: BoostCMSMediaAttachment) => {
-                    return {
-                        title: attachment?.title,
-                        url: attachment?.url,
-                        type: attachment?.type,
-                    };
-                })
+                      return {
+                          title: attachment?.title,
+                          url: attachment?.url,
+                          type: attachment?.type,
+                      };
+                  })
                 : [];
+
+            // Prefer OBv3 alignments if present on the VC; otherwise, derive from legacy skills
+            const derivedAlignments = deriveAlignmentsFromVC(_boostVC);
 
             setState(prevState => {
                 return {
@@ -226,8 +225,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                             longitude: _boostVC?.address?.geo?.longitude,
                         },
                     },
-                    mediaAttachments: [...state?.mediaAttachments, ...boostVcAttachments],
-                    skills: [...state.skills, ...(_boostVC?.skills ?? [])],
+                    mediaAttachments: boostVcAttachments,
+                    skills: _boostVC?.skills ?? [],
+                    alignments: derivedAlignments,
                 };
             });
 
@@ -361,7 +361,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     };
 
     const handleNextStep = () => {
-        dissmissModal();
+        closePreviewModal();
         if (currentStep === BoostCMSStepsEnum.create) {
             setCurrentStep(BoostCMSStepsEnum.publish);
             logAnalyticsEvent('boostCMS_publish', {
@@ -407,13 +407,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             setIonicModalBackground(state?.appearance?.backgroundImage);
         }
 
-        presentModal({
-            backdropDismiss: true,
-            showBackdrop: false,
-            onWillDismiss: () => {
-                resetIonicModalBackground();
-            },
-        });
+        presentPreviewModal();
     };
 
     const handleAddAdmin = async () => {
@@ -449,7 +443,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
         try {
             setIsSaveLoading(true);
-            dissmissModal();
+            closePreviewModal();
             handleAddAdmin();
             handleRemoveAdmin();
 
@@ -485,10 +479,12 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                 } else {
                     handleCloseModal?.();
                     if (!isModal) {
-                        history.replace(
-                            `/${BOOST_CATEGORY_TO_WALLET_ROUTE?.[state?.basicInfo?.type]
-                            }?managed=true`
-                        );
+                        const walletRoute =
+                            BOOST_CATEGORY_TO_WALLET_ROUTE[
+                                state?.basicInfo
+                                    ?.type as keyof typeof BOOST_CATEGORY_TO_WALLET_ROUTE
+                            ];
+                        history.replace(`/${walletRoute}?managed=true`);
                     }
                 }
             }
@@ -608,10 +604,12 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                         handleCloseModal?.();
                     }
                     if (!isModal) {
-                        history.replace(
-                            `/${BOOST_CATEGORY_TO_WALLET_ROUTE?.[state?.basicInfo?.type]
-                            }?managed=true`
-                        );
+                        const walletRoute =
+                            BOOST_CATEGORY_TO_WALLET_ROUTE[
+                                state?.basicInfo
+                                    ?.type as keyof typeof BOOST_CATEGORY_TO_WALLET_ROUTE
+                            ];
+                        history.replace(`/${walletRoute}?managed=true`);
                     }
                 }
             }
@@ -628,74 +626,102 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         }
     };
 
-    const [presentModal, dissmissModal] = useIonModal(BoostPreview, {
-        credential: getBoostCredentialPreview(state),
-        categoryType: state?.basicInfo?.type,
-        handleCloseModal: () => dissmissModal(),
-        customThumbComponent:
-            isID || isMembership ? (
-                <BoostCMSIDCard
-                    state={state}
-                    setState={setState}
-                    idClassName="p-0 m-0 mt-4 boost-id-preview-body min-h-[160px]"
-                    idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
-                    customIssuerThumbContainerClass="id-card-issuer-thumb-preview-container"
-                />
-            ) : (
-                <CredentialBadge
-                    achievementType={state?.basicInfo?.achievementType}
-                    boostType={state?.basicInfo?.type}
-                    badgeThumbnail={state?.appearance?.badgeThumbnail}
-                    badgeCircleCustomClass="w-[170px] h-[170px]"
-                    branding={BrandingEnum.scoutPass}
-                />
-            ),
-        customBodyCardComponent:
-            state?.issueTo?.length > 0 ? (
-                <BoostPreviewBody
-                    recipients={state?.issueTo}
-                    customBoostPreviewContainerClass="bg-white"
-                    customBoostPreviewContainerRowClass="items-center"
-                />
-            ) : (
-                <div />
-            ),
-        customFooterComponent: (
-            <BoostPreviewFooter
-                handleSaveAndQuit={handleSaveAndQuit}
-                isSaveLoading={isSaveLoading}
-                handleSubmit={handlePublishBoost}
-                isLoading={isLoading}
-                showSaveAndQuitButton={
-                    currentStep !== BoostCMSStepsEnum.confirmation && !isEditDisabled
-                }
-                showIssueButton={currentStep === BoostCMSStepsEnum.publish && !isEditDisabled}
-                selectedVCType={state?.basicInfo?.type}
-                isEditMode
-            />
-        ),
-        boostPreviewWrapperCustomClass: state?.issueTo?.length > 0 ? '' : 'boost-preview-wrapper',
+    const { newModal: newPreviewModal, closeModal: closePreviewModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
-    const [presentConfirmationModal, dismissConfirmationModal] = useIonModal(
-        BoostCMSConfirmationPrompt,
-        {
-            state: state,
-            handleCloseModal: () => dismissConfirmationModal(),
-            handleSaveAndQuit: handleSaveAndQuit,
-            handleQuit: handleCloseModal,
-            currentStep: currentStep,
-            isEditMode: isEditDisabled,
-            isSaveLoading: isSaveLoading,
-        }
-    );
+    const presentPreviewModal = () => {
+        const backgroundImage =
+            isID || isMeritBadge ? state?.appearance?.backgroundImage : undefined;
+        const previewModalOptions = backgroundImage
+            ? { backgroundImage, sectionClassName: 'bg-white' }
+            : { sectionClassName: 'bg-white' };
+
+        const categoryTypeEnum =
+            (state?.basicInfo?.type as any) || boostCategoryOptions?.achievement?.value;
+
+        const previewCredential = getBoostCredentialPreview(state) as unknown as VC;
+
+        newPreviewModal(
+            <BoostPreview
+                credential={previewCredential}
+                categoryType={categoryTypeEnum}
+                handleCloseModal={() => {
+                    closePreviewModal();
+                    resetIonicModalBackground();
+                }}
+                customThumbComponent={
+                    isID || isMembership ? (
+                        <BoostCMSIDCard
+                            state={state}
+                            setState={setState}
+                            idClassName="p-0 m-0 mt-4 boost-id-preview-body min-h-[160px]"
+                            idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
+                            customIssuerThumbContainerClass="id-card-issuer-thumb-preview-container"
+                        />
+                    ) : (
+                        <CredentialBadge
+                            achievementType={state?.basicInfo?.achievementType}
+                            boostType={state?.basicInfo?.type}
+                            badgeThumbnail={state?.appearance?.badgeThumbnail}
+                            badgeCircleCustomClass="w-[170px] h-[170px]"
+                            branding={BrandingEnum.scoutPass}
+                        />
+                    )
+                }
+                customBodyCardComponent={
+                    state?.issueTo?.length > 0 ? (
+                        <BoostPreviewBody
+                            recipients={state?.issueTo}
+                            customBoostPreviewContainerClass="bg-white"
+                            customBoostPreviewContainerRowClass="items-center"
+                        />
+                    ) : (
+                        <div />
+                    )
+                }
+                customFooterComponent={
+                    <BoostPreviewFooter
+                        handleSaveAndQuit={handleSaveAndQuit}
+                        isSaveLoading={isSaveLoading}
+                        handleSubmit={handlePublishBoost}
+                        isLoading={isLoading}
+                        showSaveAndQuitButton={
+                            currentStep !== BoostCMSStepsEnum.confirmation && !isEditDisabled
+                        }
+                        showIssueButton={
+                            currentStep === BoostCMSStepsEnum.publish && !isEditDisabled
+                        }
+                        selectedVCType={state?.basicInfo?.type}
+                        isEditMode
+                    />
+                }
+                boostPreviewWrapperCustomClass={
+                    state?.issueTo?.length > 0 ? '' : 'boost-preview-wrapper'
+                }
+            />,
+            previewModalOptions
+        );
+    };
+
+    const { newModal: newConfirmModal, closeModal: closeConfirmModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
 
     const handleConfirmationModal = () =>
-        presentConfirmationModal({
-            cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-            backdropDismiss: true,
-            showBackdrop: false,
-        });
+        newConfirmModal(
+            <BoostCMSConfirmationPrompt
+                state={state}
+                handleSaveAndQuit={handleSaveAndQuit}
+                handleQuit={handleCloseModal}
+                currentStep={currentStep}
+                isEditMode={isEditDisabled}
+                isSaveLoading={isSaveLoading}
+            />,
+            { sectionClassName: 'generic-modal show-modal ion-disable-focus-trap !bg-white' }
+        );
 
     let activeBoostCMSStep: null | React.ReactNode = null;
 
@@ -741,9 +767,6 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     )}
 
                 {!flags?.disableCmsCustomization && (
-                    <BoostCMSSkillsAttachmentForm state={state} setState={setState} />
-                )}
-                {!flags?.disableCmsCustomization && (
                     <BoostCMSMediaForm
                         state={state}
                         setState={setState}
@@ -756,6 +779,13 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     setState={setState}
                     disabled={isEditDisabled || !overrideCustomize}
                 />
+
+                <BoostFrameworkSkillSelector
+                    state={state}
+                    setState={setState}
+                    reloadStateTrigger={isBoostLoading}
+                />
+
                 <BoostAddressBook
                     state={state}
                     setState={setState}

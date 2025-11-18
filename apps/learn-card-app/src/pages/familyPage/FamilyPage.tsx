@@ -37,6 +37,7 @@ import { usePathQuery } from 'learn-card-base';
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useLoadingLine } from '../../stores/loadingStore';
 import useBoostModal from '../../components/boost/hooks/useBoostModal';
+import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 
 import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -78,6 +79,7 @@ const FamilyPage: React.FC = () => {
     );
     const { data: managedBoostCount = 0 } = useCountBoosts(CredentialCategoryEnum.family);
     const hasSwitchedProfiles = switchedProfileStore.use.isSwitchedProfile();
+    const { gate } = useLCNGatedAction();
 
     const {
         data: records,
@@ -97,12 +99,24 @@ const FamilyPage: React.FC = () => {
 
     useLoadingLine(credentialsBackgroundFetching);
 
-    const showFamilyCMS = () => {
+    const showFamilyCMS = async () => {
+        const { prompted } = await gate();
+        if (prompted) return;
         newModal(<FamilyCMS handleCloseModal={closeModal} />);
     };
 
     useEffect(() => {
         credentialSearchStore.set.reset();
+    }, []);
+
+    // Auto-open family creation flow if requested (e.g., underage -> parent login flow)
+    useEffect(() => {
+        const shouldCreate = query.get('createFamily');
+        if (shouldCreate) {
+            showFamilyCMS();
+            history.replace('/families');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const imgSrc = RelationshipCats;

@@ -100,9 +100,8 @@ const BoostCMSSkillOptions: React.FC<{
                             );
 
                             return (
-                                <>
+                                <React.Fragment key={index}>
                                     <BoostCMSPrimarySkillButton
-                                        key={skill}
                                         skill={skill}
                                         skillSelected={skillSelected}
                                         handleAddSkill={handleAddSkill}
@@ -119,7 +118,7 @@ const BoostCMSSkillOptions: React.FC<{
 
                                                     return (
                                                         <BoostCMSSubSkillButton
-                                                            key={subSkill}
+                                                            key={subSkill?.type ?? i}
                                                             handleRemoveSubSkill={
                                                                 handleRemoveSubSkill
                                                             }
@@ -133,7 +132,7 @@ const BoostCMSSkillOptions: React.FC<{
                                             </div>
                                         </div>
                                     )}
-                                </>
+                                </React.Fragment>
                             );
                         })}
                     </IonRow>

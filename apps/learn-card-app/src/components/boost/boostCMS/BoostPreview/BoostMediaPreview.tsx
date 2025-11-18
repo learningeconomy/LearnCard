@@ -20,6 +20,10 @@ import {
 } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import { VideoMetadata } from 'learn-card-base';
+import {
+    convertEvidenceToAttachments,
+    getExistingAttachmentsOrEvidence,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 export function getFilestackPreviewUrl(fileUrl: string): string {
     try {
@@ -41,7 +45,15 @@ export const BoostMediaPreview: React.FC<{
     handleShareBoost: () => void;
     onDotsClick: () => void;
     verifications: any;
-}> = ({ credential, openDetailsSideModal, handleShareBoost, onDotsClick, verifications }) => {
+    handleCloseModal?: () => void;
+}> = ({
+    credential,
+    openDetailsSideModal,
+    handleShareBoost,
+    onDotsClick,
+    verifications,
+    handleCloseModal,
+}) => {
     const { closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
     const swiperRef = useRef<any>(null);
@@ -54,10 +66,11 @@ export const BoostMediaPreview: React.FC<{
 
     const [isFullScreen, setIsFullScreen] = useState(false);
 
-    const attachments = credential?.attachments;
+    const attachments = getExistingAttachmentsOrEvidence(
+        credential?.attachments || [],
+        credential?.evidence || []
+    );
     const attachment = attachments?.[0];
-
-    const displayType = credential?.display?.displayType ?? DisplayTypeEnum.Media;
 
     useEffect(() => {
         const onKeydown = (e: KeyboardEvent) => {
@@ -83,7 +96,7 @@ export const BoostMediaPreview: React.FC<{
     const handleGetDocumentUrl = async () => {
         try {
             setIsMediaLoading(true);
-            const url = getFilestackPreviewUrl(attachment.url);
+            const url = getFilestackPreviewUrl(attachment?.url || '');
             setDocumentUrl(url);
         } catch (error) {
             console.error('Failed to get document metadata:', error);
@@ -233,7 +246,10 @@ export const BoostMediaPreview: React.FC<{
                                 showFullScreen
                                 handleFullScreen={() => setIsFullScreen(!isFullScreen)}
                                 showShareButton={false}
-                                handleClose={closeModal}
+                                handleClose={() => {
+                                    if (handleCloseModal) handleCloseModal?.();
+                                    closeModal();
+                                }}
                                 handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
                                 handleShare={handleShareBoost}
                                 handleDotMenu={onDotsClick}
@@ -264,7 +280,10 @@ export const BoostMediaPreview: React.FC<{
                     {!isFullScreen && (
                         <footer className="w-full flex justify-center items-center ion-no-border z-50">
                             <BoostFooter
-                                handleClose={closeModal}
+                                handleClose={() => {
+                                    if (handleCloseModal) handleCloseModal?.();
+                                    closeModal();
+                                }}
                                 handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
                                 handleShare={handleShareBoost}
                                 handleDotMenu={onDotsClick}

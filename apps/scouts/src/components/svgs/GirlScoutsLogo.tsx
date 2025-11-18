@@ -14,6 +14,7 @@ const GirlScoutsIcon: React.FC<{
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             xmlnsXlink="http://www.w3.org/1999/xlink"
+            className={className}
         >
             <rect y="0.433594" width="50" height="50" rx="25" fill="white" />
             <rect

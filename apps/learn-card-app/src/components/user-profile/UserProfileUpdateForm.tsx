@@ -31,17 +31,21 @@ import TrashBin from '../svgs/TrashBin';
 import InfoIcon from '../svgs/InfoIcon';
 import CopyStack from '../svgs/CopyStack';
 import HandshakeIcon from '../svgs/HandshakeIcon';
+import ExclamationPoint from '../svgs/ExclamationPoint';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import DeleteUserConfirmationPrompt from '../userOptions/DeleteUserConfirmationPrompt';
 import ExportSeedPhraseModal from '../userOptions/ExportSeedPhraseModal';
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import OnboardingRoleItem from '../onboarding/onboardingRoles/OnboardingRoleItem';
 import OnboardingRolesContainer from '../onboarding/onboardingRoles/OnboardingRolesContainer';
+import CountrySelectorModal from '../onboarding/onboardingNetworkForm/components/CountrySelectorModal';
+import countries from '../../constants/countries.json';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
+import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { JoinNetworkModalWrapper } from '../network-prompts/hooks/useJoinLCNetworkModal';
 import {
     LearnCardRoles,
@@ -56,19 +60,15 @@ const StateValidator = z.object({
         .min(3, ' Must contain at least 3 character(s).')
         .max(30, ' Must contain at most 30 character(s).')
         .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
-    // dob: z
-    //     .string()
-    //     .nonempty(' Date of birth is required.')
-    //     .refine(
-    //         dob => {
-    //             const dobMoment = moment(dob, 'YYYY-MM-DD');
-    //             return moment().diff(dobMoment, 'years') >= 13;
-    //         },
-    //         {
-    //             message: ' You must be at least 13 years old.',
-    //         }
-    //     ),
+    dob: z
+        .string()
+        .nonempty(' Date of birth is required.')
+        .refine(dob => !Number.isNaN(calculateAge(dob)) && calculateAge(dob) >= 13, {
+            message: ' You must be at least 13 years old.',
+        }),
 });
+
+const DobValidator = StateValidator.pick({ dob: true });
 
 type UserProfileUpdateFormProps = {
     title?: string;
@@ -120,6 +120,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
 
     const [dob, setDob] = useState<string | null | undefined>(lcNetworkProfile?.dob ?? '');
+    const [country, setCountry] = useState<string | undefined>(lcNetworkProfile?.country ?? '');
 
     const hasParentSwitchedProfile = switchedProfileStore.get.isSwitchedProfile();
 
@@ -140,6 +141,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         if (lcNetworkProfile?.role) {
             setRole(lcNetworkProfile?.role as LearnCardRolesEnum);
         }
+
+        if (lcNetworkProfile?.country) {
+            setCountry(lcNetworkProfile?.country);
+        }
     }, [walletDid, lcNetworkProfile]);
 
     const onUpload = (data: UploadRes) => {
@@ -159,10 +164,17 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     });
 
     const validate = () => {
-        const parsedData = StateValidator.safeParse({
-            name: name,
-            // dob: dob,
-        });
+        const Schema = lcNetworkProfile ? StateValidator : StateValidator.pick({ name: true });
+        const parsedData = Schema.safeParse(
+            lcNetworkProfile
+                ? {
+                      name: name,
+                      dob: dob,
+                  }
+                : {
+                      name: name,
+                  }
+        );
 
         if (parsedData.success) {
             setErrors({});
@@ -212,9 +224,55 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 notificationsWebhook: getNotificationsEndpoint(),
                 dob: dob ?? '',
                 role: role ?? '',
+                country: country ?? '',
             });
             console.log('updatedProfile::res', updatedProfile);
         }
+    };
+
+    const presentUnderageModal = () => {
+        newModal(
+            <div className="flex flex-col gap-[12px] w-full max-w-[520px] h-full">
+                <div className="w-full bg-white rounded-[24px] px-[20px] py-[28px] shadow-3xl text-center">
+                    <div className="mx-auto mb-4 h-[56px] w-[56px] rounded-full border border-indigo-200 flex items-center justify-center">
+                        <div className="flex items-center justify-center h-[28px] w-[28px] text-indigo-600">
+                            <ExclamationPoint className="h-full w-full" />
+                        </div>
+                    </div>
+                    <h2 className="text-[22px] font-bold text-grayscale-900 mb-2 font-poppins">
+                        Get an Adult
+                    </h2>
+                    <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
+                        You'll need a parent or guardian to set up a Family Account before you can
+                        join.
+                    </p>
+                </div>
+                <div className="flex gap-3 w-full absolute bottom-0">
+                    <button
+                        type="button"
+                        onClick={closeModal}
+                        className="flex-1 py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
+                    >
+                        Back
+                    </button>
+                    <button
+                        type="button"
+                        onClick={closeModal}
+                        className="flex-1 py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
+                    >
+                        I'm an Adult
+                    </button>
+                </div>
+            </div>,
+            {
+                sectionClassName:
+                    '!bg-transparent !border-none !shadow-none !rounded-none !max-w-[600px] !mx-auto',
+            },
+            {
+                desktop: ModalTypes.Center,
+                mobile: ModalTypes.Center,
+            }
+        );
     };
 
     const handleUpdateUser = async () => {
@@ -222,6 +280,20 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
+            // Show modal if under 13 before running Zod, to ensure UX triggers
+            const age = dob ? calculateAge(dob) : Number.NaN;
+            if (!Number.isNaN(age) && age < 13) {
+                setErrors(prev => ({ ...prev, dob: [' You must be at least 13 years old.'] }));
+                presentUnderageModal();
+                return;
+            }
+
+            // Validate DOB even if name is not required per Apple guidelines
+            const dobCheck = DobValidator.safeParse({ dob });
+            if (!dobCheck.success) {
+                setErrors(dobCheck.error.flatten().fieldErrors);
+                return;
+            }
             // ! apple's guidelines: name should NOT be required
             await updateProfile(auth()?.currentUser, {
                 displayName: name ?? '',
@@ -237,6 +309,16 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             handleCloseModal();
             // ! APPLE HOT FIX
         } else {
+            // If LCN profile exists, show modal when age < 13 regardless of Zod
+            if (lcNetworkProfile) {
+                const age = dob ? calculateAge(dob) : Number.NaN;
+                if (!Number.isNaN(age) && age < 13) {
+                    setErrors(prev => ({ ...prev, dob: [' You must be at least 13 years old.'] }));
+                    presentUnderageModal();
+                    return;
+                }
+            }
+
             if (validate()) {
                 setIsLoading(true);
                 try {
@@ -424,12 +506,14 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
                     {lcNetworkProfile && (
                         <>
-                            {/* <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
+                            <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
                                 <button
+                                    type="button"
                                     className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
                                         errors?.dob ? 'login-input-email-error' : ''
                                     }`}
-                                    onClick={() => {
+                                    onClick={e => {
+                                        e.preventDefault();
                                         newModal(
                                             <div className="w-full h-full transparent flex items-center justify-center">
                                                 <IonDatetime
@@ -449,7 +533,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                     }
                                                     id="datetime"
                                                     presentation="date"
-                                                    className="bg-white text-black rounded-[20px] shadow-3xl z-50 font-notoSans"
+                                                    className="bg-white text-black rounded-[20px] w-full shadow-3xl z-50 font-notoSans"
                                                     showDefaultButtons
                                                     color="indigo-500"
                                                     max={moment().format('YYYY-MM-DD')}
@@ -458,6 +542,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                 />
                                             </div>,
                                             {
+                                                disableCloseHandlers: true,
                                                 sectionClassName:
                                                     '!bg-transparent !border-none !shadow-none !rounded-none',
                                             },
@@ -472,13 +557,66 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     <Calendar className="w-[30px] text-grayscale-700" />
                                 </button>
 
+                                {dob && !Number.isNaN(calculateAge(dob)) && (
+                                    <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
+                                        Age: {calculateAge(dob)}
+                                    </p>
+                                )}
+
                                 {errors?.dob && (
                                     <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
                                         {errors?.dob}
                                     </p>
                                 )}
-                            </div> */}
+                            </div>
 
+                            {/* Country selector */}
+                            <div className="flex flex-col items-center justify-center w-full mt-2">
+                                <button
+                                    type="button"
+                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base`}
+                                    onClick={e => {
+                                        e.preventDefault();
+                                        newModal(
+                                            <CountrySelectorModal
+                                                selected={country}
+                                                onSelect={code => {
+                                                    setCountry(code);
+                                                    closeModal();
+                                                }}
+                                            />,
+                                            {
+                                                sectionClassName:
+                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
+                                            },
+                                            {
+                                                desktop: ModalTypes.Center,
+                                                mobile: ModalTypes.Center,
+                                            }
+                                        );
+                                    }}
+                                    aria-label="Country"
+                                >
+                                    {country ? (
+                                        <span className="text-grayscale-700 text-[14px] flex items-center gap-[10px]">
+                                            <img
+                                                src={`https://flagcdn.com/36x27/${country.toLowerCase()}.png`}
+                                                alt={`${
+                                                    (countries as Record<string, string>)[country]
+                                                } flag`}
+                                                className="w-[36px] h-[27px] object-cover"
+                                            />
+                                            {(countries as Record<string, string>)[country]}
+                                        </span>
+                                    ) : (
+                                        <span className="text-grayscale-500 text-[14px]">
+                                            Country
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Role selector */}
                             <div className="w-full flex items-center justify-center my-2">
                                 <OnboardingRoleItem
                                     role={role}

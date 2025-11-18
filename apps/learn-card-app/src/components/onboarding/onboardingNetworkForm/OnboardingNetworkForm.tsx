@@ -3,9 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import moment from 'moment';
-import { z } from 'zod';
 
-import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
+import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime, useIonToast } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import OnboardingRoleItem from '../onboardingRoles/OnboardingRoleItem';
 import OnboardingHeader from '../onboardingHeader/OnboardingHeader';
@@ -15,7 +14,11 @@ import HandleIcon from 'learn-card-base/svgs/HandleIcon';
 import { Checkmark } from '@learncard/react';
 import Calendar from '../../svgs/Calendar';
 import Pencil from '../../svgs/Pencil';
+import AddUser from '../../svgs/AddUser';
 import X from 'learn-card-base/svgs/X';
+
+import LocationIcon from '../../svgs/LocationIcon';
+import LearnCardLogo from '../../../assets/images/lca-icon-v2.png';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -31,10 +34,12 @@ import {
     getNotificationsEndpoint,
     SocialLoginTypes,
     ModalTypes,
+    BrandingEnum,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
+import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import {
     LearnCardRoles,
     LearnCardRolesEnum,
@@ -42,38 +47,20 @@ import {
     OnboardingStepsEnum,
 } from '../onboarding.helpers';
 
-const StateValidator = z.object({
-    name: z
-        .string()
-        .nonempty(' Name is required.')
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(30, ' Must contain at most 30 character(s).')
-        .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
-    // dob: z
-    //     .string()
-    //     .nonempty(' Date of birth is required.')
-    //     .refine(
-    //         dob => {
-    //             const dobMoment = moment(dob, 'YYYY-MM-DD');
-    //             return moment().diff(dobMoment, 'years') >= 13;
-    //         },
-    //         {
-    //             message: ' You must be at least 13 years old.',
-    //         }
-    //     ),
-});
+import countries from '../../../constants/countries.json';
+import CountrySelectorModal from './components/CountrySelectorModal';
+import EUParentalConsentModalContent from './components/EUParentalConsentModalContent';
+import UnderageModalContent from './components/UnderageModalContent';
+import USConsentNoticeModalContent from './components/USConsentNoticeModalContent';
+import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
+import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
+import useLogout from '../../../hooks/useLogout';
 
-const ProfileIDStateValidator = z.object({
-    profileId: z
-        .string()
-        .nonempty(' User ID is required.')
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(25, ' Must contain at most 25 character(s).')
-        .regex(
-            /^[a-zA-Z0-9-]+$/,
-            ` Alpha numeric characters(s) and dashes '-' only, no spaces allowed.`
-        ),
-});
+const COUNTRIES: Record<string, string> = countries as Record<string, string>;
+
+// Components and helpers extracted to ./components and ./helpers
+
+// Validators moved to ./onboardingNetworkForm/helpers/validators
 
 type OnboardingNetworkFormProps = {
     showHeader?: boolean;
@@ -82,6 +69,7 @@ type OnboardingNetworkFormProps = {
     step?: OnboardingStepsEnum;
     role?: LearnCardRolesEnum | null;
     setStep?: (step: OnboardingStepsEnum) => void;
+    onSuccess?: () => void;
 };
 
 const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
@@ -91,6 +79,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     step,
     setStep,
     role,
+    onSuccess,
 }) => {
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
@@ -101,10 +90,13 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
+    const { handleLogout, isLoggingOut } = useLogout();
 
     const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
     const [dob, setDob] = useState<string | null | undefined>('');
+    const [country, setCountry] = useState<string | undefined>(undefined);
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
+    const [usMinorConsent, setUsMinorConsent] = useState<boolean>(false);
 
     const [networkToggle, setNetworkToggle] = useState<boolean>(true);
 
@@ -122,6 +114,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const [profileIdErrors, setProfileIdErrors] = useState<Record<string, string[]>>({});
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
+    const [presentToast] = useIonToast();
 
     const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
 
@@ -156,6 +149,14 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         }
     }, [uniqueProfile, uniqueProfileFetching, profileId]);
 
+    // Reset consent if user is no longer a teen or if country is in the EU (EU flow handled separately)
+    useEffect(() => {
+        const age = dob ? calculateAge(dob) : Number.NaN;
+        const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
+        const inEU = country ? isEUCountry(country) : false;
+        if (inEU || !isTeen) setUsMinorConsent(false);
+    }, [country, dob]);
+
     const onUpload = (data: UploadRes) => {
         setPhoto(data?.url);
         setUploadProgress(false);
@@ -170,7 +171,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const validate = () => {
         const parsedData = StateValidator.safeParse({
             name: name,
-            // dob: dob,
+            dob: dob,
+            country: country ?? '',
         });
 
         if (parsedData.success) {
@@ -216,12 +218,13 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     };
 
     const handleStorageUpdate = async () => {
-        await updateCurrentUser(currentUser?.privateKey, {
+        if (!currentUser?.privateKey) return;
+        await updateCurrentUser(currentUser.privateKey, {
             name: name ?? currentUser?.name ?? '',
             profileImage: photo ?? currentUser?.profileImage ?? '',
         });
         currentUserStore.set.currentUser({
-            ...currentUser,
+            ...(currentUser as any),
             name: name ?? currentUser?.name ?? '',
             profileImage: photo ?? currentUser?.profileImage ?? '',
         });
@@ -234,13 +237,15 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 setIsCreateLoading(true);
                 const wallet = await initWallet();
                 const didWeb = await wallet.invoke.createProfile({
-                    did: wallet.id.did(),
                     profileId: profileId as string,
                     displayName: name ?? '',
+                    shortBio: '',
+                    bio: '',
                     image: photo ?? '',
                     notificationsWebhook: getNotificationsEndpoint(),
                     role: role ?? '',
-                    // dob: dob ?? '',
+                    dob: dob ?? '',
+                    country: country ?? '',
                 });
 
                 if (didWeb) {
@@ -251,10 +256,17 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     handleCloseModal();
                     setIsLoading(false);
                     setIsCreateLoading(false);
+
+                    setTimeout(async () => {
+                        await onSuccess?.();
+                    }, 1000);
                 }
             } catch (err) {
                 console.log('createProfile::error', err);
-                setProfileIdError(err?.message);
+                const message =
+                    (err as any)?.message ??
+                    (typeof err === 'string' ? err : 'There was an error creating your profile');
+                setProfileIdError(message as string);
                 setIsLoading(false);
                 setIsCreateLoading(false);
             }
@@ -268,21 +280,258 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             const updatedProfile = await wallet?.invoke?.updateProfile({
                 displayName: name ?? '',
                 image: photo ?? '',
-                // dob: dob ?? '',
+                dob: dob ?? '',
                 role: role ?? '',
                 notificationsWebhook: getNotificationsEndpoint(),
+                country: country ?? '',
             });
-            console.log('updatedProfile::res', updatedProfile);
         } else {
             await handleJoinLearnCardNetwork();
         }
     };
 
-    const handleUpdateUser = async () => {
+    // Ensure a LearnCard Network profile exists and is marked as unapproved when EU consent is required
+    const ensureProfileApprovedFalse = async (): Promise<boolean> => {
+        const wallet = await initWallet();
+
+        if (lcNetworkProfile && lcNetworkProfile?.profileId) {
+            // Update existing profile to set approved=false (and sync latest fields)
+            const updated = await wallet?.invoke?.updateProfile({
+                displayName: name ?? '',
+                image: photo ?? '',
+                dob: dob ?? '',
+                role: role ?? '',
+                notificationsWebhook: getNotificationsEndpoint(),
+                country: country ?? '',
+                approved: false,
+            });
+            return !!updated;
+        } else {
+            // Create a new profile with approved=false
+            const didWeb = await wallet?.invoke?.createProfile({
+                profileId: profileId as string,
+                displayName: name ?? '',
+                shortBio: '',
+                bio: '',
+                image: photo ?? '',
+                notificationsWebhook: getNotificationsEndpoint(),
+                role: role ?? '',
+                dob: dob ?? '',
+                country: country ?? '',
+                approved: false,
+            });
+
+            if (didWeb) {
+                await refetchIsCurrentUserLCNUser();
+                await wallet?.invoke?.resetLCAClient();
+                await queryClient.resetQueries();
+                await refetch();
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    const presentUnderageModal = () => {
+        const onAdult = () => {
+            // Present intermediate confirmation modal before logging out
+            newModal(
+                <div className="flex flex-col gap-[10px] items-center w-full h-full justify-center px-[20px]">
+                    <div className="w-full bg-white rounded-[24px] px-[20px] py-[28px] shadow-3xl text-center max-w-[500px]">
+                        <div className="mx-auto mb-3 flex items-center justify-center gap-3 w-full">
+                            <div className="h-[56px] w-[56px] rounded-full overflow-hidden border-2 border-white shadow-3xl">
+                                <img
+                                    src={LearnCardLogo}
+                                    alt="LearnCard logo"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                            <div className="h-[50px] w-[50px] rounded-full bg-grayscale-100 flex items-center justify-center border border-grayscale-200">
+                                <AddUser
+                                    version="3"
+                                    className="h-[28px] w-[28px] text-grayscale-800"
+                                />
+                            </div>
+                        </div>
+                        <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
+                            Add Your Child to LearnCard!
+                        </h2>
+                        <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
+                            Log in or sign up to create your profile inside a family account.
+                        </p>
+                    </div>
+
+                    <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom">
+                        <div className="w-full max-w-[700px] flex">
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                className=" mx-[10px] shadow-button-bottom flex-1 py-[10px] text-[17px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
+                            >
+                                Back
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    newModal(
+                                        <div className="w-full h-full transparent flex items-center justify-center">
+                                            <div className="bg-white text-grayscale-800 w-full rounded-[16px] shadow-3xl z-50 font-notoSans max-w-[400px] p-4 text-center">
+                                                <div className="flex items-center justify-center mb-2">
+                                                    <IonSpinner
+                                                        name="crescent"
+                                                        className="w-[28px] h-[28px] text-grayscale-700"
+                                                    />
+                                                </div>
+                                                <p className="text-grayscale-900 text-[16px] font-semibold">
+                                                    Logging out...
+                                                </p>
+                                                <p className="text-grayscale-700 text-[14px] mt-1">
+                                                    Please get a parent or guardian to login and
+                                                    create a family account.
+                                                </p>
+                                            </div>
+                                        </div>,
+                                        {
+                                            disableCloseHandlers: true,
+                                            sectionClassName:
+                                                '!bg-transparent !border-none !shadow-none !rounded-none',
+                                        },
+                                        { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+                                    );
+                                    handleLogout(BrandingEnum.learncard, {
+                                        appendQuery: { redirectTo: '/families?createFamily=true' },
+                                    });
+                                }}
+                                className="mx-[10px] shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
+                            >
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                {
+                    sectionClassName:
+                        '!bg-transparent !border-none !shadow-none !rounded-none p-[20px] !mx-auto',
+                },
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        };
+
+        newModal(
+            <UnderageModalContent
+                onBack={closeModal}
+                onAdult={onAdult}
+                isLoggingOut={isLoggingOut}
+            />,
+            {
+                sectionClassName:
+                    '!bg-transparent !border-none !shadow-none !rounded-none p-[20px] !mx-auto',
+            },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
+
+
+    const presentUSConsentNoticeModal = () => {
+        newModal(
+            <USConsentNoticeModalContent
+                onBack={closeModal}
+                onContinue={() => {
+                    setUsMinorConsent(true);
+                    closeModal();
+                    handleUpdateUser({ skipUsConsentCheck: true });
+                    console.log('///onContinue');
+                }}
+            />,
+            {
+                sectionClassName:
+                    '!bg-transparent !border-none !shadow-none !rounded-none !mx-auto',
+            },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
+
+    const presentEUParentalConsentModal = () => {
+        newModal(
+            <EUParentalConsentModalContent
+                name={name}
+                dob={dob}
+                country={country}
+                onClose={closeModal}
+            />,
+            {
+                sectionClassName:
+                    '!bg-transparent !border-none !shadow-none !rounded-none !mx-auto',
+            },
+            {
+                desktop: ModalTypes.FullScreen,
+                mobile: ModalTypes.FullScreen,
+            }
+        );
+    };
+
+    const handleUpdateUser = async (options?: { skipUsConsentCheck?: boolean }) => {
         const typeOfLogin = authStore.get.typeOfLogin();
+        console.log('//handleUpdateUser');
 
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
+            // Show modal if under 13 before running Zod, to ensure UX triggers
+            const age = dob ? calculateAge(dob) : Number.NaN;
+            if (!Number.isNaN(age) && age < 13) {
+                setErrors(prev => ({ ...prev, dob: [' You must be at least 13 years old.'] }));
+                presentUnderageModal();
+                return;
+            }
+
+            // Validate DOB even if name is not required per Apple guidelines
+            const dobCheck = DobValidator.safeParse({ dob });
+            if (!dobCheck.success) {
+                setErrors(dobCheck.error.flatten().fieldErrors);
+                return;
+            }
+
+            // Require country selection for compliance
+            if (!country) {
+                setErrors(prev => ({ ...prev, country: [' Country is required.'] }));
+                return;
+            }
+
+            // Teen consent flows (age 13-17)
+            const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
+            if (isTeen && country) {
+                if (requiresEUParentalConsent(country, age)) {
+                    try {
+                        setIsLoading(true);
+                        const success = await ensureProfileApprovedFalse();
+                        if (success) closeModal();
+                        else
+                            presentToast({
+                                message:
+                                    'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
+                                duration: 3000,
+                                position: 'top',
+                                buttons: [{ text: 'Dismiss', role: 'cancel' }],
+                            });
+                    } catch (e) {
+                        console.log('ensureProfileApprovedFalse::error', e);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                    presentEUParentalConsentModal();
+                    return;
+                }
+
+                // For all non-EU countries, require consent notice
+                if (!isEUCountry(country)) {
+                    if (!usMinorConsent && !options?.skipUsConsentCheck) {
+                        presentUSConsentNoticeModal();
+                        return;
+                    }
+                }
+            }
+
             // ! apple's guidelines: name should NOT be required
             await updateProfile(auth()?.currentUser, {
                 displayName: name ?? '',
@@ -298,7 +547,48 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             handleCloseModal();
             // ! APPLE HOT FIX
         } else {
+            const age = dob ? calculateAge(dob) : Number.NaN;
+            if (!Number.isNaN(age) && age < 13) {
+                setErrors(prev => ({ ...prev, dob: [' You must be at least 13 years old.'] }));
+                presentUnderageModal();
+                return;
+            }
+
             if (validate()) {
+                // Teen consent flows (age 13-17)
+                const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
+                if (isTeen && country) {
+                    if (requiresEUParentalConsent(country, age)) {
+                        try {
+                            setIsLoading(true);
+                            const success = await ensureProfileApprovedFalse();
+                            if (success) closeModal();
+                            else
+                                presentToast({
+                                    message:
+                                        'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
+                                    duration: 3000,
+                                    position: 'top',
+                                    buttons: [{ text: 'Dismiss', role: 'cancel' }],
+                                });
+                        } catch (e) {
+                            console.log('ensureProfileApprovedFalse::error', e);
+                        } finally {
+                            setIsLoading(false);
+                        }
+                        presentEUParentalConsentModal();
+                        return;
+                    }
+
+                    // For all non-EU countries, require consent notice
+                    if (!isEUCountry(country)) {
+                        if (!usMinorConsent && !options?.skipUsConsentCheck) {
+                            presentUSConsentNoticeModal();
+                            return;
+                        }
+                    }
+                }
+
                 setIsLoading(true);
                 try {
                     if (authToken === 'dummy') {
@@ -355,6 +645,19 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     };
 
     const isCheckingUnique = uniqueProfileLoading || uniqueProfileFetching;
+
+    // Disable Continue until required fields are valid
+    const needsProfileId = networkToggle && !lcNetworkProfile?.profileId;
+    const hasValidDob = Boolean(dob) && !Number.isNaN(calculateAge(dob as string));
+    const hasValidCountry = Boolean(country);
+    const hasValidProfileId =
+        !needsProfileId ||
+        (Boolean(profileId) &&
+            isLengthValid &&
+            isFormatValid &&
+            isUniqueValid &&
+            !isCheckingUnique);
+    const isContinueDisabled = !hasValidDob || !hasValidCountry || !hasValidProfileId || isLoading;
 
     return (
         <div className="w-full h-full bg-white relative">
@@ -448,10 +751,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                     </p>
                                 )}
                             </div>
-                            {/* <div className="flex flex-col items-center justify-center w-full">
-                            <button
-                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${errors?.dob ? 'login-input-email-error' : ''
-                                        }`}
+
+                            <div className="flex flex-col items-center justify-center w-full mt-2">
+                                <button
+                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
+                                        errors?.dob ? 'login-input-email-error' : ''
+                                    }`}
                                     onClick={() => {
                                         newModal(
                                             <div className="w-full h-full transparent flex items-center justify-center">
@@ -472,7 +777,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                                     }
                                                     id="datetime"
                                                     presentation="date"
-                                                    className="bg-white text-black rounded-[20px] shadow-3xl z-50 font-notoSans"
+                                                    className="bg-white text-black rounded-[20px] w-full shadow-3xl z-50 font-notoSans"
                                                     showDefaultButtons
                                                     color="indigo-500"
                                                     max={moment().format('YYYY-MM-DD')}
@@ -481,6 +786,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                                 />
                                             </div>,
                                             {
+                                                disableCloseHandlers: true,
                                                 sectionClassName:
                                                     '!bg-transparent !border-none !shadow-none !rounded-none',
                                             },
@@ -493,14 +799,63 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                 >
                                     {dob ? moment(dob).format('MMMM Do, YYYY') : 'Date of Birth'}
                                     <Calendar className="w-[30px] text-grayscale-700" />
-                                </button> */}
+                                </button>
 
-                            {/* {errors?.dob && (
+                                {dob && !Number.isNaN(calculateAge(dob)) && (
+                                    <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
+                                        Age: {calculateAge(dob)}
+                                    </p>
+                                )}
+
+                                {errors?.dob && (
                                     <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
                                         {errors?.dob}
                                     </p>
-                                )} */}
-                            {/* </div> */}
+                                )}
+                            </div>
+                            <div className="flex flex-col items-center justify-center w-full mt-2">
+                                <button
+                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] pr-[10px] py-[5px] tracking-wider text-base ${
+                                        errors?.country ? 'login-input-email-error' : ''
+                                    }`}
+                                    onClick={() => {
+                                        newModal(
+                                            <CountrySelectorModal
+                                                selected={country}
+                                                onSelect={code => {
+                                                    setErrors(prev => {
+                                                        const next = { ...prev };
+                                                        delete next.country;
+                                                        return next;
+                                                    });
+                                                    setCountry(code);
+                                                    closeModal();
+                                                }}
+                                            />,
+                                            {
+                                                sectionClassName:
+                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
+                                            },
+                                            {
+                                                desktop: ModalTypes.Cancel,
+                                                mobile: ModalTypes.Cancel,
+                                            }
+                                        );
+                                    }}
+                                >
+                                    {country ? COUNTRIES[country] : 'Country of Residence'}
+                                    <LocationIcon className="w-[44px] text-grayscale-700" />
+                                </button>
+                                {errors?.country && (
+                                    <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
+                                        {errors?.country}
+                                    </p>
+                                )}
+                                <p className="text-grayscale-700 text-xs px-[0px] mt-[5px]">
+                                    We ask for your age and country to make sure we comply with
+                                    privacy laws and keep you safe.
+                                </p>
+                            </div>
                         </IonRow>
 
                         {networkToggle && !lcNetworkProfile && (
@@ -591,6 +946,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 onClick={handleClick}
                 showBackButton
                 showCloseButton={!!lcNetworkProfile?.profileId}
+                disabled={isContinueDisabled}
             />
         </div>
     );

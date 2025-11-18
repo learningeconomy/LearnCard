@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isVC2Format } from '@learncard/helpers';
 import {
     BoostCategoryOptionsEnum,
+    // oxlint-disable-next-line no-unused-vars
     CredentialCategoryEnum,
     getBaseUrl,
     switchedProfileStore,
@@ -14,13 +15,16 @@ import {
     VCValidator,
     UnsignedVP,
     LCNBoostStatusEnum,
+    // oxlint-disable-next-line no-unused-vars
     Boost,
     BoostPermissions,
     UnsignedVC,
 } from '@learncard/types';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { BoostCMSState } from 'learn-card-base/components/boost/boost';
+import { getEndorsementsForVC } from 'learn-card-base/helpers/credentialHelpers';
 import { insertItem } from './mutation.helpers';
+import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 
 type SharedCredentialsIndex = {
     type: 'shared-credentials';
@@ -58,8 +62,10 @@ export const useShareBoostMutation = () => {
             //Find if credential is already stored in index, if so return that instead
             const extantCredentialIndex = currentIndex?.length > 0 && currentIndex[0];
 
+            const endorsementVCs: VC[] = await getEndorsementsForVC(myWallet, credential, 'public');
+
             //If it already exists than we don't have to do it all again....
-            if (extantCredentialIndex) {
+            if (extantCredentialIndex && endorsementVCs.length === 0) {
                 const link = `https://${baseUrl}/${baseBoostShareRouteName}?uri=${extantCredentialIndex?.uri}&seed=${extantCredentialIndex?.randomSeed}&pin=${extantCredentialIndex?.pin}`;
                 return {
                     link,
@@ -68,7 +74,6 @@ export const useShareBoostMutation = () => {
 
             //If this credential doesn't exist in the sharedCredentials inded then go through this flow
             // Generate random seed
-
             const randomKey = Array.from(crypto.getRandomValues(new Uint8Array(30)), dec =>
                 dec.toString(16).padStart(2, '0')
             ).join('');
@@ -97,7 +102,8 @@ export const useShareBoostMutation = () => {
                 ],
                 type: ['VerifiablePresentation'],
                 holder: myWalletDid,
-                verifiableCredential: credential,
+                verifiableCredential:
+                    endorsementVCs?.length > 0 ? [credential, ...endorsementVCs] : [credential],
             };
 
             // issue presentation
@@ -137,13 +143,17 @@ export const useCreateBoost = () => {
             state,
             status,
             defaultClaimPermissions,
+            skillIds,
             meta,
+            autoConnectRecipients,
         }: {
             parentUri?: string | undefined;
             state: BoostCMSState;
             status: LCNBoostStatusEnum;
             defaultClaimPermissions?: BoostPermissions;
+            skillIds?: { frameworkId: string; id: string }[]; // Framework skill references for automatic alignment
             meta?: Record<string, unknown>;
+            autoConnectRecipients?: boolean;
         }) => {
             const wallet = await initWallet();
 
@@ -152,6 +162,8 @@ export const useCreateBoost = () => {
             const expirationDate = state?.basicInfo?.expirationDate
                 ? new Date(state?.basicInfo?.expirationDate).toISOString()
                 : undefined;
+
+            const evidence = convertAttachmentsToEvidence(state?.mediaAttachments);
 
             const credentialPayload: Record<string, any> = {
                 subject: walletDid,
@@ -164,10 +176,12 @@ export const useCreateBoost = () => {
                 boostImage: state?.appearance?.badgeThumbnail,
                 achievementImage: state?.appearance?.badgeThumbnail,
                 expirationDate: expirationDate,
+                evidence, // ! attachments are deprecated in favor of evidence
                 display: {
                     backgroundColor: state?.appearance?.backgroundColor,
                     backgroundImage: state?.appearance?.backgroundImage,
-                    displayType: state?.appearance?.displayType ?? '',
+                    displayType: state?.appearance?.displayType ?? 'badge',
+                    previewType: state?.appearance?.previewType ?? 'default',
 
                     // Troops 2.0 fields
                     fadeBackgroundImage: state?.appearance?.fadeBackgroundImage,
@@ -183,8 +197,8 @@ export const useCreateBoost = () => {
                         imageUrl: state?.appearance?.emoji?.imageUrl ?? '',
                     },
                 },
-                attachments: state?.mediaAttachments,
                 skills: state?.skills ?? [],
+                // attachments: state?.mediaAttachments,
                 address: state?.address,
                 boostID: {
                     fontColor: state?.appearance?.fontColor,
@@ -227,33 +241,51 @@ export const useCreateBoost = () => {
 
             const unsignedCredential = wallet.invoke.newCredential(credentialPayload as any);
 
+            // // Set OBv3 alignments if we have any (from state.alignments or legacy state.skills)
+            // try {
+            //     const alignments = (state as any)?.alignments;
+            //     if (alignments && alignments.length > 0) {
+            //         unsignedCredential.credentialSubject = unsignedCredential.credentialSubject ?? {};
+            //         unsignedCredential.credentialSubject.achievement =
+            //             unsignedCredential.credentialSubject.achievement ?? {};
+            //         unsignedCredential.credentialSubject.achievement.alignment = alignments;
+            //     }
+            // } catch (e) {
+            //     console.warn('Failed to set alignments on unsignedCredential', e);
+            // }
+
             /// CREATE BOOST
             let boostUri;
             if (!parentUri) {
                 // makes request to LCN, second param is metadata associated with template
                 // metadata is used to categorize etc
+                // skillIds will auto-attach framework and align these skills
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
                     category: state?.basicInfo?.type,
                     status,
                     claimPermissions: defaultClaimPermissions,
+                    skills: skillIds, // Backend will handle framework attachment and alignment
+                    ...(autoConnectRecipients === true ? { autoConnectRecipients: true } : {}),
                     ...(meta ? { meta } : {}),
                 });
             }
 
             if (parentUri) {
                 /// CREATE CHILD BOOST
-                console.log('///parentUri', parentUri);
 
                 // makes request to LCN, second param is metadata associated with template
                 // metadata is used to categorize etc
+                // skillIds will auto-attach framework and align these skills
                 boostUri = await wallet.invoke.createChildBoost(parentUri, unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
                     category: state?.basicInfo?.type,
                     status,
                     claimPermissions: defaultClaimPermissions,
+                    skills: skillIds,
+                    ...(autoConnectRecipients === true ? { autoConnectRecipients: true } : {}),
                     ...(meta ? { meta } : {}),
                 });
             }
@@ -318,12 +350,14 @@ export const useCreateChildBoost = () => {
             status,
             defaultClaimPermissions,
             meta,
+            autoConnectRecipients,
         }: {
             parentUri: string;
             state: BoostCMSState;
             status: LCNBoostStatusEnum;
             defaultClaimPermissions?: BoostPermissions;
             meta?: Record<string, unknown>;
+            autoConnectRecipients?: boolean;
         }) => {
             const wallet = await initWallet();
 
@@ -354,7 +388,6 @@ export const useCreateChildBoost = () => {
                     repeatBackgroundImage: state?.appearance?.repeatBackgroundImage,
                 },
                 attachments: state?.mediaAttachments,
-                skills: state?.skills ?? [],
                 address: state?.address,
                 boostID: {
                     fontColor: state?.appearance?.fontColor,
@@ -401,6 +434,7 @@ export const useCreateChildBoost = () => {
                 category: state?.basicInfo?.type,
                 status,
                 claimPermissions: defaultClaimPermissions,
+                ...(autoConnectRecipients === true ? { autoConnectRecipients: true } : {}),
                 ...(meta ? { meta } : {}),
             });
 
@@ -536,6 +570,7 @@ export const useEditBoostMeta = () => {
             };
             const metaEditsObject = { meta: { ...(meta ?? {}), edits } };
 
+            // oxlint-disable-next-line no-unused-vars
             const success = await wallet.invoke.updateBoost(boostUri, metaEditsObject);
 
             return { boostUri, metaEditsObject };
@@ -630,7 +665,9 @@ export const useDeleteManagedBoostMutation = () => {
 
             return { currentQuery }; //use in OnError
         },
+        // oxlint-disable-next-line no-unused-vars
         onSuccess: (res, variables) => {
+            // oxlint-disable-next-line no-unused-vars
             const { boostUri, category } = res;
             queryClient.invalidateQueries({
                 queryKey: ['useGetResolvedBoostsFromCategory', category],
@@ -643,6 +680,7 @@ export const useDeleteManagedBoostMutation = () => {
     });
 };
 
+// oxlint-disable-next-line no-unused-vars
 type IndexItem = {
     pin: string;
     uri: string;
@@ -676,9 +714,11 @@ export const useDeleteEarnedBoostMutation = () => {
                 });
 
                 // why wallet.index.all.remove does not work?
+                // oxlint-disable-next-line no-unused-vars
                 const res2 = foundIndex?.id
                     ? await wallet.index.SQLite?.remove?.(foundIndex.id)
                     : undefined;
+                // oxlint-disable-next-line no-unused-vars
                 const res3 = foundLCIndex?.id
                     ? await wallet.index.LearnCloud.remove(foundLCIndex.id)
                     : undefined;
@@ -780,7 +820,9 @@ export const useDeleteEarnedBoostMutation = () => {
             }
             return { currentQuery }; //use in OnError
         },
+        // oxlint-disable-next-line no-unused-vars
         onSuccess: (res, variables) => {
+            // oxlint-disable-next-line no-unused-vars
             const { boostUri, category } = res;
             const didWeb = switchedProfileStore.get.switchedDid();
 

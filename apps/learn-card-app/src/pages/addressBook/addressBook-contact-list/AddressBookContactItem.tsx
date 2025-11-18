@@ -17,7 +17,6 @@ import { LCNProfileConnectionStatusEnum, LCNProfile } from '@learncard/types';
 import {
     ModalTypes,
     useModal,
-    useGetCurrentLCNUser,
     useConnectWithMutation,
     useAcceptConnectionRequestMutation,
     useCancelConnectionRequestMutation,
@@ -73,9 +72,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
 }) => {
     const queryClient = useQueryClient();
     const history = useHistory();
-
-    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
     const { newModal } = useModal({ desktop: ModalTypes.Cancel });
 
     const [presentToast] = useIonToast();
@@ -683,11 +680,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             {showBoostButton && !showArrow && (
                 <div className="flex item-center justify-end w-[20%]">
                     <button
-                        onClick={() => {
-                            if (!currentLCNUser && !currentLCNUserLoading) {
-                                handlePresentJoinNetworkModal();
-                                return;
-                            }
+                        onClick={async () => {
+                            const { prompted } = await gate();
+                            if (prompted) return;
 
                             newModal(
                                 <BoostTemplateSelector otherUserProfileId={contact?.profileId} />,

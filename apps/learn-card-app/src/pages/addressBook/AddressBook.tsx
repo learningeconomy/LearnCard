@@ -73,13 +73,6 @@ const AddressBook: React.FC = () => {
     const showBlockedConnections = activeTab === AddressBookTabsEnum.Blocked;
     const showSearch = true; // Always true for now
 
-    // Update the connection count when search results change
-    useEffect(() => {
-        if (!loading && search.length > 0) {
-            setConnectionCount(connections?.length ?? 0);
-        }
-    }, [loading, search, connections]);
-
     // Handler for blocking a profile
     const handleBlockUser = useCallback(
         async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>, profileId: string) => {

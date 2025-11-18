@@ -65,6 +65,14 @@ export const LoadingPage2: React.FC = React.memo(() => {
     const history = useHistory();
 
     useEffect(() => {
+        // If logged out on waitingsofa, always go to /login, preserving redirectTo if present
+        const pendingRedirect = query.get('redirectTo');
+        if (!currentUser && !isLoggedIn) {
+            if (pendingRedirect) history.replace(`/login?redirectTo=${pendingRedirect}`);
+            else history.replace('/login');
+            return;
+        }
+
         // handles redirecting a user to an LC network specific action / page
         const handleLCNetworkRedirect = async (redirect: string) => {
             try {

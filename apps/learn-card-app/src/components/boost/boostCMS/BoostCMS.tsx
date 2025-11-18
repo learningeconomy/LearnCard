@@ -126,11 +126,15 @@ interface BoostCMSProps {
 
 const BoostCMS: React.FC<BoostCMSProps> = ({
     boostDetails,
+    // oxlint-disable-next-line no-unused-vars
     handleCloseModal,
+    // oxlint-disable-next-line no-unused-vars
     handleEdit,
+    // oxlint-disable-next-line no-unused-vars
     handleSend,
     wallet: propWallet,
     boostCMSState: propBoostCMSState,
+    // oxlint-disable-next-line no-unused-vars
     profileId: propProfileId,
 }) => {
     const history = useHistory();
@@ -478,6 +482,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 }
                 boostPreviewWrapperCustomClass={issueToLength > 0 ? '' : 'boost-preview-wrapper'}
                 displayType={state?.appearance?.displayType}
+                previewType={state?.appearance?.previewType}
             />,
             {
                 backgroundImage:
@@ -497,6 +502,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         );
     };
 
+    // oxlint-disable-next-line no-unused-vars
     const handleSaveAndQuit = async (goBack: boolean = false) => {
         if (!wallet) {
             presentToast({
@@ -625,6 +631,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     state?.issueTo.map(async issuee => {
                         // handle self boosting
                         if (issuee?.profileId === profile?.profileId) {
+                            console.log('boostUri', boostUri);
+                            console.log('boost', await wallet.invoke.getBoost(boostUri));
+                            // oxlint-disable-next-line no-unused-vars
                             const { sentBoost, sentBoostUri } = await sendBoostCredential(
                                 wallet,
                                 profile?.profileId,

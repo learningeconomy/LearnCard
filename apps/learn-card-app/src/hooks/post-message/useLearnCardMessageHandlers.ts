@@ -113,6 +113,63 @@ export function useLearnCardMessageHandlers({
                         profile,
                     };
                 },
+                showLoginConsentModal: async (origin: string, appName?: string) => {
+                    return new Promise(async (resolve) => {
+                        try {
+                            // Import trusted origins utilities
+                            const { isOriginTrusted, addTrustedOrigin } = await import('./trustedOrigins');
+
+                            // Check if already trusted
+                            if (isOriginTrusted(origin)) {
+                                console.log('[PostMessage] Origin already trusted:', origin);
+                                resolve(true);
+                                return;
+                            }
+
+                            console.log('[PostMessage] Login consent requested for:', origin);
+
+                            // Dynamically import LoginConsentModal
+                            const { default: LoginConsentModal } = await import(
+                                '../../components/credentials/LoginConsentModal'
+                            );
+
+                            const handleAccept = () => {
+                                console.log('[PostMessage] User accepted login consent');
+                                addTrustedOrigin(origin, appName);
+                                closeModal();
+                                resolve(true);
+                            };
+
+                            const handleReject = () => {
+                                console.log('[PostMessage] User rejected login consent');
+                                closeModal();
+                                resolve(false);
+                            };
+
+                            // Extract app name from origin if not provided
+                            const displayAppName = appName || new URL(origin).hostname;
+
+                            // Open the login consent modal
+                            newModal(
+                                React.createElement(LoginConsentModal, {
+                                    appName: displayAppName,
+                                    appOrigin: origin,
+                                    onAccept: handleAccept,
+                                    onReject: handleReject,
+                                }),
+                                {
+                                    sectionClassName: '!max-w-[500px]',
+                                    hideButton: true,
+                                    usePortal: true,
+                                    portalClassName: '!max-w-[500px]',
+                                }
+                            );
+                        } catch (error) {
+                            console.error('[PostMessage] Failed to show login consent modal:', error);
+                            resolve(false);
+                        }
+                    });
+                },
                 mintDelegatedToken: async (challenge?: string) => {
                     const learnCard = await initWallet();
 

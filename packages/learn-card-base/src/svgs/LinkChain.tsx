@@ -1,10 +1,16 @@
 import React from 'react';
 
-const LinkChain: React.FC<{ className?: string; version?: 'thick' | 'thin'; stroke?: string }> = ({
-    className = '',
-    version = 'thick',
-    stroke = '#353E64',
-}) => {
+import LinkOutlinedIcon from './LinkOutlinedIcon';
+
+const LinkChain: React.FC<{
+    className?: string;
+    version?: 'thick' | 'thin' | 'outlined';
+    stroke?: string;
+}> = ({ className = '', version = 'thick', stroke = '#353E64' }) => {
+    if (version === 'outlined') {
+        return <LinkOutlinedIcon className={className} />;
+    }
+
     if (version === 'thin') {
         return (
             <svg

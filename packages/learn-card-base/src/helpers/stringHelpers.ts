@@ -13,6 +13,17 @@ export const ellipsisMiddle = (str: string, start: number = 0, end: number = 0) 
     return truncatedString;
 };
 
+// same idea as ellipsisMiddle, but based on max length instead of start and end
+export const middleTruncate = (value: string, max = 14): string => {
+    if (!value) return '';
+    if (value.length <= max) return value;
+    const reserve = 3; // for "..."
+    const keep = Math.max(max - reserve, 0);
+    const front = Math.ceil(keep / 2);
+    const back = Math.floor(keep / 2);
+    return `${value.slice(0, front)}...${value.slice(value.length - back)}`;
+};
+
 export const splitAtCapitalLetters = (str: string) => {
     if (!str) return '';
 

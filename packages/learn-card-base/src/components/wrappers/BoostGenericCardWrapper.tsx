@@ -42,6 +42,8 @@ type BoostGenericCardWrapperProps = {
     linkedCredentialsCount?: number;
     linkedCredentialsClassName?: string;
     displayType?: string;
+    uri?: string;
+    indicatorColor?: string;
 };
 
 export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = ({
@@ -72,6 +74,8 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     linkedCredentialsCount,
     linkedCredentialsClassName,
     displayType,
+    uri,
+    indicatorColor,
 }) => {
     if (boostPageViewMode === BoostPageViewMode.List) {
         return (
@@ -87,6 +91,8 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 linkedCredentialsClassName={linkedCredentialsClassName}
                 displayType={displayType}
                 thumbImgSrc={thumbImgSrc}
+                indicatorColor={indicatorColor}
+                uri={uri}
             />
         );
     }

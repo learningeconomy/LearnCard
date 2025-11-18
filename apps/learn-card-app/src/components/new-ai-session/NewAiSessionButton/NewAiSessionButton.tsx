@@ -8,8 +8,8 @@ import RevisitIcon from 'learn-card-base/svgs/RevisitIcon';
 
 import { aiPassportApps } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
-import { ModalTypes, useGetCredentialList, useIsCurrentUserLCNUser } from 'learn-card-base';
-import useJoinLCNetworkModal from '../../network-prompts/hooks/useJoinLCNetworkModal';
+import { ModalTypes, useGetCredentialList } from 'learn-card-base';
+import useLCNGatedAction from '../../network-prompts/hooks/useLCNGatedAction';
 import { useModal } from 'learn-card-base';
 import { NewAiSessionStepEnum } from '../newAiSession.helpers';
 import { useHasConsentedToAiApp } from 'apps/learn-card-app/src/hooks/useAiSession';
@@ -42,12 +42,7 @@ export const NewAiSessionButton: React.FC<{
 
     const { isDesktop } = useDeviceTypeByWidth();
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
-    const {
-        data: currentLCNUser,
-        isLoading: currentLCNUserLoading,
-        refetch,
-    } = useIsCurrentUserLCNUser();
+    const { gate } = useLCNGatedAction();
 
     const { hasConsentedToAiApps } = useHasConsentedToAiApp();
 
@@ -56,14 +51,12 @@ export const NewAiSessionButton: React.FC<{
 
     // const chatBotSelected = chatBotStore.useTracked.chatBotSelected();
 
-    const handleNewSession = (
+    const handleNewSession = async (
         showAiAppSelector?: boolean,
         chatBotSelectedType?: NewAiSessionStepEnum
     ) => {
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
+        const { prompted } = await gate();
+        if (prompted) return;
 
         // Reset the chatbot store when opening a new session
         chatBotStore.set.resetStore();
@@ -109,11 +102,9 @@ export const NewAiSessionButton: React.FC<{
             <button
                 onClick={
                     onClick
-                        ? () => {
-                              if (!currentLCNUser && !currentLCNUserLoading) {
-                                  handlePresentJoinNetworkModal();
-                                  return;
-                              }
+                        ? async () => {
+                              const { prompted } = await gate();
+                              if (prompted) return;
                               onClick();
                           }
                         : () => handleNewSession(false, NewAiSessionStepEnum.newTopic)
@@ -129,11 +120,9 @@ export const NewAiSessionButton: React.FC<{
             <button
                 onClick={
                     onClick
-                        ? () => {
-                              if (!currentLCNUser && !currentLCNUserLoading) {
-                                  handlePresentJoinNetworkModal();
-                                  return;
-                              }
+                        ? async () => {
+                              const { prompted } = await gate();
+                              if (prompted) return;
                               onClick();
                           }
                         : () => handleNewSession(false, NewAiSessionStepEnum.revisitTopic)
@@ -154,11 +143,9 @@ export const NewAiSessionButton: React.FC<{
             <button
                 onClick={
                     onClick
-                        ? () => {
-                              if (!currentLCNUser && !currentLCNUserLoading) {
-                                  handlePresentJoinNetworkModal();
-                                  return;
-                              }
+                        ? async () => {
+                              const { prompted } = await gate();
+                              if (prompted) return;
                               onClick();
                           }
                         : () => handleNewSession()
@@ -173,11 +160,9 @@ export const NewAiSessionButton: React.FC<{
             <button
                 onClick={
                     onClick
-                        ? () => {
-                              if (!currentLCNUser && !currentLCNUserLoading) {
-                                  handlePresentJoinNetworkModal();
-                                  return;
-                              }
+                        ? async () => {
+                              const { prompted } = await gate();
+                              if (prompted) return;
                               onClick();
                           }
                         : () => handleNewSession(undefined, NewAiSessionStepEnum.newTopic)
@@ -201,3 +186,4 @@ export const NewAiSessionButton: React.FC<{
 };
 
 export default NewAiSessionButton;
+

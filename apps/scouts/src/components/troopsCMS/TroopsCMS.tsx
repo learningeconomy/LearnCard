@@ -59,6 +59,7 @@ type TroopsCMSProps = {
 };
 
 export const TroopsCMS: React.FC<TroopsCMSProps> = ({
+    // oxlint-disable-next-line no-unused-vars
     parentUri,
     viewMode,
     editorMode = TroopsCMSEditorModeEnum.create,
@@ -84,6 +85,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isPublishLoading, setIsPublishLoading] = useState<boolean>(false);
+    // oxlint-disable-next-line no-unused-vars
     const [isSaveLoading, setIsSaveLoading] = useState<boolean>(false);
 
     const _description = state?.inheritNetworkContent
@@ -122,15 +124,21 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
         profileIDs: string[]
     ) => {
         try {
+            // oxlint-disable-next-line no-unused-vars
             const uris = await Promise.all(
                 profileIDs.map(async profileId => {
                     // handle self boosting
+                    console.log('profileId', profileId);
+                    console.log('currentLCNUser?.profileId', currentLCNUser?.profileId);
                     if (profileId === currentLCNUser?.profileId) {
+                        // oxlint-disable-next-line no-unused-vars
                         const { sentBoost, sentBoostUri } = await sendBoostCredential(
                             wallet,
                             profileId,
                             boostUri
                         );
+
+                        console.log('sentBoost', sentBoost);
 
                         const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
                             sentBoost
@@ -149,6 +157,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
         }
     };
 
+    // oxlint-disable-next-line no-unused-vars
     const handleAddAdmins = async (
         wallet: BespokeLearnCard,
         boostUri: string,
@@ -172,6 +181,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
         }
     };
 
+    // oxlint-disable-next-line no-unused-vars
     const handleUpdatePermissions = async (
         wallet: BespokeLearnCard,
         boostUri: string,
@@ -226,6 +236,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
             if (viewMode === TroopsCMSViewModeEnum.global) {
                 setIsPublishLoading(true);
                 admins = [...admins, currentUserProfileID];
+                console.log('networkIDPayload', networkIDPayload);
                 // create boost
                 const { boostUri } = await createBoost({
                     state: networkIDPayload,
@@ -233,6 +244,11 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                     defaultClaimPermissions: getPermissionsByRole(TroopsCMSViewModeEnum.global),
                     ...(networkMeta ? { meta: networkMeta } : {}),
                 });
+
+                console.log('boostUri', boostUri);
+                // oxlint-disable-next-line no-extra-non-null-assertion
+                console.log('boost', await wallet.invoke.getBoost(boostUri!));
+                console.log('admins', admins);
 
                 if (boostUri) {
                     if (admins?.length > 0) {
@@ -261,6 +277,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
 
                 try {
                     //Create claim hook for networkId
+                    // oxlint-disable-next-line no-unused-vars
                     const claimHook = await wallet.invoke.createClaimHook({
                         type: 'GRANT_PERMISSIONS',
                         data: {
@@ -300,6 +317,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                     state: networkIDPayload, // troopID
                     status: LCNBoostStatusEnum.live,
                     defaultClaimPermissions: getPermissionsByRole(TroopsCMSViewModeEnum.troop),
+                    autoConnectRecipients: true,
                     ...(networkMeta ? { meta: networkMeta } : {}),
                 });
                 const { boostUri: scoutIdUri } = await createChildBoost({
@@ -307,11 +325,13 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                     state: memberIDPayload, // scoutID
                     status: LCNBoostStatusEnum.live,
                     defaultClaimPermissions: getPermissionsByRole(TroopsCMSViewModeEnum.member),
+                    autoConnectRecipients: true,
                     ...(networkMeta ? { meta: networkMeta } : {}),
                 });
 
                 //Create claim hook for troop leader id
                 try {
+                    // oxlint-disable-next-line no-unused-vars
                     const claimHook = await wallet.invoke.createClaimHook({
                         type: 'GRANT_PERMISSIONS',
                         data: {
@@ -326,6 +346,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
 
                 try {
                     //Create claim hook for scoutId
+                    // oxlint-disable-next-line no-unused-vars
                     const claimHook2 = await wallet.invoke.createClaimHook({
                         type: 'GRANT_PERMISSIONS',
                         data: {
@@ -411,6 +432,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                 return Object.keys(n).length ? { network: n } : undefined;
             })();
 
+            // oxlint-disable-next-line no-unused-vars
             const success = await editBoost({
                 boostUri: editBoostUri,
                 state: _state,
@@ -422,6 +444,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
             }
 
             if (scoutBoostUri) {
+                // oxlint-disable-next-line no-unused-vars
                 const success = await editBoost({
                     boostUri: scoutBoostUri,
                     state: {

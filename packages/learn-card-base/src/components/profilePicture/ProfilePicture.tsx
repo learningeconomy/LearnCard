@@ -20,7 +20,7 @@ export const ProfilePicture: React.FC<ProfilePictureProps> = ({
     customContainerClass,
     customImageClass,
     customSize = 300,
-    onClick = () => {},
+    onClick = () => { },
     overrideSrc,
     overrideSrcURL,
     ignoreBaseColor = false,

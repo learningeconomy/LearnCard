@@ -5,8 +5,7 @@ import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useLocation, useHistory } from 'react-router-dom';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
-import { useJoinLCNetworkModal } from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
-import { useIsCurrentUserLCNUser, useModal, ModalTypes } from 'learn-card-base';
+import { useModal, ModalTypes } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 import useAiSession from '../../hooks/useAiSession';
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
@@ -37,6 +36,7 @@ import { aiRoutes } from '../../AppRouter';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
+import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 
 const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     branding = BrandingEnum.learncard,
@@ -49,12 +49,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const { setCurrentScreen } = useFirebaseAnalytics();
-    const {
-        data: currentLCNUser,
-        isLoading: currentLCNUserLoading,
-        refetch,
-    } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
     const { openNewAiSessionModal } = useAiSession();
 
     const [activeTab, setActiveTab] = useState<string>(location.pathname);
@@ -92,30 +87,21 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     if (!isLoggedIn) return <IonMenu contentId="main" />;
 
     const handleBoost = async () => {
-        const isCurrentLCNUser =
-            currentLCNUserLoading || typeof currentLCNUser === 'undefined'
-                ? (await refetch()).data
-                : currentLCNUser;
-
-        if (!isCurrentLCNUser) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
-
         if (location.pathname.includes('/boost')) return;
 
-        if (isCurrentLCNUser) {
-            newModal(
-                <AddToLearnCardMenu />,
-                {
-                    sectionClassName: '!max-w-[500px]',
-                },
-                {
-                    desktop: ModalTypes.Cancel,
-                    mobile: ModalTypes.Cancel,
-                }
-            );
-        }
+        const { prompted } = await gate();
+        if (prompted) return;
+
+        newModal(
+            <AddToLearnCardMenu />,
+            {
+                sectionClassName: '!max-w-[500px]',
+            },
+            {
+                desktop: ModalTypes.Cancel,
+                mobile: ModalTypes.Cancel,
+            }
+        );
     };
 
     const sideMenuBrandingStyles =

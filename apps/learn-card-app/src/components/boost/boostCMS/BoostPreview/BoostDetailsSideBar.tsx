@@ -1,17 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import X from '../../../svgs/X';
 import { IonFooter } from '@ionic/react';
+import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
+import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
+import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import SkillsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/SkillsBox';
+import BoostEndorsementDetails from '../../../boost-endorsements/BoostEndorsementDetails';
+import EndorsementsList from '../../../boost-endorsements/EndorsementsList/EndorsementsList';
 import AlignmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/AlignmentsBox';
 import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/TruncateTextBox';
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
 
-import { useGetVCInfo } from 'learn-card-base';
+import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
 import CredentialVerificationDisplay, {
     getInfoFromCredential,
@@ -31,6 +36,8 @@ type BoostDetailsSideBarProps = {
     verificationItems: VerificationItem[];
     customLinkedCredentialsComponent?: React.ReactNode;
     displayType?: DisplayTypeEnum;
+    existingEndorsements?: VC[];
+    hideEndorsementRequestCard?: boolean;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -39,7 +46,11 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     verificationItems,
     customLinkedCredentialsComponent,
     displayType,
+    existingEndorsements = [],
+    hideEndorsementRequestCard = false,
 }) => {
+    const selectedTab = boostPreviewStore.useTracked.selectedTab();
+
     const { closeModal } = useModal();
     const { createdAt, credentialSubject } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
         uppercaseDate: false,
@@ -65,19 +76,11 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
         </div>
     );
 
-    return (
-        <aside className="bg-white bg-opacity-70 h-full max-w-full min-w-[375px] px-[20px]">
-            <div className="overflow-y-auto max-h-[calc(100vh-80px)] mx-auto px-[2px] overflow-x-hidden py-[30px]">
-                {isMobile && (
-                    <button
-                        className="text-grayscale-900 flex items-center justify-center gap-[5px] px-[10px] py-[5px] rounded-[10px] bg-white/90 shadow-md mb-[20px]"
-                        onClick={() => closeModal()}
-                    >
-                        <X className="w-[20px]" />
-                        Close
-                    </button>
-                )}
-                <section className="flex flex-col gap-[10px] w-[335px] pb-[30%] sm:pb-[20px] mx-auto">
+    let activeTabDetails = null;
+    switch (selectedTab) {
+        case BoostPreviewTabsEnum.Details:
+            activeTabDetails = (
+                <>
                     <TruncateTextBox
                         headerText="Details"
                         subHeaderText={`${isMediaDisplay ? title : 'About'}`}
@@ -107,6 +110,23 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                     <CredentialIssuerInformation credential={credential} />
 
+                    {/* display open syllabus metadata */}
+                    <OpenSyllabusMetaData credential={credential} />
+
+                    {!hideEndorsementRequestCard && (
+                        <EndorsementCard
+                            credential={credential}
+                            categoryType={categoryType}
+                            existingEndorsements={existingEndorsements}
+                        />
+                    )}
+
+                    <EndorsementsList
+                        credential={credential}
+                        categoryType={categoryType}
+                        existingEndorsements={existingEndorsements}
+                    />
+
                     {customLinkedCredentialsComponent && customLinkedCredentialsComponent}
 
                     {(credential?.skills?.length ?? 0) > 0 &&
@@ -130,6 +150,46 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                     {verificationItems && verificationItems?.length > 0 && (
                         <VerificationsBox verificationItems={verificationItems} />
                     )}
+                </>
+            );
+            break;
+        case BoostPreviewTabsEnum.Endorsements:
+            activeTabDetails = (
+                <BoostEndorsementDetails
+                    credential={credential}
+                    categoryType={categoryType}
+                    existingEndorsements={existingEndorsements}
+                />
+            );
+            break;
+        default:
+            activeTabDetails = null;
+            break;
+    }
+
+    const handleClose = () => {
+        boostPreviewStore.set.updateSelectedTab(BoostPreviewTabsEnum.Details);
+        closeModal();
+    };
+
+    return (
+        <aside className="bg-white bg-opacity-70 h-full max-w-full min-w-[375px] px-[20px]">
+            <div className="overflow-y-auto max-h-[calc(100vh-80px)] mx-auto px-[2px] overflow-x-hidden py-[30px]">
+                {isMobile && (
+                    <button
+                        className="text-grayscale-900 flex items-center justify-center gap-[5px] px-[10px] py-[5px] rounded-[10px] bg-white/90 shadow-md mb-[20px]"
+                        onClick={handleClose}
+                    >
+                        <X className="w-[20px]" />
+                        Close
+                    </button>
+                )}
+                <section className="flex flex-col gap-[10px] w-[335px] pb-[30%] sm:pb-[20px] mx-auto">
+                    <BoostPreviewTabs
+                        selectedTab={selectedTab}
+                        setSelectedTab={boostPreviewStore.set.updateSelectedTab}
+                    />
+                    {activeTabDetails}
                 </section>
             </div>
             {isMobile && (
@@ -137,7 +197,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                     mode="ios"
                     className="flex justify-center items-center ion-no-border absolute bottom-0"
                 >
-                    <BoostFooter handleBack={closeModal} />
+                    <BoostFooter handleBack={handleClose} />
                 </IonFooter>
             )}
         </aside>

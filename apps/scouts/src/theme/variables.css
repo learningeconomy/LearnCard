@@ -367,6 +367,63 @@ http://ionicframework.com/docs/theming/ */
     --ion-color-spice-900-shade: #711c00;
     --ion-color-spice-900-tint: #8d361a;
 
+    /* violet */
+    --ion-color-violet-200: #ddd6fe;
+    --ion-color-violet-200-rgb: 221, 214, 254;
+    --ion-color-violet-200-contrast: #000000;
+    --ion-color-violet-200-contrast-rgb: 0, 0, 0;
+    --ion-color-violet-200-shade: #c2bce0;
+    --ion-color-violet-200-tint: #e0dafe;
+
+    --ion-color-violet-300: #c4b5fd;
+    --ion-color-violet-300-rgb: 196, 181, 253;
+    --ion-color-violet-300-contrast: #000000;
+    --ion-color-violet-300-contrast-rgb: 0, 0, 0;
+    --ion-color-violet-300-shade: #ac9fdf;
+    --ion-color-violet-300-tint: #cabcfd;
+
+    --ion-color-violet-301: #c4b5fd;
+    --ion-color-violet-301-rgb: 196, 181, 253;
+    --ion-color-violet-301-contrast: #000000;
+    --ion-color-violet-301-contrast-rgb: 0, 0, 0;
+    --ion-color-violet-301-shade: #ac9fdf;
+    --ion-color-violet-301-tint: #cabcfd;
+
+    --ion-color-violet-400: #a78bfa;
+    --ion-color-violet-400-rgb: 167, 139, 250;
+    --ion-color-violet-400-contrast: #000000;
+    --ion-color-violet-400-contrast-rgb: 0, 0, 0;
+    --ion-color-violet-400-shade: #937adc;
+    --ion-color-violet-400-tint: #b097fb;
+
+    --ion-color-violet-500: #oklch(60.6% 0.25 292.717);
+    --ion-color-violet-500-rgb: 0, 0, 0;
+    --ion-color-violet-500-contrast: #ffffff;
+    --ion-color-violet-500-contrast-rgb: 255, 255, 255;
+    --ion-color-violet-500-shade: #000000;
+    --ion-color-violet-500-tint: #1a1a1a;
+
+    --ion-color-violet-600: #4f46e5;
+    --ion-color-violet-600-rgb: 79, 70, 229;
+    --ion-color-violet-600-contrast: #ffffff;
+    --ion-color-violet-600-contrast-rgb: 255, 255, 255;
+    --ion-color-violet-600-shade: #463eca;
+    --ion-color-violet-600-tint: #6159e8;
+
+    --ion-color-violet-700: #4338ca;
+    --ion-color-violet-700-rgb: 67, 56, 202;
+    --ion-color-violet-700-contrast: #ffffff;
+    --ion-color-violet-700-contrast-rgb: 255, 255, 255;
+    --ion-color-violet-700-shade: #3b31b2;
+    --ion-color-violet-700-tint: #564ccf;
+
+    --ion-color-violet-800: #3730a3;
+    --ion-color-violet-800-rgb: 55, 48, 163;
+    --ion-color-violet-800-contrast: #ffffff;
+    --ion-color-violet-800-contrast-rgb: 255, 255, 255;
+    --ion-color-violet-800-shade: #302a8f;
+    --ion-color-violet-800-tint: #4b45ac;
+
     /* learn card indigo */
     /* indigo 50 */
     --ion-color-indigo-50: #eef2ff;
@@ -1327,6 +1384,79 @@ http://ionicframework.com/docs/theming/ */
     --ion-color-contrast-rgb: var(--ion-color-sp-purple-soft-contrast-rgb);
     --ion-color-shade: var(--ion-color-sp-purple-soft-shade);
     --ion-color-tint: var(--ion-color-sp-purple-soft-tint);
+}
+
+/* violet */
+.ion-color-violet-200 {
+    --ion-color-base: var(--ion-color-violet-200);
+    --ion-color-base-rgb: var(--ion-color-violet-200-rgb);
+    --ion-color-contrast: var(--ion-color-violet-200-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-violet-200-contrast-rgb);
+    --ion-color-shade: var(--ion-color-violet-200-shade);
+    --ion-color-tint: var(--ion-color-violet-200-tint);
+}
+
+.ion-color-violet-300 {
+    --ion-color-base: var(--ion-color-violet-300);
+    --ion-color-base-rgb: var(--ion-color-violet-300-rgb);
+    --ion-color-contrast: var(--ion-color-violet-300-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-violet-300-contrast-rgb);
+    --ion-color-shade: var(--ion-color-violet-300-shade);
+    --ion-color-tint: var(--ion-color-violet-300-tint);
+}
+
+.ion-color-violet-301 {
+    --ion-color-base: var(--ion-color-violet-301);
+    --ion-color-base-rgb: var(--ion-color-violet-301-rgb);
+    --ion-color-contrast: var(--ion-color-violet-301-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-violet-301-contrast-rgb);
+    --ion-color-shade: var(--ion-color-violet-301-shade);
+    --ion-color-tint: var(--ion-color-violet-301-tint);
+}
+
+.ion-color-violet-400 {
+    --ion-color-base: var(--ion-color-violet-400);
+    --ion-color-base-rgb: var(--ion-color-violet-400-rgb);
+    --ion-color-contrast: var(--ion-color-violet-400-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-violet-400-contrast-rgb);
+    --ion-color-shade: var(--ion-color-violet-400-shade);
+    --ion-color-tint: var(--ion-color-violet-400-tint);
+}
+
+.ion-color-violet-500 {
+    --ion-color-base: var(--ion-color-violet-500);
+    --ion-color-base-rgb: var(--ion-color-violet-500-rgb);
+    --ion-color-contrast: var(--ion-color-violet-500-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-violet-500-contrast-rgb);
+    --ion-color-shade: var(--ion-color-violet-500-shade);
+    --ion-color-tint: var(--ion-color-violet-500-tint);
+}
+
+.ion-color-violet-600 {
+    --ion-color-base: var(--ion-color-violet-600);
+    --ion-color-base-rgb: var(--ion-color-violet-600-rgb);
+    --ion-color-contrast: var(--ion-color-violet-600-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-violet-600-contrast-rgb);
+    --ion-color-shade: var(--ion-color-violet-600-shade);
+    --ion-color-tint: var(--ion-color-violet-600-tint);
+}
+
+.ion-color-violet-700 {
+    --ion-color-base: var(--ion-color-violet-700);
+    --ion-color-base-rgb: var(--ion-color-violet-700-rgb);
+    --ion-color-contrast: var(--ion-color-violet-700-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-violet-700-contrast-rgb);
+    --ion-color-shade: var(--ion-color-violet-700-shade);
+    --ion-color-tint: var(--ion-color-violet-700-tint);
+}
+
+.ion-color-violet-800 {
+    --ion-color-base: var(--ion-color-violet-800);
+    --ion-color-base-rgb: var(--ion-color-violet-800-rgb);
+    --ion-color-contrast: var(--ion-color-violet-800-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-violet-800-contrast-rgb);
+    --ion-color-shade: var(--ion-color-violet-800-shade);
+    --ion-color-tint: var(--ion-color-violet-800-tint);
 }
 
 /* scoutPass green */

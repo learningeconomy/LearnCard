@@ -9,7 +9,6 @@ import HourGlass from '../../../assets/lotties/hourglass.json';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
-import { useResolveBoost } from 'learn-card-base';
 import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential } from 'learn-card-base';
@@ -22,11 +21,14 @@ import {
     ModalTypes,
     useDeviceTypeByWidth,
 } from 'learn-card-base';
-import { VC, VP, VerificationItem } from '@learncard/types';
+import { LCNNotification, VC, VP, VerificationItem } from '@learncard/types';
 import {
+    isEndorsementCredential,
     getAchievementType,
     getDefaultCategoryForCredential,
+    parseShareLinkParams,
 } from 'learn-card-base/helpers/credentialHelpers';
+import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestForm/ViewEndorsementRequest';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -39,6 +41,8 @@ type BoostClaimCardProps = {
     acceptCredentialCompleted?: boolean;
     successCallback?: () => void;
     onDismiss?: () => void;
+    notification?: LCNNotification;
+    hideEndorsementRequestCard?: boolean;
 };
 
 export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
@@ -50,6 +54,8 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     credentialUri,
     successCallback,
     onDismiss,
+    notification,
+    hideEndorsementRequestCard,
 }) => {
     const history = useHistory();
     const isLoggedIn = useIsLoggedIn();
@@ -59,6 +65,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const [credential, setCredential] = useState(_credential);
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { data: resolvedCredential } = useGetResolvedCredential(credentialUri, !credential);
+
+    const { seed, pin, uri } = parseShareLinkParams(notification?.data?.metadata?.sharedUri);
+    const sharedUri = notification?.data?.metadata?.sharedUri;
+    const relationship = notification?.data?.metadata?.relationship;
+    const credentialId = notification?.data?.metadata?.credentialId;
 
     useEffect(() => {
         if (resolvedCredential) {
@@ -84,7 +95,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const {
         mutate,
-        isLoading: acceptCredentialLoading,
+        isPending: acceptCredentialLoading,
         isSuccess: acceptCredentialSuccess,
     } = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
@@ -95,15 +106,28 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
 
-    const handleBoostCredential = async () => {
+    const _isEndorsement = isEndorsementCredential(credential) ?? false;
+
+    const handleBoostCredential = async (visibility?: boolean) => {
+        const wallet = await initWallet();
+
         if (!acceptCredentialLoading && !isClaimLoading && !isClaimed) {
             setIsClaimLoading(true);
             try {
                 mutate(
-                    { uri: credentialUri },
+                    { uri: credentialUri, metadata: notification?.data?.metadata },
                     {
                         async onSuccess(data, variables, context) {
-                            await addVCtoWallet({ uri: credentialUri });
+                            if (_isEndorsement) {
+                                await wallet.invoke.storeEndorsement(credential, {
+                                    credentialId,
+                                    relationship,
+                                    sharedUri,
+                                    visibility: visibility ? 'public' : 'private',
+                                });
+                            } else {
+                                await addVCtoWallet({ uri: credentialUri });
+                            }
 
                             if (credential) {
                                 logAnalyticsEvent('claim_boost', {
@@ -196,6 +220,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 credential={credential}
                 // categoryType={categoryType}
                 verificationItems={vcVerifications}
+                hideEndorsementRequestCard={hideEndorsementRequestCard}
             />,
             {
                 className: '!bg-transparent',
@@ -204,6 +229,18 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
+
+    if (_isEndorsement) {
+        return (
+            <ViewEndorsementRequest
+                sharedLink={{ seed, pin, uri }}
+                notification={notification}
+                endorsementVC={credential}
+                handleSaveEndorsement={handleBoostCredential}
+                isClaimed={isClaimed}
+            />
+        );
+    }
 
     return (
         <IonPage className="flex items-center justify-center boost-cms-preview">
@@ -302,6 +339,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                         }
                         // categoryType={categoryType}
                         verificationItems={vcVerifications}
+                        hideEndorsementRequestCard={hideEndorsementRequestCard}
                     />
                 )}
             </div>

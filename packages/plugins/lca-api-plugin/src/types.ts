@@ -220,6 +220,7 @@ export type LCAPluginMethods = {
     }>;
     generateImage: (prompt: string) => Promise<string>;
     generateBoostSkills: (description: string) => Promise<BoostSkills[]>;
+    generateSkillIcons: (names: string[]) => Promise<Record<string, string>>;
     createPin: (pin: string) => Promise<boolean>;
     hasPin: (did?: string) => Promise<boolean>;
     verifyPin: (pin: string, did?: string) => Promise<boolean>;
@@ -241,11 +242,26 @@ export type LCAPluginMethods = {
         email: string,
         code: string
     ) => Promise<{ success: boolean; message?: string; token?: string }>;
-    verifyNetworkHandoffToken: (token: string) => Promise<{ success: boolean; message?: string; token?: string }>;
-    getProofOfLoginVp: (token: string) => Promise<{ success: boolean; error?: string; vp?: string }>;
+    verifyNetworkHandoffToken: (
+        token: string
+    ) => Promise<{ success: boolean; message?: string; token?: string }>;
+    getProofOfLoginVp: (
+        token: string
+    ) => Promise<{ success: boolean; error?: string; vp?: string }>;
     updatePreferences: (preferences: PreferencesType) => Promise<boolean>;
     createPreferences: (preferences: PreferencesType) => Promise<boolean>;
     getPreferencesForDid: () => Promise<PreferencesType>;
+    sendEndorsementShareLink: (
+        email: string,
+        shareLink: string,
+        issuer: {
+            name: string;
+        },
+        credential: {
+            name: string;
+        },
+        message: string
+    ) => Promise<boolean>;
 };
 
 /** @group LearnCardNetwork Plugin */

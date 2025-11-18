@@ -1,8 +1,9 @@
 import React from 'react';
 import { ModalTypes, useModal } from 'learn-card-base';
-import { IonFooter, IonToolbar } from '@ionic/react';
+import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import ShareModal from '../share/ShareModal';
+import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 
 type LearnCardFooterProps = {
     hideShare?: boolean;
@@ -11,10 +12,19 @@ type LearnCardFooterProps = {
     buttonAction?: () => void;
 };
 
-const LearnCardFooter: React.FC<LearnCardFooterProps> = ({ hideShare = false, buttonText = 'Share', icon, buttonAction }) => {
+const LearnCardFooter: React.FC<LearnCardFooterProps> = ({
+    hideShare = false,
+    buttonText = 'Share',
+    icon,
+    buttonAction,
+}) => {
     const { newModal, closeModal } = useModal();
+    const { gate } = useLCNGatedAction();
 
-    const handleShare = () => {
+    const handleShare = async () => {
+        const { prompted } = await gate();
+        if (prompted) return;
+
         newModal(
             <ShareModal />,
             { sectionClassName: '!max-w-[400px]' },
@@ -44,7 +54,7 @@ const LearnCardFooter: React.FC<LearnCardFooterProps> = ({ hideShare = false, bu
                             <X className="w-[20px] h-auto text-grayscale-900" />
                         </button>
                     )}
-                    
+
                     {!hideShare && (
                         <button
                             onClick={buttonText === 'Share' ? handleShare : buttonAction}

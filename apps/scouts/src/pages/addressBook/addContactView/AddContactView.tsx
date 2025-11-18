@@ -15,6 +15,7 @@ import { AddressBookContact } from '../addressBookHelpers';
 import ArrowRight from 'learn-card-base/svgs/ArrowRight';
 
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
+import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import { useAcceptConnectionRequestMutation } from 'learn-card-base';
@@ -55,6 +56,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const checkIfUserInNetwork = useCheckIfUserInNetwork();
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
@@ -80,10 +82,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         e.stopPropagation();
         const wallet = await initWallet();
 
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
+        if (!checkIfUserInNetwork()) return;
 
         setLoading(true);
         try {

@@ -4,11 +4,10 @@ import { BoostVCTypeOptionButtonProps } from '../boostOptions';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import {
     useModal,
-    useIsCurrentUserLCNUser,
     ModalTypes,
     useGetCredentialList,
 } from 'learn-card-base';
-import useJoinLCNetworkModal from '../../../network-prompts/hooks/useJoinLCNetworkModal';
+import useLCNGatedAction from '../../../network-prompts/hooks/useLCNGatedAction';
 import NewAiSessionContainer from '../../../new-ai-session/NewAiSessionContainer';
 
 import useTheme from '../../../../theme/hooks/useTheme';
@@ -31,12 +30,7 @@ export const BoostVCTypeOptionButton: React.FC<BoostVCTypeOptionButtonProps> = (
     const { Icon, IconWithShape } = getThemedCategoryIcons(categoryType);
 
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen });
-    const {
-        data: currentLCNUser,
-        isLoading: currentLCNUserLoading,
-        refetch,
-    } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
     const existingTopics = topics?.pages?.[0]?.records || [];
@@ -48,11 +42,9 @@ export const BoostVCTypeOptionButton: React.FC<BoostVCTypeOptionButtonProps> = (
         }
         return word;
     };
-    const handleNewSession = (showAiAppSelector?: boolean) => {
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
+    const handleNewSession = async (showAiAppSelector?: boolean) => {
+        const { prompted } = await gate();
+        if (prompted) return;
 
         newModal(
             <NewAiSessionContainer

@@ -1,15 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import {
-    IonContent,
-    IonPage,
-    IonSpinner,
-    useIonToast,
-    IonRow,
-    IonGrid,
-    IonCol,
-    IonInput,
-} from '@ionic/react';
+import { IonContent, IonPage, IonSpinner, useIonToast, IonRow, IonGrid } from '@ionic/react';
 
 import { AddressBookHeader } from './addressBook-header/AddressBookHeader';
 import AddressBookContactList from './addressBook-contact-list/AddressBookContactList';
@@ -22,9 +13,22 @@ import AddressBookConnectionRequests from './addressBookConnectionRequests/Addre
 import AddressBookBlockedContacts from './addressBookBlockedContacts/AddressBookBlockedContacts';
 import AddressBookContactCard from './addressBookContactCard/AddressBookContactCard';
 import AddressBookTabs from './addressBookTabs/AddressBookTabs';
+import AddressBookSelectionModal from './addressBook-selection-modal/AddressBookSelectionModal';
 
-import { useGetSearchProfiles, useBlockProfileMutation, BrandingEnum, useGetBlockedProfiles, useGetConnectionsRequests } from 'learn-card-base';
+import {
+    useGetSearchProfiles,
+    useBlockProfileMutation,
+    BrandingEnum,
+    useGetBlockedProfiles,
+    useGetConnectionsRequests,
+    useModal,
+    ModalTypes,
+    useGetResolvedCredential,
+    useGetIDs,
+} from 'learn-card-base';
 
+import CaretDown from '../../components/svgs/CaretDown';
+import AllContactsIcon from '../../components/svgs/AllContactsIcon';
 import Lottie from 'react-lottie-player';
 import Pulpo from '../../assets/lotties/cuteopulpo.json';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -49,6 +53,7 @@ const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
 const AddressBook: React.FC = () => {
     const { url } = useRouteMatch();
     const [presentToast] = useIonToast();
+    const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
     const searchInputRef = useRef<HTMLIonInputElement>(null);
 
     // Block profile mutation
@@ -57,13 +62,17 @@ const AddressBook: React.FC = () => {
     // Search state and query
     const [search, setSearch] = useState<string>('');
     const { data: connections, isLoading: loading, refetch } = useGetSearchProfiles(search);
-
+    const { data: records, isLoading: isLoadingRecords } = useGetIDs();
     // Active tab (derived from the route URL) and connection count state
     const initialTab = getActiveRouteTab(url) || AddressBookTabsEnum.Connections;
     const [activeTab, setActiveTab] = useState<AddressBookTabsEnum>(initialTab);
     const [connectionCount, setConnectionCount] = useState<number>(0);
     const [requestCount, setRequestCount] = useState<number>(0);
     const [blockedCount, setBlockedCount] = useState<number>(0);
+    const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
+    const [boostId, setBoostId] = useState<string>();
+    const [troopCounts, setTroopCounts] = useState<{ [key: string]: number }>({});
+    const troopCount = Object.entries(troopCounts).find(([key]) => key.includes(selectedGroupId));
 
     // Derived booleans for which tab is showing
     const showConnections = activeTab === AddressBookTabsEnum.Connections;
@@ -72,12 +81,11 @@ const AddressBook: React.FC = () => {
     const showBlockedConnections = activeTab === AddressBookTabsEnum.Blocked;
     const showSearch = true; // Always true for now
 
-    // Update the connection count when search results change
-    useEffect(() => {
-        if (!loading && search.length > 0) {
-            setConnectionCount(connections?.length ?? 0);
-        }
-    }, [loading, search, connections]);
+    const {
+        data: resolvedCredential,
+        isFetching: credentialFetching,
+        isLoading: credentialLoading,
+    } = useGetResolvedCredential(selectedGroupId);
 
     // Handler for blocking a profile
     const handleBlockUser = useCallback(
@@ -137,14 +145,34 @@ const AddressBook: React.FC = () => {
     useEffect(() => {
         if (!isLoading && blockedContacts) {
             setBlockedCount(blockedContacts?.length ?? 0);
-        };
+        }
     }, [blockedCount, blockedContacts, activeTab, url]);
 
-    const { data: requestContacts, isLoading: requestConnectionsLoading} = useGetConnectionsRequests();
+    const { data: requestContacts, isLoading: requestConnectionsLoading } =
+        useGetConnectionsRequests();
 
     useEffect(() => {
-        if (!requestConnectionsLoading && requestContacts) setRequestCount(requestContacts?.length ?? 0);
+        if (!requestConnectionsLoading && requestContacts)
+            setRequestCount(requestContacts?.length ?? 0);
     }, [requestCount, requestContacts, activeTab, url]);
+
+    const handleContactSelection = () => {
+        newModal(
+            <AddressBookSelectionModal
+                selectedGroupId={selectedGroupId}
+                onGroupSelect={(groupId: string, boostId?: string) => {
+                    setSelectedGroupId(groupId);
+                    setBoostId(boostId);
+                }}
+                setTroopCounts={setTroopCounts}
+                records={records}
+                isLoadingRecords={isLoadingRecords}
+            />,
+            {
+                sectionClassName: '!max-w-[550px]',
+            }
+        );
+    };
 
     return (
         <IonPage className="bg-grayscale-100">
@@ -161,14 +189,52 @@ const AddressBook: React.FC = () => {
                     connectionCount={connectionCount}
                     search={search}
                     clearSearch={clearSearch}
-                    showSearch 
+                    showSearch
                     handleShowSearch={handleSearchFocus}
                 />
 
                 <AddressBookContactCard />
-        
-                <div className="w-full max-w-[400px] sm:max-w-[600px] mx-auto my-4 rounded-2xl bg-white shadow-lg">        
+
+                <div className="w-full max-w-[400px] sm:max-w-[600px] mx-auto my-4 rounded-2xl bg-white shadow-lg">
                     <IonGrid className="flex flex-col items-center justify-center w-full mb-[120px] sm:mb-[0px]">
+                        {records?.length > 0 &&
+                            (selectedGroupId === 'all' ? (
+                                <button
+                                    onClick={handleContactSelection}
+                                    className="flex border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                                >
+                                    <AllContactsIcon />
+                                    <div className="flex flex-col items-start ml-2">
+                                        <span className="text-sp-purple-base text-[12px] font-bold font-notoSans">
+                                            All Contacts
+                                        </span>
+                                        <span className="text-grayscale-800 text-[17px] font-normal font-notoSans">
+                                            {connectionCount} Contacts
+                                        </span>
+                                    </div>
+                                    <CaretDown className="ml-auto mr-[15px] mt-[15px]" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleContactSelection}
+                                    className="relative flex bg-white border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                                >
+                                    <img
+                                        className="w-[40px] h-[40px] rounded-[40px] mr-2"
+                                        src={resolvedCredential?.boostCredential?.image}
+                                    />
+                                    <div className="flex flex-col items-start">
+                                        <p>{resolvedCredential?.boostCredential?.name}</p>
+                                        <p>
+                                            {troopCount && troopCount[1]}{' '}
+                                            {troopCount && troopCount[1] === 1
+                                                ? 'Contact'
+                                                : 'Contacts'}
+                                        </p>
+                                    </div>
+                                    <CaretDown className="ml-auto mr-[15px] mt-[15px]" />
+                                </button>
+                            ))}
                         <AddressBookTabs
                             activeTab={activeTab}
                             setActiveTab={setActiveTab}
@@ -220,6 +286,8 @@ const AddressBook: React.FC = () => {
                                     setConnectionCount={setConnectionCount}
                                     connectionCount={connectionCount}
                                     activeTab={activeTab}
+                                    boostId={boostId}
+                                    resolvedCredential={resolvedCredential}
                                 />
                             )}
                             {showPendingRequests && !isSearching && (

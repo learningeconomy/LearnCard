@@ -81,7 +81,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     const { newModal, closeModal } = useModal();
     const sectionPortal = document.getElementById('section-cancel-portal');
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -222,12 +222,10 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                 <IonCol className="flex flex-col items-center justify-center">
                     {showBoostButton && (
                         <button
-                            onClick={() => {
-                                if (!currentLCNUser && !currentLCNUserLoading) {
-                                    closeModal();
-                                    handlePresentJoinNetworkModal();
-                                    return;
-                                }
+                            onClick={async () => {
+                                closeModal();
+                                const { prompted } = await gate();
+                                if (prompted) return;
 
                                 if (currentLCNUser) {
                                     newModal(
@@ -292,9 +290,11 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     {showBlockButton && (
                         <button
                             className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
-                            onClick={e => {
+                            onClick={async e => {
                                 e.stopPropagation();
                                 closeModal();
+                                const { prompted } = await gate();
+                                if (prompted) return;
                                 showConfirmationAlert(
                                     'Are you sure you want to block this user?',
                                     async () => {

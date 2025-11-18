@@ -3,7 +3,6 @@ import React from 'react';
 import { ProfilePicture, useCurrentUser } from 'learn-card-base';
 import { BoostCMSState } from '../boost';
 import { insertParamsToFilestackUrl } from 'learn-card-base';
-import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 
 const BoostCMSIDCard: React.FC<{
     state: BoostCMSState;
@@ -67,11 +66,7 @@ const BoostCMSIDCard: React.FC<{
                 {state?.appearance?.showIdIssuerImage && (
                     <div className="absolute w-[80px] h-[80px] rounded-full bottom-[-15px] right-[15px] bg-white flex items-center justify-center overflow-hidden border-[3px] border-solid border-white">
                         {!state?.appearance?.idIssuerThumbnail ? (
-                            <img
-                                alt="issuer thumbnail"
-                                src={EmptyImage}
-                                className="w-[43px] h-[47px]"
-                            />
+                            <img alt="issuer thumbnail" src={''} className="w-[43px] h-[47px]" />
                         ) : (
                             <img
                                 alt="issuer thumbnail"

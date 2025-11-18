@@ -198,7 +198,7 @@ export const CheckListTranscripts: React.FC = () => {
                                 <div className="flex items-center justify-start">
                                     <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
                                     <div className="flex items-start justify-center text-left flex-col pr-4">
-                                        <p className="text-grayscale-800 text-sm font-semibold text-left line-clamp-2">
+                                        <p className="text-grayscale-800 text-sm font-semibold text-left line-clamp-2 break-all">
                                             {transcript?.fileName}
                                         </p>
                                         <p className="w-full text-xs text-grayscale-600">
@@ -209,7 +209,7 @@ export const CheckListTranscripts: React.FC = () => {
 
                                 <button
                                     onClick={() => confirmDelete(transcript?.id)}
-                                    className="bg-white overflow-hidden rounded-full shadow-bottom p-2 min-h-[35px] min-w-[35px]"
+                                    className="bg-white overflow-hidden rounded-full flex items-center justify-center shadow-bottom p-2 min-h-[35px] min-w-[35px] w-[35px] h-[35px]"
                                 >
                                     <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
                                 </button>

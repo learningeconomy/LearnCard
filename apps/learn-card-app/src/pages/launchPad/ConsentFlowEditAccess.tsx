@@ -225,8 +225,8 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                     <label className="flex flex-col gap-1">
                                         <output
                                             className={`font-semibold text-sm ${allReadToggle
-                                                    ? 'text-emerald-700'
-                                                    : 'text-grayscale-400'
+                                                ? 'text-emerald-700'
+                                                : 'text-grayscale-400'
                                                 }`}
                                         >
                                             {allReadToggle ? 'Active' : 'Off'}
@@ -291,8 +291,8 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                     <label className="flex flex-col gap-1">
                                         <output
                                             className={`font-semibold text-sm ${allWriteToggle
-                                                    ? 'text-emerald-700'
-                                                    : 'text-grayscale-400'
+                                                ? 'text-emerald-700'
+                                                : 'text-grayscale-400'
                                                 }`}
                                         >
                                             {allWriteToggle ? 'Active' : 'Off'}

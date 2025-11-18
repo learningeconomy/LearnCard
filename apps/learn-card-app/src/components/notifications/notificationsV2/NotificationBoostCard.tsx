@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
+import { capitalize } from 'lodash';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 import X from 'learn-card-base/svgs/X';
@@ -14,6 +15,7 @@ import {
     unwrapBoostCredential,
     getDefaultCategoryForCredential,
     getImageUrlFromCredential,
+    isEndorsementCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { formatDid } from 'learn-card-base/helpers/didHelpers';
 
@@ -32,6 +34,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { NotificationTypeStyles, CATEGORY_TO_NOTIFICATION_ENUM } from './types';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { NOTIFICATION_TYPES } from './NotificationCardContainer';
+import { useGetVCInfo } from 'learn-card-base';
 
 type NotificationBoostCardProps = {
     notification: NotificationType;
@@ -56,6 +59,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
+
+    console.log('notification', notification);
 
     const [isClaimed, setIsClaimed] = useState<boolean>(claimStatus || false);
     const [isRead, setIsRead] = useState<boolean>(notification?.read || false);
@@ -86,6 +91,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
 
     let unwrappedCred = data && unwrapBoostCredential(boostVc);
 
+    const { issuerProfileImageElement } = useGetVCInfo(unwrappedCred);
+
     if (Array.isArray(unwrappedCred) && unwrappedCred.length === 1) {
         unwrappedCred = unwrappedCred[0];
     }
@@ -93,9 +100,25 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     unwrappedCred = credentialWithEdits ?? unwrappedCred;
 
     const credCategory = boostVc && getDefaultCategoryForCredential(unwrappedCred);
+    const isEndorsementCredentialType = isEndorsementCredential(unwrappedCred);
+
     const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred, credCategory);
-    const notificationCategoryFromCredCategory =
+    let notificationCategoryFromCredCategory =
         credCategory && CATEGORY_TO_NOTIFICATION_ENUM[credCategory];
+
+    if (isEndorsementCredentialType) notificationCategoryFromCredCategory = 'endorsement';
+
+    let modalDisplayType = {
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
+    };
+
+    if (isEndorsementCredentialType) {
+        modalDisplayType = {
+            mobile: ModalTypes.Right,
+            desktop: ModalTypes.Right,
+        };
+    }
 
     const displayType = unwrappedCred?.display?.displayType;
     const isCertDisplayType = displayType === 'certificate';
@@ -153,19 +176,18 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                         isLoading={isLoading}
                         acceptCredentialLoading={acceptCredentialLoading}
                         acceptCredentialCompleted={isClaimed}
-                        successCallback={() => {
-                            handleSuccess();
+                        successCallback={async () => {
+                            await handleSuccess();
                             setClaimModalOpen(false);
                             history.replace('/notifications');
                         }}
                         onDismiss={async () => {
-                            updateNotification({
-                                notificationId: notification?._id,
-                                payload: { actionStatus: 'COMPLETED', read: true },
-                            });
+                            handleReadStatus();
                             setClaimModalOpen(false);
                             history.replace('/notifications');
                         }}
+                        notification={notification}
+                        hideEndorsementRequestCard
                     />,
                     {
                         className: 'notification-claim-boost-modal-open',
@@ -173,7 +195,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                             isCertDisplayType || isID || isAwardDisplayType || isFamily
                                 ? unwrappedCred?.display?.backgroundImage
                                 : undefined,
-                    }
+                    },
+                    modalDisplayType
                 );
             }
         }
@@ -199,13 +222,21 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 acceptCredentialLoading={acceptCredentialLoading}
                 acceptCredentialCompleted={isClaimed}
                 successCallback={handleSuccess}
+                notification={notification}
+                onDismiss={async () => {
+                    handleReadStatus();
+                    setClaimModalOpen(false);
+                    history.replace('/notifications');
+                }}
+                hideEndorsementRequestCard
             />,
             {
                 backgroundImage:
                     isCertDisplayType || isID || isAwardDisplayType || isFamily
                         ? unwrappedCred?.display?.backgroundImage
                         : undefined,
-            }
+            },
+            modalDisplayType
         );
     };
 
@@ -219,6 +250,16 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     ) {
         const fromName = notification.from.profileId || formatDid(notification.from.did);
         title = `${fromName} has boosted you!`;
+    }
+
+    // override text when endorsement
+    if (
+        isEndorsementCredentialType &&
+        notification.type === NOTIFICATION_TYPES.BOOST_ACCEPTED &&
+        notification.message?.body?.includes('has accepted your boost!')
+    ) {
+        const fromName = notification.from.profileId || formatDid(notification.from.did);
+        title = `${fromName} has accepted your endorsement!`;
     }
 
     const handleArchiveAction = () => {
@@ -237,6 +278,13 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 acceptCredentialLoading={acceptCredentialLoading}
                 acceptCredentialCompleted={isClaimed}
                 successCallback={handleSuccess}
+                notification={notification}
+                onDismiss={async () => {
+                    handleReadStatus();
+                    setClaimModalOpen(false);
+                    history.replace('/notifications');
+                }}
+                hideEndorsementRequestCard
             />,
 
             {
@@ -244,7 +292,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                     isCertDisplayType || isID || isAwardDisplayType
                         ? unwrappedCred?.display?.backgroundImage
                         : undefined,
-            }
+            },
+            modalDisplayType
         );
     };
 
@@ -289,7 +338,13 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                         className="notification-card-left-side px-[0px] flex cursor-pointer"
                         onClick={handleCardClick}
                     >
-                        {!isLoading && (
+                        {isEndorsementCredentialType && !isLoading && (
+                            <div className="w-[90px] h-[90px] min-w-[90px] min-h-[90px] overflow-hidden rounded-full">
+                                {issuerProfileImageElement}
+                            </div>
+                        )}
+
+                        {!isLoading && !isEndorsementCredentialType && (
                             <CredentialBadge
                                 achievementType={credentialBadgeAchievementType}
                                 boostType={credCategory}
@@ -310,7 +365,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                                 className="cursor-pointer font-semibold tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title"
                                 data-testid="notification-title"
                             >
-                                {title}
+                                {capitalize(title)}
                             </h4>
                             <p
                                 className={`font-bold p-0 mt-[10px] leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text ${textStyles}`}

@@ -11,8 +11,7 @@ import AddAward from 'learn-card-base/svgs/AddAward';
 import BoostSelectMenu from '../boost/boost-select-menu/BoostSelectMenu';
 import useBoostModal from '../boost/hooks/useBoostModal';
 import { BoostCategoryOptionsEnum } from '../boost/boost-options/boostOptions';
-import { useIsCurrentUserLCNUser } from 'learn-card-base';
-import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
+import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
 
 interface SubheaderPlusActionButtonProps {
     iconColor?: string;
@@ -30,8 +29,7 @@ const SubheaderPlusActionButton: React.FC<SubheaderPlusActionButtonProps> = ({
     subheaderType,
 }) => {
     const history = useHistory();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const checkIfUserInNetwork = useCheckIfUserInNetwork();
 
     const [presentCenterModal, dismissCenterModal] = useIonModal(BoostSelectMenu, {
         handleCloseModal: () => dismissCenterModal(),
@@ -77,10 +75,7 @@ const SubheaderPlusActionButton: React.FC<SubheaderPlusActionButtonProps> = ({
                     //     showBackdrop: false,
                     // });
 
-                    if (!currentLCNUser && !currentLCNUserLoading) {
-                        handlePresentJoinNetworkModal();
-                        return;
-                    }
+                    if (!checkIfUserInNetwork()) return;
 
                     handlePresentBoostModal();
                 }}
@@ -98,10 +93,7 @@ const SubheaderPlusActionButton: React.FC<SubheaderPlusActionButtonProps> = ({
                     //     handleBehavior: 'cycle',
                     // });
 
-                    if (!currentLCNUser && !currentLCNUserLoading) {
-                        handlePresentJoinNetworkModal();
-                        return;
-                    }
+                    if (!checkIfUserInNetwork()) return;
 
                     handlePresentBoostModal();
                 }}

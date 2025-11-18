@@ -10,11 +10,11 @@ const IOS_URL = 'https://apps.apple.com/us/app/learncard/id1635841898';
 
 const GoogleLoginHelpModal: React.FC<Props> = ({ message }) => {
     return (
-        <section className="px-5 py-5">
+        <section className="px-5 py-5 text-grayscale-900">
             <h3 className="text-xl font-semibold mb-3">Having trouble signing in?</h3>
             {message && <p className="text-sm mb-4 break-words">{message}</p>}
             <p className="text-sm mb-3">
-                You can also download Learncardapp on your smartphone or tablet:
+                You can also download LearnCard on your smartphone or tablet:
             </p>
             <div className="flex flex-col gap-5">
                 <div>
@@ -24,7 +24,7 @@ const GoogleLoginHelpModal: React.FC<Props> = ({ message }) => {
                         rel="noopener noreferrer"
                         className="text-blue-600 font-medium underline"
                     >
-                        ScoutPass for Android
+                        LearnCard for Android
                     </a>
                     <div className="mt-2 flex justify-center">
                         <QRCodeSVG value={ANDROID_URL} size={160} bgColor="transparent" />
@@ -37,7 +37,7 @@ const GoogleLoginHelpModal: React.FC<Props> = ({ message }) => {
                         rel="noopener noreferrer"
                         className="text-blue-600 font-medium underline"
                     >
-                        ScoutPass for iOS
+                        LearnCard for iOS
                     </a>
                     <div className="mt-2 flex justify-center">
                         <QRCodeSVG value={IOS_URL} size={160} bgColor="transparent" />

@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
-import { useFilestack, UploadRes, useModal } from 'learn-card-base';
-import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
-import { IonCol, IonRow, IonInput } from '@ionic/react';
-import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+import { createPortal } from 'react-dom';
 import { Updater } from 'use-immer';
-import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
-import FileIcon from 'learn-card-base/svgs/FileIcon';
-import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
-
 import { produce } from 'immer';
 
+import { IonCol, IonRow, IonInput } from '@ionic/react';
+import FileIcon from 'learn-card-base/svgs/FileIcon';
+
 import useTheme from '../../../../../theme/hooks/useTheme';
+import { useFilestack, UploadRes } from 'learn-card-base';
+
+import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
+import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
+import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 
 type BoostCMSMediaDocumentUploadProps = {
     state: BoostCMSMediaState;
@@ -22,6 +23,8 @@ type BoostCMSMediaDocumentUploadProps = {
     handleSave: () => void;
     hideBackButton?: boolean;
     handleCloseModal?: () => void;
+    setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
+    createMode?: boolean;
 };
 
 const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = ({
@@ -32,15 +35,15 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
     handleSave,
     hideBackButton,
     handleCloseModal,
+    setShowCloseButtonState,
+    createMode,
 }) => {
-    const { closeModal } = useModal();
+    const sectionPortal = document.getElementById('section-cancel-portal');
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const { id, type, title, color, Icon } = boostMediaOptions.find(
-        ({ type }) => type === activeMediaType
-    );
+    const { title, Icon } = boostMediaOptions.find(({ type }) => type === activeMediaType);
 
     const [currentIndex, setCurrentIndex] = useState<number>(0);
     const [uploadProgress, setUploadProgress] = useState<number | boolean>(false);
@@ -67,21 +70,16 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
         <>
             <IonRow className="flex flex-col pb-4">
                 <IonCol className="w-full flex items-center justify-between mt-8 mb-2">
+                    <Icon
+                        version="outlined"
+                        className={`text-grayscale-800 h-[40px] max-h-[40px] max-w-[40px] mr-2`}
+                    />
                     <h6 className="flex items-center justify-center font-medium text-grayscale-800 font-poppins text-xl tracking-wide">
-                        {!hideBackButton && (
-                            <button
-                                className="text-grayscale-50 p-0 mr-[10px]"
-                                onClick={() => setActiveMediaType(null)}
-                            >
-                                <CaretLeft className="h-auto w-3 text-grayscale-800" />
-                            </button>
-                        )}
                         {title}
                     </h6>
-                    <Icon className={`text-${color} h-[40px] max-h-[40px] max-w-[40px]`} />
                 </IonCol>
             </IonRow>
-            <div className="flex flex-col items-center justify-center w-full mb-4">
+            <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px]">
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
@@ -101,13 +99,13 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                 />
             </div>
 
-            <div className="flex items-center justify-between w-full mb-4 bg-grayscale-100 ion-padding rounded-[20px]">
-                <div className="flex items-center justify-start w-[80%]">
+            <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px] pb-[20px]">
+                <div className="flex items-center justify-start w-full py-[8px] px-[20px] bg-grayscale-100 rounded-[20px]">
                     {documentSrc && uploadProgress === false && (
                         <>
                             <FileIcon className="text-[#FF3636] h-[40px] min-h-[40px] min-w-[40px] w-[40px] mr-2" />
                             <a
-                                className={`line-clamp-1 text-${primaryColor}-600 text-base font-semibold`}
+                                className={`line-clamp-1 text-${primaryColor} text-base font-semibold`}
                                 target="_blank"
                                 rel="noreferrer"
                                 href={documentSrc}
@@ -123,48 +121,49 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                         </p>
                     )}
                 </div>
-
-                {/* <button
-                onClick={handleDeleteDocumentUploaded}
-                className="flex items-center justify-center rounded-full bg-white h-[40px] w-[40px]"
-            >
-                <TrashBin className="text-grayscale-800 h-[30px] w-[30px]" />
-            </button> */}
             </div>
 
-            <button
-                onClick={() => {
-                    handleSave();
-                }}
-                className={`flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
-            >
-                Save
-            </button>
+            {sectionPortal &&
+                createPortal(
+                    <div className="w-full flex flex-col items-center justify-center">
+                        <div className="flex justify-center gap-[10px] items-center relative !border-none w-full max-w-[500px]">
+                            <button
+                                onClick={() => {
+                                    handleSave();
+                                }}
+                                className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
+                            >
+                                Save
+                            </button>
 
-            {documentSrc && (
-                <button
-                    onClick={handleDocumentSelect}
-                    className="flex items-center mt-[20px] justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
-                >
-                    Change Document
-                </button>
-            )}
+                            {documentSrc && (
+                                <button
+                                    onClick={handleDocumentSelect}
+                                    className="flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
+                                >
+                                    Change Doc
+                                </button>
+                            )}
+                        </div>
 
-            <div className="w-full flex items-center justify-center mt-[20px]">
-                <button
-                    onClick={() => {
-                        if (!hideBackButton) {
-                            setState([]);
-                            setActiveMediaType(null);
-                        }
-                        closeModal?.();
-                        handleCloseModal?.();
-                    }}
-                    className="text-grayscale-900 text-center text-sm"
-                >
-                    Cancel
-                </button>
-            </div>
+                        <div className="flex flex-col justify-center items-center relative !border-none w-full max-w-[500px]">
+                            <button
+                                onClick={() => {
+                                    if (createMode) {
+                                        setActiveMediaType(null);
+                                        setShowCloseButtonState?.(true);
+                                    } else {
+                                        handleCloseModal?.();
+                                    }
+                                }}
+                                className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
+                            >
+                                Back
+                            </button>
+                        </div>
+                    </div>,
+                    sectionPortal
+                )}
         </>
     );
 };

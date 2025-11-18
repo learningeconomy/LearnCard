@@ -5,6 +5,7 @@ import {
 } from '../../../components/boost/boostCMS/boostCMSForms/boostCMSSkills/boostSkills';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { constructCustomBoostType } from 'learn-card-base';
+import { BoostCategoryOptionsEnum } from 'apps/scouts/src/components/boost/boost-options/boostOptions';
 
 /* Take an input like
  *    ['Stem - Engineering', 'Durable - Adaptability - Flexibility', 'Durable - Adaptability - Problem Solving', 'Durable - Lifelong Learning - Critical Thinking']
@@ -84,5 +85,23 @@ export const parseBadgeType = (category: string, badgeType: string) => {
         // SB example (custom): "ext:LCA_CUSTOM:Social Badge:CustomBoostType"
         // MB example (custom): "ext:LCA_CUSTOM:Merit Badge:Meditation"
         return constructCustomBoostType(category, badgeType);
+    }
+};
+
+export const mapCategoryToBoostEnum = (csvCategory: string) => {
+    switch (csvCategory) {
+        case 'Course':
+            return BoostCategoryOptionsEnum.learningHistory;
+        case 'Social Badge':
+            return BoostCategoryOptionsEnum.socialBadge;
+        case 'Achievement':
+            return BoostCategoryOptionsEnum.achievement;
+        case 'Experience':
+            return BoostCategoryOptionsEnum.workHistory;
+        case 'ID':
+            return BoostCategoryOptionsEnum.id;
+        default:
+            console.error(`Unexpected Badge Category: ${csvCategory}. Defaulting to achievement.`);
+            return BoostCategoryOptionsEnum.achievement;
     }
 };

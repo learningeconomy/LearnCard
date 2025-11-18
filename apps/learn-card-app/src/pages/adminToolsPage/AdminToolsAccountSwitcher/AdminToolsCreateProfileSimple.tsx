@@ -49,6 +49,7 @@ import { sendBoostCredential } from '../../../components/boost/boostHelpers';
 import { LCNBoostStatusEnum } from '../../../components/boost/boost';
 import { LearnCardIDCMSTabsEnum } from 'apps/learn-card-app/src/components/learncardID-CMS/LearnCardIDCMSTabs';
 import { useCreateChildAccount } from 'apps/learn-card-app/src/hooks/useCreateChildAccount';
+import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 
 const StateValidator = z.object({
     name: z
@@ -83,6 +84,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
     const queryClient = useQueryClient();
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { gate } = useLCNGatedAction();
     const isSwitchedProfile = switchedProfileStore?.get?.isSwitchedProfile();
 
     const { mutateAsync: createBoost } = useCreateBoost();
@@ -194,6 +196,9 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
     };
 
     const createManagedServiceProfile = async () => {
+        const { prompted } = await gate();
+        if (prompted) return;
+
         setIsLoading(true);
 
         try {

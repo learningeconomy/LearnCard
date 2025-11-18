@@ -8,21 +8,23 @@ type Alignment = {
     targetUrl: string;
     targetName: string;
     targetFramework: string;
-}
+};
 
 type AlignmentsBoxProps = {
     alignment: Alignment | Alignment[];
-    style: 'Certificate' | 'boost'; 
+    style: 'Certificate' | 'boost';
 };
 
-const AlignmentsBox:React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
+const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
     const [showInfo, setShowInfo] = useState(false);
     const alignmentText = `
     Alignments in your Open Badge credential link your achievement to established frameworks, standards, or competencies. 
     Each alignment shows how your boost directly relates to skills, knowledge areas, and professional standards that are recognized in your field.
     `;
 
-    const alignments = Array.isArray(alignment)
+    const isAlignmentsArray = Array.isArray(alignment);
+
+    const alignments = isAlignmentsArray
         ? alignment.map((object, index) => (
               <AlignmentRow
                   key={index}
@@ -39,20 +41,44 @@ const AlignmentsBox:React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
               />
           );
 
+    // Filter out Open Syllabus alignments
+    const filteredAlignments = isAlignmentsArray
+        ? alignment?.filter(al => {
+              if (
+                  al.targetFramework === 'Open Syllabus' ||
+                  al.targetFramework === 'Open Syllabus Field Classification'
+              ) {
+                  return false;
+              }
+              return true;
+          })
+        : alignment;
+
+    if (isAlignmentsArray && filteredAlignments?.length === 0) return null;
+
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom p-[15px] w-full">
             <div className="flex w-full items-center">
-                <h3 className={style === "Certificate" ? "text-[17px] text-grayscale-900 font-poppins" : "text-[22px] font-mouse"}>Alignments</h3>
-                <button className="ml-auto" onClick={() => setShowInfo(!showInfo)}>
+                <h3
+                    className={
+                        style === 'Certificate'
+                            ? 'text-[17px] text-grayscale-900 font-poppins'
+                            : 'text-[22px] font-mouse'
+                    }
+                >
+                    Alignments
+                </h3>
+                <button
+                    className="ml-auto"
+                    onClick={e => {
+                        e.stopPropagation();
+                        setShowInfo(!showInfo);
+                    }}
+                >
                     <InfoIcon color={showInfo ? '#6366F1' : undefined} />
                 </button>
             </div>
-            {showInfo && (
-                <InfoBox
-                    text={alignmentText}
-                    handleClose={() => setShowInfo(false)}
-                />
-            )}
+            {showInfo && <InfoBox text={alignmentText} handleClose={() => setShowInfo(false)} />}
             {alignments}
         </div>
     );

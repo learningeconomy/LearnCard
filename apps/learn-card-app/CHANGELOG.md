@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.95.0](https://github.com/WeLibraryOS/learncardapp/compare/learn-card-app@v1.94.0...learn-card-app@v1.95.0) (2025-11-14)
+
+
+### Features
+
+* [LC-1001] Age based signup flows FE ([#1004](https://github.com/WeLibraryOS/learncardapp/issues/1004)) ([7343748](https://github.com/WeLibraryOS/learncardapp/commit/734374816981d6857240d4466ab262f4ab008448))
+* [LC-1309][LC-1310] - Add Evidence Support + Attachments Backwards Compatibility  ([#1032](https://github.com/WeLibraryOS/learncardapp/issues/1032)) ([34697c5](https://github.com/WeLibraryOS/learncardapp/commit/34697c57115517d203d71269efd9ab816c5fe45c))
+* LC-1350 - OpenSyllabus Integration UI ([#1051](https://github.com/WeLibraryOS/learncardapp/issues/1051)) ([7982ae2](https://github.com/WeLibraryOS/learncardapp/commit/7982ae21b256dbf2238ff3c39c839e24d9ca2a5e))
+
+## [1.94.0](https://github.com/WeLibraryOS/learncardapp/compare/learn-card-app@v1.93.2...learn-card-app@v1.94.0) (2025-11-07)
+
+
+### Features
+
+* LC-1216 - Media Preview toggle ([#1026](https://github.com/WeLibraryOS/learncardapp/issues/1026)) ([acc5c06](https://github.com/WeLibraryOS/learncardapp/commit/acc5c0604d6d5a13aad3524dbb12612e9db1f379))
+* LC-1217 - add "New Indicator" per Credential ([#1050](https://github.com/WeLibraryOS/learncardapp/issues/1050)) ([203e0b7](https://github.com/WeLibraryOS/learncardapp/commit/203e0b79bf3c7b1dbb1376345410423940a6de88))
+
+## [1.93.2](https://github.com/WeLibraryOS/learncardapp/compare/learn-card-app@v1.93.1...learn-card-app@v1.93.2) (2025-11-03)
+
+
+### Bug Fixes
+
+* [LC-1303] Remove Seed from LocalStorage ([#974](https://github.com/WeLibraryOS/learncardapp/issues/974)) ([35252d9](https://github.com/WeLibraryOS/learncardapp/commit/35252d9692bdad4e43095845b24b0ec83b85ce27))
+* [LC-1425] Prompt unauthenticated users to create an account for gated flows ([#1059](https://github.com/WeLibraryOS/learncardapp/issues/1059)) ([f4d12c9](https://github.com/WeLibraryOS/learncardapp/commit/f4d12c90409b9c3b214b691b359280601421a9df))
+* [LC-1449] Fix error text from not showing up on Brave browser ([#1063](https://github.com/WeLibraryOS/learncardapp/issues/1063)) ([215a34e](https://github.com/WeLibraryOS/learncardapp/commit/215a34edf0a862bd85401f13742f10b5dcbe4f62))
+
 ## [1.93.1](https://github.com/WeLibraryOS/learncardapp/compare/learn-card-app@v1.93.0...learn-card-app@v1.93.1) (2025-10-31)
 
 

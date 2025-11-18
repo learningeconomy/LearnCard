@@ -3,6 +3,7 @@ import { initLearnCard } from '@learncard/init';
 import type { CredentialRecord } from '@learncard/types';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 import { getLCAPlugin } from '@welibraryos/lca-api-plugin';
+import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 
 import { getSQLitePlugin } from 'learn-card-base/plugins/sqlite';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -46,7 +47,6 @@ export const getBespokeLearnCard = async (
     const networkLearnCard = await initLearnCard({
         seed,
         network: network,
-        didkit,
         cloud: { url: cloudUrl, automaticallyAssociateDids: !Boolean(didWeb) },
         allowRemoteContexts: true,
         ...(didWeb && { didWeb }),
@@ -56,10 +56,12 @@ export const getBespokeLearnCard = async (
         await getLCAPlugin(networkLearnCard, apiEndpoint, Boolean(didWeb))
     );
 
+    const linkedClaimsLca = await lcaLearnCard.addPlugin(await getLinkedClaimsPlugin(lcaLearnCard));
+
     // Conditionally add SQLite plugin on native platforms only
     const sqliteAugmented = isPlatformWeb()
-        ? lcaLearnCard
-        : await lcaLearnCard.addPlugin(await getSQLitePlugin(lcaLearnCard));
+        ? linkedClaimsLca
+        : await linkedClaimsLca.addPlugin(await getSQLitePlugin(linkedClaimsLca));
 
     const bespokeLearnCard = sqliteAugmented as BespokeLearnCard;
 
@@ -111,4 +113,12 @@ export const hasLCNetworkDid = (userDid: string): boolean => {
     const regex = /did:web:network\.learncard\.com/;
 
     return regex.test(userDid); // return true || false
+};
+
+export const generatePK = async (str: string) => {
+    const msgUint8 = new TextEncoder().encode(str); // encode as (utf-8) Uint8Array
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8); // hash the message
+    const hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // convert bytes to hex string
+    return hashHex;
 };

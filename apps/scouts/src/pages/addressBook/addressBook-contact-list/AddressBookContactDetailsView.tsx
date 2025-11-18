@@ -11,7 +11,7 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import CopyStack from '../../../components/svgs/CopyStack';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import BoostSelectMenu from '../../../components/boost/boost-select-menu/BoostSelectMenu';
-import ModalLayout from '../../../layout/ModalLayout';
+import ModalLayout from 'apps/scouts/src/layout/ModalLayout';
 import { UserProfilePicture, useModal } from 'learn-card-base';
 import { createPortal } from 'react-dom';
 
@@ -22,7 +22,7 @@ import {
 
 import { LCNProfileConnectionStatusEnum, LCNProfile } from '@learncard/types';
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
-import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
+import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import useBoostModal from '../../../components/boost/hooks/useBoostModal';
 
 type AddressBookContactDetailsViewProps = {
@@ -87,7 +87,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     const { closeModal } = useModal();
     const sectionPortal = document.getElementById('section-cancel-portal');
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const checkIfUserInNetwork = useCheckIfUserInNetwork();
 
     const showConfirmationAlert = (
         header: string,
@@ -251,11 +251,8 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     {showBoostButton && (
                         <button
                             onClick={() => {
-                                if (!currentLCNUser && !currentLCNUserLoading) {
-                                    closeModal();
-                                    handlePresentJoinNetworkModal();
-                                    return;
-                                }
+                                closeModal();
+                                if (!checkIfUserInNetwork()) return;
 
                                 if (currentLCNUser) {
                                     handlePresentBoostModal();
@@ -312,6 +309,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                             onClick={e => {
                                 e.stopPropagation();
                                 closeModal();
+                                if (!checkIfUserInNetwork()) return;
                                 showConfirmationAlert(
                                     'Are you sure you want to block this user?',
                                     async () => {

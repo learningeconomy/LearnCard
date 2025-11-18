@@ -10,6 +10,7 @@ import {
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
+import { useGetCurrentUserTroopIdsResolved } from 'learn-card-base';
 
 const SideMenuSecondaryLinks: React.FC<{
     activeTab: string;
@@ -17,6 +18,9 @@ const SideMenuSecondaryLinks: React.FC<{
     branding: BrandingEnum;
 }> = ({ activeTab, setActiveTab, branding = BrandingEnum.scoutPass }) => {
     const isLoggedIn = useIsLoggedIn();
+    const { data: myTroopIdData, isLoading: troopIdDataLoading } =
+        useGetCurrentUserTroopIdsResolved();
+    const isAdmin = myTroopIdData?.isNationalAdmin || myTroopIdData?.isScoutGlobalAdmin;
 
     if (!isLoggedIn) return <IonMenu contentId="main" />;
 
@@ -30,6 +34,11 @@ const SideMenuSecondaryLinks: React.FC<{
     const sideMenuLinks = sidemenuLinks?.[branding];
 
     const secondaryLinks = sideMenuLinks?.map(link => {
+        if (link.name === 'Skills' && !isAdmin) {
+            // Only show skills if the user is an admin
+            return null;
+        }
+
         const IconComponent = link.IconComponent;
 
         const isWalletPath = link.path === '/wallet';

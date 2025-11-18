@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import queryString from 'query-string';
-import { useHistory, useLocation, Link } from 'react-router-dom';
+import { useHistory, useLocation, Link, useParams } from 'react-router-dom';
 import { BrandingEnum, CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
 import { IonContent, useIonModal, IonPage } from '@ionic/react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
@@ -20,6 +20,7 @@ import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
 import ContactsIcon from '../../assets/icons/ContactsIcon';
 import TroopsIcon from '../../assets/icons/TroopsIcon';
 import AlertsIcon from '../../assets/icons/AlertsIcon';
+import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
 
 type CapacitorBundle = {
     version: string;
@@ -31,6 +32,8 @@ const LaunchPad: React.FC = () => {
     const { search } = useLocation();
     const flags = useFlags();
     const { connectTo, challenge } = queryString.parse(search);
+    const { frameworkId, skillId } = useParams<{ frameworkId?: string; skillId?: string }>();
+
     const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
@@ -49,6 +52,15 @@ const LaunchPad: React.FC = () => {
     const isAndroid = /android/i.test(navigator.userAgent);
 
     const unreadCount = unreadNotifications?.notifications?.length || 0;
+
+    useEffect(() => {
+        if (frameworkId && skillId) {
+            newModal(<ViewAlignmentInfo frameworkId={frameworkId} skillId={skillId} />, undefined, {
+                desktop: ModalTypes.FullScreen,
+                mobile: ModalTypes.FullScreen,
+            });
+        }
+    }, []);
 
     const handleUpdateAvailable = async (res: { bundle: CapacitorBundle }) => {
         try {

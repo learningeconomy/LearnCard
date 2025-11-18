@@ -10,7 +10,10 @@ import { getVideoMetadata, VideoMetadata } from 'learn-card-base/helpers/video.h
 import { BoostMediaOptionsEnum } from '../boost/boost';
 import { boostCategoryOptions } from '../boost/boostOptions/boostOptions';
 import { CredentialCategoryEnum } from 'learn-card-base/types/credentials';
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getDefaultCategoryForCredential,
+    getExistingAttachmentsOrEvidence,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 type CredentialBadgeProps = {
     credential: VC;
@@ -38,7 +41,10 @@ export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
 
     const _colorOverride = color ?? 'gray-500';
 
-    const mediaAttachments = credential.attachments ?? [];
+    const mediaAttachments = getExistingAttachmentsOrEvidence(
+        credential?.attachments || [],
+        credential?.evidence || []
+    );
     const photoAttachments = mediaAttachments.filter(a => a.type === BoostMediaOptionsEnum.photo);
     const documentAttachment = mediaAttachments.find(
         a => a.type === BoostMediaOptionsEnum.document

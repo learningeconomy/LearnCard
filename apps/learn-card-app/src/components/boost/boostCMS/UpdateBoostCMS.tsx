@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory, useLocation } from 'react-router';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import {
     IonCol,
@@ -58,7 +58,10 @@ import {
     sendBoostCredential,
     updateBoost,
 } from '../boostHelpers';
-import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getExistingAttachmentsOrEvidence,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
 import useWallet from 'learn-card-base/hooks/useWallet';
@@ -150,8 +153,13 @@ const UpdateBoostCMS: React.FC = () => {
             if (boostWrapper?.status === LCNBoostStatusEnum.draft) setIsEditDisabled(false);
             else if (boostWrapper?.status === LCNBoostStatusEnum.live) setIsEditDisabled(true);
 
-            const boostVcAttachments = _boostVC?.attachments
-                ? boostVC?.attachments?.map((attachment: BoostCMSMediaAttachment) => {
+            const existingAttachmentsOrEvidence = getExistingAttachmentsOrEvidence(
+                _boostVC?.attachments,
+                _boostVC?.evidence
+            );
+
+            const boostVcAttachments = existingAttachmentsOrEvidence
+                ? existingAttachmentsOrEvidence?.map((attachment: BoostCMSMediaAttachment) => {
                       return {
                           title: attachment?.title,
                           url: attachment?.url,
@@ -178,6 +186,7 @@ const UpdateBoostCMS: React.FC = () => {
                         displayType:
                             _boostVC?.display?.displayType ??
                             getDefaultDisplayType(_boostCategoryType),
+                        previewType: _boostVC?.display?.previewType ?? 'default',
 
                         badgeThumbnail: _boostVC?.image,
                         backgroundImage: _boostVC?.display?.backgroundImage,
@@ -599,7 +608,9 @@ const UpdateBoostCMS: React.FC = () => {
     const [presentModal, dissmissModal] = useIonModal(BoostPreview, {
         credential: getBoostCredentialPreview(state),
         categoryType: state?.basicInfo?.type,
-        handleCloseModal: () => dissmissModal(),
+        handleCloseModal: () => {
+            dissmissModal();
+        },
         customThumbComponent: previewDisplay,
         customBodyCardComponent:
             state?.issueTo?.length > 0 ? (
@@ -627,6 +638,8 @@ const UpdateBoostCMS: React.FC = () => {
         ),
         boostPreviewWrapperCustomClass: state?.issueTo?.length > 0 ? '' : 'boost-preview-wrapper',
         skipVerification: true,
+        displayType: state?.appearance?.displayType,
+        previewType: state?.appearance?.previewType,
     });
 
     //

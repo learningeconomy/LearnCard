@@ -325,6 +325,12 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
             IconComponent: ScoutsPledge2,
             path: '/troops',
         },
+        {
+            id: 13,
+            name: 'Skills',
+            IconComponent: SkillsTwoTonedIcon,
+            path: '/skills',
+        },
     ],
 };
 

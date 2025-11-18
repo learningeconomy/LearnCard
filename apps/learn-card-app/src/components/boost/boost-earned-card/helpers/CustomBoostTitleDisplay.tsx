@@ -2,13 +2,9 @@ import React from 'react';
 
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 
-import {
-    DisplayTypeEnum,
-    getAttachmentTypeIcon,
-    getMediaAttachments,
-    BoostMediaOptionsEnum,
-} from 'learn-card-base';
+import { DisplayTypeEnum, getAttachmentTypeIcon, BoostMediaOptionsEnum } from 'learn-card-base';
 import { VC } from '@learncard/types';
+import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 export const CustomBoostTitleDisplay: React.FC<{
     displayType?: DisplayTypeEnum;
@@ -19,6 +15,8 @@ export const CustomBoostTitleDisplay: React.FC<{
     credential?: VC;
     mediaTitleContainerClassName?: string;
     isEarnedBoost?: boolean;
+    showNewItemIndicator?: boolean;
+    indicatorColor?: string;
 }> = ({
     displayType,
     showSkeleton,
@@ -28,6 +26,8 @@ export const CustomBoostTitleDisplay: React.FC<{
     credential,
     mediaTitleContainerClassName,
     isEarnedBoost = false,
+    showNewItemIndicator = false,
+    indicatorColor = '',
 }) => {
     const attachments = credential?.attachments ?? [];
     const attachment = attachments?.[0];
@@ -35,6 +35,12 @@ export const CustomBoostTitleDisplay: React.FC<{
         attachment?.type as BoostMediaOptionsEnum,
         attachment?.fileType
     );
+
+    const newItemIndicator = showNewItemIndicator ? (
+        <span className="inline-block mr-[2px]">
+            <DotIcon className={`text-${indicatorColor}`} />
+        </span>
+    ) : null;
 
     if (showSkeleton) {
         return (
@@ -60,7 +66,7 @@ export const CustomBoostTitleDisplay: React.FC<{
                 <span
                     className={`w-full text-center text-${textColor} text-[12px] font-[600] uppercase font-notoSans px-[7px] line-clamp-1`}
                 >
-                    {formattedDisplayType}
+                    {newItemIndicator} {formattedDisplayType}
                 </span>
                 {/* <div
                     className={`w-full flex items-center justify-center text-grayscale-800 text-[12px] font-[600] font-notoSans`}
@@ -82,7 +88,7 @@ export const CustomBoostTitleDisplay: React.FC<{
                 <span
                     className={`w-full text-center text-${textColor} text-[12px] font-[600] uppercase font-notoSans px-[7px] line-clamp-1`}
                 >
-                    {formattedDisplayType}
+                    {newItemIndicator} {formattedDisplayType}
                 </span>
             </div>
         );
@@ -96,7 +102,7 @@ export const CustomBoostTitleDisplay: React.FC<{
             <span
                 className={`w-full text-center text-${textColor} text-[12px] font-[600] uppercase font-notoSans px-[7px] line-clamp-1`}
             >
-                {formattedDisplayType}
+                {newItemIndicator} {formattedDisplayType}
             </span>
         </div>
     );

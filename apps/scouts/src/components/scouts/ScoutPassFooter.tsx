@@ -4,6 +4,7 @@ import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import ShareModal from '../share/ShareModal';
 import { useIonModal } from '@ionic/react';
+import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
 
 type ScoutPassFooterProps = {
     hideShare?: boolean;
@@ -19,8 +20,11 @@ const ScoutPassFooter: React.FC<ScoutPassFooterProps> = ({
     buttonAction,
 }) => {
     const { newModal, closeModal } = useModal();
+    const checkIfUserInNetwork = useCheckIfUserInNetwork();
 
     const handleShare = () => {
+        if (!checkIfUserInNetwork()) return;
+
         newModal(
             <ShareModal handleCloseModal={closeModal} />,
             { sectionClassName: '!max-w-[400px]' },

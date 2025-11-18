@@ -1,15 +1,14 @@
 import { useHistory } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useTrustedAppsRegistry } from 'learn-card-base/hooks/useRegistry';
-import useJoinLCNetworkModal from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
 import useConsentFlow from '../consentFlow/useConsentFlow';
+import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 
-import { LaunchPadAppListItem, useGetConnections, useIsCurrentUserLCNUser } from 'learn-card-base';
+import { LaunchPadAppListItem, useGetConnections } from 'learn-card-base';
 
 export const useLaunchPadApps = () => {
     const history = useHistory();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const { gate } = useLCNGatedAction();
 
     const { data: trustedAppRegistry } = useTrustedAppsRegistry();
     const { data: connections, isLoading: loadingConnections } = useGetConnections();
@@ -78,11 +77,9 @@ export const useLaunchPadApps = () => {
                     img: app?.app?.icon ?? '',
                     isConnected,
                     displayInLaunchPad: app?.app?.publicizeOnLaunchPad,
-                    handleConnect: () => {
-                        if (!currentLCNUser && !currentLCNUserLoading) {
-                            handlePresentJoinNetworkModal();
-                            return;
-                        }
+                    handleConnect: async () => {
+                        const { prompted } = await gate();
+                        if (prompted) return;
 
                         if (isSmartResume) {
                             // special handling for SmartResume

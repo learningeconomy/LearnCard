@@ -28,8 +28,8 @@ const Routes = lazyWithRetry(() =>
     import('../../Routes').then(module => ({ default: module.Routes }))
 );
 
-import { useJoinLCNetworkModal } from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
-import { useGetUnreadUserNotifications, useIsCurrentUserLCNUser } from 'learn-card-base';
+import { useGetUnreadUserNotifications } from 'learn-card-base';
+import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons';
@@ -52,31 +52,26 @@ const MobileNavBar: React.FC = () => {
     const isWalletSyncing = walletStore.useTracked.syncState();
 
     const { newModal } = useModal();
-
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
     const { data } = useGetUnreadUserNotifications();
 
     const navlinks = theme?.navbar ?? [];
     const unreadCount = (data?.notifications?.length ?? 0) > 0 ? data?.notifications.length : null;
 
     const handleBoostButton = async () => {
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
-        if (currentLCNUser) {
-            newModal(
-                <AddToLearnCardMenu />,
-                {
-                    sectionClassName: '!max-w-[500px]',
-                },
-                {
-                    desktop: ModalTypes.Cancel,
-                    mobile: ModalTypes.Cancel,
-                }
-            );
-        }
+        const { prompted } = await gate();
+        if (prompted) return;
+
+        newModal(
+            <AddToLearnCardMenu />,
+            {
+                sectionClassName: '!max-w-[500px]',
+            },
+            {
+                desktop: ModalTypes.Cancel,
+                mobile: ModalTypes.Cancel,
+            }
+        );
     };
 
     const activePathname = location.pathname;

@@ -23,6 +23,8 @@ import {
 import { boostCategoryOptions } from './boostOptions/boostOptions';
 import CredentialMediaBadge from '../CredentialBadge/CredentialMediaBadge';
 import { BoostMediaOptionsEnum } from './boost';
+import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
+import DotIcon from '../../svgs/DotIcon';
 
 type BoostListItemProps = {
     title?: string;
@@ -37,6 +39,8 @@ type BoostListItemProps = {
     displayType?: string;
     thumbImgSrc?: string;
     managedBoost?: boolean;
+    uri?: string;
+    indicatorColor?: string;
 };
 
 const DEFAULT_BG_COLOR = 'bg-white';
@@ -56,7 +60,13 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     displayType,
     thumbImgSrc,
     managedBoost,
+    uri,
+    indicatorColor,
 }) => {
+    const newCreds = newCredsStore.use.newCreds();
+    const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
+    const showNewItemIndicator = newCredsForCategory?.includes(uri) ?? false;
+
     const achievementType = useMemo(() => getAchievementType(credential), [credential]);
     const boostTypeDisplayName = useMemo(
         () => getAchievementTypeDisplayText(achievementType, categoryType),
@@ -152,6 +162,12 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         );
     }
 
+    const newItemIndicator = showNewItemIndicator ? (
+        <span className="inline-block mr-[2px]">
+            <DotIcon className={`text-${indicatorColor}`} />
+        </span>
+    ) : null;
+
     return (
         <IonRow
             className={`${
@@ -189,14 +205,14 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
 
             <div
                 className={`${
-                    isMediaDisplay ? 'p-[8px] ml-2' : ''
+                    isMediaDisplay ? '' : ''
                 } flex flex-col items-start text-[14px] font-poppins flex-1 min-w-0`}
             >
                 {isMediaDisplay && (
                     <>
                         {attachmentFileName ? (
                             <span className="text-grayscale-700 font-semibold">
-                                {attachmentTitle}
+                                {newItemIndicator} {attachmentTitle}
                             </span>
                         ) : (
                             <a
@@ -206,7 +222,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                                 rel="noopener noreferrer"
                                 className="text-grayscale-900 font-semibold truncate w-full"
                             >
-                                {attachmentUrl}
+                                {newItemIndicator} {attachmentUrl}
                             </a>
                         )}
                     </>
@@ -217,7 +233,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                             {title}
                         </h3>
                         <span className="text-grayscale-800 font-normal">
-                            {boostTypeDisplayName}
+                            {newItemIndicator} {boostTypeDisplayName}
                         </span>
                     </>
                 )}
@@ -227,7 +243,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                         <CredentialVerificationDisplay
                             managedBoost={managedBoost}
                             credential={credential}
-                            iconClassName="w-[15px] h-[15px]  z-50"
+                            iconClassName="w-[20px] h-[20px] min-w-[20px] min-h-[20px] mr-1 z-50"
                         />
                     )}
                     {issuerAndDateText}

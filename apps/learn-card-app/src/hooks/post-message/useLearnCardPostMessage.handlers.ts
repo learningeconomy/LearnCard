@@ -26,9 +26,10 @@ export const createRequestIdentityHandler = (dependencies: {
     isUserAuthenticated: () => boolean;
     mintDelegatedToken: (challenge?: string) => Promise<string>;
     getUserInfo: () => Promise<{ did: string; profile: any }>;
+    showLoginConsentModal: (origin: string, appName?: string) => Promise<boolean>;
 }): ActionHandler<'REQUEST_IDENTITY'> => {
-    return async ({ payload }) => {
-        const { isUserAuthenticated, mintDelegatedToken, getUserInfo } = dependencies;
+    return async ({ payload, origin }) => {
+        const { isUserAuthenticated, mintDelegatedToken, getUserInfo, showLoginConsentModal } = dependencies;
 
         console.log('🚀 isUserAuthenticated', isUserAuthenticated);
         // Check if user is logged in
@@ -43,6 +44,19 @@ export const createRequestIdentityHandler = (dependencies: {
         }
 
         try {
+            // Check if user has consented to share identity with this origin
+            const consented = await showLoginConsentModal(origin, payload.appName);
+
+            if (!consented) {
+                return {
+                    success: false,
+                    error: {
+                        code: 'USER_REJECTED',
+                        message: 'User rejected identity sharing',
+                    },
+                };
+            }
+
             console.log('🚀 mintDelegatedToken', mintDelegatedToken);
             // Mint a short-lived JWT token
             const token = await mintDelegatedToken(payload.challenge);
@@ -398,6 +412,8 @@ export function createActionHandlers(dependencies: {
     // Identity
     isUserAuthenticated: () => boolean;
     mintDelegatedToken: (challenge?: string) => Promise<string>;
+    getUserInfo: () => Promise<{ did: string; profile: any }>;
+    showLoginConsentModal: (origin: string, appName?: string) => Promise<boolean>;
 
     // Consent
     showConsentModal: (contractUri: string) => Promise<boolean>;

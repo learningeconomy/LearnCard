@@ -51,6 +51,7 @@ export interface LearnCardResponse {
 
 export interface RequestIdentityPayload {
     challenge?: string;
+    appName?: string; // Optional app name for consent modal
 }
 
 export interface RequestConsentPayload {

@@ -41,6 +41,8 @@ type ShareBoostLinkProps = {
     customClassName?: string;
     categoryType: string;
     onBackButtonClick?: () => void;
+    hideLinkedIn?: boolean;
+    isEndorsementRequest?: boolean;
 };
 
 const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
@@ -50,6 +52,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     handleClose,
     categoryType,
     onBackButtonClick,
+    hideLinkedIn = false,
+    isEndorsementRequest = false,
 }) => {
     const { presentToast } = useToast();
     const [shareLink, setShareLink] = useState<string | undefined>('');
@@ -144,7 +148,23 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
             { credential: boost, credentialUri: boostUri as string },
             {
                 async onSuccess(data) {
-                    setShareLink(data?.link);
+                    if (isEndorsementRequest) {
+                        const url = new URL(data?.link);
+                        const params = new URLSearchParams(url.search);
+
+                        const host = url.host;
+                        const uri = params.get('uri');
+                        const seed = params.get('seed');
+                        const pin = params.get('pin');
+
+                        // generate endorsement request share link
+                        setShareLink(
+                            `https://${host}/?uri=${uri}&seed=${seed}&pin=${pin}&endorsementRequest=true`
+                        );
+                    } else {
+                        setShareLink(data?.link);
+                    }
+
                     logAnalyticsEvent('generate_share_link', {
                         category: categoryType,
                         boostType: achievementType,
@@ -276,7 +296,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                 </button>
                             </div>
                         )}
-                        {!isLinkLoading && shareLink && shareLink?.length > 0 ? (
+
+                        {!isLinkLoading && shareLink && shareLink?.length > 0 && !hideLinkedIn ? (
                             <div className="w-full bg-white px-4 py-3">
                                 <a
                                     href={generateLinkedInUrl()}
@@ -295,7 +316,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                 </a>
                             </div>
                         ) : (
-                            <div className="w-full bg-white px-4 py-3">
+                            <div className={hideLinkedIn ? 'hidden' : 'w-full bg-white px-4 py-3'}>
                                 <button
                                     disabled
                                     className="flex items-center justify-center w-full bg-grayscale-100 text-grayscale-400 font-semibold py-2 px-4 rounded-full border-2 border-grayscale-200 cursor-not-allowed"

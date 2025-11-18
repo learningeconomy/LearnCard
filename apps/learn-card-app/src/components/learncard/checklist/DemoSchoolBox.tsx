@@ -41,9 +41,6 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const { closeAllModals } = useModal();
     const currentUser = useCurrentUser()!!!!!!!!!;
 
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-
     const demoContractUri = flags.demoContractUri;
     const { data: contract } = useContract(demoContractUri);
     const { hasConsented, consentedContract } = useConsentFlowByUri(demoContractUri);
@@ -121,11 +118,6 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     };
 
     const handleStartDemoClick = async () => {
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
-
         const confirmed = await confirm({
             text: 'Are you sure you want to sync with the demo school? This will import multiple sample credentials, but you can easily delete them later.',
             confirmText: <span className="mr-[30px]">Yes</span>,

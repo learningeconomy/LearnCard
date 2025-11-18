@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.89.3](https://github.com/WeLibraryOS/learncardapp/compare/scouts@v1.89.2...scouts@v1.89.3) (2025-11-14)
+
+## [1.89.2](https://github.com/WeLibraryOS/learncardapp/compare/scouts@v1.89.1...scouts@v1.89.2) (2025-11-07)
+
+
+### Bug Fixes
+
+* [LC-1413] [LC-1456] Fix Troops page share error and Boost CMS white screen error ([#1065](https://github.com/WeLibraryOS/learncardapp/issues/1065)) ([a602850](https://github.com/WeLibraryOS/learncardapp/commit/a60285076337cf83b607af1f1f174e78d3f4a9ed))
+
+## [1.89.1](https://github.com/WeLibraryOS/learncardapp/compare/scouts@v1.89.0...scouts@v1.89.1) (2025-11-03)
+
+
+### Bug Fixes
+
+* [LC-1303] Remove Seed from LocalStorage ([#974](https://github.com/WeLibraryOS/learncardapp/issues/974)) ([35252d9](https://github.com/WeLibraryOS/learncardapp/commit/35252d9692bdad4e43095845b24b0ec83b85ce27))
+* [LC-1425] Prompt unauthenticated users to create an account for gated flows ([#1059](https://github.com/WeLibraryOS/learncardapp/issues/1059)) ([f4d12c9](https://github.com/WeLibraryOS/learncardapp/commit/f4d12c90409b9c3b214b691b359280601421a9df))
+* [LC-1449] Fix error text from not showing up on Brave browser ([#1063](https://github.com/WeLibraryOS/learncardapp/issues/1063)) ([215a34e](https://github.com/WeLibraryOS/learncardapp/commit/215a34edf0a862bd85401f13742f10b5dcbe4f62))
+
 ## [1.89.0](https://github.com/WeLibraryOS/learncardapp/compare/scouts@v1.88.0...scouts@v1.89.0) (2025-10-31)
 
 

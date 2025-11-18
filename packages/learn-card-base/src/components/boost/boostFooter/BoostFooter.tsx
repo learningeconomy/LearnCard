@@ -46,7 +46,9 @@ const BoostFooter: React.FC<BoostFooterProps> = props => {
             <div className="max-w-[600px] mx-auto flex gap-[10px]">
                 {handleClose && (propsCount === 2 || isIdClaim || useFullCloseButton) && (
                     <button
-                        onClick={() => handleClose?.()}
+                        onClick={() => {
+                            handleClose?.();
+                        }}
                         className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom "
                     >
                         Close

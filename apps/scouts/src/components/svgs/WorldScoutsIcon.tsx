@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const WorldScoutIcon: React.FC<{ className?: string; fill: string }> = ({
+export const WorldScoutIcon: React.FC<{ className?: string; fill?: string }> = ({
     className,
     fill = '#248737',
 }) => {

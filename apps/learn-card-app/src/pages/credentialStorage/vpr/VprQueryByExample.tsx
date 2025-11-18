@@ -72,7 +72,9 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
     ]);
 
     const credentialQuery =
-        event?.credentialRequestOptions?.web?.VerifiablePresentation?.query || verifiablePresentationRequest?.query || [];
+        event?.credentialRequestOptions?.web?.VerifiablePresentation?.query ||
+        verifiablePresentationRequest?.query ||
+        [];
 
     const allRecords = records?.pages?.flatMap(page => page?.records) ?? [];
 
@@ -163,7 +165,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
         }
         if (onReject) {
             onReject();
-        }   
+        }
     };
 
     useEffect(() => {

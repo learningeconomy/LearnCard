@@ -46,11 +46,14 @@ const ShareBoostLink: React.FC<{
 
     const { mutate: shareEarnedBoost, loading: isLinkLoading } = useShareBoostMutation();
 
-    const {
-        IconComponent,
-        CategoryImage,
-        title: categoryTitle,
-    } = boostCategoryOptions?.[categoryType ?? 'Achievement'];
+    const categoryConfig =
+        boostCategoryOptions?.[categoryType as string] ??
+        boostCategoryOptions[BoostCategoryOptionsEnum.achievement];
+
+    const IconComponent =
+        (categoryConfig?.IconComponent as React.ElementType) || (() => null);
+    const CategoryImage = categoryConfig?.CategoryImage as string;
+    const categoryTitle = categoryConfig?.title;
 
     const isBoost = boost && isBoostCredential(boost);
     const cred = boost && unwrapBoostCredential(boost);
@@ -275,7 +278,7 @@ const ShareBoostLink: React.FC<{
                                 <CredentialBadge
                                     achievementType={achievementType}
                                     fallbackCircleText={title}
-                                    boostType={categoryType as BoostCategoryOptionsEnum}
+                                    boostType={categoryConfig?.value as BoostCategoryOptionsEnum}
                                     badgeThumbnail={badgeThumbnail}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                     badgeCircleCustomClass="w-[116px] h-[116px] mt-1"

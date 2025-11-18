@@ -4,6 +4,7 @@ import {
     useQueryClient,
     useMutation,
     useInfiniteQuery,
+    UseQueryResult,
 } from '@tanstack/react-query';
 import {
     BoostAndVCType,
@@ -30,7 +31,7 @@ import {
     IndexMetadata,
 } from 'learn-card-base/types/credentials';
 import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
-import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import { getBespokeLearnCard, generatePK } from 'learn-card-base/helpers/walletHelpers';
 
 /** ===============================
  *      BOOST QUERIES
@@ -98,6 +99,29 @@ export const useGetBoost = (uri: string) => {
             }
         },
         enabled: !!uri,
+    });
+};
+
+/**
+ * Query: Get multiple boosts by their URIs.
+ * Uses useQueries to fetch multiple boosts in parallel while respecting Rules of Hooks.
+ */
+export const useGetMultipleBoosts = (uris: string[]) => {
+    const { initWallet } = useWallet();
+    return useQueries({
+        queries: uris.map(uri => ({
+            queryKey: ['useGetBoost', uri],
+            queryFn: async () => {
+                try {
+                    const wallet = await initWallet();
+                    const boost = await wallet.invoke.getBoost(uri);
+                    return boost;
+                } catch (error: any) {
+                    throw error;
+                }
+            },
+            enabled: !!uri,
+        })),
     });
 };
 
@@ -645,25 +669,68 @@ export const useIsCurrentUserLCNUser = () => {
     };
 };
 
-export const useGetProfile = (profileId?: string, enabled = true) => {
+export const useGetProfile = (
+    profileId?: string,
+    enabled = true
+): UseQueryResult<LCNProfile | null> => {
     const { initWallet } = useWallet();
+    const isLoggedIn = useIsLoggedIn();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<LCNProfile | null>({
-        enabled,
+        enabled: enabled && (!!profileId || isLoggedIn),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
-        queryFn: async () => {
-            const wallet = await initWallet();
-
-            if (wallet) {
-                const data = await wallet.invoke.getProfile(profileId);
-                return data ?? null;
+        queryFn: async (): Promise<LCNProfile | null> => {
+            // If user is logged in, try to use the wallet
+            if (isLoggedIn) {
+                try {
+                    const wallet = await initWallet();
+                    if (wallet) {
+                        if (profileId) {
+                            const data = await wallet.invoke.getProfile(profileId);
+                            return data ?? null;
+                        } else {
+                            const data = await wallet.invoke.getProfile();
+                            return data ?? null;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to initialize wallet, falling back to public API', error);
+                }
             }
 
-            // fallback to fetch if could not get wallet
-            const response = await fetch(`${LEARNCARD_NETWORK_API_URL}/profile/${profileId}`);
-            const data = await response.json();
-            return data ?? null;
+            if (!isLoggedIn && profileId) {
+                // Fallback to dummy wallet
+                try {
+                    const dummyString = 'demo@learningeconomy.io';
+                    const pk = await generatePK(dummyString);
+                    const wallet = await initWallet(pk);
+                    if (wallet) {
+                        const data = await wallet.invoke.getProfile(profileId);
+                        return data ?? null;
+                    }
+                } catch (error) {
+                    console.warn(
+                        'Failed to initialize dummy wallet, falling back to public API',
+                        error
+                    );
+                }
+            }
+
+            // Fallback to public API if not logged in or wallet init fails
+            if (profileId) {
+                try {
+                    const response = await fetch(`${LEARNCARD_NETWORK_API_URL}/profile/${profileId}`);
+                    if (!response.ok) throw new Error('Failed to fetch profile');
+                    const data = await response.json();
+                    return data ?? null;
+                } catch (error) {
+                    console.error('Failed to fetch profile from public API', error);
+                    return null;
+                }
+            }
+
+            return null;
         },
     });
 };
@@ -778,5 +845,171 @@ export const useGetDid = (method?: string, enabled = true) => {
 
             return wallet.id.did(method);
         },
+    });
+};
+
+/** ===============================
+ *   SKILL FRAMEWORK QUERIES
+ *  =============================== */
+
+/**
+ * Query: List skill frameworks managed by the current user
+ */
+export const useListMySkillFrameworks = () => {
+    const { initWallet } = useWallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+
+    return useQuery({
+        queryKey: ['listMySkillFrameworks', switchedDid ?? ''],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.listMySkillFrameworks();
+        },
+    });
+};
+
+/**
+ * Query: Get a skill framework by ID with its skills
+ */
+export const useGetSkillFrameworkById = (
+    frameworkId: string,
+    options?: { limit?: number; childrenLimit?: number }
+) => {
+    const { initWallet } = useWallet();
+
+    return useQuery({
+        queryKey: ['getSkillFrameworkById', frameworkId, options],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.getSkillFrameworkById(frameworkId, options);
+        },
+        enabled: !!frameworkId,
+    });
+};
+
+/**
+ * Query: Search skills within a framework
+ */
+export const useSearchFrameworkSkills = (
+    frameworkId: string,
+    query: any,
+    options?: { limit?: number }
+) => {
+    const { initWallet } = useWallet();
+
+    return useQuery({
+        queryKey: ['searchFrameworkSkills', frameworkId, query, options],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.searchFrameworkSkills(frameworkId, query, options);
+        },
+        enabled: !!frameworkId && !!query,
+    });
+};
+
+export const useGetSkill = (frameworkId: string, skillId: string) => {
+    const { initWallet } = useWallet();
+
+    return useQuery({
+        queryKey: ['getSkill', frameworkId, skillId],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.getSkill(frameworkId, skillId);
+        },
+        enabled: !!frameworkId && !!skillId,
+    });
+};
+
+export const useCountSkillsInFramework = (
+    frameworkId: string,
+    skillId?: string,
+    options?: { recursive?: boolean; onlyCountCompetencies?: boolean }
+) => {
+    const { initWallet } = useWallet();
+
+    const { recursive = true, onlyCountCompetencies = true } = options ?? {};
+
+    return useQuery({
+        queryKey: [
+            'countSkillsInFramework',
+            frameworkId,
+            skillId,
+            recursive,
+            onlyCountCompetencies,
+        ],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.countSkills({
+                frameworkId,
+                skillId,
+                recursive,
+                onlyCountCompetencies,
+            });
+        },
+        enabled: !!frameworkId,
+    });
+};
+
+export const useGetSkillChildren = (frameworkId: string, skillId: string) => {
+    const { initWallet } = useWallet();
+
+    return useQuery({
+        queryKey: ['getSkillChildren', frameworkId, skillId],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.getSkillChildren(frameworkId, skillId);
+        },
+        enabled: !!frameworkId && !!skillId,
+    });
+};
+
+export const useGetSkillPath = (frameworkId: string, skillId: string) => {
+    const { initWallet } = useWallet();
+
+    return useQuery({
+        queryKey: ['getSkillPath', frameworkId, skillId],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.getSkillPath({ frameworkId, skillId });
+        },
+        enabled: !!frameworkId && !!skillId,
+    });
+};
+
+export const useGetSkillFrameworkAdmins = (
+    frameworkId: string,
+    options?: { enabled?: boolean }
+) => {
+    const { initWallet } = useWallet();
+    const { enabled = true } = options ?? {};
+
+    return useQuery({
+        queryKey: ['getSkillFrameworkAdmins', frameworkId],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.getSkillFrameworkAdmins(frameworkId);
+        },
+        enabled: !!frameworkId && enabled,
+    });
+};
+
+export const useGetBoostsThatUseFramework = (
+    frameworkId: string,
+    query: any,
+    options?: { enabled?: boolean }
+) => {
+    const { initWallet } = useWallet();
+    const { enabled = true } = options ?? {};
+
+    return useQuery({
+        queryKey: ['getBoostsThatUseFramework', frameworkId, query],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.getBoostsThatUseFramework(
+                frameworkId,
+                query ? { query } : undefined
+            );
+        },
+        enabled: !!frameworkId && enabled,
     });
 };

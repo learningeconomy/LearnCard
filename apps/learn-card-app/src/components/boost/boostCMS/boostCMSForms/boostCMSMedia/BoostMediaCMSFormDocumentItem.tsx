@@ -1,12 +1,14 @@
 import React from 'react';
-import { useIonModal } from '@ionic/react';
-import { BoostMediaOptionsEnum, BoostCMSMediaAttachment } from '../../../boost';
+
+import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
-import { CreateMediaAttachmentFormModal } from './CreateMediaAttachmentForm';
+
+import { BoostMediaOptionsEnum } from '../../../boost';
 import { BoostMediaCMSFormItemProps } from './BoostCMSMediaForm';
 
+import { ModalTypes, useModal } from 'learn-card-base';
 import useTheme from '../../../../../theme/hooks/useTheme';
 
 const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
@@ -16,58 +18,40 @@ const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
     state,
     setState,
 }) => {
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
+
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const [presentEditSheetModal, dismissEditSheetModal] = useIonModal(
-        CreateMediaAttachmentFormModal,
-        {
-            initialState: state,
-            initialMedia: media,
-            initialIndex: index,
-            setParentState: setState,
-            initialActiveMediaType: BoostMediaOptionsEnum.document,
-            handleCloseModal: () => dismissEditSheetModal(),
-            showCloseButton: false,
-            hideBackButton: true,
-            title: (
-                <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                    Media Attachment
-                </p>
-            ),
-        }
-    );
-
-    const [presentCenterModal, dismissCenterModal] = useIonModal(CreateMediaAttachmentFormModal, {
-        initialState: state,
-        initialMedia: media,
-        initialIndex: index,
-        setParentState: setState,
-        hideBackButton: true,
-        initialActiveMediaType: BoostMediaOptionsEnum.document,
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: false,
-        title: (
-            <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                Media Attachment
-            </p>
-        ),
-    });
-
-    const handleEditMobile = () => {
-        presentEditSheetModal({
-            cssClass: 'mobile-modal user-options-modal',
-            initialBreakpoint: 0.9,
-            handleBehavior: 'none',
-        });
-    };
-
-    const handleEditDesktop = () => {
-        presentCenterModal({
-            cssClass: 'center-modal user-options-modal',
-            backdropDismiss: false,
-            showBackdrop: false,
-        });
+    const handleEdit = () => {
+        newModal(
+            <div className="w-full flex flex-col items-center justify-center">
+                <CreateMediaAttachmentForm
+                    initialState={state}
+                    initialMedia={media}
+                    initialIndex={index}
+                    setParentState={setState}
+                    hideBackButton={true}
+                    initialActiveMediaType={BoostMediaOptionsEnum.document}
+                    handleCloseModal={() => closeModal()}
+                    showCloseButton={false}
+                    createMode={false}
+                    title={
+                        <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
+                            Media Attachment
+                        </p>
+                    }
+                />
+            </div>,
+            {
+                sectionClassName: '!max-w-[500px]',
+                hideButton: true,
+                usePortal: true,
+            }
+        );
     };
 
     return (
@@ -82,14 +66,14 @@ const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 className="flex items-center justify-start w-full text-decoration-none"
                 style={{ textDecoration: 'none' }}
             >
-                <FileIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-4" />
+                <FileIcon className="text-[#FF3636] h-[50px] w-[50px] mr-1" />
                 <div className="flex items-start justify-center text-left ml-2 flex-col flex-grow">
                     <p className="text-grayscale-800 text-xs text-left line-clamp-1">
                         {media.title}
                     </p>
                     <div className="w-full overflow-hidden">
                         <span
-                            className={`line-clamp-1 text-${primaryColor}-600 text-base font-semibold`}
+                            className={`line-clamp-1 text-${primaryColor} text-base font-semibold`}
                         >
                             View Document
                         </span>
@@ -98,16 +82,9 @@ const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
             </a>
             <div className="absolute right-1 bottom-1 z-30 cursor-pointer flex flex-col justify-between h-full pt-[10px]">
                 <button
-                    onClick={() => handleEditDesktop()}
+                    onClick={() => handleEdit()}
                     type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-desktop"
-                >
-                    <Pencil className="h-[60%]" />
-                </button>
-                <button
-                    onClick={() => handleEditMobile()}
-                    type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-mobile"
+                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
                 >
                     <Pencil className="h-[60%]" />
                 </button>

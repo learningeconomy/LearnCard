@@ -12,6 +12,8 @@ import {
     BoostCMSState,
 } from 'learn-card-base';
 import { defaultIDCardImage, defaultIssuerThumbnail } from './boost-options/boostOptions';
+import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignmentHelpers';
+import { BoostCMSAlignment } from './boost';
 import { CATEGORY_TO_SUBCATEGORY_LIST, boostCategoryOptions } from './boost-options/boostOptions';
 
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {
@@ -143,6 +145,8 @@ export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
                 description: vcInput?.basicInfo?.description, // description
                 name: vcInput?.basicInfo?.name || fallbackCredentialValues?.title, // title
                 image: vcInput?.appearance?.badgeThumbnail, // badge image
+                alignment:
+                    (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []),
             },
         },
         display: {
@@ -202,7 +206,6 @@ export const createBoost = async (
             backgroundImage: vcInput.appearance.backgroundImage,
         },
         attachments: vcInput?.mediaAttachments,
-        skills: vcInput?.skills ?? [],
         address: vcInput?.address,
         boostID: {
             fontColor: vcInput?.appearance?.fontColor,
@@ -232,6 +235,36 @@ export const createBoost = async (
         // boostId : 'urn:uuid:boost:example:555', // boost uri should be uri from createboost if not using sentboost, if using sendboost dont have to
     });
 
+    // Extract skill IDs from alignments for Neo4j-based skill management
+    // Backend will auto-inject alignments when retrieving the boost
+    const skillIds = extractSkillIdsFromAlignments(vcInput?.alignments ?? []);
+
+    // Set alignments on the credential (OBv3 format)
+    try {
+        let alignments: BoostCMSAlignment[] = [];
+
+        // Prefer new framework-based alignments if present
+        if (vcInput?.alignments && vcInput.alignments.length > 0) {
+            alignments = vcInput.alignments;
+        }
+        // Legacy fallback: convert old-style skills to alignments
+        else if (vcInput?.skills && vcInput.skills.length > 0) {
+            alignments = alignmentsFromSkills(vcInput.skills);
+        }
+
+        // Set alignments on the unsigned credential if we have any
+        if (alignments.length > 0) {
+            unsignedCredential.credentialSubject = unsignedCredential.credentialSubject ?? {};
+            // @ts-ignore
+            unsignedCredential.credentialSubject.achievement =
+                unsignedCredential.credentialSubject.achievement ?? {};
+            // @ts-ignore
+            unsignedCredential.credentialSubject.achievement.alignment = alignments;
+        }
+    } catch (e) {
+        console.warn('Failed to set alignments on unsignedCredential', e);
+    }
+
     // TODO: Forcibly using 3.0.1 for now, need to figure out what to do about this!
     unsignedCredential['@context'][1] =
         'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json';
@@ -242,11 +275,17 @@ export const createBoost = async (
 
     // makes request to LCN, second param is metadata associated with template
     // metadata is used to categorize etc
+    // If skillIds are provided, backend will automatically:
+    //   - Detect framework from skill IDs
+    //   - Create Neo4j relationships
+    //   - Attach framework to boost
+    //   - Auto-inject alignments on retrieval
     const boostUri = await wallet?.invoke?.createBoost(unsignedCredential, {
         name: vcInput?.basicInfo?.name || fallbackCredentialValues?.title,
         type: vcInput?.basicInfo.achievementType,
         category: vcInput?.basicInfo?.type,
         status: boostStatus,
+        skillIds, // Backend handles Neo4j relationships and alignment injection
     });
 
     return {
@@ -300,6 +339,7 @@ export const updateBoost = async (
         },
         attachments: vcInput?.mediaAttachments,
         skills: vcInput?.skills ?? [],
+        // alignments: (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []),
         address: vcInput?.address,
         boostID: {
             fontColor: vcInput?.appearance?.fontColor,
@@ -326,6 +366,20 @@ export const updateBoost = async (
     const updatedCredential = await wallet.invoke.newCredential({
         ...credentialPayload,
     });
+
+    // Ensure OBv3 alignments live under credential.credentialSubject.achievement.alignment
+    try {
+        const alignments =
+            (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []);
+        updatedCredential.credentialSubject = updatedCredential.credentialSubject ?? {};
+        // @ts-ignore
+        updatedCredential.credentialSubject.achievement =
+            updatedCredential.credentialSubject.achievement ?? {};
+        // @ts-ignore
+        updatedCredential.credentialSubject.achievement.alignment = alignments;
+    } catch (e) {
+        console.warn('Failed to set nested alignments on updatedCredential', e);
+    }
 
     // TODO: Forcibly using 3.0.1 for now, need to figure out what to do about this!
     updatedCredential['@context'][1] = 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json';
@@ -381,6 +435,7 @@ export const sendAndSaveBoostCredentialSelf = async (
     // TODO:
     // if boost status is DRAFT, set boost to LIVE then issue
     // if boost status is already live, then automatically boost user
+    // oxlint-disable-next-line no-unused-vars
     const { sentBoost, sentBoostUri } = await sendBoostCredential(wallet, profileId, boostUri);
     const uri = await wallet.store.LearnCloud.uploadEncrypted?.(sentBoost);
 
@@ -445,6 +500,7 @@ export const getDefaultAchievementTypeImage = (
     if (defaultStylePackEntry) return defaultStylePackEntry?.url;
     else if (!defaultStylePackEntry && !isDefaultAchievementTypeImage)
         return boostCategoryOptions[category]?.CategoryImage;
+    // oxlint-disable-next-line no-dupe-else-if
     else if (!defaultStylePackEntry && !isDefaultCategoryImage && !isDefaultAchievementTypeImage)
         return currentBadgeImage;
 

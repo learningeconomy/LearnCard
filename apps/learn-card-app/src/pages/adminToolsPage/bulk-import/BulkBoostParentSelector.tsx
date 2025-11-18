@@ -21,7 +21,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     const { data: parentBoost, isLoading } = useGetBoost(parentUri);
 
     const { category, name, boost } = parentBoost ?? {};
-    const { color } = boostCategoryOptions[category] ?? {};
+    const color = boostCategoryOptions[category]?.color;
 
     const presentModal = () => {
         newModal(

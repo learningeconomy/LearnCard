@@ -40,7 +40,8 @@ const ShareModal: React.FC<ShareModalProps> = () => {
         } catch (e) {
             console.log('generateInvite::error', e);
             presentToast('Failed to generate invite link', {
-                className: 'bg-[#eb445a] text-white',
+                className: ToastTypeEnum.CopySuccess,
+                hasDismissButton: true,
             });
         } finally {
             setLoading(false);

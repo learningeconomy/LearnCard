@@ -23,6 +23,11 @@ export enum DisplayTypeEnum {
     Media = 'media',
 }
 
+export enum PreviewTypeEnum {
+    Default = 'default',
+    Media = 'media',
+}
+
 export const getDefaultDisplayType = (category: string): DisplayTypeEnum => {
     if (category === CredentialCategoryEnum.accomplishment) {
         return DisplayTypeEnum.Media;

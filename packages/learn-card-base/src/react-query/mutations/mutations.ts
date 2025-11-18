@@ -116,9 +116,17 @@ export const useAcceptCredentialMutation = () => {
     const { initWallet } = useWallet();
 
     return useMutation({
-        mutationFn: async ({ uri }: { uri: string }) => {
+        mutationFn: async ({
+            uri,
+            metadata,
+        }: {
+            uri: string;
+            metadata?: Record<string, unknown>;
+        }) => {
             const wallet = await initWallet();
-            const data = await wallet?.invoke?.acceptCredential(uri);
+            const data = await wallet?.invoke?.acceptCredential(uri, {
+                ...(metadata ? { metadata } : {}),
+            });
 
             return data;
         },

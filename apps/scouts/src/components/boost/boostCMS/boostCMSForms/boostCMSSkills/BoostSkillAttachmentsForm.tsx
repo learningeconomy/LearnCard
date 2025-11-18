@@ -7,7 +7,13 @@ import PuzzlePiece from '../../../../svgs/PuzzlePiece';
 import BoostCMSSkillOptions from './BoostCMSSkillOptions';
 import BoostCMSSelectedSkills from './BoostCMSSelectedSkills';
 
-import { BoostCMSSkill, BoostCMSSkillsEnum, BoostCMSState } from '../../../boost';
+import {
+    BoostCMSSkill,
+    BoostCMSSkillsEnum,
+    BoostCMSState,
+    BoostCMSAlignment,
+} from '../../../boost';
+import { toSkillAlignment, toSubskillAlignment } from '../../../alignmentHelpers';
 import {
     BoostCMSSKillsCategoryEnum,
     BoostCMSSubSkillEnum,
@@ -32,6 +38,8 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
         _setState(state);
     }, [state]);
 
+    // Alignment conversions are centralized in alignmentHelpers
+
     const handleAddSkill = (
         skill: {
             category: BoostCMSSKillsCategoryEnum | string;
@@ -42,16 +50,29 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
     ) => {
         if (mode === BoostCMSSkillsAttachmentFormModeEnum.view) {
             setState(prevState => {
+                const nextAlignments = [
+                    ...(prevState.alignments ?? []),
+                    toSkillAlignment(skill as BoostCMSSkill),
+                    ...skill.subskills.map(ss => toSubskillAlignment(skill.skill, ss)),
+                ];
                 return {
                     ...prevState,
                     skills: [...prevState.skills, skill],
+                    alignments: nextAlignments,
                 };
             });
         } else {
             _setState(prevState => {
+                if (!prevState) return prevState;
+                const nextAlignments = [
+                    ...(prevState.alignments ?? []),
+                    toSkillAlignment(skill as BoostCMSSkill),
+                    ...skill.subskills.map(ss => toSubskillAlignment(skill.skill, ss)),
+                ];
                 return {
                     ...prevState,
                     skills: [...prevState.skills, skill],
+                    alignments: nextAlignments,
                 };
             });
         }
@@ -63,16 +84,38 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
     ) => {
         if (mode === BoostCMSSkillsAttachmentFormModeEnum.view) {
             setState(prevState => {
+                const removedSkill = prevState.skills.find(s => s.skill === skill);
+                const filteredAlignments = (prevState.alignments ?? []).filter(a => {
+                    if (!removedSkill) return true;
+                    // remove the primary skill alignment and any subskill alignments under it
+                    const isPrimary =
+                        a.targetName === removedSkill.skill &&
+                        a.targetFramework === String(removedSkill.category);
+                    const isSub = a.targetFramework === removedSkill.skill;
+                    return !isPrimary && !isSub;
+                });
                 return {
                     ...prevState,
                     skills: prevState.skills.filter(s => s.skill !== skill),
+                    alignments: filteredAlignments,
                 };
             });
         } else {
             _setState(prevState => {
+                if (!prevState) return prevState;
+                const removedSkill = prevState.skills.find(s => s.skill === skill);
+                const filteredAlignments = (prevState.alignments ?? []).filter(a => {
+                    if (!removedSkill) return true;
+                    const isPrimary =
+                        a.targetName === removedSkill.skill &&
+                        a.targetFramework === String(removedSkill.category);
+                    const isSub = a.targetFramework === removedSkill.skill;
+                    return !isPrimary && !isSub;
+                });
                 return {
                     ...prevState,
                     skills: prevState.skills.filter(s => s.skill !== skill),
+                    alignments: filteredAlignments,
                 };
             });
         }
@@ -85,34 +128,39 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
     ) => {
         if (mode === BoostCMSSkillsAttachmentFormModeEnum.view) {
             setState(prevState => {
+                const updatedSkills = prevState.skills.map(s => {
+                    if (skill === s.skill) {
+                        return {
+                            ...s,
+                            subskills: [...s.subskills, subskill],
+                        };
+                    }
+                    return s;
+                });
+                const newAlignment = toSubskillAlignment(String(skill), subskill);
                 return {
                     ...prevState,
-                    skills: prevState.skills.map(s => {
-                        if (skill === s.skill) {
-                            return {
-                                ...s,
-                                subskills: [...s.subskills, subskill],
-                            };
-                        }
-
-                        return s;
-                    }),
+                    skills: updatedSkills,
+                    alignments: [...(prevState.alignments ?? []), newAlignment],
                 };
             });
         } else {
             _setState(prevState => {
+                if (!prevState) return prevState;
+                const updatedSkills = prevState.skills.map(s => {
+                    if (skill === s.skill) {
+                        return {
+                            ...s,
+                            subskills: [...s.subskills, subskill],
+                        };
+                    }
+                    return s;
+                });
+                const newAlignment = toSubskillAlignment(String(skill), subskill);
                 return {
                     ...prevState,
-                    skills: prevState.skills.map(s => {
-                        if (skill === s.skill) {
-                            return {
-                                ...s,
-                                subskills: [...s.subskills, subskill],
-                            };
-                        }
-
-                        return s;
-                    }),
+                    skills: updatedSkills,
+                    alignments: [...(prevState.alignments ?? []), newAlignment],
                 };
             });
         }
@@ -125,34 +173,43 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
     ) => {
         if (mode === BoostCMSSkillsAttachmentFormModeEnum.view) {
             setState(prevState => {
+                const updatedSkills = prevState.skills.map(s => {
+                    if (skill === s.skill) {
+                        return {
+                            ...s,
+                            subskills: s.subskills.filter(ss => ss !== subskill),
+                        };
+                    }
+                    return s;
+                });
+                const filteredAlignments = (prevState.alignments ?? []).filter(
+                    a => !(a.targetName === String(subskill) && a.targetFramework === String(skill))
+                );
                 return {
                     ...prevState,
-                    skills: prevState.skills.map(s => {
-                        if (skill === s.skill) {
-                            return {
-                                ...s,
-                                subskills: s.subskills.filter(s => s !== subskill),
-                            };
-                        }
-
-                        return s;
-                    }),
+                    skills: updatedSkills,
+                    alignments: filteredAlignments,
                 };
             });
         } else {
             _setState(prevState => {
+                if (!prevState) return prevState;
+                const updatedSkills = prevState.skills.map(s => {
+                    if (skill === s.skill) {
+                        return {
+                            ...s,
+                            subskills: s.subskills.filter(ss => ss !== subskill),
+                        };
+                    }
+                    return s;
+                });
+                const filteredAlignments = (prevState.alignments ?? []).filter(
+                    a => !(a.targetName === String(subskill) && a.targetFramework === String(skill))
+                );
                 return {
                     ...prevState,
-                    skills: prevState.skills.map(s => {
-                        if (skill === s.skill) {
-                            return {
-                                ...s,
-                                subskills: s.subskills.filter(s => s !== subskill),
-                            };
-                        }
-
-                        return s;
-                    }),
+                    skills: updatedSkills,
+                    alignments: filteredAlignments,
                 };
             });
         }
@@ -163,6 +220,7 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
             return {
                 ...prevState,
                 skills: [..._state?.skills],
+                alignments: [...(_state?.alignments ?? [])],
             };
         });
     };
@@ -293,6 +351,7 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
 
                             return (
                                 <BoostCMSSelectedSkills
+                                    key={index}
                                     state={state}
                                     setState={setState}
                                     category={category}

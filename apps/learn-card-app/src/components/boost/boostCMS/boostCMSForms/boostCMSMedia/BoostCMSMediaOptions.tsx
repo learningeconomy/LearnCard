@@ -1,53 +1,68 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useModal } from 'learn-card-base';
+import { createPortal } from 'react-dom';
 
-import { IonCol, IonRow, IonGrid, IonToolbar, IonHeader } from '@ionic/react';
-import X from 'learn-card-base/svgs/X';
-import { BoostCMSState, BoostCMSAppearanceDisplayTypeEnum } from '../../../boost';
+import { IonToolbar, IonHeader } from '@ionic/react';
 import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
+
+import { BoostCMSState, BoostCMSAppearanceDisplayTypeEnum } from '../../../boost';
 
 type BoostCMSMediaOptionsProps = {
     state: BoostCMSState;
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
-    showCloseButton?: boolean;
     title?: String | React.ReactNode;
     displayType?: BoostCMSAppearanceDisplayTypeEnum;
+    showCloseButton?: boolean;
 };
 
 const BoostCMSMediaOptions: React.FC<BoostCMSMediaOptionsProps> = ({
     state,
     setState,
-    showCloseButton = true,
     title,
     displayType,
+    showCloseButton,
 }) => {
     const { closeModal } = useModal();
+    const [showCloseButtonState, setShowCloseButtonState] = useState<boolean>(
+        showCloseButton || true
+    );
+    const sectionPortal = document.getElementById('section-cancel-portal');
+
     return (
-        <section id="user-options-modal" className="h-[500px]">
-            <IonHeader className="ion-no-border bg-white pt-5">
-                <IonRow className="w-full bg-white">
-                    <IonCol className="w-full flex items-center justify-end">
-                        {showCloseButton && (
-                            <button onClick={closeModal}>
-                                <X className="text-grayscale-600 h-8 w-8" />
+        <>
+            <section
+                id="user-options-modal"
+                className="max-w-[500px] flex flex-col items-center justify-center"
+            >
+                <IonHeader className="ion-no-border bg-white pt-5">
+                    {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
+                </IonHeader>
+
+                <CreateMediaAttachmentForm
+                    initialState={state}
+                    createMode
+                    setParentState={setState}
+                    displayType={displayType}
+                    showCloseButtonState={showCloseButtonState}
+                    setShowCloseButtonState={setShowCloseButtonState}
+                />
+            </section>
+            {sectionPortal &&
+                showCloseButtonState &&
+                createPortal(
+                    <div className="w-full flex items-center justify-center">
+                        <div className="flex flex-col justify-center items-center relative !border-none w-full max-w-[500px]">
+                            <button
+                                onClick={closeModal}
+                                className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
+                            >
+                                Close
                             </button>
-                        )}
-                    </IonCol>
-                </IonRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
-            </IonHeader>
-            <div>
-                <IonGrid className="">
-                    <CreateMediaAttachmentForm
-                        initialState={state}
-                        createMode
-                        // handleSave={handleSaveMediaState}
-                        setParentState={setState}
-                        displayType={displayType}
-                    />
-                </IonGrid>
-            </div>
-        </section>
+                        </div>
+                    </div>,
+                    sectionPortal
+                )}
+        </>
     );
 };
 

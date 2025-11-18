@@ -2,26 +2,24 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
-
-import AddAward from 'learn-card-base/svgs/AddAward';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
-import NewBoostSelectMenu from '../../../components/boost/boost-select-menu/NewBoostSelectMenu';
 import AddressBookContactDetailsView from './AddressBookContactDetailsView';
 import { IonItem, useIonAlert, useIonToast } from '@ionic/react';
-
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
+import GirlScoutsIcon from 'apps/scouts/src/components/svgs/GirlScoutsLogo';
+import WorldScoutIcon from 'apps/scouts/src/components/svgs/WorldScoutsIcon';
+import AddressBookContactItemButton from './AddressBookContactItemButton';
 import {
     useModal,
-    useGetCurrentLCNUser,
     useConnectWithMutation,
     useAcceptConnectionRequestMutation,
     useCancelConnectionRequestMutation,
     useUnblockProfileMutation,
-    CredentialCategoryEnum,
     UserProfilePicture,
     ModalTypes,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
-import { LCNProfileConnectionStatusEnum, LCNProfile } from '@learncard/types';
+import { LCNProfileConnectionStatusEnum, LCNProfile, VC } from '@learncard/types';
 
 type AddressBookContactItemProps = {
     contact: LCNProfile;
@@ -43,6 +41,7 @@ type AddressBookContactItemProps = {
     search: string;
     setConnectionCount: React.Dispatch<React.SetStateAction<number>>;
     showArrow: boolean;
+    resolvedCredential?: VC;
 };
 
 export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
@@ -59,29 +58,53 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     search,
     setConnectionCount,
     showArrow = false,
+    resolvedCredential,
 }) => {
     const queryClient = useQueryClient();
     const history = useHistory();
     const { newModal, closeModal } = useModal();
-    const handlePresentBoostModal = () => {
-        newModal(
-            <NewBoostSelectMenu
-                handleCloseModal={() => closeModal()}
-                category={CredentialCategoryEnum.socialBadge}
-            />,
-            {
-                className: '!p-0',
-                sectionClassName: '!p-0',
-            },
-            {
-                mobile: ModalTypes.FullScreen,
-                desktop: ModalTypes.FullScreen,
-            }
-        );
+    const { isDesktop } = useDeviceTypeByWidth();
+
+    const { credentials: highlightedCreds, uris } = useHighlightedCredentials(
+        contact?.profileId,
+        true
+    );
+
+    const troopTypes: Record<string, { label: string; icon: JSX.Element }> = {
+        'ext:TroopID': {
+            label: 'Leader',
+            icon: <GirlScoutsIcon className="absolute top-[-5px] left-[30px] w-[25px]" />,
+        },
+        'ext:ScoutID': {
+            label: 'Scout',
+            icon: <WorldScoutIcon className="absolute top-0 left-[30px] w-[25px]" />,
+        },
+        'ext:GlobalID': {
+            label: 'Global Admin',
+            icon: (
+                <WorldScoutIcon fill={'#622599'} className="absolute top-0 left-[30px] w-[25px]" />
+            ),
+        },
+        'ext:NetworkID': {
+            label: 'National Admin',
+            icon: (
+                <GirlScoutsIcon
+                    className={`absolute top-[-5px] w-[25px] ${
+                        isDesktop ? 'left-[30px]' : 'left-[20px]'
+                    }`}
+                />
+            ),
+        },
     };
 
-    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    // The chosenHighlightedCred is filtered based on the assumption that someone is in no more than 5 troops since highlightedCreds only returns the top 5 credentials
+    const chosenHighlightedCred =
+        highlightedCreds.find(cred => cred.name === resolvedCredential?.boostCredential?.name) ??
+        highlightedCreds[0];
+
+    const troopStatus =
+        troopTypes[chosenHighlightedCred?.credentialSubject?.achievement?.achievementType] ?? '';
+
     const [presentToast] = useIonToast();
     const [presentAlert, dismissAlert] = useIonAlert();
 
@@ -401,10 +424,16 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 customSize={500}
                 user={contact}
             />
+            {highlightedCreds.length !== 0 && troopStatus.icon}
             <div className="flex flex-col items-start">
                 {contact.displayName && (
                     <p className="text-grayscale-900 font-semibold text-[17px] font-notoSans line-clamp-2 leading-[24px]">
                         {contact.displayName}
+                    </p>
+                )}
+                {highlightedCreds.length !== 0 && (
+                    <p className="text-grayscale-600 font-notoSans text-[12px] font-semibold">
+                        {troopStatus.label} • {chosenHighlightedCred?.name}
                     </p>
                 )}
                 <p className="text-grayscale-600 font-semibold font-notoSans text-[12px] line-clamp-2">
@@ -500,32 +529,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
 
     // Render boost button (if enabled) or an arrow button (if showArrow is true)
     const boostOrArrowButton = showBoostButton ? (
-        <div className="flex items-center justify-end w-1/5">
-            <button
-                onClick={() => {
-                    if (!currentLCNUser && !currentLCNUserLoading) {
-                        handlePresentJoinNetworkModal();
-                        return;
-                    }
-                    handlePresentBoostModal();
-                }}
-                className="flex items-center justify-center text-white rounded-full bg-indigo-500 w-12 h-12 modal-btn-desktop"
-            >
-                <AddAward className="w-8 h-auto" />
-            </button>
-            <button
-                onClick={() => {
-                    if (!currentLCNUser && !currentLCNUserLoading) {
-                        handlePresentJoinNetworkModal();
-                        return;
-                    }
-                    handlePresentBoostModal();
-                }}
-                className="flex items-center justify-center text-white rounded-full bg-indigo-500 w-12 h-12 modal-btn-mobile"
-            >
-                <AddAward className="w-8 h-auto" />
-            </button>
-        </div>
+        <AddressBookContactItemButton
+            troopTypes={troopTypes}
+            resolvedCredential={resolvedCredential}
+        />
     ) : (
         showArrow && (
             <div className="flex items-center justify-end w-1/5">

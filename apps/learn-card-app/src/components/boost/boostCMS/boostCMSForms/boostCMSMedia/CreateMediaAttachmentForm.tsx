@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { IonCol, IonRow } from '@ionic/react';
+import { Updater } from 'use-immer';
+import { curriedStateSlice } from '@learncard/helpers';
+
+import { IonCol, IonRow, IonProgressBar } from '@ionic/react';
+
+import BoostCMSMediaPhotoUpload from './BoostCMSMediaPhotoUpload';
+import BoostCMSMediaDocumentUpload from './BoostCMSMediaDocumentUpload';
+import BoostCMSMediaLinkAttachment from './BoostCMSMediaLinkAttachment';
+import BoostCMSMediaVideoAttachment from './BoostCMSMediaVideoAttachment';
+import BoostMediaModalLayoutWrapper from './BoostMediaModalLayoutWrapper';
+import BoostCMSAttachmentWarning from './BoostCMSAttachmentWarning';
+
 import {
     BoostCMSMediaAttachment,
     BoostCMSState,
@@ -9,22 +20,12 @@ import {
     BoostCMSAppearanceDisplayTypeEnum,
     useModal,
     ModalTypes,
-} from 'learn-card-base';
-import { Updater } from 'use-immer';
-import { curriedStateSlice } from '@learncard/helpers';
-import BoostCMSMediaPhotoUpload from './BoostCMSMediaPhotoUpload';
-import BoostCMSMediaDocumentUpload from './BoostCMSMediaDocumentUpload';
-import BoostCMSMediaLinkAttachment from './BoostCMSMediaLinkAttachment';
-import BoostCMSMediaVideoAttachment from './BoostCMSMediaVideoAttachment';
-import BoostMediaModalLayoutWrapper from './BoostMediaModalLayoutWrapper';
-import BoostCMSAttachmentWarning from './BoostCMSAttachmentWarning';
-
-import {
     useFilestack,
     UploadRes,
     BoostCMSMediaState,
     useBoostCMSMediaState,
 } from 'learn-card-base';
+
 import { IMAGE_MIME_TYPES, VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 type CreateMediaAttachmentFormProps = {
@@ -38,6 +39,8 @@ type CreateMediaAttachmentFormProps = {
     hideBackButton?: boolean;
     handleCloseModal?: () => void;
     displayType?: BoostCMSAppearanceDisplayTypeEnum;
+    showCloseButtonState?: boolean;
+    setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 type BoostCMSMediaTypeSelectorProps = {
@@ -49,6 +52,8 @@ type BoostCMSMediaTypeSelectorProps = {
     handleDocumentSelect: () => void;
     displayType?: BoostCMSAppearanceDisplayTypeEnum;
     attachments?: BoostCMSMediaAttachment[];
+    showCloseButtonState?: boolean;
+    setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
@@ -60,6 +65,8 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
     handleDocumentSelect,
     displayType,
     attachments,
+    showCloseButtonState,
+    setShowCloseButtonState,
 }) => {
     const { newModal } = useModal();
 
@@ -67,7 +74,7 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
     const attachment = attachments?.[0];
 
     return (
-        <IonRow className="flex w-full">
+        <IonRow className="flex w-full pb-[20px]">
             <IonCol className="flex items-center justify-center flex-wrap">
                 {boostMediaOptions.map(({ id, type, title, color, Icon }) => {
                     let styles = '';
@@ -114,17 +121,21 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
                             type !== BoostMediaOptionsEnum.document
                         ) {
                             setActiveMediaType(type);
+                            setShowCloseButtonState?.(false);
                         }
                     };
 
                     return (
                         <button
                             key={id}
-                            className={`flex flex-col items-center justify-center text-center ion-padding h-[122px] m-2 bg-${color} rounded-[20px] ${styles} w-[45%] xs:!w-[60%]`}
+                            className={`flex flex-col items-center justify-center text-center ion-padding h-[122px] m-2 bg-grayscale-100 rounded-[20px] ${styles} w-[45%] xs:!w-[60%]`}
                             onClick={handleMediaSelect}
                         >
-                            <Icon className="h-[40px] text-white max-h-[40px] max-w-[40px]" />
-                            <p className="font-poppins text-white text-xl tracking-wider">
+                            <Icon
+                                version="outlined"
+                                className="h-[40px] text-grayscale-800 max-h-[40px] max-w-[40px]"
+                            />
+                            <p className="font-poppins text-grayscale-800 text-xl tracking-wider">
                                 {title}
                             </p>
                         </button>
@@ -135,7 +146,7 @@ const BoostCMSMediaTypeSelector: React.FC<BoostCMSMediaTypeSelectorProps> = ({
     );
 };
 
-const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
+export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
     initialState,
     initialIndex,
     initialActiveMediaType,
@@ -145,6 +156,8 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
     setParentState,
     hideBackButton,
     displayType,
+    showCloseButtonState,
+    setShowCloseButtonState,
 }) => {
     const { closeModal } = useModal();
 
@@ -207,6 +220,7 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
             },
         ]);
         setActiveMediaType(BoostMediaOptionsEnum.photo);
+        setShowCloseButtonState?.(false);
     };
 
     const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
@@ -230,6 +244,7 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
             },
         ]);
         setActiveMediaType(BoostMediaOptionsEnum.document);
+        setShowCloseButtonState?.(false);
     };
 
     const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useFilestack({
@@ -250,6 +265,7 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
                 setActiveMediaType={setActiveMediaType}
                 hideBackButton={hideBackButton}
                 handleCloseModal={handleCloseModal}
+                setShowCloseButtonState={setShowCloseButtonState}
             />
         );
     }
@@ -268,6 +284,7 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
                 setActiveMediaType={setActiveMediaType}
                 hideBackButton={hideBackButton}
                 handleCloseModal={handleCloseModal}
+                setShowCloseButtonState={setShowCloseButtonState}
             />
         );
     }
@@ -284,6 +301,7 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
                 setActiveMediaType={setActiveMediaType}
                 hideBackButton={hideBackButton}
                 handleCloseModal={handleCloseModal}
+                setShowCloseButtonState={setShowCloseButtonState}
             />
         );
     }
@@ -300,6 +318,7 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
                 setActiveMediaType={setActiveMediaType}
                 hideBackButton={hideBackButton}
                 handleCloseModal={handleCloseModal}
+                setShowCloseButtonState={setShowCloseButtonState}
             />
         );
     }
@@ -307,12 +326,14 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
     return (
         <>
             {uploadProgress !== false && (
-                <div className="flex items-center justify-between w-full mb-4 bg-grayscale-100 ion-padding rounded-[20px]">
-                    <div className="flex items-center justify-start w-[80%]">
-                        <p className="font-medium text-[#FF3636]">
-                            {uploadProgress?.toString?.()}% uploaded
-                        </p>
-                    </div>
+                <div className="w-full px-4">
+                    <IonProgressBar
+                        color="grayscale-800"
+                        value={(uploadProgress as number) / 100}
+                    />
+                    <p className="mt-2 text-sm font-medium text-grayscale-900">
+                        {uploadProgress}% uploaded
+                    </p>
                 </div>
             )}
             <BoostCMSMediaTypeSelector
@@ -324,18 +345,9 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
                 setState={setState}
                 onSave={onSave}
                 displayType={displayType}
+                showCloseButtonState={showCloseButtonState}
+                setShowCloseButtonState={setShowCloseButtonState}
             />
-            <div className="w-full flex items-center justify-center mt-[20px]">
-                <button
-                    onClick={() => {
-                        closeModal?.();
-                        handleCloseModal?.();
-                    }}
-                    className="text-grayscale-900 text-center text-sm"
-                >
-                    Cancel
-                </button>
-            </div>
         </>
     );
 };
@@ -362,15 +374,13 @@ export const CreateMediaAttachmentFormModal: React.FC<CreateMediaAttachmentFormM
     handleCloseModal,
 }) => {
     return (
-        <BoostMediaModalLayoutWrapper>
-            <CreateMediaAttachmentForm
-                hideBackButton={hideBackButton}
-                handleCloseModal={handleCloseModal}
-                initialIndex={initialIndex}
-                setParentState={setParentState}
-                initialState={initialState}
-                initialActiveMediaType={initialActiveMediaType}
-            />
-        </BoostMediaModalLayoutWrapper>
+        <CreateMediaAttachmentForm
+            hideBackButton={hideBackButton}
+            handleCloseModal={handleCloseModal}
+            initialIndex={initialIndex}
+            setParentState={setParentState}
+            initialState={initialState}
+            initialActiveMediaType={initialActiveMediaType}
+        />
     );
 };

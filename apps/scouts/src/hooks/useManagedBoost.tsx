@@ -56,10 +56,10 @@ export const useManagedBoost = (
     const history = useHistory();
     const currentUser = useCurrentUser();
 
-    // const { newModal, closeModal, closeAllModals } = useModal({
-    //     mobile: ModalTypes.FullScreen,
-    //     desktop: ModalTypes.FullScreen,
-    // });
+    const { newModal, closeModal, closeAllModals } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
+    });
 
     const {
         boostVC: _boostVC,
@@ -161,18 +161,22 @@ export const useManagedBoost = (
         }
     };
 
-    const [presentBoostCMSModal, dismissBoostCMSModal] = useIonModal(UpdateBoostCMS, {
-        boostCategoryType: categoryType,
-        boostSubCategoryType: boost?.type,
-        boostUserType: BoostUserTypeEnum.someone,
-        handleCloseModal: () => {
-            refetchQuery?.();
-            dismissBoostCMSModal();
-        },
-        boostUri: boost.uri,
-        overrideCustomize,
-        parentUri,
-    });
+    const presentBoostCMSModal = () => {
+        newModal(
+            <UpdateBoostCMS
+                boostCategoryType={categoryType}
+                boostSubCategoryType={boost?.type}
+                boostUserType={BoostUserTypeEnum.someone}
+                handleCloseModal={() => {
+                    refetchQuery?.();
+                    closeModal();
+                }}
+                boostUri={boost.uri}
+                overrideCustomize={overrideCustomize}
+                parentUri={parentUri}
+            />
+        );
+    };
 
     const handleIssueOnClick = () => {
         dissmissManagedBoostPreview();

@@ -1,14 +1,16 @@
 import React from 'react';
 import { useIonModal } from '@ionic/react';
 
-import { BoostMediaOptionsEnum, BoostCMSMediaAttachment } from '../../../boost';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
-import { CreateMediaAttachmentFormModal } from './CreateMediaAttachmentForm';
+import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
+
+import { BoostMediaOptionsEnum } from '../../../boost';
 import { BoostMediaCMSFormItemProps } from './BoostCMSMediaForm';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 const BoostMediaCMSFormLinkItem: React.FC<BoostMediaCMSFormItemProps> = ({
     index,
@@ -17,58 +19,39 @@ const BoostMediaCMSFormLinkItem: React.FC<BoostMediaCMSFormItemProps> = ({
     state,
     setState,
 }) => {
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const [presentEditSheetModal, dismissEditSheetModal] = useIonModal(
-        CreateMediaAttachmentFormModal,
-        {
-            initialState: state,
-            initialMedia: media,
-            initialIndex: index,
-            setParentState: setState,
-            initialActiveMediaType: BoostMediaOptionsEnum.link,
-            handleCloseModal: () => dismissEditSheetModal(),
-            showCloseButton: false,
-            hideBackButton: true,
-            title: (
-                <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                    Media Attachment
-                </p>
-            ),
-        }
-    );
-
-    const [presentCenterModal, dismissCenterModal] = useIonModal(CreateMediaAttachmentFormModal, {
-        initialState: state,
-        initialMedia: media,
-        initialIndex: index,
-        setParentState: setState,
-        hideBackButton: true,
-        initialActiveMediaType: BoostMediaOptionsEnum.link,
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: false,
-        title: (
-            <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                Media Attachment
-            </p>
-        ),
-    });
-
-    const handleEditMobile = () => {
-        presentEditSheetModal({
-            cssClass: 'mobile-modal user-options-modal',
-            initialBreakpoint: 0.9,
-            handleBehavior: 'none',
-        });
-    };
-
-    const handleEditDesktop = () => {
-        presentCenterModal({
-            cssClass: 'center-modal user-options-modal',
-            backdropDismiss: false,
-            showBackdrop: false,
-        });
+    const handleEdit = () => {
+        newModal(
+            <div className="w-full flex flex-col items-center justify-center">
+                <CreateMediaAttachmentForm
+                    initialState={state}
+                    initialMedia={media}
+                    initialIndex={index}
+                    setParentState={setState}
+                    hideBackButton={true}
+                    initialActiveMediaType={BoostMediaOptionsEnum.link}
+                    handleCloseModal={() => closeModal()}
+                    showCloseButton={false}
+                    createMode={false}
+                    title={
+                        <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
+                            Media Attachment
+                        </p>
+                    }
+                />
+            </div>,
+            {
+                sectionClassName: '!max-w-[500px]',
+                hideButton: true,
+                usePortal: true,
+            }
+        );
     };
 
     return (
@@ -84,7 +67,7 @@ const BoostMediaCMSFormLinkItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 style={{ textDecoration: 'none' }}
             >
                 <div className="flex items-center justify-start">
-                    <LinkChain className={`text-${primaryColor} h-[55px] w-[55px] mr-4`} />
+                    <LinkChain className={`text-${primaryColor} h-[50px] w-[50px] mr-1`} />
                     <div className="flex items-start justify-center text-left ml-2 flex-col flex-grow">
                         <p className="text-grayscale-800 text-xs text-left line-clamp-1 break-all">
                             {media.title}
@@ -99,16 +82,9 @@ const BoostMediaCMSFormLinkItem: React.FC<BoostMediaCMSFormItemProps> = ({
             </a>
             <div className="absolute right-1 bottom-1 z-20 cursor-pointer flex flex-col justify-between h-full pt-[10px]">
                 <button
-                    onClick={() => handleEditDesktop()}
+                    onClick={() => handleEdit()}
                     type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-desktop"
-                >
-                    <Pencil className="h-[60%]" />
-                </button>
-                <button
-                    onClick={() => handleEditMobile()}
-                    type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-mobile"
+                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
                 >
                     <Pencil className="h-[60%]" />
                 </button>

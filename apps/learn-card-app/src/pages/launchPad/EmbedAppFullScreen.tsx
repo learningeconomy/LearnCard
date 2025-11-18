@@ -21,6 +21,7 @@ interface EmbedAppParams {
 export const EmbedAppFullScreen: React.FC = () => {
     const history = useHistory<{ embedUrl?: string; appName?: string }>();
     const { appId } = useParams<EmbedAppParams>();
+    const [isLoading, setIsLoading] = React.useState(true);
 
     // Get embedUrl and appName from query params or location state
     const queryParams = React.useMemo(() => new URLSearchParams(history.location.search), [history.location.search]);
@@ -64,6 +65,7 @@ export const EmbedAppFullScreen: React.FC = () => {
         return null; // Will redirect via useEffect
     }
 
+    const embedUrlWithOverride = `${embedUrl}?lc_host_override=${window.location.origin}`;
     return (
         <IonPage>
             <IonHeader>
@@ -90,16 +92,34 @@ export const EmbedAppFullScreen: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent fullscreen>
-                <iframe
-                    src={embedUrl}
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        border: 'none',
-                        display: 'block',
-                    }}
-                    title={`${appName} - Full Screen`}
-                />
+                <div className="relative w-full h-full">
+                    {isLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
+                            <div className="flex flex-col items-center gap-4">
+                                {/* Animated spinner */}
+                                <div className="relative">
+                                    <div className="w-16 h-16 border-4 border-indigo-200 rounded-full"></div>
+                                    <div className="w-16 h-16 border-4 border-indigo-600 rounded-full border-t-transparent absolute top-0 left-0 animate-spin"></div>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-lg font-semibold text-grayscale-800">Loading {appName}...</p>
+                                    <p className="text-sm text-grayscale-600 mt-1">Please wait</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <iframe
+                        src={embedUrlWithOverride}
+                        onLoad={() => setIsLoading(false)}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            border: 'none',
+                            display: 'block',
+                        }}
+                        title={`${appName} - Full Screen`}
+                    />
+                </div>
             </IonContent>
         </IonPage>
     );

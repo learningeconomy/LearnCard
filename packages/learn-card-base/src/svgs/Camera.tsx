@@ -1,12 +1,16 @@
 import React from 'react';
+import CameraOutlinedIcon from './CameraOutlinedIcon';
 
-const Camera: React.FC<{ className?: string }> = ({ className = '' }) => {
+const Camera: React.FC<{ className?: string; version?: 'outlined' | 'filled' }> = ({
+    className = '',
+    version = 'filled',
+}) => {
+    if (version === 'outlined') {
+        return <CameraOutlinedIcon className={className} />;
+    }
+
     return (
-        <svg
-            viewBox="0 0 31 30"
-            fill="none"
-            className={className}
-        >
+        <svg viewBox="0 0 31 30" fill="none" className={className}>
             <path
                 d="M25.8022 7.27441H23.2342C22.4302 7.27441 21.6802 6.87241 21.2362 6.20641L20.1622 4.59241C19.7182 3.92641 18.9682 3.52441 18.1642 3.52441H13.2322C12.4282 3.52441 11.6782 3.92641 11.2342 4.59241L10.1602 6.20641C9.7162 6.87241 8.9662 7.27441 8.1622 7.27441H5.6002C4.2742 7.27441 3.2002 8.34841 3.2002 9.67441V23.6244C3.2002 24.9504 4.2742 26.0244 5.6002 26.0244H25.8022C27.1282 26.0244 28.2022 24.9504 28.2022 23.6244V9.67441C28.2022 8.34841 27.1282 7.27441 25.8022 7.27441ZM15.8002 22.1724C12.4882 22.1724 9.8002 19.4844 9.8002 16.1724C9.8002 12.8604 12.4882 10.1724 15.8002 10.1724C19.1122 10.1724 21.8002 12.8604 21.8002 16.1724C21.8002 19.4844 19.1122 22.1724 15.8002 22.1724Z"
                 fill="currentColor"

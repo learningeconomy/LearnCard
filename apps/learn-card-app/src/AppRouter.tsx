@@ -7,10 +7,12 @@ import queryString from 'query-string';
 import { IonSplitPane } from '@ionic/react';
 import SideMenu from './components/sidemenu/SideMenu';
 import NewMyData from './components/new-my-data/NewMyData';
+import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 import AiSessionAssessmentPreviewContainer from './components/ai-assessment/AiSessionAssessmentPreviewContainer';
+import EndorsementRequestModal from './components/boost-endorsements/EndorsementRequestModal/EndorsementRequestModal';
 
 import {
     useIsLoggedIn,
@@ -33,11 +35,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { WALLET_ADAPTERS } from '@web3auth/base';
 
+import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
 import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyIdentify';
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
-import { useUserflowIdentify } from './constants/userflow';
+
 import { Modals } from 'learn-card-base';
 import { useSetFirebaseAnalyticsUserId } from './hooks/useSetFirebaseAnalyticsUserId';
 import { useDeviceTypeByWidth } from 'learn-card-base';
@@ -63,6 +66,12 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
 
     const params = queryString.parse(location.search);
+
+    const boostUri = params.uri;
+    const seed = params.seed;
+    const pin = params.pin;
+    const endorsementRequest = params.endorsementRequest;
+    const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
 
     const hideSideMenu =
         ['/consent-flow', '/consent-flow-login', '/claim/from-dashboard/', '/chats'].includes(
@@ -105,6 +114,37 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
         }
     }, []);
 
+    useEffect(() => {
+        if (boostUri && endorsementRequest) {
+            if (!isLoggedIn) {
+                endorsementsRequestStore.set.credentialInfo({
+                    uri: boostUri as string,
+                    seed: seed as string,
+                    pin: pin as string,
+                });
+            }
+            newModal(
+                <ViewSharedBoost boostUri={boostUri as string} showEndorsementRequest />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        }
+    }, []);
+
+    useEffect(() => {
+        if (
+            isLoggedIn &&
+            draftEndorsementRequest?.relationship?.type &&
+            draftEndorsementRequest?.relationship?.type
+        ) {
+            newModal(
+                <ViewSharedBoost showDraftSuccess showEndorsementRequest={false} />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        }
+    }, [isLoggedIn]);
+
     const enablePrefetch = isLoggedIn && !isChapiInteraction;
 
     usePrefetchCredentials('Social Badge', enablePrefetch);
@@ -122,7 +162,7 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
     useLaunchDarklyIdentify({ debug: false });
     useSentryIdentify({ debug: false });
-    useUserflowIdentify({ debug: false });
+
     useSetFirebaseAnalyticsUserId({ debug: false });
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();

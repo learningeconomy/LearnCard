@@ -137,6 +137,7 @@ export type ShortBoostState = {
 
 export type BoostCMSAppearance = {
     displayType: BoostCMSAppearanceDisplayTypeEnum | undefined;
+    previewType?: BoostCMSAppearancePreviewTypeEnum | undefined;
 
     badgeThumbnail?: string;
     backgroundColor?: string;
@@ -150,6 +151,11 @@ export type BoostCMSAppearance = {
     idIssuerThumbnail?: string;
     showIdIssuerImage?: boolean;
 };
+
+export enum BoostCMSAppearancePreviewTypeEnum {
+    Default = 'default', // defaults to display type
+    Media = 'media',
+}
 
 export enum BoostCMSAppearanceDisplayTypeEnum {
     Badge = 'badge',
@@ -211,6 +217,7 @@ export const initialBoostCMSState: BoostCMSState = {
     admins: [],
     appearance: {
         displayType: undefined,
+        previewType: undefined,
 
         badgeThumbnail: '',
         backgroundColor: '',

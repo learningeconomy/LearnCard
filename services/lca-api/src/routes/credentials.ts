@@ -1,10 +1,17 @@
 import { TRPCError } from '@trpc/server';
 import { VCValidator, JWEValidator } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
+import { z } from 'zod';
+
+import {
+    sendEmailWithTemplate,
+    POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID,
+    getFrom,
+} from '@helpers/postmark.helpers';
 
 import { IssueEndpointValidator } from 'types/credentials';
 
-import { t, authorizedDidRoute } from '@routes';
+import { t, authorizedDidRoute, openRoute } from '@routes';
 import { getSigningAuthorityLearnCard } from '@helpers/learnCard.helpers';
 
 export const credentialsRouter = t.router({
@@ -67,6 +74,67 @@ export const credentialsRouter = t.router({
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: '[/credentials/issue] Caught error: ' + JSON.stringify(error),
+                });
+            }
+        }),
+
+    sendEndorsementShareLink: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'POST',
+                path: '/credentials/send-endorsement-share-link',
+                tags: ['Credentials'],
+                summary: 'Send an endorsement share link',
+                description:
+                    "This route is used to send an endorsement share link to a user's email address.",
+            },
+        })
+        .input(
+            z.object({
+                email: z.string().email(),
+                shareLink: z.string(),
+                issuer: z.object({
+                    name: z.string(),
+                }),
+                credential: z.object({
+                    name: z.string(),
+                }),
+                message: z.string().optional(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input }) => {
+            const { email, shareLink, issuer, credential, message } = input;
+
+            if (!shareLink || !email) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Email and shareLink are required',
+                });
+            }
+
+            const _email = email.toLowerCase();
+
+            try {
+                await sendEmailWithTemplate(
+                    _email,
+                    Number(POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID),
+                    {
+                        recipient: { name: _email },
+                        shareLink,
+                        message,
+                        issuer,
+                        credential,
+                    },
+                    getFrom({ mailbox: 'endorsement' })
+                );
+                return true;
+            } catch (error) {
+                console.error('Failed to send verification email:', error);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to send endorsement share link email',
                 });
             }
         }),

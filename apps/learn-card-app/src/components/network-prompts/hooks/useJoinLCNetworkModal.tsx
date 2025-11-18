@@ -27,9 +27,9 @@ export const useJoinLCNetworkModal = (onDismiss?: () => void) => {
         mobile: ModalTypes.FullScreen,
     });
 
-    const presentNetworkModal = () => {
+    const presentNetworkModal = (onSuccess?: () => void) => {
         newModal(
-            <OnboardingContainer />,
+            <OnboardingContainer onSuccess={onSuccess} />,
             {},
             {
                 desktop: ModalTypes.FullScreen,
@@ -47,14 +47,14 @@ export const useJoinLCNetworkModal = (onDismiss?: () => void) => {
     //     showNotificationsModal: showNotificationsModal,
     // });
 
-    const handlePresentJoinNetworkModal = async () => {
+    const handlePresentJoinNetworkModal = async (onSuccess?: () => void) => {
         const deletingAccount = deletingAccountStore.get.deletingAccount();
         if (deletingAccount) {
             return { prompted: false };
         }
 
         if (!isLoading && !data && isLoggedIn) {
-            presentNetworkModal();
+            presentNetworkModal(onSuccess);
             return { prompted: true };
         }
         return { prompted: false };

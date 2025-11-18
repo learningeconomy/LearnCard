@@ -4,7 +4,7 @@ type SlimCaretLeftProps = { className?: string; color?: string; strokeWidth?: st
 
 const SlimCaretLeft: React.FC<SlimCaretLeftProps> = ({
     className = '',
-    color = '#353E64',
+    color = '#6F7590',
     strokeWidth = '3',
 }) => {
     return (
@@ -18,10 +18,10 @@ const SlimCaretLeft: React.FC<SlimCaretLeftProps> = ({
         >
             <path
                 d="M18.75 24.375L9.375 15L18.75 5.625"
-                stroke="#6F7590"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
             />
         </svg>
     );

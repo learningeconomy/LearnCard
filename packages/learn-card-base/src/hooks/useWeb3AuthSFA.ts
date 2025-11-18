@@ -300,7 +300,11 @@ export const useWeb3AuthSFA = () => {
 
             setInitLoading(false);
             if (redirectUrl) {
-                window.location.href = '/login';
+                if (typeof redirectUrl === 'string') {
+                    window.location.href = redirectUrl;
+                } else {
+                    window.location.href = '/login';
+                }
             }
             // One day we will solve this weird logout issue - must be hard refresh or state resets itself in a race condition somewhere.
             //history.push('/login');

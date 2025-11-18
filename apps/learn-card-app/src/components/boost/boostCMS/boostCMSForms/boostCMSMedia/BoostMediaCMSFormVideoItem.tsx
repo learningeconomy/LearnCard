@@ -1,20 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { useIonModal } from '@ionic/react';
 
-import { BoostMediaOptionsEnum } from '../../../boost';
+import CreateMediaAttachmentForm from './CreateMediaAttachmentForm';
+import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import Video from 'learn-card-base/svgs/Video';
-import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
-import { CreateMediaAttachmentFormModal } from './CreateMediaAttachmentForm';
+
+import { BoostMediaOptionsEnum } from '../../../boost';
 import { BoostMediaCMSFormItemProps } from './BoostCMSMediaForm';
 import {
     VideoMetadata,
-    isYoutubeUrl,
-    getYoutubeVideoId,
-    getCoverImageUrl,
     getVideoSource,
     getVideoMetadata,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
@@ -24,6 +23,10 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
     state,
     setState,
 }) => {
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
     const [metaData, setMetaData] = useState<VideoMetadata | null>(null);
 
     const handleGetVideoMetadata = async () => {
@@ -35,60 +38,32 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
         handleGetVideoMetadata();
     }, [media]);
 
-    const [presentEditSheetModal, dismissEditSheetModal] = useIonModal(
-        CreateMediaAttachmentFormModal,
-        {
-            initialState: state,
-            initialMedia: media,
-            initialIndex: index,
-            setParentState: setState,
-            initialActiveMediaType: BoostMediaOptionsEnum.video,
-            handleCloseModal: () => dismissEditSheetModal(),
-            showCloseButton: false,
-            hideBackButton: true,
-            title: (
-                <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                    Media Attachment
-                </p>
-            ),
-        }
-    );
-
-    const [presentCenterModal, dismissCenterModal] = useIonModal(CreateMediaAttachmentFormModal, {
-        initialState: state,
-        initialMedia: media,
-        initialIndex: index,
-        setParentState: setState,
-        hideBackButton: true,
-        initialActiveMediaType: BoostMediaOptionsEnum.video,
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: false,
-        title: (
-            <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                Media Attachment
-            </p>
-        ),
-    });
-
-    const handleEditMobile = () => {
-        presentEditSheetModal({
-            cssClass: 'mobile-modal user-options-modal',
-            initialBreakpoint: 0.9,
-            handleBehavior: 'none',
-        });
-    };
-
-    const handleEditDesktop = () => {
-        presentCenterModal({
-            cssClass: 'center-modal user-options-modal',
-            backdropDismiss: false,
-            showBackdrop: false,
-        });
-    };
-
-    const handleCloseModal = () => {
-        dismissEditSheetModal();
-        dismissCenterModal();
+    const handleEdit = () => {
+        newModal(
+            <div className="w-full flex flex-col items-center justify-center">
+                <CreateMediaAttachmentForm
+                    initialState={state}
+                    initialMedia={media}
+                    initialIndex={index}
+                    setParentState={setState}
+                    hideBackButton={true}
+                    initialActiveMediaType={BoostMediaOptionsEnum.video}
+                    handleCloseModal={() => closeModal()}
+                    showCloseButton={false}
+                    createMode={false}
+                    title={
+                        <p className="font-poppins flex items-center justify-center text-xl w-full h-full text-grayscale-900">
+                            Media Attachment
+                        </p>
+                    }
+                />
+            </div>,
+            {
+                sectionClassName: '!max-w-[500px]',
+                hideButton: true,
+                usePortal: true,
+            }
+        );
     };
 
     return (
@@ -133,16 +108,9 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
             {/* TrashBin icon, positioned absolutely to the right bottom corner */}
             <div className="absolute right-1 bottom-1 z-30 cursor-pointer flex flex-col justify-between h-full pt-[10px]">
                 <button
-                    onClick={() => handleEditDesktop()}
+                    onClick={() => handleEdit()}
                     type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-desktop"
-                >
-                    <Pencil className="h-[60%]" />
-                </button>
-                <button
-                    onClick={() => handleEditMobile()}
-                    type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-mobile"
+                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
                 >
                     <Pencil className="h-[60%]" />
                 </button>

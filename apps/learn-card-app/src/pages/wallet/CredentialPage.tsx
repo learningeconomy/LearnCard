@@ -170,11 +170,6 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
 
     useLoadingLine(credentialsBackgroundFetching);
 
-    useEffect(() => {
-        credentialSearchStore.set.reset();
-        newCredsStore.set.clearNewCreds(category as any);
-    }, []);
-
     const simpleEarnedBoostsCount = records?.pages?.[0]?.records?.length ?? 0;
     const simpleManagedBoostsCount = managedBoosts?.pages?.[0]?.records?.length ?? 0;
 

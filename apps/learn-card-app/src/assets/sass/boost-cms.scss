@@ -408,15 +408,41 @@ ion-segment-button {
 }
 
 ion-datetime::part(calendar-day) {
-    font-family: 'Poppins';
-    font-size: x-large;
+    font-family: 'Noto Sans';
+    font-size: large;
 }
 
 ion-datetime::part(month-year-button) {
-    font-family: 'Poppins';
-    font-size: x-large;
+    font-family: 'Noto Sans';
+    font-size: large;
     font-weight: 500;
-    letter-spacing: 0.5px;
+    width: 100%;
+}
+
+.calendar-month-year-toggle #toggle-wrapper {
+    justify-content: space-between;
+}
+
+ion-datetime {
+    --background: rgb(245, 235, 247);
+    --background-rgb: 245, 235, 247;
+    --wheel-highlight-background: rgb(218, 216, 255);
+    --wheel-highlight-border-radius: 48px;
+    --wheel-fade-background-rgb: 246, 246, 247;
+    --datetime-selected-date: 10px;
+    --title-font-size: 10px;
+}
+
+ion-datetime.datetime-header .datetime-header .datetime-title {
+    font-size: 10px !important;
+}
+
+ion-datetime.datetime-header .datetime-selected-date ion-datetime::part(wheel-item) {
+    color: rgb(192, 192, 192);
+}
+
+ion-datetime::part(wheel-item active) {
+    color: rgb(32, 30, 171);
 }
 
 .boost-verifier-badge-display {

@@ -53,7 +53,7 @@ const BoostCMSTitleForm: React.FC<{
     const placeHolder = isID || isMembership ? 'Title' : 'Boost Title';
 
     return (
-        <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-2">
+        <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-6">
             <IonTextarea
                 autocapitalize="on"
                 value={basicInfo?.name}

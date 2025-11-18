@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { IonList, IonSpinner } from '@ionic/react';
 import AddressBookContactItem from './AddressBookContactItem';
 
-import { LCNProfile } from '@learncard/types';
+import { LCNProfile, VC } from '@learncard/types';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 export const AddressBookContactList: React.FC<{
@@ -30,6 +30,7 @@ export const AddressBookContactList: React.FC<{
     search: string;
     setConnectionCount: React.Dispatch<React.SetStateAction<number>>;
     showArrow?: boolean;
+    resolvedCredential?: VC;
 }> = ({
     pages,
     hasNextPage,
@@ -48,6 +49,7 @@ export const AddressBookContactList: React.FC<{
     search,
     setConnectionCount,
     showArrow = false,
+    resolvedCredential,
 }) => {
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +76,7 @@ export const AddressBookContactList: React.FC<{
                 search={search}
                 setConnectionCount={setConnectionCount}
                 showArrow={showArrow}
+                resolvedCredential={resolvedCredential}
             />
         );
     });
@@ -106,6 +109,7 @@ export const AddressBookContactList: React.FC<{
                             search={search}
                             setConnectionCount={setConnectionCount}
                             showArrow={showArrow}
+                            resolvedCredential={resolvedCredential}
                         />
                     ))}
                 </>

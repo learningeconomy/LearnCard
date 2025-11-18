@@ -12,14 +12,29 @@ export const useGetCurrentLCNUser = () => {
     const isLoggedIn = useIsLoggedIn();
     const hasParentSwitchedProfiles = switchedProfileStore.use.isSwitchedProfile();
 
-    const { data: profile, error, refetch, isLoading: currentLCNUserLoading } = useGetProfile();
+    // Initial cached profile (wallet.invoke.getProfile without profileId returns cached userData)
+    const {
+        data: cachedProfile,
+        error,
+        isLoading: cachedLoading,
+        refetch: refetchCached,
+    } = useGetProfile();
+
+    // Force a fresh fetch by querying the current profile by profileId
+    const profileId = cachedProfile?.profileId;
+    const {
+        data: freshProfile,
+        isLoading: freshLoading,
+        refetch: refetchFresh,
+    } = useGetProfile(profileId, Boolean(profileId));
 
     const [lcnProfile, setLcnProfile] = useState<LCNProfile | null>(null);
 
     const loadLCNUser = async () => {
-        if (profile) {
-            setLcnProfile(profile);
-            auth.set({ did: profile.did });
+        const next = freshProfile ?? cachedProfile ?? null;
+        if (next) {
+            setLcnProfile(next);
+            auth.set({ did: next.did });
         }
 
         if (error) setLcnProfile(null);
@@ -29,12 +44,20 @@ export const useGetCurrentLCNUser = () => {
         if (currentUser && isLoggedIn) {
             loadLCNUser();
         }
-    }, [hasParentSwitchedProfiles, lcnProfile, profile, currentLCNUserLoading]);
+    }, [
+        hasParentSwitchedProfiles,
+        cachedProfile,
+        freshProfile,
+        cachedLoading,
+        freshLoading,
+        isLoggedIn,
+        currentUser,
+    ]);
 
     return {
         currentLCNUser: lcnProfile,
-        refetch,
-        currentLCNUserLoading,
+        refetch: refetchFresh ?? refetchCached,
+        currentLCNUserLoading: cachedLoading || freshLoading,
     };
 };
 

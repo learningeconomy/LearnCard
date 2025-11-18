@@ -8,7 +8,7 @@ import { useModal } from 'learn-card-base';
 
 import { LearnCardRolesEnum, OnboardingStepsEnum } from './onboarding.helpers';
 
-const OnboardingContainer: React.FC = () => {
+const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
     const { closeModal } = useModal();
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
 
@@ -22,6 +22,7 @@ const OnboardingContainer: React.FC = () => {
                 step={step}
                 role={role}
                 setStep={setStep}
+                onSuccess={onSuccess}
             />
         );
     }

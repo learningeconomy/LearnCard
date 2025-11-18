@@ -5,6 +5,7 @@ import BlocksIcon from 'learn-card-base/svgs/Blocks';
 import CustomSpinner from '../../svgs/CustomSpinner';
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 import CheckListContainer from '../checklist/CheckListContainer';
+import useLCNGatedAction from '../../network-prompts/hooks/useLCNGatedAction';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 
@@ -20,6 +21,7 @@ export const CheckListButton: React.FC<{ className?: string }> = ({ className = 
     const flags = useFlags();
     const { newModal } = useModal();
     const { completedItems } = useGetCheckListStatus();
+    const { gate } = useLCNGatedAction();
 
     const { theme, colors } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
@@ -29,7 +31,9 @@ export const CheckListButton: React.FC<{ className?: string }> = ({ className = 
         checklistStore.useTracked.isParsing();
     const isParsing = resume || certificate || transcript || diploma || rawVC;
 
-    const handleCheckListButton = () => {
+    const handleCheckListButton = async () => {
+        const { prompted } = await gate();
+        if (prompted) return;
         newModal(
             <CheckListContainer />,
             { className: '!bg-transparent' },

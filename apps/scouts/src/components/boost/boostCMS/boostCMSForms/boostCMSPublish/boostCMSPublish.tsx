@@ -2,12 +2,9 @@ import React from 'react';
 
 import { IonCol, IonRow } from '@ionic/react';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
+
 import { BoostCMSState } from '../../../boost';
-import {
-    BoostCategoryOptionsEnum,
-    boostCategoryOptions,
-    boostVCTypeOptions,
-} from '../../../boost-options/boostOptions';
+import { boostCategoryOptions } from '../../../boost-options/boostOptions';
 
 export const BoostCMSPublish: React.FC<{
     state: BoostCMSState;

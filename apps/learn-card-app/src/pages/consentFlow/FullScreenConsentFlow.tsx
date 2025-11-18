@@ -15,6 +15,7 @@ import {
     ModalTypes,
 } from 'learn-card-base';
 
+import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import ConsentFlowConnecting from './ConsentFlowConnecting';
 import ConsentFlowConfirmation from './ConsentFlowConfirmation';
 import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
@@ -50,6 +51,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const { newModal, closeModal, closeAllModals } = useModal();
+    const { gate } = useLCNGatedAction();
 
     const { returnTo: urlReturnTo, recipientToken } = queryString.parse(location.search);
     const returnTo = urlReturnTo || contractDetails?.redirectUrl?.trim(); // prefer url param
@@ -77,6 +79,9 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             customDuration: string;
         }
     ) => {
+        const { prompted } = await gate();
+        if (prompted) return;
+
         setStep(ConsentFlowStep.connecting);
 
         try {

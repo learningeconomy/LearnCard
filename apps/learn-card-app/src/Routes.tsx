@@ -65,6 +65,9 @@ const WalletServiceWorker = lazyWithRetry(
     () => import('./pages/walletServiceWorker/WalletServiceWorker')
 );
 const ClaimBoost = lazyWithRetry(() => import('./pages/claimBoost/ClaimBoost'));
+const ApproveAccount = lazyWithRetry(
+    () => import('./pages/approveAccount/ApproveAccount')
+);
 
 import SocialBadgesPage from './pages/socialBadgesPage/SocialBadgesPage';
 
@@ -240,6 +243,11 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
                         <SentryRoute exact path="/invite" component={InvitePage} />
                         <SentryRoute exact path="/claim/boost" component={ClaimBoost} />
+                        <SentryRoute
+                            exact
+                            path="/approve-account"
+                            component={ApproveAccount}
+                        />
                         <SentryRoute
                             exact
                             path="/claim/from-dashboard"

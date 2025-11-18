@@ -94,9 +94,10 @@ export const useVerifyContactMethodWithProofOfLogin = () => {
     });
 };
 
-export const useGetProofOfLoginVp = () => {
+export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
     const { initWallet } = useWallet();
     const [presentAlert] = useIonAlert();
+    const showAlert = opts?.showAlert ?? false;
 
     return useMutation<
         { success: boolean; vp?: string; error?: string },
@@ -115,16 +116,20 @@ export const useGetProofOfLoginVp = () => {
         },
         onSuccess: data => {
             if (!data?.success) {
-                presentAlert({
-                    header: 'Error',
-                    message: data?.error || 'Failed to get Proof of Login VP',
-                    buttons: [
-                        {
-                            text: 'Dismiss',
-                            role: 'cancel',
-                        },
-                    ],
-                });
+                if (showAlert) {
+                    presentAlert({
+                        header: 'Error',
+                        message: data?.error || 'Failed to get Proof of Login VP',
+                        buttons: [
+                            {
+                                text: 'Dismiss',
+                                role: 'cancel',
+                            },
+                        ],
+                    });
+                } else {
+                    console.warn('useGetProofOfLoginVp: Failed to get Proof of Login VP', data?.error);
+                }
                 return;
             }
         },

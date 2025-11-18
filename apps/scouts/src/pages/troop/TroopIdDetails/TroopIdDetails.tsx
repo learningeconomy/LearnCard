@@ -9,8 +9,12 @@ import PermissionsBox from './PermissionsBox';
 import IssueHistoryBox from './IssueHistoryBox';
 import VerificationsBox from './VerificationsBox';
 
-import { getScoutsNoun, getScoutsNounForRole, getScoutsRole } from '../../../helpers/troop.helpers';
-import { ScoutsRoleEnum } from '../../../stores/troopPageStore';
+import {
+    getScoutsNoun,
+    getScoutsNounForRole,
+    getScoutsRole,
+} from 'apps/scouts/src/helpers/troop.helpers';
+import { ScoutsRoleEnum } from 'apps/scouts/src/stores/troopPageStore';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { VC, VerificationItem } from '@learncard/types';
 
@@ -75,9 +79,9 @@ export const TroopIdDetails: React.FC<TroopIdDetailsProps> = ({
                                     <span className="text-grayscale-700 font-notoSans">
                                         {isGeneralView
                                             ? `on ${format(
-                                                  new Date(credential.issuanceDate),
-                                                  'MMMM dd, yyyy'
-                                              )}`
+                                                new Date(credential.issuanceDate),
+                                                'MMMM dd, yyyy'
+                                            )}`
                                             : troopName}
                                     </span>
                                 </div>

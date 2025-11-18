@@ -77,6 +77,7 @@ export const useManagedBoost = (
     const isCertificate = boostVC?.display?.displayType === 'certificate';
     const isAwardDisplay = boostVC?.display?.displayType === 'award';
 
+    const previewType = boostVC?.display?.previewType;
     const displayType = boostVC?.credentialSubject?.achievement?.achievementType;
     const formattedDisplayType = getAchievementTypeDisplayText(displayType, categoryType);
 
@@ -245,6 +246,7 @@ export const useManagedBoost = (
             </IonList>
         ),
         hideQRCode: true,
+        previewType,
     };
 
     const managedBoostModalProps = {
@@ -331,6 +333,7 @@ export const useManagedBoost = (
         ),
         formattedDisplayType: formattedDisplayType,
         displayType: cred?.display?.displayType,
+        previewType,
     };
 
     const presentManagedBoostModal = () => {

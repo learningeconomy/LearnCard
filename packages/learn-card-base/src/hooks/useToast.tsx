@@ -109,8 +109,11 @@ const CustomToast: React.FC<CustomToastProps> = ({
             space-x-3
           
             /* Colors */
-            bg-[#eff0f5]
-            text-black
+            ${
+                toastType === ToastTypeEnum.Success
+                    ? 'bg-[#eff0f5] text-black'
+                    : 'bg-red-700 text-white'
+            }
           
             /* Optional Custom Class */
             ${className}

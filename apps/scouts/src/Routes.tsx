@@ -161,6 +161,12 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/invite" component={InvitePage} />
                         <SentryRoute exact path="/claim/boost" component={ClaimBoost} />
 
+                        <SentryRoute
+                            exact
+                            path="/frameworks/:frameworkId/skills/:skillId"
+                            component={LaunchPad}
+                        />
+
                         <PrivateRoute
                             exact
                             path="/select-credentials/:profileId"

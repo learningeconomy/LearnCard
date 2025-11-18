@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -14,19 +14,65 @@ import {
     useDisconnectWithMutation,
     useBlockProfileMutation,
     useGetPaginatedConnections,
+    useWallet,
 } from 'learn-card-base';
+import { useGetBoostParents } from 'learn-card-base';
 import PurpGhost from '../../../assets/lotties/purpghost.json';
 import Lottie from 'react-lottie-player';
+import { VC } from '@learncard/types';
 
 const AddressBookConnections: React.FC<{
     activeTab: AddressBookTabsEnum;
     connectionCount: number;
     setConnectionCount: React.Dispatch<React.SetStateAction<number>>;
-}> = ({ connectionCount, setConnectionCount, activeTab }) => {
+    boostId: string | undefined;
+    selectedGroupId: string;
+    resolvedCredential?: VC;
+}> = ({
+    connectionCount,
+    setConnectionCount,
+    activeTab,
+    boostId,
+    selectedGroupId,
+    resolvedCredential,
+}) => {
     const queryClient = useQueryClient();
     const { url } = useRouteMatch();
+    const { initWallet } = useWallet();
+    const [matchingConnections, setMatchingConnections] = useState<any[] | null>(null);
 
     const { data, isLoading, error, refetch } = useGetConnections();
+
+    const parentBoostQuery = useGetBoostParents(boostId, 2);
+    const troopParent = parentBoostQuery?.data?.records?.find((p: any) => p.type === 'ext:TroopID');
+
+    const getTroopConnections = async (id: string) => {
+        const wallet = await initWallet();
+        const troopCount = await wallet.invoke.getPaginatedBoostRecipientsWithChildren(id);
+        return troopCount;
+    };
+
+    useEffect(() => {
+        const fetchMatchingConnections = async () => {
+            if (!boostId || !data) {
+                setMatchingConnections(null);
+                return;
+            }
+
+            const troopData = await getTroopConnections(troopParent?.uri ?? boostId);
+            const dataProfileIds = new Set(data.map(d => d.profileId));
+
+            const troopDataFiltered = troopData?.records?.filter(record =>
+                dataProfileIds.has(record?.to?.profileId)
+            );
+            const troopDataMapped = troopDataFiltered?.map(item => item?.to);
+            setMatchingConnections(troopDataMapped);
+        };
+
+        fetchMatchingConnections();
+    }, [boostId, troopParent?.uri, data, initWallet]);
+
+    const contactsToShow = boostId ? matchingConnections : data;
 
     const queryOptions = { limit: 10 };
     const {
@@ -42,8 +88,12 @@ const AddressBookConnections: React.FC<{
     const [presentToast] = useIonToast();
 
     useEffect(() => {
-        if (!isLoading && data) setConnectionCount(data?.length ?? 0);
-    }, [connectionCount, data, activeTab, url]);
+        if (selectedGroupId === 'all') {
+            setConnectionCount(data?.length ?? 0);
+        } else if (!isLoading && matchingConnections !== null) {
+            setConnectionCount(matchingConnections?.length);
+        } else if (!isLoading && data) setConnectionCount(data?.length ?? 0);
+    }, [matchingConnections, data, isLoading, activeTab, url]);
 
     const handleRemoveConnection = async (
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -196,11 +246,12 @@ const AddressBookConnections: React.FC<{
                     handleRemoveConnection={handleRemoveConnection}
                     showBlockButton
                     handleBlockUser={handleBlockUser}
-                    contacts={data}
-                    pages={paginatedData?.pages}
+                    contacts={contactsToShow}
+                    pages={!matchingConnections && !boostId && paginatedData?.pages}
                     hasNextPage={hasNextPage}
                     fetchNextPage={fetchNextPage}
                     isFetching={isFetching}
+                    resolvedCredential={resolvedCredential}
                 />
             )}
             {!isLoading && (data?.length === 0 || error) && (

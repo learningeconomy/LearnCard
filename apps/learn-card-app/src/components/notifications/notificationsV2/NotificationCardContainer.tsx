@@ -5,11 +5,13 @@ import {
     useAcceptConnectionRequestMutation,
     useMarkNotificationRead,
     useGetProfile,
+    useGetCurrentLCNUser,
 } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import NotificationBoostCard from './NotificationBoostCard';
 import ConnectionRequestCard from './ConnectionRequestCard';
 import NotificationConsentFlowCard from './NotificationConsentFlowCard';
+import NotificationProfileApprovalCard from './NotificationProfileApprovalCard';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIonAlert } from '@ionic/react';
 
@@ -26,6 +28,7 @@ export const NOTIFICATION_TYPES = {
     BOOST_ACCEPTED: 'BOOST_ACCEPTED',
     CONSENT_FLOW_TRANSACTION: 'CONSENT_FLOW_TRANSACTION',
     CREDENTIAL_RECEIVED: 'CREDENTIAL_RECEIVED',
+    PROFILE_PARENT_APPROVED: 'PROFILE_PARENT_APPROVED',
 };
 
 export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
@@ -63,6 +66,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     const { mutate: updateNotification } = useUpdateNotification();
 
     const { mutate: markNotificationAsRead } = useMarkNotificationRead();
+    const { refetch: refetchCurrentLCNUser } = useGetCurrentLCNUser();
 
     const handleArchiveNotification = async () => {
         await updateNotification({
@@ -248,6 +252,18 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
             />
         );
     }
+    /* Parent/Guardian approval notification */
+    if (type === NOTIFICATION_TYPES.PROFILE_PARENT_APPROVED) {
+        return (
+            <NotificationProfileApprovalCard
+                notification={notification}
+                onRead={async () => {
+                    await handleMarkAsRead();
+                    await refetchCurrentLCNUser();
+                }}
+            />
+        );
+    }
     /* If someone has accepted your boost*/
     if (type === NOTIFICATION_TYPES.BOOST_ACCEPTED) {
         const claimStatus = true;
@@ -291,7 +307,6 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
             />
         );
     }
-
     /* Someone made a transaction on your ConsentFlow contract (e.g. Accepted / updated) */
     if (type === NOTIFICATION_TYPES.CONSENT_FLOW_TRANSACTION) {
         return <NotificationConsentFlowCard notification={notification} />;

@@ -16,6 +16,7 @@ import ShareCredentialsModal from '../../../../../packages/learn-card-base/src/c
 import PlusButtonModalContent from '../../../../../packages/learn-card-base/src/components/plusButton/PlusButtonModalContent';
 import SubheaderPlusActionButton from './SubheaderPlusActionButton';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
+import CenteredSubHeader from '../../pages/skills/CenteredSubHeader';
 
 import { ACHIEVEMENT_CATEGORIES } from '../../../../../packages/learn-card-base/src/components/IssueVC/constants';
 import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
@@ -62,6 +63,9 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
             break;
         case SubheaderTypeEnum.MeritBadge:
             category = BoostCategoryOptionsEnum.meritBadge;
+            break;
+        case SubheaderTypeEnum.Skill:
+            category = BoostCategoryOptionsEnum.skill;
             break;
     }
 
@@ -182,6 +186,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                     </span>
                 </h2>
             </IonCol>
+
             <IonCol
                 size={plusButtonOverride ? '3' : '2'}
                 className="flex items-center justify-end p-0 ml-auto"

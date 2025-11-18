@@ -16,6 +16,7 @@ export const OnboardingFooter: React.FC<{
     showBackButton?: boolean;
     showCloseButton?: boolean;
     overrideSkip?: () => void;
+    disabled?: boolean;
 }> = ({
     step = OnboardingStepsEnum,
     role,
@@ -26,10 +27,14 @@ export const OnboardingFooter: React.FC<{
     showBackButton = false,
     showCloseButton = false,
     overrideSkip,
+    disabled,
 }) => {
     const { closeModal } = useModal();
-    const isDisabled = step === OnboardingStepsEnum.selectRole && !role;
-    const activeStyles = isDisabled ? 'bg-grayscale-200 text-white' : 'bg-emerald-700 text-white';
+    const isDisabled =
+        (disabled ?? false) || (step === OnboardingStepsEnum.selectRole && !role);
+    const activeStyles = isDisabled
+        ? 'bg-grayscale-200 text-grayscale-500 cursor-not-allowed'
+        : 'bg-emerald-700 text-white';
 
     const handleContinue = () => {
         if (step === OnboardingStepsEnum.selectRole) {

@@ -70,7 +70,7 @@ export const BoostCMSConfirmationPrompt: React.FC<{
         currentStep === BoostCMSStepsEnum.issueTo ? 'Issue Later' : 'Quit Without Saving';
 
     return (
-        <section className="py-5">
+        <section className="py-5 bg-white">
             <div className="flex flex-col items-center justify-center w-full px-4">
                 <div className="w-full flex flex-col items-center justify-center">
                     <div className="flex flex-col">

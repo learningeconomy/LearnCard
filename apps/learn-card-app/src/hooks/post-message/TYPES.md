@@ -12,6 +12,7 @@ Each action type has a corresponding payload interface:
 ```typescript
 interface RequestIdentityPayload {
     challenge?: string;  // Optional challenge string for DID Auth
+    appName?: string;    // Optional app name for consent modal
 }
 ```
 

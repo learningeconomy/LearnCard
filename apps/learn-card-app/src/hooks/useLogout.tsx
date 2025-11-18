@@ -21,7 +21,10 @@ const useLogout = () => {
     const [presentToast] = useIonToast();
     const queryClient = useQueryClient();
 
-    const handleLogout = async (branding: BrandingEnum) => {
+    const handleLogout = async (
+        branding: BrandingEnum,
+        options?: { appendQuery?: Record<string, string>; overrideRedirectUrl?: string }
+    ) => {
         setIsLoggingOut(true);
         const typeOfLogin = authStore?.get?.typeOfLogin();
         const nativeSocialLogins = [
@@ -31,10 +34,21 @@ const useLogout = () => {
             SocialLoginTypes.google,
         ];
 
-        const redirectUrl =
+        const baseRedirectUrl =
             IS_PRODUCTION || Capacitor.getPlatform() === 'android'
                 ? LOGIN_REDIRECTS[branding].redirectUrl
                 : LOGIN_REDIRECTS[branding].devRedirectUrl;
+
+        const appendParams = (url: string, params?: Record<string, string>) => {
+            if (!params || Object.keys(params).length === 0) return url;
+            const hasQuery = url.includes('?');
+            const usp = new URLSearchParams(params);
+            return `${url}${hasQuery ? '&' : '?'}${usp.toString()}`;
+        };
+
+        const redirectUrl = options?.overrideRedirectUrl
+            ? options.overrideRedirectUrl
+            : appendParams(baseRedirectUrl, options?.appendQuery);
 
         setTimeout(async () => {
             try {
@@ -48,7 +62,9 @@ const useLogout = () => {
                 }
 
                 await firebaseAuth.signOut(); // sign out of web layer
-                if (nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
+                const isNativeSocialLogin =
+                    !!typeOfLogin && nativeSocialLogins.includes(typeOfLogin as SocialLoginTypes);
+                if (isNativeSocialLogin && Capacitor.isNativePlatform()) {
                     try {
                         await FirebaseAuthentication?.signOut?.();
                     } catch (e) {

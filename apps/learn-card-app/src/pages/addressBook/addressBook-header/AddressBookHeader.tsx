@@ -7,7 +7,7 @@ import { AddressBookTabsEnum } from '../addressBookHelpers';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
-import useJoinLCNetworkModal from 'apps/learn-card-app/src/components/network-prompts/hooks/useJoinLCNetworkModal';
+import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
 
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
@@ -39,7 +39,7 @@ export const AddressBookHeader: React.FC<{
 
     const history = useHistory();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
 
     let headerTitle = 'Contacts';
 
@@ -74,11 +74,10 @@ export const AddressBookHeader: React.FC<{
                         </button>
                     </IonCol>
                     <button
-                        onClick={() => {
-                            if (!currentLCNUser && !currentLCNUserLoading) {
-                                handlePresentJoinNetworkModal();
-                                return;
-                            }
+                        onClick={async () => {
+                            const { prompted } = await gate();
+                            if (prompted) return;
+
                             if (currentLCNUser) {
                                 presentCenterModal({
                                     cssClass: 'generic-modal show-modal ion-disable-focus-trap',

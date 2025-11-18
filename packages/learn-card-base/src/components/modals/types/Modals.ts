@@ -1,5 +1,5 @@
 import { FC, ReactNode } from 'react';
-import type { SuggestString } from '@learncard/helpers';
+import type { SuggestString } from '@learncard/types';
 
 export const enum ModalTypes {
     None = '',

@@ -27,7 +27,12 @@ export const ShareCredentialModal: React.FC<ShareCredentialModalProps> = ({
     return (
         <div className="flex flex-col h-full w-full bg-grayscale-100">
             {/* Header */}
-            <div className="bg-white border-b border-grayscale-200 p-6">
+            <div 
+                className="bg-white border-b border-grayscale-200 p-6"
+                style={{
+                    paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+                }}
+            >
                 <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                     Share Credential
                 </h2>
@@ -51,7 +56,14 @@ export const ShareCredentialModal: React.FC<ShareCredentialModalProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white">
+            <div 
+                className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
+                style={{
+                    paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                    paddingLeft: 'max(1.5rem, env(safe-area-inset-left))',
+                    paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
+                }}
+            >
                 <button
                     onClick={onCancel}
                     className="px-8 py-3 text-lg font-semibold text-grayscale-700 bg-grayscale-100 rounded-full hover:bg-grayscale-200 transition-colors disabled:opacity-50"

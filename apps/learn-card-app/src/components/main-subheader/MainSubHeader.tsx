@@ -8,12 +8,14 @@ import ShareCredentialsModal from '../../../../../packages/learn-card-base/src/c
 import PlusButtonModalContent from '../../../../../packages/learn-card-base/src/components/plusButton/PlusButtonModalContent';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
 import CenteredSubHeader from '../../pages/skills/CenteredSubHeader';
+import DotIcon from 'learn-card-base/svgs/DotIcon';
 import Plus from 'learn-card-base/svgs/Plus';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
 
 import useTheme from '../../theme/hooks/useTheme';
+import newCredsStore from 'learn-card-base/stores/newCredsStore';
 
 const formatCount = (count: number | string): string => {
     if (typeof count === 'string') return count;
@@ -42,6 +44,10 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const { getThemedCategoryColors, getThemedCategoryIcons, theme } = useTheme();
     const colors = getThemedCategoryColors(category as CredentialCategoryEnum);
     const { Icon } = getThemedCategoryIcons(category as CredentialCategoryEnum);
+
+    const newCreds = newCredsStore.use.newCreds();
+    const newCredsForCategory = newCreds?.[category as CredentialCategoryEnum] ?? [];
+    const newCredsCount = newCredsForCategory?.length ?? 0;
 
     const { labels } = theme?.categories.find(c => c.categoryId === category) || {};
     const { headerTextColor, backgroundPrimaryColor } = colors;
@@ -74,6 +80,15 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
         if (count === 1) titleDisplay = labels?.singular;
     }
 
+    const newCredsCountDisplay =
+        newCredsCount > 0 ? (
+            <span
+                className={`text-${colors?.indicatorColor} font-poppins text-[17px] font-[600] inline-flex items-center gap-[5px] ml-[5px]`}
+            >
+                <DotIcon className="w-[10px] h-[10px]" /> {newCredsCount} New
+            </span>
+        ) : null;
+
     return (
         <IonRow className="max-w-[700px] mx-auto">
             {subheaderType === SubheaderTypeEnum.Skill ||
@@ -91,7 +106,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                     <h2
                         className={`select-none whitespace-nowrap flex flex-col gap-[4px] ${headerTextColor}`}
                     >
-                        <span className="font-poppins text-[22px] leading-[100%]">
+                        <span className="font-poppins text-[22px] leading-[100%] flex items-center">
                             {countLoading && (
                                 <IonSpinner
                                     name="crescent"
@@ -99,6 +114,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                                 />
                             )}{' '}
                             {titleDisplay}
+                            {newCredsCountDisplay}
                         </span>
                         <span className="font-poppins text-[12px]">
                             <span>{helperText}</span>{' '}

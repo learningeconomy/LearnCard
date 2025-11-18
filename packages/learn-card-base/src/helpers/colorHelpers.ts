@@ -15,6 +15,7 @@ export const getRandomBaseColor = (): string => {
 
 export const getNotificationButtonColor = (path?: string) => {
     if (
+        path === '/passport' ||
         path === '/home' ||
         path === '/jobs' ||
         path === '/wallet' ||

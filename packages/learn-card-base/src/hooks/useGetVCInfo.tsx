@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 import ProfilePicture, {
     UserProfilePicture,
@@ -18,6 +18,7 @@ import {
     isClrCredential as checkIsClrCredential,
     getClrLinkedCredentialCounts,
     getCredentialSubjectAchievementData,
+    getEndorsements,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 
@@ -25,12 +26,14 @@ import useCurrentUser from './useGetCurrentUser';
 import useGetCurrentLCNUser from './useGetCurrentLCNUser';
 import { useGetDid, useGetProfile } from 'learn-card-base/react-query/queries/queries';
 
-import { UnsignedAchievementCredential, UnsignedVC } from '@learncard/types';
+import { UnsignedAchievementCredential, UnsignedVC, VC } from '@learncard/types';
 import {
     getIDCardDisplayInputsFromVC,
     ID_CARD_DISPLAY_TYPES,
 } from 'learn-card-base/helpers/credentials/ids';
 import { ellipsisMiddle } from 'learn-card-base/helpers/stringHelpers';
+
+import { useWallet } from 'learn-card-base';
 
 /**
  * useGetVCInfo Hook
@@ -45,10 +48,14 @@ export const useGetVCInfo = (
     vc: UnsignedVC | UnsignedAchievementCredential,
     categoryType?: string
 ) => {
+    // --- Wallet context ---
+    const { initWallet } = useWallet();
+
     // --- Current user context ---
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: currentUserDidKey } = useGetDid('key');
+    const [endorsements, setEndorsements] = useState<{ endorsement: VC; metadata: any }[]>([]);
 
     // --- Basic VC fields ---
     const credentialSubject = getCredentialSubject(vc);
@@ -77,6 +84,8 @@ export const useGetVCInfo = (
     // ========================================================================
     // ISSUER INFO
     // ========================================================================
+    const isCurrentUserIssuer =
+        issuerDid === currentUserDidKey || issuerDid === currentLCNUser?.did;
     if (issuerProfileId) {
         // Issuer has LCN profile
         issuerName =
@@ -93,7 +102,7 @@ export const useGetVCInfo = (
                 {getEmojiFromDidString(issuerDid!)}
             </div>
         );
-    } else if (issuerDid === currentUserDidKey) {
+    } else if (isCurrentUserIssuer) {
         // Issuer is current user
         issuerName = currentUser?.name;
     } else {
@@ -116,6 +125,8 @@ export const useGetVCInfo = (
     // ========================================================================
     // SUBJECT INFO
     // ========================================================================
+    const isCurrentUserSubject =
+        issueeDid === currentUserDidKey || issueeDid === currentLCNUser?.did;
     if (issueeProfileId) {
         issueeName =
             issueeProfile?.displayName || (issueeProfileLoading ? 'Loading...' : issueeDid);
@@ -136,7 +147,7 @@ export const useGetVCInfo = (
                 {getEmojiFromDidString(issueeDid)}
             </div>
         );
-    } else if (issueeDid === currentUserDidKey) {
+    } else if (isCurrentUserSubject) {
         // Subject is current user
         issueeName = currentUser?.name || issueeDid;
     } else if (credentialSubject?.identifier) {
@@ -242,6 +253,7 @@ export const useGetVCInfo = (
     const attachments = vc?.attachments ?? [];
     const skills = vc?.skills ?? [];
     const evidence = vc?.evidence ?? [];
+    const source = credentialSubject?.source ?? {};
     const { description, criteria, alignment } = getCredentialSubjectAchievementData(vc);
 
     // Achievement type resolution
@@ -260,6 +272,7 @@ export const useGetVCInfo = (
     // DISPLAY METADATA
     // ========================================================================
     const displayType = vc?.display?.displayType;
+    const previewType = vc?.display?.previewType;
 
     // ID card-specific display settings
     const idBackgroundImage = vc?.boostID?.backgroundImage;
@@ -278,20 +291,37 @@ export const useGetVCInfo = (
     const linkedCredentialCount = isClrCredential ? getClrLinkedCredentialCounts(vc) : 0;
 
     // ========================================================================
+    // Endorsements
+    // ========================================================================
+    useEffect(() => {
+        const fetchEndorsements = async () => {
+            const wallet = await initWallet();
+            const endorsements = await getEndorsements(wallet, vc);
+
+            setEndorsements(endorsements);
+        };
+        fetchEndorsements();
+    }, []);
+    const endorsementComment = vc?.credentialSubject?.endorsementComment ?? '';
+
+    // ========================================================================
     // Final normalized VC data
     // ========================================================================
+
     return {
         // issuer
         issuerName,
         issuerProfileImageElement,
         issuerProfile,
         issuerDid,
+        isCurrentUserIssuer,
 
         // subject
         issueeName,
         subjectProfileImageElement,
         issueeProfile,
         issueeDid,
+        isCurrentUserSubject,
 
         // ID overrides
         idDisplayType,
@@ -315,9 +345,15 @@ export const useGetVCInfo = (
         isClrCredential,
         linkedCredentialCount,
         address,
+        source,
+
+        // Endorsements
+        endorsements,
+        endorsementComment,
 
         // Display settings
         displayType,
+        previewType,
         idBackgroundImage,
         idDimBackgroundImage,
         idFontColor,

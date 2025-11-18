@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { Keyboard } from '@capacitor/keyboard';
-import { BoostCMSMediaAttachment, BoostCMSMediaState, useModal } from 'learn-card-base';
-import { IonCol, IonRow, IonInput } from '@ionic/react';
-import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { Updater } from 'use-immer';
+import { createPortal } from 'react-dom';
+import { Keyboard } from '@capacitor/keyboard';
+
+import CaretLeft from 'learn-card-base/svgs/CaretLeft';
+
+import { IonCol, IonRow, IonInput } from '@ionic/react';
+
+import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 
 type BoostCMSMediaLinkAttachmentProps = {
@@ -17,6 +21,7 @@ type BoostCMSMediaLinkAttachmentProps = {
     createMode?: boolean;
     hideBackButton?: boolean;
     handleCloseModal?: () => void;
+    setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = ({
@@ -29,12 +34,11 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
     createMode,
     hideBackButton,
     handleCloseModal,
+    setShowCloseButtonState,
 }) => {
-    const { closeModal } = useModal();
+    const sectionPortal = document.getElementById('section-cancel-portal');
 
-    const { id, type, title, color, Icon } = boostMediaOptions.find(
-        ({ type }) => type === activeMediaType
-    );
+    const { title, color, Icon } = boostMediaOptions.find(({ type }) => type === activeMediaType);
 
     const [currentIndex, setCurrentIndex] = useState<number | undefined>(
         createMode ? undefined : initialIndex
@@ -47,21 +51,16 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
         <>
             <IonRow className="flex flex-col pb-4">
                 <IonCol className="w-full flex items-center justify-between mt-8 mb-2">
+                    <Icon
+                        version="outlined"
+                        className={`text-grayscale-800 h-[30px] max-h-[30px] max-w-[30px] mr-2`}
+                    />
                     <h6 className="flex items-center justify-center font-medium text-grayscale-800 font-poppins text-xl tracking-wide">
-                        {!hideBackButton && (
-                            <button
-                                className="text-grayscale-50 p-0 mr-[10px]"
-                                onClick={() => setActiveMediaType(null)}
-                            >
-                                <CaretLeft className="h-auto w-3 text-grayscale-800" />
-                            </button>
-                        )}
                         {title}
                     </h6>
-                    <Icon className={`text-${color} h-[40px] max-h-[40px] max-w-[40px]`} />
                 </IonCol>
             </IonRow>
-            <div className="flex flex-col items-center justify-center w-full mb-4">
+            <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px]">
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
@@ -82,7 +81,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                     }}
                 />
             </div>
-            <div className="flex flex-col items-center justify-center w-full mb-4">
+            <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px] pb-[20px]">
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
@@ -103,44 +102,54 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                     }}
                 />
             </div>
-            <button
-                onClick={() => {
-                    if (newLinkUrl) {
-                        let stateCopy = structuredClone(state);
-                        let stateUpdate = [
-                            ...stateCopy.links,
-                            {
-                                title: newLinkTitle || newLinkUrl,
-                                url: newLinkUrl,
-                                type: BoostMediaOptionsEnum.link,
-                            },
-                        ];
-                        stateCopy.links = stateUpdate;
-                        setState(stateUpdate);
-                        handleSave(stateCopy);
-                    } else {
-                        handleSave();
-                    }
-                }}
-                className={`flex items-center justify-center rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide bg-grayscale-900`}
-            >
-                Save
-            </button>
-            <div className="w-full flex items-center justify-center mt-[20px]">
-                <button
-                    onClick={() => {
-                        setState([]);
-                        if (!hideBackButton) {
-                            setActiveMediaType(null);
-                        }
-                        closeModal?.();
-                        handleCloseModal?.();
-                    }}
-                    className="text-grayscale-900 text-center text-sm"
-                >
-                    Cancel
-                </button>
-            </div>
+
+            {sectionPortal &&
+                createPortal(
+                    <div className="w-full flex flex-col items-center justify-center">
+                        <div className="flex justify-center gap-[10px] items-center relative !border-none w-full max-w-[500px]">
+                            <button
+                                onClick={() => {
+                                    if (newLinkUrl) {
+                                        let stateCopy = structuredClone(state);
+                                        let stateUpdate = [
+                                            ...stateCopy.links,
+                                            {
+                                                title: newLinkTitle || newLinkUrl,
+                                                url: newLinkUrl,
+                                                type: BoostMediaOptionsEnum.link,
+                                            },
+                                        ];
+                                        stateCopy.links = stateUpdate;
+                                        setState(stateUpdate);
+                                        handleSave(stateCopy);
+                                    } else {
+                                        handleSave();
+                                    }
+                                }}
+                                className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
+                            >
+                                Save
+                            </button>
+                        </div>
+
+                        <div className="flex flex-col justify-center items-center relative !border-none w-full max-w-[500px]">
+                            <button
+                                onClick={() => {
+                                    if (createMode) {
+                                        setActiveMediaType(null);
+                                        setShowCloseButtonState?.(true);
+                                    } else {
+                                        handleCloseModal?.();
+                                    }
+                                }}
+                                className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
+                            >
+                                Back
+                            </button>
+                        </div>
+                    </div>,
+                    sectionPortal
+                )}
         </>
     );
 };

@@ -20,12 +20,14 @@ import {
 } from 'learn-card-base';
 
 import { useFirebase } from '../../hooks/useFirebase';
+import useLogout from '../../hooks/useLogout';
 
 import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
 import OnboardingContainer from '../../components/onboarding/OnboardingContainer';
+import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
 import LearnCardTextLogo from '../../assets/images/learncard-text-logo.svg';
@@ -33,18 +35,21 @@ import LearnCardBrandMark from '../../assets/images/lca-brandmark.png';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 import DesktopLoginBG from '../../assets/images/desktop-login-bg.png';
+import EndorsementSuccessfullRequestModal from '../../components/boost-endorsements/EndorsementRequestModal/EndorsementSuccessfullRequestModal';
 
 import { themeStore } from '../../theme/store/themeStore';
+import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { ThemeEnum } from '../../theme/helpers/theme-helpers';
 import { useTheme } from '../../theme/hooks/useTheme';
 
 export const LoginContent: React.FC = () => {
     const { syncThemeDefaults } = useTheme();
-    const { newModal } = useModal();
+    const { newModal, closeModal } = useModal();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
     const { appleLogin, googleLogin } = useFirebase();
+    const { handleLogout } = useLogout();
 
     // const { installChapi } = useWallet();
     const query = usePathQuery();
@@ -97,6 +102,21 @@ export const LoginContent: React.FC = () => {
                     {},
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
+            } else if (profile?.approved === false) {
+                // Re-prompt EU Parental Consent if user was previously marked unapproved
+                newModal(
+                    <EUParentalConsentModalContent
+                        name={profile?.displayName ?? ''}
+                        dob={profile?.dob ?? ''}
+                        country={profile?.country ?? ''}
+                        onClose={closeModal}
+                    />,
+                    {
+                        sectionClassName:
+                            '!bg-transparent !border-none !shadow-none !rounded-none !mx-auto',
+                    },
+                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                );
             }
         } catch (e) {
             console.error('///error handlePromptOnboarding', e);
@@ -115,6 +135,21 @@ export const LoginContent: React.FC = () => {
         const lcnRedirectTo = redirectStore.get.lcnRedirect();
         // const isChapiInteraction = chapiStore.get.isChapiInteraction();
         try {
+            const underageFamily = query.get('underageFamily');
+            if (underageFamily) {
+                if (currentUser && isLoggedIn) {
+                    // Child still logged in: set redirect to families and logout to allow parent login
+                    redirectStore.set.lcnRedirect('/families?createFamily=true');
+                    handleLogout(BrandingEnum.learncard, {
+                        appendQuery: { redirectTo: '/families?createFamily=true' },
+                    });
+                    return;
+                } else {
+                    // Not logged in yet: set post-login redirect to family creation
+                    redirectStore.set.lcnRedirect('/families?createFamily=true');
+                    return;
+                }
+            }
             if (redirectTo) {
                 redirectStore.set.authRedirect(null);
                 chapiStore.set.isChapiInteraction(null);
@@ -138,6 +173,7 @@ export const LoginContent: React.FC = () => {
         query,
         handleGeneratePinUpdateToken,
         handlePromptOnboarding,
+        handleLogout,
     ]);
 
     useEffect(() => {
@@ -221,8 +257,27 @@ export const LoginContent: React.FC = () => {
 const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     alternateBgComponent,
 }) => {
+    const { newModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
+    const endorsementRequest = endorsementRequestStore.useTracked.endorsementRequest();
     const showConfirmation = confirmationStore.use.showConfirmation();
-    const { isDesktop } = useDeviceTypeByWidth();
+    const { isDesktop, isMobile } = useDeviceTypeByWidth();
+    const [isSuccessEndorsementModalOpen, setIsSuccessEndorsementModalOpen] =
+        useState<boolean>(false);
+
+    useEffect(() => {
+        if (
+            isMobile &&
+            !isSuccessEndorsementModalOpen &&
+            endorsementRequest?.relationship &&
+            endorsementRequest?.description
+        ) {
+            newModal(<EndorsementSuccessfullRequestModal showCloseButton />);
+            setIsSuccessEndorsementModalOpen(true);
+        }
+    }, [isMobile, isDesktop, isSuccessEndorsementModalOpen]);
 
     return (
         <IonPage color="emerald-700" className="flex flex-col h-full">
@@ -237,17 +292,27 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                 <IonGrid className="h-full w-full flex items-center justify-center bg-emerald-700">
                     <LoginContent />
                     {/* Desktop background image */}
-                    {isDesktop && (
-                        <>
-                            <div className="w-full h-full p-0 m-0 flex items-center justify-center">
-                                {alternateBgComponent ? (
-                                    alternateBgComponent
-                                ) : (
-                                    <img src={DesktopLoginBG} alt="" aria-hidden="true" />
-                                )}
-                            </div>
-                        </>
-                    )}
+                    {isDesktop &&
+                        !endorsementRequest?.relationship?.label &&
+                        !endorsementRequest?.description && (
+                            <>
+                                <div className="w-full h-full p-0 m-0 flex items-center justify-center">
+                                    {alternateBgComponent ? (
+                                        alternateBgComponent
+                                    ) : (
+                                        <img src={DesktopLoginBG} alt="" aria-hidden="true" />
+                                    )}
+                                </div>
+                            </>
+                        )}
+
+                    {isDesktop &&
+                        endorsementRequest?.relationship?.label &&
+                        endorsementRequest?.description && (
+                            <>
+                                <EndorsementSuccessfullRequestModal />
+                            </>
+                        )}
                 </IonGrid>
             </IonContent>
         </IonPage>

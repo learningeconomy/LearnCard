@@ -20,6 +20,7 @@ import ArrowRight from 'learn-card-base/svgs/ArrowRight';
 import ExpiredInviteLink from './ExpiredInviteLink';
 
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
+import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import { useAcceptConnectionRequestMutation } from 'learn-card-base';
@@ -62,6 +63,7 @@ export const AddContactView: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
 
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const { gate } = useLCNGatedAction();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
@@ -89,10 +91,8 @@ export const AddContactView: React.FC<{
         e.stopPropagation();
         const wallet = await initWallet();
 
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-            return;
-        }
+        const { prompted } = await gate();
+        if (prompted) return;
 
         setLoading(true);
         try {
@@ -128,9 +128,8 @@ export const AddContactView: React.FC<{
         e.stopPropagation();
         const wallet = await initWallet();
 
-        if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
-        }
+        const { prompted } = await gate();
+        if (prompted) return;
 
         setLoading(true);
         try {

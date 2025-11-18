@@ -55,6 +55,7 @@ import { LCNProfile } from '@learncard/types';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
+import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 
 export enum MyLearnCardModalViewModeEnum {
     child = 'child',
@@ -88,6 +89,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const currentUser = useCurrentUser();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
+    const { gate } = useLCNGatedAction();
 
     const { newModal, closeModal } = useModal();
     const { handleLogout, isLoggingOut } = useLogout();
@@ -187,7 +189,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 title: 'My Account',
                 Icon: OrangeProfileIcon,
                 caretText: '',
-                onClick: () => {
+                onClick: async () => {
                     newModal(
                         <UserProfileSetup
                             title="My Account"
@@ -210,7 +212,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 title: 'Personalize AI Sessions',
                 Icon: BlueMagicWand,
                 caretText: '',
-                onClick: () => {
+                onClick: async () => {
                     newModal(
                         <AiPassportPersonalizationContainer />,
                         { className: '!bg-transparent' },
@@ -222,7 +224,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 title: 'Email Addresses',
                 Icon: EmailIcon,
                 caretText: '',
-                onClick: () => {
+                onClick: async () => {
+                    const { prompted } = await gate();
+                    if (prompted) return;
                     newModal(
                         <UserContact />,
                         {},
@@ -234,8 +238,10 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 title: 'Build My LearnCard',
                 Icon: BuildColorBlocksIcon,
                 caretText: checkListItemText,
-                onClick: () => {
+                onClick: async () => {
                     // closeModal();
+                    const { prompted } = await gate();
+                    if (prompted) return;
                     newModal(
                         <CheckListContainer />,
                         { className: '!bg-transparent' },
@@ -312,7 +318,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
             title: 'Admin Tools',
             Icon: WrenchColorFillIcon,
             caretText: '',
-            onClick: () => {
+            onClick: async () => {
+                const { prompted } = await gate();
+                if (prompted) return;
                 newModal(
                     <AdminToolsModal />,
                     {},

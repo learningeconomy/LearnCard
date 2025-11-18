@@ -6,6 +6,7 @@ import { RouteComponentProps } from 'react-router-dom';
 import {
     BoostCMSState,
     LCAStylesPackRegistryEntry,
+    convertAttachmentsToEvidence,
     defaultCategoryThumbImages,
     defaultIDCardImage,
     getAchievementTypeFromCustomType,
@@ -192,6 +193,11 @@ export const updateBoost = async (
             ) ?? {};
     }
 
+    const evidence = convertAttachmentsToEvidence(vcInput?.mediaAttachments);
+    // attachments are deprecated in favor of evidence
+    // this will clear any existing attachments currently in draft on next update / publish
+    const attachments = undefined;
+
     const credentialPayload = {
         subject: walletDid,
         issuanceDate: currentDate,
@@ -207,8 +213,10 @@ export const updateBoost = async (
             backgroundColor: vcInput.appearance.backgroundColor,
             backgroundImage: vcInput.appearance.backgroundImage,
             displayType: vcInput?.appearance?.displayType ?? '',
+            previewType: vcInput?.appearance?.previewType ?? 'default',
         },
-        attachments: vcInput?.mediaAttachments,
+        evidence, // ! attachments are deprecated in favor of evidence
+        attachments,
         skills: vcInput?.skills ?? [],
         address: vcInput?.address,
         boostID: {
@@ -294,6 +302,7 @@ export const sendAndSaveBoostCredentialSelf = async (
     // TODO:
     // if boost status is DRAFT, set boost to LIVE then issue
     // if boost status is already live, then automatically boost user
+    // oxlint-disable-next-line no-unused-vars
     const { sentBoost, sentBoostUri } = await sendBoostCredential(wallet, profileId, boostUri);
     const uri = await wallet.store.LearnCloud.uploadEncrypted?.(sentBoost);
 
@@ -356,6 +365,7 @@ export const getDefaultAchievementTypeImage = (
     if (defaultStylePackEntry) return defaultStylePackEntry?.url;
     else if (!defaultStylePackEntry && !isDefaultAchievementTypeImage)
         return boostCategoryOptions[category]?.CategoryImage;
+    // oxlint-disable-next-line no-dupe-else-if
     else if (!defaultStylePackEntry && !isDefaultCategoryImage && !isDefaultAchievementTypeImage)
         return currentBadgeImage;
 
@@ -550,6 +560,7 @@ export const createBoost = async (vcInput: BoostCMSState, wallet: BespokeLearnCa
     };
 
     const vc = await wallet.invoke.issueCredential(newCredential);
+
     const boostUri = await wallet.invoke.createBoost(vc, {
         name: vcInput?.basicInfo?.name,
         type: vcInput?.basicInfo.achievementType,

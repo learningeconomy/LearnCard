@@ -170,6 +170,14 @@ export const NotificationTypeStyles: {
         iconCircleStyles: 'bg-grayscale-100',
         typeText: 'Consent Flow Transaction',
     },
+    ['endorsement']: {
+        viewButtonStyles: 'border-emerald-700 text-emerald-700',
+        unclaimedButtonStyles: 'text-white bg-emerald-700 border-emerald-700 ',
+        claimedButtonStyles: 'text-emerald-700 bg-emerald-50 border-emerald-50 cursor-default',
+        textStyles: 'text-indigo-600 capitalize',
+        iconCircleStyles: 'bg-emerald-700',
+        typeText: 'Endorsement',
+    },
 };
 
 export const UserNotificationTypeStyles: {

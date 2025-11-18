@@ -90,8 +90,8 @@ export const IdDetails: React.FC<IdDetailsProps> = ({
                                     <span className="text-grayscale-700 font-notoSans">
                                         {isGeneralView
                                             ? `on ${moment(credential.issuanceDate).format(
-                                                  'MMMM dd, yyyy'
-                                              )}`
+                                                'MMMM dd, yyyy'
+                                            )}`
                                             : troopName}
                                     </span>
                                 </div>

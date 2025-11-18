@@ -66,6 +66,24 @@ const AIResponseValidator = z.object({
     narrative: z.string().optional(),
 });
 
+// Map of skill name => single unicode emoji character
+const IconMapValidator = z.record(
+    z.string().min(1),
+    // Single emoji character (we accept any non-empty string; downstream can further validate)
+    z.string().min(1).max(8)
+);
+
+// LLM output schema: object-wrapped list to satisfy response_format type 'object'
+// We'll convert this into the IconMapValidator shape before returning
+const IconListContainerValidator = z.object({
+    items: z.array(
+        z.object({
+            name: z.string().min(1),
+            icon: z.string().min(1).max(8),
+        })
+    ),
+});
+
 const openai = process.env.OPENAI_API_KEY
     ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
     : undefined;
@@ -162,6 +180,82 @@ export const aiRouter = t.router({
             const parsedResponse = await BoostSkillHierarchyValidator.parseAsync(response);
 
             return transformLLMResultToOutputShape(parsedResponse);
+        }),
+
+    generateSkillIcons: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/ai/generate-skill-icons',
+                tags: ['AI'],
+                summary: 'Generate Skill Icons',
+                description:
+                    'Given a list of skill names, returns a mapping of each name to a single unicode emoji that best represents it. No skin tones, flags, or multi-character sequences.',
+            },
+        })
+        .input(z.object({ names: z.array(z.string().nonempty()).min(1) }))
+        .output(IconMapValidator)
+        .query(async ({ input, ctx }) => {
+            const {
+                user: { did },
+            } = ctx;
+            if (!openai) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'No OpenAI Key Set',
+                });
+            }
+
+            const { names } = input;
+
+            const systemPrompt = `You are assigning a single, standard Unicode emoji to represent each skill name.
+Rules:
+- Output exactly one emoji character per skill.
+- Use generic, non-skin-tone, non-flag emojis (no regional indicator flags, no skin tone modifiers).
+- Prefer clear semantic matches; if unsure, choose a sensible generic symbol like a circle or star.
+- Return ONLY a JSON object with an "items" array of objects, where each object has the exact input name and the chosen emoji, e.g. {"items":[{"name":"Skill A","icon":"🎯"}]}.`;
+
+            const userContent = `Skill names:\n${names
+                .map(n => `- ${n}`)
+                .join(
+                    '\n'
+                )}\n\nReturn a JSON object of the form { items: [{ name, icon }] } for these names.`;
+
+            // TODO switch to gpt 5 and use responses API
+            // will have to bump the openai package
+            const completion = await openai.chat.completions.create({
+                model: 'gpt-4o-2024-08-06',
+                messages: [
+                    {
+                        role: 'system',
+                        content: systemPrompt,
+                    },
+                    { role: 'user', content: userContent },
+                ],
+                // Use the object-wrapped list schema for structured outputs
+                response_format: zodResponseFormat(IconListContainerValidator, 'icons'),
+                user: did,
+            });
+
+            const response = JSON.parse(completion.choices[0]?.message.content ?? '');
+
+            // First, validate the model output with the object-wrapped list schema
+            const parsed = await IconListContainerValidator.parseAsync(response);
+
+            // Transform into a record mapping input names to icons
+            const record: Record<string, string> = {};
+            for (const { name, icon } of parsed.items) {
+                // Only include keys that were requested
+                if (names.includes(name)) record[name] = icon;
+            }
+
+            // Ensure we return all requested names; if missing, fill with a generic symbol
+            for (const n of names) {
+                if (!record[n]) record[n] = '⭐';
+            }
+
+            return IconMapValidator.parseAsync(record);
         }),
 
     generateImage: didAndChallengeRoute

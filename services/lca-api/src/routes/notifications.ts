@@ -5,7 +5,7 @@ import { t, didAndChallengeRoute, authorizedDidRoute } from '@routes';
 
 import { createPushNotificationRegistration } from '@accesslayer/pushtokens/create';
 import { deletePushNotificationRegistration } from '@accesslayer/pushtokens/delete';
-import { LCNNotificationValidator } from '@learncard/types';
+// import { LCNNotificationValidator } from '@learncard/types';
 import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 import { isDidOwnerOfNotification } from '@helpers/notifications.helpers';
 import { createNotification } from '@accesslayer/notifications/create';
@@ -18,7 +18,6 @@ import {
     updateNotificationMeta,
 } from '@accesslayer/notifications/update';
 import {
-    PaginatedNotificationsValidator,
     NotificationQueryFiltersValidator,
     NotificationMetaValidator,
     PaginatedNotificationsOptionsValidator,
@@ -46,13 +45,21 @@ export const notificationsRouter = t.router({
                 filters: NotificationQueryFiltersValidator.optional(),
             })
         )
-        .output(PaginatedNotificationsValidator)
+        // TODO: use correct typing for output notifications
+        .output(
+            z.object({
+                notifications: z.array(z.any()),
+                cursor: z.string().optional(),
+                hasMore: z.boolean(),
+            })
+        )
         .query(async ({ input, ctx }) => {
             const notifications = await getPaginatedNotificationsForDid(
                 ctx.user.did,
                 input.options,
                 input.filters
             );
+
             if (!notifications) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
@@ -190,7 +197,8 @@ export const notificationsRouter = t.router({
                 description: 'Webhook endpoint for receiving a notification to process.',
             },
         })
-        .input(LCNNotificationValidator)
+        // TODO: use correct typing for input notifications
+        .input(z.any())
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const [sendNotificationResponse, createdNotificationId] = await Promise.all([

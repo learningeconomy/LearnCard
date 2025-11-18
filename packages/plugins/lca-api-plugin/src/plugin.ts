@@ -130,7 +130,7 @@ export const getLCAPlugin = async (
                     return client.notifications.notifications.query({
                         options,
                         filters,
-                    });
+                    }) as any;
                 },
                 markAllNotificationsRead: async _learnCard => {
                     await initialized;
@@ -201,6 +201,14 @@ export const getLCAPlugin = async (
                     await updateLearnCard(_learnCard);
 
                     const result = await client.ai.generateBoostSkills.query({ description });
+
+                    return result;
+                },
+                generateSkillIcons: async (_learnCard, names: string[]) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    const result = await client.ai.generateSkillIcons.query({ names });
 
                     return result;
                 },
@@ -367,7 +375,9 @@ export const getLCAPlugin = async (
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    const result = await client.firebase.verifyNetworkHandoffToken.mutate({ token });
+                    const result = await client.firebase.verifyNetworkHandoffToken.mutate({
+                        token,
+                    });
 
                     return result;
                 },
@@ -400,6 +410,27 @@ export const getLCAPlugin = async (
                     await updateLearnCard(_learnCard);
 
                     const result = await client.preferences.updatePreferences.mutate(preferences);
+
+                    return result;
+                },
+                sendEndorsementShareLink: async (
+                    _learnCard,
+                    email,
+                    shareLink,
+                    issuer,
+                    credential,
+                    message
+                ) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    const result = await client.credentials.sendEndorsementShareLink.mutate({
+                        email,
+                        shareLink,
+                        issuer,
+                        credential,
+                        message,
+                    });
 
                     return result;
                 },
@@ -468,6 +499,10 @@ export const getLCAPlugin = async (
                 generateBoostSkills: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return [];
+                },
+                generateSkillIcons: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return {};
                 },
                 createPin: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
@@ -545,6 +580,10 @@ export const getLCAPlugin = async (
                 getPreferencesForDid: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return { theme: ThemeEnum.Colorful };
+                },
+                sendEndorsementShareLink: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return false;
                 },
             },
         };
