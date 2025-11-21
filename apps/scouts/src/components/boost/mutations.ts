@@ -29,10 +29,7 @@ export const useAddCredentialToWallet = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (
-            input: AddVCInput,
-            location: 'IDX' | 'SQLite' | 'LearnCloud' = 'LearnCloud'
-        ) => {
+        mutationFn: async (input: AddVCInput) => {
             const wallet = await initWallet();
             const { uri, id, title, imgUrl } = input;
             let _id = id;
@@ -47,7 +44,7 @@ export const useAddCredentialToWallet = () => {
 
             // get VC From stream given streamId
             // this does not return the added vc, it just adds the streamId to the wallet
-            await wallet.index[location].add({
+            await wallet.index.LearnCloud.add({
                 id: _id,
                 uri,
                 category,

@@ -32,8 +32,7 @@ export const useAddCredentialToWallet = () => {
         mutationFn: async (
             input: AddVCInput & {
                 didOverride?: string | true; // true for parent user's did
-            },
-            location: 'SQLite' | 'LearnCloud' = 'LearnCloud' // never actually used 🙃
+            }
         ) => {
             try {
                 const wallet = await initWallet(undefined, input.didOverride);
@@ -48,10 +47,7 @@ export const useAddCredentialToWallet = () => {
 
                 const category = getDefaultCategoryForCredential(vc) || 'Achievement';
 
-                // get VC From stream given streamId
-                // this does not return the added vc, it just adds the streamId to the wallet
-
-                const res = await wallet.index[location].add({
+                const res = await wallet.index.LearnCloud.add({
                     id: _id,
                     uri,
                     category,

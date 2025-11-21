@@ -5,7 +5,7 @@
     "projectType": "application",
     "root": "apps/scouts",
     "tags": [],
-    "implicitDependencies": ["learn-card-base"],
+    "implicitDependencies": ["learn-card-base", "linked-claims-plugin"],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],
         "tests": ["{projectRoot}/tests/**/*"],

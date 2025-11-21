@@ -61,7 +61,7 @@ export default defineConfig(async () => ({
                 find: '@web3auth/openlogin-adapter',
                 replacement: '@web3auth/openlogin-adapter/dist/openloginAdapter.umd.min.js',
             },
-            'apps/scouts': path.resolve(__dirname),
+            { find: 'apps/scouts', replacement: path.resolve(__dirname) },
         ],
         dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
     },

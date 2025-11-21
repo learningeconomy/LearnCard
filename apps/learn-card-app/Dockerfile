@@ -43,6 +43,7 @@ COPY packages/plugins/ethereum/package.json packages/plugins/ethereum/
 COPY packages/plugins/expiration/package.json packages/plugins/expiration/
 COPY packages/plugins/learn-card/package.json packages/plugins/learn-card/
 COPY packages/plugins/learn-card-network/package.json packages/plugins/learn-card-network/
+COPY packages/plugins/linked-claims/package.json packages/plugins/linked-claims/
 COPY packages/plugins/learn-cloud/package.json packages/plugins/learn-cloud/
 COPY packages/plugins/vc/package.json packages/plugins/vc/
 COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
@@ -80,12 +81,15 @@ COPY packages/plugins/ethereum packages/plugins/ethereum
 COPY packages/plugins/expiration packages/plugins/expiration
 COPY packages/plugins/learn-card packages/plugins/learn-card
 COPY packages/plugins/learn-card-network packages/plugins/learn-card-network
+COPY packages/plugins/linked-claims packages/plugins/linked-claims
 COPY packages/plugins/learn-cloud packages/plugins/learn-cloud
 COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-api packages/plugins/vc-api
 COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vpqr packages/plugins/vpqr
 COPY apps/learn-card-app apps/learn-card-app
+
+RUN rm -rf node_modules/.cache/nx
 
 RUN pnpm exec nx docker-build learn-card-app
 

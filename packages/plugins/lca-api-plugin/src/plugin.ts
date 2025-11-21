@@ -1,4 +1,4 @@
-import { getClient, Client } from '@welibraryos/lca-api-client';
+import { getClient, Client } from '@learncard/lca-api-client';
 import { LearnCard } from '@learncard/core';
 import pbkdf2Hmac from 'pbkdf2-hmac';
 
@@ -91,10 +91,14 @@ export const getLCAPlugin = async (
             learnCard = _learnCard;
         };
 
-        const initialized = learnCard.invoke.getProfile()
+        const initialized = learnCard.invoke
+            .getProfile()
             .then(async profile => {
                 if (profile) await updateLearnCard(learnCard);
-                encryptionJwk = await getEncryptionJwk(await getNewClient(url, learnCard), learnCard);
+                encryptionJwk = await getEncryptionJwk(
+                    await getNewClient(url, learnCard),
+                    learnCard
+                );
             })
             .catch(error => {
                 console.warn('[LCA Plugin] Initialization warning:', error);
@@ -186,7 +190,7 @@ export const getLCAPlugin = async (
                         description: result.description,
                         category: result.category,
                         type: result.type,
-                        skills: result.skills,
+                        skills: (result as any).skills,
                         narrative: result.narrative ?? '',
                     };
                 },

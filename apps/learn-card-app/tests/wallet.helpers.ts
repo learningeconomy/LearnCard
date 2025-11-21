@@ -1,7 +1,7 @@
 /// <reference path="./global.d.ts" />
 
 import { initLearnCard } from '@learncard/init';
-import { getLCAPlugin, LCALearnCard } from '@welibraryos/lca-api-plugin';
+import { getLCAPlugin, LCALearnCard } from '@learncard/lca-api-plugin';
 
 export type BespokeLearnCard = LCALearnCard;
 export const getBespokeLearnCard = async (seed: string): Promise<BespokeLearnCard> => {

@@ -1,6 +1,6 @@
 import { TRPCLink } from '@trpc/client';
 import { observable, Unsubscribable } from '@trpc/server/observable';
-import type { AppRouter } from '@welibraryos/lca-api-service';
+import type { AppRouter } from '@learncard/lca-api-service';
 
 export const callbackLink = (callback: () => Promise<void>): TRPCLink<AppRouter> => {
     return () => {

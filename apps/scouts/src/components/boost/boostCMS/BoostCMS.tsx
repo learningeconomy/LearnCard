@@ -535,6 +535,7 @@ const BoostCMS: React.FC<{
                             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
                                 sentBoost
                             );
+
                             await addCredentialToWallet({ uri: issuedVcUri });
                             return issuedVcUri;
                         }

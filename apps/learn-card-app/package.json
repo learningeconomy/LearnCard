@@ -46,7 +46,7 @@
         "@web3auth/no-modal": "^10.2.0",
         "@web3auth/openlogin-adapter": "^8.12.4",
         "@web3auth/single-factor-auth": "^9.5.0",
-        "@welibraryos/lca-api-plugin": "workspace:*",
+        "@learncard/lca-api-plugin": "workspace:*",
         "@tanstack/react-query": "^5.80.3",
         "async": "^3.2.6",
         "history": "^5.3.0",
@@ -97,7 +97,6 @@
         "userflow.js": "^2.12.1",
         "uuid": "^9.0.1",
         "web-vitals": "^0.2.4",
-        "zod": "3.23.8",
         "zustand": "^3.7.2"
     },
     "scripts": {

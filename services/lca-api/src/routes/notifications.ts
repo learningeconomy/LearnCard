@@ -5,7 +5,7 @@ import { t, didAndChallengeRoute, authorizedDidRoute } from '@routes';
 
 import { createPushNotificationRegistration } from '@accesslayer/pushtokens/create';
 import { deletePushNotificationRegistration } from '@accesslayer/pushtokens/delete';
-// import { LCNNotificationValidator } from '@learncard/types';
+import { LCNNotificationValidator } from '@learncard/types';
 import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 import { isDidOwnerOfNotification } from '@helpers/notifications.helpers';
 import { createNotification } from '@accesslayer/notifications/create';
@@ -198,7 +198,7 @@ export const notificationsRouter = t.router({
             },
         })
         // TODO: use correct typing for input notifications
-        .input(z.any())
+        .input(LCNNotificationValidator)
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const [sendNotificationResponse, createdNotificationId] = await Promise.all([

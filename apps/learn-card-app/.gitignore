@@ -34,3 +34,5 @@ yarn-error.log*
 demoState.json
 
 /tests/states/*
+
+.env

@@ -1,7 +1,6 @@
 import serverlessHttp from 'serverless-http';
 import type { Context, APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { createOpenApiAwsLambdaHandler } from 'trpc-openapi';
 import * as Sentry from '@sentry/serverless';
 import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
 
@@ -9,6 +8,7 @@ import app from './src/openapi';
 import didWebApp from './src/dids';
 import { appRouter, createContext } from './src/app';
 import { getEmptyLearnCard } from './src/helpers/learnCard.helpers';
+import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
 
 let promise = getEmptyLearnCard(); // Load WASM in for better cold starts
 

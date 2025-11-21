@@ -32,3 +32,5 @@ yarn-error.log*
 /playwright/.cache/
 
 demoState.json
+
+.env

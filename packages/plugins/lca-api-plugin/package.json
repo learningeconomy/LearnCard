@@ -1,5 +1,5 @@
 {
-    "name": "@welibraryos/lca-api-plugin",
+    "name": "@learncard/lca-api-plugin",
     "version": "1.0.0",
     "description": "",
     "main": "./dist/index.js",
@@ -37,11 +37,10 @@
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
-        "@welibraryos/lca-api-client": "workspace:*",
+        "@learncard/lca-api-client": "workspace:*",
         "hex-lite": "^1.5.0",
         "isomorphic-fetch": "^3.0.0",
         "isomorphic-webcrypto": "^2.3.8",
-        "pbkdf2-hmac": "^1.2.1",
-        "zod": "^3.21.4"
+        "pbkdf2-hmac": "^1.2.1"
     }
 }

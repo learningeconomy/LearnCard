@@ -2,7 +2,7 @@ import { isEqual } from 'lodash';
 import { initLearnCard } from '@learncard/init';
 import type { CredentialRecord } from '@learncard/types';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
-import { getLCAPlugin } from '@welibraryos/lca-api-plugin';
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 
 import { getSQLitePlugin } from 'learn-card-base/plugins/sqlite';

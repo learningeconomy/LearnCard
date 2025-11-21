@@ -6,7 +6,8 @@
     "root": "apps/learn-card-app",
     "tags": [],
     "implicitDependencies": [
-        "learn-card-base"
+        "learn-card-base",
+        "linked-claims-plugin"
     ],
     "namedInputs": {
         "source": [
