@@ -1,0 +1,13 @@
+.id-card-issuer-thumb-container {
+    height: 65px;
+    width: 65px;
+    right: 15px;
+}
+
+.id-card-issuer-thumb-preview-container {
+    @media (max-width: 413px) {
+        max-height: 60px;
+        max-width: 60px;
+        right: 8px;
+    }
+}

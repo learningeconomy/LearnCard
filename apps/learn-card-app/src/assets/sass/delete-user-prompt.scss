@@ -1,0 +1,23 @@
+.delete-user-header-title {
+    @media (max-height: 650px) {
+        display: none;
+    }
+}
+
+.delete-user-icon-wrap {
+    @media (max-height: 650px) {
+        & > svg {
+            display: none;
+        }
+
+        & h3 {
+            padding-top: 10px;
+        }
+    }
+}
+
+.delete-user-footer {
+    @media (max-height: 650px) {
+        display: none;
+    }
+}

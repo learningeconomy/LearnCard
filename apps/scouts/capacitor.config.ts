@@ -1,0 +1,44 @@
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+    appId: 'org.scoutpass.app',
+    appName: 'ScoutPass',
+    webDir: 'build',
+    bundledWebRuntime: false,
+    android: {
+        adjustMarginsForEdgeToEdge: 'force',
+    },
+    plugins: {
+        SplashScreen: {
+            launchShowDuration: 6000,
+            launchAutoHide: true,
+            backgroundColor: '#00BA88',
+            showSpinner: false,
+            spinnerColor: '#ffffff',
+            splashFullScreen: false,
+            splashImmersive: false,
+            layoutName: 'launch_screen',
+        },
+        FirebaseAuthentication: {
+            skipNativeAuth: false,
+            providers: ['phone', 'apple.com', 'google.com'],
+        },
+        PushNotifications: {
+            presentationOptions: ['badge', 'sound', 'alert'],
+        },
+        Badge: {
+            persist: true,
+            autoClear: false,
+        },
+        SafeArea: {
+            enabled: true,
+        },
+        CapacitorUpdater: {
+            appId: 'org.scoutpass.app',
+            autoUpdate: true,
+            defaultChannel: 'production',
+        },
+    },
+};
+
+export default config;

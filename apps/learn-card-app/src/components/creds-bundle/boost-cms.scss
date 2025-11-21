@@ -1,0 +1,221 @@
+.boost-cms-badge-container {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.boost-cms-badge {
+    @media (max-width: 991px) {
+        width: 24%;
+        height: 150px;
+    }
+
+    @media (max-width: 479px) {
+        height: 100px;
+
+        & > .boost-cms-camera-icon {
+            height: 40px;
+        }
+    }
+
+    @media (max-width: 375px) {
+        height: 93px;
+        max-height: 93px;
+    }
+
+    @media (max-width: 320px) {
+        height: 75px;
+        max-height: 75px;
+        width: 27.5%;
+
+        & > .boost-cms-camera-icon {
+            height: 20px;
+        }
+    }
+}
+
+.boost-cms-rounded-bg {
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 200px;
+    border-bottom-right-radius: 200px;
+}
+
+.boost-category-button,
+.boost-subcategory-button {
+    @media (max-width: 375px) {
+        font-size: 26px;
+    }
+}
+
+// boost earned / managed tabs
+
+.fix-ripple ion-segment-button {
+    --border-radius: 100px;
+    --indicator-transition: none;
+
+    overflow: hidden;
+}
+
+ShareBoostsBundleModal{
+    background-color: white;
+    width: 100%;
+
+    & > p {
+        color: black;
+        width: 100%;
+        line-height: 125%;
+    }
+}
+
+.boost-managed-card-badge {
+    border-radius: 100px;
+    height: 110px;
+    width: 110px;
+}
+
+.boost-managed-card-btn {
+    position: absolute;
+    top: 25px;
+    color: black;
+    z-index: 9999;
+    right: 20px;
+
+    & > svg {
+        width: 30px;
+    }
+
+    @media (min-width: 992px) {
+        right: 25px;
+    }
+
+    @media (max-width: 479px) {
+        right: 20px;
+    }
+
+    @media (max-width: 375px) {
+        right: 10px;
+    }
+
+    @media (max-width: 320px) {
+        right: 10px;
+    }
+}
+
+.boost-cms-preview {
+    --background: none;
+}
+
+.boost-save-quit-btn {
+    width: 33%;
+
+    & > p {
+        font-size: 30px;
+    }
+
+    @media (max-width: 479px) {
+        width: 38%;
+
+        & > p {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 375px) {
+        width: 47%;
+
+        & > p {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 320px) {
+        width: 45%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+}
+
+.boost-preview-btn {
+    width: 33%;
+
+    & > p {
+        font-size: 30px;
+    }
+
+    @media (max-width: 479px) {
+        width: 29%;
+
+        & > p {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 375px) {
+        width: 32%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+
+    @media (max-width: 320px) {
+        width: 30%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+}
+
+.boost-issue-btn {
+    width: 33%;
+
+    & > p {
+        font-size: 30px;
+    }
+
+    @media (max-width: 479px) {
+        width: 28%;
+
+        & > div {
+            display: none;
+        }
+
+        & > p {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 375px) {
+        width: 25%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+
+    @media (max-width: 320px) {
+        width: 20%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+}
+
+.boost-loading-wrapper {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.boost-cms-category-slider {
+    width: 100%;
+
+    .swiper-slide {
+        width: auto !important;
+        padding-left: 5px;
+    }
+}

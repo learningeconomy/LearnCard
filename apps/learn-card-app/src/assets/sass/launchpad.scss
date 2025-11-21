@@ -1,0 +1,21 @@
+.launchpad-popover::part(content) {
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    margin-top: 10px;
+    border: solid 1px #6366f1;
+}
+
+.launchpad-formal::part(content) {
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    margin-top: 10px;
+    border: solid 1px #3b82f6;
+}
+
+.chatgpt-bg {
+    background-image: url('../images/chatGpt-app-bg.png');
+    background-position: center;
+    background-size: contain;
+}
