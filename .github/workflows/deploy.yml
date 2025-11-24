@@ -7,17 +7,17 @@ on:
   workflow_dispatch:
     inputs:
       network-environment:
-        description: "Choose Environment"
+        description: "Choose Network Environment"
         required: true
         default: "learn-cloud-network-api-staging"
         type: environment
       learn-cloud-environment:
-        description: "Choose Environment"
+        description: "Choose Storage Environment"
         required: true
         default: "learn-cloud-storage-api-staging"
         type: environment
       lca-api-environment:
-        description: "Choose Environment"
+        description: "Choose LCA API Environment"
         required: true
         default: "learn-card-app-api-staging"
         type: environment
