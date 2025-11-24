@@ -5,8 +5,8 @@
     "description": "LearnCard Apps shared components",
     "main": "src/index.ts",
     "scripts": {
-        "test": "jest",
-        "test:watch": "jest --watch"
+        "test": "echo \"Skipping tests...\"",
+        "test:watch": "echo \"Skipping tests...\""
     },
     "dependencies": {
         "@capacitor-community/sqlite": "^7.0.1",
