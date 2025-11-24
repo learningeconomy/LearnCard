@@ -49,7 +49,7 @@ export const AppStoreListingCreateValidator = AppStoreListingValidator.omit({
 });
 export type AppStoreListingCreateType = z.infer<typeof AppStoreListingCreateValidator>;
 
-export const AppStoreListingUpdateValidator = AppStoreListingValidator.partial().extend({
-    listing_id: z.string(),
+export const AppStoreListingUpdateValidator = AppStoreListingValidator.partial().omit({
+    listing_id: true,
 });
 export type AppStoreListingUpdateType = z.infer<typeof AppStoreListingUpdateValidator>;
