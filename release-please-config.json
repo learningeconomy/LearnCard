@@ -1,0 +1,24 @@
+{
+    "include-v-in-tag": true,
+    "tag-separator": "@",
+    "initial-version": "1.84.0",
+    "packages": {
+        "apps/learn-card-app": {
+            "component": "learn-card-app",
+            "release-type": "node",
+            "changelog-path": "CHANGELOG.md"
+        },
+        "apps/scouts": {
+            "component": "scouts",
+            "release-type": "node",
+            "changelog-path": "CHANGELOG.md"
+        }
+    },
+    "plugins": [
+        {
+            "type": "node-workspace",
+            "updateAllPackages": true,
+            "updatePeerDependencies": true
+        }
+    ]
+}

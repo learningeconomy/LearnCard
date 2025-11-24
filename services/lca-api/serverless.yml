@@ -31,8 +31,8 @@ custom:
 
         # References to 'dev' stage
         dev:
-            domainName: testnet-api.learncard.app
-            certificateName: testnet-api.learncard.app
+            domainName: staging.api.learncard.app
+            certificateName: staging.api.learncard.app
 
     # Amazon Certificate Manager
     customCertificate:
@@ -79,20 +79,20 @@ provider:
     region: ${opt:region, "us-east-1"}
     environment:
         LAMBDA_STAGE: ${opt:stage, "dev"}
-        SEED: ${env:SEED}
-        DOMAIN_NAME: ${env:DOMAIN_NAME}
-        OPENAI_API_KEY: ${env:OPENAI_API_KEY}
-        METABASE_SECRET_KEY: ${env:METABASE_SECRET_KEY}
-        POSTMARK_SERVER_TOKEN: ${env:POSTMARK_SERVER_TOKEN}
-        POSTMARK_LOGIN_CODE_TEMPLATE_ID: ${env:POSTMARK_LOGIN_CODE_TEMPLATE_ID}
-        POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID: ${env:POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID}
-        POSTMARK_FROM_EMAIL: ${env:POSTMARK_FROM_EMAIL}
-        POSTMARK_BRAND_NAME: ${env:POSTMARK_BRAND_NAME}
+        SEED: ${env:SEED, ''}
+        DOMAIN_NAME: ${env:DOMAIN_NAME, ''}
+        OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''}
+        METABASE_SECRET_KEY: ${env:METABASE_SECRET_KEY, ''}
+        POSTMARK_SERVER_TOKEN: ${env:POSTMARK_SERVER_TOKEN, ''}
+        POSTMARK_LOGIN_CODE_TEMPLATE_ID: ${env:POSTMARK_LOGIN_CODE_TEMPLATE_ID, ''}
+        POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID: ${env:POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID, ''}
+        POSTMARK_FROM_EMAIL: ${env:POSTMARK_FROM_EMAIL, ''}
+        POSTMARK_BRAND_NAME: ${env:POSTMARK_BRAND_NAME, ''}
         PORT: ${opt:httpPort, "3000"}
-        MONGO_URI: ${env:MONGO_URI}
-        MONGO_DB_NAME: ${env:MONGO_DB_NAME}
-        AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS}
-        GOOGLE_APPLICATION_CREDENTIAL: ${env:GOOGLE_APPLICATION_CREDENTIAL}
+        MONGO_URI: ${env:MONGO_URI, ''}
+        MONGO_DB_NAME: ${env:MONGO_DB_NAME, ''}
+        AUTHORIZED_DIDS: ${env:AUTHORIZED_DIDS, ''}
+        GOOGLE_APPLICATION_CREDENTIAL: ${env:GOOGLE_APPLICATION_CREDENTIAL, ''}
         REDIS_HOST:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:

@@ -5,48 +5,47 @@
     "projectType": "application",
     "root": "services/lca-api",
     "tags": [],
-    "implicitDependencies": [
-        "nx-run-command"
-    ],
+    "implicitDependencies": ["nx-run-command"],
     "namedInputs": {
-        "source": [
-            "{projectRoot}/src/**/*"
-        ],
-        "tests": [
-            "{projectRoot}/test/**/*"
-        ],
-        "dist": [
-            "{projectRoot}/dist/**/*"
-        ]
+        "source": ["{projectRoot}/src/**/*"],
+        "tests": ["{projectRoot}/test/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
     },
     "targets": {
         "build": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source"
-            ],
+            "inputs": ["source"],
             "options": {
                 "script": "build"
             }
         },
         "build:docker": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source"
-            ],
-            "dependsOn": [
-                "^build"
-            ],
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
             "options": {
                 "script": "build:docker"
             }
         },
+        "serverless-deploy": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "serverless-deploy"
+            }
+        },
+        "serverless-deploy-scouts": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "serverless-deploy-scouts"
+            }
+        },
         "test": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source",
-                "tests"
-            ],
+            "inputs": ["source", "tests"],
             "options": {
                 "script": "test"
             }

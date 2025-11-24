@@ -31,8 +31,8 @@ custom:
 
         # References to 'dev' stage
         dev:
-            domainName: testnet-api.scoutnetwork.org
-            certificateName: testnet-api.scoutnetwork.org
+            domainName: staging.api.scoutnetwork.org
+            certificateName: staging.api.scoutnetwork.org
 
     # Amazon Certificate Manager
     customCertificate:

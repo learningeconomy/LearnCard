@@ -35,8 +35,8 @@ const config: CapacitorConfig = {
         },
         CapacitorUpdater: {
             appId: 'org.scoutpass.app',
-            autoUpdate: true,
-            defaultChannel: 'production',
+            autoUpdate: false,
+            defaultChannel: 'migration',
         },
     },
 };
