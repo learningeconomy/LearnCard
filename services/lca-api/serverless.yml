@@ -22,6 +22,7 @@ custom:
         minify: true
         external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
         sourcemap: external
+        target: 'node20'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
 
