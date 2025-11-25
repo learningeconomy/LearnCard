@@ -66,7 +66,7 @@ export const IntegrationSelector: React.FC = () => {
                             {selectedIntegration.name}
                         </span>
                     ) : (
-                        <span className="text-apple-gray-400">Select integration</span>
+                        <span className="text-apple-gray-400">Select integration project</span>
                     )}
                 </div>
 
