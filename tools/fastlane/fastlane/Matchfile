@@ -1,0 +1,19 @@
+git_url("git@github.com:WeLibraryOS/certificates.git")
+
+storage_mode("git")
+
+type(ENV['CODE_SIGNING_TYPE'])
+
+app_identifier([ENV['APP_ID']])
+username(ENV['APPLE_ID']) # Your Apple Developer Portal username
+
+team_id(ENV['TEAM_ID'])
+
+git_branch(ENV['MATCH_GIT_BRANCH'])
+keychain_password(ENV['MATCH_PASSWORD'])
+git_private_key(ENV['MATCH_GIT_DEPLOY_KEY'])
+
+# For all available options run `fastlane match --help`
+# Remove the # in the beginning of the line to enable the other options
+
+# The docs are available on https://docs.fastlane.tools/actions/match

@@ -1,0 +1,71 @@
+{
+  "project_info": {
+    "project_number": "792471921493",
+    "project_id": "scoutpass-9a67e",
+    "storage_bucket": "scoutpass-9a67e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:792471921493:android:aced86b53ad54a85aec5dc",
+        "android_client_info": {
+          "package_name": "org.scoutpass.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "792471921493-4b0u4nforfi3aqf18lpu789aam16ah9q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.scoutpass.app",
+            "certificate_hash": "1e5bd16d967452d961253630d49815211a0542f5"
+          }
+        },
+        {
+          "client_id": "792471921493-7ua17rcjo2dgqudl0ij7tbardl8j3822.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.scoutpass.app",
+            "certificate_hash": "0e6b4b5a19470f8529c0dc828615d36ba1c03a06"
+          }
+        },
+        {
+          "client_id": "792471921493-bi0fdb35l8gd3k9v1e46e2alqaa4qa1c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.scoutpass.app",
+            "certificate_hash": "364e2a16c39586fbe876b6f6976cdd2558d4cf2f"
+          }
+        },
+        {
+          "client_id": "792471921493-df6n0hb184opgghl84lujffto69bq8g9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7_RehWb-_aieqZVKKa15QsaDuRowyA-c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "792471921493-b450iql2fbbprup7tetqlejii9qgnet4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "792471921493-d8odpnqc3qjlq9m34d6if7pf8mta21hu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "org.scoutpass.app",
+                "app_store_id": "6451271002"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

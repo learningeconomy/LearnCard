@@ -67,3 +67,14 @@ export const unwrapBoostCredential = (vc?: VC | UnsignedVC) => {
         return vc;
     }
 };
+
+// Export helpers from shared-helpers migration
+export * from './images';
+export * from './arrays';
+export * from './types';
+export * from './strings';
+export * from './numbers';
+export * from './state';
+
+// Export utilities from shared-types migration
+export * from './Utilities';

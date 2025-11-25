@@ -1,0 +1,24 @@
+.notificaion-list-item {
+    --padding-end: 0;
+    --padding-start: 0;
+    --inner-padding-end: 0;
+    --inner-padding-start: 0;
+}
+
+.notification-badge {
+    position: absolute;
+    top: 15px;
+    right: 32%;
+
+    @media (max-width: 479px) {
+        right: 22%;
+    }
+
+    @media (max-width: 375px) {
+        right: 18%;
+    }
+
+    @media (max-width: 320px) {
+        right: 20%;
+    }
+}

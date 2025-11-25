@@ -1,0 +1,79 @@
+#############################################
+##  Configuration for Netlify deployments  ##
+#############################################
+
+[build.environment]
+PNPM_FLAGS = "-P false"
+# Global Context Default
+[build]
+command = "pnpm exec nx build scouts"
+publish = "build/"
+
+# Netlify Deploy Preview
+[context.deploy-preview]
+environment = { NODE_ENV = 'staging', VITE_NODE_ENV = "staging-learncardapp", NETLIFY_BUILD_TYPE = "deploy-preview", SENTRY_ENV="scouts-deploy-preview", SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704'  }
+
+# Production Scouts
+[context.main]
+environment = {NODE_ENV = 'production', VITE_NODE_ENV = "production-learncardapp", NETLIFY_BUILD_TYPE = "live",  SENTRY_ENV="scouts-production", SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704' }
+
+# Production Scouts
+[context.add-scouts]
+environment = {NODE_ENV = 'production', VITE_NODE_ENV = "production-learncardapp", NETLIFY_BUILD_TYPE = "live",  SENTRY_ENV="scouts-production", SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704' }
+
+# Production Scouts
+[context.production-scouts]
+environment = {NODE_ENV = 'production', VITE_NODE_ENV = "production-learncardapp", NETLIFY_BUILD_TYPE = "live",  SENTRY_ENV="scouts-production", SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704' }
+
+
+###################################
+#      Redirects + Headers        #
+###################################
+# Redirects and headers are GLOBAL for all builds. For context-specific
+# rules, use _headers or _redirects files, which are PER-DEPLOY.
+
+[[redirects]] # For use with SPAs that handle routing internally
+from = "/*"
+to = "/index.html"
+status = 200
+
+[redirects.headers]
+X-From = "Netlify"
+
+# Edge Handler declaration
+[[edge_handlers]]
+path = "/*"
+handler = "filterRequests"
+
+
+[[headers]]
+for = "/.well-known/apple-app-site-association"
+[headers.values]
+Cache-Control = "public, max-age=0"
+Content-Type = "application/json"
+X-Content-Type-Options = "nosniff"
+
+[[headers]]
+for = "/manifest.json"
+[headers.values]
+Access-Control-Allow-Origin = "*"
+
+[[headers]]
+for = "/*"
+[headers.values]
+Access-Control-Allow-Origin = "*"
+
+[[headers]]
+for = "/assets/icon/icon.png"
+[headers.values]
+Access-Control-Allow-Origin = "*"
+
+[[headers]]
+for = "/assets/icon/favicon.png"
+[headers.values]
+Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/assets/*.wasm"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

@@ -1,0 +1,10 @@
+.launchpad-action-btn-wrap {
+    display: flex;
+    flex-direction: row;
+    @media (max-width: 991px) {
+        display: flex;
+        flex-direction: column;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+}

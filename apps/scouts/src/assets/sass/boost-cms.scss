@@ -1,0 +1,426 @@
+.boost-cms-badge-container {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.boost-cms-badge {
+    width: 31%;
+    padding-bottom: 31%;
+    height: 0;
+    position: relative;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 1%;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #1a1a1a;
+    }
+
+    img,
+    .absolute {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .boost-cms-camera-icon {
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40%;
+        height: auto;
+    }
+
+    .upload-text {
+        position: absolute;
+        bottom: 20%;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: white;
+        font-size: 14px;
+    }
+
+    // Updated styles for the centered trash can button
+    .trash-button {
+        position: absolute;
+        left: 50%;
+        bottom: 10%;
+        transform: translateX(-50%);
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 60;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+        .trash-icon {
+            width: 20px;
+            height: 20px;
+            color: #333;
+        }
+    }
+
+    // Media queries
+    @media (max-width: 991px) {
+        width: 31%;
+        padding-bottom: 31%;
+    }
+
+    @media (max-width: 479px) {
+        width: 31%;
+        padding-bottom: 31%;
+
+        .boost-cms-camera-icon {
+            width: 30%;
+        }
+
+        .upload-text {
+            font-size: 12px;
+        }
+
+        .trash-button {
+            width: 25px;
+            height: 25px;
+
+            .trash-icon {
+                width: 15px;
+                height: 15px;
+            }
+        }
+    }
+
+    @media (max-width: 375px) {
+        width: 31%;
+        padding-bottom: 31%;
+    }
+
+    @media (max-width: 320px) {
+        width: 31%;
+        padding-bottom: 31%;
+
+        .boost-cms-camera-icon {
+            width: 25%;
+        }
+
+        .upload-text {
+            font-size: 10px;
+        }
+
+        .trash-button {
+            width: 20px;
+            height: 20px;
+
+            .trash-icon {
+                width: 12px;
+                height: 12px;
+            }
+        }
+    }
+}
+
+.boost-cms-rounded-bg {
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border-bottom-left-radius: 200px;
+    border-bottom-right-radius: 200px;
+}
+
+.boost-category-button,
+.boost-subcategory-button {
+    @media (max-width: 375px) {
+        font-size: 26px;
+    }
+}
+
+// boost earned / managed tabs
+
+.fix-ripple ion-segment-button {
+    --border-radius: 100px;
+    --indicator-transition: none;
+
+    overflow: hidden;
+}
+
+ion-segment {
+    min-height: fit-content;
+    max-height: fit-content;
+}
+
+ion-segment-button {
+    min-width: auto;
+    min-height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+}
+
+.generic-card-title {
+    display: flex;
+    height: auto;
+    align-items: center;
+    justify-content: center;
+}
+
+.boost-small-card-body {
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    width: 100%;
+    .profile-thumb-img {
+        width: 30px !important;
+        height: 30px !important;
+    }
+}
+
+.boost-managed-card {
+    background-color: white;
+    width: 100%;
+
+    & > p {
+        color: black;
+        width: 100%;
+        line-height: 125%;
+    }
+}
+
+.boost-managed-card-badge {
+    border-radius: 100px;
+    height: 110px;
+    width: 110px;
+}
+
+.boost-managed-card-btn {
+    position: absolute;
+    top: 25px;
+    color: black;
+    z-index: 9999;
+    right: 20px;
+
+    & > svg {
+        width: 30px;
+    }
+
+    @media (min-width: 992px) {
+        right: 25px;
+    }
+
+    @media (max-width: 479px) {
+        right: 20px;
+    }
+
+    @media (max-width: 375px) {
+        right: 10px;
+    }
+
+    @media (max-width: 320px) {
+        right: 10px;
+    }
+}
+
+.boost-cms-preview {
+    --background: none;
+}
+
+.boost-save-quit-btn {
+    width: 33%;
+
+    & > p {
+        font-size: 30px;
+    }
+
+    @media (max-width: 479px) {
+        width: 38%;
+
+        & > p {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 375px) {
+        width: 47%;
+
+        & > p {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 320px) {
+        width: 45%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+}
+
+.boost-preview-btn {
+    width: 33%;
+
+    & > p {
+        font-size: 30px;
+    }
+
+    @media (max-width: 479px) {
+        width: 29%;
+
+        & > p {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 375px) {
+        width: 32%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+
+    @media (max-width: 320px) {
+        width: 30%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+}
+
+.boost-issue-btn {
+    width: 33%;
+
+    & > p {
+        font-size: 30px;
+    }
+
+    @media (max-width: 479px) {
+        width: 28%;
+
+        & > div {
+            display: none;
+        }
+
+        & > p {
+            font-size: 28px;
+        }
+    }
+
+    @media (max-width: 375px) {
+        width: 25%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+
+    @media (max-width: 320px) {
+        width: 20%;
+
+        & > p {
+            font-size: 26px;
+        }
+    }
+}
+
+.boost-loading-wrapper {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.boost-cms-category-slider {
+    width: 100%;
+
+    .swiper-slide {
+        width: auto !important;
+        padding-left: 5px;
+    }
+}
+
+.boost-preview-wrapper {
+    .vc-issue-info-box {
+        display: none;
+    }
+}
+
+.boost-id-preview-body {
+    height: 140px;
+    width: 100%;
+    max-width: 335px;
+
+    & > p:first-of-type {
+        margin-top: 2px;
+    }
+
+    & > div {
+        height: 65px;
+        width: 65px;
+    }
+
+    & > .boost-id-profile-picture-preview {
+        height: 75px;
+        min-height: 75px;
+    }
+
+    & > .boost-id-card-issuer-name {
+        max-width: 200px;
+
+        @media (max-width: 413px) {
+            max-width: 180px;
+        }
+    }
+}
+
+.boost-id-card-footer {
+    & > .boost-id-card-title {
+        padding-top: 2px;
+        padding-left: 16px;
+        text-transform: uppercase;
+        color: white;
+        font-size: 12px;
+
+        @media (max-width: 413px) {
+            max-width: 180px;
+        }
+
+        @media (max-width: 375px) {
+            padding-left: 6px;
+            max-width: 180px;
+        }
+    }
+}
+
+.boost-id-preview-footer {
+    width: 100%;
+    max-width: 335px;
+}
+
+.boost-verifier-badge-display {
+    display: flex;
+    position: absolute;
+    bottom: 4px;
+    width: 100%;
+    justify-content: center;
+}
+
+.small-generic-boost-issuer-name {
+    line-height: 120%;
+    margin: 4px 0px;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+}

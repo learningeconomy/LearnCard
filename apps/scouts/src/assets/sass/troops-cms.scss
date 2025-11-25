@@ -1,0 +1,46 @@
+.troops-cms-placeholder {
+  font-family: 'Noto Sans', sans-serif;
+
+  >label {
+    padding-top: 15px !important;
+    padding-bottom: 15px !important;
+    padding-left: 20px !important;
+    padding-right: 10px !important;
+  }
+
+  ::placeholder {
+    font-family: 'Noto Sans', sans-serif !important;
+    font-weight: 400 !important;
+    font-size: 17px !important;
+  }
+}
+
+.troops-cms-textarea {
+  font-family: 'Noto Sans', sans-serif;
+  padding-top: 20px;
+  padding-left: 15px;
+  padding-right: 15px;
+  padding-bottom: 15px;
+
+  ::placeholder {
+    font-family: 'Noto Sans', sans-serif !important;
+    font-weight: 400 !important;
+    font-size: 17px !important;
+  }
+
+  textarea {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+}
+
+ion-toggle.troops-cms-toggle-disabled {
+  --track-background: #a8acbd !important;
+  --track-background-checked: #a8acbd !important;
+  opacity: 1;
+}
+
+ion-toggle.troops-cms-toggle {
+  --track-background: #52597a !important;
+  --track-background-checked: #00ba88 !important;
+}

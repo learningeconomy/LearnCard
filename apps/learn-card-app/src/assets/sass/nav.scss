@@ -1,0 +1,107 @@
+.nav-dot-display {
+    display: none;
+}
+.tab-selected {
+    .nav-dot-display {
+        display: block;
+        font-size: 40px;
+        transform: translateY(-2px);
+        line-height: 10px;
+    }
+}
+
+ion-tab-bar {
+    @media (min-width: 992px) {
+        display: none;
+    }
+}
+
+.mobile-nav-left-button {
+    margin-right: 40px;
+
+    @media (max-width: 579px) {
+        margin-right: 20px;
+    }
+
+    @media (max-width: 479px) {
+        margin-right: 0px;
+        margin-left: 10px;
+    }
+}
+
+.mobile-nav-right-button {
+    margin-left: 40px;
+}
+
+.mobile-nav-hamburger-button {
+    background: none;
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+    height: 35px;
+    width: 41px;
+    z-index: 9999;
+    border-radius: none !important;
+
+    @media (max-width: 414px) {
+        left: 10px;
+    }
+}
+
+// side menu
+.side-menu-collapse-button {
+    @media (max-width: 992px) {
+        display: none;
+    }
+}
+
+.side-menu-split-pane-container-visible.split-pane-md.split-pane-visible > .split-pane-side {
+    min-width: 270px;
+    max-width: 270px;
+    border-right: var(--border);
+    border-left: 0;
+    transition: all 0.3s ease-out;
+}
+
+.side-menu-split-pane-container-collapsed.split-pane-md.split-pane-visible > .split-pane-side {
+    min-width: 135px;
+    max-width: 135px;
+    border-right: var(--border);
+    border-left: 0;
+    transition: all 0.3s ease-in;
+}
+
+.side-menu-text-visible {
+    font-size: 16px;
+    transition: font-size 0.3s ease-out;
+}
+
+.side-menu-text-collapsed {
+    font-size: 0;
+    transition: font-size 0.3s ease-in;
+}
+
+.side-menu-list-collapsed {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.mobile-nav-boost-button {
+    position: absolute;
+    // top: -25px;
+    background: transparent;
+    transform: translateX(-65%);
+    z-index: 50;
+    height: 100px;
+    width: 100px;
+
+    @media (min-width: 500px) {
+        left: 50%;
+    }
+    @media (max-width: 500px) {
+        left: 54%;
+    }
+}

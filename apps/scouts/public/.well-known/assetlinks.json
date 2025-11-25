@@ -1,0 +1,12 @@
+[
+    {
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "org.scoutpass.app",
+            "sha256_cert_fingerprints": [
+                "DD:1D:2B:44:8B:E8:1F:47:FA:37:FD:8F:4E:2C:7B:25:DA:5A:F1:32:0B:BD:29:30:4D:3D:3C:A3:9E:B2:88:2A"
+            ]
+        }
+    }
+]

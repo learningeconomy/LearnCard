@@ -1,0 +1,3267 @@
+{
+  "Countries": [
+    {
+      "ID": 1,
+      "Country": "Afghanistan",
+      "ISO": "AF",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 3,
+      "Country": "Algeria",
+      "ISO": "DZ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 5,
+      "Country": "Angola",
+      "ISO": "AO",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 7,
+      "Country": "Argentina",
+      "ISO": "AR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 8,
+      "Country": "Armenia",
+      "ISO": "AM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 246,
+      "Country": "Aruba",
+      "ISO": "AW",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 9,
+      "Country": "Australia",
+      "ISO": "AU",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 10,
+      "Country": "Austria",
+      "ISO": "AT",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 11,
+      "Country": "Azerbaijan",
+      "ISO": "AZ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 12,
+      "Country": "Bahamas",
+      "ISO": "BS",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 13,
+      "Country": "Bahrain",
+      "ISO": "BH",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 14,
+      "Country": "Bangladesh",
+      "ISO": "BD",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 15,
+      "Country": "Barbados",
+      "ISO": "BB",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 16,
+      "Country": "Belarus",
+      "ISO": "BY",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 17,
+      "Country": "Belgium",
+      "ISO": "BE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 18,
+      "Country": "Belize",
+      "ISO": "BZ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 19,
+      "Country": "Benin",
+      "ISO": "BJ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 20,
+      "Country": "Bhutan",
+      "ISO": "BT",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 192,
+      "Country": "Bolivarian Republic of Venezuela",
+      "ISO": "VE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 22,
+      "Country": "Bosnia and Herzegovina",
+      "ISO": "BA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 23,
+      "Country": "Botswana",
+      "ISO": "BW",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 24,
+      "Country": "Brazil",
+      "ISO": "BR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 25,
+      "Country": "Brunei Darussalam",
+      "ISO": "BN",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 26,
+      "Country": "Bulgaria",
+      "ISO": "BG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 27,
+      "Country": "Burkina Faso",
+      "ISO": "BF",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 29,
+      "Country": "Burundi",
+      "ISO": "BI",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 33,
+      "Country": "Cabo Verde",
+      "ISO": "CV",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 30,
+      "Country": "Cambodia",
+      "ISO": "KH",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 31,
+      "Country": "Cameroon",
+      "ISO": "CM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 32,
+      "Country": "Canada",
+      "ISO": "CA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 35,
+      "Country": "Chad",
+      "ISO": "TD",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 36,
+      "Country": "Chile",
+      "ISO": "CL",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 39,
+      "Country": "Colombia",
+      "ISO": "CO",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 40,
+      "Country": "Comoros",
+      "ISO": "KM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 44,
+      "Country": "Costa Rica",
+      "ISO": "CR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 45,
+      "Country": "Côte d’Ivoire",
+      "ISO": "CI",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 46,
+      "Country": "Croatia",
+      "ISO": "HR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 247,
+      "Country": "Curaçao",
+      "ISO": "CW",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 48,
+      "Country": "Cyprus",
+      "ISO": "CY",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 49,
+      "Country": "Czechia",
+      "ISO": "CZ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 41,
+      "Country": "Democratic Republic of the Congo",
+      "ISO": "CD",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 50,
+      "Country": "Denmark",
+      "ISO": "DK",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 52,
+      "Country": "Dominica",
+      "ISO": "DM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 53,
+      "Country": "Dominican Republic",
+      "ISO": "DO",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 55,
+      "Country": "Ecuador",
+      "ISO": "EC",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 56,
+      "Country": "Egypt",
+      "ISO": "EG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 57,
+      "Country": "El Salvador",
+      "ISO": "SV",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 60,
+      "Country": "Estonia",
+      "ISO": "EE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 61,
+      "Country": "Ethiopia",
+      "ISO": "ET",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 62,
+      "Country": "Fiji",
+      "ISO": "FJ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 63,
+      "Country": "Finland",
+      "ISO": "FI",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 64,
+      "Country": "France",
+      "ISO": "FR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 65,
+      "Country": "Gabon",
+      "ISO": "GA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 66,
+      "Country": "Gambia",
+      "ISO": "GM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 67,
+      "Country": "Georgia",
+      "ISO": "GE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 68,
+      "Country": "Germany",
+      "ISO": "DE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 69,
+      "Country": "Ghana",
+      "ISO": "GH",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 70,
+      "Country": "Greece",
+      "ISO": "GR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 71,
+      "Country": "Grenada",
+      "ISO": "GD",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 72,
+      "Country": "Guatemala",
+      "ISO": "GT",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 73,
+      "Country": "Guinea",
+      "ISO": "GN",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 74,
+      "Country": "Guinea-Bissau",
+      "ISO": "GW",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 75,
+      "Country": "Guyana",
+      "ISO": "GY",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 76,
+      "Country": "Haiti",
+      "ISO": "HT",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 77,
+      "Country": "Honduras",
+      "ISO": "HN",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 197,
+      "Country": "Hong Kong",
+      "ISO": "HK",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 78,
+      "Country": "Hungary",
+      "ISO": "HU",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 79,
+      "Country": "Iceland",
+      "ISO": "IS",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 80,
+      "Country": "India",
+      "ISO": "IN",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 81,
+      "Country": "Indonesia",
+      "ISO": "ID",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 83,
+      "Country": "Iraq",
+      "ISO": "IQ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "European"
+    },
+    {
+      "ID": 84,
+      "Country": "Ireland",
+      "ISO": "IE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 85,
+      "Country": "Israel",
+      "ISO": "IL",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 86,
+      "Country": "Italy",
+      "ISO": "IT",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 87,
+      "Country": "Jamaica",
+      "ISO": "JM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 88,
+      "Country": "Japan",
+      "ISO": "JP",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 89,
+      "Country": "Jordan",
+      "ISO": "JO",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 90,
+      "Country": "Kazakhstan",
+      "ISO": "KZ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 91,
+      "Country": "Kenya",
+      "ISO": "KE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 92,
+      "Country": "Kiribati",
+      "ISO": "KI",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 94,
+      "Country": "Kuwait",
+      "ISO": "KW",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 97,
+      "Country": "Latvia",
+      "ISO": "LV",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 98,
+      "Country": "Lebanon",
+      "ISO": "LB",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "European"
+    },
+    {
+      "ID": 99,
+      "Country": "Lesotho",
+      "ISO": "LS",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 100,
+      "Country": "Liberia",
+      "ISO": "LR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 101,
+      "Country": "Libya",
+      "ISO": "LY",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "European"
+    },
+    {
+      "ID": 102,
+      "Country": "Liechtenstein",
+      "ISO": "LI",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 103,
+      "Country": "Lithuania",
+      "ISO": "LT",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 104,
+      "Country": "Luxembourg",
+      "ISO": "LU",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 224,
+      "Country": "Macao",
+      "ISO": "MO",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 106,
+      "Country": "Madagascar",
+      "ISO": "MG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 107,
+      "Country": "Malawi",
+      "ISO": "MW",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 108,
+      "Country": "Malaysia",
+      "ISO": "MY",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 109,
+      "Country": "Maldives",
+      "ISO": "MV",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 111,
+      "Country": "Malta",
+      "ISO": "MT",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 113,
+      "Country": "Mauritania",
+      "ISO": "MR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 114,
+      "Country": "Mauritius",
+      "ISO": "MU",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 115,
+      "Country": "Mexico",
+      "ISO": "MX",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 118,
+      "Country": "Monaco",
+      "ISO": "MC",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 119,
+      "Country": "Mongolia",
+      "ISO": "MN",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 120,
+      "Country": "Montenegro",
+      "ISO": "ME",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 121,
+      "Country": "Morocco",
+      "ISO": "MA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "European"
+    },
+    {
+      "ID": 122,
+      "Country": "Mozambique",
+      "ISO": "MZ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 28,
+      "Country": "Myanmar",
+      "ISO": "MM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 123,
+      "Country": "Namibia",
+      "ISO": "NA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 125,
+      "Country": "Nepal",
+      "ISO": "NP",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 126,
+      "Country": "Netherlands",
+      "ISO": "NL",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 127,
+      "Country": "New Zealand",
+      "ISO": "NZ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 128,
+      "Country": "Nicaragua",
+      "ISO": "NI",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 129,
+      "Country": "Niger",
+      "ISO": "NE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 130,
+      "Country": "Nigeria",
+      "ISO": "NG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 105,
+      "Country": "North Macedonia",
+      "ISO": "MK",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 132,
+      "Country": "Norway",
+      "ISO": "NO",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 133,
+      "Country": "Oman",
+      "ISO": "OM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 134,
+      "Country": "Pakistan",
+      "ISO": "PK",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 137,
+      "Country": "Panama",
+      "ISO": "PA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 138,
+      "Country": "Papua New Guinea",
+      "ISO": "PG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 139,
+      "Country": "Paraguay",
+      "ISO": "PY",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 140,
+      "Country": "Peru",
+      "ISO": "PE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 141,
+      "Country": "Philippines",
+      "ISO": "PH",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 21,
+      "Country": "Plurinational State of Bolivia",
+      "ISO": "BO",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 142,
+      "Country": "Poland",
+      "ISO": "PL",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 143,
+      "Country": "Portugal",
+      "ISO": "PT",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 144,
+      "Country": "Qatar",
+      "ISO": "QA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 93,
+      "Country": "Republic of Korea",
+      "ISO": "KR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 117,
+      "Country": "Republic of Moldova",
+      "ISO": "MD",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 145,
+      "Country": "Romania",
+      "ISO": "RO",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 146,
+      "Country": "Russian Federation",
+      "ISO": "RU",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 147,
+      "Country": "Rwanda",
+      "ISO": "RW",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 149,
+      "Country": "Saint Lucia",
+      "ISO": "LC",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 150,
+      "Country": "Saint Vincent and the Grenadines",
+      "ISO": "VC",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 152,
+      "Country": "San Marino",
+      "ISO": "SM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 153,
+      "Country": "Sao Tome and Principe",
+      "ISO": "ST",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 154,
+      "Country": "Saudi Arabia",
+      "ISO": "SA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 38,
+      "Country": "Scouts of China",
+      "ISO": "TW",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 155,
+      "Country": "Senegal",
+      "ISO": "SN",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 156,
+      "Country": "Serbia",
+      "ISO": "RS",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 157,
+      "Country": "Seychelles",
+      "ISO": "SC",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 158,
+      "Country": "Sierra Leone",
+      "ISO": "SL",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 159,
+      "Country": "Singapore",
+      "ISO": "SG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 160,
+      "Country": "Slovakia",
+      "ISO": "SK",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 161,
+      "Country": "Slovenia",
+      "ISO": "SI",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 164,
+      "Country": "South Africa",
+      "ISO": "ZA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 165,
+      "Country": "South Sudan",
+      "ISO": "SS",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 166,
+      "Country": "Spain",
+      "ISO": "ES",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 167,
+      "Country": "Sri Lanka",
+      "ISO": "LK",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "European"
+    },
+    {
+      "ID": 136,
+      "Country": "State of Palestine",
+      "ISO": "PS",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 168,
+      "Country": "Sudan",
+      "ISO": "SD",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 169,
+      "Country": "Suriname",
+      "ISO": "SR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 170,
+      "Country": "Eswatini",
+      "ISO": "SZ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 171,
+      "Country": "Sweden",
+      "ISO": "SE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 172,
+      "Country": "Switzerland",
+      "ISO": "CH",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 173,
+      "Country": "Syrian Arab Republic",
+      "ISO": "SY",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 174,
+      "Country": "Tajikistan",
+      "ISO": "TJ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 176,
+      "Country": "Thailand",
+      "ISO": "TH",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 54,
+      "Country": "Timor-Leste",
+      "ISO": "TL",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 177,
+      "Country": "Togo",
+      "ISO": "TG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 179,
+      "Country": "Trinidad and Tobago",
+      "ISO": "TT",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 180,
+      "Country": "Tunisia",
+      "ISO": "TN",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "European"
+    },
+    {
+      "ID": 181,
+      "Country": "Turkey",
+      "ISO": "TR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 184,
+      "Country": "Uganda",
+      "ISO": "UG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 185,
+      "Country": "Ukraine",
+      "ISO": "UA",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 186,
+      "Country": "United Arab Emirates",
+      "ISO": "AE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 187,
+      "Country": "United Kingdom",
+      "ISO": "GB",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 175,
+      "Country": "United Republic of Tanzania",
+      "ISO": "TZ",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 188,
+      "Country": "United States of America",
+      "ISO": "US",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 189,
+      "Country": "Uruguay",
+      "ISO": "UY",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 193,
+      "Country": "Viet Nam",
+      "ISO": "VN",
+      "WSD Type": "COUNTRY",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 194,
+      "Country": "Yemen",
+      "ISO": "YE",
+      "WSD Type": "COUNTRY",
+      "Region ID": 3,
+      "Region Name": "European"
+    },
+    {
+      "ID": 195,
+      "Country": "Zambia",
+      "ISO": "ZM",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 196,
+      "Country": "Zimbabwe",
+      "ISO": "ZW",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "European"
+    },
+    {
+      "ID": 198,
+      "Country": "Puerto Rico",
+      "ISO": "PR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "European"
+    },
+    {
+      "ID": 198,
+      "Country": "Puerto Rico",
+      "ISO": "PR",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 2,
+      "Country": "Albania",
+      "ISO": "AL",
+      "WSD Type": "COUNTRY",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 6,
+      "Country": "Antigua and Barbuda",
+      "ISO": "AG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 42,
+      "Country": "Congo",
+      "ISO": "CG",
+      "WSD Type": "COUNTRY",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    }
+  ],
+  "Organisations": [
+    {
+      "ID": 2,
+      "Organisation": "Associação de Escuteiros de Angola",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 1,
+      "Organisation": "Scouts Musulmans Algériens",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 3,
+      "Organisation": "Scouts de Argentina",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 4,
+      "Organisation": "Hayastani Azgayin Scautakan Sharjum Kazmakerputiun",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 6,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 203,
+      "Organisation": "Scouting Aruba",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 5,
+      "Organisation": "The Scout Association of Australia",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 6,
+      "Organisation": "Pfadfinder und Pfadfinderinnen Österreichs",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 10,
+      "Organisation": "Bangladesh Scouts",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 8,
+      "Organisation": "The Scout Association of the Bahamas",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 9,
+      "Organisation": "Boy Scouts of Bahrain",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 7,
+      "Organisation": "Azerbaycan Skautlar Associasiyasi",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 6,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 11,
+      "Organisation": "Barbados Boy Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 12,
+      "Organisation": "Belarusian Republican Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 6,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 13,
+      "Organisation": "Guidisme et Scoutisme en Belgique",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 14,
+      "Organisation": "Les Scouts",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 15,
+      "Organisation": "Scouts en Gidsen Vlaanderen",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 16,
+      "Organisation": "Scouts et Guides Pluralistes de Belgique",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 17,
+      "Organisation": "Federatie voor Open Scoutisme",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 18,
+      "Organisation": "The Scout Association of Belize",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 19,
+      "Organisation": "Scoutisme Béninois",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 20,
+      "Organisation": "Bhutan Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 22,
+      "Organisation": "Scout Association in Bosnia and Herzegovina",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 21,
+      "Organisation": "Asociación de Scouts de Bolivia",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 23,
+      "Organisation": "Savez Izvidaca Federacije Bosne i Hercegovine",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 24,
+      "Organisation": "Savez Izvidjaca Republike Srpske",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 237,
+      "Organisation": "Scouts of the Brčko District",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 25,
+      "Organisation": "The Botswana Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 26,
+      "Organisation": "União dos Escoteiros do Brasil",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 27,
+      "Organisation": "Persekutuan Pengakap Negara Brunei Darussalam",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 28,
+      "Organisation": "Organizatsia Na Bulgarskite Skauty",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 29,
+      "Organisation": "Association des Scouts du Burkina Faso",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 30,
+      "Organisation": "Association des Scouts du Burundi",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 35,
+      "Organisation": "Associação dos Escuteiros de Cabo Verde",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 31,
+      "Organisation": "National Association of Cambodian Scouts",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 32,
+      "Organisation": "Les Scouts du Cameroun",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 33,
+      "Organisation": "Scouts Canada",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 34,
+      "Organisation": "Association des Scouts du Canada",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "Associated Entity",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 36,
+      "Organisation": "Fédération du Scoutisme Tchadien",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 37,
+      "Organisation": "Eclaireurs du Tchad",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 38,
+      "Organisation": "Scouts du Tchad",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 39,
+      "Organisation": "Asociación de Guías y Scouts de Chile",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 40,
+      "Organisation": "The General Association of the Scouts of China",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 41,
+      "Organisation": "Asociación Scouts de Colombia",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 42,
+      "Organisation": "Wezo Mbeli",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 206,
+      "Organisation": "Fédération des Scouts de la République Démocratique du Congo",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 43,
+      "Organisation": "Asociación de Guías y Scouts de Costa Rica",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 238,
+      "Organisation": "Fédération Ivoirienne du Scoutisme",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 239,
+      "Organisation": "Les Eclaireurs Laïcs de Côte d’Ivoire",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 240,
+      "Organisation": "Les Eclaireurs Unionistes de Côte d’Ivoire",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 241,
+      "Organisation": "Les Scouts Catholiques de Côte d’Ivoire",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 44,
+      "Organisation": "Savez izvidaca Hrvatske",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 242,
+      "Organisation": "Scouting Antiano",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 45,
+      "Organisation": "Cyprus Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 46,
+      "Organisation": "Junák – český skaut",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 47,
+      "Organisation": "Fællesrådet for Danmarks Drengespejdere",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 48,
+      "Organisation": "Det Danske Spejderkorps",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 49,
+      "Organisation": "KFUM - Spejderne i Danmark",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 50,
+      "Organisation": "Danske Baptisters Spejderkorps",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "Associated Entity",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 51,
+      "Organisation": "Føroya Skótarád",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "Associated Entity",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 52,
+      "Organisation": "Groenlands Spejderkorps",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "Associated Entity",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 53,
+      "Organisation": "The Scout Association of Dominica",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 54,
+      "Organisation": "Asociación de Scouts Dominicanos",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 55,
+      "Organisation": "Asociación de Scouts del Ecuador",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 56,
+      "Organisation": "Egyptian Scout Federation",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 57,
+      "Organisation": "Asociación de Scouts de El Salvador",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 58,
+      "Organisation": "Eesti Skautide Ühing",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 59,
+      "Organisation": "Ethiopia Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 60,
+      "Organisation": "Fiji Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 61,
+      "Organisation": "Suomen Partiolaiset - Finlands Scouter",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 62,
+      "Organisation": "Scoutisme Français",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 63,
+      "Organisation": "Les Eclaireuses et Eclaireurs de France",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 64,
+      "Organisation": "Les Eclaireuses et Eclaireurs Israélites de France",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 65,
+      "Organisation": "Eclaireuses et Eclaireurs Unionistes de France",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 66,
+      "Organisation": "Scouts et Guides de France",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 67,
+      "Organisation": "Scouts Musulmans de France",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 243,
+      "Organisation": "Eclaireuses et Eclaireurs de la Nature",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 68,
+      "Organisation": "Fédération Gabonaise du Scoutisme",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 69,
+      "Organisation": "Eclaireuses-Eclaireurs du Gabon",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 70,
+      "Organisation": "Eclaireurs et Eclaireuses Unionistes du Gabon",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 71,
+      "Organisation": "Scouts et Guides Catholiques du Gabon",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 72,
+      "Organisation": "The Gambia Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 73,
+      "Organisation": "Sakartvelos Skauturi Modzraobis Organizatsia",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 6,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 74,
+      "Organisation": "Ring deutscher Pfadfinderverbände",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 75,
+      "Organisation": "Bund der Pfadfinderinnen und Pfadfinder",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 76,
+      "Organisation": "Deutsche Pfadfinderschaft Sankt Georg",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 77,
+      "Organisation": "Verband Christlicher Pfadfinderinnen und Pfadfinder",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 78,
+      "Organisation": "The Ghana Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 79,
+      "Organisation": "Soma Hellinon Proskopon",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 80,
+      "Organisation": "The Scout Association of Grenada",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 81,
+      "Organisation": "Asociación de Scouts de Guatemala",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 82,
+      "Organisation": "Association Nationale des Scouts de Guinée",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 244,
+      "Organisation": "Escuteiros da Guiné Bissau",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 83,
+      "Organisation": "The Scout Association of Guyana",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 84,
+      "Organisation": "Scouts d’Haïti",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 85,
+      "Organisation": "Asociación de Scouts de Honduras",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 86,
+      "Organisation": "Scout Association of Hong Kong",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 87,
+      "Organisation": "Magyar Cserkészszövetség",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 88,
+      "Organisation": "Bandalag íslenskra Skáta",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 89,
+      "Organisation": "The Bharat Scouts and Guides",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 90,
+      "Organisation": "Gerakan Pramuka",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 245,
+      "Organisation": "Iraq Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 91,
+      "Organisation": "Scouting Ireland",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 92,
+      "Organisation": "Hitachdut Hatsofim Ve Hatsofot Be Israel",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 93,
+      "Organisation": "The Hebrew Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 94,
+      "Organisation": "The Arab School Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 95,
+      "Organisation": "The Druze Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 96,
+      "Organisation": "The Israeli Catholic Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 97,
+      "Organisation": "The Orthodox Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 98,
+      "Organisation": "The Israeli Arab Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 99,
+      "Organisation": "Federazione Italiana dello Scautismo",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 100,
+      "Organisation": "Associazione Guide e Scouts Cattolici Italiani",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 101,
+      "Organisation": "Corpo Nazionale Giovani Esploratori ed Esploratrici Italiani",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 102,
+      "Organisation": "The Scout Association of Jamaica",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 103,
+      "Organisation": "Scout Association of Japan",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 104,
+      "Organisation": "The Jordanian Association for Boy Scouts and Girl Guides",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 105,
+      "Organisation": "Organisation of the Scout Movement of Kazakhstan",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 6,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 106,
+      "Organisation": "The Kenya Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 107,
+      "Organisation": "Kiribati Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 108,
+      "Organisation": "Korea Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 109,
+      "Organisation": "Kuwait Boy Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 110,
+      "Organisation": "Latvijas Skautu un Gaidu centrala organizacija",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 111,
+      "Organisation": "Lebanese Scouting Federation",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 112,
+      "Organisation": "Lesotho Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 113,
+      "Organisation": "Liberia Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 114,
+      "Organisation": "Boy Scouts and Girl Guides of Libya",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 115,
+      "Organisation": "Pfadfinder und Pfadfinderinnen Liechtensteins",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 116,
+      "Organisation": "Lietuvos Skautija",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 117,
+      "Organisation": "Scouting in Luxembourg",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 118,
+      "Organisation": "Lëtzebuerger Guiden a Scouten",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 119,
+      "Organisation": "Fédération Nationale des Eclaireurs et Eclaireuses du Luxembourg",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 204,
+      "Organisation": "The Scout Association of Macau",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 120,
+      "Organisation": "Firaisan’ny Skotisma eto Madagasikara",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 121,
+      "Organisation": "Kiadin’i Madagasikara",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 122,
+      "Organisation": "Tily Eto Madagasikara",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 123,
+      "Organisation": "Antilin’i Madagasikara",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 124,
+      "Organisation": "Scout Association of Malawi",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 125,
+      "Organisation": "Persekutuan Pengakap Malaysia",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 126,
+      "Organisation": "Scout Association of Maldives",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 127,
+      "Organisation": "The Scout Association of Malta",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 128,
+      "Organisation": "Association des Scouts et Guides de Mauritanie",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 129,
+      "Organisation": "The Mauritius Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 130,
+      "Organisation": "Asociación de Scouts de México",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 247,
+      "Organisation": "Asociatia Nationala A Scoutilor Din Moldova",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 6,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 131,
+      "Organisation": "Association des Guides et Scouts de Monaco",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 132,
+      "Organisation": "The Scout Association of Mongolia",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 133,
+      "Organisation": "Savez Izvidjaca Crne Gore",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 134,
+      "Organisation": "Fédération Nationale du Scoutisme Marocain",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 135,
+      "Organisation": "Liga dos Escuteiros de Moçambique",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 248,
+      "Organisation": "Myanmar Scout",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 136,
+      "Organisation": "Scouts of Namibia",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 137,
+      "Organisation": "Nepal Scouts",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 138,
+      "Organisation": "Scouting Nederland",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 139,
+      "Organisation": "Scouts New Zealand",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 140,
+      "Organisation": "Asociación de Scouts de Nicaragua",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 141,
+      "Organisation": "Association des Scouts du Niger",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 142,
+      "Organisation": "The Scout Association of Nigeria",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 246,
+      "Organisation": "Sojuz na Izvidnici na Makedonija",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 143,
+      "Organisation": "Speidernes Fellesorganisasjon",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 144,
+      "Organisation": "Norges Speiderforbund",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 145,
+      "Organisation": "Norges KFUK-KFUM -speidere",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 146,
+      "Organisation": "The National Organization for Scouts and Guides",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 147,
+      "Organisation": "Pakistan Boy Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 249,
+      "Organisation": "Palestinian Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 148,
+      "Organisation": "Asociación Nacional de Scouts de Panamá",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 149,
+      "Organisation": "The Scout Association of Papua New Guinea",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 150,
+      "Organisation": "Asociación de Scouts del Paraguay",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 151,
+      "Organisation": "Asociación de Scouts del Perú",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 152,
+      "Organisation": "Boy Scouts of the Philippines",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 153,
+      "Organisation": "Zwiazek Harcerstwa Polskiego",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 154,
+      "Organisation": "Federação Escutista de Portugal",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 155,
+      "Organisation": "Associação dos Escoteiros de Portugal",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 156,
+      "Organisation": "Corpo Nacional de Escutas",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 157,
+      "Organisation": "Qatar Boy Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 158,
+      "Organisation": "Cercetasii României",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 159,
+      "Organisation": "All-Russian Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 6,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 160,
+      "Organisation": "Rwanda Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 161,
+      "Organisation": "The St. Lucia Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 162,
+      "Organisation": "The Scout Association of St. Vincent and the Grenadines",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 163,
+      "Organisation": "Associazione Guide e Esploratori Cattolici Sammarinesi",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 205,
+      "Organisation": "Associação dos Escuteiros de São Tomé e Príncipe",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 164,
+      "Organisation": "Saudi Arabian Boy Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 165,
+      "Organisation": "Confédération Sénégalaise du Scoutisme",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 166,
+      "Organisation": "Les Scouts du Sénégal",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 167,
+      "Organisation": "Eclaireurs du Sénégal",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 168,
+      "Organisation": "Savez Izvidjača Srbije",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 169,
+      "Organisation": "The Seychelles Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 170,
+      "Organisation": "Sierra Leone Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 171,
+      "Organisation": "The Singapore Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 172,
+      "Organisation": "Slovensky skauting",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 173,
+      "Organisation": "Zveza tabornikov Slovenije",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 174,
+      "Organisation": "Scouts South Africa",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 175,
+      "Organisation": "South Sudan Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 176,
+      "Organisation": "Federación de Escultismo en España",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO_FEDERATION",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 177,
+      "Organisation": "ASDE-Scouts de España",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 178,
+      "Organisation": "Federació Catalana d’Escoltisme i Guiatge",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "Associated Entity",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 179,
+      "Organisation": "Movimiento Scout Católico",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSA",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 180,
+      "Organisation": "Sri Lanka Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 181,
+      "Organisation": "Sudan Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 182,
+      "Organisation": "Boy Scouts van Suriname",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 183,
+      "Organisation": "Emavulandlela Swaziland Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 184,
+      "Organisation": "Scouterna",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 185,
+      "Organisation": "Mouvement Scout de Suisse",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 186,
+      "Organisation": "Scouts of Syria",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 187,
+      "Organisation": "Ittihodi Scouthoi Tochikiston",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 6,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 250,
+      "Organisation": "Tanzania Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 188,
+      "Organisation": "National Scout Organization of Thailand",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 251,
+      "Organisation": "União Nacional dos Escuteiros de Timor-Leste",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 189,
+      "Organisation": "Association Scoute du Togo",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 190,
+      "Organisation": "The Scout Association of Trinidad and Tobago",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 191,
+      "Organisation": "Les Scouts Tunisiens",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 192,
+      "Organisation": "Turkiye Izcilik Federasyonu",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 193,
+      "Organisation": "Uganda Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 194,
+      "Organisation": "National Organization of Scouts of Ukraine",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 6,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 195,
+      "Organisation": "Emirates Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 196,
+      "Organisation": "The Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 197,
+      "Organisation": "Boy Scouts of America",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 198,
+      "Organisation": "Movimiento Scout del Uruguay",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 199,
+      "Organisation": "Asociación de Scouts de Venezuela",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 299,
+      "Organisation": "Pathfinder Scouts Vietnam",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 200,
+      "Organisation": "Yemen Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 3,
+      "Region Name": "Arab"
+    },
+    {
+      "ID": 201,
+      "Organisation": "Zambia Scouts Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 202,
+      "Organisation": "The Scout Association of Zimbabwe",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 371,
+      "Organisation": "Afghanistan National Scout Organization",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 1,
+      "Region Name": "Asia-Pacific"
+    },
+    {
+      "ID": 538,
+      "Organisation": "Scouts of Albania",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 2,
+      "Region Name": "European"
+    },
+    {
+      "ID": 501,
+      "Organisation": "Antigua and Barbuda Scout Association",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 5,
+      "Region Name": "Interamerican"
+    },
+    {
+      "ID": 529,
+      "Organisation": "Scoutisme Congolais",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    },
+    {
+      "ID": 537,
+      "Organisation": "Association des Scouts et Guides du Mali",
+      "WSD Type": "ORGANIZATION",
+      "WOSM Subtype": "NSO",
+      "Region ID": 4,
+      "Region Name": "Africa"
+    }
+  ],
+  "Regions": [
+    {
+      "ID": 1,
+      "Region": "Asia-Pacific",
+      "WSD Type": "REGION"
+    },
+    {
+      "ID": 2,
+      "Region": "European",
+      "WSD Type": "REGION"
+    },
+    {
+      "ID": 3,
+      "Region": "Arab",
+      "WSD Type": "REGION"
+    },
+    {
+      "ID": 4,
+      "Region": "Africa",
+      "WSD Type": "REGION"
+    },
+    {
+      "ID": 5,
+      "Region": "Interamerican",
+      "WSD Type": "REGION"
+    },
+    {
+      "ID": 7,
+      "Region": "Not Member of WOSM Region",
+      "WSD Type": "REGION"
+    },
+    {
+      "ID": 8,
+      "Region": "Global",
+      "WSD Type": "REGION"
+    }
+  ]
+}

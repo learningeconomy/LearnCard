@@ -1,0 +1,61 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "lca-api-service",
+    "sourceRoot": "services/lca-api/src",
+    "projectType": "application",
+    "root": "services/lca-api",
+    "tags": [],
+    "implicitDependencies": ["nx-run-command"],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "tests": ["{projectRoot}/test/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "build"
+            }
+        },
+        "build:docker": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "build:docker"
+            }
+        },
+        "serverless-deploy": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "serverless-deploy"
+            }
+        },
+        "serverless-deploy-scouts": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "serverless-deploy-scouts"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "tests"],
+            "options": {
+                "script": "test"
+            }
+        },
+        "test:watch": {
+            "executor": "./tools/executors/workspace:run-command",
+            "options": {
+                "command": "pnpm test:watch",
+                "cwd": "{root}/services/lca-api"
+            }
+        }
+    }
+}

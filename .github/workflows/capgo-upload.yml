@@ -1,0 +1,106 @@
+name: CapGo Upload (Reusable)
+
+on:
+    workflow_call:
+        inputs:
+            project:
+                description: NX project name to build
+                required: true
+                type: string
+            app_id:
+                description: CapGo app id (bundle id)
+                required: true
+                type: string
+            version:
+                description: Version to upload (e.g., 1.2.3)
+                required: true
+                type: string
+            build_path:
+                description: Path to built web assets
+                required: true
+                type: string
+            package_json:
+                description: Path to package.json for the app
+                required: true
+                type: string
+            node_modules_path:
+                description: Path to app-specific node_modules (for delta calc)
+                required: true
+                type: string
+            environment:
+                description: GitHub environment name to use for this job
+                required: true
+                type: string
+            channel:
+                description: CapGo default channel name to upload to (ex.g. production, 1.0.1)
+                required: true
+                type: string
+        secrets:
+            CAPGO_TOKEN:
+                required: true
+
+jobs:
+    upload:
+        name: Upload CapGo Bundle
+        runs-on: ubuntu-latest
+        environment: ${{ inputs.environment }}
+
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js 20.x
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v3
+              id: pnpm-install
+              with:
+                  version: 9
+                  run_install: false
+
+            - name: Get pnpm store directory
+              id: pnpm-cache
+              run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+            - name: Setup pnpm cache
+              uses: actions/cache@v3
+              with:
+                  path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pnpm-store-
+
+            - name: Install dependencies
+              run: pnpm install --no-frozen-lockfile
+
+            - name: Build ${{ inputs.project }}
+              run: pnpm exec nx build ${{ inputs.project }}
+              env:
+                  NODE_ENV: ${{ vars.NODE_ENV }}
+                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+                  SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+                  SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+
+            - name: Create Release (CapGo)
+              run: >-
+                  npx @capgo/cli@latest bundle upload
+                  ${{ inputs.app_id }}
+                  --delta
+                  --apikey ${{ secrets.CAPGO_TOKEN }}
+                  --path ${{ inputs.build_path }}
+                  --channel ${{ inputs.channel }}
+                  --bundle ${{ inputs.version }}
+                  --package-json ${{ inputs.package_json }}
+                  --node-modules ${{ inputs.node_modules_path }}
+
+            - name: Set Release (CapGo)
+              run: >-
+                  npx @capgo/cli@latest channel set ${{ inputs.channel }}
+                  -s default
+                  -a ${{ secrets.CAPGO_TOKEN }}
+                  -b ${{ inputs.version }}
+                  ${{ inputs.app_id }}

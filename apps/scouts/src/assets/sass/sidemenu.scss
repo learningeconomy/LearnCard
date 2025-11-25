@@ -1,0 +1,187 @@
+ion-split-pane {
+  --side-max-width: 270px;
+
+  &>ion-menu {
+    &>ion-content {
+      --background: #18224e;
+      --overflow: hidden;
+    }
+  }
+}
+
+.scout-pass-side-menu-list {
+  background: #18224e;
+  padding: 0;
+  width: 100%;
+}
+
+// .scout-pass-secondary-side-menu-list {
+
+//     & > li:first-child {
+//         margin-left: 2px;
+//         font-weight: 700;
+//     }
+
+//     & > li:not(:first-child) {
+//         margin-left: 10px;
+//         font-weight: 500;
+//     }
+// }
+
+.scout-pass-side-menu-list-item {
+  background: #18224e;
+  padding: 0;
+  width: 100%;
+}
+
+.scout-pass-side-menu-list-item-link {
+  align-items: center;
+  background-color: white;
+  border-radius: 100px;
+  color: #18224e;
+  display: flex;
+  font-size: 18px;
+  font-weight: 400;
+  padding: 8px 0 5px 8px;
+  width: 100%;
+
+  &>svg {
+    color: black;
+    height: 30px;
+    margin-right: 10px;
+    width: 30px;
+
+    .firewood {
+      fill: #353e64;
+    }
+
+    .flames {
+      fill: #e2e3e9;
+    }
+  }
+}
+
+.scout-pass-side-menu-secondary-list-item-link {
+  align-items: center;
+  background-color: white;
+  border-radius: 20px;
+  color: #18224e;
+  display: flex;
+  font-size: 18px;
+  font-weight: 400;
+  padding: 12px 0 12px 8px;
+  width: 100%;
+
+  &>svg {
+    color: black;
+    height: 30px;
+    margin-right: 10px;
+    width: 30px;
+  }
+}
+
+.scout-pass-side-menu-list-item-link-active {
+  background-color: #fbfbfc;
+  border-radius: 10px;
+
+  &>svg {
+
+    .firewood,
+    .outline-notification {
+      fill: #ff5655;
+    }
+
+    .flames {
+      fill: #ffae80;
+    }
+
+    .scarf {
+      fill: #9fed8f;
+    }
+
+    .outline-globe {
+      fill: #622599;
+    }
+
+    .notification-bulb {
+      fill: #ff8dff;
+    }
+
+    .shield {
+      // fill: #82e6de; // blue-river
+
+      // fill: #a670d6; // purple-light-medium
+      fill: #b895d6; // purple-lighter
+    }
+
+    .shield,
+    .shield-chevron {
+      // stroke: #03748d; // blue-dark-ocean
+
+      stroke: #4d006e; // purple-midnight
+    }
+  }
+}
+
+.scout-pass-side-menu-secondary-list-item-link-active {
+  background-color: #fbfbfc;
+
+  &>svg {
+
+    .wallet-flap,
+    .inside-star {
+      fill: #82e6de;
+    }
+
+    .wallet-outline,
+    .badge-outline {
+      fill: #622599;
+    }
+
+    .wallet-handle {
+      fill: #248737;
+    }
+
+    .wallet-inner-flap {
+      fill: #0094b4;
+    }
+
+    .outline-star {
+      fill: #03748d;
+    }
+
+    .mountain {
+      fill: #ff8dff;
+    }
+
+    .ribbon {
+      fill: #9fed8f;
+    }
+
+    .pledge-outline {
+      fill: #0f631d;
+    }
+  }
+}
+
+.learn-card-boost-button {
+  align-items: center;
+  color: #fff;
+  display: flex;
+  font-family: 'Noto Sans', 'Montserrat', 'Noto Sans', sans-serif;
+  font-weight: 600;
+  font-size: 25px;
+  line-height: 130%;
+  letter-spacing: -0.25px;
+  width: 90%;
+  justify-content: center;
+  padding: 10px;
+  box-shadow: 0px 4px 0px 0px rgba(0, 0, 0, 0.25);
+}
+
+.learn-card-boost-button>svg {
+  color: white;
+  height: 30px;
+  margin-right: 10px;
+  width: 30px;
+}
