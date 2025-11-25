@@ -84,6 +84,14 @@ import {
     LCNIntegrationUpdateType,
     LCNIntegrationQueryType,
     PaginatedLCNIntegrationsType,
+    // App Store
+    AppStoreListing,
+    AppStoreListingCreateType,
+    AppStoreListingUpdateType,
+    AppListingStatus,
+    PromotionLevel,
+    PaginatedAppStoreListings,
+    PaginatedInstalledApps,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -609,6 +617,47 @@ export type LearnCardNetworkPluginMethods = {
         did: string,
         isPrimary?: boolean
     ) => Promise<boolean>;
+
+    // App Store
+    createAppStoreListing: (
+        integrationId: string,
+        listing: AppStoreListingCreateType
+    ) => Promise<string>;
+    getAppStoreListing: (listingId: string) => Promise<AppStoreListing | undefined>;
+    updateAppStoreListing: (
+        listingId: string,
+        updates: AppStoreListingUpdateType
+    ) => Promise<boolean>;
+    deleteAppStoreListing: (listingId: string) => Promise<boolean>;
+    getListingsForIntegration: (
+        integrationId: string,
+        options?: Partial<PaginationOptionsType>
+    ) => Promise<PaginatedAppStoreListings>;
+    countListingsForIntegration: (integrationId: string) => Promise<number>;
+
+    browseAppStore: (options?: {
+        limit?: number;
+        cursor?: string;
+        category?: string;
+        promotionLevel?: PromotionLevel;
+    }) => Promise<PaginatedAppStoreListings>;
+    getPublicAppStoreListing: (listingId: string) => Promise<AppStoreListing | undefined>;
+    getAppStoreListingInstallCount: (listingId: string) => Promise<number>;
+
+    installApp: (listingId: string) => Promise<boolean>;
+    uninstallApp: (listingId: string) => Promise<boolean>;
+    getInstalledApps: (options?: Partial<PaginationOptionsType>) => Promise<PaginatedInstalledApps>;
+    countInstalledApps: () => Promise<number>;
+    isAppInstalled: (listingId: string) => Promise<boolean>;
+
+    isAppStoreAdmin: () => Promise<boolean>;
+    adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
+    adminUpdatePromotionLevel: (listingId: string, promotionLevel: PromotionLevel) => Promise<boolean>;
+    adminGetAllListings: (options?: {
+        limit?: number;
+        cursor?: string;
+        status?: AppListingStatus;
+    }) => Promise<PaginatedAppStoreListings>;
 
     resolveFromLCN: (
         uri: string

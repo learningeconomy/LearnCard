@@ -1459,3 +1459,78 @@ export type FrameworkWithSkills = z.infer<typeof FrameworkWithSkillsValidator>;
 
 // Aliases used by the plugin type definitions
 export type CreateSkillTreeInput = SkillTreeInput;
+
+// App Store Listing
+export const AppListingStatusValidator = z.enum(['DRAFT', 'PENDING_REVIEW', 'LISTED', 'ARCHIVED']);
+export type AppListingStatus = z.infer<typeof AppListingStatusValidator>;
+
+export const LaunchTypeValidator = z.enum([
+    'EMBEDDED_IFRAME',
+    'SECOND_SCREEN',
+    'DIRECT_LINK',
+    'CONSENT_REDIRECT',
+    'SERVER_HEADLESS',
+]);
+export type LaunchType = z.infer<typeof LaunchTypeValidator>;
+
+export const PromotionLevelValidator = z.enum([
+    'FEATURED_CAROUSEL',
+    'CURATED_LIST',
+    'STANDARD',
+    'DEMOTED',
+]);
+export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
+
+export const AppStoreListingValidator = z.object({
+    listing_id: z.string(),
+    display_name: z.string(),
+    tagline: z.string(),
+    full_description: z.string(),
+    icon_url: z.string(),
+    app_listing_status: AppListingStatusValidator,
+    launch_type: LaunchTypeValidator,
+    launch_config_json: z.string(),
+    category: z.string().optional(),
+    promo_video_url: z.string().optional(),
+    promotion_level: PromotionLevelValidator.optional(),
+    ios_app_store_id: z.string().optional(),
+    android_app_store_id: z.string().optional(),
+    privacy_policy_url: z.string().optional(),
+    terms_url: z.string().optional(),
+});
+
+export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;
+
+export const AppStoreListingCreateValidator = AppStoreListingValidator.omit({
+    listing_id: true,
+    app_listing_status: true,
+    promotion_level: true,
+});
+
+export type AppStoreListingCreateType = z.infer<typeof AppStoreListingCreateValidator>;
+
+export const AppStoreListingUpdateValidator = AppStoreListingValidator.partial().omit({
+    listing_id: true,
+    app_listing_status: true,
+    promotion_level: true,
+});
+
+export type AppStoreListingUpdateType = z.infer<typeof AppStoreListingUpdateValidator>;
+
+export const InstalledAppValidator = AppStoreListingValidator.extend({
+    installed_at: z.string(),
+});
+
+export type InstalledApp = z.infer<typeof InstalledAppValidator>;
+
+export const PaginatedAppStoreListingsValidator = PaginationResponseValidator.extend({
+    records: AppStoreListingValidator.array(),
+});
+
+export type PaginatedAppStoreListings = z.infer<typeof PaginatedAppStoreListingsValidator>;
+
+export const PaginatedInstalledAppsValidator = PaginationResponseValidator.extend({
+    records: InstalledAppValidator.array(),
+});
+
+export type PaginatedInstalledApps = z.infer<typeof PaginatedInstalledAppsValidator>;
