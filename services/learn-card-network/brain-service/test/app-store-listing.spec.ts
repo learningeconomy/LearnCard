@@ -1,6 +1,6 @@
 import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
 
-import { getUser } from './helpers/getClient';
+import { getClient, getUser } from './helpers/getClient';
 
 import { AppStoreListing, Integration, Profile } from '@models';
 
@@ -36,6 +36,7 @@ let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
 let userC: Awaited<ReturnType<typeof getUser>>;
 
+// For access layer tests - can set all fields including protected ones
 const makeListingInput = (overrides?: Record<string, any>) => ({
     display_name: 'Test App',
     tagline: 'A test application',
@@ -48,6 +49,12 @@ const makeListingInput = (overrides?: Record<string, any>) => ({
     promotion_level: 'STANDARD' as const,
     ...overrides,
 });
+
+// For router tests - excludes protected fields (app_listing_status, promotion_level)
+const makeRouterListingInput = (overrides?: Record<string, any>) => {
+    const { app_listing_status, promotion_level, ...rest } = makeListingInput(overrides);
+    return rest;
+};
 
 const seedProfile = async (user: Awaited<ReturnType<typeof getUser>>, profileId: string) => {
     await user.clients.fullAuth.profile.createProfile({ profileId });
@@ -544,6 +551,662 @@ describe('AppStoreListing', () => {
 
                 const count = await countListingsForIntegration(integration.id);
                 expect(count).toBe(2);
+            });
+        });
+    });
+
+    describe('Router', () => {
+        const noAuthClient = getClient();
+
+        let adminUser: Awaited<ReturnType<typeof getUser>>;
+
+        beforeAll(async () => {
+            userA = await getUser('a'.repeat(64));
+            userB = await getUser('b'.repeat(64));
+            userC = await getUser('c'.repeat(64), 'app-store:write');
+            adminUser = await getUser('d'.repeat(64));
+        });
+
+        beforeEach(async () => {
+            await AppStoreListing.delete({ detach: true, where: {} });
+            await Integration.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+
+            await seedProfile(userA, 'usera');
+            await seedProfile(userB, 'userb');
+            await seedProfile(adminUser, 'app-store-admin');
+            // userC intentionally has no profile for NOT_FOUND checks
+        });
+
+        afterAll(async () => {
+            await AppStoreListing.delete({ detach: true, where: {} });
+            await Integration.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        const seedIntegrationViaRouter = async (
+            user: Awaited<ReturnType<typeof getUser>>,
+            name = 'Test Integration'
+        ) => {
+            const id = await user.clients.fullAuth.integrations.addIntegration({
+                name,
+                description: 'Test integration',
+                whitelistedDomains: ['example.com'],
+            });
+            return id;
+        };
+
+        const seedListingViaRouter = async (
+            user: Awaited<ReturnType<typeof getUser>>,
+            integrationId: string,
+            overrides?: Record<string, any>
+        ) => {
+            // Router creates listings as DRAFT - protected fields are stripped
+            const listingId = await user.clients.fullAuth.appStore.createListing({
+                integrationId,
+                listing: makeRouterListingInput(overrides),
+            });
+            return listingId;
+        };
+
+        // Helper to set listing status via access layer (simulating admin action for test setup)
+        const setListingStatus = async (
+            listingId: string,
+            status: 'DRAFT' | 'LISTED' | 'ARCHIVED'
+        ) => {
+            const listing = await readAppStoreListingById(listingId);
+            if (listing) {
+                await updateAppStoreListing(listing, { app_listing_status: status });
+            }
+        };
+
+        describe('createListing', () => {
+            it('requires app-store:write scope and an existing profile', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    noAuthClient.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput(),
+                    })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+                await expect(
+                    userA.clients.partialAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput(),
+                    })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+                await expect(
+                    userC.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput(),
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+
+            it('requires ownership of the integration', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userB.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput(),
+                    })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('creates a listing as DRAFT with STANDARD promotion', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                expect(typeof listingId).toBe('string');
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.display_name).toBe('Test App');
+                // Verify protected defaults are set correctly
+                expect(listing?.app_listing_status).toBe('DRAFT');
+                expect(listing?.promotion_level).toBe('STANDARD');
+            });
+        });
+
+        describe('getListing', () => {
+            it('requires app-store:read and enforces ownership', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                await expect(
+                    userB.clients.fullAuth.appStore.getListing({ listingId })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.listing_id).toBe(listingId);
+            });
+        });
+
+        describe('getListingsForIntegration', () => {
+            it('paginates listings', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await seedListingViaRouter(userA, integrationId, { display_name: 'App 1' });
+                await seedListingViaRouter(userA, integrationId, { display_name: 'App 2' });
+                await seedListingViaRouter(userA, integrationId, { display_name: 'App 3' });
+
+                const page1 = await userA.clients.fullAuth.appStore.getListingsForIntegration({
+                    integrationId,
+                    limit: 2,
+                });
+                expect(page1.records.length).toBe(2);
+                expect(page1.hasMore).toBe(true);
+
+                const page2 = await userA.clients.fullAuth.appStore.getListingsForIntegration({
+                    integrationId,
+                    limit: 2,
+                    cursor: page1.cursor!,
+                });
+                expect(page2.records.length).toBe(1);
+                expect(page2.hasMore).toBe(false);
+            });
+        });
+
+        describe('countListingsForIntegration', () => {
+            it('counts listings for integration', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await seedListingViaRouter(userA, integrationId, { display_name: 'App 1' });
+                await seedListingViaRouter(userA, integrationId, { display_name: 'App 2' });
+
+                const count = await userA.clients.fullAuth.appStore.countListingsForIntegration({
+                    integrationId,
+                });
+                expect(count).toBe(2);
+            });
+        });
+
+        describe('updateListing', () => {
+            it('requires app-store:write and ownership', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                await expect(
+                    userB.clients.fullAuth.appStore.updateListing({
+                        listingId,
+                        updates: { display_name: 'Nope' },
+                    })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+                const ok = await userA.clients.fullAuth.appStore.updateListing({
+                    listingId,
+                    updates: { display_name: 'Updated App', tagline: 'New tagline' },
+                });
+                expect(ok).toBe(true);
+
+                const after = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(after?.display_name).toBe('Updated App');
+                expect(after?.tagline).toBe('New tagline');
+            });
+        });
+
+        describe('deleteListing', () => {
+            it('requires app-store:delete and ownership', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                await expect(
+                    userB.clients.fullAuth.appStore.deleteListing({ listingId })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+                const ok = await userA.clients.fullAuth.appStore.deleteListing({ listingId });
+                expect(ok).toBe(true);
+
+                const after = await readAppStoreListingById(listingId);
+                expect(after).toBeNull();
+            });
+        });
+
+        describe('browseListedApps (public)', () => {
+            it('returns only LISTED apps without auth', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                // Create draft app (stays as DRAFT)
+                await seedListingViaRouter(userA, integrationId, { display_name: 'Draft App' });
+
+                // Create and set to LISTED
+                const listedId = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Listed App',
+                });
+                await setListingStatus(listedId, 'LISTED');
+
+                const result = await noAuthClient.appStore.browseListedApps();
+
+                expect(result.records.length).toBe(1);
+                expect(result.records[0]?.display_name).toBe('Listed App');
+            });
+
+            it('filters by category', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const learning = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Learning App',
+                    category: 'Learning',
+                });
+                await setListingStatus(learning, 'LISTED');
+
+                const games = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Games App',
+                    category: 'Games',
+                });
+                await setListingStatus(games, 'LISTED');
+
+                const result = await noAuthClient.appStore.browseListedApps({
+                    category: 'Learning',
+                });
+
+                expect(result.records.length).toBe(1);
+                expect(result.records[0]?.display_name).toBe('Learning App');
+            });
+
+            it('filters by promotion level', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                // Use access layer to set promotion level directly (admin-only field)
+                const featured = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Featured App',
+                });
+                const featuredListing = await readAppStoreListingById(featured);
+                await updateAppStoreListing(featuredListing!, {
+                    app_listing_status: 'LISTED',
+                    promotion_level: 'FEATURED_CAROUSEL',
+                });
+
+                const standard = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Standard App',
+                });
+                await setListingStatus(standard, 'LISTED');
+
+                const result = await noAuthClient.appStore.browseListedApps({
+                    promotionLevel: 'FEATURED_CAROUSEL',
+                });
+
+                expect(result.records.length).toBe(1);
+                expect(result.records[0]?.display_name).toBe('Featured App');
+            });
+        });
+
+        describe('getPublicListing', () => {
+            it('returns listed apps without auth', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Public App',
+                });
+                await setListingStatus(listingId, 'LISTED');
+
+                const listing = await noAuthClient.appStore.getPublicListing({ listingId });
+                expect(listing?.display_name).toBe('Public App');
+            });
+
+            it('returns undefined for non-LISTED apps', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Draft App',
+                });
+                // Listing stays as DRAFT by default
+
+                const listing = await noAuthClient.appStore.getPublicListing({ listingId });
+                expect(listing).toBeUndefined();
+            });
+        });
+
+        describe('getListingInstallCount', () => {
+            it('returns install count for listed apps', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+
+                // Install the app
+                await userA.clients.fullAuth.appStore.installApp({ listingId });
+                await userB.clients.fullAuth.appStore.installApp({ listingId });
+
+                const count = await noAuthClient.appStore.getListingInstallCount({ listingId });
+                expect(count).toBe(2);
+            });
+        });
+
+        describe('installApp', () => {
+            it('requires app-store:write scope', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+
+                await expect(
+                    noAuthClient.appStore.installApp({ listingId })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+                await expect(
+                    userA.clients.partialAuth.appStore.installApp({ listingId })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('installs a listed app', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+
+                const ok = await userA.clients.fullAuth.appStore.installApp({ listingId });
+                expect(ok).toBe(true);
+
+                const isInstalled = await userA.clients.fullAuth.appStore.isAppInstalled({
+                    listingId,
+                });
+                expect(isInstalled).toBe(true);
+            });
+
+            it('prevents installing non-LISTED apps', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                // Listing stays as DRAFT by default
+
+                await expect(
+                    userA.clients.fullAuth.appStore.installApp({ listingId })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+
+            it('prevents duplicate installations', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+
+                await userA.clients.fullAuth.appStore.installApp({ listingId });
+
+                await expect(
+                    userA.clients.fullAuth.appStore.installApp({ listingId })
+                ).rejects.toMatchObject({ code: 'CONFLICT' });
+            });
+        });
+
+        describe('uninstallApp', () => {
+            it('uninstalls an installed app', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+
+                await userA.clients.fullAuth.appStore.installApp({ listingId });
+                const ok = await userA.clients.fullAuth.appStore.uninstallApp({ listingId });
+                expect(ok).toBe(true);
+
+                const isInstalled = await userA.clients.fullAuth.appStore.isAppInstalled({
+                    listingId,
+                });
+                expect(isInstalled).toBe(false);
+            });
+
+            it('fails if app is not installed', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+
+                await expect(
+                    userA.clients.fullAuth.appStore.uninstallApp({ listingId })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+        });
+
+        describe('getInstalledApps', () => {
+            it('returns installed apps with pagination', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listing1 = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'App 1',
+                });
+                await setListingStatus(listing1, 'LISTED');
+
+                const listing2 = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'App 2',
+                });
+                await setListingStatus(listing2, 'LISTED');
+
+                const listing3 = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'App 3',
+                });
+                await setListingStatus(listing3, 'LISTED');
+
+                await userA.clients.fullAuth.appStore.installApp({ listingId: listing1 });
+                await userA.clients.fullAuth.appStore.installApp({ listingId: listing2 });
+                await userA.clients.fullAuth.appStore.installApp({ listingId: listing3 });
+
+                const page1 = await userA.clients.fullAuth.appStore.getInstalledApps({ limit: 2 });
+                expect(page1.records.length).toBe(2);
+                expect(page1.hasMore).toBe(true);
+
+                const page2 = await userA.clients.fullAuth.appStore.getInstalledApps({
+                    limit: 2,
+                    cursor: page1.cursor!,
+                });
+                expect(page2.records.length).toBe(1);
+                expect(page2.hasMore).toBe(false);
+            });
+        });
+
+        describe('countInstalledApps', () => {
+            it('counts installed apps', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listing1 = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'App 1',
+                });
+                await setListingStatus(listing1, 'LISTED');
+
+                const listing2 = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'App 2',
+                });
+                await setListingStatus(listing2, 'LISTED');
+
+                await userA.clients.fullAuth.appStore.installApp({ listingId: listing1 });
+                await userA.clients.fullAuth.appStore.installApp({ listingId: listing2 });
+
+                const count = await userA.clients.fullAuth.appStore.countInstalledApps();
+                expect(count).toBe(2);
+            });
+        });
+
+        describe('isAppInstalled', () => {
+            it('returns correct installation status', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+
+                const before = await userA.clients.fullAuth.appStore.isAppInstalled({ listingId });
+                expect(before).toBe(false);
+
+                await userA.clients.fullAuth.appStore.installApp({ listingId });
+
+                const after = await userA.clients.fullAuth.appStore.isAppInstalled({ listingId });
+                expect(after).toBe(true);
+            });
+        });
+
+        describe('Admin Routes', () => {
+            // For admin tests, we need to temporarily add the user to the admin list
+            // Since the admin list is config-based, we'll use the access layer directly
+            // to verify admin-only behavior works correctly
+
+            it('adminUpdateListingStatus - rejects non-admin users', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // userA is not an admin
+                await expect(
+                    userA.clients.fullAuth.appStore.adminUpdateListingStatus({
+                        listingId,
+                        status: 'LISTED',
+                    })
+                ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+                // Listing should still be DRAFT
+                const listing = await readAppStoreListingById(listingId);
+                expect(listing?.app_listing_status).toBe('DRAFT');
+            });
+
+            it('adminUpdatePromotionLevel - rejects non-admin users', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.adminUpdatePromotionLevel({
+                        listingId,
+                        promotionLevel: 'FEATURED_CAROUSEL',
+                    })
+                ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+                // Promotion level should still be STANDARD
+                const listing = await readAppStoreListingById(listingId);
+                expect(listing?.promotion_level).toBe('STANDARD');
+            });
+
+            it('adminGetAllListings - rejects non-admin users', async () => {
+                await expect(
+                    userA.clients.fullAuth.appStore.adminGetAllListings()
+                ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            });
+
+            it('isAdmin - returns false for non-admin users', async () => {
+                const isAdmin = await userA.clients.fullAuth.appStore.isAdmin();
+                expect(isAdmin).toBe(false);
+            });
+
+            it('isAdmin - returns true for admin users', async () => {
+                const isAdmin = await adminUser.clients.fullAuth.appStore.isAdmin();
+                expect(isAdmin).toBe(true);
+            });
+
+            it('adminUpdateListingStatus - admin can update listing status', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Verify starts as DRAFT
+                const before = await readAppStoreListingById(listingId);
+                expect(before?.app_listing_status).toBe('DRAFT');
+
+                // Admin updates to LISTED
+                const result = await adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                    listingId,
+                    status: 'LISTED',
+                });
+                expect(result).toBe(true);
+
+                const after = await readAppStoreListingById(listingId);
+                expect(after?.app_listing_status).toBe('LISTED');
+
+                // Admin can also archive
+                await adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                    listingId,
+                    status: 'ARCHIVED',
+                });
+
+                const archived = await readAppStoreListingById(listingId);
+                expect(archived?.app_listing_status).toBe('ARCHIVED');
+            });
+
+            it('adminUpdatePromotionLevel - admin can update promotion level', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Verify starts as STANDARD
+                const before = await readAppStoreListingById(listingId);
+                expect(before?.promotion_level).toBe('STANDARD');
+
+                // Admin updates to FEATURED_CAROUSEL
+                const result = await adminUser.clients.fullAuth.appStore.adminUpdatePromotionLevel({
+                    listingId,
+                    promotionLevel: 'FEATURED_CAROUSEL',
+                });
+                expect(result).toBe(true);
+
+                const after = await readAppStoreListingById(listingId);
+                expect(after?.promotion_level).toBe('FEATURED_CAROUSEL');
+
+                // Admin can set other levels too
+                await adminUser.clients.fullAuth.appStore.adminUpdatePromotionLevel({
+                    listingId,
+                    promotionLevel: 'CURATED_LIST',
+                });
+
+                const curated = await readAppStoreListingById(listingId);
+                expect(curated?.promotion_level).toBe('CURATED_LIST');
+            });
+
+            it('adminGetAllListings - admin can view all listings regardless of status', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                // Create listings with different statuses
+                const draft = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Draft App',
+                });
+
+                const listed = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Listed App',
+                });
+                await setListingStatus(listed, 'LISTED');
+
+                const archived = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Archived App',
+                });
+                await setListingStatus(archived, 'ARCHIVED');
+
+                // Admin can see all listings
+                const allListings = await adminUser.clients.fullAuth.appStore.adminGetAllListings();
+                expect(allListings.records.length).toBe(3);
+
+                const names = allListings.records.map(l => l.display_name);
+                expect(names).toContain('Draft App');
+                expect(names).toContain('Listed App');
+                expect(names).toContain('Archived App');
+            });
+
+            it('adminGetAllListings - admin can filter by status', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await seedListingViaRouter(userA, integrationId, { display_name: 'Draft App' });
+
+                const listed = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Listed App',
+                });
+                await setListingStatus(listed, 'LISTED');
+
+                // Admin filters by DRAFT only
+                const draftOnly = await adminUser.clients.fullAuth.appStore.adminGetAllListings({
+                    status: 'DRAFT',
+                });
+                expect(draftOnly.records.length).toBe(1);
+                expect(draftOnly.records[0]?.display_name).toBe('Draft App');
+
+                // Admin filters by LISTED only
+                const listedOnly = await adminUser.clients.fullAuth.appStore.adminGetAllListings({
+                    status: 'LISTED',
+                });
+                expect(listedOnly.records.length).toBe(1);
+                expect(listedOnly.records[0]?.display_name).toBe('Listed App');
+            });
+
+            it('regular updateListing - cannot change protected fields', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Try to update with regular route - protected fields should be stripped
+                await userA.clients.fullAuth.appStore.updateListing({
+                    listingId,
+                    updates: {
+                        display_name: 'Updated Name',
+                        // app_listing_status and promotion_level are not accepted by the validator
+                    },
+                });
+
+                const listing = await readAppStoreListingById(listingId);
+                expect(listing?.display_name).toBe('Updated Name');
+                // Protected fields should remain unchanged
+                expect(listing?.app_listing_status).toBe('DRAFT');
+                expect(listing?.promotion_level).toBe('STANDARD');
             });
         });
     });

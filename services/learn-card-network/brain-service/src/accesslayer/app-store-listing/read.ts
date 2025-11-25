@@ -61,15 +61,27 @@ export const getListedApps = async (
         cursor,
         category,
         promotionLevel,
+        status,
+        includeAllStatuses = false,
     }: {
         limit: number;
         cursor?: string;
         category?: string;
         promotionLevel?: string;
+        status?: string; // When provided, filter by this specific status
+        includeAllStatuses?: boolean; // When true, returns all statuses (for admin)
     }
 ): Promise<AppStoreListingType[]> => {
-    const whereClauses: string[] = ["listing.app_listing_status = 'LISTED'"];
+    const whereClauses: string[] = [];
     const params: Record<string, any> = { limit: int(limit) };
+
+    // Status filtering: specific status > all statuses > default to LISTED only
+    if (status) {
+        whereClauses.push('listing.app_listing_status = $status');
+        params.status = status;
+    } else if (!includeAllStatuses) {
+        whereClauses.push("listing.app_listing_status = 'LISTED'");
+    }
 
     if (cursor) {
         whereClauses.push('listing.listing_id < $cursor');

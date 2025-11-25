@@ -16,6 +16,7 @@ import { inboxRouter, InboxRouter } from '@routes/inbox';
 import { skillFrameworksRouter, SkillFrameworksRouter } from '@routes/skill-frameworks';
 import { skillsRouter, SkillsRouter } from '@routes/skills';
 import { integrationsRouter, IntegrationsRouter } from '@routes/integrations';
+import { appStoreRouter, AppStoreRouter } from '@routes/app-store';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -40,6 +41,7 @@ export const appRouter = t.router<{
     skillFrameworks: SkillFrameworksRouter;
     skills: SkillsRouter;
     integrations: IntegrationsRouter;
+    appStore: AppStoreRouter;
     test?: TestRouter;
 }>({
     boost: boostsRouter,
@@ -59,6 +61,7 @@ export const appRouter = t.router<{
     skillFrameworks: skillFrameworksRouter,
     skills: skillsRouter,
     integrations: integrationsRouter,
+    appStore: appStoreRouter,
     test: !!process.env.IS_E2E_TEST ? testRouter : undefined,
 });
 
