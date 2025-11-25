@@ -10,6 +10,7 @@ import {
     TrendingUp,
     Minus,
     ArrowDown,
+    RotateCcw,
 } from 'lucide-react';
 import type { AppStoreListing, PromotionLevel } from '../../types/app-store';
 import { LAUNCH_TYPE_INFO, PROMOTION_LEVEL_INFO, CATEGORY_OPTIONS } from '../../types/app-store';
@@ -28,6 +29,8 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
 }) => {
     const [isApproving, setIsApproving] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
+    const [isUnarchiving, setIsUnarchiving] = useState(false);
+    const [isUnlisting, setIsUnlisting] = useState(false);
     const [showPromotionMenu, setShowPromotionMenu] = useState(false);
 
     const launchTypeInfo = LAUNCH_TYPE_INFO[listing.launch_type];
@@ -54,6 +57,20 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
         await new Promise(resolve => setTimeout(resolve, 1000));
         onStatusChange(listing.listing_id, 'ARCHIVED');
         setIsRejecting(false);
+    };
+
+    const handleUnarchive = async () => {
+        setIsUnarchiving(true);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        onStatusChange(listing.listing_id, 'DRAFT');
+        setIsUnarchiving(false);
+    };
+
+    const handleUnlist = async () => {
+        setIsUnlisting(true);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        onStatusChange(listing.listing_id, 'ARCHIVED');
+        setIsUnlisting(false);
     };
 
     const promotionIcons: Record<PromotionLevel, React.FC<{ className?: string }>> = {
@@ -253,7 +270,25 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                 )}
             </div>
 
-            {/* Actions */}
+            {/* Actions for Listed */}
+            {listing.app_listing_status === 'LISTED' && (
+                <div className="p-6 border-t border-apple-gray-200 bg-apple-gray-50">
+                    <button
+                        onClick={handleUnlist}
+                        disabled={isUnlisting}
+                        className="w-full py-3 px-4 rounded-full border-2 border-red-200 text-red-600 font-medium text-sm hover:bg-red-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {isUnlisting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <XCircle className="w-4 h-4" />
+                        )}
+                        Unlist App
+                    </button>
+                </div>
+            )}
+
+            {/* Actions for Pending Review */}
             {listing.app_listing_status === 'PENDING_REVIEW' && (
                 <div className="p-6 border-t border-apple-gray-200 bg-apple-gray-50">
                     <div className="flex gap-3">
@@ -281,6 +316,30 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 <CheckCircle className="w-4 h-4" />
                             )}
                             Approve
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Actions for Archived */}
+            {listing.app_listing_status === 'ARCHIVED' && (
+                <div className="p-6 border-t border-apple-gray-200 bg-apple-gray-50">
+                    <div className="flex flex-col gap-3">
+                        <p className="text-sm text-apple-gray-500 text-center">
+                            This listing was rejected/archived. You can send it back to the partner as a draft for revision.
+                        </p>
+
+                        <button
+                            onClick={handleUnarchive}
+                            disabled={isUnarchiving}
+                            className="w-full py-3 px-4 rounded-full bg-apple-blue text-white font-medium text-sm hover:bg-apple-blue/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {isUnarchiving ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <RotateCcw className="w-4 h-4" />
+                            )}
+                            Send Back to Draft
                         </button>
                     </div>
                 </div>

@@ -11,13 +11,14 @@ import {
     Send,
     AlertCircle,
     ChevronRight,
-    Pencil
+    Pencil,
+    Archive
 } from 'lucide-react';
 import { useLearnCardStore } from '../../stores/learncard';
 import type { AppStoreListing } from '@learncard/types';
 import { StatusBadge } from '../ui/StatusBadge';
 
-type Tab = 'DRAFT' | 'PENDING_REVIEW' | 'LISTED';
+type Tab = 'DRAFT' | 'PENDING_REVIEW' | 'LISTED' | 'ARCHIVED';
 
 interface PartnerDashboardProps {
     onCreateNew: () => void;
@@ -48,12 +49,14 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ onCreateNew,
     const draftListings = listings.filter(l => l.app_listing_status === 'DRAFT');
     const pendingListings = listings.filter(l => l.app_listing_status === 'PENDING_REVIEW');
     const listedListings = listings.filter(l => l.app_listing_status === 'LISTED');
+    const archivedListings = listings.filter(l => l.app_listing_status === 'ARCHIVED');
 
     const getFilteredListings = () => {
         switch (activeTab) {
             case 'DRAFT': return draftListings;
             case 'PENDING_REVIEW': return pendingListings;
             case 'LISTED': return listedListings;
+            case 'ARCHIVED': return archivedListings;
             default: return [];
         }
     };
@@ -96,6 +99,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ onCreateNew,
         { id: 'DRAFT' as Tab, label: 'Drafts', icon: FileEdit, count: draftListings.length },
         { id: 'PENDING_REVIEW' as Tab, label: 'Pending Review', icon: Clock, count: pendingListings.length },
         { id: 'LISTED' as Tab, label: 'Published', icon: CheckCircle2, count: listedListings.length },
+        { id: 'ARCHIVED' as Tab, label: 'Rejected', icon: Archive, count: archivedListings.length },
     ];
 
     if (!selectedIntegrationId) {
@@ -184,18 +188,21 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ onCreateNew,
                                 {activeTab === 'DRAFT' && <FileEdit className="w-6 h-6 text-apple-gray-400" />}
                                 {activeTab === 'PENDING_REVIEW' && <Clock className="w-6 h-6 text-apple-gray-400" />}
                                 {activeTab === 'LISTED' && <CheckCircle2 className="w-6 h-6 text-apple-gray-400" />}
+                                {activeTab === 'ARCHIVED' && <Archive className="w-6 h-6 text-apple-gray-400" />}
                             </div>
 
                             <h3 className="text-sm font-medium text-apple-gray-500 mb-1">
                                 {activeTab === 'DRAFT' && 'No draft listings'}
                                 {activeTab === 'PENDING_REVIEW' && 'No pending listings'}
                                 {activeTab === 'LISTED' && 'No published listings'}
+                                {activeTab === 'ARCHIVED' && 'No rejected listings'}
                             </h3>
 
                             <p className="text-xs text-apple-gray-400">
                                 {activeTab === 'DRAFT' && 'Create a new listing to get started'}
                                 {activeTab === 'PENDING_REVIEW' && 'Submit drafts for review to see them here'}
                                 {activeTab === 'LISTED' && 'Your approved apps will appear here'}
+                                {activeTab === 'ARCHIVED' && 'Rejected apps will appear here for review'}
                             </p>
                         </div>
                     ) : (
@@ -368,6 +375,16 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ onCreateNew,
                                     <CheckCircle2 className="w-4 h-4" />
 
                                     <span className="text-sm">Your app is live in the App Store</span>
+                                </div>
+                            )}
+
+                            {selectedListing.app_listing_status === 'ARCHIVED' && (
+                                <div className="flex items-center gap-2 text-red-600 bg-red-50 px-4 py-2 rounded-apple flex-1">
+                                    <Archive className="w-4 h-4" />
+
+                                    <span className="text-sm">
+                                        This app was rejected. An admin can send it back to drafts for revision.
+                                    </span>
                                 </div>
                             )}
                         </div>
