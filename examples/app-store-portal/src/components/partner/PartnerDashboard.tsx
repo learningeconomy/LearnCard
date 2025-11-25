@@ -10,7 +10,8 @@ import {
     Trash2,
     Send,
     AlertCircle,
-    ChevronRight
+    ChevronRight,
+    Pencil
 } from 'lucide-react';
 import { useLearnCardStore } from '../../stores/learncard';
 import type { AppStoreListing } from '@learncard/types';
@@ -20,9 +21,10 @@ type Tab = 'DRAFT' | 'PENDING_REVIEW' | 'LISTED';
 
 interface PartnerDashboardProps {
     onCreateNew: () => void;
+    onEditListing: (listing: AppStoreListing) => void;
 }
 
-export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ onCreateNew }) => {
+export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ onCreateNew, onEditListing }) => {
     const {
         learnCard,
         selectedIntegrationId,
@@ -311,6 +313,14 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ onCreateNew 
                             {selectedListing.app_listing_status === 'DRAFT' && (
                                 <>
                                     <button
+                                        onClick={() => onEditListing(selectedListing)}
+                                        className="btn-secondary flex-1"
+                                    >
+                                        <Pencil className="w-4 h-4 mr-2" />
+                                        Edit Draft
+                                    </button>
+
+                                    <button
                                         onClick={() => handleSubmitForReview(selectedListing.listing_id)}
                                         disabled={actionLoading === selectedListing.listing_id}
                                         className="btn-primary flex-1"
@@ -336,11 +346,21 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ onCreateNew 
                             )}
 
                             {selectedListing.app_listing_status === 'PENDING_REVIEW' && (
-                                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-apple flex-1">
-                                    <Clock className="w-4 h-4" />
+                                <>
+                                    <button
+                                        onClick={() => onEditListing(selectedListing)}
+                                        className="btn-secondary"
+                                    >
+                                        <Pencil className="w-4 h-4 mr-2" />
+                                        Edit
+                                    </button>
 
-                                    <span className="text-sm">Waiting for admin approval</span>
-                                </div>
+                                    <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-4 py-2 rounded-apple flex-1">
+                                        <Clock className="w-4 h-4" />
+
+                                        <span className="text-sm">Waiting for admin approval</span>
+                                    </div>
+                                </>
                             )}
 
                             {selectedListing.app_listing_status === 'LISTED' && (

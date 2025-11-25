@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
 import type { AppStoreListingCreate } from '../../types/app-store';
+import type { AppStoreListing } from '@learncard/types';
 import { StepIndicator } from '../ui/StepIndicator';
 import { AppDetailsStep } from './AppDetailsStep';
 import { LaunchTypeStep } from './LaunchTypeStep';
@@ -17,19 +18,63 @@ const STEPS = [
 
 interface SubmissionFormProps {
     onSuccess?: () => void;
+    onBack?: (hasChanges: boolean, onSave: () => Promise<boolean>, onDiscard: () => void) => void;
+    editingListing?: AppStoreListing | null;
 }
 
-export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess }) => {
-    const { learnCard, selectedIntegrationId, createListing, submitForReview } = useLearnCardStore();
+export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBack, editingListing }) => {
+    const { learnCard, selectedIntegrationId, createListing, updateListing, submitForReview } = useLearnCardStore();
+
+    const isEditMode = !!editingListing;
+    const isPendingReview = editingListing?.app_listing_status === 'PENDING_REVIEW';
+
+    // Initialize form data from editing listing
+    const initialFormData = useMemo<Partial<AppStoreListingCreate>>(() => {
+        if (!editingListing) return {};
+
+        return {
+            display_name: editingListing.display_name,
+            tagline: editingListing.tagline,
+            full_description: editingListing.full_description,
+            icon_url: editingListing.icon_url,
+            launch_type: editingListing.launch_type,
+            launch_config_json: editingListing.launch_config_json,
+            category: editingListing.category,
+            promo_video_url: editingListing.promo_video_url,
+            privacy_policy_url: editingListing.privacy_policy_url,
+            terms_url: editingListing.terms_url,
+        };
+    }, [editingListing]);
 
     const [currentStep, setCurrentStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isDraftSaved, setIsDraftSaved] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const [createdListingId, setCreatedListingId] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const [formData, setFormData] = useState<Partial<AppStoreListingCreate>>({});
+    const [formData, setFormData] = useState<Partial<AppStoreListingCreate>>(initialFormData);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+    // Reset form when editingListing changes
+    useEffect(() => {
+        setFormData(initialFormData);
+        setHasUnsavedChanges(false);
+        setCurrentStep(1);
+        setIsSubmitted(false);
+        setIsDraftSaved(false);
+        setSubmitError(null);
+    }, [initialFormData]);
+
+    const handleFormChange = (newData: Partial<AppStoreListingCreate>) => {
+        setFormData(newData);
+        setHasUnsavedChanges(true);
+    };
+
+    const hasMinimumDataForDraft = useCallback(() => {
+        return !!(formData.display_name?.trim());
+    }, [formData.display_name]);
 
     const validateStep = (step: number): boolean => {
         const newErrors: Record<string, string> = {};
@@ -104,6 +149,85 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess }) => 
         setCurrentStep(prev => Math.max(prev - 1, 1));
     };
 
+    const saveDraft = async (): Promise<boolean> => {
+        if (!learnCard || !selectedIntegrationId) {
+            setSubmitError('Please connect and select an integration first');
+            return false;
+        }
+
+        if (!hasMinimumDataForDraft()) {
+            setSubmitError('Please enter at least a display name to save as draft');
+            return false;
+        }
+
+        setIsSavingDraft(true);
+        setSubmitError(null);
+
+        try {
+            if (isEditMode && editingListing) {
+                // Update existing listing
+                const updates = {
+                    display_name: formData.display_name!,
+                    tagline: formData.tagline || 'Draft listing',
+                    full_description: formData.full_description || 'Draft - description pending',
+                    icon_url: formData.icon_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=Draft',
+                    launch_type: formData.launch_type || 'DIRECT_LINK',
+                    launch_config_json: formData.launch_config_json || '{}',
+                    category: formData.category,
+                    promo_video_url: formData.promo_video_url,
+                    privacy_policy_url: formData.privacy_policy_url,
+                    terms_url: formData.terms_url,
+                };
+
+                const success = await updateListing(editingListing.listing_id, updates);
+
+                if (!success) {
+                    throw new Error('Failed to update draft');
+                }
+            } else {
+                // Create new listing
+                const listingData = {
+                    display_name: formData.display_name!,
+                    tagline: formData.tagline || 'Draft listing',
+                    full_description: formData.full_description || 'Draft - description pending',
+                    icon_url: formData.icon_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=Draft',
+                    launch_type: formData.launch_type || 'DIRECT_LINK',
+                    launch_config_json: formData.launch_config_json || '{}',
+                    category: formData.category,
+                    promo_video_url: formData.promo_video_url,
+                    privacy_policy_url: formData.privacy_policy_url,
+                    terms_url: formData.terms_url,
+                };
+
+                const listingId = await createListing(selectedIntegrationId, listingData);
+
+                if (!listingId) {
+                    throw new Error('Failed to save draft');
+                }
+            }
+
+            setHasUnsavedChanges(false);
+            setIsSavingDraft(false);
+            setIsDraftSaved(true);
+            return true;
+        } catch (error) {
+            setSubmitError(error instanceof Error ? error.message : 'Failed to save draft');
+            setIsSavingDraft(false);
+            return false;
+        }
+    };
+
+    const handleSaveDraft = async () => {
+        const success = await saveDraft();
+
+        if (success) {
+            // Show success for a moment, then go back to dashboard
+            setTimeout(() => {
+                onSuccess?.();
+            }, 1500);
+        }
+    };
+
     const handleSubmit = async () => {
         if (!learnCard || !selectedIntegrationId) {
             setSubmitError('Please connect and select an integration first');
@@ -114,35 +238,61 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess }) => 
         setSubmitError(null);
 
         try {
-            // Create the listing as a draft first
-            const listingData = {
-                display_name: formData.display_name!,
-                tagline: formData.tagline!,
-                full_description: formData.full_description!,
-                icon_url: formData.icon_url!,
-                launch_type: formData.launch_type!,
-                launch_config_json: formData.launch_config_json || '{}',
-                category: formData.category,
-                promo_video_url: formData.promo_video_url,
-                privacy_policy_url: formData.privacy_policy_url,
-                terms_url: formData.terms_url,
-            };
+            let listingId: string;
 
-            const listingId = await createListing(selectedIntegrationId, listingData);
+            if (isEditMode && editingListing) {
+                // Update existing listing then submit
+                const updates = {
+                    display_name: formData.display_name!,
+                    tagline: formData.tagline!,
+                    full_description: formData.full_description!,
+                    icon_url: formData.icon_url!,
+                    launch_type: formData.launch_type!,
+                    launch_config_json: formData.launch_config_json || '{}',
+                    category: formData.category,
+                    promo_video_url: formData.promo_video_url,
+                    privacy_policy_url: formData.privacy_policy_url,
+                    terms_url: formData.terms_url,
+                };
 
-            if (!listingId) {
-                throw new Error('Failed to create listing');
+                const success = await updateListing(editingListing.listing_id, updates);
+
+                if (!success) {
+                    throw new Error('Failed to update listing');
+                }
+
+                listingId = editingListing.listing_id;
+            } else {
+                // Create new listing
+                const listingData = {
+                    display_name: formData.display_name!,
+                    tagline: formData.tagline!,
+                    full_description: formData.full_description!,
+                    icon_url: formData.icon_url!,
+                    launch_type: formData.launch_type!,
+                    launch_config_json: formData.launch_config_json || '{}',
+                    category: formData.category,
+                    promo_video_url: formData.promo_video_url,
+                    privacy_policy_url: formData.privacy_policy_url,
+                    terms_url: formData.terms_url,
+                };
+
+                const newListingId = await createListing(selectedIntegrationId, listingData);
+
+                if (!newListingId) {
+                    throw new Error('Failed to create listing');
+                }
+
+                listingId = newListingId;
             }
 
-            setCreatedListingId(listingId);
-
-            // Submit for review
             const submitted = await submitForReview(listingId);
 
             if (!submitted) {
                 throw new Error('Failed to submit listing for review');
             }
 
+            setHasUnsavedChanges(false);
             setIsSubmitting(false);
             setIsSubmitted(true);
         } catch (error) {
@@ -150,6 +300,53 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess }) => 
             setIsSubmitting(false);
         }
     };
+
+    const handleDiscard = useCallback(() => {
+        setFormData({});
+        setHasUnsavedChanges(false);
+        setCurrentStep(1);
+    }, []);
+
+    const handleBackClick = useCallback(() => {
+        if (hasUnsavedChanges && hasMinimumDataForDraft()) {
+            onBack?.(true, saveDraft, handleDiscard);
+        } else {
+            onSuccess?.();
+        }
+    }, [hasUnsavedChanges, hasMinimumDataForDraft, onBack, onSuccess, saveDraft, handleDiscard]);
+
+    if (isDraftSaved) {
+        return (
+            <div className="text-center py-16 animate-fade-in">
+                <div className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center ${
+                    isPendingReview ? 'bg-amber-100' : 'bg-blue-100'
+                }`}>
+                    <FileEdit className={`w-10 h-10 ${isPendingReview ? 'text-amber-600' : 'text-blue-600'}`} />
+                </div>
+
+                <h2 className="text-2xl font-semibold text-apple-gray-600 mb-3">
+                    {isPendingReview ? 'Changes Saved!' : isEditMode ? 'Draft Updated!' : 'Draft Saved!'}
+                </h2>
+
+                <p className="text-apple-gray-500 max-w-md mx-auto mb-8">
+                    {isPendingReview ? (
+                        <>Your app "{formData.display_name}" has been updated and remains pending review.</>
+                    ) : (
+                        <>Your app "{formData.display_name}" has been {isEditMode ? 'updated' : 'saved as a draft'}.
+                        You can continue editing it anytime from your dashboard.</>
+                    )}
+                </p>
+
+                <div className="flex gap-3 justify-center">
+                    {onSuccess && (
+                        <button onClick={onSuccess} className="btn-primary">
+                            View My Listings
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     if (isSubmitted) {
         return (
@@ -179,7 +376,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess }) => 
                             setIsSubmitted(false);
                             setCurrentStep(1);
                             setFormData({});
-                            setCreatedListingId(null);
+                            setHasUnsavedChanges(false);
                         }}
                         className="btn-secondary"
                     >
@@ -229,6 +426,16 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess }) => 
 
     return (
         <div className="max-w-2xl mx-auto">
+            {/* Back to Dashboard button */}
+            {onBack && (
+                <button
+                    onClick={handleBackClick}
+                    className="btn-ghost mb-6"
+                >
+                    ← Back to Dashboard
+                </button>
+            )}
+
             {/* Step Indicator */}
             <div className="mb-10">
                 <StepIndicator steps={STEPS} currentStep={currentStep} />
@@ -250,13 +457,13 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess }) => 
             {/* Form Content */}
             <div className="card-elevated min-h-[500px]">
                 {currentStep === 1 && (
-                    <AppDetailsStep data={formData} onChange={setFormData} errors={errors} />
+                    <AppDetailsStep data={formData} onChange={handleFormChange} errors={errors} />
                 )}
 
-                {currentStep === 2 && <LaunchTypeStep data={formData} onChange={setFormData} />}
+                {currentStep === 2 && <LaunchTypeStep data={formData} onChange={handleFormChange} />}
 
                 {currentStep === 3 && (
-                    <LaunchConfigStep data={formData} onChange={setFormData} errors={errors} />
+                    <LaunchConfigStep data={formData} onChange={handleFormChange} errors={errors} />
                 )}
 
                 {currentStep === 4 && <ReviewStep data={formData} />}
@@ -273,34 +480,60 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess }) => 
                     Back
                 </button>
 
-                {currentStep < STEPS.length ? (
-                    <button
-                        onClick={handleNext}
-                        disabled={currentStep === 2 && !formData.launch_type}
-                        className="btn-primary"
-                    >
-                        Continue
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                    </button>
-                ) : (
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                        className="btn-primary min-w-[160px]"
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Submitting...
-                            </>
-                        ) : (
-                            <>
-                                Submit for Review
-                                <Send className="w-4 h-4 ml-2" />
-                            </>
-                        )}
-                    </button>
-                )}
+                <div className="flex gap-3">
+                    {/* Save button - show on all steps if there's data */}
+                    {hasMinimumDataForDraft() && (
+                        <button
+                            onClick={handleSaveDraft}
+                            disabled={isSavingDraft || isSubmitting}
+                            className={isPendingReview ? 'btn-primary' : 'btn-secondary'}
+                        >
+                            {isSavingDraft ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    {isPendingReview ? 'Saving...' : isEditMode ? 'Updating...' : 'Saving...'}
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    {isPendingReview ? 'Save Changes' : isEditMode ? 'Update Draft' : 'Save Draft'}
+                                </>
+                            )}
+                        </button>
+                    )}
+
+                    {currentStep < STEPS.length ? (
+                        <button
+                            onClick={handleNext}
+                            disabled={currentStep === 2 && !formData.launch_type}
+                            className="btn-primary"
+                        >
+                            Continue
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                        </button>
+                    ) : (
+                        /* Hide Submit for Review when editing pending review - Save Changes is sufficient */
+                        !isPendingReview && (
+                            <button
+                                onClick={handleSubmit}
+                                disabled={isSubmitting || isSavingDraft}
+                                className="btn-primary min-w-[160px]"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    <>
+                                        Submit for Review
+                                        <Send className="w-4 h-4 ml-2" />
+                                    </>
+                                )}
+                            </button>
+                        )
+                    )}
+                </div>
             </div>
         </div>
     );

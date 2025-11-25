@@ -1,27 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Header } from './ui/Header';
 import { ConnectPanel } from './ui/ConnectPanel';
 import { IntegrationSelector } from './ui/IntegrationSelector';
+import { ExitConfirmDialog } from './ui/ExitConfirmDialog';
 import { SubmissionForm } from './partner/SubmissionForm';
 import { PartnerDashboard } from './partner/PartnerDashboard';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { useLearnCardStore } from '../stores/learncard';
+import type { AppStoreListing } from '@learncard/types';
 
 type Mode = 'partner' | 'admin';
-type PartnerView = 'dashboard' | 'create';
+type PartnerView = 'dashboard' | 'create' | 'edit';
 
 export const App: React.FC = () => {
     const [mode, setMode] = useState<Mode>('partner');
     const [partnerView, setPartnerView] = useState<PartnerView>('dashboard');
+    const [editingListing, setEditingListing] = useState<AppStoreListing | null>(null);
+    const [showExitDialog, setShowExitDialog] = useState(false);
     const { learnCard, isAdmin, selectedIntegrationId } = useLearnCardStore();
 
+    // Store the save/discard callbacks from the form
+    const exitCallbacksRef = useRef<{
+        onSave: () => Promise<boolean>;
+        onDiscard: () => void;
+    } | null>(null);
+
     const handleCreateNew = () => {
+        setEditingListing(null);
         setPartnerView('create');
     };
 
+    const handleEditListing = (listing: AppStoreListing) => {
+        setEditingListing(listing);
+        setPartnerView('edit');
+    };
+
     const handleBackToDashboard = () => {
+        setEditingListing(null);
         setPartnerView('dashboard');
     };
+
+    const handleFormExit = useCallback((
+        hasChanges: boolean,
+        onSave: () => Promise<boolean>,
+        onDiscard: () => void
+    ) => {
+        if (hasChanges) {
+            exitCallbacksRef.current = { onSave, onDiscard };
+            setShowExitDialog(true);
+        } else {
+            handleBackToDashboard();
+        }
+    }, []);
+
+    const handleExitSave = useCallback(async () => {
+        if (exitCallbacksRef.current) {
+            const success = await exitCallbacksRef.current.onSave();
+
+            if (success) {
+                handleBackToDashboard();
+            }
+
+            return success;
+        }
+
+        return false;
+    }, []);
+
+    const handleExitDiscard = useCallback(() => {
+        exitCallbacksRef.current?.onDiscard();
+        handleBackToDashboard();
+    }, []);
+
+    const handleExitCancel = useCallback(() => {
+        setShowExitDialog(false);
+        exitCallbacksRef.current = null;
+    }, []);
 
     return (
         <div className="min-h-screen bg-apple-gray-50">
@@ -32,13 +86,15 @@ export const App: React.FC = () => {
                     <div className="max-w-6xl mx-auto px-6 py-12">
                         <div className="text-center mb-8 animate-fade-in">
                             <h1 className="text-4xl font-semibold text-apple-gray-600 tracking-tight">
-                                {partnerView === 'dashboard' ? 'Partner Portal' : 'Submit Your App'}
+                                {partnerView === 'dashboard' && 'Partner Portal'}
+                                {partnerView === 'create' && 'Submit Your App'}
+                                {partnerView === 'edit' && 'Edit Your App'}
                             </h1>
 
                             <p className="text-lg text-apple-gray-500 mt-3 max-w-2xl mx-auto">
-                                {partnerView === 'dashboard'
-                                    ? 'Manage your app listings and track their approval status'
-                                    : 'Create a new app listing for the LearnCard ecosystem'}
+                                {partnerView === 'dashboard' && 'Manage your app listings and track their approval status'}
+                                {partnerView === 'create' && 'Create a new app listing for the LearnCard ecosystem'}
+                                {partnerView === 'edit' && `Editing: ${editingListing?.display_name}`}
                             </p>
                         </div>
 
@@ -58,18 +114,16 @@ export const App: React.FC = () => {
                         {learnCard && selectedIntegrationId && (
                             <div className="animate-fade-in">
                                 {partnerView === 'dashboard' ? (
-                                    <PartnerDashboard onCreateNew={handleCreateNew} />
+                                    <PartnerDashboard
+                                        onCreateNew={handleCreateNew}
+                                        onEditListing={handleEditListing}
+                                    />
                                 ) : (
-                                    <div>
-                                        <button
-                                            onClick={handleBackToDashboard}
-                                            className="btn-ghost mb-6"
-                                        >
-                                            ← Back to Dashboard
-                                        </button>
-
-                                        <SubmissionForm onSuccess={handleBackToDashboard} />
-                                    </div>
+                                    <SubmissionForm
+                                        onSuccess={handleBackToDashboard}
+                                        onBack={handleFormExit}
+                                        editingListing={editingListing}
+                                    />
                                 )}
                             </div>
                         )}
@@ -112,6 +166,14 @@ export const App: React.FC = () => {
                     </div>
                 )}
             </main>
+
+            {/* Exit Confirmation Dialog */}
+            <ExitConfirmDialog
+                isOpen={showExitDialog}
+                onSave={handleExitSave}
+                onDiscard={handleExitDiscard}
+                onCancel={handleExitCancel}
+            />
         </div>
     );
 };
