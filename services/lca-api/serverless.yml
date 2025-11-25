@@ -66,9 +66,11 @@ custom:
         apiType: http
 
 package:
+    individually: true
     patterns:
         - '!node_modules/**'
         - 'node_modules/@learncard/didkit-plugin'
+        - 'src/swagger-ui'
 
 provider:
     name: aws
