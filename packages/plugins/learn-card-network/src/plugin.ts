@@ -1471,6 +1471,12 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.deleteListing.mutate({ listingId });
             },
 
+            submitAppStoreListingForReview: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.submitForReview.mutate({ listingId });
+            },
+
             getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {
                 await ensureUser();
 

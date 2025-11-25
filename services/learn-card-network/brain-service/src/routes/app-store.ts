@@ -287,6 +287,37 @@ export const appStoreRouter = t.router({
             return updateAppStoreListing(listing, input.updates);
         }),
 
+    submitForReview: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/submit-for-review',
+                tags: ['App Store'],
+                summary: 'Submit Listing for Review',
+                description: 'Submit a DRAFT listing for admin review',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            // Only DRAFT listings can be submitted for review
+            if (listing.app_listing_status !== 'DRAFT') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Cannot submit listing with status "${listing.app_listing_status}" for review. Only DRAFT listings can be submitted.`,
+                });
+            }
+
+            return updateAppStoreListing(listing, { app_listing_status: 'PENDING_REVIEW' });
+        }),
+
     deleteListing: profileRoute
         .meta({
             openapi: {

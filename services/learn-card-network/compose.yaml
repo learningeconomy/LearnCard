@@ -71,6 +71,7 @@ services:
       # If you don't need notifications, you do not need to set up/include ElasticMQ
       NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
       NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
+      APP_STORE_ADMIN_PROFILE_IDS: ${APP_STORE_ADMIN_PROFILE_IDS:-app-store-admin}
 
   # LearnCloud Service
   cloud:

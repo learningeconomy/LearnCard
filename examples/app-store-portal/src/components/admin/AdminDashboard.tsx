@@ -1,54 +1,67 @@
-import React, { useState } from 'react';
-import { Search, Filter, Inbox } from 'lucide-react';
-import type { AppStoreListing, AppListingStatus, PromotionLevel } from '../../types/app-store';
-import { MOCK_LISTINGS } from '../../data/mock-listings';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Inbox, Loader2, RefreshCw } from 'lucide-react';
+import type { AppListingStatus, PromotionLevel } from '../../types/app-store';
+import type { AppStoreListing } from '@learncard/types';
 import { ListingCard } from './ListingCard';
 import { ListingDetail } from './ListingDetail';
+import { useLearnCardStore } from '../../stores/learncard';
 
 type FilterStatus = AppListingStatus | 'ALL';
 
 export const AdminDashboard: React.FC = () => {
-    const [listings, setListings] = useState<AppStoreListing[]>(MOCK_LISTINGS);
+    const {
+        listings,
+        isLoadingListings,
+        loadAllListings,
+        adminUpdateStatus,
+        adminUpdatePromotion,
+    } = useLearnCardStore();
+
     const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(null);
     const [filterStatus, setFilterStatus] = useState<FilterStatus>('PENDING_REVIEW');
     const [searchQuery, setSearchQuery] = useState('');
 
-    const filteredListings = listings.filter(listing => {
-        const matchesStatus = filterStatus === 'ALL' || listing.app_listing_status === filterStatus;
+    // Load listings on mount and when filter changes
+    useEffect(() => {
+        if (filterStatus === 'ALL') {
+            loadAllListings();
+        } else {
+            loadAllListings(filterStatus as AppListingStatus);
+        }
+    }, [filterStatus]);
 
+    const filteredListings = listings.filter(listing => {
         const matchesSearch =
             !searchQuery ||
             listing.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             listing.tagline.toLowerCase().includes(searchQuery.toLowerCase());
 
-        return matchesStatus && matchesSearch;
+        return matchesSearch;
     });
 
     const pendingCount = listings.filter(l => l.app_listing_status === 'PENDING_REVIEW').length;
 
-    const handleStatusChange = (listingId: string, status: AppListingStatus) => {
-        setListings(prev =>
-            prev.map(listing =>
-                listing.listing_id === listingId
-                    ? { ...listing, app_listing_status: status }
-                    : listing
-            )
-        );
+    const handleStatusChange = async (listingId: string, status: AppListingStatus) => {
+        const success = await adminUpdateStatus(listingId, status);
 
-        if (selectedListing?.listing_id === listingId) {
+        if (success && selectedListing?.listing_id === listingId) {
             setSelectedListing(prev => (prev ? { ...prev, app_listing_status: status } : null));
         }
     };
 
-    const handlePromotionChange = (listingId: string, level: PromotionLevel) => {
-        setListings(prev =>
-            prev.map(listing =>
-                listing.listing_id === listingId ? { ...listing, promotion_level: level } : listing
-            )
-        );
+    const handlePromotionChange = async (listingId: string, level: PromotionLevel) => {
+        const success = await adminUpdatePromotion(listingId, level);
 
-        if (selectedListing?.listing_id === listingId) {
+        if (success && selectedListing?.listing_id === listingId) {
             setSelectedListing(prev => (prev ? { ...prev, promotion_level: level } : null));
+        }
+    };
+
+    const handleRefresh = () => {
+        if (filterStatus === 'ALL') {
+            loadAllListings();
+        } else {
+            loadAllListings(filterStatus as AppListingStatus);
         }
     };
 
@@ -100,9 +113,27 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Refresh button */}
+                <div className="px-4 py-2 border-b border-apple-gray-100">
+                    <button
+                        onClick={handleRefresh}
+                        disabled={isLoadingListings}
+                        className="flex items-center gap-2 text-sm text-apple-gray-500 hover:text-apple-gray-600 transition-colors"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isLoadingListings ? 'animate-spin' : ''}`} />
+                        {isLoadingListings ? 'Loading...' : 'Refresh'}
+                    </button>
+                </div>
+
                 {/* Listings */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {filteredListings.length === 0 ? (
+                    {isLoadingListings ? (
+                        <div className="text-center py-12">
+                            <Loader2 className="w-8 h-8 text-apple-blue mx-auto mb-3 animate-spin" />
+
+                            <p className="text-apple-gray-500 text-sm">Loading listings...</p>
+                        </div>
+                    ) : filteredListings.length === 0 ? (
                         <div className="text-center py-12">
                             <Inbox className="w-12 h-12 text-apple-gray-300 mx-auto mb-3" />
 

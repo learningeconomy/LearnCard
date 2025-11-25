@@ -144,6 +144,12 @@ importers:
       '@astrojs/tailwind':
         specifier: ^5.1.2
         version: 5.1.5(astro@4.16.18(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(rollup@4.37.0)(terser@5.39.0)(typescript@5.6.2))(tailwindcss@3.4.17(ts-node@10.9.2(@types/node@22.13.14)(typescript@5.6.2)))(ts-node@10.9.2(@types/node@22.13.14)(typescript@5.6.2))
+      '@learncard/init':
+        specifier: workspace:^
+        version: link:../../packages/learn-card-init
+      '@learncard/types':
+        specifier: workspace:^
+        version: link:../../packages/learn-card-types
       astro:
         specifier: ^4.16.7
         version: 4.16.18(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(rollup@4.37.0)(terser@5.39.0)(typescript@5.6.2)
@@ -162,6 +168,9 @@ importers:
       typescript:
         specifier: 5.6.2
         version: 5.6.2
+      zustand:
+        specifier: ^4.5.5
+        version: 4.5.7(@types/react@18.3.27)(immer@9.0.21)(react@18.3.1)
     devDependencies:
       '@types/react':
         specifier: ^18.3.12
@@ -20427,6 +20436,11 @@ packages:
       '@types/react':
         optional: true
 
+  use-sync-external-store@1.6.0:
+    resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   use@3.1.1:
     resolution: {integrity: sha512-cwESVXlO3url9YWlFW/TA9cshCEhtu7IKJ/p5soJ/gGpj7vbvFrAY/eIioQ6Dw23KjZhYgiIo8HOs1nQ2vr/oQ==}
     engines: {node: '>=0.10.0'}
@@ -21316,6 +21330,21 @@ packages:
 
   zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
+
+  zustand@4.5.7:
+    resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
+    engines: {node: '>=12.7.0'}
+    peerDependencies:
+      '@types/react': '>=16.8'
+      immer: '>=9.0.6'
+      react: '>=16.8'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
 
   zwitch@1.0.5:
     resolution: {integrity: sha512-V50KMwwzqJV0NpZIZFwfOD5/lyny3WlSzRiXgA0G7VUnRlqttta1L6UQIHzd6EuBY/cHGfwTIck7w1yH6Q5zUw==}
@@ -47211,6 +47240,10 @@ snapshots:
     optionalDependencies:
       '@types/react': 17.0.84
 
+  use-sync-external-store@1.6.0(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+
   use@3.1.1: {}
 
   utif@2.0.1:
@@ -48198,6 +48231,14 @@ snapshots:
       zod: 3.23.8
 
   zod@3.23.8: {}
+
+  zustand@4.5.7(@types/react@18.3.27)(immer@9.0.21)(react@18.3.1):
+    dependencies:
+      use-sync-external-store: 1.6.0(react@18.3.1)
+    optionalDependencies:
+      '@types/react': 18.3.27
+      immer: 9.0.21
+      react: 18.3.1
 
   zwitch@1.0.5: {}
 

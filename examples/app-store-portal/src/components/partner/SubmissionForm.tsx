@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle } from 'lucide-react';
 import type { AppStoreListingCreate } from '../../types/app-store';
 import { StepIndicator } from '../ui/StepIndicator';
 import { AppDetailsStep } from './AppDetailsStep';
 import { LaunchTypeStep } from './LaunchTypeStep';
 import { LaunchConfigStep } from './LaunchConfigStep';
 import { ReviewStep } from './ReviewStep';
+import { useLearnCardStore } from '../../stores/learncard';
 
 const STEPS = [
     { id: 1, title: 'App Details', description: 'Basic information about your app' },
@@ -14,10 +15,18 @@ const STEPS = [
     { id: 4, title: 'Review', description: 'Submit for approval' },
 ];
 
-export const SubmissionForm: React.FC = () => {
+interface SubmissionFormProps {
+    onSuccess?: () => void;
+}
+
+export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess }) => {
+    const { learnCard, selectedIntegrationId, createListing, submitForReview } = useLearnCardStore();
+
     const [currentStep, setCurrentStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [createdListingId, setCreatedListingId] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [formData, setFormData] = useState<Partial<AppStoreListingCreate>>({});
@@ -96,14 +105,50 @@ export const SubmissionForm: React.FC = () => {
     };
 
     const handleSubmit = async () => {
+        if (!learnCard || !selectedIntegrationId) {
+            setSubmitError('Please connect and select an integration first');
+            return;
+        }
+
         setIsSubmitting(true);
+        setSubmitError(null);
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            // Create the listing as a draft first
+            const listingData = {
+                display_name: formData.display_name!,
+                tagline: formData.tagline!,
+                full_description: formData.full_description!,
+                icon_url: formData.icon_url!,
+                launch_type: formData.launch_type!,
+                launch_config_json: formData.launch_config_json || '{}',
+                category: formData.category,
+                promo_video_url: formData.promo_video_url,
+                privacy_policy_url: formData.privacy_policy_url,
+                terms_url: formData.terms_url,
+            };
 
-        console.log('Submitting:', formData);
-        setIsSubmitting(false);
-        setIsSubmitted(true);
+            const listingId = await createListing(selectedIntegrationId, listingData);
+
+            if (!listingId) {
+                throw new Error('Failed to create listing');
+            }
+
+            setCreatedListingId(listingId);
+
+            // Submit for review
+            const submitted = await submitForReview(listingId);
+
+            if (!submitted) {
+                throw new Error('Failed to submit listing for review');
+            }
+
+            setIsSubmitting(false);
+            setIsSubmitted(true);
+        } catch (error) {
+            setSubmitError(error instanceof Error ? error.message : 'Failed to submit listing');
+            setIsSubmitting(false);
+        }
     };
 
     if (isSubmitted) {
@@ -122,16 +167,62 @@ export const SubmissionForm: React.FC = () => {
                     you once it's been processed.
                 </p>
 
-                <button
-                    onClick={() => {
-                        setIsSubmitted(false);
-                        setCurrentStep(1);
-                        setFormData({});
-                    }}
-                    className="btn-secondary"
-                >
-                    Submit Another App
-                </button>
+                <div className="flex gap-3 justify-center">
+                    {onSuccess && (
+                        <button onClick={onSuccess} className="btn-primary">
+                            View My Listings
+                        </button>
+                    )}
+
+                    <button
+                        onClick={() => {
+                            setIsSubmitted(false);
+                            setCurrentStep(1);
+                            setFormData({});
+                            setCreatedListingId(null);
+                        }}
+                        className="btn-secondary"
+                    >
+                        Submit Another App
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Show message if not connected
+    if (!learnCard) {
+        return (
+            <div className="max-w-2xl mx-auto">
+                <div className="card-elevated text-center py-12">
+                    <AlertCircle className="w-12 h-12 text-apple-gray-300 mx-auto mb-4" />
+
+                    <h3 className="text-lg font-medium text-apple-gray-500 mb-2">
+                        Connect to Submit
+                    </h3>
+
+                    <p className="text-sm text-apple-gray-400">
+                        Connect your LearnCard wallet above to submit an app listing
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!selectedIntegrationId) {
+        return (
+            <div className="max-w-2xl mx-auto">
+                <div className="card-elevated text-center py-12">
+                    <AlertCircle className="w-12 h-12 text-apple-gray-300 mx-auto mb-4" />
+
+                    <h3 className="text-lg font-medium text-apple-gray-500 mb-2">
+                        Select an Integration
+                    </h3>
+
+                    <p className="text-sm text-apple-gray-400">
+                        Choose or create an integration above to submit an app listing
+                    </p>
+                </div>
             </div>
         );
     }
@@ -142,6 +233,19 @@ export const SubmissionForm: React.FC = () => {
             <div className="mb-10">
                 <StepIndicator steps={STEPS} currentStep={currentStep} />
             </div>
+
+            {/* Error Alert */}
+            {submitError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-apple flex items-start gap-3 animate-fade-in">
+                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+
+                    <div>
+                        <p className="text-sm font-medium text-red-800">Submission Failed</p>
+
+                        <p className="text-sm text-red-700 mt-1">{submitError}</p>
+                    </div>
+                </div>
+            )}
 
             {/* Form Content */}
             <div className="card-elevated min-h-[500px]">

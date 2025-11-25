@@ -40,6 +40,39 @@ pnpm dev
 pnpm build
 ```
 
+## Connecting to LearnCard Network
+
+The portal connects to a LearnCard Network instance using a wallet seed. You can configure the connection in two ways:
+
+### 1. Environment Variables (Recommended)
+
+Create a `.env` file in the project root:
+
+```bash
+PUBLIC_USER_SEED=your-wallet-seed-here
+PUBLIC_NETWORK_URL=http://localhost:4000/trpc
+```
+
+The app will automatically connect when loaded.
+
+### 2. Manual Connection
+
+If no environment variables are set, enter your seed and network URL in the connection panel when the app loads.
+
+### Running with a Local Network
+
+1. Start the LearnCard Network brain-service:
+   ```bash
+   cd services/learn-card-network/brain-service
+   pnpm dev
+   ```
+
+2. The default network URL is `http://localhost:4000/trpc`
+
+### Admin Access
+
+To access admin features, your wallet seed must correspond to a profile ID listed in the `APP_STORE_ADMIN_PROFILE_IDS` environment variable on the brain-service.
+
 ## Project Structure
 
 ```
@@ -57,11 +90,15 @@ src/
 │   │   └── SubmissionForm.tsx
 │   ├── ui/              # Shared UI components
 │   │   ├── Header.tsx
+│   │   ├── ConnectPanel.tsx
+│   │   ├── IntegrationSelector.tsx
 │   │   ├── StepIndicator.tsx
 │   │   └── StatusBadge.tsx
 │   └── App.tsx          # Main application component
 ├── data/
-│   └── mock-listings.ts # Sample app listings data
+│   └── mock-listings.ts # Sample app listings data (fallback)
+├── stores/
+│   └── learncard.ts     # Zustand store for LearnCard state
 ├── layouts/
 │   └── Layout.astro
 ├── pages/
