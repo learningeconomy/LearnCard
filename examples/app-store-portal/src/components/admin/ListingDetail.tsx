@@ -1,0 +1,290 @@
+import React, { useState } from 'react';
+import {
+    ExternalLink,
+    Code,
+    ShieldAlert,
+    CheckCircle,
+    XCircle,
+    Loader2,
+    Star,
+    TrendingUp,
+    Minus,
+    ArrowDown,
+} from 'lucide-react';
+import type { AppStoreListing, PromotionLevel } from '../../types/app-store';
+import { LAUNCH_TYPE_INFO, PROMOTION_LEVEL_INFO, CATEGORY_OPTIONS } from '../../types/app-store';
+import { StatusBadge } from '../ui/StatusBadge';
+
+interface ListingDetailProps {
+    listing: AppStoreListing;
+    onStatusChange: (listingId: string, status: AppStoreListing['app_listing_status']) => void;
+    onPromotionChange: (listingId: string, level: PromotionLevel) => void;
+}
+
+export const ListingDetail: React.FC<ListingDetailProps> = ({
+    listing,
+    onStatusChange,
+    onPromotionChange,
+}) => {
+    const [isApproving, setIsApproving] = useState(false);
+    const [isRejecting, setIsRejecting] = useState(false);
+    const [showPromotionMenu, setShowPromotionMenu] = useState(false);
+
+    const launchTypeInfo = LAUNCH_TYPE_INFO[listing.launch_type];
+    const categoryLabel = CATEGORY_OPTIONS.find(c => c.value === listing.category)?.label;
+
+    let parsedConfig: Record<string, unknown> = {};
+    try {
+        parsedConfig = JSON.parse(listing.launch_config_json);
+    } catch {
+        // Keep empty
+    }
+
+    const sandbox = Array.isArray(parsedConfig.sandbox) ? parsedConfig.sandbox : [];
+
+    const handleApprove = async () => {
+        setIsApproving(true);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        onStatusChange(listing.listing_id, 'LISTED');
+        setIsApproving(false);
+    };
+
+    const handleReject = async () => {
+        setIsRejecting(true);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        onStatusChange(listing.listing_id, 'ARCHIVED');
+        setIsRejecting(false);
+    };
+
+    const promotionIcons: Record<PromotionLevel, React.FC<{ className?: string }>> = {
+        FEATURED_CAROUSEL: Star,
+        CURATED_LIST: TrendingUp,
+        STANDARD: Minus,
+        DEMOTED: ArrowDown,
+    };
+
+    return (
+        <div className="h-full flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-apple-gray-200">
+                <div className="flex items-start gap-4">
+                    <div className="w-20 h-20 rounded-apple-lg bg-apple-gray-100 overflow-hidden flex-shrink-0">
+                        <img
+                            src={listing.icon_url}
+                            alt={listing.display_name}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+
+                    <div className="flex-1">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <h2 className="text-xl font-semibold text-apple-gray-600">
+                                    {listing.display_name}
+                                </h2>
+
+                                <p className="text-apple-gray-500 mt-1">{listing.tagline}</p>
+                            </div>
+
+                            <StatusBadge status={listing.app_listing_status} />
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-3">
+                            {categoryLabel && (
+                                <span className="px-2.5 py-1 bg-apple-gray-100 rounded-full text-xs font-medium text-apple-gray-500">
+                                    {categoryLabel}
+                                </span>
+                            )}
+
+                            <span className="px-2.5 py-1 bg-apple-blue/10 rounded-full text-xs font-medium text-apple-blue">
+                                {launchTypeInfo.label}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Description */}
+                <div>
+                    <h3 className="text-sm font-medium text-apple-gray-600 mb-2">Description</h3>
+
+                    <p className="text-sm text-apple-gray-500 whitespace-pre-wrap">
+                        {listing.full_description}
+                    </p>
+                </div>
+
+                {/* Launch Configuration */}
+                <div>
+                    <div className="flex items-center gap-2 mb-3">
+                        <ShieldAlert className="w-4 h-4 text-amber-500" />
+
+                        <h3 className="text-sm font-medium text-apple-gray-600">
+                            Launch Configuration (Security Review)
+                        </h3>
+                    </div>
+
+                    <div className="p-4 bg-apple-gray-600 rounded-apple">
+                        <pre className="text-sm text-apple-gray-100 overflow-x-auto">
+                            <code>{JSON.stringify(parsedConfig, null, 2)}</code>
+                        </pre>
+                    </div>
+
+                    {/* Security Warnings */}
+                    {listing.launch_type === 'EMBEDDED_IFRAME' &&
+                        sandbox.includes('allow-same-origin') && (
+                            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-apple">
+                                <div className="flex gap-2 text-sm text-amber-800">
+                                    <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
+
+                                    <span>
+                                        <strong>Security Note:</strong> allow-same-origin is
+                                        enabled. Verify this is required for the app's
+                                        functionality.
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                </div>
+
+                {/* Links */}
+                <div>
+                    <h3 className="text-sm font-medium text-apple-gray-600 mb-3">External Links</h3>
+
+                    <div className="space-y-2">
+                        {parsedConfig.url && (
+                            <a
+                                href={String(parsedConfig.url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-sm text-apple-blue hover:underline"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                                Application URL
+                            </a>
+                        )}
+
+                        {listing.privacy_policy_url && (
+                            <a
+                                href={listing.privacy_policy_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-sm text-apple-blue hover:underline"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                                Privacy Policy
+                            </a>
+                        )}
+
+                        {listing.terms_url && (
+                            <a
+                                href={listing.terms_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-sm text-apple-blue hover:underline"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                                Terms of Service
+                            </a>
+                        )}
+                    </div>
+                </div>
+
+                {/* Promotion Level */}
+                {listing.app_listing_status === 'LISTED' && (
+                    <div>
+                        <h3 className="text-sm font-medium text-apple-gray-600 mb-3">
+                            Promotion Level
+                        </h3>
+
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowPromotionMenu(!showPromotionMenu)}
+                                className="w-full p-3 bg-apple-gray-50 rounded-apple flex items-center justify-between hover:bg-apple-gray-100 transition-colors"
+                            >
+                                <span className="text-sm text-apple-gray-600">
+                                    {listing.promotion_level
+                                        ? PROMOTION_LEVEL_INFO[listing.promotion_level].label
+                                        : 'Standard'}
+                                </span>
+
+                                <Code className="w-4 h-4 text-apple-gray-400" />
+                            </button>
+
+                            {showPromotionMenu && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-apple shadow-apple-lg border border-apple-gray-200 z-10">
+                                    {(Object.entries(PROMOTION_LEVEL_INFO) as [PromotionLevel, typeof PROMOTION_LEVEL_INFO[PromotionLevel]][]).map(
+                                        ([level, info]) => {
+                                            const Icon = promotionIcons[level];
+
+                                            return (
+                                                <button
+                                                    key={level}
+                                                    onClick={() => {
+                                                        onPromotionChange(listing.listing_id, level);
+                                                        setShowPromotionMenu(false);
+                                                    }}
+                                                    className={`w-full p-3 text-left flex items-center gap-3 hover:bg-apple-gray-50 transition-colors ${
+                                                        listing.promotion_level === level
+                                                            ? 'bg-apple-blue/5'
+                                                            : ''
+                                                    }`}
+                                                >
+                                                    <Icon className="w-4 h-4 text-apple-gray-400" />
+
+                                                    <div>
+                                                        <p className="text-sm font-medium text-apple-gray-600">
+                                                            {info.label}
+                                                        </p>
+
+                                                        <p className="text-xs text-apple-gray-400">
+                                                            {info.description}
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                            );
+                                        }
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Actions */}
+            {listing.app_listing_status === 'PENDING_REVIEW' && (
+                <div className="p-6 border-t border-apple-gray-200 bg-apple-gray-50">
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleReject}
+                            disabled={isRejecting || isApproving}
+                            className="flex-1 py-3 px-4 rounded-full border-2 border-red-200 text-red-600 font-medium text-sm hover:bg-red-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {isRejecting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <XCircle className="w-4 h-4" />
+                            )}
+                            Reject
+                        </button>
+
+                        <button
+                            onClick={handleApprove}
+                            disabled={isApproving || isRejecting}
+                            className="flex-1 py-3 px-4 rounded-full bg-emerald-500 text-white font-medium text-sm hover:bg-emerald-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {isApproving ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <CheckCircle className="w-4 h-4" />
+                            )}
+                            Approve
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
