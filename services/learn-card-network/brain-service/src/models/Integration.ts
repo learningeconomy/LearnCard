@@ -14,6 +14,7 @@ export type IntegrationRelationships = {
         { name: string; did: string; isPrimary?: boolean },
         { name: string; did: string; isPrimary?: boolean }
     >;
+    publishesListing: ModelRelatedNodesI<any, any>;
 };
 
 export type IntegrationInstance = NeogmaInstance<FlatIntegrationType, IntegrationRelationships>;
