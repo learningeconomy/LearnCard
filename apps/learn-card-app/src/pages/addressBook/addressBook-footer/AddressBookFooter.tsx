@@ -12,6 +12,7 @@ import AddressBookContactOptions from '../addressBook-contact-options/AddressBoo
 import { IonFooter, IonToolbar, IonGrid, IonRow, IonCol, useIonModal } from '@ionic/react';
 
 import { ModalTypes, useIsCurrentUserLCNUser, useModal } from 'learn-card-base';
+import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 
 export const AddressBookFooter: React.FC<{
     showSearch?: boolean;

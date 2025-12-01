@@ -20,6 +20,7 @@ import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 
 type AddressBookContactDetailsViewProps = {
     contact: LCNProfile | null;
@@ -63,17 +64,17 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     showCloseButton,
     showBoostButton,
     showRequestButton,
-    handleConnectionRequest = () => {},
+    handleConnectionRequest = () => { },
     showDeleteButton,
-    handleRemoveConnection = () => {},
+    handleRemoveConnection = () => { },
     showAcceptButton,
-    handleAcceptConnectionRequest = () => {},
+    handleAcceptConnectionRequest = () => { },
     showCancelButton,
-    handleCancelConnectionRequest = () => {},
+    handleCancelConnectionRequest = () => { },
     showBlockButton,
-    handleBlockUser = () => {},
+    handleBlockUser = () => { },
     showUnblockButton,
-    handleUnblockUser = () => {},
+    handleUnblockUser = () => { },
     history,
 }) => {
     const { presentToast } = useToast();
