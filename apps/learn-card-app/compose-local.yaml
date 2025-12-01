@@ -131,7 +131,7 @@ services:
     image: lca-api-service
     build:
       context: ../../
-      dockerfile: services/lca-api/Dockerfile.local
+      dockerfile: services/learn-card-network/lca-api/Dockerfile.local
     container_name: "lcn-api-service"
     expose:
       - 5100
@@ -145,7 +145,7 @@ services:
     extra_hosts:
       - "localhost:host-gateway"
     volumes:
-      - ../../services/lca-api/src:/app/services/lca-api/src
+      - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
     environment:
       IS_OFFLINE: true
       PORT: 5100

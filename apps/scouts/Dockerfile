@@ -17,7 +17,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmr
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 
 # Copy dependency manifests for better Docker caching
-COPY services/lca-api/package.json services/lca-api/
+COPY services/learn-card-network/lca-api/package.json services/learn-card-network/lca-api/
 COPY packages/lca-api-client/package.json packages/lca-api-client/
 COPY packages/plugins/lca-api-plugin/package.json packages/plugins/lca-api-plugin/
 COPY packages/learn-card-helpers/package.json packages/learn-card-helpers/
@@ -55,7 +55,7 @@ COPY apps/scouts/package.json apps/scouts/
 RUN pnpm install --no-frozen-lockfile
 
 # Copy sources
-COPY services/lca-api services/lca-api
+COPY services/learn-card-network/lca-api services/learn-card-network/lca-api
 COPY packages/lca-api-client packages/lca-api-client
 COPY packages/plugins/lca-api-plugin packages/plugins/lca-api-plugin
 COPY packages/learn-card-helpers packages/learn-card-helpers

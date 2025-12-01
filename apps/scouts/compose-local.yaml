@@ -128,7 +128,7 @@ services:
         image: lca-api-service
         build:
             context: ../../
-            dockerfile: services/lca-api/Dockerfile.local
+            dockerfile: services/learn-card-network/lca-api/Dockerfile
         container_name: 'lcn-api-service'
         expose:
             - 5100
