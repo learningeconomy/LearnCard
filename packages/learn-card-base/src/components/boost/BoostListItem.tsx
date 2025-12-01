@@ -3,7 +3,6 @@ import moment from 'moment';
 import { IonRow } from '@ionic/react';
 import useGetIssuerName from 'learn-card-base/hooks/useGetIssuerName';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-import ProfilePicture from '../profilePicture/ProfilePicture';
 import CredentialVerificationDisplay from '../CredentialBadge/CredentialVerificationDisplay';
 import { ellipsisMiddle } from 'learn-card-base/helpers/stringHelpers';
 import {
@@ -11,7 +10,7 @@ import {
     getAchievementTypeDisplayText,
     getIssuanceDate,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { CredentialCategory, CredentialCategoryEnum } from 'learn-card-base/types/credentials';
+import { CredentialCategory, CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import BoostTextSkeleton, { BoostSkeleton } from './boostSkeletonLoaders/BoostSkeletons';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
@@ -20,7 +19,6 @@ import {
     getAttachmentTypeIcon,
     getDisplayIcon,
 } from 'learn-card-base/helpers/display.helpers';
-import { boostCategoryOptions } from './boostOptions/boostOptions';
 import CredentialMediaBadge from '../CredentialBadge/CredentialMediaBadge';
 import { BoostMediaOptionsEnum } from './boost';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
@@ -79,7 +77,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         [issuanceDate]
     );
 
-    const { color, subColor } = boostCategoryOptions?.[categoryType] || {};
+    const { subColor } = categoryMetadata[categoryType];
 
     const issuerName = useGetIssuerName(credential);
 

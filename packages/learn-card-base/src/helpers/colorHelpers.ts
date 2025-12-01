@@ -1,4 +1,4 @@
-import { CredentialCategoryEnum } from 'learn-card-base/types/credentials';
+import { CredentialCategoryEnum } from 'learn-card-base';
 
 const baseColors: string[] = [
     'bg-emerald-500',

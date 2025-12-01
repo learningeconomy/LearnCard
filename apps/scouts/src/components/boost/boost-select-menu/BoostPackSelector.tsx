@@ -2,8 +2,7 @@ import React, { useMemo } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { WorldScoutIcon } from '../../svgs/WorldScoutsIcon';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import { boostCategoryOptions, BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
-import { ModalTypes, useModal } from 'learn-card-base';
+import { ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BoostPackOptionsModal } from './BoostPackOptionsModal';
 import { BadgePackOption, BadgePackOptionsEnum } from './badge-pack.helper';
 import { useGetCurrentUserTroopIdsResolved } from 'learn-card-base';
@@ -54,7 +53,6 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
     const { data: myTroopIdData, isLoading: troopIdDataLoading } =
         useGetCurrentUserTroopIdsResolved(hideNetworkBoostPacks);
 
-    const { color } = boostCategoryOptions[boostPackType];
     let troopData = myTroopIdData?.scout;
     if (myTroopIdData?.isTroopLeader) {
         troopData = myTroopIdData?.troopLeader;

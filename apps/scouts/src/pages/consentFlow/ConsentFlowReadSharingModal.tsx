@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
 import { ConsentFlowTerm, CredentialRecord } from '@learncard/types';
-import { TYPE_TO_IMG_SRC } from '@learncard/react';
 import { Updater } from 'use-immer';
 import { capitalizeFirstLetter } from '@learncard/helpers';
 import {
@@ -18,12 +17,12 @@ import {
     IonToolbar,
 } from '@ionic/react';
 
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 import {
     useGetCredentialList,
     useGetCredentialCount,
     CredentialCategory,
     useModal,
+    categoryMetadata,
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import Calendar from '../../components/svgs/Calendar';
@@ -53,7 +52,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
     const [term, setTerm] = useState(initialTerm);
-    const [onContinue, setOnContinue] = useState(() => () => { });
+    const [onContinue, setOnContinue] = useState(() => () => {});
     const [formerSharedUris, setFormerSharedUris] = useState<string[]>();
 
     const { IconComponent, plural } = getInfoFromContractKey(category);
@@ -371,9 +370,8 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                                 const isSelected = getIsSelected(record);
 
                                                 const categoryImgUrl =
-                                                    TYPE_TO_IMG_SRC[
-                                                    CATEGORY_TO_WALLET_SUBTYPE[record.category]
-                                                    ];
+                                                    categoryMetadata[record.category]
+                                                        .defaultImageSrc;
 
                                                 return (
                                                     <BoostEarnedCard

@@ -1,57 +1,56 @@
 import React from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
-import { VC } from '@learncard/types';
-import {
-    useGetVCInfo,
-    useGetCredentialWithEdits,
-    useModal,
-    boostCategoryOptions,
-    DisplayTypeEnum,
-    CredentialSubjectDisplay,
-    resetIonicModalBackground,
-    CredentialCategoryEnum,
-} from 'learn-card-base';
+
 import { useLoadingLine } from '../../../stores/loadingStore';
+import useTheme from '../../../theme/hooks/useTheme';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
-import { useTheme } from '../../../theme/hooks/useTheme';
-import { IonCol } from '@ionic/react';
+
 import {
+    useModal,
+    CredentialSubjectDisplay,
+    useGetVCInfo,
+    useGetResolvedCredential,
+    useGetCredentialWithEdits,
+    ModalTypes,
+    DisplayTypeEnum,
+    categoryMetadata,
     BoostPageViewMode,
+    CredentialCategory,
     BoostPageViewModeType,
     BoostGenericCardWrapper,
-    CredentialCategory,
-    useGetResolvedCredential,
-    ModalTypes,
+    resetIonicModalBackground,
+    BoostCategoryOptionsEnum,
     newCredsStore,
 } from 'learn-card-base';
+import { IonCol } from '@ionic/react';
 
-import CustomIssuerName from './helpers/CustomIssuerName';
+import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
+
 import FamilyCard from '../../familyCMS/FamilyCard/FamilyCard';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
-import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
-import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
-import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
+import CustomIssuerName from './helpers/CustomIssuerName';
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
+import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 
-import {
-    CATEGORY_TO_WALLET_SUBTYPE,
-    getClrLinkedCredentials,
-} from 'learn-card-base/helpers/credentialHelpers';
+import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
+
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import {
     unwrapBoostCredential,
     isBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
+
+import { VC } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
-import { getDefaultDisplayType } from '../boostHelpers';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
+import { getDefaultDisplayType } from '../boostHelpers';
 
 type BoostEarnedCardProps = {
     credential?: VC;
@@ -60,7 +59,7 @@ type BoostEarnedCardProps = {
     onCheckMarkClick?: any;
     selectAll?: any;
     initialCheckmarkState?: boolean;
-    categoryType?: CredentialCategory;
+    categoryType: CredentialCategory;
     sizeLg?: number;
     sizeMd?: number;
     sizeSm?: number;
@@ -115,8 +114,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const { credentialWithEdits } = useGetCredentialWithEdits(cred);
     cred = credentialWithEdits ?? cred;
 
-    const type =
-        CATEGORY_TO_WALLET_SUBTYPE?.[categoryType] ?? CATEGORY_TO_WALLET_SUBTYPE.Achievement;
+    const type = categoryMetadata[categoryType].walletSubtype;
 
     let {
         issuerName,
@@ -172,10 +170,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
     const showNewItemIndicator = newCredsForCategory?.includes(record?.uri) ?? false;
 
-    const color = boostCategoryOptions?.[categoryType as any]?.color;
-    const darkColor = boostCategoryOptions?.[categoryType as any]?.darkColor;
+    const color = categoryMetadata[categoryType].color;
+    const darkColor = categoryMetadata[categoryType].darkColor;
     const { getThemedCategory } = useTheme();
-    const colors = (getThemedCategory(categoryType as CredentialCategoryEnum))?.colors;
+    const colors = getThemedCategory(categoryType as CredentialCategoryEnum)?.colors;
     const indicatorColor = colors?.indicatorColor;
 
     const presentShareBoostLink = () => {

@@ -2,8 +2,6 @@ import React, { useEffect } from 'react';
 
 import { useIonModal } from '@ionic/react';
 import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
     BoostUserTypeEnum,
     CATEGORY_TO_SUBCATEGORY_LIST,
 } from '../../../boost-options/boostOptions';
@@ -16,10 +14,13 @@ import MeritBadgeRibbon from 'learn-card-base/svgs/MeritBadgeRibbon';
 import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSState } from '../../../boost';
 import BoostCMSAppearanceFormModal from './BoostCMSAppearanceFormModal';
 import {
+    CredentialCategoryEnum,
     getAchievementTypeFromCustomType,
+    getBoostMetadata,
     isCustomBoostType,
     replaceUnderscoresWithWhiteSpace,
     useModal,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import CertRibbon from 'apps/learn-card-app/src/components/svgs/CertRibbon';
 
@@ -54,8 +55,11 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
     const { newModal } = useModal();
     const { getThemedCategoryIcons } = useTheme();
 
-    const { Icon } = getThemedCategoryIcons(state?.basicInfo?.type);
-    const { color, subColor } = boostCategoryOptions[state?.basicInfo?.type];
+    const boostMetadata = getBoostMetadata(state?.basicInfo?.type as BoostCategoryOptionsEnum);
+    const { Icon } = getThemedCategoryIcons(
+        boostMetadata?.credentialType as CredentialCategoryEnum
+    );
+    const { color, subColor } = boostMetadata || {};
     let badgeCircleText = '';
 
     if (isCustomBoostType(state?.basicInfo?.achievementType)) {

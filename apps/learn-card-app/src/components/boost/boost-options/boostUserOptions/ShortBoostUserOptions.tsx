@@ -8,11 +8,17 @@ import BoostShareableCode from '../../boostCMS/boostCMSForms/boostCMSIssueTo/Boo
 import BoostSearch from '../../boost-search/BoostSearch';
 import AddUser from '../../../svgs/AddUser';
 
-import { BoostCategoryOptionsEnum, BoostUserTypeEnum, boostCategoryOptions } from '../boostOptions';
+import { BoostUserTypeEnum } from '../boostOptions';
 
 import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
 import useBoost from '../../../boost/hooks/useBoost';
-import { useModal, ModalTypes, ProfilePicture } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    ProfilePicture,
+    boostCategoryMetadata,
+    BoostCategoryOptionsEnum,
+} from 'learn-card-base';
 
 import { UnsignedVC, VC } from '@learncard/types';
 import {
@@ -62,12 +68,17 @@ const ShortBoostUserOptions: React.FC<{
 
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
-    const firstPage = (draftRecipients?.length && draftRecipients?.length > 0) ? ShortBoostStepsEnum.issueTo : ShortBoostStepsEnum.boostUserTypeOptions;
+    const firstPage =
+        draftRecipients?.length && draftRecipients?.length > 0
+            ? ShortBoostStepsEnum.issueTo
+            : ShortBoostStepsEnum.boostUserTypeOptions;
 
     const [page, setPage] = useState<ShortBoostStepsEnum>(firstPage);
     const prevPageRef = useRef<ShortBoostStepsEnum>(firstPage);
     const [issueLoading, setIssueLoading] = useState(false);
-    const [state, setState] = useState<ShortBoostState>({ issueTo: draftRecipients || [] as BoostCMSIssueTo[] });
+    const [state, setState] = useState<ShortBoostState>({
+        issueTo: draftRecipients || ([] as BoostCMSIssueTo[]),
+    });
     const { handleSubmitExistingBoostOther, handleSubmitExistingBoostSelf, boostIssueLoading } =
         useBoost(history);
 
@@ -216,7 +227,7 @@ const ShortBoostUserOptions: React.FC<{
     }
 
     const category = boost?.category as BoostCategoryOptionsEnum;
-    const color = boostCategoryOptions[category]?.color;
+    const color = boostCategoryMetadata[category].color;
 
     if (page === ShortBoostStepsEnum.boostUserTypeOptions) {
         const boostName = boost?.name || boostCredential?.name || 'Boost';

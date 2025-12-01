@@ -1,74 +1,37 @@
 import React from 'react';
 import { z } from 'zod';
 
-import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
-import Graduation from 'learn-card-base/svgs/Graduation';
-import KeyIcon from 'learn-card-base/svgs/KeyIcon';
 import ExperienceIcon from 'learn-card-base/svgs/ExperienceIcon';
 import AccommodationsIcon from 'learn-card-base/svgs/AccommodationsIcon';
 
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
-import BoostsIcon, { ThickBoostsIconWithShape } from 'learn-card-base/svgs/wallet/BoostsIcon';
-import AllBoostsIcon, { AllBoostsIconNoBorder } from 'learn-card-base/svgs/wallet/AllBoostsIcon';
-import AchievementsIcon, {
-    ThickAchievementsIconWithShape,
-} from 'learn-card-base/svgs/wallet/AchievementsIcon';
-import PortfolioIcon, {
-    ThickPortfolioIconWithShape,
-} from 'learn-card-base/svgs/wallet/PortfolioIcon';
-import StudiesIcon, { ThickStudiesIconWithShape } from 'learn-card-base/svgs/wallet/StudiesIcon';
-import AssistanceIcon, {
-    ThickAssistanceIconWithShape,
-} from 'learn-card-base/svgs/wallet/AssistanceIcon';
-import ExperiencesIcon, {
-    ThickExperiencesIconWithShape,
-} from 'learn-card-base/svgs/wallet/ExperiencesIcon';
-import IDsIcon, { ThickIDsIconWithShape } from 'learn-card-base/svgs/wallet/IDsIcon';
-import FamiliesIcon, { ThickFamiliesIconWithShape } from 'learn-card-base/svgs/wallet/FamiliesIcon';
-import { Shapes } from 'learn-card-base';
-import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
+import BoostsIcon from 'learn-card-base/svgs/wallet/BoostsIcon';
+import AllBoostsIcon from 'learn-card-base/svgs/wallet/AllBoostsIcon';
+import AchievementsIcon from 'learn-card-base/svgs/wallet/AchievementsIcon';
+import PortfolioIcon from 'learn-card-base/svgs/wallet/PortfolioIcon';
+import StudiesIcon from 'learn-card-base/svgs/wallet/StudiesIcon';
+import AssistanceIcon from 'learn-card-base/svgs/wallet/AssistanceIcon';
+import ExperiencesIcon from 'learn-card-base/svgs/wallet/ExperiencesIcon';
+import IDsIcon from 'learn-card-base/svgs/wallet/IDsIcon';
+import { BoostCategoryOptionsEnum, Shapes } from 'learn-card-base';
 
 const { Square, Circle, Triangle, Diamond, Hexagon, Kite } = Shapes;
+
+export const availableBoostCategories = [
+    BoostCategoryOptionsEnum.all,
+    BoostCategoryOptionsEnum.socialBadge,
+    BoostCategoryOptionsEnum.achievement,
+    BoostCategoryOptionsEnum.learningHistory,
+    BoostCategoryOptionsEnum.accomplishment,
+    BoostCategoryOptionsEnum.accommodation,
+    BoostCategoryOptionsEnum.workHistory,
+    BoostCategoryOptionsEnum.id,
+];
 
 export enum BoostUserTypeEnum {
     self = 'self',
     someone = 'someone',
 }
-
-export enum BoostCategoryOptionsEnum {
-    socialBadge = 'Social Badge',
-    achievement = 'Achievement',
-    course = 'Course',
-    job = 'Job',
-    id = 'ID',
-    workHistory = 'Work History',
-    currency = 'Currency',
-    learningHistory = 'Learning History',
-    skill = 'Skill',
-    membership = 'Membership',
-    accomplishment = 'Accomplishment',
-    accommodation = 'Accommodation',
-    describe = 'Describe',
-    family = 'Family',
-    all = 'All',
-}
-export const BoostCategoryOptionsEnumValidator = z.nativeEnum(BoostCategoryOptionsEnum);
-
-export type BoostVCTypeOptionButtonProps = {
-    id?: number;
-    IconComponent?: React.ReactNode;
-    iconCircleClass?: string;
-    iconClassName?: string;
-    title: string;
-    categoryType: BoostCategoryOptionsEnum;
-    setSelectedCategoryType: React.Dispatch<React.SetStateAction<string | null>>;
-    isActive?: boolean;
-    ShapeIcon?: React.FC<{ className?: string }>;
-    shapeColor?: string;
-    iconStyles?: string;
-    WalletIcon?: React.FC<{ className?: string }>;
-    onClickOverride?: (categoryType: BoostCategoryOptionsEnum) => void;
-};
 
 // ! MUST ALIGN WITH -> learn-card-base/src/helpers -> credentialHelpers.ts -> { CATEGORY_MAP }
 // ! MUST ALIGN WITH -> learn-card-base/src/components/issueVC -> constants.ts -> { AchievementTypes }
@@ -275,193 +238,6 @@ export const boostVCTypeOptions = {
             WalletIcon: IDsIcon,
         },
     ],
-};
-
-export const boostCategoryOptions: {
-    [key: BoostCategoryOptionsEnum | string]: {
-        title: string;
-        titleSingular: string;
-        value: BoostCategoryOptionsEnum;
-        color: string;
-        subColor: string;
-        lightColor: string;
-        IconComponent: React.FC<{ className?: string }>;
-        IconWithShape: React.FC<{ className?: string }>;
-        AltIconWithShapeForColorBg?: React.FC<{ className?: string }>;
-        CategoryImage: string;
-        ShapeIcon?: React.FC<{ className?: string }>;
-        shapeColor?: string;
-        iconStyles?: string;
-        WalletIcon?: React.FC<{ className?: string }>;
-    };
-} = {
-    [BoostCategoryOptionsEnum.socialBadge]: {
-        title: 'Boosts',
-        titleSingular: 'Boost',
-        value: BoostCategoryOptionsEnum.socialBadge,
-        color: 'blue-500',
-        subColor: 'blue-300',
-        lightColor: 'blue-200',
-        IconComponent: BoostsIcon,
-        IconWithShape: ThickBoostsIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/DRPwxXjSWKl6TTkd2OCF',
-        ShapeIcon: Kite,
-        WalletIcon: BoostsIcon,
-        shapeColor: 'text-[#93C5FD] w-[35px] h-[35px] !right-[-50%]',
-        iconStyles: 'h-[35px] w-[35px]',
-    },
-    [BoostCategoryOptionsEnum.achievement]: {
-        title: 'Achievements',
-        titleSingular: 'Achievement',
-        value: BoostCategoryOptionsEnum.achievement,
-        color: 'pink-500',
-        subColor: 'pink-400',
-        lightColor: 'pink-200',
-        IconComponent: AchievementsIcon,
-        IconWithShape: ThickAchievementsIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/P9zICsCHQP2NJs1EzYj5',
-        ShapeIcon: Diamond,
-        shapeColor: 'text-pink-300 w-[35px] h-[35px]',
-        iconStyles: 'h-[35px] w-[35px]',
-        WalletIcon: AchievementsIcon,
-    },
-    [BoostCategoryOptionsEnum.course]: {
-        title: 'Studies',
-        titleSingular: 'Study',
-        value: BoostCategoryOptionsEnum.course,
-        color: 'emerald-700',
-        subColor: 'emerald-500',
-        lightColor: 'emerald-201',
-        IconComponent: Graduation,
-        IconWithShape: ThickStudiesIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/xMW7lO1R7yv7Uy7qSzTB',
-        ShapeIcon: Diamond,
-        shapeColor: 'text-emerald-500 w-[35px] h-[35px]',
-        iconStyles: 'h-[30px] w-[30px]',
-        WalletIcon: StudiesIcon,
-    },
-    [BoostCategoryOptionsEnum.id]: {
-        title: 'IDs',
-        titleSingular: 'ID',
-        value: BoostCategoryOptionsEnum.id,
-        color: 'blue-400',
-        subColor: 'blue-300',
-        lightColor: 'blue-200',
-        IconComponent: IDsIcon,
-        IconWithShape: ThickIDsIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/HRKQyEDZSc2NS01uur0F',
-        ShapeIcon: Hexagon,
-        shapeColor: 'text-blue-400 w-[35px] h-[35px]',
-        iconStyles: 'h-[33px] w-[33px] !top-[55%] !left-[50%]',
-        WalletIcon: IDsIcon,
-    },
-    [BoostCategoryOptionsEnum.skill]: {
-        title: 'Skills',
-        titleSingular: 'Skill',
-        value: BoostCategoryOptionsEnum.skill,
-        color: 'indigo-600',
-        subColor: 'indigo-400',
-        lightColor: 'indigo-200',
-        IconComponent: PuzzlePiece,
-        IconWithShape: SkillsIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/9lKwrJdoRPmv9chLFJQv',
-    },
-    [BoostCategoryOptionsEnum.learningHistory]: {
-        title: 'Studies',
-        titleSingular: 'Study',
-        value: BoostCategoryOptionsEnum.learningHistory,
-        color: 'emerald-700',
-        subColor: 'emerald-500',
-        lightColor: 'emerald-201',
-        IconComponent: StudiesIcon,
-        IconWithShape: ThickStudiesIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/xMW7lO1R7yv7Uy7qSzTB',
-        ShapeIcon: Hexagon,
-        shapeColor: 'text-emerald-500 w-[35px] h-[35px]',
-        iconStyles: 'h-[30px] w-[30px]',
-        WalletIcon: StudiesIcon,
-    },
-    [BoostCategoryOptionsEnum.workHistory]: {
-        title: 'Experiences',
-        titleSingular: 'Experience',
-        value: BoostCategoryOptionsEnum.workHistory,
-        color: 'cyan-500',
-        subColor: 'cyan-400',
-        lightColor: 'cyan-201',
-        IconComponent: ExperiencesIcon,
-        IconWithShape: ThickExperiencesIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/A3cfrOaQ3StXLw7guVKO',
-        ShapeIcon: Circle,
-        shapeColor: 'text-cyan-400 w-[35px] h-[35px]',
-        WalletIcon: ExperiencesIcon,
-        iconStyles: 'h-[35px] w-[35px] !top-[46%]',
-    },
-    [BoostCategoryOptionsEnum.membership]: {
-        title: 'Membership',
-        titleSingular: 'Membership',
-        value: BoostCategoryOptionsEnum.membership,
-        color: 'teal-400',
-        subColor: 'teal-300',
-        lightColor: 'teal-200',
-        IconComponent: KeyIcon,
-        IconWithShape: ThickIDsIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/EwXi4MnoT6eDgM6cmJuH',
-    },
-    [BoostCategoryOptionsEnum.accomplishment]: {
-        title: 'Portfolio',
-        titleSingular: 'Portfolio',
-        value: BoostCategoryOptionsEnum.accomplishment,
-        color: 'yellow-400',
-        subColor: 'yellow-300',
-        lightColor: 'yellow-200',
-        IconComponent: PortfolioIcon,
-        IconWithShape: ThickPortfolioIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/8OIEKhtHTAutM1nzlKkT',
-        ShapeIcon: Triangle,
-        shapeColor: 'text-yellow-300 rotate-180 w-[35px] h-[35px]',
-        iconStyles: 'h-[35px] w-[35px]',
-        WalletIcon: PortfolioIcon,
-    },
-    [BoostCategoryOptionsEnum.accommodation]: {
-        title: 'Assistance',
-        titleSingular: 'Assistance',
-        value: BoostCategoryOptionsEnum.accommodation,
-        color: 'violet-400',
-        subColor: 'violet-500',
-        lightColor: 'violet-200',
-        IconComponent: AssistanceIcon,
-        IconWithShape: ThickAssistanceIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/u9De5ed2RPe3bYWukmTc',
-        ShapeIcon: Square,
-        shapeColor: 'text-violet-400 w-[35px] h-[35px]',
-        iconStyles: 'h-[28px] w-[28px]',
-        WalletIcon: AssistanceIcon,
-    },
-    [BoostCategoryOptionsEnum.family]: {
-        title: 'Families',
-        titleSingular: 'Family',
-        value: BoostCategoryOptionsEnum.family,
-        color: 'pink-600',
-        subColor: 'pink-500',
-        lightColor: 'pink-200',
-        IconComponent: FamiliesIcon,
-        IconWithShape: ThickFamiliesIconWithShape,
-        CategoryImage: 'https://cdn.filestackcontent.com/XPxGgf7RQOmGgaFgS7QB',
-    },
-    [BoostCategoryOptionsEnum.all]: {
-        title: 'All',
-        titleSingular: 'All',
-        value: BoostCategoryOptionsEnum.all,
-        color: 'gradient-rainbow',
-        subColor: 'gradient-rainbow',
-        lightColor: 'gradient-rainbow',
-        IconComponent: AllBoostsIcon,
-        IconWithShape: AllBoostsIcon,
-        AltIconWithShapeForColorBg: AllBoostsIconNoBorder,
-        CategoryImage: 'https://cdn.filestackcontent.com/yfeWgdSWQ7Ckl4sVuGLc',
-        WalletIcon: AllBoostsIcon,
-        iconStyles: 'h-[35px] w-[35px]',
-    },
 };
 
 export const CATEGORY_TO_SUBCATEGORY_LIST: {

@@ -1,4 +1,4 @@
-import { useIonToast } from '@ionic/react';
+// import { useIonToast } from '@ionic/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     RegistryEntry,
@@ -6,6 +6,8 @@ import {
     useCurrentUser,
     walletStore,
     WalletSyncState,
+    // useToast,
+    // ToastTypeEnum,
 } from 'learn-card-base';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
 import { SYNC_STATE, SyncState } from './useRegistryEntryState';
@@ -16,7 +18,7 @@ export const useSyncDataSource = (id: string) => {
     const user = useCurrentUser();
     const queryClient = useQueryClient();
     const { data: registry } = useRegistry();
-    const [presentToast] = useIonToast();
+    // const { presentToast } = useToast();
 
     const setState = (state: SyncState) =>
         queryClient.setQueryData(['useRegistryEntryState', id], state);
@@ -121,11 +123,9 @@ export const useSyncDataSource = (id: string) => {
 
                 await storeAndAddManyVCsToWallet(vcData);
 
-                // presentToast({
-                //     message: `Successfully synced ${vcData?.length} Credentials!`,
-                //     duration: 3000,
-                //     position: 'top',
-                //     cssClass: 'login-link-success-toast',
+                // presentToast(`Successfully synced ${vcData?.length} Credentials!`, {
+                //     type: ToastTypeEnum.Success,
+                //     hasDismissButton: true,
                 // });
                 walletStore.set.setIsSyncing(WalletSyncState.Completed, vcData?.length);
 

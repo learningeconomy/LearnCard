@@ -4,17 +4,14 @@ import moment from 'moment';
 import useManagedBoost from '../../../../hooks/useManagedBoost';
 import BlueCheckMark from '../../../../components/svgs/BlueCheckMark';
 
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../../../components/boost/boost-options/boostOptions';
 import { Boost } from '@learncard/types';
-import { useGetCurrentLCNUser, useModal } from 'learn-card-base';
+import { useGetCurrentLCNUser, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
+import { boostCategoryOptions } from 'apps/scouts/src/components/boost/boost-options/boostOptions';
 
 type BulkParentSelectorCredentialItemProps = {
     boost?: Boost;
-    category?: BoostCategoryOptionsEnum;
+    category: BoostCategoryOptionsEnum;
     setParentUri: React.Dispatch<React.SetStateAction<string>>;
     parentUri?: string;
 };
@@ -33,7 +30,7 @@ const BulkParentSelectorCredentialItem: React.FC<BulkParentSelectorCredentialIte
         disableLoadingLine: true,
     });
 
-    const { subColor } = boostCategoryOptions?.[category || ''];
+    const { subColor } = boostCategoryOptions[category];
 
     if (!cred?.name) return <></>;
 

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
-import { BoostCategoryOptionsEnum } from '../../../boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 export const FamilyBoostListItem: React.FC<{
     title: string;

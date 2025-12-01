@@ -7,8 +7,7 @@ import {
     BoostPageViewMode,
     BoostPageViewModeType,
 } from '../earned-and-managed-tabs/EarnedAndManagedTabs';
-import { CredentialCategory, CredentialCategoryEnum } from 'learn-card-base/types/credentials';
-import { boostCategoryOptions } from './boostOptions/boostOptions';
+import { CredentialCategory, CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 
 type NewBoostButtonProps = {
@@ -24,7 +23,7 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
     viewMode = BoostPageViewMode.Card,
     branding = BrandingEnum.learncard,
 }) => {
-    let { color } = boostCategoryOptions[credentialType];
+    let { color } = categoryMetadata[credentialType];
     let typeName: string = credentialType;
 
     const isId = credentialType === CredentialCategoryEnum.id;

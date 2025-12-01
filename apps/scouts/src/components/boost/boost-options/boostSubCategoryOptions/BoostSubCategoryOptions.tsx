@@ -2,27 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import {
-    IonHeader,
-    IonContent,
-    IonRow,
-    IonCol,
-    IonGrid,
-    IonPage,
-    IonToolbar,
-    IonInput,
-} from '@ionic/react';
+import { IonHeader, IonContent, IonRow, IonCol, IonGrid, IonToolbar, IonInput } from '@ionic/react';
 import CaretLeft from '../../../svgs/CaretLeft';
 import BoostSubCategoryButton from './BoostSubCategoryButton';
 
 import {
     BoostUserTypeEnum,
-    BoostCategoryOptionsEnum,
-    boostCategoryOptions,
     CATEGORY_TO_SUBCATEGORY_LIST,
+    boostCategoryOptions,
 } from '../boostOptions';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
-import { CUSTOM_BOOST_TYPE_REGEX, constructCustomBoostType } from 'learn-card-base';
+import {
+    BoostCategoryOptionsEnum,
+    CUSTOM_BOOST_TYPE_REGEX,
+    constructCustomBoostType,
+} from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
 
 const StateValidator = z.object({
@@ -37,7 +31,7 @@ type BoostSubCategoryOptionsProps = {
     closeAllModals: () => void;
     handleCloseModal: () => void;
     boostUserType: BoostUserTypeEnum;
-    boostCategoryType: BoostCategoryOptionsEnum | string | null;
+    boostCategoryType: BoostCategoryOptionsEnum;
     setSelectedCategoryType: React.Dispatch<React.SetStateAction<string | null>>;
     otherUserProfileId?: string;
     hideBackButton: boolean;

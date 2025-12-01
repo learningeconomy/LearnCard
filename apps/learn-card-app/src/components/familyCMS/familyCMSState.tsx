@@ -3,8 +3,8 @@ import {
     BoostCMSAppearanceDisplayTypeEnum,
     CurrentUser,
     getLastNameOrFirst,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from '../boost/boost-options/boostOptions';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { LearnCardIDCMSTabsEnum } from '../learncardID-CMS/LearnCardIDCMSTabs';
 import { VC } from '@learncard/types';

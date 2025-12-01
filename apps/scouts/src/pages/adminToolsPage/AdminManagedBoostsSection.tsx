@@ -1,14 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import { useGetPaginatedManagedBoosts } from 'learn-card-base';
+import { useGetPaginatedManagedBoosts, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import { IonSpinner } from '@ionic/react';
 
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../components/boost/boost-options/boostOptions';
+import { boostCategoryOptions } from '../../components/boost/boost-options/boostOptions';
 import AdminManagedBoostRow from './AdminManagedBoostRow';
 
 type AdminManagedBoostsSectionProps = {

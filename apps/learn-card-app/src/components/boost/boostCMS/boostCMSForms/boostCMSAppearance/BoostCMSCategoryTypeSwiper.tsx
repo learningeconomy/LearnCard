@@ -2,17 +2,12 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper';
 
-import { useScreenWidth } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, useScreenWidth } from 'learn-card-base';
 
 import SkinnyArrowLeft from 'learn-card-base/svgs/SkinnyArrowLeft';
 import SkinnyArrowRight from 'learn-card-base/svgs/SkinnyArrowRight';
 
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-    BoostUserTypeEnum,
-    boostVCTypeOptions,
-} from '../../../boost-options/boostOptions';
+import { BoostUserTypeEnum, boostVCTypeOptions } from '../../../boost-options/boostOptions';
 
 import { useTheme } from '../../../../../theme/hooks/useTheme';
 
@@ -66,8 +61,6 @@ const BoostVCTypeSwiper: React.FC<{
     useEffect(() => {
         setHidePrevButton(initialSlideIndex === 0);
     }, [initialSlideIndex]);
-
-    const { subColor } = boostCategoryOptions[activeCategoryType] || {};
 
     const showNavigation = width > 991;
 

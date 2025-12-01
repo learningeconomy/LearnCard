@@ -10,7 +10,6 @@ import MediaDisplayTypeIcon from 'learn-card-base/assets/images/media-display-ty
 import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSState } from '../../../boost';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from '../../../boost-options/boostOptions';
 
 type BoostCMSDisplayTypeSelectorModalProps = {
     state: BoostCMSState;

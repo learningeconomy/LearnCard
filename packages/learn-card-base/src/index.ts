@@ -150,6 +150,7 @@ export * from './helpers/lazyWithRetry';
 export * from './helpers/recaptcha.helpers';
 
 export * from './types/credentials';
+export * from './types/boostAndCredentialMetadata';
 
 // Constants
 export * from './constants/gdprAgeLimits';

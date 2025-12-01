@@ -19,7 +19,7 @@ import {
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 import useFirebaseAnalytics from './useFirebaseAnalytics';
-import { useIonToast, useIonAlert } from '@ionic/react';
+import { useIonAlert } from '@ionic/react';
 
 import {
     authStore,
@@ -32,6 +32,8 @@ import {
     ModalTypes,
     ensureRecaptcha,
     destroyRecaptcha,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import { auth } from '../firebase/firebase';
@@ -42,10 +44,13 @@ import { FIREBASE_REDIRECT_URL } from '../constants/web3AuthConfig';
 import { WALLET_ADAPTERS } from '@web3auth/base';
 
 export const useFirebase = () => {
-    const { newModal, closeModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
     const { web3AuthSFAInit } = useWeb3AuthSFA();
     const { web3AuthInit } = useWeb3Auth();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
@@ -256,32 +261,16 @@ export const useFirebase = () => {
                     // Save the email locally so you don't need to ask the user for it again
                     // if they open the link on the same device.
                     window.localStorage.setItem('emailForSignIn', email);
-                    presentToast({
-                        message: 'A login link has been sent to your email.',
-                        duration: 6000,
-                        buttons: [
-                            {
-                                text: 'Dismiss',
-                                role: 'cancel',
-                            },
-                        ],
-                        position: 'top',
-                        cssClass: 'login-link-success-toast',
+                    presentToast('A login link has been sent to your email.', {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
                     });
                 })
                 .catch(error => {
                     console.error('sendSignInLinkToEmail::error', error);
-                    presentToast({
-                        message: 'An error occurred, unable to send a login link!',
-                        duration: 6000,
-                        buttons: [
-                            {
-                                text: 'Dismiss',
-                                role: 'cancel',
-                            },
-                        ],
-                        position: 'top',
-                        cssClass: 'login-link-warning-toast',
+                    presentToast('An error occurred, unable to send a login link!', {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
                     });
                 });
         } else {
@@ -302,32 +291,16 @@ export const useFirebase = () => {
             sendSignInLinkToEmail(auth(), email, actionCodeSettings)
                 .then(() => {
                     window.localStorage.setItem('emailForSignIn', email);
-                    presentToast({
-                        message: 'A login link has been sent to your email.',
-                        duration: 6000,
-                        buttons: [
-                            {
-                                text: 'Dismiss',
-                                role: 'cancel',
-                            },
-                        ],
-                        position: 'top',
-                        cssClass: 'login-link-success-toast',
+                    presentToast('A login link has been sent to your email.', {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
                     });
                 })
                 .catch(error => {
                     console.error('sendSignInLinkToEmail::error', error);
-                    presentToast({
-                        message: 'An error occurred, unable to send a login link!',
-                        duration: 6000,
-                        buttons: [
-                            {
-                                text: 'Dismiss',
-                                role: 'cancel',
-                            },
-                        ],
-                        position: 'top',
-                        cssClass: 'login-link-warning-toast',
+                    presentToast('An error occurred, unable to send a login link!', {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
                     });
                 });
         }
@@ -567,24 +540,9 @@ export const useFirebase = () => {
             console.error('errorMessage', errorMessage);
 
             if (errorCode === 5111) {
-                presentToast({
-                    message: 'An error occured. Please refresh to fix.',
-                    duration: 6000,
-                    buttons: [
-                        {
-                            text: 'Refresh',
-                            role: 'info',
-                            handler: () => {
-                                window.location.reload();
-                            },
-                        },
-                        {
-                            text: 'Dismiss',
-                            role: 'cancel',
-                        },
-                    ],
-                    position: 'top',
-                    cssClass: 'login-link-warning-toast',
+                presentToast('An error occured. Please refresh to fix.', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             }
         }

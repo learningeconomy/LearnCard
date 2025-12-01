@@ -2,13 +2,10 @@ import React from 'react';
 
 import { IonHeader, IonToolbar, IonRow, IonCol } from '@ionic/react';
 
-import {
-    BoostUserTypeEnum,
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../boost-options/boostOptions';
+import { BoostUserTypeEnum, boostCategoryOptions } from '../../boost-options/boostOptions';
 import { BoostCMSStepsEnum } from '../../boost';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 type BoostCMSHeaderProps = {
     boostUserType: BoostUserTypeEnum | string | null;
@@ -35,7 +32,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
     isLoading,
     issueToLength,
 }) => {
-    const { title } = boostCategoryOptions[selectedVCType];
+    const { title } = boostCategoryOptions[selectedVCType as BoostCategoryOptionsEnum];
     let headerTitle = '';
 
     if (currentStep === BoostCMSStepsEnum.create) {

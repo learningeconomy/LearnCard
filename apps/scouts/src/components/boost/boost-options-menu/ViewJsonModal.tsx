@@ -1,7 +1,6 @@
 import React, { useCallback } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useIonToast } from '@ionic/react';
-import { useModal } from 'learn-card-base';
+import { useModal, useToast, ToastTypeEnum } from 'learn-card-base';
 
 import CopyStack from '../../svgs/CopyStack';
 import X from 'learn-card-base/svgs/X';
@@ -14,7 +13,7 @@ type ViewJsonModalProps = {
 
 const ViewJsonModal: React.FC<ViewJsonModalProps> = ({ boost }) => {
     const { closeModal } = useModal();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const jsonPrettyPrint = JSON.stringify(boost, null, 2);
 
@@ -29,31 +28,15 @@ const ViewJsonModal: React.FC<ViewJsonModalProps> = ({ boost }) => {
                 });
                 console.log('Copied using Capacitor Clipboard');
             }
-            presentToast({
-                message: 'JSON copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('JSON copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
             console.error('Failed to copy to clipboard:', err);
-            presentToast({
-                message: 'Unable to copy JSON to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy JSON to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     }, [jsonPrettyPrint, presentToast]);

@@ -2,13 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import { VCDisplayCard2 } from '@learncard/react';
-import { IonContent, IonFooter, IonPage, IonRow, IonToolbar } from '@ionic/react';
+import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
-import { useWallet } from 'learn-card-base';
-import X from 'learn-card-base/svgs/X';
-import { BoostCategoryOptionsEnum } from '../../boost-options/boostOptions';
-import FatArrow from 'learn-card-base/svgs/FatArrow';
+import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 type IssueHistory = {
     id?: string | number;

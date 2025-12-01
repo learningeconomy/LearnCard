@@ -172,19 +172,27 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                         )}
 
                         {isClaimMode && (
-                            <button
-                                onClick={handleClaim}
-                                className={`text-white font-notoSans text-[17px] font-[600] leadeing-[24px] tracking-[0.25px] w-full rounded-[30px] p-[7px] disabled:opacity-60 ${claimButtonColor}`}
-                                disabled={isClaiming || isAlreadyClaimed}
-                            >
-                                {isAlreadyClaimed && 'Joined'}
-                                {!isAlreadyClaimed && (
-                                    <>
-                                        {isClaiming ? 'Joining ' : 'Join '}
-                                        {!isGlobal && !isNational && 'Troop'}
-                                    </>
+                            <>
+                                <button
+                                    onClick={handleClaim}
+                                    className={`text-white font-notoSans text-[17px] font-[600] leadeing-[24px] tracking-[0.25px] w-full rounded-[30px] p-[7px] disabled:opacity-60 ${claimButtonColor}`}
+                                    disabled={isClaiming || isAlreadyClaimed}
+                                >
+                                    {isAlreadyClaimed && 'Joined'}
+                                    {!isAlreadyClaimed && (
+                                        <>
+                                            {isClaiming ? 'Joining ' : 'Join '}
+                                            {!isGlobal && !isNational && 'Troop'}
+                                        </>
+                                    )}
+                                </button>
+                                {!isGlobal && !isNational && (
+                                    <p className="text-grayscale-700 font-notoSans text-[12px] font-normal text-center">
+                                        Joining this troop will automatically add all its members to
+                                        your contacts.
+                                    </p>
                                 )}
-                            </button>
+                            </>
                         )}
                     </div>
 

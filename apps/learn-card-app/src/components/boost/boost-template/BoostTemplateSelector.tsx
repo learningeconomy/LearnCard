@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
-import { BoostPageViewMode, BoostPageViewModeType } from 'learn-card-base';
+import {
+    BoostCategoryOptionsEnum,
+    BoostPageViewMode,
+    BoostPageViewModeType,
+} from 'learn-card-base';
 import BoostTemplateSelectorHeader from './BoostTemplateSelectorHeader';
 import BoostTemplateSelectorFooter from './BoostTemplateSelectorFooter';
 import BoostTemplateSelectorBody from './BoostTemplateSelectorBody';

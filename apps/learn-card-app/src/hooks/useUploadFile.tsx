@@ -220,19 +220,19 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     presentToast(
                         `Your journey is now reflected in portable, trusted credentials.`,
                         {
-                            version: 2,
                             title: `${uploadType} Successfully Parsed`,
                             hasDismissButton: true,
-                            toastType: ToastTypeEnum.Success,
+                            type: ToastTypeEnum.Success,
+                            hasCheckmark: true,
                             duration: 5000,
                         }
                     );
                 } else if (failedUploads === totalUploads) {
                     presentToast(`All uploads failed. Please try again.`, {
-                        version: 2,
                         title: 'Upload Failed',
                         hasDismissButton: true,
-                        toastType: ToastTypeEnum.Error,
+                        type: ToastTypeEnum.Error,
+                        hasX: true,
                         duration: 5000,
                     });
                 } else {
@@ -241,10 +241,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                             totalUploads - failedUploads
                         } of ${totalUploads} uploaded. Some files failed.`,
                         {
-                            version: 2,
                             title: 'Partial Upload',
                             hasDismissButton: true,
-                            toastType: ToastTypeEnum.Error,
+                            type: ToastTypeEnum.Error,
+                            hasX: true,
                             duration: 5000,
                         }
                     );
@@ -267,10 +267,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             setTimeout(() => {
                 presentToast(message, {
-                    version: 2,
                     title: 'Error',
                     hasDismissButton: true,
-                    toastType: ToastTypeEnum.Error,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
                     duration: 5000,
                 });
             }, 500);

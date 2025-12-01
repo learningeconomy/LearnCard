@@ -1,60 +1,60 @@
 import { AchievementCredential, VC } from '@learncard/types';
 
-export enum CredentialCategoryEnum {
-    learningHistory = 'Learning History',
-    socialBadge = 'Social Badge',
-    achievement = 'Achievement',
-    accomplishment = 'Accomplishment',
-    skill = 'Skill',
-    workHistory = 'Work History',
-    relationship = 'Relationship',
-    accommodation = 'Accommodation',
-    events = 'Events',
-    meritBadge = 'Merit Badge',
-    troops = 'Membership',
-    family = 'Family',
+// export enum CredentialCategoryEnum {
+//     learningHistory = 'Learning History',
+//     socialBadge = 'Social Badge',
+//     achievement = 'Achievement',
+//     accomplishment = 'Accomplishment',
+//     skill = 'Skill',
+//     workHistory = 'Work History',
+//     relationship = 'Relationship',
+//     accommodation = 'Accommodation',
+//     events = 'Events',
+//     meritBadge = 'Merit Badge',
+//     troops = 'Membership',
+//     family = 'Family',
 
-    // todo
-    membership = 'Membership',
-    goals = 'Goals',
+//     // todo
+//     membership = 'Membership',
+//     goals = 'Goals',
 
-    // deprecated
-    id = 'ID',
-    currency = 'Currency',
+//     // deprecated
+//     id = 'ID',
+//     currency = 'Currency',
 
-    // troops 2.0 ID categories
-    globalAdminId = 'Global Admin ID',
-    nationalNetworkAdminId = 'National Network Admin ID',
-    troopLeaderId = 'Troop Leader ID',
-    scoutId = 'Scout ID',
+//     // troops 2.0 ID categories
+//     globalAdminId = 'Global Admin ID',
+//     nationalNetworkAdminId = 'National Network Admin ID',
+//     troopLeaderId = 'Troop Leader ID',
+//     scoutId = 'Scout ID',
 
-    // ai passport
-    aiSummary = 'AI Summary',
-    aiTopic = 'AI Topic',
-    aiPathway = 'AI Pathway',
-    aiInsight = 'AI Insight',
-    aiAssessment = 'AI Assessment',
-}
+//     // ai passport
+//     aiSummary = 'AI Summary',
+//     aiTopic = 'AI Topic',
+//     aiPathway = 'AI Pathway',
+//     aiInsight = 'AI Insight',
+//     aiAssessment = 'AI Assessment',
+// }
 
 export const CREDENTIAL_CATEGORIES = [
+    'Social Badge',
     'Achievement',
+    'Course', // not in the above enum (CredentialCategoryEnum)
     'Skill',
     'ID',
     'Learning History',
     'Work History',
-    'Hidden',
-    'Social Badge',
+    // 'Hidden',
     'Membership',
     'Currency',
-    'Course',
     'Accomplishment',
     'Accommodation',
-    'Relationship',
-    'Events',
+    'Relationship', // not in BoostCategoryOptionsEnum
+    'Events', // not in BoostCategoryOptionsEnum
     'Merit Badge',
-    'Social Badge',
+    'Social Badge', // duplicate
     'Family',
-    'Experience',
+    'Experience', // not in the above enum, not in BoostCategoryOptionsEnum (work history maps here)
 
     // troops 2.0 ID categories
     'Global Admin ID',
@@ -63,6 +63,7 @@ export const CREDENTIAL_CATEGORIES = [
     'Scout ID',
 
     // AI Passport Categories
+    //   not in BoostCategoryOptionsEnum
     'AI Summary',
     'AI Topic',
     'AI Assessment',

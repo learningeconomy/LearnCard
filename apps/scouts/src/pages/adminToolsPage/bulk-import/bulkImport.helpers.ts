@@ -4,8 +4,7 @@ import {
     BoostCMSSubSkillEnum,
 } from '../../../components/boost/boostCMS/boostCMSForms/boostCMSSkills/boostSkills';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
-import { constructCustomBoostType } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from 'apps/scouts/src/components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum, constructCustomBoostType } from 'learn-card-base';
 
 /* Take an input like
  *    ['Stem - Engineering', 'Durable - Adaptability - Flexibility', 'Durable - Adaptability - Problem Solving', 'Durable - Lifelong Learning - Critical Thinking']

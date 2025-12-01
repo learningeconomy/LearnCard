@@ -32,7 +32,7 @@ import {
     SubheaderContentType,
     SubheaderTypeEnum,
 } from '../../components/main-subheader/MainSubHeader.types';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { useSyncMembershipHighlights } from '../../hooks/useSyncMembershipHighlights';
 
 const WAITLIST_FORM_LINK = 'https://r18y4ggjlxv.typeform.com/to/TKCrkKW5';

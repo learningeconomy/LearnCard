@@ -167,10 +167,10 @@ export const CheckListUploadRawVC: React.FC = () => {
                 setRawVcText('');
                 loadRawVCs();
                 presentToast(`Your journey is now reflected in portable, trusted credentials.`, {
-                    version: 2,
                     title: `JSON VC Successfully Parsed`,
                     hasDismissButton: true,
-                    toastType: ToastTypeEnum.Success,
+                    type: ToastTypeEnum.Success,
+                    hasCheckmark: true,
                     duration: 5000,
                 });
             } else {

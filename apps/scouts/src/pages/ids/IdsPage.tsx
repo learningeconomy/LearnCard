@@ -9,7 +9,7 @@ import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import HourGlass from '../../assets/lotties/hourglass.json';
 
-import { BrandingEnum, usePathQuery } from 'learn-card-base';
+import { BrandingEnum, categoryMetadata, usePathQuery } from 'learn-card-base';
 import { useGetCredentials } from 'learn-card-base';
 import {
     CurvedBackdropEl,
@@ -21,8 +21,7 @@ import {
     VC_WITH_URI,
 } from 'learn-card-base';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import BoostEarnedIDCard from '../../components/boost/boost-earned-card/BoostEarnedIDCard';
 import BoostManagedIDCard from '../../components/boost/boost-managed-card/BoostManagedIDCard';
 
@@ -54,7 +53,7 @@ const IdsPage: React.FC = () => {
         _activeTab ?? CredentialListTabEnum.Earned
     );
 
-    const imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.IDS];
+    const imgSrc = categoryMetadata[CredentialCategoryEnum.id];
 
     const boostError = managedBoostsError || earnedBoostsError ? true : false;
     // Upon initially loading component, read wallet contents

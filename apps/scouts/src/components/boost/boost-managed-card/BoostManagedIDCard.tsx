@@ -5,7 +5,6 @@ import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { VC, Boost } from '@learncard/types';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 
 import { useIonModal, IonList, IonItem } from '@ionic/react';
 import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
@@ -29,6 +28,7 @@ import {
     useCountBoostRecipients,
     useResolveBoost,
     BrandingEnum,
+    CredentialCategory,
 } from 'learn-card-base';
 import { useGetBoostRecipients } from 'learn-card-base';
 import useShortBoost from '../hooks/useShortBoost';
@@ -44,7 +44,7 @@ type BoostManagedIDCardProps = {
     boost: Boost;
     boostVC?: VC;
     defaultImg: string;
-    categoryType: string;
+    categoryType: CredentialCategory;
     sizeLg?: number;
     sizeMd?: number;
     sizeSm?: number;
@@ -151,8 +151,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     const thumbImage = (cred && getImageUrlFromCredential(cred)) || defaultImg;
     const badgeThumbnail = credImg && credImg?.trim() !== '' ? credImg : thumbImage;
 
-    const type =
-        CATEGORY_TO_WALLET_SUBTYPE?.[categoryType] ?? CATEGORY_TO_WALLET_SUBTYPE.Achievement;
+    const type = categoryMetadata[categoryType].walletSubtype;
     const isID = categoryType === BoostCategoryOptionsEnum.id;
     const isMembership = categoryType === BoostCategoryOptionsEnum.membership;
 

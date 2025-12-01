@@ -7,18 +7,17 @@ import {
     IonFooter,
     IonToolbar,
     IonRow,
-    useIonToast,
-    IonLoading,
-    IonList,
-    IonListHeader,
     IonItem,
     IonLabel,
+    IonList,
+    IonListHeader,
+    IonLoading,
 } from '@ionic/react';
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import X from 'learn-card-base/svgs/X';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 
 import {
@@ -57,7 +56,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const [credentials] = useState<VC[]>(getCredentials());
 
     const history = useHistory();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const { storeAndAddVCToWallet } = useWallet();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
@@ -84,27 +83,23 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
             setIsClaimed(true);
 
-            presentToast({
-                message: `Successfully claimed ${credentials.length} credential(s)!`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-success-toast',
+            presentToast(`Successfully claimed ${credentials.length} credential(s)!`, {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
 
             onAccept({}, credentials.length);
         } catch (e) {
             console.error('Error claiming credential(s)', e);
             if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast({
-                    message: `You have already claimed this credential.`,
-                    duration: 3000,
-                    cssClass: 'ion-toast-bottom-nav-offset',
+                presentToast(`You have already claimed this credential.`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             } else {
-                presentToast({
-                    message: `Oops, we couldn't claim the credential(s).`,
-                    duration: 3000,
-                    cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+                presentToast(`Oops, we couldn't claim the credential(s).`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             }
         } finally {

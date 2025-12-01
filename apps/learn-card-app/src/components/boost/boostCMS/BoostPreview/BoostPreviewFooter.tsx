@@ -2,7 +2,11 @@ import React from 'react';
 
 import { IonSpinner } from '@ionic/react';
 
-import { boostCategoryOptions } from '../../boost-options/boostOptions';
+import {
+    BoostCategoryOptionsEnum,
+    CredentialCategoryEnum,
+    getBoostMetadata,
+} from 'learn-card-base';
 
 export const BoostPreviewFooter: React.FC<{
     selectedVCType: string;
@@ -23,7 +27,10 @@ export const BoostPreviewFooter: React.FC<{
     isLoading = false,
     isEditMode = false,
 }) => {
-    const { color, IconComponent } = boostCategoryOptions[selectedVCType] ?? {};
+    const boostMetadata = getBoostMetadata(
+        selectedVCType as BoostCategoryOptionsEnum | CredentialCategoryEnum
+    );
+    const { color, IconComponent } = boostMetadata ?? {};
 
     return (
         <div className="flex items-center justify-center w-full">

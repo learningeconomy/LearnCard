@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { z } from 'zod';
 
-import { IonPage, useIonToast } from '@ionic/react';
+import { IonPage } from '@ionic/react';
 import TroopsCMSLayout from './TroopsCMSLayout';
 import TroopsCMSThumbnail from './TroopsCMSThumbnail';
 import TroopsCMSHeader from './TroopsCMSHeader/TroopsCMSHeader';
@@ -20,6 +20,8 @@ import {
     useGetCurrentLCNUser,
     useWallet,
     CredentialCategoryEnum,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import {
@@ -73,7 +75,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
 }) => {
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const { mutateAsync: createBoost } = useCreateBoost();
     const { mutateAsync: createChildBoost } = useCreateChildBoost();
@@ -383,12 +385,9 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             console.error('handlePublishBoost::error', e);
-            presentToast({
-                message: `Error issuing boost`,
-                duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+            presentToast(`Error issuing boost`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -469,12 +468,9 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             console.error('handleEditBoost::error', e);
-            presentToast({
-                message: `Error editing boost`,
-                duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+            presentToast(`Error editing boost`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

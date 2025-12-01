@@ -4,10 +4,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
-import { IonItem, useIonAlert, useIonToast } from '@ionic/react';
+import { IonItem, useIonAlert } from '@ionic/react';
 
 import Plus from 'learn-card-base/svgs/Plus';
-import BoostIcon from '../../../../src/assets/images/Learncard-new-boost-icon.png';
+// @ts-ignore
+import BoostIcon from '../../../assets/images/Learncard-new-boost-icon.png';
 import SlimCaretRight from 'apps/learn-card-app/src/components/svgs/SlimCaretRight';
 import MobileNavCircleIcon from 'apps/learn-card-app/src/components/svgs/MobileNavCircleIcon';
 import AddressBookContactDetailsView from './AddressBookContactDetailsView';
@@ -22,6 +23,8 @@ import {
     useCancelConnectionRequestMutation,
     useUnblockProfileMutation,
     UserProfilePicture,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import BoostTemplateSelector from 'apps/learn-card-app/src/components/boost/boost-template/BoostTemplateSelector';
 
@@ -38,6 +41,10 @@ type AddressBookContactItemProps = {
     ) => void;
     showAcceptButton: boolean;
     showCancelButton: boolean;
+    handleCancelConnectionRequest?: (
+        e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+        profileId: string
+    ) => void;
     showBlockButton: boolean;
     handleBlockUser?: (
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -60,6 +67,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     handleRemoveConnection,
     showAcceptButton,
     showCancelButton,
+
     showBlockButton,
     handleBlockUser,
     showUnblockButton,
@@ -75,18 +83,18 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     const { gate } = useLCNGatedAction();
     const { newModal } = useModal({ desktop: ModalTypes.Cancel });
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [presentAlert, dismissAlert] = useIonAlert();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const { mutate, isLoading } = useConnectWithMutation();
-    const { mutate: acceptConnectionRequest, isLoading: acceptConnectionLoading } =
+    const { mutate, isPending: isLoading } = useConnectWithMutation();
+    const { mutate: acceptConnectionRequest, isPending: acceptConnectionLoading } =
         useAcceptConnectionRequestMutation();
-    const { mutate: cancelConnectionRequest, isLoading: cancelRequestLoading } =
+    const { mutate: cancelConnectionRequest, isPending: cancelRequestLoading } =
         useCancelConnectionRequestMutation();
-    const { mutate: unblockUser, isLoading: unblockLoading } = useUnblockProfileMutation();
+    const { mutate: unblockUser, isPending: unblockLoading } = useUnblockProfileMutation();
 
     const handleConnectionRequest = async (
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -103,72 +111,55 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             queryKey: ['getSearchProfiles', search],
                         });
 
-                        queryClient.setQueryData(['getSearchProfiles', search], prevConnections =>
-                            prevConnections?.map(connection => {
-                                if (connection.profileId === profileId) {
+                        queryClient.setQueryData(
+                            ['getSearchProfiles', search],
+                            (prevConnections: LCNProfile[] | undefined) =>
+                                prevConnections?.map(connection => {
+                                    if (connection.profileId === profileId) {
+                                        return {
+                                            ...connection,
+                                            connectionStatus:
+                                                LCNProfileConnectionStatusEnum?.Enum
+                                                    ?.PENDING_REQUEST_SENT,
+                                        };
+                                    }
                                     return {
                                         ...connection,
-                                        connectionStatus:
-                                            LCNProfileConnectionStatusEnum?.Enum
-                                                ?.PENDING_REQUEST_SENT,
                                     };
-                                }
-                                return {
-                                    ...connection,
-                                };
-                            })
+                                })
                         );
 
                         refetch?.();
 
-                        presentToast({
-                            message: 'Connection Request sent',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-success-toast',
+                        presentToast('Connection Request sent', {
+                            type: ToastTypeEnum.Success,
+                            hasDismissButton: true,
                         });
                         console.log('onSuccess::data', data);
                     },
                     onError(error, variables, context) {
-                        presentToast({
+                        presentToast(
                             // @ts-ignore
-                            message:
-                                error?.message ||
+                            error?.message ||
                                 'An error occurred, unable to send connection request',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-warning-toast',
-                        });
+                            {
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );
         } catch (err) {
             console.log('connectionReq::error', err);
-            presentToast({
+            presentToast(
                 // @ts-ignore
-                message: err?.message || 'An error occurred, unable to send connection request',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
-            });
+                err?.message || 'An error occurred, unable to send connection request',
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
         }
     };
 
@@ -185,57 +176,49 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         queryKey: ['getSearchProfiles', search],
                     });
 
-                    queryClient.setQueryData(['getSearchProfiles', search], prevConnections =>
-                        prevConnections?.map(connection => {
-                            if (connection.profileId === profileId) {
+                    queryClient.setQueryData(
+                        ['getSearchProfiles', search],
+                        (prevConnections: LCNProfile[] | undefined) =>
+                            prevConnections?.map(connection => {
+                                if (connection.profileId === profileId) {
+                                    return {
+                                        ...connection,
+                                        connectionStatus:
+                                            LCNProfileConnectionStatusEnum?.Enum?.NOT_CONNECTED,
+                                    };
+                                }
                                 return {
                                     ...connection,
-                                    connectionStatus:
-                                        LCNProfileConnectionStatusEnum?.Enum?.NOT_CONNECTED,
                                 };
-                            }
-                            return {
-                                ...connection,
-                            };
-                        })
+                            })
                     );
 
                     refetch?.();
                 },
                 onError(error, variables, context) {
                     refetch();
-                    presentToast({
+                    presentToast(
                         // @ts-ignore
-                        message: error?.message || 'An error occurred, unable to cancel request',
-                        duration: 3000,
-                        buttons: [
-                            {
-                                text: 'Dismiss',
-                                role: 'cancel',
-                            },
-                        ],
-                        position: 'top',
-                        cssClass: 'login-link-warning-toast',
-                    });
+                        error?.message || 'An error occurred, unable to cancel request',
+                        {
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
+                        }
+                    );
                 },
             }
         );
         try {
         } catch (err) {
             console.log('canceledConnectionReq::error', err);
-            presentToast({
+            presentToast(
                 // @ts-ignore
-                message: err?.message || 'An error occurred, unable to cancel request',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
-            });
+                err?.message || 'An error occurred, unable to cancel request',
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
         }
     };
 
@@ -253,19 +236,21 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             queryKey: ['getSearchProfiles', search],
                         });
 
-                        queryClient.setQueryData(['getSearchProfiles', search], prevConnections =>
-                            prevConnections?.map(connection => {
-                                if (connection.profileId === profileId) {
+                        queryClient.setQueryData(
+                            ['getSearchProfiles', search],
+                            (prevConnections: LCNProfile[] | undefined) =>
+                                prevConnections?.map(connection => {
+                                    if (connection.profileId === profileId) {
+                                        return {
+                                            ...connection,
+                                            connectionStatus:
+                                                LCNProfileConnectionStatusEnum?.Enum?.CONNECTED,
+                                        };
+                                    }
                                     return {
                                         ...connection,
-                                        connectionStatus:
-                                            LCNProfileConnectionStatusEnum?.Enum?.CONNECTED,
                                     };
-                                }
-                                return {
-                                    ...connection,
-                                };
-                            })
+                                })
                         );
 
                         const switchedDid = switchedProfileStore.get.switchedDid();
@@ -289,37 +274,26 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast({
+                        presentToast(
                             // @ts-ignore
-                            message:
-                                error?.message || 'An error occurred, unable to accept request',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-warning-toast',
-                        });
+                            error?.message || 'An error occurred, unable to accept request',
+                            {
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );
         } catch (err) {
-            presentToast({
+            presentToast(
                 // @ts-ignore
-                message: err?.message || 'An error occurred, unable to accept request',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
-            });
+                err?.message || 'An error occurred, unable to accept request',
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
         }
     };
 
@@ -367,49 +341,39 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         ]);
                     },
                     onError(error, variables, context) {
-                        presentToast({
+                        presentToast(
                             // @ts-ignore
-                            message: error?.message || 'An error occurred, unable to unblock user',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-warning-toast',
-                        });
+                            error?.message || 'An error occurred, unable to unblock user',
+                            {
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );
         } catch (err) {
             console.log('unBlockProfile::error', err);
-            presentToast({
+            presentToast(
                 // @ts-ignore
-                message: err?.message || 'An error occurred, unable to unblock user',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
-            });
+                err?.message || 'An error occurred, unable to unblock user',
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
         }
     };
 
     let actionButton = null;
 
     if (showRequestButton) {
-        if (LCNProfileConnectionStatusEnum.Enum.CONNECTED === contact?.connectionStatus) {
+        if (LCNProfileConnectionStatusEnum.Enum.CONNECTED === (contact as any)?.connectionStatus) {
             actionButton = (
                 <button className="text-emerald-600 font-bold text-sm">Connected</button>
             );
         } else if (
-            LCNProfileConnectionStatusEnum.Enum.NOT_CONNECTED === contact?.connectionStatus
+            LCNProfileConnectionStatusEnum.Enum.NOT_CONNECTED === (contact as any)?.connectionStatus
         ) {
             actionButton = (
                 <button
@@ -443,7 +407,8 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 </button>
             );
         } else if (
-            LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_SENT === contact?.connectionStatus
+            LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_SENT ===
+            (contact as any)?.connectionStatus
         ) {
             actionButton = (
                 <button
@@ -479,7 +444,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             );
         } else if (
             LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_RECEIVED ===
-            contact?.connectionStatus
+            (contact as any)?.connectionStatus
         ) {
             actionButton = (
                 <button

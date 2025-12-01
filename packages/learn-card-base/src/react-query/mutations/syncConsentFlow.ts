@@ -1,14 +1,17 @@
 import { useMutation } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
-import { useWallet, WalletSyncState, CredentialCategory } from 'learn-card-base';
+import {
+    useToast,
+    useWallet,
+    WalletSyncState,
+    CredentialCategory,
+    contractCategoryNameToCategoryMetadata,
+    syncProgressStore,
+    walletStore,
+} from 'learn-card-base';
 import { getOrCreateSharedUriForWallet } from 'learn-card-base/hooks/useSharedUrisInTerms';
 import { useAcceptCredentialMutation } from './mutations';
-import { useToast } from 'learn-card-base';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
-
-import { walletStore } from 'learn-card-base';
-import { mapAiCredentialCategory } from 'learn-card-base/helpers/credentialHelpers';
-import { syncProgressStore } from 'learn-card-base';
 
 export type ConsentRecord = {
     credentialUri: string;
@@ -84,7 +87,8 @@ export const useSyncConsentContractsMutation = () => {
                                             contract.owner.did,
                                             queryClient,
                                             uri,
-                                            mapAiCredentialCategory(category)
+                                            contractCategoryNameToCategoryMetadata(category)
+                                                ?.credentialType!
                                         ).catch(err => {
                                             try {
                                                 console.error(
@@ -174,7 +178,6 @@ export const useSyncConsentContractsMutation = () => {
 export const useAcceptAndStoreCredentialsMutation = () => {
     const acceptCredential = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
-    const { presentToast } = useToast();
 
     return useMutation<void, Error, { allRecords: ConsentRecord[] }>({
         mutationFn: async ({ allRecords }) => {

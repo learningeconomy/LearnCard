@@ -3,24 +3,24 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { useScreenWidth } from 'learn-card-base';
+import { useScreenWidth, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import SkinnyArrowLeft from 'learn-card-base/svgs/SkinnyArrowLeft';
 import SkinnyArrowRight from 'learn-card-base/svgs/SkinnyArrowRight';
 
 import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
     BoostUserTypeEnum,
+    boostCategoryOptions,
     boostVCTypeOptions,
 } from '../../../boost-options/boostOptions';
 
 import 'swiper/css/navigation';
+import { SetState } from 'packages/shared-types/dist';
 
 const BoostVCTypeSwiper: React.FC<{
     boostUserType: BoostUserTypeEnum;
     activeCategoryType: string;
-    setActiveCategoryType: React.Dispatch<React.SetStateAction<string>>;
+    setActiveCategoryType: SetState<string>;
 }> = ({ boostUserType, activeCategoryType, setActiveCategoryType }) => {
     const flags = useFlags();
     const width = useScreenWidth(true);
@@ -47,7 +47,7 @@ const BoostVCTypeSwiper: React.FC<{
     const [hidePrevButton, setHidePrevButton] = useState<boolean>(initialSlideIndex === 0);
     const [hideNextButton, setHideNextButton] = useState<boolean>(false);
 
-    const { subColor } = boostCategoryOptions[activeCategoryType];
+    const { subColor } = boostCategoryOptions[activeCategoryType as BoostCategoryOptionsEnum];
 
     const showNavigation = width > 991;
 

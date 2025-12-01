@@ -6,6 +6,8 @@ import {
     CredentialCategory,
     BoostUserTypeEnum,
     BoostCMSAppearanceDisplayTypeEnum,
+    boostCategoryMetadata,
+    categoryMetadata,
 } from 'learn-card-base';
 
 import { IonCol } from '@ionic/react';
@@ -16,7 +18,6 @@ import CredentialBadge from 'learn-card-base/components/CredentialBadge/Credenti
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { boostCategoryOptions } from '../boost-options/boostOptions';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { getDefaultAchievementTypeImage, getDefaultDisplayType } from '../boostHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
@@ -53,11 +54,13 @@ export const LearnCardTemplateCard: React.FC<LearnCardTemplateCardProps> = ({
     const badgeThumbnail = getDefaultAchievementTypeImage(
         categoryType,
         subType,
-        boostCategoryOptions[categoryType]?.CategoryImage,
+        categoryMetadata[categoryType].CategoryImage,
         boostAppearanceBadgeList
     );
 
-    const displayType: BoostCMSAppearanceDisplayTypeEnum = getDefaultDisplayType(categoryType);
+    const displayType: BoostCMSAppearanceDisplayTypeEnum = getDefaultDisplayType(
+        categoryMetadata[categoryType].value
+    );
 
     const categoryColors = {
         [CredentialCategoryEnum.learningHistory]: 'emerald-700',

@@ -14,7 +14,7 @@ import BulkBoostParentSelector from './bulk-import/BulkBoostParentSelector';
 import ConsentFlowCredFrontDoor from '../consentFlow/ConsentFlowCredFrontDoor';
 import ContractCredentialSelectorModal from './ContractCredentialSelectorModal';
 import SelectIssuerModal from './SelectIssuerModal';
-import MultiSelectInput from '../hidden/MultiSelectInput';
+import ContractCategoryMultiSelect from '../hidden/ContractCategoryMultiSelect';
 import MultiTextInput from '../hidden/MultiTextInput';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import Calendar from '../../components/svgs/Calendar';
@@ -32,11 +32,11 @@ import {
     useGetCurrentLCNUser,
     isValidISOString,
     currentUserStore,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import { ConsentFlowContract, LCNProfile } from '@learncard/types';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
-import { boostCategoryOptions } from '../../components/boost/boost-options/boostOptions';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -217,7 +217,9 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
             presentToast(`Contract "${contract.name}" created successfully!`);
             closeModal();
         } catch (e) {
-            presentToast(`Failed to create "${contract.name}": ${e.message}`);
+            presentToast(`Failed to create "${contract.name}": ${e.message}`, {
+                type: ToastTypeEnum.Error,
+            });
             setError(e.message);
         } finally {
             setLoading(false);
@@ -535,14 +537,11 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
 
                             <div className="flex flex-col">
                                 <h4>Credentials</h4>
-                                <MultiSelectInput
+                                <ContractCategoryMultiSelect
                                     values={contract.contract.read.credentials.categories}
-                                    options={Object.keys(boostCategoryOptions)}
                                     onChange={updateReadCredentials('categories') as any}
                                     setContract={setContract}
                                     mode="read"
-                                    enableCategoryPickerModal
-                                    enableCategorySettingsModal
                                 />
                             </div>
 
@@ -568,14 +567,11 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
 
                             <div className="flex flex-col">
                                 <h4>Credentials</h4>
-                                <MultiSelectInput
+                                <ContractCategoryMultiSelect
                                     values={contract.contract.write.credentials.categories}
-                                    options={Object.keys(boostCategoryOptions)}
                                     setContract={setContract}
                                     onChange={updateWriteCredentials('categories') as any}
                                     mode="write"
-                                    enableCategoryPickerModal
-                                    enableCategorySettingsModal
                                 />
                             </div>
 

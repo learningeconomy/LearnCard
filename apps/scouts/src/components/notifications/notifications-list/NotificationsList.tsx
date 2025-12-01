@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { IonItem, IonList, useIonModal, useIonToast } from '@ionic/react';
+import { IonItem, IonList, useIonModal } from '@ionic/react';
 
 import { Notification, NotificationProps } from '@learncard/react';
 import { VCClaim } from 'learn-card-base/components/vcmodal/VCModal';
 
-import { useWallet, useAcceptCredentialMutation, usePathQuery } from 'learn-card-base';
+import {
+    useWallet,
+    useAcceptCredentialMutation,
+    usePathQuery,
+    useToast,
+    ToastTypeEnum,
+} from 'learn-card-base';
 import { useAddCredentialToWallet } from '../../boost/mutations';
 
 export const NotificationItem: React.FC<{
@@ -23,7 +29,7 @@ export const NotificationItem: React.FC<{
 
     const [isClaimed, setIsClaimed] = useState<boolean>(false);
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const handleViewOnClick = () => {
         presentModal();
@@ -38,10 +44,9 @@ export const NotificationItem: React.FC<{
                 {
                     async onSuccess(data, variables, context) {
                         await addCredentialToWallet({ uri: notification?.uri });
-                        presentToast({
-                            message: `Successfully claimed Credential!`,
-                            duration: 3000,
-                            cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                        presentToast(`Successfully claimed Credential!`, {
+                            type: ToastTypeEnum.Success,
+                            hasDismissButton: true,
                         });
                         dismissModal?.();
 

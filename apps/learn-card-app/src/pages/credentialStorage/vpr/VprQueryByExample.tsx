@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import BoostEarnedCard from 'apps/learn-card-app/src/components/boost/boost-earned-card/BoostEarnedCard';
-import { TYPE_TO_IMG_SRC } from '@learncard/react';
 import VCToShare from '../VCToShare';
 import './VprQueryByExample.scss';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
-import { CurrentUser, useGetCredentialList, useGetResolvedCredentials } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    CurrentUser,
+    categoryMetadata,
+    useGetCredentialList,
+    useGetResolvedCredentials,
+} from 'learn-card-base';
 
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
 import Lottie from 'react-lottie-player';
 import HourGlass from '../../../assets/lotties/hourglass.json';
@@ -134,7 +138,8 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
     const renderCredentialList = vcsToDisplay?.map(credential => {
         if (!credential.record?.uri) return <></>;
 
-        const categoryImgUrl = TYPE_TO_IMG_SRC[CATEGORY_TO_WALLET_SUBTYPE[credential.category]];
+        const categoryImgUrl =
+            categoryMetadata[credential.category as CredentialCategoryEnum].defaultImageSrc;
         const uniqueId = credential.vc ? getUniqueId(credential.vc) : credential.record.uri;
 
         return (

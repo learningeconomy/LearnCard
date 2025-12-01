@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
 import { ConsentFlowTerm, CredentialRecord } from '@learncard/types';
-import { TYPE_TO_IMG_SRC } from '@learncard/react';
 import { Updater } from 'use-immer';
 import { capitalizeFirstLetter } from '@learncard/helpers';
 import {
@@ -17,12 +16,12 @@ import {
     IonToolbar,
 } from '@ionic/react';
 
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 import {
     useGetCredentialList,
     useGetCredentialCount,
     CredentialCategory,
     useModal,
+    categoryMetadata,
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import Calendar from '../../components/svgs/Calendar';
@@ -97,7 +96,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
 
     const hasCredentials = records?.pages?.[0]?.records?.length > 0;
 
-    const onScreen = useOnScreen(infiniteScrollRef as any, '300px', [
+    const onScreen = useOnScreen(infiniteScrollRef as any, '200px', [
         records?.pages?.[0]?.records?.length,
     ]);
 
@@ -382,44 +381,44 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                 {hasCredentials && (
                                     <IonRow className="px-5 pb-5 flex justify-center items-start bg-grayscale-300 relative z-0 h-full">
                                         <section className="w-full max-w-[800px] flex flex-wrap gap-4 justify-center py-[30px]">
-                                            {records?.pages.flatMap(page => {
-                                                return page?.records.map(record => {
-                                                    const isSelected = getIsSelected(record);
+                                            {allCreds?.map((record, index) => {
+                                                const isSelected = getIsSelected(record);
 
-                                                    const categoryImgUrl =
-                                                        TYPE_TO_IMG_SRC[
-                                                            CATEGORY_TO_WALLET_SUBTYPE[
-                                                                record.category
-                                                            ]
-                                                        ];
+                                                const categoryImgUrl =
+                                                    categoryMetadata[record.category]
+                                                        .defaultImageSrc;
 
-                                                    return (
-                                                        <div
-                                                            className="flex justify-center items-center"
-                                                            key={record.uri}
-                                                        >
-                                                            <BoostEarnedCard
-                                                                className="[&>button>.check-btn-overlay]:right-[5px] [&>button>.check-btn-overlay]:left-[unset] shrink-0"
-                                                                record={record}
-                                                                defaultImg={categoryImgUrl}
-                                                                categoryType={record.category}
-                                                                verifierState
-                                                                onCheckMarkClick={() => {
-                                                                    toggleCredentialSelected(
-                                                                        record
-                                                                    );
-                                                                }}
-                                                                initialCheckmarkState={
-                                                                    term.shareAll || isSelected
-                                                                }
-                                                                showChecked
-                                                            />
-                                                        </div>
-                                                    );
-                                                });
+                                                const isLastCredential =
+                                                    index === allCreds.length - 1;
+
+                                                return (
+                                                    <div
+                                                        className="flex justify-center items-center"
+                                                        key={record.uri}
+                                                        ref={
+                                                            isLastCredential
+                                                                ? infiniteScrollRef
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        <BoostEarnedCard
+                                                            className="[&>button>.check-btn-overlay]:right-[5px] [&>button>.check-btn-overlay]:left-[unset] shrink-0"
+                                                            record={record}
+                                                            defaultImg={categoryImgUrl}
+                                                            categoryType={record.category}
+                                                            verifierState
+                                                            onCheckMarkClick={() => {
+                                                                toggleCredentialSelected(record);
+                                                            }}
+                                                            initialCheckmarkState={
+                                                                term.shareAll || isSelected
+                                                            }
+                                                            showChecked
+                                                        />
+                                                    </div>
+                                                );
                                             })}
                                         </section>
-                                        <div role="presentation" ref={infiniteScrollRef} />
                                     </IonRow>
                                 )}
                             </IonCol>

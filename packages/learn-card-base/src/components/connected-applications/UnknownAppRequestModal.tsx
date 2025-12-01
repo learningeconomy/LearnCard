@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useWallet } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 
-import { IonHeader, IonRow, IonCol, IonGrid, IonPage, IonToolbar, useIonToast } from '@ionic/react';
+import { IonHeader, IonRow, IonCol, IonGrid, IonPage, IonToolbar } from '@ionic/react';
 
 import TRex from '../../assets/images/emptystate-dinocandle.png';
 
@@ -19,7 +19,7 @@ export const UnknownAppRequestModal: React.FC<UnknownAppRequestModalProps> = ({
     onSuccess,
 }) => {
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -40,18 +40,9 @@ export const UnknownAppRequestModal: React.FC<UnknownAppRequestModalProps> = ({
             setLoading(false);
             onSuccess?.();
         } catch (err) {
-            presentToast({
-                // @ts-ignore
-                message: err?.message ?? 'An error ocurred, failed to connect to Application.',
-                duration: 5000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+            presentToast(err?.message ?? 'An error ocurred, failed to connect to Application.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
             // @ts-ignore
             console.log('connectionReq::error', err?.message);

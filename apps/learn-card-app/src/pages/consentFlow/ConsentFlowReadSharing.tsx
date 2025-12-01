@@ -15,7 +15,7 @@ import ConsentFlowAiSessionsReadItem from './ConsentFlowAiSessionsReadItem';
 
 import { sidemenuLinks } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import {
-    ALL_AI_CREDENTIAL_TYPES,
+    AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES,
     getInfoFromContractKey,
     getPersonalEntry,
 } from '../../helpers/contract.helpers';
@@ -70,7 +70,7 @@ const ConsentFlowReadSharing: React.FC<ConsentFlowReadSharingProps> = ({
     } = {};
 
     let credentialCategories = orderedCategories.map(({ category, required }) => {
-        if (ALL_AI_CREDENTIAL_TYPES.includes(category)) {
+        if (AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES.includes(category)) {
             aiSessionCategories[category] = {
                 required,
                 term: terms.credentials.categories[category] ?? {

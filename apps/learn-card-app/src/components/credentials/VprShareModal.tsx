@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import BoostEarnedCard from '../boost/boost-earned-card/BoostEarnedCard';
-import { TYPE_TO_IMG_SRC } from '@learncard/react';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
-import { useGetCredentialList, useGetResolvedCredentials } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    categoryMetadata,
+    useGetCredentialList,
+    useGetResolvedCredentials,
+} from 'learn-card-base';
 import { queryListOfCredentials } from 'learn-card-base/helpers/credentials/queries';
 import { filterMaybes } from '@learncard/helpers';
 import { IonSpinner } from '@ionic/react';
@@ -114,11 +117,15 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
     });
 
     const renderCredentialCard = (credential: any, key: string) => {
-        const categoryImgUrl = TYPE_TO_IMG_SRC[CATEGORY_TO_WALLET_SUBTYPE[credential.category]];
+        const categoryImgUrl =
+            categoryMetadata[credential.category as CredentialCategoryEnum].defaultImageSrc;
         const uniqueId = credential.vc ? getUniqueId(credential.vc) : credential.record.uri;
 
         return (
-            <div key={key} className="w-full 2xs:w-1/1 xs:w-1/3 sm:w-1/3 md:w-1/4 lg:w-1/5 2xl:w-1/6 px-2 pb-3">
+            <div
+                key={key}
+                className="w-full 2xs:w-1/1 xs:w-1/3 sm:w-1/3 md:w-1/4 lg:w-1/5 2xl:w-1/6 px-2 pb-3"
+            >
                 <BoostEarnedCard
                     credential={credential.vc}
                     record={credential.record}
@@ -160,7 +167,8 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
                 </h2>
                 {origin && (
                     <p className="text-sm text-grayscale-600 text-center mt-2">
-                        <span className="font-semibold">{origin}</span> is requesting access to {reason}
+                        <span className="font-semibold">{origin}</span> is requesting access to{' '}
+                        {reason}
                     </p>
                 )}
             </div>
@@ -187,12 +195,11 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
                                         Suggested Credentials
                                     </h3>
                                     <span className="text-sm text-grayscale-600">
-                                        ({suggestedCredentials.length} {suggestedCredentials.length === 1 ? 'match' : 'matches'})
+                                        ({suggestedCredentials.length}{' '}
+                                        {suggestedCredentials.length === 1 ? 'match' : 'matches'})
                                     </span>
                                 </div>
-                                <div className="flex flex-wrap">
-                                    {renderSuggestedList}
-                                </div>
+                                <div className="flex flex-wrap">{renderSuggestedList}</div>
                             </div>
                         )}
 
@@ -203,7 +210,7 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
                                 placeholder="Search all credentials..."
                                 className="w-full px-4 py-2.5 bg-white border border-grayscale-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-grayscale-900 placeholder-grayscale-500"
                                 value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value.toLowerCase())}
+                                onChange={e => setSearchInput(e.target.value.toLowerCase())}
                             />
                         </div>
 
@@ -214,9 +221,7 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
                                     All Credentials
                                 </h3>
                             )}
-                            <div className="flex flex-wrap">
-                                {renderCredentialList}
-                            </div>
+                            <div className="flex flex-wrap">{renderCredentialList}</div>
                         </div>
                     </>
                 )}
@@ -233,10 +238,13 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
             >
                 <div className="flex items-center justify-between mb-4">
                     <p className="text-grayscale-700 font-semibold">
-                        {selectedVcs.length} {selectedVcs.length === 1 ? 'Credential' : 'Credentials'} Selected
+                        {selectedVcs.length}{' '}
+                        {selectedVcs.length === 1 ? 'Credential' : 'Credentials'} Selected
                     </p>
                     {credentialQuery.length > 0 && !hasSuggested && (
-                        <p className="text-sm text-grayscale-500">Selecting matching credentials...</p>
+                        <p className="text-sm text-grayscale-500">
+                            Selecting matching credentials...
+                        </p>
                     )}
                 </div>
                 <div className="flex items-center justify-center gap-4">
@@ -252,7 +260,9 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
                         className="px-10 py-3 text-lg font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-lg"
                         disabled={sharing || selectedVcs.length === 0}
                     >
-                        {sharing ? 'Sharing...' : `Share ${selectedVcs.length > 0 ? `(${selectedVcs.length})` : ''}`}
+                        {sharing
+                            ? 'Sharing...'
+                            : `Share ${selectedVcs.length > 0 ? `(${selectedVcs.length})` : ''}`}
                     </button>
                 </div>
             </div>

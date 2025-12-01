@@ -9,20 +9,18 @@ import { IonContent, IonPage } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import HourGlass from '../../assets/lotties/hourglass.json';
 
-import { useGetBoosts, usePathQuery } from 'learn-card-base';
+import { categoryMetadata, useGetBoosts, usePathQuery } from 'learn-card-base';
 import {
     CurvedBackdropEl,
     CredentialListTabEnum,
     EarnedAndManagedTabs,
     CredentialCategoryEnum,
-    useGetResolvedBoostsFromCategory,
     useIsCurrentUserLCNUser,
     useGetCredentialList,
     useGetCredentialCount,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
 import BoostEarnedIDCard from '../../components/boost/boost-earned-card/BoostEarnedIDCard';
 import BoostManagedIDCard from '../../components/boost/boost-managed-card/BoostManagedIDCard';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -71,7 +69,7 @@ const MembershipPage: React.FC = () => {
         _activeTab ?? CredentialListTabEnum.Earned
     );
 
-    const imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.MEMBERSHIP];
+    const imgSrc = categoryMetadata[CredentialCategoryEnum.membership].defaultImageSrc;
 
     const boostError = managedBoostsError || earnedBoostsError ? true : false;
 

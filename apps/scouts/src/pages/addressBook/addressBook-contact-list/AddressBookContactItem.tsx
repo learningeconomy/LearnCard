@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import AddressBookContactDetailsView from './AddressBookContactDetailsView';
-import { IonItem, useIonAlert, useIonToast } from '@ionic/react';
+import { IonItem, useIonAlert } from '@ionic/react';
 import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
 import GirlScoutsIcon from 'apps/scouts/src/components/svgs/GirlScoutsLogo';
 import WorldScoutIcon from 'apps/scouts/src/components/svgs/WorldScoutsIcon';
@@ -18,6 +18,8 @@ import {
     UserProfilePicture,
     ModalTypes,
     useDeviceTypeByWidth,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { LCNProfileConnectionStatusEnum, LCNProfile, VC } from '@learncard/types';
 
@@ -105,7 +107,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     const troopStatus =
         troopTypes[chosenHighlightedCred?.credentialSubject?.achievement?.achievementType] ?? '';
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [presentAlert, dismissAlert] = useIonAlert();
 
     const { mutate: connectMutate, isLoading: connectLoading } = useConnectWithMutation();
@@ -145,24 +147,19 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                 : connection
                         )
                     );
-                    presentToast({
-                        message: 'Connection Request sent',
-                        duration: 3000,
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        position: 'top',
-                        cssClass: 'login-link-success-toast',
+                    presentToast('Connection Request sent', {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
                     });
                 },
                 onError: (error: any) => {
-                    presentToast({
-                        message:
-                            error?.message ||
-                            'An error occurred, unable to send connection request',
-                        duration: 3000,
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        position: 'top',
-                        cssClass: 'login-link-warning-toast',
-                    });
+                    presentToast(
+                        error?.message || 'An error occurred, unable to send connection request',
+                        {
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
+                        }
+                    );
                 },
             }
         );
@@ -191,12 +188,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     );
                 },
                 onError: (error: any) => {
-                    presentToast({
-                        message: error?.message || 'An error occurred, unable to cancel request',
-                        duration: 3000,
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        position: 'top',
-                        cssClass: 'login-link-warning-toast',
+                    presentToast(error?.message || 'An error occurred, unable to cancel request', {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
                     });
                 },
             }
@@ -232,12 +226,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     });
                 },
                 onError: (error: any) => {
-                    presentToast({
-                        message: error?.message || 'An error occurred, unable to accept request',
-                        duration: 3000,
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        position: 'top',
-                        cssClass: 'login-link-warning-toast',
+                    presentToast(error?.message || 'An error occurred, unable to accept request', {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
                     });
                 },
             }
@@ -260,12 +251,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     });
                 },
                 onError: (error: any) => {
-                    presentToast({
-                        message: error?.message || 'An error occurred, unable to unblock user',
-                        duration: 3000,
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        position: 'top',
-                        cssClass: 'login-link-warning-toast',
+                    presentToast(error?.message || 'An error occurred, unable to unblock user', {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
                     });
                 },
             }

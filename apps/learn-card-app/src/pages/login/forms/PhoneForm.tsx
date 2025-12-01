@@ -6,10 +6,16 @@ import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { z } from 'zod';
 
-import { authStore, isPlatformAndroid, destroyRecaptcha } from 'learn-card-base';
+import {
+    authStore,
+    isPlatformAndroid,
+    destroyRecaptcha,
+    useToast,
+    ToastTypeEnum,
+} from 'learn-card-base';
 import { useFirebase } from '../../../hooks/useFirebase';
 
-import { IonCol, IonInput, IonCheckbox, IonToggle, IonRouterLink, useIonToast } from '@ionic/react';
+import { IonCol, IonInput, IonCheckbox, IonToggle, IonRouterLink } from '@ionic/react';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
 
 import { PhoneFormStepsEnum } from 'learn-card-base';
@@ -47,7 +53,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         verifySmsAuthCodeOnNative,
         loginAfterAutoVerifiedSMS,
     } = useFirebase();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const [currentStep, setCurrentStep] = useState<PhoneFormStepsEnum>(PhoneFormStepsEnum.phone);
     const [phone, setPhone] = useState<any>('');
@@ -90,7 +96,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 },
                 (err: string) => {
                     setIsLoading(false);
-                    setCodeError(err);
+                    setCodeError(err || '');
                 }
             );
         });
@@ -142,17 +148,9 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     };
 
     const showSuccessToast = () => {
-        presentToast({
-            message: 'A verification code has been sent',
-            duration: 6000,
-            buttons: [
-                {
-                    text: 'Dismiss',
-                    role: 'cancel',
-                },
-            ],
-            position: 'top',
-            cssClass: 'login-link-success-toast',
+        presentToast('A verification code has been sent', {
+            type: ToastTypeEnum.Success,
+            hasDismissButton: true,
         });
     };
 

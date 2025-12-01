@@ -37,7 +37,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
             setInviteLink(_inviteLink);
         } catch (e) {
             presentToast('Failed to generate invite link', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         } finally {
@@ -53,12 +53,11 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
         try {
             await Clipboard.write({ string: inviteLink });
             presentToast('Invite link copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (e) {
             presentToast('Unable to copy Invite link', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }
@@ -82,7 +81,7 @@ const ParentInviteModal: React.FC<ParentInviteModalProps> = ({ handleCloseModal 
         if (!inviteLink) return;
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             presentToast('Please enter a valid email', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
             return;

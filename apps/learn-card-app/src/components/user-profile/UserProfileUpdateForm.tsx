@@ -381,12 +381,11 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 string: walletDid,
             });
             presentToast('DID copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy DID to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import { QRCodeSVG } from 'qrcode.react';
-import { IonSpinner, useIonToast } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import {
     ProfilePicture,
     useGetCurrentLCNUser,
     useShareBoostMutation,
     useGetCredentialWithEdits,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
@@ -19,7 +21,7 @@ type ShareTroopIdModalProps = {
 };
 
 const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({ credential, uri }) => {
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const currentUser = useGetCurrentLCNUser();
     const network = useGetNetworkFromTroop(uri);
@@ -51,30 +53,14 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({ credential, uri }
             await Clipboard.write({
                 string: shareLink,
             });
-            presentToast({
-                message: 'Link copied to clipboard!',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Link copied to clipboard!', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Failed to copy link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Failed to copy link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

@@ -14,7 +14,7 @@ import {
     getCategoryTypeFromCustomType,
     isCustomBoostType,
 } from 'learn-card-base/helpers/boostCustomTypeHelpers';
-import { BoostCategoryOptionsEnum } from '../boost/boostOptions/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 export enum NotificationTypeEnum {
     Currency = 'currency',

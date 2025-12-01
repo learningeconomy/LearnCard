@@ -4,20 +4,22 @@ import moment from 'moment';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import BlueCheckMark from 'apps/learn-card-app/src/components/svgs/BlueCheckMark';
 
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../../../components/boost/boost-options/boostOptions';
 import { Boost } from '@learncard/types';
 
-import { useGetCurrentLCNUser, useModal } from 'learn-card-base';
+import {
+    boostCategoryMetadata,
+    CredentialCategory,
+    useGetCurrentLCNUser,
+    useModal,
+    BoostCategoryOptionsEnum,
+} from 'learn-card-base';
 import useManagedBoost from '../../../../hooks/useManagedBoost';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 type BulkParentSelectorCredentialItemProps = {
     boost?: Boost;
-    category?: BoostCategoryOptionsEnum;
+    category: BoostCategoryOptionsEnum;
     setParentUri: React.Dispatch<React.SetStateAction<string>>;
     parentUri?: string;
 };
@@ -32,11 +34,11 @@ const BulkParentSelectorCredentialItem: React.FC<BulkParentSelectorCredentialIte
     const { currentLCNUser } = useGetCurrentLCNUser();
 
     const { cred, thumbImage, presentManagedBoostModal } = useManagedBoost(boost, {
-        categoryType: category,
+        categoryType: boostCategoryMetadata[category].credentialType as CredentialCategory,
         disableLoadingLine: true,
     });
 
-    const { subColor } = boostCategoryOptions?.[category || ''];
+    const { subColor } = boostCategoryMetadata[category];
 
     if (!cred?.name) return <></>;
     const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {

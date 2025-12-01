@@ -1,7 +1,19 @@
 import React from 'react';
 
-import { BoostVCTypeOptionButtonProps } from '../boostOptions';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { SetState } from 'packages/shared-types/dist';
+
+type BoostVCTypeOptionButtonProps = {
+    id?: number;
+    IconComponent: React.ReactNode;
+    iconCircleClass?: string;
+    iconClassName?: string;
+    title: string;
+    categoryType: BoostCategoryOptionsEnum;
+    setSelectedCategoryType: SetState<string | null>;
+    isActive?: boolean;
+};
 
 export const BoostVCTypeOptionButton: React.FC<BoostVCTypeOptionButtonProps> = ({
     IconComponent,

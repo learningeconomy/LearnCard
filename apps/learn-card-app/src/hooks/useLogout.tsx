@@ -7,10 +7,10 @@ import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { BrandingEnum } from 'learn-card-base';
 import { pushUtilities } from 'learn-card-base';
 import { auth } from '../firebase/firebase';
-import { useWeb3AuthSFA, useWallet } from 'learn-card-base';
+import { useWeb3AuthSFA, useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { useQueryClient } from '@tanstack/react-query';
-import { useIonToast, IonLoading } from '@ionic/react';
+import { IonLoading } from '@ionic/react';
 
 const useLogout = () => {
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
@@ -18,7 +18,7 @@ const useLogout = () => {
     const { clearDB } = useSQLiteStorage();
     const firebaseAuth = auth();
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const queryClient = useQueryClient();
 
     const handleLogout = async (
@@ -86,10 +86,9 @@ const useLogout = () => {
             } catch (e) {
                 console.error('There was an issue logging out', e);
                 setIsLoggingOut(false);
-                presentToast({
-                    message: `Oops, we had an issue logging out.`,
-                    duration: 3000,
-                    cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+                presentToast(`Oops, we had an issue logging out.`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             }
         }, 1000);

@@ -9,13 +9,13 @@ import {
     useGetBoost,
     useModal,
     useShareBoostMutation,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { useIsTroopIDRevokedFake } from '../../../pages/troop/TroopIdStatusButton';
 
 import { isTroopCategory } from '../../../helpers/troop.helpers';
 
 import { UnsignedVC, VC, Boost } from '@learncard/types';
-import { BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
 
 export enum BoostMenuType {
     managed = 'MANAGED',

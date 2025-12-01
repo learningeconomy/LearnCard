@@ -1,16 +1,11 @@
-import React, { useState } from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
-import { IonContent, IonRow, IonCol, useIonModal, IonPage } from '@ionic/react';
-import SubHeaderActionMenu from './SubHeaderActionMenu';
-import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
-import Plus from 'learn-card-base/svgs/Plus';
-import modalStateStore from 'learn-card-base/stores/modalStateStore';
-import BoostUserOptions from '../boost/boost-options/boostUserOptions/BoostUserOptions';
+import React from 'react';
+import { useHistory } from 'react-router-dom';
+import { useIonModal } from '@ionic/react';
 import { LocationState, SubheaderTypeEnum } from './MainSubHeader.types';
 import AddAward from 'learn-card-base/svgs/AddAward';
 import BoostSelectMenu from '../boost/boost-select-menu/BoostSelectMenu';
 import useBoostModal from '../boost/hooks/useBoostModal';
-import { BoostCategoryOptionsEnum } from '../boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
 
 interface SubheaderPlusActionButtonProps {

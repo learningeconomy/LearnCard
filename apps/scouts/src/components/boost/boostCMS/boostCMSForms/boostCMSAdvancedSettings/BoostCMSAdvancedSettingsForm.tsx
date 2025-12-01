@@ -9,22 +9,21 @@ import LocationIcon from 'learn-card-base/svgs/LocationIcon';
 import LocationSearch from '../../../../locationSearch/LocationSearch';
 
 import { BoostCMSState } from '../../../boost';
-import {
-    BoostCategoryOptionsEnum,
-    boostCategoryOptions,
-} from '../../../boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { AddressSpec } from '../../../../locationSearch/location.helpers';
+import { SetState } from 'packages/shared-types/dist';
+import { boostCategoryOptions } from '../../../boost-options/boostOptions';
 
 const BoostCMSAdvancedSettingsForm: React.FC<{
     state: BoostCMSState;
-    setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
+    setState: SetState<BoostCMSState>;
     disabled?: boolean;
 }> = ({ state, setState, disabled = false }) => {
     const flags = useFlags();
     const basicInfo = state?.basicInfo;
     const boostType = state?.basicInfo?.type;
 
-    const { title } = boostCategoryOptions?.[boostType];
+    const { title } = boostCategoryOptions[boostType as BoostCategoryOptionsEnum];
 
     const [showAbout, setShowAbout] = useState<boolean>(false);
 

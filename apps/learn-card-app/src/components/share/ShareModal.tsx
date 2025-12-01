@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
+import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
+import { v4 as uuidv4 } from 'uuid';
 
-import { IonCol, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import Select from 'learn-card-base/components/generic/Select';
 import CopyStack from '../svgs/CopyStack';
-import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
-import { useWallet } from 'learn-card-base';
 
-import { v4 as uuidv4 } from 'uuid';
+import { useWallet, ToastTypeEnum, useToast } from 'learn-card-base';
 
 type ShareModalProps = {};
 
@@ -40,7 +39,7 @@ const ShareModal: React.FC<ShareModalProps> = () => {
         } catch (e) {
             console.log('generateInvite::error', e);
             presentToast('Failed to generate invite link', {
-                className: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         } finally {
@@ -52,12 +51,11 @@ const ShareModal: React.FC<ShareModalProps> = () => {
         try {
             await Clipboard.write({ string: inviteLink });
             presentToast('Invite link copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy Invite link to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }
@@ -84,12 +82,11 @@ const ShareModal: React.FC<ShareModalProps> = () => {
                 string: `https://learncard.app/connect?did=${wallet?.id?.did()}`,
             });
             presentToast('Profile link copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy Profile link to clipboard', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

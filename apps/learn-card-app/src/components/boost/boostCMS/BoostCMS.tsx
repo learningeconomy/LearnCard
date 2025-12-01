@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { BoostUserTypeEnum, lazyWithRetry } from 'learn-card-base';
-import { IonCol, IonContent, IonGrid, IonPage, IonRow, useIonToast } from '@ionic/react';
+import {
+    BoostUserTypeEnum,
+    lazyWithRetry,
+    useToast,
+    ToastTypeEnum,
+    boostCategoryMetadata,
+    BoostCategoryOptionsEnum,
+} from 'learn-card-base';
+import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 
 import {
     BoostAddressBookEditMode,
@@ -65,11 +72,7 @@ import {
     initialCustomBoostTypesState,
     LCNBoostStatusEnum,
 } from '../boost';
-import {
-    BOOST_CATEGORY_TO_WALLET_ROUTE,
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../boost-options/boostOptions';
+import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../boost-options/boostOptions';
 import {
     addBoostSomeone,
     addAdmin,
@@ -141,7 +144,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const location = useLocation();
     const query = usePathQuery();
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const queryClient = useQueryClient();
     const { isDesktop } = useDeviceTypeByWidth();
 
@@ -190,7 +193,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     getDefaultAchievementTypeImage(
                         _boostCategoryType,
                         _boostSubCategoryType,
-                        boostCategoryOptions[_boostCategoryType]?.CategoryImage,
+                        boostCategoryMetadata[_boostCategoryType].CategoryImage,
                         boostAppearanceBadgeList
                     ),
                 backgroundImage: aiBoost?.backgroundImageUrl || '',
@@ -278,7 +281,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             const newThumbnail = getDefaultAchievementTypeImage(
                 _boostCategoryType,
                 _boostSubCategoryType,
-                boostCategoryOptions[_boostCategoryType]?.CategoryImage,
+                boostCategoryMetadata[_boostCategoryType].CategoryImage,
                 boostAppearanceBadgeList
             );
 
@@ -505,10 +508,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     // oxlint-disable-next-line no-unused-vars
     const handleSaveAndQuit = async (goBack: boolean = false) => {
         if (!wallet) {
-            presentToast({
-                message: `Wallet is not initialized`,
+            presentToast(`Wallet is not initialized`, {
                 duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+                type: ToastTypeEnum.Error,
             });
             return;
         }
@@ -530,12 +532,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
             if (boostUri) {
                 setIsSaveLoading(false);
-                presentToast({
-                    message: `Boost saved successfully`,
+                presentToast(`Boost saved successfully`, {
                     duration: 3000,
-                    cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
-                    buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                    swipeGesture: 'vertical',
+                    type: ToastTypeEnum.Success,
                 });
 
                 logAnalyticsEvent('boostCMS_publish_draft', {
@@ -552,22 +551,18 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         } catch (e) {
             setIsSaveLoading(false);
             console.log('error::savingBoost', e);
-            presentToast({
-                message: `Unable to save boost`,
+            presentToast(`Unable to save boost`, {
                 duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+                type: ToastTypeEnum.Error,
             });
         }
     };
 
     const handlePublishBoost = async () => {
         if (!wallet) {
-            presentToast({
-                message: `Wallet is not initialized`,
+            presentToast(`Wallet is not initialized`, {
                 duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+                type: ToastTypeEnum.Error,
             });
             return;
         }
@@ -604,22 +599,18 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             console.log('error::boosting::someone', e);
-            presentToast({
-                message: `Error issuing boost`,
+            presentToast(`Error issuing boost`, {
                 duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+                type: ToastTypeEnum.Error,
             });
         }
     };
 
     const handleSaveAndIssue = async (boostUri?: string | null) => {
         if (!wallet) {
-            presentToast({
-                message: `Wallet is not initialized`,
+            presentToast(`Wallet is not initialized`, {
                 duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+                type: ToastTypeEnum.Error,
             });
             return;
         }
@@ -655,12 +646,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast({
-                        message: `Boost issued successfully`,
+                    presentToast(`Boost issued successfully`, {
                         duration: 3000,
-                        cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        swipeGesture: 'vertical',
+                        type: ToastTypeEnum.Success,
                     });
                     history.goBack();
                 }
@@ -669,12 +657,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
                 if (boostUri) {
                     setIsSaveLoading(false);
-                    presentToast({
-                        message: `Boost saved successfully`,
+                    presentToast(`Boost saved successfully`, {
                         duration: 3000,
-                        cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        swipeGesture: 'vertical',
+                        type: ToastTypeEnum.Success,
                     });
                     history.goBack();
                 }
@@ -682,12 +667,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         } catch (e) {
             setIsLoading(false);
             console.log('error::boosting::someone', e);
-            presentToast({
-                message: `Error issuing boost`,
+            presentToast(`Error issuing boost`, {
                 duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+                type: ToastTypeEnum.Error,
             });
         }
     };

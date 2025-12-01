@@ -8,8 +8,7 @@ import ShareBoostLink from '../../boost/boost-options-menu/ShareBoostLink';
 import FamilyInviteGuardian from './FamilyBoostInviteModal/FamilyInviteGuardian';
 
 import { VC } from '@learncard/types';
-import { ModalTypes, useModal } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from '../../boost/boost-options/boostOptions';
+import { ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 export const FamilyPreview: React.FC<{
     credential: VC;

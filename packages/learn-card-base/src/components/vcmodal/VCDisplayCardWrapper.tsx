@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES, VCDisplayCard2 } from '@learncard/react';
+import { VCDisplayCard2 } from '@learncard/react';
 import { VC, VerificationItem, CredentialRecord } from '@learncard/types';
 import { getCredentialSubject } from '../IssueVC/helpers';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useWallet } from 'learn-card-base';
+import { CredentialCategory, categoryMetadata, useWallet } from 'learn-card-base';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import X from 'learn-card-base/svgs/X';
-import { IonContent, IonHeader, IonPage, IonRow, IonToolbar } from '@ionic/react';
+import { IonContent, IonPage, IonRow } from '@ionic/react';
 import {
     getUrlFromImage,
     getImageUrlFromCredential,
@@ -18,7 +18,6 @@ import {
     DetailsFieldType,
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 const DetailsDisplay: React.FC<VC> = ({ credential }) => {
@@ -120,8 +119,8 @@ export const VCDisplayCardWrapper = ({
         overrideIssueName || isSubjectCurrentUser
             ? userName
             : dids.length > 0
-                ? `${credentialSubject?.id?.slice(0, 20)}...`
-                : 'Loading...';
+            ? `${credentialSubject?.id?.slice(0, 20)}...`
+            : 'Loading...';
     const issuerId = credential?.issuer?.id || credential?.issuer;
     const issuerName = credential?.issuer?.name;
 
@@ -129,10 +128,10 @@ export const VCDisplayCardWrapper = ({
     issuerText = isIssuerCurrentUser
         ? userName
         : issuerName
-            ? issuerName
-            : dids
-                ? issuerId
-                : 'Loading...';
+        ? issuerName
+        : dids
+        ? issuerId
+        : 'Loading...';
 
     const subjectElEmoji = getEmojiFromDidString(credentialSubject?.id);
     const issuerElEmoji = getEmojiFromDidString(issuerId);
@@ -155,8 +154,8 @@ export const VCDisplayCardWrapper = ({
             {isSubjectCurrentUser
                 ? getCurrentUserEl()
                 : subjectElEmoji
-                    ? subjectElEmoji
-                    : credentialSubject?.id?.slice(0, 1)}
+                ? subjectElEmoji
+                : credentialSubject?.id?.slice(0, 1)}
         </div>
     );
 
@@ -197,8 +196,8 @@ export const VCDisplayCardWrapper = ({
     const subjectImageComp = getDisplayComponent('issuee');
     const issuerImageComp = getDisplayComponent('issuer');
 
-    const category = VcCategory || cr?.category || 'Achievement';
-    const categoryImgUrl = TYPE_TO_IMG_SRC[CATEGORY_TO_WALLET_SUBTYPE[category]];
+    const category: CredentialCategory = VcCategory || cr?.category || 'Achievement';
+    const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
 
     //override default image component in vc display which depends on assumption of a default vc data shape
     const cardImgUrl =

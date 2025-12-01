@@ -17,6 +17,7 @@ import {
     useModal,
     ModalTypes,
     useGetBoostPermissions,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { useLoadingLine } from '../../../stores/loadingStore';
@@ -25,12 +26,8 @@ import NewBoostSelectMenuBoostPackItem from './NewBoostSelectMenuBoostPackItem';
 import NewBoostSelectMenuCustomTypeButton from './NewBoostSelectMenuCustomTypeButton';
 import X from '../../svgs/X';
 import BoostManagedChildrenList from '../boost-managed-card/BoostManagedChildrenList';
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-} from '../boost-options/boostOptions';
-import { BadgePackOption, BadgePackOptionsEnum, defaultBadgePacks } from './badge-pack.helper';
+import { CATEGORY_TO_SUBCATEGORY_LIST, boostCategoryOptions } from '../boost-options/boostOptions';
+import { BadgePackOption, BadgePackOptionsEnum } from './badge-pack.helper';
 import Lottie from 'react-lottie-player';
 import Pulpo from '../../../assets/lotties/cuteopulpo.json';
 import boostSearchStore from '../../../stores/boostSearchStore';

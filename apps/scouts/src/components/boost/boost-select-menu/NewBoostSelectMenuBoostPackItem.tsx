@@ -5,14 +5,10 @@ import { BoostSmallCard } from '@learncard/react';
 import { IonCol } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-    BoostUserTypeEnum,
-} from '../boost-options/boostOptions';
+import { boostCategoryOptions, BoostUserTypeEnum } from '../boost-options/boostOptions';
 import { BoostCMSAppearanceDisplayTypeEnum, BrandingEnum, CredentialBadge } from 'learn-card-base';
 import { getDefaultAchievementTypeImage } from '../boostHelpers';
-import { ModalTypes, useModal } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, ModalTypes, useModal } from 'learn-card-base';
 import BoostCMS from '../boostCMS/BoostCMS';
 
 export type NewBoostSelectMenuBoostPackItemProps = {
@@ -48,7 +44,7 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
-    const { CategoryImage, color } = boostCategoryOptions?.[category];
+    const { CategoryImage, color } = boostCategoryOptions[category];
 
     const image = getDefaultAchievementTypeImage(
         category,

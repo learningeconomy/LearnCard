@@ -13,7 +13,8 @@ import { insertParamsToFilestackUrl } from 'learn-card-base/filestack/images/fil
 import { VC } from '@learncard/types';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
-import { boostCategoryOptions, BoostCategoryOptionsEnum } from '../boost/boostOptions/boostOptions';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
+
 type CredentialBadgeProps = {
     boostType?: BoostCategoryOptionsEnum;
     achievementType: string;
@@ -58,8 +59,7 @@ export const CredentialBadge: React.FC<CredentialBadgeProps> = ({
     borderStyle,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
-    const { color, subColor, IconComponent } =
-        boostCategoryOptions?.[boostType ?? defaultBoostType] ?? {};
+    const { color, subColor, IconComponent } = boostCategoryMetadata[boostType ?? defaultBoostType];
 
     let _colorOverride = color ?? 'gray-500';
     let _subColorOverride = subColor ?? 'gray-300';

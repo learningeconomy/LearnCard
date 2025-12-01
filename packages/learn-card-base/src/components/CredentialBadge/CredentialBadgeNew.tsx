@@ -1,20 +1,18 @@
 import React from 'react';
 
 import Ribbon from 'learn-card-base/svgs/Ribbon';
-import ScoutsPledge from 'learn-card-base/svgs/ScoutsPledge';
-import CircleWithText from 'learn-card-base/svgs/CircleWithText';
-import CredentialMediaBadge from './CredentialMediaBadge';
-import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
-import ScoutsGlobe from 'learn-card-base/svgs/ScoutsGlobe';
-import CertRibbon, { CertRibbon2 } from 'learn-card-base/svgs/CertRibbon';
+import CertRibbon from 'learn-card-base/svgs/CertRibbon';
 import MeritBadgeRibbon from 'learn-card-base/svgs/MeritBadgeRibbon';
+import CredentialIDBadge from './CredentialIDBadge';
+import CredentialMediaBadge from './CredentialMediaBadge';
 
 import { insertParamsToFilestackUrl } from 'learn-card-base/filestack/images/filestack.helpers';
 import { VC } from '@learncard/types';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
-import { boostCategoryOptions, BoostCategoryOptionsEnum } from '../boost/boostOptions/boostOptions';
-import CredentialIDBadge from './CredentialIDBadge';
+
+import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
+
 type CredentialBadgeProps = {
     boostType?: BoostCategoryOptionsEnum;
     achievementType: string;
@@ -59,8 +57,8 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
     borderStyle,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
-    const { color, subColor, IconComponent, SolidIconComponent, badgeBackgroundColor } =
-        boostCategoryOptions?.[boostType ?? defaultBoostType] ?? {};
+    const { subColor, IconComponent, SolidIconComponent, badgeBackgroundColor } =
+        boostCategoryMetadata[boostType ?? defaultBoostType];
 
     let _colorOverride = badgeBackgroundColor ?? 'gray-500';
     let _subColorOverride = subColor ?? 'gray-300';

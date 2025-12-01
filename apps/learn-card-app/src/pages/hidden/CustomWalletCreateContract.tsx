@@ -4,8 +4,7 @@ import { ConsentFlowContract } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { curriedStateSlice } from '@learncard/helpers';
 import MultiTextInput from './MultiTextInput';
-import MultiSelectInput from './MultiSelectInput';
-import { boostCategoryOptions } from 'learn-card-base';
+import ContractCategoryMultiSelect from './ContractCategoryMultiSelect';
 
 type CustomWalletCreateContractProps = {
     wallet: BespokeLearnCard;
@@ -133,9 +132,8 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
                     <fieldset className="border p-4 w-full flex flex-col gap-4">
                         <legend>Credentials</legend>
 
-                        <MultiSelectInput
+                        <ContractCategoryMultiSelect
                             values={contract.contract.read.credentials.categories}
-                            options={Object.keys(boostCategoryOptions)}
                             onChange={updateReadCredentials('categories') as any}
                         />
                     </fieldset>
@@ -157,9 +155,8 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
                     <fieldset className="border p-4 w-full flex flex-col gap-4">
                         <legend>Credentials</legend>
 
-                        <MultiSelectInput
+                        <ContractCategoryMultiSelect
                             values={contract.contract.write.credentials.categories}
-                            options={Object.keys(boostCategoryOptions)}
                             onChange={updateWriteCredentials('categories') as any}
                         />
                     </fieldset>

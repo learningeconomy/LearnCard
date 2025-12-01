@@ -2,15 +2,7 @@ import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import { useHistory } from 'react-router';
 
-import {
-    IonContent,
-    IonPage,
-    IonSpinner,
-    useIonToast,
-    useIonModal,
-    useIonAlert,
-    IonRow,
-} from '@ionic/react';
+import { IonContent, IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
 // import MainHeader from '../../components/main-header/MainHeader';
 import X from 'learn-card-base/svgs/X';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
@@ -36,6 +28,8 @@ import {
     BrandingEnum,
     ModalTypes,
     SCOUTPASS_NETWORK_API_URL,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
@@ -132,7 +126,7 @@ export const ClaimBoostModal: React.FC<{
     const [isClaimed, setIsClaimed] = useState<boolean>(false);
     const [boost, setBoost] = useState<VC | null>(null);
     const [isFront, setIsFront] = useState(true);
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const troopTypes = ['ext:TroopID', 'ext:GlobalID', 'ext:NetworkID', 'ext:ScoutID'];
 
     const handleRedirectTo = () => {
@@ -216,21 +210,17 @@ export const ClaimBoostModal: React.FC<{
 
             history?.push('/');
 
-            presentToast({
-                message: `Successfully claimed Credential!`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-success-toast',
+            presentToast(`Successfully claimed Credential!`, {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (e) {
             setIsClaimLoading(false);
             dismissLoader();
 
-            presentToast({
-                message: `Unable to claim Credential`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+            presentToast(`Unable to claim Credential`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
 
             presentAlert({

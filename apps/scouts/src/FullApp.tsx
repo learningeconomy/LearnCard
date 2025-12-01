@@ -31,7 +31,6 @@ import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
 import { QRCodeScannerStore } from 'learn-card-base';
-import { ToastProvider } from 'learn-card-base/hooks/useToast';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
@@ -114,27 +113,25 @@ const FullApp: React.FC = () => {
             <IonReactRouter>
                 <Suspense fallback={<LoadingPageDumb />}>
                     <IonApp>
-                        <ToastProvider>
-                            <ModalsProvider>
-                                <div id="modal-mid-root"></div>
-                                <NetworkListener />
-                                <AppUrlListener />
-                                <PushNotificationListener />
-                                <PresentVcModalListener />
-                                {/* <UserProfileSetupListener loading={initLoading} /> */}
-                                <AppRouter initLoading={initLoading} />
-                                <QRCodeScannerListener />
-                                {showScannerOverlay && <QRCodeScannerOverlay />}
-                                {isSentryEnabled && (
-                                    <button
-                                        className="sentry-feedback-widget-btn z-[99999999999999]"
-                                        ref={buttonRef}
-                                    >
-                                        <p>Feedback</p>
-                                    </button>
-                                )}
-                            </ModalsProvider>
-                        </ToastProvider>
+                        <ModalsProvider>
+                            <div id="modal-mid-root"></div>
+                            <NetworkListener />
+                            <AppUrlListener />
+                            <PushNotificationListener />
+                            <PresentVcModalListener />
+                            {/* <UserProfileSetupListener loading={initLoading} /> */}
+                            <AppRouter initLoading={initLoading} />
+                            <QRCodeScannerListener />
+                            {showScannerOverlay && <QRCodeScannerOverlay />}
+                            {isSentryEnabled && (
+                                <button
+                                    className="sentry-feedback-widget-btn z-[99999999999999]"
+                                    ref={buttonRef}
+                                >
+                                    <p>Feedback</p>
+                                </button>
+                            )}
+                        </ModalsProvider>
                     </IonApp>
                 </Suspense>
             </IonReactRouter>

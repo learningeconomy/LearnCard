@@ -1,17 +1,19 @@
 import React from 'react';
-import { BoostUserTypeEnum, useModal } from 'learn-card-base';
+import {
+    BoostCategoryOptionsEnum,
+    BoostUserTypeEnum,
+    boostCategoryMetadata,
+    useModal,
+} from 'learn-card-base';
 
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
-import {
-    boostCategoryOptions,
-    boostVCTypeOptions,
-} from '../../../../components/boost/boost-options/boostOptions';
-import { BoostCategoryOptionsEnum } from '../../../../components/boost/boost-options/boostOptions';
+import { boostVCTypeOptions } from '../../../../components/boost/boost-options/boostOptions';
+import { SetState } from 'packages/shared-types/dist';
 
 export const BulkParentSelectorCategoryFilter: React.FC<{
     activeCategory?: BoostCategoryOptionsEnum;
-    setActiveCategory?: React.Dispatch<React.SetStateAction<BoostCategoryOptionsEnum>>;
+    setActiveCategory?: SetState<BoostCategoryOptionsEnum>;
 }> = ({ activeCategory, setActiveCategory }) => {
     const { closeModal } = useModal();
 
@@ -24,23 +26,24 @@ export const BulkParentSelectorCategoryFilter: React.FC<{
         return word;
     };
 
-    const boostDropdownCategoryOptions = boostVCTypeOptions[BoostUserTypeEnum.someone];
+    const boostDropdownCategoryOptions = boostVCTypeOptions[BoostUserTypeEnum.someone].map(
+        option => option.type
+    );
 
     return (
         <div className="flex flex-col items-center gap-[10px] w-full py-4 px-2">
             {boostDropdownCategoryOptions.map(category => {
-                const { type } = category;
-                const { title, IconWithShape } = boostCategoryOptions[type];
+                const { title, IconWithShape } = boostCategoryMetadata[category];
 
-                const isActive = activeCategory === type;
+                const isActive = activeCategory === category;
 
                 return (
                     <button
-                        key={type}
+                        key={category}
                         className="flex items-center justify-between bg-white text-black px-[18px] py-[6px] font-poppins text-lg font-normal text-center w-full mb-4"
                         onClick={e => {
                             e.stopPropagation();
-                            setActiveCategory?.(type);
+                            setActiveCategory?.(category);
                             closeModal();
                         }}
                     >

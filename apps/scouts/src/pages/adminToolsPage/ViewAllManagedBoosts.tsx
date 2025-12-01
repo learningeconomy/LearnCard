@@ -4,7 +4,7 @@ import AdminPageStructure from './AdminPageStructure';
 import AdminManagedBoostsSection from './AdminManagedBoostsSection';
 import AdminTroopsSection from './AdminTroopsSection';
 
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 const ViewAllManagedBoosts: React.FC = () => {
     return (

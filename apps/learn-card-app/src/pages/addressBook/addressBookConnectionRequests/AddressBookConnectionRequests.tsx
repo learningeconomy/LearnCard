@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useRouteMatch, useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { IonSpinner, useIonToast, useIonModal } from '@ionic/react';
+import { IonSpinner, useIonModal } from '@ionic/react';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 
@@ -11,6 +11,8 @@ import {
     useBlockProfileMutation,
     usePathQuery,
     useGetPaginatedConnectionRequests,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import ConnectModal from '../../connectPage/ConnectModal';
@@ -51,7 +53,7 @@ const AddressBookConnectionRequests: React.FC<{
         isFetching,
     } = useGetPaginatedConnectionRequests(queryOptions);
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const handleBlockUser = async (
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -68,37 +70,27 @@ const AddressBookConnectionRequests: React.FC<{
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast({
+                        presentToast(
                             // @ts-ignore
-                            message: error?.message || 'An error occurred, unable to block user',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-warning-toast',
-                        });
+                            error?.message || 'An error occurred, unable to block user',
+                            {
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );
         } catch (err) {
             console.log('blockProfile::error', err);
-            presentToast({
+            presentToast(
                 // @ts-ignore
-                message: err?.message || 'An error occurred, unable to block user',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
-            });
+                err?.message || 'An error occurred, unable to block user',
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
         }
     };
 
@@ -108,11 +100,11 @@ const AddressBookConnectionRequests: React.FC<{
         });
 
         queryClient.setQueryData(['getConnectionRequests'], prevPendingRequest => {
-            const updatedPendingRequests = prevPendingRequest?.filter(
-                connectionReq => connectionReq?.profileId !== userId
+            const connectionRequests = (prevPendingRequest as any)?.filter(
+                (connectionReq: any) => connectionReq.profileId !== userId
             );
-            setRequestCount(updatedPendingRequests?.length);
-            return updatedPendingRequests;
+            setRequestCount(connectionRequests?.length);
+            return connectionRequests;
         });
 
         dismissModal?.();
@@ -156,6 +148,9 @@ const AddressBookConnectionRequests: React.FC<{
                     showBlockButton
                     handleBlockUser={handleBlockUser}
                     setConnectionCount={setRequestCount}
+                    showUnblockButton={false}
+                    search=""
+                    refetch={refetch}
                     hasNextPage={hasNextPage}
                     fetchNextPage={fetchNextPage}
                     isFetching={isFetching}

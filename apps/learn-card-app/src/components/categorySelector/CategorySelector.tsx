@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
-import { walletPageData, WALLET_SUBTYPES, SUBTYPE_TO_CATEGORY } from '../../pages/wallet/constants';
-import { CredentialCategoryEnum } from 'learn-card-base';
+import { walletPageData } from '../../pages/wallet/constants';
+import { CredentialCategoryEnum, walletSubtypeToCredentialCategory } from 'learn-card-base';
+import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
 export const CategorySelector: React.FC<{
     activeCategory: CredentialCategoryEnum;
@@ -20,15 +21,15 @@ export const CategorySelector: React.FC<{
                     const { title, WalletIcon, ShapeIcon, id, shapeColor } = c;
 
                     if (
-                        c.subtype === WALLET_SUBTYPES.aiSessions ||
-                        c.subtype === WALLET_SUBTYPES.aiPathways ||
-                        c.subtype === WALLET_SUBTYPES.aiInsights ||
-                        c.subtype === WALLET_SUBTYPES.skills ||
-                        (hideFamily && c.subtype === WALLET_SUBTYPES.families)
+                        c.subtype === WalletCategoryTypes.aiSessions ||
+                        c.subtype === WalletCategoryTypes.aiPathways ||
+                        c.subtype === WalletCategoryTypes.aiInsights ||
+                        c.subtype === WalletCategoryTypes.skills ||
+                        (hideFamily && c.subtype === WalletCategoryTypes.families)
                     )
                         return null;
 
-                    const isActive = SUBTYPE_TO_CATEGORY[c.subtype] === category;
+                    const isActive = walletSubtypeToCredentialCategory(c.subtype) === category;
 
                     return (
                         <button
@@ -37,10 +38,8 @@ export const CategorySelector: React.FC<{
                                 isActive ? 'bg-blue-50' : ''
                             }`}
                             onClick={() => {
-                                handleOnClick(SUBTYPE_TO_CATEGORY[c.subtype] as string);
-                                setCategory(
-                                    SUBTYPE_TO_CATEGORY[c.subtype] as CredentialCategoryEnum
-                                );
+                                handleOnClick(walletSubtypeToCredentialCategory(c.subtype));
+                                setCategory(walletSubtypeToCredentialCategory(c.subtype));
                             }}
                         >
                             {WalletIcon && (

@@ -1,12 +1,11 @@
 'use client';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { usePathQuery } from 'learn-card-base';
+import { categoryMetadata, usePathQuery } from 'learn-card-base';
 import { IonContent, IonPage } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
 import { useLoadingLine } from '../../stores/loadingStore';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import {
@@ -35,6 +34,7 @@ import EmptyMeritBadgeIcon from '../../assets/images/emptyMeritBadge.svg';
 import Plus from '../../components/svgs/Plus';
 import { SubheaderContentType } from '../../components/main-subheader/MainSubHeader.types';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
+import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
 const MeritBadgesPage: React.FC = () => {
     const { newModal, closeModal } = useModal({
@@ -51,8 +51,8 @@ const MeritBadgesPage: React.FC = () => {
         () =>
             Boolean(
                 myTroopIds?.isNationalAdmin ||
-                myTroopIds?.isScoutGlobalAdmin ||
-                myTroopIds?.isTroopLeader
+                    myTroopIds?.isScoutGlobalAdmin ||
+                    myTroopIds?.isTroopLeader
             ),
         [myTroopIds]
     );
@@ -85,7 +85,7 @@ const MeritBadgesPage: React.FC = () => {
     useLoadingLine(credentialsBackgroundFetching);
 
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.MeritBadge];
-    const imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.SOCIAL_BADGES];
+    const imgSrc = categoryMetadata[CredentialCategoryEnum.meritBadge].defaultImageSrc;
     const shouldShowCreateButton = useMemo(
         () => flags.createMeritBadges && canCreateMeritBadges,
         [flags.createMeritBadges, canCreateMeritBadges]

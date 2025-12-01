@@ -6,8 +6,7 @@ import { IonCol, IonRow, IonSkeletonText } from '@ionic/react';
 import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
-import { useContract } from 'learn-card-base';
+import { useContract, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 

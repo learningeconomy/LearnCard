@@ -11,7 +11,6 @@ import {
     IonFooter,
     IonToolbar,
     useIonModal,
-    useIonToast,
 } from '@ionic/react';
 
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
@@ -29,6 +28,8 @@ import {
     useIsLoggedIn,
     useWallet,
     useCurrentUser,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
@@ -63,9 +64,7 @@ export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boost
     const { data, isLoading } = useGetProfile(profileId);
 
     const issuerName = isLCNetworkUrlIssuer ? data?.displayName : getIssuerNameNonBoost(boostVC);
-    const issuerImage = isLCNetworkUrlIssuer
-        ? data?.image || data?.profileImage
-        : getIssuerImageNonBoost(boostVC);
+    const issuerImage = isLCNetworkUrlIssuer ? data?.image : getIssuerImageNonBoost(boostVC);
     const dateValue = boostVC?.issuanceDate || boostVC?.validFrom;
     const issueDate = moment(dateValue).format('MMM DD, YYYY');
 
@@ -155,7 +154,7 @@ const ClaimFromDashboard: React.FC = () => {
 
     const { initWallet, storeAndAddVCToWallet } = useWallet();
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -289,11 +288,9 @@ const ClaimFromDashboard: React.FC = () => {
             setClaimingCredential(false);
             handleAfterCredentialClaim();
 
-            presentToast({
-                message: `Successfully claimed Credential!`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-success-toast',
+            presentToast(`Successfully claimed Credential!`, {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (e) {
             setClaimingCredential(false);
@@ -305,19 +302,17 @@ const ClaimFromDashboard: React.FC = () => {
              * So, it's more of a warning and we can warn them that it already exists, and proceed.
              **/
             if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast({
-                    message: `You have already claimed this credential.`,
-                    duration: 3000,
-                    cssClass: 'ion-toast-bottom-nav-offset',
+                presentToast(`You have already claimed this credential.`, {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
                 });
 
                 // We are assuming it is a success since user already has this credential.
                 handleAfterCredentialClaim();
             } else {
-                presentToast({
-                    message: `Oops, we couldn't claim the credential.`,
-                    duration: 3000,
-                    cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+                presentToast(`Oops, we couldn't claim the credential.`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             }
         }

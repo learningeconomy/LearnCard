@@ -1,13 +1,11 @@
 import React from 'react';
-
-import { boostCategoryOptions, BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
-
 import useTheme from '../../../theme/hooks/useTheme';
+import { boostCategoryMetadata, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 export type BoostSelectCategoryMenuProps = {
-    categories: any[];
-    onClick?: (type: BoostCategoryOptionsEnum) => void;
-    selectedBoostType: any;
+    categories: BoostCategoryOptionsEnum[];
+    onClick?: (category: BoostCategoryOptionsEnum) => void;
+    selectedBoostType: BoostCategoryOptionsEnum;
     closeModal: () => void;
 };
 
@@ -21,18 +19,19 @@ export const BoostSelectCategoryMenu: React.FC<BoostSelectCategoryMenuProps> = (
 
     return (
         <div className="p-[10px] flex flex-col">
-            {categories?.map(category => {
-                const { type } = category;
-                const isSelected = type === selectedBoostType;
+            {categories?.map(boostCategory => {
+                const isSelected = boostCategory === selectedBoostType;
 
-                const { title } = boostCategoryOptions[type];
+                const { title } = boostCategoryMetadata[boostCategory];
 
-                const { Icon, IconWithShape: ThemedIconWithShape } = getThemedCategoryIcons?.(type);
+                const { Icon, IconWithShape: ThemedIconWithShape } = getThemedCategoryIcons(
+                    boostCategoryMetadata[boostCategory].credentialType
+                );
 
                 const { IconWithShape: AllIconWithShape } =
-                    boostCategoryOptions?.[BoostCategoryOptionsEnum.all];
+                    boostCategoryMetadata[BoostCategoryOptionsEnum.all];
 
-                if (type === BoostCategoryOptionsEnum.family) return <></>;
+                if (boostCategory === BoostCategoryOptionsEnum.family) return <></>;
 
                 let icon = null;
 
@@ -42,16 +41,16 @@ export const BoostSelectCategoryMenu: React.FC<BoostSelectCategoryMenuProps> = (
                     icon = <Icon className="h-[40px] w-[40px]" />;
                 }
 
-                if (type === BoostCategoryOptionsEnum.all) {
+                if (boostCategory === BoostCategoryOptionsEnum.all) {
                     icon = <AllIconWithShape className="h-[40px] w-[40px]" />;
                 }
 
                 return (
                     <button
-                        key={type}
+                        key={boostCategory}
                         role="button"
                         onClick={() => {
-                            onClick?.(type);
+                            onClick?.(boostCategory);
                             closeModal?.();
                         }}
                         className={`flex items-center gap-[10px] rounded-[15px] p-[10px] ${

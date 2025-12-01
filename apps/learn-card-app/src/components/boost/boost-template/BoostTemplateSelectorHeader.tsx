@@ -1,17 +1,13 @@
 import React from 'react';
-import { BoostPageViewMode, ModalTypes, useModal, CredentialCategoryEnum } from 'learn-card-base';
+import { ModalTypes, useModal, boostCategoryMetadata } from 'learn-card-base';
 
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import BoostSelectCategoryMenu from '../boost-select-menu/BoostSelectCategoryMenu';
 
-import {
-    BoostCategoryOptionsEnum,
-    boostCategoryOptions,
-    boostVCTypeOptions,
-} from '../boost-options/boostOptions';
+import { availableBoostCategories } from '../boost-options/boostOptions';
 
 import type { SetState } from '@learncard/helpers';
-import { BoostPageViewModeType, BoostUserTypeEnum } from 'learn-card-base';
+import { BoostPageViewModeType, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
@@ -32,17 +28,12 @@ const BoostTemplateSelectorHeader: React.FC<BoostTemplateSelectorHeaderProps> = 
 
     const { newModal, closeModal } = useModal();
 
-    const { title, lightColor } = boostCategoryOptions?.[selectedCategory];
-    const { IconWithShape, Icon } = getThemedCategoryIcons?.(selectedCategory);
+    const { title, lightColor } = boostCategoryMetadata[selectedCategory];
+    const { IconWithShape, Icon } = getThemedCategoryIcons(
+        boostCategoryMetadata[selectedCategory].credentialType
+    );
 
-    const { IconWithShape: AllIconWithShape } =
-        boostCategoryOptions?.[BoostCategoryOptionsEnum.all];
-
-    const boostUserType = BoostUserTypeEnum.someone;
-    const boostDropdownCategoryOptions = boostVCTypeOptions[boostUserType];
-
-    const isCard = viewMode === BoostPageViewMode.Card;
-    const isList = viewMode === BoostPageViewMode.List;
+    const { IconWithShape: AllIconWithShape } = boostCategoryMetadata[BoostCategoryOptionsEnum.all];
 
     return (
         <div className="bg-white pl-[10px] pr-[20px] py-[10px] rounded-b-[20px] shadow-header">
@@ -55,7 +46,7 @@ const BoostTemplateSelectorHeader: React.FC<BoostTemplateSelectorHeaderProps> = 
                                 onClick={setSelectedCategory}
                                 closeModal={closeModal}
                                 selectedBoostType={selectedCategory}
-                                categories={boostDropdownCategoryOptions}
+                                categories={availableBoostCategories}
                             />,
                             {
                                 sectionClassName: '!max-w-[500px]',

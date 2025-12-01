@@ -27,12 +27,11 @@ import {
     BoostPageViewModeType,
     CredentialCategoryEnum,
     resetIonicModalBackground,
-    boostCategoryOptions,
+    categoryMetadata,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { VC, Boost } from '@learncard/types';
 import { closeAll } from 'apps/learn-card-app/src/helpers/uiHelpers';
-import { BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 
 type BoostManagedCardProps = {
@@ -120,26 +119,23 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
 
     const cardTitle = boost?.name || boostVC?.credentialSubject?.achievement?.name;
 
-    const type =
-        CATEGORY_TO_WALLET_SUBTYPE?.[categoryType] ?? CATEGORY_TO_WALLET_SUBTYPE.Achievement;
-
-    const { darkColor } = boostCategoryOptions?.[categoryType as any];
+    const type = categoryMetadata[categoryType].walletSubtype;
+    const { darkColor } = categoryMetadata[categoryType];
 
     const isAwardDisplay = boostVC?.display?.displayType === 'award';
 
     let draftButton;
     const bgColors = {
-        [CredentialCategoryEnum.learningHistory]: '#40CBA6',
-        [CredentialCategoryEnum.socialBadge]: '#3B82F6',
-        [CredentialCategoryEnum.achievement]: '#EC4899',
-        [CredentialCategoryEnum.accomplishment]: '#EAB308',
-        [CredentialCategoryEnum.workHistory]: '#71DAF5',
-        [CredentialCategoryEnum.accommodation]: '#8B5CF6',
-        [CredentialCategoryEnum.id]: '#3B82F6',
-        [CredentialCategoryEnum.membership]: '#2dd4bf',
+        [CredentialCategoryEnum.socialBadge]: '#3B82F6', // blue-500 - color
+        [CredentialCategoryEnum.achievement]: '#EC4899', // pink-500 - color
+        [CredentialCategoryEnum.learningHistory]: '#40CBA6', // emerald-500 - subColor
+        [CredentialCategoryEnum.accomplishment]: '#EAB308', // yellow-500 - none (color = yellow-400)
+        [CredentialCategoryEnum.accommodation]: '#8B5CF6', // violet-500 - subColor
+        [CredentialCategoryEnum.workHistory]: '#71DAF5', // cyan-500 - color
+        [CredentialCategoryEnum.id]: '#3B82F6', // blue-500 - none (color = blue-400)
     };
 
-    const buttonBgColor = bgColors[categoryType];
+    const buttonBgColor = bgColors[categoryType as keyof typeof bgColors];
 
     if (isDraft) {
         draftButton = (

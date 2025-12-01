@@ -12,12 +12,11 @@ import {
     getAchievementTypeFromCustomType,
     isCustomBoostType,
     replaceUnderscoresWithWhiteSpace,
-} from 'learn-card-base';
-import {
     BoostCategoryOptionsEnum,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-    boostCategoryOptions,
-} from './boost-options/boostOptions';
+    CredentialCategoryEnum,
+    getBoostMetadata,
+} from 'learn-card-base';
+import { CATEGORY_TO_SUBCATEGORY_LIST } from './boost-options/boostOptions';
 
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {
     const fallbackName = isCustomBoostType(state.basicInfo.achievementType ?? '')
@@ -362,14 +361,18 @@ export const getDefaultAchievementTypeImage = (
 
     const isDefaultCategoryImage: boolean = defaultCategoryThumbImages.includes(currentBadgeImage);
 
+    const boostMetadata = getBoostMetadata(
+        category as BoostCategoryOptionsEnum | CredentialCategoryEnum
+    );
+    const { CategoryImage } = boostMetadata || {};
+
     if (defaultStylePackEntry) return defaultStylePackEntry?.url;
-    else if (!defaultStylePackEntry && !isDefaultAchievementTypeImage)
-        return boostCategoryOptions[category]?.CategoryImage;
+    else if (!defaultStylePackEntry && !isDefaultAchievementTypeImage) return CategoryImage || '';
     // oxlint-disable-next-line no-dupe-else-if
     else if (!defaultStylePackEntry && !isDefaultCategoryImage && !isDefaultAchievementTypeImage)
         return currentBadgeImage;
 
-    return boostCategoryOptions[category]?.CategoryImage;
+    return CategoryImage || '';
 };
 
 export const getDefaultIDBackgroundImage = (category: string) => {
@@ -404,7 +407,7 @@ export const getDefaultBoostTitle = (category: string, achievementType: string) 
     return '';
 };
 
-export const getDefaultDisplayType = (category: string) => {
+export const getDefaultDisplayType = (category: BoostCategoryOptionsEnum) => {
     if (category === BoostCategoryOptionsEnum.accomplishment) {
         return BoostCMSAppearanceDisplayTypeEnum.Media;
     }

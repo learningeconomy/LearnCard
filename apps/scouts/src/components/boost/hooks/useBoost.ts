@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { LCNProfile } from '@learncard/types';
 
-import { useIonToast } from '@ionic/react';
+import { useToast, ToastTypeEnum } from 'learn-card-base';
 import useWallet from 'learn-card-base/hooks/useWallet';
 
 import {
@@ -18,7 +18,7 @@ import { LCNBoostStatusEnum } from '../boost';
 // oxlint-disable-next-line no-unused-vars
 const useBoost = (history: RouteComponentProps['history']) => {
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [loading, setIsLoading] = useState(false);
     const { mutate: addCredentialToWallet } = useAddCredentialToWallet();
 
@@ -39,20 +39,18 @@ const useBoost = (history: RouteComponentProps['history']) => {
                     })
                 ).then(() => {
                     setIsLoading(false);
-                    presentToast({
-                        message: `Boost issued successfully`,
-                        duration: 3000,
-                        cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                    presentToast(`Boost issued successfully`, {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
                     });
                 });
             }
         } catch (e) {
             console.log('error', e);
             setIsLoading(false);
-            presentToast({
-                message: `Error issuing boost`,
-                duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+            presentToast(`Error issuing boost`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -82,10 +80,9 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             console.log('error', e);
             setIsLoading(false);
-            presentToast({
-                message: `Error issuing boost`,
-                duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+            presentToast(`Error issuing boost`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -97,18 +94,16 @@ const useBoost = (history: RouteComponentProps['history']) => {
             const vcUri = await sendAndSaveBoostCredentialSelf(wallet, profileId, boostUri);
             await addCredentialToWallet({ uri: vcUri });
             setIsLoading(false);
-            presentToast({
-                message: `Boost issued successfully`,
-                duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+            presentToast(`Boost issued successfully`, {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (e) {
             console.log('error', e);
             setIsLoading(false);
-            presentToast({
-                message: `Error issuing boost`,
-                duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+            presentToast(`Error issuing boost`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -137,10 +132,9 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             console.log('error', e);
             setIsLoading(false);
-            presentToast({
-                message: `Error issuing boost`,
-                duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+            presentToast(`Error issuing boost`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

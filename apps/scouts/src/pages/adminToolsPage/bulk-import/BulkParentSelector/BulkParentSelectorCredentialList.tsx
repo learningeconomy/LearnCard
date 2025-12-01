@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 
-import { useModal } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { useGetPaginatedManagedBoosts } from 'learn-card-base';
 
@@ -8,7 +7,7 @@ import BulkParentSelectorCredentialItem from './BulkParentSelectorCredentialItem
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 
 import { ignoredCategories } from './BulkParentSelectorModal';
-import { BoostCategoryOptionsEnum } from '../../../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { Boost } from '@learncard/types';
 
 type BulkParentSelectorCredentialListProps = {

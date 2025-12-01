@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { VC } from '@learncard/types';
-import { AiSession } from 'learn-card-base';
+import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 
@@ -33,7 +33,11 @@ export const useGetLearningPathwaysForSession = (sessionUri?: string) => {
             const wallet = await initWallet();
             const learningPathways = await wallet.invoke.getBoostChildren(sessionUri!, {
                 numberOfGenerations: 1,
-                query: { category: 'learning-pathway' },
+                query: {
+                    category:
+                        categoryMetadata[CredentialCategoryEnum.aiPathway]
+                            .contractCredentialTypeOverride,
+                },
                 limit: 100,
             });
             return Promise.all(

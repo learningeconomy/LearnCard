@@ -7,9 +7,11 @@ import {
     redirectStore,
     useIsCurrentUserLCNUser,
     usePathQuery,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonGrid, useIonToast } from '@ionic/react';
+import { IonCol, IonRow, IonGrid } from '@ionic/react';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
 import { AddressBookContact } from '../addressBookHelpers';
 import ArrowRight from 'learn-card-base/svgs/ArrowRight';
@@ -60,7 +62,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const { mutate: acceptConnectionRequest, isLoading: acceptConnectionLoading } =
         useAcceptConnectionRequestMutation();
@@ -88,35 +90,18 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         try {
             const connectionReq = await wallet?.invoke?.connectWith(profileId);
             if (connectionReq) {
-                presentToast({
-                    message: 'Connection Request sent',
-                    duration: 5000,
-                    buttons: [
-                        {
-                            text: 'Dismiss',
-                            role: 'cancel',
-                        },
-                    ],
-                    position: 'top',
-                    cssClass: 'login-link-success-toast',
+                presentToast('Connection Request sent', {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
                 });
             }
             setLoading(false);
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
         } catch (err) {
-            presentToast({
-                // @ts-ignore
-                message: err?.message ?? 'An error ocurred, unable to send connection request.',
-                duration: 5000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+            presentToast(err?.message ?? 'An error ocurred, unable to send connection request.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
             // @ts-ignore
             if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
@@ -141,17 +126,9 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         try {
             const connectionReq = await wallet?.invoke?.connectWithInvite(profileId, challenge);
             if (connectionReq) {
-                presentToast({
-                    message: 'Connected Successfully!',
-                    duration: 5000,
-                    buttons: [
-                        {
-                            text: 'Dismiss',
-                            role: 'cancel',
-                        },
-                    ],
-                    position: 'top',
-                    cssClass: 'login-link-success-toast',
+                presentToast('Connected Successfully!', {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
                 });
             }
             setLoading(false);
@@ -161,18 +138,9 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
             let _errMessage = err?.message;
             if (_errMessage.includes('Challenge not found'))
                 _errMessage = 'Invite link has expired!';
-            presentToast({
-                // @ts-ignore
-                message: _errMessage ?? 'An error ocurred, unable to connect!',
-                duration: 5000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+            presentToast(_errMessage ?? 'An error ocurred, unable to connect!', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
             // @ts-ignore
             console.log('connection::error', err?.message);
@@ -211,36 +179,21 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         await updateCacheOnSuccessCallback(profileId);
                     },
                     onError(error, variables, context) {
-                        presentToast({
-                            // @ts-ignore
-                            message:
-                                error?.message || 'An error occurred, unable to accept request',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-warning-toast',
-                        });
+                        presentToast(
+                            error?.message || 'An error occurred, unable to accept request',
+                            {
+                                // @ts-ignore
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );
         } catch (err) {
-            presentToast({
-                // @ts-ignore
-                message: err?.message || 'An error occurred, unable to accept request',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+            presentToast(err?.message || 'An error occurred, unable to accept request', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

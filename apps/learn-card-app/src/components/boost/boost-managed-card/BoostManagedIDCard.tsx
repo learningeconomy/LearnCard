@@ -4,12 +4,9 @@ import Lottie from 'react-lottie-player';
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 
-import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
-
 import { VC, Boost } from '@learncard/types';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 
-import { useIonModal, IonList, IonItem } from '@ionic/react';
+import { IonList, IonItem } from '@ionic/react';
 import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../../boost/boostCMS/BoostPreview/BoostPreviewFooter';
@@ -32,6 +29,8 @@ import {
     useCountBoostRecipients,
     useModal,
     ModalTypes,
+    categoryMetadata,
+    CredentialCategory,
 } from 'learn-card-base';
 import { useGetBoostRecipients } from 'learn-card-base';
 import useShortBoost from '../hooks/useShortBoost';
@@ -52,7 +51,7 @@ type BoostManagedIDCardProps = {
     boost: Boost;
     boostVC?: VC;
     defaultImg: string;
-    categoryType: string;
+    categoryType: CredentialCategory;
     sizeLg?: number;
     sizeMd?: number;
     sizeSm?: number;
@@ -161,8 +160,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
 
     const formattedDisplayType = getAchievementTypeDisplayText(boost?.type, categoryType);
 
-    const type =
-        CATEGORY_TO_WALLET_SUBTYPE?.[categoryType] ?? CATEGORY_TO_WALLET_SUBTYPE.Achievement;
+    const type = categoryMetadata[categoryType].walletSubtype;
     const isID = categoryType === BoostCategoryOptionsEnum.id;
     const isMembership = categoryType === BoostCategoryOptionsEnum.membership;
 

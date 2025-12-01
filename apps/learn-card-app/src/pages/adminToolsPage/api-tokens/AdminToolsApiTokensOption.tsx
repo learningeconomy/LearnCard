@@ -104,7 +104,6 @@ const AdminToolsApiTokensOption: React.FC<{ option: AdminToolOption; showFooter?
                         setAuthGrants(authGrants?.filter(grant => grant.id !== id));
 
                         presentToast(`${name} API Token revoked successfully`, {
-                            className: ToastTypeEnum.CopySuccess,
                             hasDismissButton: true,
                         });
 
@@ -127,7 +126,6 @@ const AdminToolsApiTokensOption: React.FC<{ option: AdminToolOption; showFooter?
                     setAuthGrants(authGrants?.filter(grant => grant.id !== id));
 
                     presentToast(`${name} API Token deleted successfully`, {
-                        className: ToastTypeEnum.CopySuccess,
                         hasDismissButton: true,
                     });
 
@@ -138,13 +136,13 @@ const AdminToolsApiTokensOption: React.FC<{ option: AdminToolOption; showFooter?
             if (status === 'active') {
                 console.error(`Failed to revoke API Token`, err);
                 presentToast(`Unable to revoke API Token`, {
-                    className: ToastTypeEnum.CopyFail,
+                    type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
             } else if (status === 'revoked') {
                 console.error(`Failed to delete API Token`, err);
                 presentToast(`Unable to delete API Token`, {
-                    className: ToastTypeEnum.CopyFail,
+                    type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
             }

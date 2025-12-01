@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import AdminPageStructure from '../AdminPageStructure';
+import { Clipboard } from '@capacitor/clipboard';
+
 import { IonGrid, IonRow, IonCol, IonSpinner } from '@ionic/react';
+import AdminPageStructure from '../AdminPageStructure';
+import CreateAPITokenModal from './CreateAPITokenModal';
+import ThreeDots from 'learn-card-base/svgs/ThreeDots';
+import EditAPITokenModal from './EditAPITokenModal';
+
 import {
     ModalTypes,
     useModal,
@@ -9,10 +15,6 @@ import {
     ToastTypeEnum,
     useConfirmation,
 } from 'learn-card-base';
-import CreateAPITokenModal from './CreateAPITokenModal';
-import EditAPITokenModal from './EditAPITokenModal';
-import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-import { Clipboard } from '@capacitor/clipboard';
 
 type AuthGrant = {
     id: string;
@@ -68,14 +70,13 @@ const APITokensPage: React.FC = () => {
             await Clipboard.write({ string: token });
             closeModal();
             presentToast('API Token copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             console.error('Failed to copy to clipboard:', err);
             closeModal();
             presentToast('Unable to copy API Token to clipboard', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }
@@ -91,7 +92,6 @@ const APITokensPage: React.FC = () => {
                     onConfirm: async () => {
                         await wallet.invoke.revokeAuthGrant(id);
                         presentToast(`${name} API Token revoked successfully`, {
-                            className: ToastTypeEnum.CopySuccess,
                             hasDismissButton: true,
                         });
                         fetchAuthGrants();
@@ -107,7 +107,6 @@ const APITokensPage: React.FC = () => {
                     onConfirm: async () => {
                         await wallet.invoke.deleteAuthGrant(id);
                         presentToast(`${name} API Token deleted successfully`, {
-                            className: ToastTypeEnum.CopySuccess,
                             hasDismissButton: true,
                         });
                         fetchAuthGrants();
@@ -122,13 +121,13 @@ const APITokensPage: React.FC = () => {
             if (status === 'active') {
                 console.error(`Failed to revoke API Token`, err);
                 presentToast(`Unable to revoke API Token`, {
-                    className: ToastTypeEnum.CopyFail,
+                    type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
             } else if (status === 'revoked') {
                 console.error(`Failed to delete API Token`, err);
                 presentToast(`Unable to delete API Token`, {
-                    className: ToastTypeEnum.CopyFail,
+                    type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
             }

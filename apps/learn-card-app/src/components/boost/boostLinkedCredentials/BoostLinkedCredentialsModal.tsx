@@ -21,7 +21,7 @@ import {
     getCredentialSubject,
     getCredentialName,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { BoostCategoryOptionsEnum, boostCategoryOptions } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { Capacitor } from '@capacitor/core';
@@ -66,7 +66,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
 
     const achievementType = credential?.credentialSubject?.achievement?.achievementType;
 
-    const { subColor, color } = boostCategoryOptions?.[categoryType];
+    const { subColor, color } = boostCategoryMetadata[categoryType];
     const categoryColors = {
         [BoostCategoryOptionsEnum.learningHistory]: 'emerald-700',
         [BoostCategoryOptionsEnum.socialBadge]: 'blue-400',

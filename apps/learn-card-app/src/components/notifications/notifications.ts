@@ -10,8 +10,11 @@ import {
     SocialBadgesCategoryTypes,
 } from 'learn-card-base/components/IssueVC/constants';
 
-import { getCategoryTypeFromCustomType, isCustomBoostType } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from '../boost/boost-options/boostOptions';
+import {
+    BoostCategoryOptionsEnum,
+    getCategoryTypeFromCustomType,
+    isCustomBoostType,
+} from 'learn-card-base';
 
 export enum NotificationTypeEnum {
     Currency = 'currency',

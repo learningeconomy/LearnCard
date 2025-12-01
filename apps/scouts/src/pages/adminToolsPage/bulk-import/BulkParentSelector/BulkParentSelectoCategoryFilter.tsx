@@ -1,5 +1,5 @@
 import React from 'react';
-import { BoostUserTypeEnum, useModal } from 'learn-card-base';
+import { BoostUserTypeEnum, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
@@ -7,7 +7,6 @@ import {
     boostCategoryOptions,
     boostVCTypeOptions,
 } from '../../../../components/boost/boost-options/boostOptions';
-import { BoostCategoryOptionsEnum } from '../../../../components/boost/boost-options/boostOptions';
 
 export const BulkParentSelectorCategoryFilter: React.FC<{
     activeCategory?: BoostCategoryOptionsEnum;

@@ -2,12 +2,12 @@ import React, { useEffect } from 'react';
 import queryString from 'query-string';
 import { useLocation } from 'react-router-dom';
 
-import { IonPage, IonLoading, useIonToast } from '@ionic/react';
+import { IonPage, IonLoading } from '@ionic/react';
 import ConsentFlowSyncButton from '../../pages/consentFlow/ConsentFlowSyncButton';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 
-import { ProfilePicture } from 'learn-card-base';
+import { ProfilePicture, useToast, ToastTypeEnum } from 'learn-card-base';
 import { oauth2ReducerArgStore } from '../../pages/sync-my-school/ExternalAuthServiceProvider';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
 import { useRegistryEntryState } from '../../hooks/useRegistryEntryState';
@@ -28,16 +28,14 @@ const NewDataSource: React.FC<NewDataSourceProps> = ({ handleCloseModal, entryId
 
     const { data: state } = useRegistryEntryState(newEntry);
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     useEffect(() => {
         if (state === 'Synced') {
             handleCloseModal();
-            presentToast({
-                message: `Successfully synced Data Source!`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-success-toast',
+            presentToast(`Successfully synced Data Source!`, {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         }
     }, [state]);

@@ -1,4 +1,4 @@
-import { CredentialCategoryEnum } from 'learn-card-base/types/credentials';
+import { CredentialCategoryEnum } from 'learn-card-base';
 
 import { BadgeDisplayIcon } from '../svgs/displayTypes/BadgeDisplayIcon';
 import { CertificateDisplayIcon } from '../svgs/displayTypes/CertificateDisplayIcon';

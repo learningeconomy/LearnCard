@@ -59,7 +59,7 @@ export const ChatBotAppListItem: React.FC<{
                         presentToast(
                             `Failed to consent to LearnCard AI contract: ${error.message}`,
                             {
-                                className: ToastTypeEnum.Error,
+                                type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
                             }
                         );

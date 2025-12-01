@@ -99,12 +99,12 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                     );
                     presentToast(
                         `Deleted ${contractCredentials.length} credentials from contract ${contractDetails.name}`,
-                        { toastType: ToastTypeEnum.CopySuccess }
+                        { type: ToastTypeEnum.Success }
                     );
                 } catch (e) {
                     presentToast(
                         `Error while deleting credentials from contarct ${contractDetails.name}: ${e.message}`,
-                        { toastType: ToastTypeEnum.CopyFail }
+                        { type: ToastTypeEnum.Error }
                     );
                 }
             }
@@ -223,10 +223,11 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 <section className="w-full flex justify-between items-center">
                                     <label className="flex flex-col gap-1">
                                         <output
-                                            className={`font-semibold text-sm ${allReadToggle
+                                            className={`font-semibold text-sm ${
+                                                allReadToggle
                                                     ? 'text-emerald-700'
                                                     : 'text-grayscale-400'
-                                                }`}
+                                            }`}
                                         >
                                             {allReadToggle ? 'Active' : 'Off'}
                                         </output>
@@ -289,10 +290,11 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 <section className="w-full flex justify-between items-center">
                                     <label className="flex flex-col gap-1">
                                         <output
-                                            className={`font-semibold text-sm ${allWriteToggle
+                                            className={`font-semibold text-sm ${
+                                                allWriteToggle
                                                     ? 'text-emerald-700'
                                                     : 'text-grayscale-400'
-                                                }`}
+                                            }`}
                                         >
                                             {allWriteToggle ? 'Active' : 'Off'}
                                         </output>

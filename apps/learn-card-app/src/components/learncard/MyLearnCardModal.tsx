@@ -365,8 +365,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 connections={connections ?? []}
                 qrOnly
             />,
-            { sectionClassName: '!max-w-[400px]' },
-            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
     };
 

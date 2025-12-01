@@ -17,11 +17,11 @@ import {
     useDeviceTypeByWidth,
     useGetCredentialWithEdits,
     DisplayTypeEnum,
+    BoostCategoryOptionsEnum,
     PreviewTypeEnum,
 } from 'learn-card-base';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 
-import { BoostCategoryOptionsEnum } from '../../boost-options/boostOptions';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 export type IssueHistory = {

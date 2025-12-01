@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import useWallet from './useWallet';
-import { useIonAlert, useIonToast } from '@ionic/react';
+import { useIonAlert } from '@ionic/react';
 import { useAcceptCredentialMutation } from 'learn-card-base/react-query/mutations/mutations';
+import { useToast, ToastTypeEnum } from 'learn-card-base';
 
 export const useClaimCredential = (
     uri: string,
@@ -19,7 +20,7 @@ export const useClaimCredential = (
     const { addVCtoWallet } = useWallet();
 
     const [presentAlert, dismissAlert] = useIonAlert();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const handleClaimCredential = async () => {
         if (!acceptCredentialLoading && !isClaiming && !isClaimed) {
@@ -32,10 +33,9 @@ export const useClaimCredential = (
                             await addVCtoWallet({ uri });
 
                             setIsClaimed(true);
-                            presentToast({
-                                message: `Successfully claimed Credential!`,
-                                duration: 3000,
-                                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                            presentToast(`Successfully claimed Credential!`, {
+                                type: ToastTypeEnum.Success,
+                                hasDismissButton: true,
                             });
 
                             setIsClaiming(false);

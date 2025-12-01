@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Lottie from 'react-lottie-player';
-import { useGetBoosts, useGetResolvedBoosts, useModal } from 'learn-card-base';
+import {
+    useGetBoosts,
+    useGetResolvedBoosts,
+    useModal,
+    walletSubtypeToDefaultImageSrc,
+} from 'learn-card-base';
 import useBoostModal from '../hooks/useBoostModal';
 import BoostWizard from '../boost-options/boostVCTypeOptions/BoostWizard';
 
@@ -11,15 +16,14 @@ import CaretDown from 'learn-card-base/svgs/CaretDown';
 import BoostManagedCard from '../../boost/boost-managed-card/BoostManagedCard';
 import BoostManagedIDCard from '../boost-managed-card/BoostManagedIDCard';
 
-import {
-    BoostUserTypeEnum,
-    boostVCTypeOptions,
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../boost-options/boostOptions';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
+import { BoostUserTypeEnum, boostVCTypeOptions } from '../boost-options/boostOptions';
 import Wand from 'learn-card-base/svgs/Wand';
-import { ModalTypes } from 'learn-card-base';
+import {
+    ModalTypes,
+    categoryMetadata,
+    boostCategoryMetadata,
+    BoostCategoryOptionsEnum,
+} from 'learn-card-base';
 
 import HourGlass from '../../../assets/lotties/hourglass.json';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
@@ -75,26 +79,20 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
 
     const boostUserType = BoostUserTypeEnum.someone;
 
-    const boostDropdownCategoryOptions = boostVCTypeOptions[boostUserType];
+    const boostDropdownCategoryOptions = boostVCTypeOptions[boostUserType].map(
+        options => options.type
+    );
 
     let color, IconComponent, title;
 
-    ({ color, IconComponent, title } = boostCategoryOptions[selectedVCType]);
-
-    const CATEGORY_TO_WALLET_SUBTYPE = {
-        [BoostCategoryOptionsEnum.learningHistory]: WALLET_SUBTYPES.LEARNING_HISTORY,
-        [BoostCategoryOptionsEnum.workHistory]: WALLET_SUBTYPES.JOB_HISTORY,
-        [BoostCategoryOptionsEnum.id]: WALLET_SUBTYPES.IDS,
-        [BoostCategoryOptionsEnum.skill]: WALLET_SUBTYPES.SKILLS,
-        [BoostCategoryOptionsEnum.achievement]: WALLET_SUBTYPES.ACHIEVEMENTS,
-        [BoostCategoryOptionsEnum.socialBadge]: WALLET_SUBTYPES.SOCIAL_BADGES,
-        [BoostCategoryOptionsEnum.membership]: WALLET_SUBTYPES.MEMBERSHIP,
-    };
+    ({ color, IconComponent, title } = boostCategoryMetadata[selectedVCType]);
 
     const { isFetching: fetchingAllBoosts } = useGetBoosts();
 
     const { data: boostUris, isLoading: boostUrisLoading } =
-        selectedVCType !== 'All' ? useGetBoosts(selectedVCType) : useGetBoosts();
+        selectedVCType !== 'All'
+            ? useGetBoosts(boostCategoryMetadata[selectedVCType].credentialType)
+            : useGetBoosts();
 
     const filteredBoostUris = boostUris?.filter(boost => boost.category !== 'Family');
     const boostUrisToUse = selectedVCType === 'All' ? filteredBoostUris ?? [] : boostUris ?? [];
@@ -105,8 +103,9 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
 
     const boostsLoading = boostUrisLoading || fetchingAllBoosts || boostsResolvedLoading;
 
-    const currentWalletSubtype = CATEGORY_TO_WALLET_SUBTYPE[selectedVCType];
-    const imgSrc = TYPE_TO_IMG_SRC[currentWalletSubtype];
+    const currentWalletSubtype =
+        categoryMetadata[boostCategoryMetadata[selectedVCType].credentialType].walletSubtype;
+    const imgSrc = walletSubtypeToDefaultImageSrc(currentWalletSubtype);
     const renderBoostsList = boosts?.map((boost, index) => {
         const isID = boost?.boost?.category === BoostCategoryOptionsEnum.id;
         const isMembership = boost?.boost?.category === BoostCategoryOptionsEnum.membership;

@@ -20,6 +20,8 @@ import {
     useModal,
     useWallet,
     useGetVCInfo,
+    CredentialCategory,
+    categoryMetadata,
 } from 'learn-card-base';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
@@ -27,17 +29,14 @@ import IdDisplayContainer from 'apps/learn-card-app/src/pages/ids/IdDisplayConta
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import CredentialSubjectDisplay from 'learn-card-base/components/CredentialSubjectDisplay/CredentialSubjectDisplay';
 import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
-import ViewIdModal from 'apps/learn-card-app/src/pages/ids/view-id/ViewIdModal';
 
 import {
-    CATEGORY_TO_WALLET_SUBTYPE,
     getCredentialSubject,
     getUrlFromImage,
     getImageUrlFromCredential,
     getCredentialName,
     unwrapBoostCredential,
     isBoostCredential,
-    getIssuerNameNonBoost,
     getAchievementTypeDisplayText,
 } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -59,7 +58,7 @@ type BoostEarnedIDCardProps = {
     onCheckMarkClick?: () => void;
     selectAll?: any;
     initialCheckmarkState?: boolean;
-    categoryType: string;
+    categoryType: CredentialCategory;
     useWrapper?: boolean;
     showChecked?: boolean;
     boostPageViewMode?: BoostPageViewModeType;
@@ -126,8 +125,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         menuType: BoostMenuType.earned,
     });
 
-    const type =
-        CATEGORY_TO_WALLET_SUBTYPE?.[categoryType] ?? CATEGORY_TO_WALLET_SUBTYPE.Achievement;
+    const type = categoryMetadata[categoryType].walletSubtype;
     const isID = categoryType === BoostCategoryOptionsEnum.id;
     const isMembership = categoryType === BoostCategoryOptionsEnum.membership;
 

@@ -3,7 +3,7 @@ import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonCol, IonContent, IonGrid, IonPage, IonRow, useIonToast } from '@ionic/react';
+import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
 import BoostAddressBook, {
     BoostAddressBookEditMode,
@@ -39,9 +39,8 @@ import {
 } from '../boost';
 import {
     BOOST_CATEGORY_TO_WALLET_ROUTE,
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
     BoostUserTypeEnum,
+    boostCategoryOptions,
 } from '../boost-options/boostOptions';
 import {
     addAdmin,
@@ -72,6 +71,9 @@ import {
     useGetSearchProfiles,
     usePathQuery,
     useGetBoostPermissions,
+    BoostCategoryOptionsEnum,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { VC } from '@learncard/types';
@@ -108,9 +110,10 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const { data: profile } = useGetProfile();
-    const _boostCategoryType = boostCategoryType || query.get('boostCategoryType');
+    const _boostCategoryType =
+        boostCategoryType || (query.get('boostCategoryType') as BoostCategoryOptionsEnum);
     const _boostSubCategoryType = boostSubCategoryType || query.get('boostSubCategoryType');
     const _boostUserType = boostUserType || query.get('boostUserType');
     const _boostUri = boostUri || query.get('uri');
@@ -456,12 +459,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
             if (updatedBoost) {
                 setIsSaveLoading(false);
-                presentToast({
-                    message: `Boost saved successfully`,
-                    duration: 3000,
-                    cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
-                    buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                    swipeGesture: 'vertical',
+                presentToast('Boost saved successfully', {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
                 });
 
                 logAnalyticsEvent('boostCMS_publish_draft', {
@@ -491,12 +491,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         } catch (e) {
             setIsSaveLoading(false);
             console.log('error::savingBoost', e);
-            presentToast({
-                message: `Unable to save boost`,
-                duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+            presentToast('Unable to save boost', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -530,12 +527,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             } catch (e) {
                 setIsPublishLoading(false);
                 console.log('error::boosting::someone', e);
-                presentToast({
-                    message: `Error issuing boost`,
-                    duration: 3000,
-                    cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                    buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                    swipeGesture: 'vertical',
+                presentToast('Error issuing boost', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             }
         }
@@ -578,12 +572,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast({
-                        message: `Boost issued successfully`,
-                        duration: 3000,
-                        cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        swipeGesture: 'vertical',
+                    presentToast('Boost issued successfully', {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
                     });
                     handleNextStep();
                 }
@@ -592,12 +583,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
                 if (_boostUri) {
                     setIsSaveLoading(false);
-                    presentToast({
-                        message: `Boost saved successfully`,
-                        duration: 3000,
-                        cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        swipeGesture: 'vertical',
+                    presentToast('Boost saved successfully', {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
                     });
 
                     if (isModal) {
@@ -616,12 +604,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         } catch (e) {
             setIsLoading(false);
             console.log('error::boosting::someone', e);
-            presentToast({
-                message: `Error issuing boost`,
-                duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+            presentToast('Error issuing boost', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -639,7 +624,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             : { sectionClassName: 'bg-white' };
 
         const categoryTypeEnum =
-            (state?.basicInfo?.type as any) || boostCategoryOptions?.achievement?.value;
+            (state?.basicInfo?.type as any) || BoostCategoryOptionsEnum.achievement;
 
         const previewCredential = getBoostCredentialPreview(state) as unknown as VC;
 

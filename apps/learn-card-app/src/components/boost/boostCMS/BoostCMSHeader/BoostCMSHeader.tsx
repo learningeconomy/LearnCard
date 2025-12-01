@@ -2,20 +2,16 @@ import React, { useEffect } from 'react';
 
 import { IonHeader, IonToolbar, IonRow, IonCol } from '@ionic/react';
 
-import {
-    BoostUserTypeEnum,
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../boost-options/boostOptions';
+import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
 import { BoostCMSStepsEnum } from '../../boost';
-import { useQuery } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 
 type BoostCMSHeaderProps = {
     boostUserType: BoostUserTypeEnum | string | null;
-    selectedVCType: BoostCategoryOptionsEnum | string;
+    selectedVCType: BoostCategoryOptionsEnum;
     currentStep: BoostCMSStepsEnum;
     handleNextStep: () => void;
     handlePrevStep: () => void;
@@ -39,8 +35,8 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
     issueToLength,
 }) => {
     const { getThemedCategoryIcons } = useTheme();
-    const { Icon } = getThemedCategoryIcons(selectedVCType);
-    const { title } = boostCategoryOptions[selectedVCType];
+    const { Icon } = getThemedCategoryIcons(boostCategoryMetadata[selectedVCType].credentialType);
+    const { title } = boostCategoryMetadata[selectedVCType];
     let headerTitle: React.ReactNode | string = '';
 
     if (currentStep === BoostCMSStepsEnum.create) {

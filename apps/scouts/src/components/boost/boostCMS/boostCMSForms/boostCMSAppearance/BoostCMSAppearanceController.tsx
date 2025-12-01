@@ -2,10 +2,9 @@ import React from 'react';
 
 import { useIonModal } from '@ionic/react';
 import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
     BoostUserTypeEnum,
     CATEGORY_TO_SUBCATEGORY_LIST,
+    boostCategoryOptions,
 } from '../../../boost-options/boostOptions';
 
 import Ribbon from 'learn-card-base/svgs/Ribbon';
@@ -19,6 +18,7 @@ import {
     getAchievementTypeFromCustomType,
     isCustomBoostType,
     replaceUnderscoresWithWhiteSpace,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 
 type BoostCMSActiveAppearanceControllerProps = {
@@ -47,7 +47,8 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
     showEditButton = true,
     customHeaderClass = '',
 }) => {
-    const { color, subColor, IconComponent } = boostCategoryOptions[state?.basicInfo?.type];
+    const { color, subColor, IconComponent } =
+        boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     let badgeCircleText = '';
 
     if (isCustomBoostType(state?.basicInfo?.achievementType)) {
@@ -109,8 +110,9 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
                                 showBackdrop: false,
                             })
                         }
-                        className={`absolute bg-white h-12 w-12 z-10 ${isMeritBadge ? 'right-[-32px]' : 'right-[-38px]'
-                            } rounded-tr-full rounded-br-full flex items-center justify-center modal-btn-desktop`}
+                        className={`absolute bg-white h-12 w-12 z-10 ${
+                            isMeritBadge ? 'right-[-32px]' : 'right-[-38px]'
+                        } rounded-tr-full rounded-br-full flex items-center justify-center modal-btn-desktop`}
                     >
                         <Pencil className="text-grayscale-800 w-[30px]" />
                     </button>
@@ -120,8 +122,9 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
                         onClick={() => {
                             presentSheetModal();
                         }}
-                        className={`absolute bg-white h-12 w-12 z-10 ${isMeritBadge ? 'right-[-32px]' : 'right-[-38px]'
-                            } rounded-tr-full rounded-br-full flex items-center justify-center modal-btn-mobile`}
+                        className={`absolute bg-white h-12 w-12 z-10 ${
+                            isMeritBadge ? 'right-[-32px]' : 'right-[-38px]'
+                        } rounded-tr-full rounded-br-full flex items-center justify-center modal-btn-mobile`}
                     >
                         <Pencil className="text-grayscale-800 w-[30px]" />
                     </button>

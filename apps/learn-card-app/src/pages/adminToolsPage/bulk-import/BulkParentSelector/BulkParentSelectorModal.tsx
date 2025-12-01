@@ -3,15 +3,15 @@ import React, { useEffect, useState } from 'react';
 import { IonInput } from '@ionic/react';
 import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import BulkImportWithPlusIcon from 'learn-card-base/svgs/BulkImportWithPlusIcon';
 import BulkParentSelectorCredentialList from './BulkParentSelectorCredentialList';
 import BulkParentSelectorCategoryFilter from './BulkParentSelectoCategoryFilter';
 
-import { ModalTypes, useModal } from 'learn-card-base';
 import {
+    ModalTypes,
+    boostCategoryMetadata,
     BoostCategoryOptionsEnum,
-    boostCategoryOptions,
-} from '../../../../components/boost/boost-options/boostOptions';
+    useModal,
+} from 'learn-card-base';
 
 type ViewAllManagedBoostsProps = {
     parentUri?: string;
@@ -41,12 +41,7 @@ const BulkParentSelectorModal: React.FC<ViewAllManagedBoostsProps> = ({
     const [categoryTitle, setCategoryTitle] = useState<string>('All');
 
     useEffect(() => {
-        if (activeCategory === BoostCategoryOptionsEnum.all) {
-            setCategoryTitle('All');
-            return;
-        } else if (boostCategoryOptions[activeCategory]) {
-            setCategoryTitle(boostCategoryOptions[activeCategory].title);
-        }
+        setCategoryTitle(boostCategoryMetadata[activeCategory].title);
     }, [activeCategory]);
 
     const handleCategoryFilter = () => {
@@ -69,7 +64,7 @@ const BulkParentSelectorModal: React.FC<ViewAllManagedBoostsProps> = ({
         });
     }
 
-    const { IconWithShape, AltIconWithShapeForColorBg } = boostCategoryOptions[activeCategory];
+    const { IconWithShape, AltIconWithShapeForColorBg } = boostCategoryMetadata[activeCategory];
 
     return (
         <div className="flex flex-col bg-grayscale-100 h-full relative">

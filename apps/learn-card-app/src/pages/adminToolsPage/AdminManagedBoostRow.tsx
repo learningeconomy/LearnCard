@@ -8,12 +8,9 @@ import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoa
 import { Checkmark } from '@learncard/react';
 import { Boost } from '@learncard/types';
 
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../components/boost/boost-options/boostOptions';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { LCNProfile } from '@learncard/types';
+import { boostCategoryMetadata, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 type AdminManagedBoostRowProps = {
     boost?: Boost;
@@ -62,7 +59,7 @@ const AdminManagedBoostRow: React.FC<AdminManagedBoostRowProps> = ({
     });
 
     category = category || getDefaultCategoryForCredential(cred);
-    const { subColor } = boostCategoryOptions[category];
+    const { subColor } = boostCategoryMetadata[category as BoostCategoryOptionsEnum];
 
     if (!cred?.name) {
         return <BoostSkeleton containerClassName="w-full h-[46px] rounded-[10px]" />;

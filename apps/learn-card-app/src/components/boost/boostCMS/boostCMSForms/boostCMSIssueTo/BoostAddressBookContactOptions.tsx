@@ -15,7 +15,6 @@ import {
     IonContent,
     IonPage,
     useIonModal,
-    useIonToast,
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
@@ -31,7 +30,7 @@ import {
     BoostAddressBookViewMode,
 } from './BoostAddressBook';
 
-import { ModalTypes, QRCodeScannerStore, useModal } from 'learn-card-base';
+import { ModalTypes, QRCodeScannerStore, useModal, useToast, ToastTypeEnum } from 'learn-card-base';
 import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
 
 import { useWallet } from 'learn-card-base';
@@ -80,7 +79,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     const { newModal, closeModal, closeAllModals } = useModal();
     const { initWallet } = useWallet();
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const [_issueTo, _setIssueTo] = useState<BoostCMSIssueTo[]>(state?.[collectionPropName]);
     const [walletDid, setWalletDid] = useState<string>('');
@@ -197,30 +196,14 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
             await Clipboard.write({
                 string: `https://learncard.app/connect?did=${walletDid}`,
             });
-            presentToast({
-                message: 'Contact link copied to clipboard',
+            presentToast('Contact link copied to clipboard', {
                 duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+                type: ToastTypeEnum.Success,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy Contact link to clipboard',
+            presentToast('Unable to copy Contact link to clipboard', {
                 duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+                type: ToastTypeEnum.Error,
             });
         }
     };

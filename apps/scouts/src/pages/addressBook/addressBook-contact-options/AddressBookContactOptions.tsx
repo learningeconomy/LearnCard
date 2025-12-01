@@ -4,14 +4,14 @@ import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
-import { IonCol, IonPage, useIonModal, useIonToast } from '@ionic/react';
+import { IonCol, IonPage, useIonModal } from '@ionic/react';
 import Camera from 'learn-card-base/svgs/Camera';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import AddressBookQRCode from '../addressBook-qrcode/AddressBookQRCode';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import ScannerPermissionsPrompt from '../../../components/scanner-permissions-prompt/ScannerPermissionsPrompt';
 
-import { QRCodeScannerStore } from 'learn-card-base';
+import { QRCodeScannerStore, useToast, ToastTypeEnum } from 'learn-card-base';
 
 import { useWallet } from 'learn-card-base';
 import Search from 'learn-card-base/svgs/Search';
@@ -23,7 +23,7 @@ const AddressBookContactOptions: React.FC<{
     handleShowSearch?: () => void;
 }> = ({ handleCloseModal, showSearch = true, handleShowSearch }) => {
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const [walletDid, setWalletDid] = useState<string>('');
 
@@ -97,30 +97,14 @@ const AddressBookContactOptions: React.FC<{
             await Clipboard.write({
                 string: `https://pass.scout.org/connect?did=${walletDid}`,
             });
-            presentToast({
-                message: 'Contact link copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Contact link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy Contact link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy Contact link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

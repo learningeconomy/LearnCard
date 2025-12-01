@@ -2,10 +2,10 @@ import React from 'react';
 
 import { IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
 
 import CategoryDescriptor from '../../components/category-descriptor/CategoryDescriptor';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
+import { walletSubtypeToDefaultImageSrc, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 const CategoryDescriptorModal: React.FC<{
     handleCloseModal: () => void;
@@ -17,47 +17,48 @@ const CategoryDescriptorModal: React.FC<{
 
         switch (title) {
             case 'Studies':
-                imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.LEARNING_HISTORY];
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.learningHistory);
                 category = BoostCategoryOptionsEnum.learningHistory;
                 break;
 
             case 'Boosts':
-                imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.SOCIAL_BADGES];
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.socialBadges);
                 category = BoostCategoryOptionsEnum.socialBadge;
                 break;
 
             case 'Achievements':
-                imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.ACHIEVEMENTS];
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.achievements);
                 category = BoostCategoryOptionsEnum.achievement;
                 break;
 
             case 'Portfolio':
-                imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.ACCOMPLISHMENTS];
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.accomplishments);
                 category = BoostCategoryOptionsEnum.accomplishment;
                 break;
 
             case 'Skills':
-                imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.SKILLS];
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills);
                 category = BoostCategoryOptionsEnum.skill;
                 break;
 
             case 'Experiences':
-                imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.JOB_HISTORY];
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.jobHistory);
                 category = BoostCategoryOptionsEnum.workHistory;
                 break;
 
             case 'Assistance':
-                imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.ACCOMMODATIONS];
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.accommodations);
                 category = BoostCategoryOptionsEnum.accommodation;
                 break;
 
             case 'IDs':
-                imgSrc = 'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag';
+                imgSrc = 'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag'; // not totally sure why this one's different. Leaving it.
+                // imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.ids)
                 category = BoostCategoryOptionsEnum.id;
                 break;
 
             case 'Families':
-                imgSrc = 'https://cdn.filestackcontent.com/yfeWgdSWQ7Ckl4sVuGLc';
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.families);
                 category = BoostCategoryOptionsEnum.family;
                 break;
 

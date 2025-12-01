@@ -6,7 +6,7 @@ import BoostListItem from '../boost/BoostListItem';
 import { VC } from '@learncard/types';
 import { CredentialCategory } from 'learn-card-base/types/credentials';
 import { WalletCategoryTypes } from '../IssueVC/types';
-import { BoostCategoryOptionsEnum } from '../boost/boostOptions/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import {
     BoostPageViewMode,
     BoostPageViewModeType,
@@ -52,7 +52,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     thumbImgSrc,
     customThumbClass = '',
     customHeaderClass = '',
-    type = BoostCategoryOptionsEnum.achievement,
+    type = WalletCategoryTypes.achievements,
     categoryType,
     className,
     onCheckClick,
@@ -113,7 +113,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             bgImgSrc={bgImgSrc}
             customThumbComponent={customThumbComponent}
             title={title}
-            type={type}
+            type={type ?? WalletCategoryTypes.achievements}
             boostPageViewMode={boostPageViewMode}
             customTitle={customTitle}
             customDateDisplay={customDateDisplay}

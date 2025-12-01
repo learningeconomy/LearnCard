@@ -14,7 +14,7 @@ import {
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
-import { useIonToast } from '@ionic/react';
+import { useToast, ToastTypeEnum } from 'learn-card-base';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 
 import web3AuthStore from 'learn-card-base/stores/web3AuthStore';
@@ -210,7 +210,7 @@ export const WEB3AUTH_WHITE_LABEL_CONFIG: Partial<Record<BrandingEnum, Web3AuthW
 
 export const useWeb3Auth = (onLogin?: () => Promise<any>) => {
     const isLoggedIn = useIsLoggedIn();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const { setCurrentUser, clearDB } = useSQLiteStorage();
     const { initWallet } = useWallet();
     const initLoading = useInitLoading();
@@ -301,19 +301,13 @@ export const useWeb3Auth = (onLogin?: () => Promise<any>) => {
         web3auth.on(ADAPTER_EVENTS.ERRORED, (error: unknown) => {
             const msg = String(error);
             if (msg.includes('Unable to open window')) {
-                presentToast({
-                    message:
-                        'Login failed because your browser has blocked the popup window. Please enable popups to login to this site.',
-                    duration: 15000,
-                    buttons: [
-                        {
-                            text: 'Dismiss',
-                            role: 'cancel',
-                        },
-                    ],
-                    position: 'top',
-                    cssClass: 'login-link-warning-toast',
-                });
+                presentToast(
+                    'Login failed because your browser has blocked the popup window. Please enable popups to login to this site.',
+                    {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    }
+                );
             }
             setInitLoading(false);
             throw new Error(msg);

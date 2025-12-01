@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-import { ModalTypes, useModal } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, ModalTypes, getBoostMetadata, useModal } from 'learn-card-base';
 import { IonRow } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BadgeDisplayTypeIcon from 'learn-card-base/assets/images/badge-display-type.svg';
@@ -10,7 +10,6 @@ import IDDisplayTypeIcon from 'learn-card-base/assets/images/id-display-type.svg
 import AwardDisplayTypeIcon from 'learn-card-base/assets/images/award-display-type.svg';
 import MediaDisplayTypeIcon from 'learn-card-base/assets/images/media-display-type.svg';
 
-import { boostCategoryOptions } from '../../../boost-options/boostOptions';
 import { BoostCMSAppearanceDisplayTypeEnum, BoostCMSState } from '../../../boost';
 import BoostCMSDisplayTypeSelectorModal from './BoostCMSDisplayTypeSelectorModal';
 
@@ -45,7 +44,8 @@ const BoostCMSDisplayTypeSelector: React.FC<BoostCMSDisplayTypeSelectorProps> = 
     // Default to 'certificate' if displayType is not set
     const displayType = state?.appearance?.displayType || BoostCMSAppearanceDisplayTypeEnum.Badge;
 
-    const { color: _color, IconComponent: Icon } = boostCategoryOptions[state?.basicInfo?.type];
+    const { color: _color } =
+        getBoostMetadata(state?.basicInfo?.type as BoostCategoryOptionsEnum) || {};
     const displayTypeText = `${displayType} Display`;
 
     let displayTypeIcon = null;

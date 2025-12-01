@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import moment from 'moment';
 
-import { IonPage, IonSpinner, useIonToast, useIonModal, useIonAlert, IonRow } from '@ionic/react';
+import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -28,6 +28,8 @@ import {
     useDeviceTypeByWidth,
     useModal,
     ModalTypes,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
@@ -139,7 +141,7 @@ const ClaimBoost: React.FC<{
     const [boost, setBoost] = useState<VC | null>(null);
     const [isFront, setIsFront] = useState(true);
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const { credentialWithEdits } = useGetCredentialWithEdits(boost, boostUri);
 
@@ -226,20 +228,16 @@ const ClaimBoost: React.FC<{
                 history?.push('/');
             }
 
-            presentToast({
-                message: `Successfully claimed Credential!`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-success-toast',
+            presentToast(`Successfully claimed Credential!`, {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (e) {
             setIsClaimLoading(false);
 
-            presentToast({
-                message: `Unable to claim Credential`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+            presentToast(`Unable to claim Credential`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
 
             presentAlert({
@@ -278,20 +276,16 @@ const ClaimBoost: React.FC<{
 
             history?.push('/');
 
-            presentToast({
-                message: `Successfully claimed Credential!`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-success-toast',
+            presentToast(`Successfully claimed Credential!`, {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (e) {
             setIsClaimLoading(false);
 
-            presentToast({
-                message: `Unable to claim Credential`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+            presentToast(`Unable to claim Credential`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

@@ -164,6 +164,9 @@ importers:
 
   apps/learn-card-app:
     dependencies:
+      '@capacitor-community/media':
+        specifier: '7'
+        version: 7.0.1(@capacitor/core@7.4.2)
       '@capacitor-community/sqlite':
         specifier: ^7.0.1
         version: 7.0.2(@capacitor/core@7.4.2)
@@ -194,6 +197,12 @@ importers:
       '@capacitor/core':
         specifier: 7.4.2
         version: 7.4.2
+      '@capacitor/file-transfer':
+        specifier: ^1.0.6
+        version: 1.0.6(@capacitor/core@7.4.2)
+      '@capacitor/filesystem':
+        specifier: ^7.1.4
+        version: 7.1.5(@capacitor/core@7.4.2)
       '@capacitor/haptics':
         specifier: ^7.0.2
         version: 7.0.2(@capacitor/core@7.4.2)
@@ -368,12 +377,15 @@ importers:
       papaparse:
         specifier: ^5.5.1
         version: 5.5.3
+      pdf-lib:
+        specifier: ^1.17.1
+        version: 1.17.1
       pretty-bytes:
         specifier: ^6.1.1
         version: 6.1.1
       qrcode.react:
-        specifier: ^3.2.0
-        version: 3.2.0(react@18.3.1)
+        specifier: ^4.2.0
+        version: 4.2.0(react@18.3.1)
       query-string:
         specifier: ^8.2.0
         version: 8.2.0
@@ -1210,6 +1222,12 @@ importers:
       moment:
         specifier: ^2.29.4
         version: 2.30.1
+      moment-timezone:
+        specifier: ^0.5.40
+        version: 0.5.48
+      motion:
+        specifier: ^12.23.24
+        version: 12.23.25(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       nanostores:
         specifier: ^0.11.3
         version: 0.11.4
@@ -5100,6 +5118,11 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
+  '@capacitor-community/media@7.0.1':
+    resolution: {integrity: sha512-SO9cAOakGVKLPS9HGaDU2JoDwskZrBEo7mFCy1L+pjI7qXQhvMseTb24i2BzIiKbJNfYnAcotcDwXLZNmi2pkw==}
+    peerDependencies:
+      '@capacitor/core': ^6.0.0
+
   '@capacitor-community/sqlite@7.0.2':
     resolution: {integrity: sha512-TkxvuLgVCSmme/NSUEE2xopTVMwMqdT6+zH9pH8g76DMdi2z+ZsPEATQnJchGw4YAhhiQ8vTYxIP9se3/zkhGg==}
     engines: {node: '>=16.0.0'}
@@ -5172,6 +5195,16 @@ packages:
   '@capacitor/core@7.4.2':
     resolution: {integrity: sha512-akCf9A1FUR8AWTtmgGjHEq6LmGsjA2U7igaJ9PxiCBfyxKqlDbuGHrlNdpvHEjV5tUPH3KYtkze6gtFcNKPU9A==}
 
+  '@capacitor/file-transfer@1.0.6':
+    resolution: {integrity: sha512-R4aGcolmn77hfGPA3+RGhH9YBX1xTR7H43WOcoQx56whWnIUTlQ3B6SQkd8912JPFHvnPhOJ4lC0yNCDY1TjrQ==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
+  '@capacitor/filesystem@7.1.5':
+    resolution: {integrity: sha512-ZzJxpEh6SwKhF1cqSVmIAkEyNG3ozf3Lwg8rUNltX6CGdd94UJV45asqmFoP6X6aT5eVu7FPjPU5SHxi6XOFgA==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
   '@capacitor/haptics@7.0.2':
     resolution: {integrity: sha512-vqfeEM6s2zMgLjpITCTUIy7P/hadq/Gr5E/RClFgMJPB41Y5FsqOKD+j85/uwh8N2cf/aWaPeXUmjnTzJbEB2g==}
     peerDependencies:
@@ -5216,6 +5249,9 @@ packages:
     resolution: {integrity: sha512-JyRpVnKwHij9hgPWolF6PK+HT3e2HSPjN11/h2OmKxq8GAdPGARFLv+97eZl0pvuvm0Kka/LpiLb5whXISBg7Q==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
+
+  '@capacitor/synapse@1.0.4':
+    resolution: {integrity: sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw==}
 
   '@capawesome/capacitor-badge@7.0.1':
     resolution: {integrity: sha512-jhVieRRVLgGO1NU7PW8uWZmf3WD4IsYUlkrJ82KuoRgLFx1tbJGwHU1ro0sUJmEwfLO9vldhBnJJ/J5nHrjbQQ==}
@@ -8698,6 +8734,12 @@ packages:
   '@paulmillr/qr@0.2.1':
     resolution: {integrity: sha512-IHnV6A+zxU7XwmKFinmYjUcwlyK9+xkG3/s9KcQhI9BjQKycrJ1JRO+FbNYPwZiPKW3je/DR0k7w8/gLa5eaxQ==}
     deprecated: 'The package is now available as "qr": npm install qr'
+
+  '@pdf-lib/standard-fonts@1.0.0':
+    resolution: {integrity: sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==}
+
+  '@pdf-lib/upng@1.0.1':
+    resolution: {integrity: sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ==}
 
   '@peculiar/asn1-schema@2.6.0':
     resolution: {integrity: sha512-xNLYLBFTBKkCzEZIw842BxytQQATQv+lDTCEMZ8C196iJcJJMBUZxrhSTxLaohMyKK8QlzRNTRkUmanucnDSqg==}
@@ -16553,6 +16595,20 @@ packages:
     resolution: {integrity: sha512-GMBAbW9antB8iZRHLoGw0b3HANt57diZYFO/HL1JGIC1MjKrdmhxvrJbupnVvpys0zsz7yBApXdQyfepKly2kA==}
     engines: {node: '>=0.10.0'}
 
+  framer-motion@12.23.25:
+    resolution: {integrity: sha512-gUHGl2e4VG66jOcH0JHhuJQr6ZNwrET9g31ZG0xdXzT0CznP7fHX4P8Bcvuc4MiUB90ysNnWX2ukHRIggkl6hQ==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
   freeport-async@2.0.0:
     resolution: {integrity: sha512-K7od3Uw45AJg00XUmy15+Hae2hOcgKcmN3/EF6Y7i01O0gaqiRx8sUSpsb9+BRNL8RPBrhzPsVfy8q9ADlJuWQ==}
     engines: {node: '>=8'}
@@ -20217,6 +20273,26 @@ packages:
       socks:
         optional: true
 
+  motion-dom@12.23.23:
+    resolution: {integrity: sha512-n5yolOs0TQQBRUFImrRfs/+6X4p3Q4n1dUEqt/H58Vx7OW6RF+foWEgmTVDhIWJIMXOuNNL0apKH2S16en9eiA==}
+
+  motion-utils@12.23.6:
+    resolution: {integrity: sha512-eAWoPgr4eFEOFfg2WjIsMoqJTW6Z8MTUCgn/GZ3VRpClWBdnbjryiA3ZSNLyxCTmCQx4RmYX6jX1iWHbenUPNQ==}
+
+  motion@12.23.25:
+    resolution: {integrity: sha512-Fk5Y1kcgxYiTYOUjmwfXQAP7tP+iGqw/on1UID9WEL/6KpzxPr9jY2169OsjgZvXJdpraKXy0orkjaCVIl5fgQ==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
     engines: {node: '>=4'}
@@ -21249,6 +21325,9 @@ packages:
     resolution: {integrity: sha512-Q3CG/cYvCO1ye4QKkuH7EXxs3VC/rI1/trd+qX2+PolbaKG0H+bgcZzrTt96mMyRtejk+JMCiLUn3y29W8qmFQ==}
     engines: {node: '>= 0.10'}
 
+  pdf-lib@1.17.1:
+    resolution: {integrity: sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==}
+
   peek-readable@4.1.0:
     resolution: {integrity: sha512-ZI3LnwUv5nOGbQzD9c2iDG6toheuXSZP5esSHBjopsXH4dg19soufvpUGA3uohi5anFtGb2lhAVdHzH6R/Evvg==}
     engines: {node: '>=8'}
@@ -22079,6 +22158,11 @@ packages:
     resolution: {integrity: sha512-YietHHltOHA4+l5na1srdaMx4sVSOjV9tamHs+mwiLWAMr6QVACRUw1Neax5CptFILcNoITctJY0Ipyn5enQ8g==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
+
+  qrcode.react@4.2.0:
+    resolution: {integrity: sha512-QpgqWi8rD9DsS9EP3z7BT+5lY5SFhsqGjpgW5DY/i3mK4M9DTBNz3ErMi8BWYEfI3L0d8GIbGmcdFAS1uIRGjA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   qs@6.13.0:
     resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
@@ -28650,6 +28734,10 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
+  '@capacitor-community/media@7.0.1(@capacitor/core@7.4.2)':
+    dependencies:
+      '@capacitor/core': 7.4.2
+
   '@capacitor-community/sqlite@7.0.2(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
@@ -28764,6 +28852,16 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@capacitor/file-transfer@1.0.6(@capacitor/core@7.4.2)':
+    dependencies:
+      '@capacitor/core': 7.4.2
+      '@capacitor/synapse': 1.0.4
+
+  '@capacitor/filesystem@7.1.5(@capacitor/core@7.4.2)':
+    dependencies:
+      '@capacitor/core': 7.4.2
+      '@capacitor/synapse': 1.0.4
+
   '@capacitor/haptics@7.0.2(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
@@ -28799,6 +28897,8 @@ snapshots:
   '@capacitor/status-bar@7.0.3(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor/synapse@1.0.4': {}
 
   '@capawesome/capacitor-badge@7.0.1(@capacitor/core@7.4.2)':
     dependencies:
@@ -32576,7 +32676,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       signal-exit: 3.0.7
       tree-kill: 1.2.2
-      tslib: 2.6.2
+      tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
@@ -32601,7 +32701,7 @@ snapshots:
   '@ionic/utils-stream@3.1.6':
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
-      tslib: 2.6.2
+      tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
@@ -32634,7 +32734,7 @@ snapshots:
       '@ionic/utils-terminal': 2.3.4
       cross-spawn: 7.0.6
       debug: 4.3.4
-      tslib: 2.6.2
+      tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
@@ -32673,7 +32773,7 @@ snapshots:
       slice-ansi: 4.0.0
       string-width: 4.2.3
       strip-ansi: 6.0.1
-      tslib: 2.6.2
+      tslib: 2.8.1
       untildify: 4.0.0
       wrap-ansi: 7.0.0
     transitivePeerDependencies:
@@ -34208,6 +34308,14 @@ snapshots:
       '@parcel/watcher-win32-x64': 2.5.1
 
   '@paulmillr/qr@0.2.1': {}
+
+  '@pdf-lib/standard-fonts@1.0.0':
+    dependencies:
+      pako: 1.0.11
+
+  '@pdf-lib/upng@1.0.1':
+    dependencies:
+      pako: 1.0.11
 
   '@peculiar/asn1-schema@2.6.0':
     dependencies:
@@ -45451,6 +45559,15 @@ snapshots:
     dependencies:
       map-cache: 0.2.2
 
+  framer-motion@12.23.25(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      motion-dom: 12.23.23
+      motion-utils: 12.23.6
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
   freeport-async@2.0.0:
     optional: true
 
@@ -51108,6 +51225,20 @@ snapshots:
     optionalDependencies:
       socks: 2.8.7
 
+  motion-dom@12.23.23:
+    dependencies:
+      motion-utils: 12.23.6
+
+  motion-utils@12.23.6: {}
+
+  motion@12.23.25(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      framer-motion: 12.23.25(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
   mri@1.2.0: {}
 
   mrmime@2.0.1: {}
@@ -52410,6 +52541,13 @@ snapshots:
       sha.js: 2.4.12
       to-buffer: 1.2.2
 
+  pdf-lib@1.17.1:
+    dependencies:
+      '@pdf-lib/standard-fonts': 1.0.0
+      '@pdf-lib/upng': 1.0.1
+      pako: 1.0.11
+      tslib: 1.14.1
+
   peek-readable@4.1.0: {}
 
   peek-readable@5.4.2: {}
@@ -53325,6 +53463,10 @@ snapshots:
     optional: true
 
   qrcode.react@3.2.0(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+
+  qrcode.react@4.2.0(react@18.3.1):
     dependencies:
       react: 18.3.1
 

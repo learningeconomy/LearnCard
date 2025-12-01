@@ -4,7 +4,6 @@ import { IonContent, IonPage, IonCol, IonGrid, IonRow } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import BoostManagedCard from '../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
 
 import {
     CurvedBackdropEl,
@@ -16,11 +15,12 @@ import {
     useIsCurrentUserLCNUser,
     VC_WITH_URI,
     BrandingEnum,
+    categoryMetadata,
 } from 'learn-card-base';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import { usePathQuery } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import Lottie from 'react-lottie-player';
 import HourGlass from '../../assets/lotties/hourglass.json';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -53,7 +53,7 @@ const WorkHistoryPage: React.FC = () => {
         _activeTab ?? CredentialListTabEnum.Earned
     );
 
-    const imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.JOB_HISTORY];
+    const imgSrc = categoryMetadata[CredentialCategoryEnum.workHistory].defaultImageSrc;
 
     // Upon initially loading component, read wallet contents
     /* the filtering step is to handle old wallets that may have different VCs on their index that have the same uri */
@@ -101,7 +101,11 @@ const WorkHistoryPage: React.FC = () => {
     return (
         <IonPage className="bg-white">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <MainHeader showBackButton subheaderType={SubheaderTypeEnum.Job} branding={BrandingEnum.scoutPass}>
+                <MainHeader
+                    showBackButton
+                    subheaderType={SubheaderTypeEnum.Job}
+                    branding={BrandingEnum.scoutPass}
+                >
                     {currentLCNUser && (
                         <EarnedAndManagedTabs
                             handleActiveTab={setActiveTab}
@@ -154,18 +158,20 @@ const WorkHistoryPage: React.FC = () => {
                             </section>
                         )}
 
-                    {boostsLoading && activeTab === CredentialListTabEnum.Managed && !boostError && (
-                        <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <div className="max-w-[280px] mt-[-40px]">
-                                <Lottie
-                                    loop
-                                    animationData={HourGlass}
-                                    play
-                                    style={{ width: '100%', height: '100%' }}
-                                />
-                            </div>
-                        </section>
-                    )}
+                    {boostsLoading &&
+                        activeTab === CredentialListTabEnum.Managed &&
+                        !boostError && (
+                            <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
+                                <div className="max-w-[280px] mt-[-40px]">
+                                    <Lottie
+                                        loop
+                                        animationData={HourGlass}
+                                        play
+                                        style={{ width: '100%', height: '100%' }}
+                                    />
+                                </div>
+                            </section>
+                        )}
                     {!boostsLoading &&
                         boosts &&
                         !boostError &&

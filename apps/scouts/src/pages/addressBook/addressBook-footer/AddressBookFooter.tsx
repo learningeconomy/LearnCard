@@ -8,14 +8,12 @@ import User from '../../../components/svgs/User';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
-import BoostUserOptions from '../../../components/boost/boost-options/boostUserOptions/BoostUserOptions';
 import BoostSelectMenu from '../../../components/boost/boost-select-menu/BoostSelectMenu';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 
-import { useIsCurrentUserLCNUser } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import useBoostModal from '../../../components/boost/hooks/useBoostModal';
-import { BoostCategoryOptionsEnum } from '../../../components/boost/boost-options/boostOptions';
 
 export const AddressBookFooter: React.FC<{
     showSearch?: boolean;

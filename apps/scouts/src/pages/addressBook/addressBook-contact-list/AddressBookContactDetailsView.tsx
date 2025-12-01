@@ -1,7 +1,7 @@
 import React from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 
-import { IonPage, IonRow, IonCol, useIonModal, useIonToast, useIonAlert } from '@ionic/react';
+import { IonRow, IonCol, useIonAlert } from '@ionic/react';
 
 import X from 'learn-card-base/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -10,15 +10,16 @@ import TrashBin from '../../../components/svgs/TrashBin';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import CopyStack from '../../../components/svgs/CopyStack';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
-import BoostSelectMenu from '../../../components/boost/boost-select-menu/BoostSelectMenu';
-import ModalLayout from 'apps/scouts/src/layout/ModalLayout';
-import { UserProfilePicture, useModal } from 'learn-card-base';
+
 import { createPortal } from 'react-dom';
 
 import {
+    UserProfilePicture,
+    useModal,
+    useToast,
+    ToastTypeEnum,
     BoostCategoryOptionsEnum,
-    BoostUserTypeEnum,
-} from '../../../components/boost/boost-options/boostOptions';
+} from 'learn-card-base';
 
 import { LCNProfileConnectionStatusEnum, LCNProfile } from '@learncard/types';
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
@@ -82,7 +83,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     handleUnblockUser = () => {},
     history,
 }) => {
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [presentAlert, dismissAlert] = useIonAlert();
     const { closeModal } = useModal();
     const sectionPortal = document.getElementById('section-cancel-portal');
@@ -122,30 +123,14 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             await Clipboard.write({
                 string: privateKey,
             });
-            presentToast({
-                message: 'DID copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-success-toast',
+            presentToast('DID copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy DID to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+            presentToast('Unable to copy DID to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

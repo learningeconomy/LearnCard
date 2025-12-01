@@ -17,9 +17,10 @@ import {
     constructCustomBoostType,
     UploadRes,
     BoostCategoryOptionsEnum,
-    boostCategoryOptions,
+    boostCategoryMetadata,
     currentUserStore,
     UserProfilePicture,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
@@ -75,7 +76,7 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
                 'Managed Profile ID'
             );
 
-            const defaultImage = boostCategoryOptions[BoostCategoryOptionsEnum.id].CategoryImage;
+            const defaultImage = boostCategoryMetadata[BoostCategoryOptionsEnum.id].CategoryImage;
             state.appearance.badgeThumbnail = image || defaultImage;
             state.appearance.idBackgroundImage = image || DEFAULT_LEARNCARD_ID_WALLPAPER;
 
@@ -186,7 +187,9 @@ const CreateManagedProfileModal: React.FC<CreateManagedProfileModalProps> = ({})
             presentToast(`Profile "${name}" created successfully!`);
             closeModal();
         } catch (e) {
-            presentToast(`Failed to create "${name}": ${e.message}`);
+            presentToast(`Failed to create "${name}": ${e.message}`, {
+                type: ToastTypeEnum.Error,
+            });
             console.log('🔥🔥 Error in createManagedServiceProfile 🔥🔥');
             console.error(e);
         } finally {

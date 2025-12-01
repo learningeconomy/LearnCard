@@ -3,28 +3,23 @@ import { useWallet } from '../../hooks/useWallet';
 import { getOrCreateSharedUriForWallet } from '../../hooks/useSharedUrisInTerms';
 import { getOrFetchConsentedContracts } from '../../hooks/useConsentedContracts';
 import type { QueryClient } from '@tanstack/react-query';
+import {
+    categoryMetadata,
+    CredentialCategoryEnum,
+} from 'learn-card-base/types/boostAndCredentialMetadata';
 
 const NETWORK_CONTRACT_URI =
     'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891';
 const CONTRACT_OWNER_DID = 'did:web:network.learncard.com:users:learn-cloud';
 
-const CATEGORIES = [
-    'ai-summary',
-    'ID',
-    'ai-assessment',
-    'Skill',
-    'Membership',
-    'Learning History',
-    'Work History',
-    'Accomplishment',
-    'ai-topic',
-    'Family',
-    'Course',
-    'Achievement',
-    'Social Badge',
-    'Accommodation',
-    'learning-pathway',
-];
+// All possible contract categories, preferring the contractCredentialTypeOverride if available
+const CATEGORIES: string[] = Object.values(categoryMetadata).reduce((categories, category) => {
+    const categoryToAdd = category.contractCredentialTypeOverride || category.credentialType;
+    if (!categories.includes(categoryToAdd)) {
+        categories.push(categoryToAdd);
+    }
+    return categories;
+}, [] as string[]);
 
 interface NetworkConsentMutationParams {
     queryClient: QueryClient;
@@ -82,81 +77,16 @@ const generateConsentTerms = async (wallet: any, queryClient: QueryClient): Prom
                 shareAll: true,
                 sharing: true,
                 categories: {
-                    'ai-summary': {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['ai-summary'] || [],
-                    },
-                    ID: {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['ID'] || [],
-                    },
-                    'ai-assessment': {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['ai-assessment'] || [],
-                    },
-                    Skill: {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Skill'] || [],
-                    },
-                    Membership: {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Membership'] || [],
-                    },
-                    'Learning History': {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Learning History'] || [],
-                    },
-                    'Work History': {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Work History'] || [],
-                    },
-                    Accomplishment: {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Accomplishment'] || [],
-                    },
-                    'ai-topic': {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['ai-topic'] || [],
-                    },
-                    Family: {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Family'] || [],
-                    },
-                    Course: {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Course'] || [],
-                    },
-                    Achievement: {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Achievement'] || [],
-                    },
-                    'Social Badge': {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Social Badge'] || [],
-                    },
-                    Accommodation: {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['Accommodation'] || [],
-                    },
-                    'learning-pathway': {
-                        shareAll: true,
-                        sharing: true,
-                        shared: categoryCredentials['learning-pathway'] || [],
-                    },
+                    ...Object.fromEntries(
+                        CATEGORIES.map(category => [
+                            category,
+                            {
+                                shareAll: true,
+                                sharing: true,
+                                shared: categoryCredentials[category] || [],
+                            },
+                        ])
+                    ),
                 },
             },
         },
@@ -164,21 +94,7 @@ const generateConsentTerms = async (wallet: any, queryClient: QueryClient): Prom
             personal: {},
             credentials: {
                 categories: {
-                    'ai-summary': true,
-                    'ai-assessment': true,
-                    'learning-pathway': true,
-                    'ai-topic': true,
-                    ID: true,
-                    Family: true,
-                    Course: true,
-                    'Social Badge': true,
-                    'Work History': true,
-                    Accommodation: true,
-                    Skill: true,
-                    Membership: true,
-                    'Learning History': true,
-                    Accomplishment: true,
-                    Achievement: true,
+                    ...Object.fromEntries(CATEGORIES.map(category => [category, true])),
                 },
             },
         },

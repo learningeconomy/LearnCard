@@ -57,11 +57,11 @@ export const ScannerPermissionsPrompt: React.FC<{
                         </h6>
                     </IonCol>
                 </IonRow>
-                <IonRow className="w-full flex items-center justify-center">
+                <IonRow className="w-full flex items-center justify-center mb-2">
                     <IonCol className="flex items-center justify-around w-full max-w-[600px]">
-                        <div className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1">
-                            <div className="absolute top-0 left-[%50] w-[70px] h-[70px] bg-rose-100 rounded-full" />
-                            <Camera className="z-50 h-[50px] w-[50px]" />
+                        <div className="relative flex items-center justify-center p-2 rounded-3xl flex-1">
+                            <div className="absolute top-0 left-[50%] translate-x-[-50%] w-[70px] h-[70px] bg-grayscale-200 rounded-full" />
+                            <Camera className="z-50 h-[50px] w-[50px] text-grayscale-700" />
                         </div>
                     </IonCol>
                 </IonRow>

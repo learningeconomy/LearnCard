@@ -25,7 +25,7 @@ import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
 import { QRCodeScannerStore } from 'learn-card-base';
-import { ToastProvider } from 'learn-card-base/hooks/useToast';
+import Toast from 'learn-card-base/components/toast/Toast';
 
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
 import localforage from 'localforage';
@@ -160,30 +160,29 @@ const FullApp: React.FC = () => {
             <IonReactRouter history={history}>
                 <Suspense fallback={<LoadingPageDumb />}>
                     <ExternalAuthServiceProvider>
-                        <ToastProvider>
-                            <ModalsProvider>
-                                <IonApp>
-                                    <div id="modal-mid-root"></div>
-                                    <NetworkListener />
-                                    <AppUrlListener />
-                                    <PushNotificationListener />
-                                    <PresentVcModalListener />
-                                    {/* <UserProfileSetupListener loading={initLoading} /> */}
-                                    <AppRouter initLoading={initLoading} />
-                                    <QRCodeScannerListener />
+                        <ModalsProvider>
+                            <IonApp>
+                                <div id="modal-mid-root"></div>
+                                <Toast />
+                                <NetworkListener />
+                                <AppUrlListener />
+                                <PushNotificationListener />
+                                <PresentVcModalListener />
+                                {/* <UserProfileSetupListener loading={initLoading} /> */}
+                                <AppRouter initLoading={initLoading} />
+                                <QRCodeScannerListener />
 
-                                    {showScannerOverlay && <QRCodeScannerOverlay />}
-                                    {isSentryEnabled && (
-                                        <button
-                                            className="sentry-feedback-widget-btn z-[99999999999999]"
-                                            ref={buttonRef}
-                                        >
-                                            <p>Feedback</p>
-                                        </button>
-                                    )}
-                                </IonApp>
-                            </ModalsProvider>
-                        </ToastProvider>
+                                {showScannerOverlay && <QRCodeScannerOverlay />}
+                                {isSentryEnabled && (
+                                    <button
+                                        className="sentry-feedback-widget-btn z-[99999999999999]"
+                                        ref={buttonRef}
+                                    >
+                                        <p>Feedback</p>
+                                    </button>
+                                )}
+                            </IonApp>
+                        </ModalsProvider>
                     </ExternalAuthServiceProvider>
                 </Suspense>
             </IonReactRouter>

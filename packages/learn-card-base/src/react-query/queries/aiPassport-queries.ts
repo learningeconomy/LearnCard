@@ -5,7 +5,7 @@ import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGet
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
-import { CredentialCategoryEnum } from 'learn-card-base/types/credentials';
+import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { getOrFetchResolvedCredential } from './vcQueries';
 import { AiSession } from 'learn-card-base/types/ai-session';
 
@@ -159,7 +159,11 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
 
                     const sessions = (
                         await wallet.invoke.getBoostChildren(boostUri, {
-                            query: { category: 'ai-summary' },
+                            query: {
+                                category:
+                                    categoryMetadata[CredentialCategoryEnum.aiSummary]
+                                        .contractCredentialTypeOverride,
+                            },
                             limit: 100,
                         })
                     )?.records;
@@ -205,7 +209,11 @@ export const useGetEnrichedSession = (topicUri: string, enabled: boolean = true)
 
             const summaryBoosts = (
                 await wallet?.invoke?.getBoostChildren(topicVc?.boostId, {
-                    query: { category: 'ai-summary' },
+                    query: {
+                        category:
+                            categoryMetadata[CredentialCategoryEnum.aiSummary]
+                                .contractCredentialTypeOverride,
+                    },
                     limit: 100,
                 })
             )?.records;

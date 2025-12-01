@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { LCNProfile } from '@learncard/types';
 
-import { useIonToast } from '@ionic/react';
 import useWallet from 'learn-card-base/hooks/useWallet';
+
+import { useToast, ToastTypeEnum } from 'learn-card-base';
 
 import {
     sendAndSaveBoostCredentialSelf,
@@ -15,7 +16,7 @@ import { LCNBoostStatusEnum } from '../boost';
 
 const useBoost = (history: RouteComponentProps['history']) => {
     const { initWallet, addVCtoWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [loading, setIsLoading] = useState(false);
 
     const boostSomeoneElse = async (issueTo: LCNProfile[], wallet: any, boostUri: string) => {
@@ -32,20 +33,18 @@ const useBoost = (history: RouteComponentProps['history']) => {
                     })
                 ).then(() => {
                     setIsLoading(false);
-                    presentToast({
-                        message: `Boost issued successfully`,
+                    presentToast('Boost issued successfully', {
                         duration: 3000,
-                        cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                        type: ToastTypeEnum.Success,
                     });
                 });
             }
         } catch (e) {
             console.log('error', e);
             setIsLoading(false);
-            presentToast({
-                message: `Error issuing boost`,
+            presentToast('Error issuing boost', {
                 duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                type: ToastTypeEnum.Error,
             });
         }
     };
@@ -75,10 +74,9 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             console.log('error', e);
             setIsLoading(false);
-            presentToast({
-                message: `Error issuing boost`,
+            presentToast('Error issuing boost', {
                 duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                type: ToastTypeEnum.Error,
             });
         }
     };
@@ -90,18 +88,16 @@ const useBoost = (history: RouteComponentProps['history']) => {
             const vcUri = await sendAndSaveBoostCredentialSelf(wallet, profileId, boostUri);
             await addVCtoWallet({ uri: vcUri });
             setIsLoading(false);
-            presentToast({
-                message: `Boost issued successfully`,
+            presentToast('Boost issued successfully', {
                 duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                type: ToastTypeEnum.Success,
             });
         } catch (e) {
             console.log('error', e);
             setIsLoading(false);
-            presentToast({
-                message: `Error issuing boost`,
+            presentToast('Error issuing boost', {
                 duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                type: ToastTypeEnum.Error,
             });
         }
     };
@@ -130,10 +126,9 @@ const useBoost = (history: RouteComponentProps['history']) => {
         } catch (e) {
             console.log('error', e);
             setIsLoading(false);
-            presentToast({
-                message: `Error issuing boost`,
+            presentToast('Error issuing boost', {
                 duration: 3000,
-                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                type: ToastTypeEnum.Error,
             });
         }
     };

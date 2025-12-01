@@ -19,6 +19,7 @@ import {
     useGetCredentials,
     CredentialCategoryEnum,
     useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { FamilyCMSAppearance } from '../../familyCMSState';
@@ -118,10 +119,15 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                 });
 
                 closeModal();
-                presentToast(`Profile "${name}" created successfully!`);
+                presentToast(`Profile "${name}" created successfully!`, {
+                    hasDismissButton: true,
+                });
                 return;
             } catch (e) {
-                presentToast(`Failed to create "${name}": ${e?.message}`);
+                presentToast(`Failed to create "${name}": ${e?.message}`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
                 console.error(e);
             } finally {
                 setIsLoading(false);

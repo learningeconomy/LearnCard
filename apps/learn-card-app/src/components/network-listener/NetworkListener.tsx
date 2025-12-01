@@ -1,22 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { useIonToast } from '@ionic/react';
+import { useEffect } from 'react';
+
 import { useNetworkStatus } from './useNetworkStatus';
+import { useToast, ToastTypeEnum } from 'learn-card-base';
 
 export const NetworkListener = () => {
     const isConnected = useNetworkStatus();
-    const [present, dismiss] = useIonToast();
+    const { presentToast, dismissToast } = useToast();
 
     useEffect(() => {
         if (!isConnected && isConnected !== undefined) {
-            present({
-                message:
-                    "Oops! It seems you've lost your connection. The app may not function properly and you will not be able to send boosts.",
-                duration: 3000000,
-                position: 'top',
-                cssClass: 'network-offline-toast',
-            });
+            presentToast(
+                "Oops! It seems you've lost your connection. The app may not function properly and you will not be able to send boosts.",
+                {
+                    hasDismissButton: true,
+                    duration: 300000,
+                    type: ToastTypeEnum.Error,
+                }
+            );
         } else if (isConnected) {
-            dismiss();
+            dismissToast();
         }
     }, [isConnected]);
 

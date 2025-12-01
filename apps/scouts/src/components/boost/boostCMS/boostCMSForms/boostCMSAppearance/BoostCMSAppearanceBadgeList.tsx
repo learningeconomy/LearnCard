@@ -12,10 +12,8 @@ import HourGlass from '../../../../../assets/lotties/hourglass.json';
 import TrashBin from '../../../../svgs/TrashBin';
 import Lottie from 'react-lottie-player';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
-import {
-    BoostCategoryOptionsEnum,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-} from '../../../boost-options/boostOptions';
+import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import { BoostCMSState } from '../../../boost';
 import {
@@ -26,6 +24,7 @@ import {
 import BoostVCTypeOptionButton from '../../../boost-options/boostVCTypeOptions/BoostVCTypeOptionButton';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
+import { SetState } from 'packages/shared-types/dist';
 
 export enum StylePackCategories {
     all = 'All',
@@ -60,14 +59,14 @@ const getFilteredStylePack = (
 
 export const BoostCMSAppearanceBadgeList: React.FC<{
     state: BoostCMSState;
-    setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
+    setState: SetState<BoostCMSState>;
     handleCloseModal: () => void;
     disabled?: boolean;
     boostUserType: BoostUserTypeEnum;
 
     showStylePackCategoryList: boolean;
-    setShowStylePackCategoryList: React.Dispatch<React.SetStateAction<boolean>>;
-    setActiveForm: React.Dispatch<React.SetStateAction<BoostCMSActiveAppearanceForm>>;
+    setShowStylePackCategoryList: SetState<boolean>;
+    setActiveForm: SetState<BoostCMSActiveAppearanceForm>;
 }> = ({
     state,
     setState,
@@ -81,7 +80,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     const flags = useFlags();
     const { data: boostAppearanceBadgeList, isLoading } = useScoutPassStylesPackRegistry();
 
-    const { CategoryImage } = boostCategoryOptions[state?.basicInfo?.type];
+    const { CategoryImage } =
+        boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     const isDefaultImage = state?.appearance?.badgeThumbnail === CategoryImage;
     const type = state?.basicInfo?.type;
     const targetType = type === 'Social Badge' ? 'Boost' : type;

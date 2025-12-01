@@ -1,17 +1,19 @@
 import React from 'react';
 import { Updater, useImmer } from 'use-immer';
-import { LaunchPadAppListItem, useModal } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    LaunchPadAppListItem,
+    categoryMetadata,
+    contractCategoryNameToCategoryMetadata,
+    useModal,
+} from 'learn-card-base';
 
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import ConsentFlowFooter from './ConsentFlowFooter';
 import PrivacyAndDataHeader from './PrivacyAndDataHeader';
 import ConsentFlowWriteSharingItem from './ConsentFlowWriteSharingItem';
 
-import {
-    AI_CREDENTIAL_TYPE,
-    getPrivacyAndDataInfo,
-    rawAiCategoryToDisplayName,
-} from '../../helpers/contract.helpers';
+import { getPrivacyAndDataInfo } from '../../helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
 type ConsentFlowAiSessionsWriteDetailsModalProps = {
@@ -35,10 +37,14 @@ const ConsentFlowAiSessionsWriteDetailsModal: React.FC<
     const [aiSessionCategories, setAiSessionCategories] = useImmer(_aiSessionCategories);
 
     const infoText = {
-        [AI_CREDENTIAL_TYPE.AI_ASSESSMENT]: 'Evaluations and feedback from AI tutoring sessions',
-        [AI_CREDENTIAL_TYPE.AI_SUMMARY]: 'Written overviews of your AI tutoring sessions',
-        [AI_CREDENTIAL_TYPE.AI_TOPIC]: "Subjects and focus areas you're learning",
-        [AI_CREDENTIAL_TYPE.LEARNING_PATHWAY]: "Updates to the skills or goals you're working on",
+        [categoryMetadata[CredentialCategoryEnum.aiAssessment].contractCredentialTypeOverride!]:
+            'Evaluations and feedback from AI tutoring sessions',
+        [categoryMetadata[CredentialCategoryEnum.aiSummary].contractCredentialTypeOverride!]:
+            'Written overviews of your AI tutoring sessions',
+        [categoryMetadata[CredentialCategoryEnum.aiTopic].contractCredentialTypeOverride!]:
+            "Subjects and focus areas you're learning",
+        [categoryMetadata[CredentialCategoryEnum.aiPathway].contractCredentialTypeOverride!]:
+            "Updates to the skills or goals you're working on",
     };
 
     return (
@@ -89,7 +95,9 @@ const ConsentFlowAiSessionsWriteDetailsModal: React.FC<
                                     category={category}
                                     required={required}
                                     hideIcon
-                                    titleOverride={rawAiCategoryToDisplayName(category)}
+                                    titleOverride={
+                                        contractCategoryNameToCategoryMetadata(category)?.title
+                                    }
                                     infoText={infoText[category as keyof typeof infoText]}
                                 />
                             )

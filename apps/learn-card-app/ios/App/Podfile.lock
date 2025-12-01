@@ -17,11 +17,20 @@ PODS:
     - Capacitor
   - CapacitorClipboard (7.0.2):
     - Capacitor
+  - CapacitorCommunityMedia (7.0.1):
+    - Capacitor
+    - SDWebImage
   - CapacitorCommunitySqlite (7.0.1):
     - Capacitor
     - SQLCipher
     - ZIPFoundation
   - CapacitorCordova (7.4.2)
+  - CapacitorFilesystem (7.1.4):
+    - Capacitor
+    - IONFilesystemLib (~> 1.0.1)
+  - CapacitorFileTransfer (1.0.6):
+    - Capacitor
+    - IONFileTransferLib (~> 1.0.1)
   - CapacitorFirebaseAnalytics (7.3.0):
     - Capacitor
     - CapacitorFirebaseAnalytics/Lite (= 7.3.0)
@@ -173,6 +182,8 @@ PODS:
     - AppAuth/Core (~> 1.7)
     - GTMSessionFetcher/Core (< 4.0, >= 3.3)
   - GTMSessionFetcher/Core (3.5.0)
+  - IONFilesystemLib (1.0.1)
+  - IONFileTransferLib (1.0.1)
   - MLImage (1.0.0-beta6)
   - MLKitBarcodeScanning (6.0.0):
     - MLKitCommon (~> 12.0)
@@ -197,6 +208,9 @@ PODS:
   - nanopb/encode (3.30910.0)
   - PromisesObjC (2.4.0)
   - RecaptchaInterop (100.0.0)
+  - SDWebImage (5.21.3):
+    - SDWebImage/Core (= 5.21.3)
+  - SDWebImage/Core (5.21.3)
   - SQLCipher (4.10.0):
     - SQLCipher/standard (= 4.10.0)
   - SQLCipher/common (4.10.0)
@@ -212,8 +226,11 @@ DEPENDENCIES:
   - "CapacitorBrowser (from `../../../../node_modules/.pnpm/@capacitor+browser@7.0.2_@capacitor+core@7.4.2/node_modules/@capacitor/browser`)"
   - "CapacitorCamera (from `../../../../node_modules/.pnpm/@capacitor+camera@7.0.2_@capacitor+core@7.4.2/node_modules/@capacitor/camera`)"
   - "CapacitorClipboard (from `../../../../node_modules/.pnpm/@capacitor+clipboard@7.0.2_@capacitor+core@7.4.2/node_modules/@capacitor/clipboard`)"
+  - "CapacitorCommunityMedia (from `../../../../node_modules/.pnpm/@capacitor-community+media@7.0.1_@capacitor+core@7.4.2/node_modules/@capacitor-community/media`)"
   - "CapacitorCommunitySqlite (from `../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.1_@capacitor+core@7.4.2/node_modules/@capacitor-community/sqlite`)"
   - "CapacitorCordova (from `../../../../node_modules/.pnpm/@capacitor+ios@7.4.2_@capacitor+core@7.4.2/node_modules/@capacitor/ios`)"
+  - "CapacitorFilesystem (from `../../../../node_modules/.pnpm/@capacitor+filesystem@7.1.4_@capacitor+core@7.4.2/node_modules/@capacitor/filesystem`)"
+  - "CapacitorFileTransfer (from `../../../../node_modules/.pnpm/@capacitor+file-transfer@1.0.6_@capacitor+core@7.4.2/node_modules/@capacitor/file-transfer`)"
   - "CapacitorFirebaseAnalytics (from `../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@7.4.2_firebase@11.10.0/node_modules/@capacitor-firebase/analytics`)"
   - "CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport (from `../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@7.4.2_firebase@11.10.0/node_modules/@capacitor-firebase/analytics`)"
   - "CapacitorFirebaseAuthentication (from `../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.3.0_@capacitor+core@7.4.2_firebase@11.10.0/node_modules/@capacitor-firebase/authentication`)"
@@ -256,6 +273,8 @@ SPEC REPOS:
     - GoogleUtilities
     - GTMAppAuth
     - GTMSessionFetcher
+    - IONFilesystemLib
+    - IONFileTransferLib
     - MLImage
     - MLKitBarcodeScanning
     - MLKitCommon
@@ -263,6 +282,7 @@ SPEC REPOS:
     - nanopb
     - PromisesObjC
     - RecaptchaInterop
+    - SDWebImage
     - SQLCipher
     - SSZipArchive
     - Version
@@ -279,10 +299,16 @@ EXTERNAL SOURCES:
     :path: "../../../../node_modules/.pnpm/@capacitor+camera@7.0.2_@capacitor+core@7.4.2/node_modules/@capacitor/camera"
   CapacitorClipboard:
     :path: "../../../../node_modules/.pnpm/@capacitor+clipboard@7.0.2_@capacitor+core@7.4.2/node_modules/@capacitor/clipboard"
+  CapacitorCommunityMedia:
+    :path: "../../../../node_modules/.pnpm/@capacitor-community+media@7.0.1_@capacitor+core@7.4.2/node_modules/@capacitor-community/media"
   CapacitorCommunitySqlite:
     :path: "../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.1_@capacitor+core@7.4.2/node_modules/@capacitor-community/sqlite"
   CapacitorCordova:
     :path: "../../../../node_modules/.pnpm/@capacitor+ios@7.4.2_@capacitor+core@7.4.2/node_modules/@capacitor/ios"
+  CapacitorFilesystem:
+    :path: "../../../../node_modules/.pnpm/@capacitor+filesystem@7.1.4_@capacitor+core@7.4.2/node_modules/@capacitor/filesystem"
+  CapacitorFileTransfer:
+    :path: "../../../../node_modules/.pnpm/@capacitor+file-transfer@1.0.6_@capacitor+core@7.4.2/node_modules/@capacitor/file-transfer"
   CapacitorFirebaseAnalytics:
     :path: "../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@7.4.2_firebase@11.10.0/node_modules/@capacitor-firebase/analytics"
   CapacitorFirebaseAuthentication:
@@ -323,8 +349,11 @@ SPEC CHECKSUMS:
   CapacitorBrowser: 22541e48442de44dc629c214388290d6eecc6ae9
   CapacitorCamera: f9e54db0a18bb218a8dc360907d63aaefe9209ff
   CapacitorClipboard: 7e227702976d4435a5a40df54f65e154d0dfc1f3
+  CapacitorCommunityMedia: a3ae1c14d9b30ca500171a62f58b859e06c00fd1
   CapacitorCommunitySqlite: 8b2c6bab33e3519280811d481f8bd0fa90343e1b
   CapacitorCordova: 5e58d04631bc5094894ac106e2bf1da18a9e6151
+  CapacitorFilesystem: f9bd850c41e048180e5dc0cbb90f2033ede9d2cc
+  CapacitorFileTransfer: 591bdf4cbb809fbdaf85aba6ddfa93ff1c4c1b2d
   CapacitorFirebaseAnalytics: 99fb86679f3a40b148d6e3e7ddeb6115a9c08edf
   CapacitorFirebaseAuthentication: b25177f2b09cf7581d3f11d96008cc56dcb5aa36
   CapacitorHaptics: b3fb2869e72c4466e18ce9ccbeb60a3d8723b3d4
@@ -358,6 +387,8 @@ SPEC CHECKSUMS:
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMAppAuth: f69bd07d68cd3b766125f7e072c45d7340dea0de
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
+  IONFilesystemLib: 89258b8e3e85465da93127d25d7ce37f977e8a6f
+  IONFileTransferLib: b268561ab0ba7f386eea228c4986b55ba0146ca9
   MLImage: 0ad1c5f50edd027672d8b26b0fee78a8b4a0fc56
   MLKitBarcodeScanning: 0a3064da0a7f49ac24ceb3cb46a5bc67496facd2
   MLKitCommon: 07c2c33ae5640e5380beaaa6e4b9c249a205542d
@@ -365,11 +396,12 @@ SPEC CHECKSUMS:
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RecaptchaInterop: 7d1a4a01a6b2cb1610a47ef3f85f0c411434cb21
+  SDWebImage: 16309af6d214ba3f77a7c6f6fdda888cb313a50a
   SQLCipher: eb79c64049cb002b4e9fcb30edb7979bf4706dfc
   SSZipArchive: fe6a26b2a54d5a0890f2567b5cc6de5caa600aef
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: b8c29ea7ae353b309bc810586181fd073cb3312c
 
-PODFILE CHECKSUM: f49572a0863f4da32cccf792c8f6cb96e829488c
+PODFILE CHECKSUM: c512112e8c59d350b528e158b5761a680cb1eeff
 
 COCOAPODS: 1.16.2

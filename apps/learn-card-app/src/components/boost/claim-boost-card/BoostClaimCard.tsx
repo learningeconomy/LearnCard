@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
-import { IonSpinner, useIonAlert, useIonToast, IonPage } from '@ionic/react';
+import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import Lottie from 'react-lottie-player';
 import HourGlass from '../../../assets/lotties/hourglass.json';
@@ -11,7 +11,7 @@ import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu'
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
 import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
-import { useGetResolvedCredential } from 'learn-card-base';
+import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
 
 import {
     CredentialCategoryEnum,
@@ -101,7 +101,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const { addVCtoWallet } = useWallet();
 
     const [presentAlert, dismissAlert] = useIonAlert();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
@@ -138,10 +138,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             }
 
                             setIsClaimed(true);
-                            presentToast({
-                                message: `Successfully claimed Credential!`,
+                            presentToast(`Successfully claimed Credential!`, {
                                 duration: 3000,
-                                cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                                type: ToastTypeEnum.Success,
                             });
 
                             setIsClaimLoading(false);

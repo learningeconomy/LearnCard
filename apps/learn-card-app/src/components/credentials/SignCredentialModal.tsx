@@ -1,9 +1,8 @@
 import React from 'react';
 import BoostEarnedCard from '../boost/boost-earned-card/BoostEarnedCard';
-import { TYPE_TO_IMG_SRC } from '@learncard/react';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 import { VC } from '@learncard/types';
+import { categoryMetadata } from 'learn-card-base';
 
 type SignCredentialModalProps = {
     credential: VC;
@@ -20,7 +19,7 @@ export const SignCredentialModal: React.FC<SignCredentialModalProps> = ({
 }) => {
     const categoryFromVc = getDefaultCategoryForCredential(credential);
     const category = categoryFromVc || 'Achievement';
-    const categoryImgUrl = TYPE_TO_IMG_SRC[CATEGORY_TO_WALLET_SUBTYPE[category]];
+    const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
 
     return (
         <div className="flex flex-col h-full w-full bg-grayscale-100">

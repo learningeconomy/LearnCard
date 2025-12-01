@@ -3,7 +3,7 @@ import React from 'react';
 import { IonCol, IonRow } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 
-import { CredentialCategoryEnum } from 'learn-card-base/types/credentials';
+import { CredentialCategoryEnum } from 'learn-card-base';
 import {
     BoostPageViewMode,
     BoostPageViewModeType,

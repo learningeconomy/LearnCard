@@ -1,5 +1,9 @@
 [
 	{
+		"pkg": "@capacitor-community/media",
+		"classpath": "com.getcapacitor.community.media.MediaPlugin"
+	},
+	{
 		"pkg": "@capacitor-community/sqlite",
 		"classpath": "com.getcapacitor.community.database.sqlite.CapacitorSQLitePlugin"
 	},
@@ -30,6 +34,14 @@
 	{
 		"pkg": "@capacitor/clipboard",
 		"classpath": "com.capacitorjs.plugins.clipboard.ClipboardPlugin"
+	},
+	{
+		"pkg": "@capacitor/file-transfer",
+		"classpath": "com.capacitorjs.plugins.filetransfer.FileTransferPlugin"
+	},
+	{
+		"pkg": "@capacitor/filesystem",
+		"classpath": "com.capacitorjs.plugins.filesystem.FilesystemPlugin"
 	},
 	{
 		"pkg": "@capacitor/haptics",

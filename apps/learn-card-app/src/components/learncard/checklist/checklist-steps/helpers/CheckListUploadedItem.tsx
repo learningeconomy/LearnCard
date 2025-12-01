@@ -13,8 +13,8 @@ import {
     useModal,
     useDeleteChecklistCredentialMutation,
     useUpdateChecklistItemCategoryMutation,
+    categoryMetadata,
 } from 'learn-card-base';
-import { boostCategoryOptions } from '../../../../boost/boost-options/boostOptions';
 
 export type RawVCFileType = {
     id: string; // LearnCloud record id
@@ -89,7 +89,7 @@ export const CheckListUploadRawVC: React.FC<{ rawVC: RawVCFileType; onSuccess: (
     };
 
     const { title, IconComponent, color } =
-        boostCategoryOptions[rawVC?.category as CredentialCategoryEnum];
+        categoryMetadata[rawVC?.category as CredentialCategoryEnum];
 
     if (isDeleting || isUpdating) return <CheckListItemSkeleton />;
 

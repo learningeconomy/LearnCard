@@ -1,33 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
-import {
-    IonCol,
-    IonContent,
-    IonButton,
-    IonPage,
-    IonRow,
-    useIonAlert,
-    IonHeader,
-    IonToolbar,
-    IonSpinner,
-} from '@ionic/react';
+import { useParams } from 'react-router-dom';
+import { IonContent, IonButton, IonPage, useIonAlert, IonHeader, IonToolbar } from '@ionic/react';
 
-import { getSortedCredentials, isEntryVC } from 'learn-card-base/helpers/credentialHelpers';
 import { initLearnCard } from '@learncard/init';
 import { VC, VP } from '@learncard/types';
-import { SyncCredentialsVCs, CurvedBackdropEl } from 'learn-card-base';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { SyncCredentialsVCs } from 'learn-card-base';
 
-import Coinage from '../../assets/images/smallcoinstack.svg';
-import ClockIcon from '../../assets/images/clock.svg';
-import CalendarIcon from '../../assets/images/calendar.svg';
-import LocationIcon from '../../assets/images/location.svg';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
-import Checkmark from 'learn-card-base/svgs/Checkmark';
-import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import ShareBoostsBundle from './ShareBoostsBundle';
 
 const ViewCredsBundle: React.FC = () => {

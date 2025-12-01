@@ -7,7 +7,8 @@ import BoostSubCategoryOptions from '../boostSubCategoryOptions/BoostSubCategory
 import MiniGhost from 'learn-card-base/assets/images/ghostboost.png';
 import CaretLeft from '../../../svgs/CaretLeft';
 
-import { boostVCTypeOptions, BoostUserTypeEnum, BoostCategoryOptionsEnum } from '../boostOptions';
+import { boostVCTypeOptions, BoostUserTypeEnum } from '../boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 type BoostVCTypeOptionsProps = {
     boostUserType: BoostUserTypeEnum;

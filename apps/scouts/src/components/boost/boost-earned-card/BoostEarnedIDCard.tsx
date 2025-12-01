@@ -34,7 +34,6 @@ import VCDisplayCardWrapper from 'learn-card-base/components/vcmodal/VCDisplayCa
 import ShareTroopIdModal from '../../../pages/troop/ShareTroopIdModal';
 
 import {
-    CATEGORY_TO_WALLET_SUBTYPE,
     getCredentialSubject,
     getDefaultCategoryForCredential,
     getUrlFromImage,
@@ -140,8 +139,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         BoostMenuType.earned
     );
 
-    const type =
-        CATEGORY_TO_WALLET_SUBTYPE?.[categoryType] ?? CATEGORY_TO_WALLET_SUBTYPE.Achievement;
+    const type = categoryMetadata[categoryType].walletSubtype;
     const isID = categoryType === BoostCategoryOptionsEnum.id;
     const isMembership = categoryType === BoostCategoryOptionsEnum.membership;
 

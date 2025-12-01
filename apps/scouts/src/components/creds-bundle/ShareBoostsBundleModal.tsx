@@ -12,13 +12,12 @@ import {
     IonToolbar,
     IonButtons,
     IonSpinner,
-    useIonToast,
     useIonAlert,
 } from '@ionic/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 import { VP, UnsignedVP } from '@learncard/types';
-import { useWallet, SelectedCredsStoreState } from 'learn-card-base';
+import { useWallet, SelectedCredsStoreState, useToast, ToastTypeEnum } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareBoostsBundle from './ShareBoostsBundle';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
@@ -31,7 +30,7 @@ const ShareBoostsBundleModal = ({
     onDismiss: (data?: string | null | undefined | number, role?: string) => void;
 }) => {
     const [page, setPage] = useState('application');
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [vpUri, setVpUri] = useState<string>();
     const [pinNum, setPinNum] = useState<string>();
     const [randomSeed, setRandomSeed] = useState<string>();
@@ -193,30 +192,14 @@ const ShareBoostsBundleModal = ({
             await Clipboard.write({
                 string: link,
             });
-            presentToast({
-                message: 'Verified resume link copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Verified resume link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy verified resume link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy verified resume link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

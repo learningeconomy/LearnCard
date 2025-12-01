@@ -18,7 +18,6 @@ import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 import NewMyData from '../../components/new-my-data/NewMyData';
 
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
 import {
     useUpdateTerms,
     useConsentToContract,
@@ -26,6 +25,7 @@ import {
     ModalTypes,
     useWallet,
     useSyncConsentFlow,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { IonLoading } from '@ionic/react';
 

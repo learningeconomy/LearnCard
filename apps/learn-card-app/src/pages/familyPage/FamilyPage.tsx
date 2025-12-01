@@ -31,6 +31,7 @@ import {
     useModal,
     ModalTypes,
     switchedProfileStore,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 
 import { usePathQuery } from 'learn-card-base';
@@ -38,9 +39,6 @@ import { useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useLoadingLine } from '../../stores/loadingStore';
 import useBoostModal from '../../components/boost/hooks/useBoostModal';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
-
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
-import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import useTheme from '../../theme/hooks/useTheme';
 

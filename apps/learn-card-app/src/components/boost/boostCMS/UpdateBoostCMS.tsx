@@ -1,15 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import {
-    IonCol,
-    IonContent,
-    IonGrid,
-    IonPage,
-    IonRow,
-    useIonModal,
-    useIonToast,
-} from '@ionic/react';
+import { IonCol, IonContent, IonGrid, IonPage, IonRow, useIonModal } from '@ionic/react';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
 import BoostAddressBook, {
     BoostAddressBookEditMode,
@@ -40,12 +32,7 @@ import {
     initialCustomBoostTypesState,
     LCNBoostStatusEnum,
 } from '../boost';
-import {
-    BOOST_CATEGORY_TO_WALLET_ROUTE,
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-    BoostUserTypeEnum,
-} from '../boost-options/boostOptions';
+import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../boost-options/boostOptions';
 import {
     addAdmin,
     addBoostSomeone,
@@ -77,6 +64,10 @@ import {
     usePathQuery,
     useModal,
     ModalTypes,
+    boostCategoryMetadata,
+    BoostCategoryOptionsEnum,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import BoostCMSAchievementTypeSelectorButton from './boostCMSForms/boostCMSAppearance/BoostCMSAchievementTypeSelectorButton';
@@ -92,9 +83,9 @@ const UpdateBoostCMS: React.FC = () => {
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
     const { initWallet, addVCtoWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const { data: profile } = useGetProfile();
-    const _boostCategoryType = query.get('boostCategoryType');
+    const _boostCategoryType = query.get('boostCategoryType') as BoostCategoryOptionsEnum;
     const _boostSubCategoryType = query.get('boostSubCategoryType');
     const _boostUserType = query.get('boostUserType');
     const _boostUri = query.get('uri')?.replace('localhost:', 'localhost%3A');
@@ -117,7 +108,7 @@ const UpdateBoostCMS: React.FC = () => {
         },
         appearance: {
             ...initialBoostCMSState.appearance,
-            badgeThumbnail: boostCategoryOptions[_boostCategoryType].CategoryImage,
+            badgeThumbnail: boostCategoryMetadata[_boostCategoryType].CategoryImage,
             displayType:
                 getDefaultDisplayType(initialBoostCMSState.basicInfo.type) || 'certificate',
         },
@@ -435,12 +426,9 @@ const UpdateBoostCMS: React.FC = () => {
 
             if (updatedBoost) {
                 setIsSaveLoading(false);
-                presentToast({
-                    message: `Boost saved successfully`,
+                presentToast(`Boost saved successfully`, {
                     duration: 3000,
-                    cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
-                    buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                    swipeGesture: 'vertical',
+                    type: ToastTypeEnum.Success,
                 });
 
                 logAnalyticsEvent('boostCMS_publish_draft', {
@@ -461,12 +449,9 @@ const UpdateBoostCMS: React.FC = () => {
         } catch (e) {
             setIsSaveLoading(false);
             console.log('error::savingBoost', e);
-            presentToast({
-                message: `Unable to save boost`,
+            presentToast(`Unable to save boost`, {
                 duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+                type: ToastTypeEnum.Error,
             });
         }
     };
@@ -500,12 +485,9 @@ const UpdateBoostCMS: React.FC = () => {
             } catch (e) {
                 setIsPublishLoading(false);
                 console.log('error::boosting::someone', e);
-                presentToast({
-                    message: `Error issuing boost`,
+                presentToast(`Error issuing boost`, {
                     duration: 3000,
-                    cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                    buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                    swipeGesture: 'vertical',
+                    type: ToastTypeEnum.Error,
                 });
             }
         }
@@ -547,12 +529,9 @@ const UpdateBoostCMS: React.FC = () => {
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast({
-                        message: `Boost issued successfully`,
+                    presentToast(`Boost issued successfully`, {
                         duration: 3000,
-                        cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        swipeGesture: 'vertical',
+                        type: ToastTypeEnum.Success,
                     });
                     history.goBack();
                 }
@@ -561,12 +540,9 @@ const UpdateBoostCMS: React.FC = () => {
 
                 if (_boostUri) {
                     setIsSaveLoading(false);
-                    presentToast({
-                        message: `Boost saved successfully`,
+                    presentToast(`Boost saved successfully`, {
                         duration: 3000,
-                        cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
-                        buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                        swipeGesture: 'vertical',
+                        type: ToastTypeEnum.Success,
                     });
                     history.goBack();
                 }
@@ -574,12 +550,9 @@ const UpdateBoostCMS: React.FC = () => {
         } catch (e) {
             setIsLoading(false);
             console.log('error::boosting::someone', e);
-            presentToast({
-                message: `Error issuing boost`,
+            presentToast(`Error issuing boost`, {
                 duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+                type: ToastTypeEnum.Error,
             });
         }
     };

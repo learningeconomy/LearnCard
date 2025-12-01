@@ -5,7 +5,6 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import MainHeader from '../../components/main-header/MainHeader';
 import BoostManagedCard from '../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
 
 import {
     CurvedBackdropEl,
@@ -13,8 +12,8 @@ import {
     CredentialListTabEnum,
     CredentialCategoryEnum,
     BrandingEnum,
+    categoryMetadata,
 } from 'learn-card-base';
-import { VC } from '@learncard/types';
 
 import { usePathQuery } from 'learn-card-base';
 import {
@@ -22,8 +21,8 @@ import {
     useGetCredentials,
     VC_WITH_URI,
     useIsCurrentUserLCNUser,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
 import Lottie from 'react-lottie-player';
 import HourGlass from '../../assets/lotties/hourglass.json';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -58,7 +57,7 @@ const AchievementsPage: React.FC = () => {
         _activeTab ?? CredentialListTabEnum.Earned
     );
 
-    const imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.ACHIEVEMENTS];
+    const imgSrc = categoryMetadata[CredentialCategoryEnum.achievement].defaultImageSrc;
 
     const boostError = managedBoostsError || earnedBoostsError ? true : false;
     // Upon initially loading component, read wallet contents
@@ -105,7 +104,11 @@ const AchievementsPage: React.FC = () => {
     return (
         <IonPage className="bg-white">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <MainHeader showBackButton subheaderType={SubheaderTypeEnum.Achievement} branding={BrandingEnum.scoutPass}>
+                <MainHeader
+                    showBackButton
+                    subheaderType={SubheaderTypeEnum.Achievement}
+                    branding={BrandingEnum.scoutPass}
+                >
                     {currentLCNUser && (
                         <EarnedAndManagedTabs
                             handleActiveTab={setActiveTab}
@@ -159,18 +162,20 @@ const AchievementsPage: React.FC = () => {
                             </section>
                         )}
 
-                    {boostsLoading && activeTab === CredentialListTabEnum.Managed && !boostError && (
-                        <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <div className="max-w-[280px] mt-[-40px]">
-                                <Lottie
-                                    loop
-                                    animationData={HourGlass}
-                                    play
-                                    style={{ width: '100%', height: '100%' }}
-                                />
-                            </div>
-                        </section>
-                    )}
+                    {boostsLoading &&
+                        activeTab === CredentialListTabEnum.Managed &&
+                        !boostError && (
+                            <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
+                                <div className="max-w-[280px] mt-[-40px]">
+                                    <Lottie
+                                        loop
+                                        animationData={HourGlass}
+                                        play
+                                        style={{ width: '100%', height: '100%' }}
+                                    />
+                                </div>
+                            </section>
+                        )}
                     {!boostsLoading &&
                         !boostError &&
                         boosts &&

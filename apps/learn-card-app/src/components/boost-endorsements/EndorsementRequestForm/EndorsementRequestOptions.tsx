@@ -85,7 +85,6 @@ export const EndorsementRequestOptions: React.FC<{
         await Clipboard.write({ string: shareLink });
 
         presentToast(`Link copied to clipboard`, {
-            className: ToastTypeEnum.CopySuccess,
             hasDismissButton: true,
         });
     };
@@ -154,7 +153,7 @@ export const EndorsementRequestOptions: React.FC<{
         } catch (error) {
             setIsSendingEmail(false);
             presentToast(`Failed to send endorsement request`, {
-                className: ToastTypeEnum.Error,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

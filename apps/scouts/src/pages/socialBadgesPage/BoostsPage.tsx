@@ -30,16 +30,16 @@ import {
     useModal,
     ModalTypes,
     useIsLoggedIn,
+    categoryMetadata,
 } from 'learn-card-base';
 
 import { useLoadingLine } from '../../stores/loadingStore';
 import { useIonModal } from '@ionic/react';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
 import {
     SubheaderContentType,
     SubheaderTypeEnum,
 } from '../../components/main-subheader/MainSubHeader.types';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 const BoostsPage: React.FC = () => {
@@ -87,7 +87,7 @@ const BoostsPage: React.FC = () => {
         credentialSearchStore.set.reset();
     }, []);
 
-    const imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.SOCIAL_BADGES];
+    const imgSrc = categoryMetadata[CredentialCategoryEnum.socialBadge].defaultImageSrc;
 
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.SocialBadge];
 

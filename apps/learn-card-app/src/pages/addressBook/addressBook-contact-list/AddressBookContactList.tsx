@@ -21,6 +21,10 @@ type AddressBookContactListProps = {
     ) => void;
     showAcceptButton?: boolean;
     showCancelButton?: boolean;
+    handleCancelConnectionRequest?: (
+        e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+        profileId: string
+    ) => void;
     showBlockButton: boolean;
     handleBlockUser?: (
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -47,6 +51,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
     handleRemoveConnection = () => {},
     showAcceptButton = false,
     showCancelButton = false,
+    handleCancelConnectionRequest = () => {},
     showBlockButton = false,
     handleBlockUser = () => {},
     showUnblockButton = false,
@@ -79,6 +84,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                             handleRemoveConnection={handleRemoveConnection}
                             showAcceptButton={showAcceptButton}
                             showCancelButton={showCancelButton}
+                            handleCancelConnectionRequest={handleCancelConnectionRequest}
                             showBlockButton={showBlockButton}
                             handleBlockUser={handleBlockUser}
                             showUnblockButton={showUnblockButton}
@@ -89,6 +95,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                             refetch={refetch}
                             refetchBlockedContacts={refetchBlockedContacts}
                             refetchRequestContacts={refetchRequestContacts}
+                            showArrow={showArrow}
                         />
                     );
                 })}
@@ -101,7 +108,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
             <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
                 {pages?.flatMap(page => (
                     <>
-                        {page?.records?.map((record, index) => (
+                        {page?.records?.map((record: LCNProfile, index: number) => (
                             <AddressBookContactItem
                                 showBoostButton={showBoostButton}
                                 showRequestButton={showRequestButton}
@@ -109,6 +116,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                                 handleRemoveConnection={handleRemoveConnection}
                                 showAcceptButton={showAcceptButton}
                                 showCancelButton={showCancelButton}
+                                handleCancelConnectionRequest={handleCancelConnectionRequest}
                                 showBlockButton={showBlockButton}
                                 handleBlockUser={handleBlockUser}
                                 showUnblockButton={showUnblockButton}
@@ -119,6 +127,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                                 refetch={refetch}
                                 refetchBlockedContacts={refetchBlockedContacts}
                                 refetchRequestContacts={refetchRequestContacts}
+                                showArrow={showArrow}
                             />
                         ))}
                     </>

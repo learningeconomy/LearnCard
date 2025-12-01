@@ -1,15 +1,13 @@
 import React from 'react';
 import useManagedBoost from '../../hooks/useManagedBoost';
 
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
 
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 
 import { Boost } from '@learncard/types';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
+import { boostCategoryOptions } from '../../components/boost/boost-options/boostOptions';
 
 type AdminManagedBoostRowProps = {
     category: BoostCategoryOptionsEnum;
@@ -28,7 +26,10 @@ const AdminManagedBoostRow: React.FC<AdminManagedBoostRowProps> = ({ category, b
         handleIssueOnClick,
         handleOptionsMenu,
         presentManagedBoostModal,
-    } = useManagedBoost(boost, { categoryType: category, disableLoadingLine: true });
+    } = useManagedBoost(boost, {
+        categoryType: boostCategoryMetadata[category].credentialType,
+        disableLoadingLine: true,
+    });
 
     if (!cred?.name) {
         return <BoostSkeleton containerClassName="w-full min-w-[400px] h-[46px] rounded-[10px]" />;

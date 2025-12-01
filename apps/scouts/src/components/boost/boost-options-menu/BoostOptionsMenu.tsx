@@ -9,9 +9,8 @@ import BracketsIcon from '../../svgs/BracketsIcon';
 
 import { Boost, VC } from '@learncard/types';
 import { BoostMenuType } from '../hooks/useBoostMenu';
-import { ModalTypes, useModal, useConfirmation } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, ModalTypes, useModal, useConfirmation } from 'learn-card-base';
 import { isTroopCategory } from '../../../helpers/troop.helpers';
-import { BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
 
 type BoostOptionsMenuProps = {
     handleCloseModal: () => void;

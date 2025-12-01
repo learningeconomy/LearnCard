@@ -14,8 +14,7 @@ import ConsentFlowAiSessionsWriteItem from './ConsentFlowAiSessionsWriteItem';
 
 import { sidemenuLinks } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import {
-    ALL_AI_CREDENTIAL_TYPES,
-    AI_CREDENTIAL_TYPE,
+    AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES,
     getInfoFromContractKey,
 } from '../../helpers/contract.helpers';
 
@@ -67,7 +66,7 @@ const ConsentFlowWriteSharing: React.FC<ConsentFlowWriteSharingProps> = ({
 
     // Process credential categories and separate AI session categories
     let credentialCategories = orderedCategories.map(({ category, required }) => {
-        if (ALL_AI_CREDENTIAL_TYPES.includes(category)) {
+        if (AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES.includes(category)) {
             aiSessionCategories[category] = {
                 required,
                 term: terms.credentials.categories[category] ?? false,

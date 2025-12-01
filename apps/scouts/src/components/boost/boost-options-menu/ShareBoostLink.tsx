@@ -3,7 +3,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
-import { IonGrid, IonSpinner, useIonToast } from '@ionic/react';
+import { IonGrid, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import {
     BoostCategoryOptionsEnum,
@@ -13,6 +13,8 @@ import {
     truncateWithEllipsis,
     useGetProfile,
     useShareBoostMutation,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
@@ -39,7 +41,7 @@ const ShareBoostLink: React.FC<{
     customClassName?: string;
     categoryType: string;
 }> = ({ boost, boostUri, customClassName, handleClose, categoryType }) => {
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [shareLink, setShareLink] = useState<string | undefined>('');
 
     const { logAnalyticsEvent } = useFirebaseAnalytics();
@@ -50,8 +52,7 @@ const ShareBoostLink: React.FC<{
         boostCategoryOptions?.[categoryType as string] ??
         boostCategoryOptions[BoostCategoryOptionsEnum.achievement];
 
-    const IconComponent =
-        (categoryConfig?.IconComponent as React.ElementType) || (() => null);
+    const IconComponent = (categoryConfig?.IconComponent as React.ElementType) || (() => null);
     const CategoryImage = categoryConfig?.CategoryImage as string;
     const categoryTitle = categoryConfig?.title;
 
@@ -153,30 +154,14 @@ const ShareBoostLink: React.FC<{
             await Clipboard.write({
                 string: shareLink,
             });
-            presentToast({
-                message: 'Share link copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Share link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy share link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy share link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

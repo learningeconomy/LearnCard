@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useWallet } from 'learn-card-base';
-import { IonSpinner, useIonToast } from '@ionic/react';
+import { useWallet , useToast, ToastTypeEnum } from 'learn-card-base';
+import { IonSpinner } from '@ionic/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Plus from 'apps/scouts/src/components/svgs/Plus';
 // import TrashIcon from 'learn-card-base/svgs/TrashIcon';
@@ -27,7 +27,7 @@ type Network = {
 export const FrameworkCRUD: React.FC = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const [selectedFramework, setSelectedFramework] = useState<SkillFramework | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -76,18 +76,16 @@ export const FrameworkCRUD: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
-            presentToast({
-                message: 'Framework created successfully!',
-                duration: 2000,
-                color: 'success',
+            presentToast('Framework created successfully!', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
             setShowCreateForm(false);
         },
         onError: (error: any) => {
-            presentToast({
-                message: `Error: ${error.message}`,
-                duration: 3000,
-                color: 'danger',
+            presentToast(`Error: ${error.message}`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         },
     });
@@ -99,17 +97,15 @@ export const FrameworkCRUD: React.FC = () => {
             return await wallet.invoke.attachFrameworkToBoost(networkUri, frameworkId);
         },
         onSuccess: () => {
-            presentToast({
-                message: 'Framework attached to network!',
-                duration: 2000,
-                color: 'success',
+            presentToast('Framework attached to network!', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         },
         onError: (error: any) => {
-            presentToast({
-                message: `Error: ${error.message}`,
-                duration: 3000,
-                color: 'danger',
+            presentToast(`Error: ${error.message}`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         },
     });

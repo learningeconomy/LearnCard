@@ -7,31 +7,33 @@ type DownloadIconProps = {
 const DownloadIcon: React.FC<DownloadIconProps> = ({ className = '' }) => {
     return (
         <svg
-            width="25"
-            height="25"
-            viewBox="0 0 25 25"
+            width="30"
+            height="30"
+            viewBox="0 0 30 30"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             className={className}
         >
-            <path
-                d="M12.6276 16.0779L12.6276 3.53516"
+            <line
+                x1="6.5"
+                y1="24.5"
+                x2="23.5"
+                y2="24.5"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="3"
+                strokeLinecap="round"
+            />
+            <path
+                d="M10.5 13.75L15.5 18.75L20.5 13.75"
+                stroke="currentColor"
+                strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
             />
             <path
-                d="M15.666 13.0273L12.6285 16.0773L9.59102 13.0273"
+                d="M15.5 18.75L15.5 2.5"
                 stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-            <path
-                d="M17.4543 8.46484H18.4262C20.546 8.46484 22.2637 10.1826 22.2637 12.3034V17.3909C22.2637 19.5055 20.5501 21.219 18.4355 21.219L6.83138 21.219C4.71159 21.219 2.99284 19.5003 2.99284 17.3805V12.2919C2.99284 10.1784 4.70742 8.46484 6.82096 8.46484L7.80221 8.46484"
-                stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
             />

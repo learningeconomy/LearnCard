@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 
-import { useIonToast } from '@ionic/react';
-import { useModal, ModalTypes, useGetCredentialWithEdits, useEditBoostMeta } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useGetCredentialWithEdits,
+    useEditBoostMeta,
+    useToast,
+    ToastTypeEnum,
+} from 'learn-card-base';
 import useGetTroopNetwork from './useGetTroopNetwork';
 
 import TroopsCMSWrapper from '../components/troopsCMS/TroopsCMSWrapper';
@@ -63,7 +69,7 @@ export const useEditTroopId = (credential: VC, uri?: string) => {
 
     const { mutateAsync: editBoost } = useEditBoostMeta();
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const editBoostUri = credential?.boostId;
     const handleEditBoost = async (state: TroopsCMSState) => {
         if (!editBoostUri || !state) return;
@@ -78,12 +84,9 @@ export const useEditTroopId = (credential: VC, uri?: string) => {
             closeModal();
         } catch (e) {
             console.error('handleEditBoostID::error', e);
-            presentToast({
-                message: `Error editing boost ID`,
-                duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+            presentToast(`Error editing boost ID`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

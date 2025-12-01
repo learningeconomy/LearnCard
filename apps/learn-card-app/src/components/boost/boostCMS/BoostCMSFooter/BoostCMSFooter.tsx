@@ -3,18 +3,15 @@ import { Capacitor } from '@capacitor/core';
 
 import { IonToolbar, IonRow, IonCol, IonFooter, IonSpinner } from '@ionic/react';
 
-import {
-    BoostUserTypeEnum,
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../boost-options/boostOptions';
+import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { BoostCMSStepsEnum } from '../../boost';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
 
 const BoostCMSFooter: React.FC<{
     boostUserType: BoostUserTypeEnum;
-    selectedVCType: BoostCategoryOptionsEnum | string;
+    selectedVCType: BoostCategoryOptionsEnum;
     currentStep: BoostCMSStepsEnum;
     handleNextStep: () => void;
     handlePreview: () => void;
@@ -34,7 +31,7 @@ const BoostCMSFooter: React.FC<{
     handleSubmit,
 }) => {
     const bottomBarRef = useRef<HTMLDivElement>();
-    const { color, cssClass, IconComponent } = boostCategoryOptions[selectedVCType];
+    const { color, IconComponent } = boostCategoryMetadata[selectedVCType];
 
     keyboardStore.store.subscribe(({ isOpen }) => {
         if (isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
@@ -47,7 +44,7 @@ const BoostCMSFooter: React.FC<{
 
     return (
         <IonFooter ref={bottomBarRef}>
-            <IonToolbar color={color} className={`${cssClass} ion-no-border pt-5`}>
+            <IonToolbar color={color} className="ion-no-border pt-5">
                 <IonRow className="w-full flex items-center justify-center">
                     <div className="w-full max-w-[600px] flex items-center justify-center">
                         <IonCol size="12" className="w-full flex items-center">

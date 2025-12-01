@@ -99,7 +99,6 @@ export const AddContactView: React.FC<{
             const connectionReq = await wallet?.invoke?.connectWith(profileId);
             if (connectionReq) {
                 presentToast('Connection Request sent', {
-                    className: ToastTypeEnum.CopySuccess,
                     hasDismissButton: true,
                 });
             }
@@ -110,7 +109,7 @@ export const AddContactView: React.FC<{
         } catch (err) {
             // @ts-ignore
             presentToast(err?.message ?? 'An error ocurred, unable to send connection request.', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
             // @ts-ignore
@@ -136,7 +135,6 @@ export const AddContactView: React.FC<{
             const connectionReq = await wallet?.invoke?.connectWithInvite(profileId, challenge);
             if (connectionReq) {
                 presentToast('Connected Successfully', {
-                    className: ToastTypeEnum.CopySuccess,
                     hasDismissButton: true,
                 });
             }
@@ -162,7 +160,7 @@ export const AddContactView: React.FC<{
             } else {
                 // @ts-ignore
                 presentToast(_errMessage ?? 'An error ocurred, unable to connect!', {
-                    className: ToastTypeEnum.CopyFail,
+                    type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
             }
@@ -207,7 +205,7 @@ export const AddContactView: React.FC<{
                         presentToast(
                             error?.message || 'An error occurred, unable to accept request',
                             {
-                                className: ToastTypeEnum.CopyFail,
+                                type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
                             }
                         );
@@ -217,7 +215,7 @@ export const AddContactView: React.FC<{
         } catch (err) {
             // @ts-ignore
             presentToast(error?.message || 'An error occurred, unable to accept request', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

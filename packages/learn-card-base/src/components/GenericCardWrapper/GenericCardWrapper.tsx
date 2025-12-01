@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { GenericCard, TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
+import { GenericCard } from '@learncard/react';
 import { useIonModal } from '@ionic/react';
 import {
     getImageUrlFromCredential,
     getCredentialName,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { VC } from '@learncard/types';
-import { VCModal, useGetResolvedCredential } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    VCModal,
+    categoryMetadata,
+    useGetResolvedCredential,
+} from 'learn-card-base';
 
 type GenericCardWrapperProps = {
     vc?: VC;
@@ -52,7 +57,7 @@ const GenericCardWrapper: React.FC<GenericCardWrapperProps> = ({
         onClick?.();
     };
 
-    const defaultImg = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.ACHIEVEMENTS];
+    const defaultImg = categoryMetadata[CredentialCategoryEnum.achievement].defaultImageSrc;
     const thumbImg = customThumbSrc || (vc && getImageUrlFromCredential(vc)) || defaultImg;
     const thumbClass = thumbImg ? 'generic-lc-thumb bg-white' : 'generic-lc-thumb bg-spice-300';
     const cardTitle = vc && getCredentialName(vc);

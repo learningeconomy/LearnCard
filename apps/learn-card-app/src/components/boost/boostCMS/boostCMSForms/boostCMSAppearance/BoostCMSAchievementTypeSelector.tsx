@@ -4,14 +4,13 @@ import { z } from 'zod';
 import { IonRow, IonGrid, IonInput } from '@ionic/react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
-import {
-    boostCategoryOptions,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-} from '../../../boost-options/boostOptions';
+import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 import {
     BoostCategoryOptionsEnum,
     constructCustomBoostType,
+    CredentialCategoryEnum,
     CUSTOM_BOOST_TYPE_REGEX,
+    getBoostMetadata,
     isCustomBoostType,
 } from 'learn-card-base';
 
@@ -46,7 +45,9 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
     customTypes,
     setCustomTypes,
 }) => {
-    const { color, subColor, CategoryImage } = boostCategoryOptions[activeCategoryType] || {};
+    const { color, subColor, CategoryImage } =
+        getBoostMetadata(activeCategoryType as BoostCategoryOptionsEnum | CredentialCategoryEnum) ||
+        {};
     let bgColor = `bg-${subColor}`;
 
     if (activeCategoryType === BoostCategoryOptionsEnum.accommodation) {

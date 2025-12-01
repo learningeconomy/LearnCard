@@ -2,14 +2,20 @@ import React, { useEffect } from 'react';
 import { useRouteMatch, useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { IonSpinner, useIonToast, useIonModal } from '@ionic/react';
+import { IonSpinner, useIonModal } from '@ionic/react';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import Pulpo from '../../../assets/lotties/cuteopulpo.json';
 import Lottie from 'react-lottie-player';
 
-import { useGetConnectionsRequests, useBlockProfileMutation, usePathQuery } from 'learn-card-base';
+import {
+    useGetConnectionsRequests,
+    useBlockProfileMutation,
+    usePathQuery,
+    useToast,
+    ToastTypeEnum,
+} from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import ConnectModal from '../../connectPage/ConnectModal';
 
@@ -28,7 +34,7 @@ const AddressBookConnectionRequests: React.FC<{
     const { data, isLoading, error, refetch } = useGetConnectionsRequests();
     const { mutate: blockProfile } = useBlockProfileMutation();
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const handleBlockUser = async (
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -45,36 +51,18 @@ const AddressBookConnectionRequests: React.FC<{
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast({
-                            // @ts-ignore
-                            message: error?.message || 'An error occurred, unable to block user',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-warning-toast',
+                        presentToast(error?.message || 'An error occurred, unable to block user', {
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
                         });
                     },
                 }
             );
         } catch (err) {
             console.log('blockProfile::error', err);
-            presentToast({
-                // @ts-ignore
-                message: err?.message || 'An error occurred, unable to block user',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+            presentToast(err?.message || 'An error occurred, unable to block user', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { LCNProfile } from '@learncard/types';
 
-import { IonSpinner, useIonToast } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 
@@ -15,6 +15,8 @@ import {
     useDisconnectWithMutation,
     useBlockProfileMutation,
     useGetPaginatedConnections,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
@@ -46,7 +48,7 @@ const AddressBookConnections: React.FC<{
     const { mutate } = useDisconnectWithMutation();
     const { mutate: blockProfile } = useBlockProfileMutation();
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     useEffect(() => {
         if (!connectionsLoading && data) setConnectionCount(data?.length ?? 0);
@@ -109,37 +111,26 @@ const AddressBookConnections: React.FC<{
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast({
+                        presentToast(
                             // @ts-ignore
-                            message:
-                                error?.message || 'An error occurred, unable to remove contact',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-warning-toast',
-                        });
+                            error?.message || 'An error occurred, unable to remove contact',
+                            {
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );
         } catch (err) {
-            presentToast({
+            presentToast(
                 // @ts-ignore
-                message: err?.message || 'An error occurred, unable to remove contact',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
-            });
+                err?.message || 'An error occurred, unable to remove contact',
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
         }
     };
 
@@ -221,37 +212,27 @@ const AddressBookConnections: React.FC<{
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast({
+                        presentToast(
                             // @ts-ignore
-                            message: error?.message || 'An error occurred, unable to block user',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-warning-toast',
-                        });
+                            error?.message || 'An error occurred, unable to block user',
+                            {
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );
         } catch (err) {
             console.log('blockProfile::error', err);
-            presentToast({
+            presentToast(
                 // @ts-ignore
-                message: err?.message || 'An error occurred, unable to block user',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
-            });
+                err?.message || 'An error occurred, unable to block user',
+                {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                }
+            );
         }
     };
 
@@ -277,6 +258,10 @@ const AddressBookConnections: React.FC<{
                     handleBlockUser={handleBlockUser}
                     contacts={data ?? []}
                     pages={paginatedData?.pages}
+                    showUnblockButton={false}
+                    search=""
+                    setConnectionCount={setConnectionCount}
+                    refetch={refetch}
                     hasNextPage={hasNextPage}
                     fetchNextPage={fetchNextPage}
                     isFetching={isFetching}

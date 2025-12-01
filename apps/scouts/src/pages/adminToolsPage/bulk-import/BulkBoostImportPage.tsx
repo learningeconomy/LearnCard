@@ -17,6 +17,7 @@ import {
     useGetBoost,
     useModal,
     useToast,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
@@ -28,10 +29,7 @@ import BoostPreview from '../../../components/boost/boostCMS/BoostPreview/BoostP
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { parseBadgeType, parseSkills } from './bulkImport.helpers';
 import { LCNBoostStatusEnum } from '../../../components/boost/boost';
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../../components/boost/boost-options/boostOptions';
+import { boostCategoryOptions } from '../../../components/boost/boost-options/boostOptions';
 import {
     getBoostCredentialPreview,
     getBoostVerificationPreview,
@@ -219,7 +217,7 @@ const BulkBoostImportPage: React.FC = () => {
         const file = event.target.files[0];
         if (!file || !file.name.endsWith('.zip')) {
             presentToast('Please upload a valid ZIP file', {
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
             });
             return;
         }
@@ -263,12 +261,12 @@ const BulkBoostImportPage: React.FC = () => {
 
             setZipUploaded(true);
             presentToast(`Successfully processed ${imageMap.size} images from ZIP file`, {
-                toastType: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Success,
             });
         } catch (error) {
             console.error('Error extracting ZIP file:', error);
             presentToast('Error extracting ZIP file', {
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
             });
         } finally {
             setIsLoading(false);
@@ -409,7 +407,7 @@ const BulkBoostImportPage: React.FC = () => {
         // Check for missing images
         if (hasMissingImages) {
             presentToast('Please upload all required images before publishing', {
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 duration: 5000,
             });
             return;
@@ -508,7 +506,7 @@ const BulkBoostImportPage: React.FC = () => {
             presentToast('Boosts imported successfully!', {
                 duration: 5000,
                 hasDismissButton: true,
-                toastType: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Success,
             });
 
             history.push('/admin-tools');
@@ -518,7 +516,7 @@ const BulkBoostImportPage: React.FC = () => {
             presentToast(`Bulk boost import failed! ${e.message}`, {
                 duration: 5000,
                 hasDismissButton: true,
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
             });
         } finally {
             setNumBoostsCreated(0);

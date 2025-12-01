@@ -101,7 +101,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             }
 
             presentToast(`Successfully connected to ${app?.name ?? contractDetails?.name}`, {
-                toastType: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Success,
             });
 
             if (redirectUrl) {
@@ -156,7 +156,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         } catch (e) {
             console.error(e);
             presentToast(`Failed to accept contract: ${e.message}`, {
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
             });
             setStep(ConsentFlowStep.confirmation);
         }

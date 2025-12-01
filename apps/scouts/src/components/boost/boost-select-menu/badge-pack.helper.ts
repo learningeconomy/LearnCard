@@ -1,8 +1,5 @@
-import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
-import {
-    BoostCategoryOptionsEnum,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-} from '../boost-options/boostOptions';
+import { CATEGORY_TO_SUBCATEGORY_LIST } from '../boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 export enum BadgePackOptionsEnum {
     scoutpass = 'scoutpass',

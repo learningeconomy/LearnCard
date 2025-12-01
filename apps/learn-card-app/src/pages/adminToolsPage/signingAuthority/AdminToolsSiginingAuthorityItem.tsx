@@ -22,7 +22,7 @@ const AdminToolsSigningAuthorityItem: React.FC<{
         await Clipboard.write({ string: itemValue });
 
         presentToast(`${item} copied to clipboard`, {
-            className: ToastTypeEnum.CopySuccess,
+            type: ToastTypeEnum.Success,
             hasDismissButton: true,
         });
     };

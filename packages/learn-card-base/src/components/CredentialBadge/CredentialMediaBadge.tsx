@@ -8,8 +8,7 @@ import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.
 import { getVideoMetadata, VideoMetadata } from 'learn-card-base/helpers/video.helpers';
 
 import { BoostMediaOptionsEnum } from '../boost/boost';
-import { boostCategoryOptions } from '../boost/boostOptions/boostOptions';
-import { CredentialCategoryEnum } from 'learn-card-base/types/credentials';
+import { categoryMetadata, CredentialCategoryEnum } from 'learn-card-base';
 import {
     getDefaultCategoryForCredential,
     getExistingAttachmentsOrEvidence,
@@ -36,7 +35,7 @@ export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
 
     const displayTypeBackgroundStyles = 'min-h-[120px] max-h-[120px] !rounded-none';
     const { color, SolidIconComponent, IconComponent } =
-        boostCategoryOptions?.[boostType ?? defaultCategory] ?? {};
+        categoryMetadata[boostType ?? defaultCategory];
     const [videoMetaData, setVideoMetaData] = useState<VideoMetadata | null>(null);
 
     const _colorOverride = color ?? 'gray-500';

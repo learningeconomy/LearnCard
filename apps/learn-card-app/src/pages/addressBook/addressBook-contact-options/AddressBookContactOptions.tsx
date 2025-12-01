@@ -4,7 +4,7 @@ import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
-import { IonPage, useIonModal, useIonToast } from '@ionic/react';
+import { IonPage, useIonModal } from '@ionic/react';
 import Camera from 'learn-card-base/svgs/Camera';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import AddressBookQRCode from '../addressBook-qrcode/AddressBookQRCode';
@@ -15,7 +15,7 @@ import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 
 import { QRCodeScannerStore } from 'learn-card-base';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 
 const AddressBookContactOptions: React.FC<{
     handleCloseModal: () => void;
@@ -23,7 +23,7 @@ const AddressBookContactOptions: React.FC<{
     handleShowSearch?: () => void;
 }> = ({ handleCloseModal, showSearch = true, handleShowSearch }) => {
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const [walletDid, setWalletDid] = useState<string>('');
 
@@ -86,30 +86,14 @@ const AddressBookContactOptions: React.FC<{
             await Clipboard.write({
                 string: `https://learncard.app/connect?did=${walletDid}`,
             });
-            presentToast({
-                message: 'Contact link copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Contact link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy Contact link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy Contact link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

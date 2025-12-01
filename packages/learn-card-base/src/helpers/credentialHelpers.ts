@@ -25,13 +25,13 @@ import {
     isCustomBoostType,
     replaceUnderscoresWithWhiteSpace,
 } from './boostCustomTypeHelpers';
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-} from 'learn-card-base/components/boost/boostOptions/boostOptions';
+import { CATEGORY_TO_SUBCATEGORY_LIST } from 'learn-card-base/components/boost/boostOptions/boostOptions';
 import { LCN_DID_WEB_REGEX } from 'learn-card-base/constants/regexes';
-import { CredentialCategoryEnum } from 'learn-card-base/types/credentials';
+import {
+    BoostCategoryOptionsEnum,
+    CredentialCategoryEnum,
+    boostCategoryMetadata,
+} from 'learn-card-base';
 import { VerifierState } from '@learncard/react';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { VERIFIER_STATES } from '@learncard/react';
@@ -342,20 +342,6 @@ const CATEGORY_MAP: Record<
     'ext:Family': 'Family',
 };
 
-export const CATEGORY_TO_WALLET_SUBTYPE = {
-    ID: 'ids',
-    'Learning History': 'learningHistory',
-    Achievement: 'achievements',
-    'Work History': 'jobHistory',
-    Skill: 'skills',
-    'Social Badge': 'socialBadge',
-    Membership: 'membership',
-    Accomplishment: 'accomplishment',
-    Accommodation: 'accommodation',
-    Family: 'family',
-    Hidden: 'hidden',
-} as const satisfies Record<CredentialCategory, string>;
-
 // unwrapBoost helper returns inner vc of boost or if normal vc returns vc
 export const unwrapBoostCredential = (vc?: VC | UnsignedVC) => {
     if (vc?.type?.includes('CertifiedBoostCredential') && vc?.boostCredential) {
@@ -467,22 +453,6 @@ export const getVerifierState = (credential: VC | UnsignedVC) => {
     }
 
     return verifierState;
-};
-
-export const mapAiCredentialCategory = (category: string): CredentialCategory => {
-    switch (category) {
-        case 'ai-summary':
-            return CredentialCategoryEnum.aiSummary;
-        case 'ai-topic':
-            return CredentialCategoryEnum.aiTopic;
-        case 'ai-pathway':
-        case 'learningPathway':
-            return CredentialCategoryEnum.aiPathway;
-        case 'ai-assessment':
-            return CredentialCategoryEnum.aiAssessment;
-        default:
-            return category as CredentialCategory;
-    }
 };
 
 export const getDefaultCategoryForCredential = (
@@ -1061,7 +1031,7 @@ export const getAchievementTypeDisplayText = (
         //   (arbitrarily) default to boostType here, since it's at least generally accurate and properly formatted for display
         //   otherwise, just display whatever was passed in for achievementType.
         //   fallbackText if we need it
-        const boostTypeDisplayText = boostCategoryOptions?.[boostType]?.title;
+        const boostTypeDisplayText = boostCategoryMetadata[boostType]?.title;
         if (boostTypeDisplayText) displayText = boostTypeDisplayText;
 
         displayText = boostTypeDisplayText || achievementType || fallbackText;

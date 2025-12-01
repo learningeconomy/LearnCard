@@ -5,12 +5,13 @@ import DotIcon from 'learn-card-base/svgs/DotIcon';
 import { useLoadingLine } from '../../stores/loadingStore';
 import { useGetCredentialsForSkills } from 'learn-card-base';
 
-import { SubType, WalletPageItem } from './constants';
+import { WalletPageItem } from './constants';
 import { mapBoostsToSkills } from '../skills/skills.helpers';
 import { IonSkeletonText } from '@ionic/react';
+import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
 const WalletPageSkillsSquare: React.FC<{
-    handleClickSquare: (subtype: SubType) => void;
+    handleClickSquare: (subtype: WalletCategoryTypes) => void;
     walletPageItem: WalletPageItem;
 }> = ({ handleClickSquare, walletPageItem }) => {
     const {

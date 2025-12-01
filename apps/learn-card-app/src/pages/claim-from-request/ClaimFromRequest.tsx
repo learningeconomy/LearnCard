@@ -11,7 +11,6 @@ import {
     IonFooter,
     IonToolbar,
     useIonModal,
-    useIonToast,
     IonButton,
     IonButtons,
     IonCol,
@@ -37,6 +36,8 @@ import {
     useIsLoggedIn,
     useWallet,
     useCurrentUser,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
@@ -161,9 +162,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const { data, isLoading } = useGetProfile(profileId);
 
     const issuerName = isLCNetworkUrlIssuer ? data?.displayName : getIssuerNameNonBoost(boostVC);
-    const issuerImage = isLCNetworkUrlIssuer
-        ? data?.image || data?.profileImage
-        : getIssuerImageNonBoost(boostVC);
+    const issuerImage = isLCNetworkUrlIssuer ? data?.image : getIssuerImageNonBoost(boostVC);
 
     const { createdAt } = getInfoFromCredential(boostVC, 'MMMM DD, YYYY', {
         uppercaseDate: false,
@@ -339,7 +338,7 @@ const ClaimFromRequest: React.FC = () => {
 
     const { initWallet, storeAndAddVCToWallet } = useWallet();
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const handleRedirectTo = () => {
         const redirectTo = `/request?vc_request_url=${vc_request_url}`;
@@ -456,29 +455,25 @@ const ClaimFromRequest: React.FC = () => {
             setClaimingCredential(false);
             handleAfterCredentialClaim();
 
-            presentToast({
-                message: `Successfully claimed Credential!`,
-                duration: 3000,
-                position: 'top',
-                cssClass: 'login-link-success-toast',
+            presentToast(`Successfully claimed Credential!`, {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (e) {
             setClaimingCredential(false);
             console.error('Error claiming credential', e);
 
             if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast({
-                    message: `You have already claimed this credential.`,
-                    duration: 3000,
-                    cssClass: 'ion-toast-bottom-nav-offset',
+                presentToast(`You have already claimed this credential.`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
 
                 handleAfterCredentialClaim();
             } else {
-                presentToast({
-                    message: `Oops, we couldn't claim the credential.`,
-                    duration: 3000,
-                    cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+                presentToast(`Oops, we couldn't claim the credential.`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             }
         }

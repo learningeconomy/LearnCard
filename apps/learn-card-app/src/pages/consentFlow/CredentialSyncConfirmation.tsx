@@ -61,7 +61,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
             }, 500);
         } catch (e) {
             presentToast(`Something went wrong: ${e.message}`, {
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
             });
             console.error(e);
             setSyncState(SyncStateEnum.error);

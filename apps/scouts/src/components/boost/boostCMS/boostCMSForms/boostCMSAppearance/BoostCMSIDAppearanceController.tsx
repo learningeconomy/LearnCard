@@ -6,15 +6,17 @@ import Pencil from '../../../../svgs/Pencil';
 import BoostCMSAppearanceFormModal from './BoostCMSAppearanceFormModal';
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
 
-import { BoostCategoryOptionsEnum, BoostUserTypeEnum } from '../../../boost-options/boostOptions';
+import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
+import { SetState } from 'packages/shared-types/dist';
 
 const BoostCMSIDAppearanceController: React.FC<{
     state: BoostCMSState;
-    setState?: React.Dispatch<React.SetStateAction<BoostCMSState>>;
+    setState?: SetState<BoostCMSState>;
     boostUserType?: BoostUserTypeEnum;
     customTypes?: any;
-    setCustomTypes?: React.Dispatch<any>;
+    setCustomTypes?: SetState<any>;
     disabled?: boolean;
     handleCategoryAndTypeChange?: (
         categoryType: BoostCategoryOptionsEnum,

@@ -4,6 +4,12 @@ import {
     useGetPaginatedManagedBoostsQuery,
     searchManagedBoostsFromCache,
     BoostPageViewMode,
+    categoryMetadata,
+    boostCategoryMetadata,
+    BoostPageViewModeType,
+    CredentialCategoryEnum,
+    walletSubtypeToDefaultImageSrc,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
@@ -18,10 +24,7 @@ import { BoostTemplateTabsEnum } from './BoostTemplateTabs';
 import LearnCardTemplateCard from './LearnCardTemplateCard';
 import LearnCardTemplateListItem from './LearnCardTemplateListItem';
 
-import { BoostPageViewModeType, ModalTypes, CredentialCategoryEnum } from 'learn-card-base';
-import { BoostUserTypeEnum, BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
-import { TYPE_TO_IMG_SRC } from '@learncard/react';
+import { BoostUserTypeEnum } from '../boost-options/boostOptions';
 import {
     BoostTemplateFilterOptionsEnum,
     BoostTemplateSortOptionsEnum,
@@ -67,8 +70,9 @@ const BoostTemplateSelectorBody: React.FC<BoostTemplateSelectorBodyProps> = ({
     }, [searchInput]);
 
     const isListView = viewMode === BoostPageViewMode.List;
-    const currentWalletSubtype = CATEGORY_TO_WALLET_SUBTYPE[selectedCategory];
-    const imgSrc = TYPE_TO_IMG_SRC[currentWalletSubtype];
+    const currentWalletSubtype =
+        categoryMetadata[boostCategoryMetadata[selectedCategory].credentialType].walletSubtype;
+    const imgSrc = walletSubtypeToDefaultImageSrc(currentWalletSubtype);
 
     const handleTabSwitch = (tab: BoostTemplateTabsEnum) => {
         setActiveTab(tab);

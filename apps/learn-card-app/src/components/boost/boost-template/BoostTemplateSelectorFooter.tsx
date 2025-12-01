@@ -1,5 +1,11 @@
 import React from 'react';
-import { ModalTypes, useModal, useDeviceTypeByWidth } from 'learn-card-base';
+import {
+    ModalTypes,
+    useModal,
+    useDeviceTypeByWidth,
+    boostCategoryMetadata,
+    BoostCategoryOptionsEnum,
+} from 'learn-card-base';
 
 import useBoostModal from '../hooks/useBoostModal';
 
@@ -8,11 +14,7 @@ import BoostTemplateTypeModal from './BoostTemplateTypeModal';
 import BoostWizard from '../boost-options/boostVCTypeOptions/BoostWizard';
 import BoostWizardIcon from 'learn-card-base/svgs/BoostWizardIcon';
 import X from 'learn-card-base/svgs/X';
-import {
-    BoostCategoryOptionsEnum,
-    boostCategoryOptions,
-    BoostUserTypeEnum,
-} from '../boost-options/boostOptions';
+import { BoostUserTypeEnum } from '../boost-options/boostOptions';
 
 type BoostTemplateSelectorFooterProps = {
     selectedCategory: BoostCategoryOptionsEnum;
@@ -25,7 +27,7 @@ const BoostTemplateSelectorFooter: React.FC<BoostTemplateSelectorFooterProps> = 
 }) => {
     const { closeModal, newModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
-    const { color } = boostCategoryOptions[selectedCategory];
+    const { color } = boostCategoryMetadata[selectedCategory];
     const isAll = selectedCategory === BoostCategoryOptionsEnum.all;
     const boostUserType = BoostUserTypeEnum.someone;
 
@@ -81,7 +83,7 @@ const BoostTemplateSelectorFooter: React.FC<BoostTemplateSelectorFooterProps> = 
                         }
                     );
                 }}
-                className="bg-cyan-101 text-grayscale-900 text-[17px] px-[20px] py-[5px] rounded-[40px] font-poppins font-[600] w-full flex gap-[5px] justify-center items-center shadow-button-bottom border-[2px] border-solid border-white mb-[10px]"
+                className="bg-cyan-101 text-grayscale-900 text-[17px] px-[20px] py-[5px] rounded-[40px] font-poppins font-[600] w-full flex gap-[5px] justify-center items-center shadow-button-bottom border-[2px] border-solid border-white mb-[10px] max-w-[600px] mx-auto"
             >
                 AI Boost Wizard
                 <BoostWizardIcon className="h-[35px] w-[35px]" />

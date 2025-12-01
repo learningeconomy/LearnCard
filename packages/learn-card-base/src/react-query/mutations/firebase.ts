@@ -1,11 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
-import { useWallet } from 'learn-card-base';
-import { useIonToast, useIonAlert } from '@ionic/react';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useIonAlert } from '@ionic/react';
 
 export const useSendLoginVerificationCode = () => {
     const { initWallet } = useWallet();
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
 
     return useMutation<{ success: boolean; message?: string }, Error, { email: string }>({
@@ -34,17 +34,9 @@ export const useSendLoginVerificationCode = () => {
                 return;
             }
 
-            presentToast({
-                message: 'A login verification code has been sent to your email.',
-                duration: 6000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-success-toast',
+            presentToast('A login verification code has been sent to your email.', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         },
     });
@@ -56,22 +48,29 @@ export const useVerifyContactMethodWithProofOfLogin = () => {
     const { mutateAsync: getProofOfLoginVp } = useGetProofOfLoginVp();
 
     return useMutation<
-        { success: boolean; error?: string, contactMethod?: any },
+        { success: boolean; error?: string; contactMethod?: any },
         Error,
         { token: string }
     >({
         mutationFn: async ({ token }: { token: string }) => {
-            try {       
+            try {
                 const proofRes = await getProofOfLoginVp({ token });
 
                 if (!proofRes?.success || !proofRes?.vp) {
-                    return { success: false, error: proofRes?.error || 'Failed to get Proof of Login VP' };
+                    return {
+                        success: false,
+                        error: proofRes?.error || 'Failed to get Proof of Login VP',
+                    };
                 }
 
                 const wallet = await initWallet();
                 const result = await wallet?.invoke?.verifyContactMethodWithCredential(proofRes.vp);
 
-                return { success: true, contactMethod: result.contactMethod, message: result.message };
+                return {
+                    success: true,
+                    contactMethod: result.contactMethod,
+                    message: result.message,
+                };
             } catch (error) {
                 return Promise.reject(new Error(error as string));
             }
@@ -99,41 +98,42 @@ export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
     const [presentAlert] = useIonAlert();
     const showAlert = opts?.showAlert ?? false;
 
-    return useMutation<
-        { success: boolean; vp?: string; error?: string },
-        Error,
-        { token: string }
-    >({
-        mutationFn: async ({ token }: { token: string }) => {
-            try {
-                const wallet = await initWallet('aaa');
-                const data = await wallet?.invoke?.getProofOfLoginVp(token);
+    return useMutation<{ success: boolean; vp?: string; error?: string }, Error, { token: string }>(
+        {
+            mutationFn: async ({ token }: { token: string }) => {
+                try {
+                    const wallet = await initWallet('aaa');
+                    const data = await wallet?.invoke?.getProofOfLoginVp(token);
 
-                return data;
-            } catch (error) {
-                return Promise.reject(new Error(error as string));
-            }
-        },
-        onSuccess: data => {
-            if (!data?.success) {
-                if (showAlert) {
-                    presentAlert({
-                        header: 'Error',
-                        message: data?.error || 'Failed to get Proof of Login VP',
-                        buttons: [
-                            {
-                                text: 'Dismiss',
-                                role: 'cancel',
-                            },
-                        ],
-                    });
-                } else {
-                    console.warn('useGetProofOfLoginVp: Failed to get Proof of Login VP', data?.error);
+                    return data;
+                } catch (error) {
+                    return Promise.reject(new Error(error as string));
                 }
-                return;
-            }
-        },
-    });
+            },
+            onSuccess: data => {
+                if (!data?.success) {
+                    if (showAlert) {
+                        presentAlert({
+                            header: 'Error',
+                            message: data?.error || 'Failed to get Proof of Login VP',
+                            buttons: [
+                                {
+                                    text: 'Dismiss',
+                                    role: 'cancel',
+                                },
+                            ],
+                        });
+                    } else {
+                        console.warn(
+                            'useGetProofOfLoginVp: Failed to get Proof of Login VP',
+                            data?.error
+                        );
+                    }
+                    return;
+                }
+            },
+        }
+    );
 };
 
 export const useVerifyLoginVerificationCode = () => {
@@ -178,7 +178,12 @@ export const useVerifyNetworkHandoffToken = () => {
     const [presentAlert] = useIonAlert();
 
     return useMutation<
-        { success: boolean; token?: string; message?: string; validatedNetworkHandoffToken?: string },
+        {
+            success: boolean;
+            token?: string;
+            message?: string;
+            validatedNetworkHandoffToken?: string;
+        },
         Error,
         { token: string }
     >({
@@ -187,7 +192,9 @@ export const useVerifyNetworkHandoffToken = () => {
                 const wallet = await initWallet('aaa');
                 const data = await wallet?.invoke?.verifyNetworkHandoffToken(token);
 
-                const result = await wallet?.invoke?.verifyPresentation(token, { proofFormat: 'jwt' });
+                const result = await wallet?.invoke?.verifyPresentation(token, {
+                    proofFormat: 'jwt',
+                });
                 let validatedNetworkHandoffToken: string | undefined = undefined;
 
                 if (

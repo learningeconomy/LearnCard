@@ -2,7 +2,7 @@ import React from 'react';
 
 import AdminManagedBoostsSection from './AdminManagedBoostsSection';
 
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { Boost } from '@learncard/types';
 
 type ViewAllManagedBoostsProps = {

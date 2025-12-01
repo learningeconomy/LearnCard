@@ -3,8 +3,12 @@ import React from 'react';
 import { IonCheckbox, IonCol } from '@ionic/react';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
-import { BoostUserTypeEnum, boostVCTypeOptions } from 'learn-card-base';
-import { boostCategoryOptions } from '../../../components/boost/boost-options/boostOptions';
+import {
+    BoostCategoryOptionsEnum,
+    CredentialCategoryEnum,
+    contractCategoryNameToCategoryMetadata,
+    getBoostMetadata,
+} from 'learn-card-base';
 
 export type ConsentFlowCategorySettingOption = {
     label: string;
@@ -61,9 +65,7 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
     setContract: React.Dispatch<React.SetStateAction<ConsentFlowContractDetails>>;
     mode: 'read' | 'write';
 }> = ({ values, category, setContract, mode }) => {
-    const { IconComponent, plural } =
-        boostVCTypeOptions?.[BoostUserTypeEnum.someone].find(vc => vc.type === category) ?? {};
-    const { IconWithShape } = boostCategoryOptions?.[category] ?? {};
+    const { plural, IconWithShape } = contractCategoryNameToCategoryMetadata(category) || {};
 
     const value = values[category];
 

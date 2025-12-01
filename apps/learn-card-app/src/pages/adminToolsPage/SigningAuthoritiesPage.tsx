@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { IonInput, IonSpinner, IonGrid, IonCol, IonRow } from '@ionic/react';
-import AdminPageStructure from './AdminPageStructure';
-import { useWallet, useModal, ModalTypes, useToast, ToastTypeEnum } from 'learn-card-base';
-import CopyStack from '../../components/svgs/CopyStack';
 import { Clipboard } from '@capacitor/clipboard';
 
+import { IonInput, IonSpinner, IonGrid, IonCol, IonRow } from '@ionic/react';
+import AdminPageStructure from './AdminPageStructure';
+import CopyStack from '../../components/svgs/CopyStack';
+
+import { useWallet, useModal, ModalTypes, useToast, ToastTypeEnum } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
 
 const SigningAuthoritiesPage: React.FC = () => {
@@ -112,7 +113,6 @@ const SigningAuthoritiesPage: React.FC = () => {
         await Clipboard.write({ string: itemValue });
         closeModal();
         presentToast(`${item} copied to clipboard`, {
-            className: ToastTypeEnum.CopySuccess,
             hasDismissButton: true,
         });
     };

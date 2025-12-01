@@ -7,9 +7,9 @@ import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
 import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
-import { IonModal, IonContent, IonPage, IonSpinner, useIonToast } from '@ionic/react';
+import { IonModal, IonContent, IonPage, IonSpinner } from '@ionic/react';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
@@ -20,7 +20,7 @@ import { VC } from '@learncard/types';
 export const QRCodeScannerListener: React.FC = () => {
     const history = useHistory();
     const { initWallet } = useWallet();
-    const [present, dismiss] = useIonToast();
+    const { presentToast } = useToast();
     const { validateTextVC } = useUploadVcFromText();
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
@@ -170,11 +170,9 @@ export const QRCodeScannerListener: React.FC = () => {
                             setIsClaimModalOpen(true);
                             return;
                         } else {
-                            present({
-                                message: `Invalid VC: ${validationErrors.join(', ')}`,
-                                duration: 4000,
-                                position: 'bottom',
-                                cssClass: 'network-offline-toast',
+                            presentToast(`Invalid VC: ${validationErrors.join(', ')}`, {
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
                             });
                         }
                     }
@@ -198,11 +196,9 @@ export const QRCodeScannerListener: React.FC = () => {
             await handleCancelScanning();
             setInteraction(null);
 
-            present({
-                message: `Oops! ${error?.message ?? 'There was an error scanning the QR Code.'}`,
-                duration: 3000,
-                position: 'middle',
-                cssClass: 'network-offline-toast',
+            presentToast(`Oops! ${error?.message ?? 'There was an error scanning the QR Code.'}`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

@@ -20,75 +20,64 @@ import {
     BrandingEnum,
     useModal,
     ModalTypes,
+    categoryMetadata,
+    walletSubtypeToCredentialCategory,
 } from 'learn-card-base';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
 import MeritBadgesIcon from 'learn-card-base/svgs/MeritBadgesIcon';
 import ScoutsPledge2 from 'learn-card-base/svgs/ScoutsPledge2';
-
-const WALLET_SUBTYPES = {
-    socialBadge: 'socialBadge',
-    meritBadge: 'meritBadge',
-    troops: 'troops',
-};
-
-type SubType = (typeof WALLET_SUBTYPES)[keyof typeof WALLET_SUBTYPES];
-
-const SUBTYPE_TO_CATEGORY: Record<SubType, CredentialCategory | null> = {
-    socialBadge: 'Social Badge',
-    meritBadge: 'Merit Badge',
-    troops: 'Membership',
-};
+import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
 const walletPageData: {
     id: number;
     title: string;
-    subtype: SubType;
+    subtype: WalletCategoryTypes;
     description: string;
     count: string;
     bgColor: string;
     iconSrc: React.FC;
     iconCircleClass: string;
 }[] = [
-        {
-            id: 1,
-            title: 'Social Boosts',
-            subtype: WALLET_SUBTYPES.socialBadge,
-            description: 'Showcase your social milestones',
-            count: '0',
-            iconSrc: (
-                <BoostOutline2
-                    outsideStar="#FFFFFF"
-                    insideStar="#82E6DE"
-                    outlineStar="#03748D"
-                    inlineStar="#03748D"
-                />
-            ),
-            bgColor: 'bg-sp-blue-ocean',
-            iconCircleClass: 'border-2 border-cyan-300',
-        },
-        {
-            id: 3,
-            title: 'Merit Badges',
-            subtype: WALLET_SUBTYPES.meritBadge,
-            description: 'Collect your scouting achievements',
-            count: '0',
-            bgColor: 'bg-sp-purple-base',
-            iconSrc: <MeritBadgesIcon badgeOutline="#4D006E" mountain="#FF8DFF" />,
-            iconCircleClass: 'border-2 border-spice-300',
-        },
-        {
-            id: 4,
-            title: 'Troops',
-            subtype: WALLET_SUBTYPES.troops,
-            description: 'Access your troop affiliations',
-            count: '0',
-            bgColor: 'bg-sp-green-forest',
-            iconSrc: <ScoutsPledge2 ribbon="#9FED8F" pledgeOutline="#0F631D" />,
-            iconCircleClass: 'border-2 border-emerald-300',
-        },
-    ];
+    {
+        id: 1,
+        title: 'Social Boosts',
+        subtype: WalletCategoryTypes.socialBadges,
+        description: 'Showcase your social milestones',
+        count: '0',
+        iconSrc: (
+            <BoostOutline2
+                outsideStar="#FFFFFF"
+                insideStar="#82E6DE"
+                outlineStar="#03748D"
+                inlineStar="#03748D"
+            />
+        ),
+        bgColor: 'bg-sp-blue-ocean',
+        iconCircleClass: 'border-2 border-cyan-300',
+    },
+    {
+        id: 3,
+        title: 'Merit Badges',
+        subtype: WalletCategoryTypes.meritBadges,
+        description: 'Collect your scouting achievements',
+        count: '0',
+        bgColor: 'bg-sp-purple-base',
+        iconSrc: <MeritBadgesIcon badgeOutline="#4D006E" mountain="#FF8DFF" />,
+        iconCircleClass: 'border-2 border-spice-300',
+    },
+    {
+        id: 4,
+        title: 'Troops',
+        subtype: WalletCategoryTypes.membership,
+        description: 'Access your troop affiliations',
+        count: '0',
+        bgColor: 'bg-sp-green-forest',
+        iconSrc: <ScoutsPledge2 ribbon="#9FED8F" pledgeOutline="#0F631D" />,
+        iconCircleClass: 'border-2 border-emerald-300',
+    },
+];
 
 const WalletPage: React.FC = () => {
     const { newModal, closeModal } = useModal({
@@ -152,21 +141,21 @@ const WalletPage: React.FC = () => {
         setIsOpen(true);
     };
 
-    const handleClickSquare = (subtype: SubType) => {
-        if (subtype === WALLET_SUBTYPES.meritBadge) {
+    const handleClickSquare = (subtype: WalletCategoryTypes) => {
+        if (subtype === WalletCategoryTypes.meritBadges) {
             history.push('/badges');
         }
-        if (subtype === WALLET_SUBTYPES.socialBadge) {
+        if (subtype === WalletCategoryTypes.socialBadges) {
             history.push('/boosts');
         }
-        if (subtype === WALLET_SUBTYPES.troops) {
+        if (subtype === WalletCategoryTypes.membership) {
             history.push('/troops');
         }
     };
 
     const renderWalletList = walletPageData?.map(dataSrc => {
         const { title, id, description, bgColor, iconSrc, subtype, iconCircleClass } = dataSrc;
-        const category = SUBTYPE_TO_CATEGORY[subtype];
+        const category = walletSubtypeToCredentialCategory(subtype);
         return (
             <WalletSquare
                 type={subtype}
@@ -177,7 +166,7 @@ const WalletPage: React.FC = () => {
                 description={description}
                 bgColor={bgColor}
                 onClick={() => handleClickSquare(subtype)}
-            // iconCircleClass={iconCircleClass}
+                // iconCircleClass={iconCircleClass}
             />
         );
     });

@@ -6,9 +6,9 @@ import Pencil from '../../../../svgs/Pencil';
 import BoostCMSAppearanceFormModal from './BoostCMSAppearanceFormModal';
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
 
-import { BoostCategoryOptionsEnum, BoostUserTypeEnum } from '../../../boost-options/boostOptions';
+import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 import { BoostCMSState } from '../../../boost';
-import { useModal } from 'learn-card-base';
+import { useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 const BoostCMSIDAppearanceController: React.FC<{
     state: BoostCMSState;

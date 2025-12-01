@@ -10,14 +10,13 @@ import {
     getAchievementTypeFromCustomType,
     useModal,
     ModalTypes,
+    boostCategoryMetadata,
+    getBoostMetadata,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonRow, useIonModal, IonSpinner, IonGrid } from '@ionic/react';
-import {
-    boostCategoryOptions,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-} from '../../../boost-options/boostOptions';
+import { IonRow, IonSpinner, IonGrid } from '@ionic/react';
+import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
 import Pencil from '../../../../svgs/Pencil';
@@ -75,7 +74,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
 
-    const { CategoryImage } = boostCategoryOptions[activeCategoryType];
+    const { CategoryImage } = boostCategoryMetadata[activeCategoryType];
 
     const isDefaultImage = state?.appearance?.badgeThumbnail === CategoryImage;
 
@@ -162,7 +161,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
         color: _color,
         subColor: _subColor,
         IconComponent: Icon,
-    } = boostCategoryOptions[state?.basicInfo?.type];
+    } = getBoostMetadata(state?.basicInfo?.type as BoostCategoryOptionsEnum) || {};
     formBackgroundColor = state?.appearance?.backgroundColor
         ? state?.appearance?.backgroundColor
         : '#353E64';

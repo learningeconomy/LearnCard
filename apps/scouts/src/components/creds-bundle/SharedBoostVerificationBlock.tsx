@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 
 import {
-    useIonToast,
     IonPage,
     IonGrid,
     IonRow,
@@ -14,7 +13,7 @@ import {
     IonButton,
     IonTitle,
 } from '@ionic/react';
-import { useIsLoggedIn } from 'learn-card-base';
+import { useIsLoggedIn, useToast, ToastTypeEnum } from 'learn-card-base';
 
 import X from '../svgs/X';
 import InfoIcon from '../svgs/InfoIcon';
@@ -61,7 +60,7 @@ const SharedBoostVerificationBlock: React.FC<{
     handleCloseModal,
 }) => {
     const isLoggedIn = useIsLoggedIn();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [viewJson, setViewJson] = useState<boolean>(false);
     const [isJsonModalOpen, setIsJsonModalOpen] = useState<boolean>(false);
     const jsonModalRef = useRef<HTMLIonModalElement>(null);
@@ -73,30 +72,14 @@ const SharedBoostVerificationBlock: React.FC<{
             await Clipboard.write({
                 string: jsonPrettyPrint,
             });
-            presentToast({
-                message: 'JSON copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('JSON copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy JSON to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy JSON to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

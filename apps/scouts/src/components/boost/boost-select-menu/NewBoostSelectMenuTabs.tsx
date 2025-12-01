@@ -2,7 +2,8 @@ import React from 'react';
 
 import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
 
-import { boostCategoryOptions, BoostCategoryOptionsEnum } from '../boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { boostCategoryOptions } from '../boost-options/boostOptions';
 
 export enum BoostSelectMenuTabsEnum {
     new = 'new',
@@ -14,7 +15,7 @@ const NewBoostSelectMenuTabs: React.FC<{
     activeTab: BoostSelectMenuTabsEnum;
     setActiveTab: React.Dispatch<React.SetStateAction<BoostSelectMenuTabsEnum>>;
 }> = ({ category = BoostCategoryOptionsEnum.socialBadge, activeTab, setActiveTab }) => {
-    const { title, color } = boostCategoryOptions?.[category];
+    const { title, color } = boostCategoryOptions[category];
 
     return (
         <IonRow className="flex w-full items-center justify-center">

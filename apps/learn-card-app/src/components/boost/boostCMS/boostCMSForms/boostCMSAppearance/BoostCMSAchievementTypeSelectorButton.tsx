@@ -12,12 +12,11 @@ import {
     useModal,
     useDeviceTypeByWidth,
     ModalTypes,
+    getBoostMetadata,
+    CredentialCategoryEnum,
 } from 'learn-card-base';
 
-import {
-    boostCategoryOptions,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-} from '../../../boost-options/boostOptions';
+import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 
 import { BoostCMSState } from '../../../boost';
 import BoostCMSAchievementTypeSelectorModal from './BoostCMSAchievementTypeSelectorModal';
@@ -63,8 +62,12 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<AchievementTypeSelectorBut
                 ?.title ?? 'Select Type';
     }
 
-    const { color: _color } = boostCategoryOptions[state?.basicInfo?.type];
-    const { Icon } = getThemedCategoryIcons(state?.basicInfo?.type);
+    const boostMetadata =
+        getBoostMetadata(
+            state?.basicInfo?.type as BoostCategoryOptionsEnum | CredentialCategoryEnum
+        ) || {};
+    const { color: _color } = boostMetadata;
+    const { Icon } = getThemedCategoryIcons(boostMetadata.credentialType as CredentialCategoryEnum);
 
     return (
         <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4">

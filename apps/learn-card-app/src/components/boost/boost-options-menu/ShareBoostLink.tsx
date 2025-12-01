@@ -3,21 +3,26 @@ import { Clipboard } from '@capacitor/clipboard';
 import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
-import { IonGrid, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
+import { IonGrid, IonSpinner } from '@ionic/react';
+import LeftArrow from 'learn-card-base/svgs/LeftArrow';
+import IDSleeve from '../../../assets/images/id-sleeve.png';
+import FamilyCrest from '../../familyCMS/FamilyCrest/FamilyCrest';
+import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+
 import {
     BoostCategoryOptionsEnum,
     CredentialBadge,
+    CredentialCategoryEnum,
     ProfilePicture,
+    getBoostMetadata,
     truncateWithEllipsis,
     useGetProfile,
     useShareBoostMutation,
+    ToastTypeEnum,
+    useToast,
 } from 'learn-card-base';
-import IDSleeve from '../../../assets/images/id-sleeve.png';
-import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
-import LeftArrow from 'learn-card-base/svgs/LeftArrow';
-import FamilyCrest from '../../familyCMS/FamilyCrest/FamilyCrest';
-import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
+import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
 
 import {
     getCredentialName,
@@ -30,16 +35,14 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import { UnsignedVC, VC } from '@learncard/types';
-import { boostCategoryOptions } from '../boost-options/boostOptions';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
-import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;
     boost: VC | UnsignedVC;
     boostUri?: string;
     customClassName?: string;
-    categoryType: string;
+    categoryType: BoostCategoryOptionsEnum | CredentialCategoryEnum;
     onBackButtonClick?: () => void;
     hideLinkedIn?: boolean;
     isEndorsementRequest?: boolean;
@@ -62,11 +65,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
     const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
-    const {
-        IconComponent,
-        CategoryImage,
-        title: categoryTitle,
-    } = boostCategoryOptions?.[categoryType ?? 'Achievement'];
+    const boostMetadata = getBoostMetadata(categoryType);
+    const { IconComponent, CategoryImage, title: categoryTitle } = boostMetadata ?? {};
 
     const isBoost = boost && isBoostCredential(boost);
     const cred = boost && unwrapBoostCredential(boost);
@@ -185,12 +185,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                 string: shareLink,
             });
             presentToast('Share link copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy share link to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

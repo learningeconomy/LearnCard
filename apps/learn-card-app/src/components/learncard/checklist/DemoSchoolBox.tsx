@@ -78,13 +78,12 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             fetchNewContractCredentials();
             resetCache();
             presentToast('You have successfully connected to the demo school.', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
             closeAllModals();
         } catch (error) {
             presentToast('Unable to connect to the demo school. Please try again.', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
             console.error(error);
@@ -94,7 +93,8 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
     const handleEndDemoContract = async () => {
         if (!contractCredentialsExist) {
             presentToast('No Demo credentials found. Please try again.', {
-                toastType: ToastTypeEnum.Error,
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
             return;
         }
@@ -111,7 +111,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             newCredsStore.set.removeCreds(credentialUris);
 
             presentToast(`Deleted ${contractCredentials?.length ?? 0} Demo credentials`, {
-                toastType: ToastTypeEnum.CopySuccess,
+                hasDismissButton: true,
             });
             resetCache();
         });

@@ -162,12 +162,12 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
 
                     presentToast(
                         `Deleted ${contractCredentials?.length} credentials from contract ${contractDetails.name}`,
-                        { toastType: ToastTypeEnum.CopySuccess }
+                        { type: ToastTypeEnum.Success }
                     );
                 } catch (e) {
                     presentToast(
                         `Error while deleting credentials from contarct ${contractDetails.name}: ${e.message}`,
-                        { toastType: ToastTypeEnum.CopyFail }
+                        { type: ToastTypeEnum.Error }
                     );
                 }
             }

@@ -37,7 +37,7 @@ const {
 } = SideNavIcons;
 
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
-import { CredentialCategoryEnum } from 'learn-card-base/types/credentials';
+import { CredentialCategoryEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
 
 export enum SideMenuLinksEnum {
     //  root links

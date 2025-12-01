@@ -3,14 +3,14 @@ import { useHistory } from 'react-router-dom';
 import { z } from 'zod';
 import { IonCol, IonTextarea } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
-import { useModal, ModalTypes } from 'learn-card-base';
-import BoostCMS from '../boostCMS/BoostCMS';
-import { constructCustomBoostType, CUSTOM_BOOST_TYPE_REGEX } from 'learn-card-base';
 import {
-    boostCategoryOptions,
     BoostCategoryOptionsEnum,
-    BoostUserTypeEnum,
-} from '../boost-options/boostOptions';
+    constructCustomBoostType,
+    useModal,
+    ModalTypes,
+} from 'learn-card-base';
+import BoostCMS from '../boostCMS/BoostCMS';
+import { BoostUserTypeEnum, boostCategoryOptions } from '../boost-options/boostOptions';
 
 const MAX_TYPE_LENGTH = 100;
 const StateValidator = z.object({

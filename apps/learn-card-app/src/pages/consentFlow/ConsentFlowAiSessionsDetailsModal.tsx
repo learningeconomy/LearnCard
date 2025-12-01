@@ -1,17 +1,19 @@
 import React from 'react';
 import { Updater, useImmer } from 'use-immer';
-import { LaunchPadAppListItem, useModal } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    LaunchPadAppListItem,
+    categoryMetadata,
+    contractCategoryNameToCategoryMetadata,
+    useModal,
+} from 'learn-card-base';
 
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import ConsentFlowFooter from './ConsentFlowFooter';
 import PrivacyAndDataHeader from './PrivacyAndDataHeader';
 import ConsentFlowReadSharingItem from './ConsentFlowReadSharingItem';
 
-import {
-    AI_CREDENTIAL_TYPE,
-    getPrivacyAndDataInfo,
-    rawAiCategoryToDisplayName,
-} from '../../helpers/contract.helpers';
+import { getPrivacyAndDataInfo } from '../../helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 
 type ConsentFlowAiSessionsDetailsModalProps = {
@@ -38,10 +40,13 @@ const ConsentFlowAiSessionsDetailsModal: React.FC<ConsentFlowAiSessionsDetailsMo
     const [aiSessionCategories, setAiSessionCategories] = useImmer(_aiSessionCategories);
 
     const infoText = {
-        [AI_CREDENTIAL_TYPE.AI_ASSESSMENT]: 'Evaluations of your progress during tutoring',
-        [AI_CREDENTIAL_TYPE.AI_SUMMARY]: 'Brief overviews of your tutoring conversations',
-        [AI_CREDENTIAL_TYPE.AI_TOPIC]: "The subjects and areas you're actively exploring",
-        [AI_CREDENTIAL_TYPE.LEARNING_PATHWAY]:
+        [categoryMetadata[CredentialCategoryEnum.aiAssessment].contractCredentialTypeOverride!]:
+            'Evaluations of your progress during tutoring',
+        [categoryMetadata[CredentialCategoryEnum.aiSummary].contractCredentialTypeOverride!]:
+            'Brief overviews of your tutoring conversations',
+        [categoryMetadata[CredentialCategoryEnum.aiTopic].contractCredentialTypeOverride!]:
+            "The subjects and areas you're actively exploring",
+        [categoryMetadata[CredentialCategoryEnum.aiPathway].contractCredentialTypeOverride!]:
             "The goals and skills you're currently working towards",
     };
 
@@ -81,7 +86,9 @@ const ConsentFlowAiSessionsDetailsModal: React.FC<ConsentFlowAiSessionsDetailsMo
                                     category={category}
                                     required={required}
                                     hideIcon
-                                    titleOverride={rawAiCategoryToDisplayName(category)}
+                                    titleOverride={
+                                        contractCategoryNameToCategoryMetadata(category)?.title
+                                    }
                                     infoText={infoText[category as keyof typeof infoText]}
                                     onClickOverride={() => {
                                         const newTerm = {

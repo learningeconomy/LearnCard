@@ -8,6 +8,9 @@ import {
     redirectStore,
     CredentialCategory,
     CredentialCategoryEnum,
+    categoryMetadata,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import {
@@ -16,20 +19,8 @@ import {
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES, VCDisplayCard, VCDisplayCard2 } from '@learncard/react';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
-
 import useWallet from 'learn-card-base/hooks/useWallet';
-import {
-    IonPage,
-    IonContent,
-    IonRow,
-    IonCol,
-    IonGrid,
-    IonLoading,
-    IonProgressBar,
-    useIonToast,
-} from '@ionic/react';
+import { IonPage, IonContent, IonRow, IonCol, IonGrid, IonLoading } from '@ionic/react';
 
 import CredentialStorageFooter from './CredentialStorageFooter';
 import LoadingPage from '../loadingPage/LoadingPage';
@@ -38,7 +29,7 @@ import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarne
 export const getCredentialFromVp = (vp: VP): VC => {
     const vcField = vp.verifiableCredential;
 
-    return Array.isArray(vcField) ? vcField[0] : vcField;
+    return (Array.isArray(vcField) ? vcField[0] : vcField) as VC;
 };
 
 export const areMultipleCredentials = (vp: VP): boolean => {
@@ -71,13 +62,14 @@ const SingleCredential: React.FC<{
         <IonPage>
             <IonContent fullscreen>
                 <div className="pb-[50px] pt-[50px]">
-                    <VCDisplayCardWrapper2
-                        overrideCardImageUrl={imgUrl}
-                        overrideCardTitle={credTitle}
-                        credential={credential}
-                        className="credential-storage-vc-card"
-                        walletDid={lcDid}
-                    />
+                    <div className="credential-storage-vc-card">
+                        <VCDisplayCardWrapper2
+                            overrideCardImageUrl={imgUrl}
+                            overrideCardTitle={credTitle}
+                            credential={credential!}
+                            walletDid={lcDid}
+                        />
+                    </div>
                     <CredentialStorageFooter
                         className="ion-no-border mt-5 credential-storage-footer-desktop"
                         {...credentialStorageFooterProps}
@@ -106,11 +98,11 @@ const MultiCredential: React.FC<{
     const credential = presentation && getCredentialFromVp(presentation);
 
     const credentials = presentation.verifiableCredential.map((cred: VC) => {
-        const category =
+        const category: CredentialCategory =
             cred?.category ||
             getDefaultCategoryForCredential(cred) ||
             CredentialCategoryEnum.achievement;
-        const categoryImgUrl = TYPE_TO_IMG_SRC[CATEGORY_TO_WALLET_SUBTYPE[category]];
+        const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
         return (
             <BoostEarnedCard
                 credential={cred}
@@ -163,7 +155,7 @@ const CredentialStorage: React.FC = () => {
     const [lcDid, setLcDid] = useState<any>();
     const [claimCount, setClaimCount] = useState(0);
     const [totalToClaim, setTotalToClaim] = useState(0);
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -193,6 +185,7 @@ const CredentialStorage: React.FC = () => {
             setClaimCount(0);
             const wallet = await initWallet();
 
+            if (!presentation?.verifiableCredential) return;
             const credentialsToAccept = Array.isArray(presentation.verifiableCredential)
                 ? presentation.verifiableCredential
                 : [presentation.verifiableCredential];
@@ -200,6 +193,7 @@ const CredentialStorage: React.FC = () => {
             setTotalToClaim(credentialsToAccept.length);
             for (let x = 0; x < credentialsToAccept.length; x++) {
                 const accepting = credentialsToAccept[x];
+                if (!accepting) continue;
                 const uri = await publishEncryptedContentToCeramic(accepting);
 
                 const imgUrl = getImageUrlFromCredential(accepting);
@@ -237,10 +231,9 @@ const CredentialStorage: React.FC = () => {
             setClaimCount(totalToClaim);
         } catch (e) {
             console.error(e);
-            presentToast({
-                message: `Oops, we were unable accept the credentials. Please try again.`,
-                duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+            presentToast(`Oops, we were unable accept the credentials. Please try again.`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
             setIsLoading(false);
             setClaimCount(0);
@@ -253,10 +246,9 @@ const CredentialStorage: React.FC = () => {
             redirectStore.set.authRedirect(null);
         } catch (e) {
             console.error(e);
-            presentToast({
-                message: `Oops, we were unable reject the credentials. Please try again.`,
-                duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+            presentToast(`Oops, we were unable reject the credentials. Please try again.`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
         event.respondWith(Promise.resolve(null));

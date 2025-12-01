@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { BoostUserTypeEnum, BoostCategoryOptionsEnum, boostCategoryOptions } from '../boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostUserTypeEnum, boostCategoryOptions } from '../boostOptions';
 
 export const BoostSubCategoryButton: React.FC<{
     closeAllModals: () => void;
@@ -22,7 +23,7 @@ export const BoostSubCategoryButton: React.FC<{
 }) => {
     const { IconComponent, color } = boostCategoryOptions[boostCategoryType];
 
-    const baseLink = `/boost?boostUserType=${boostUserType}&boostCategoryType=${boostCategoryType}&boostSubCategoryType=${subCategoryType}`
+    const baseLink = `/boost?boostUserType=${boostUserType}&boostCategoryType=${boostCategoryType}&boostSubCategoryType=${subCategoryType}`;
 
     let link = baseLink;
 

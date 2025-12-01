@@ -23,14 +23,12 @@ import {
     BoostCMSState,
     ToastTypeEnum,
     CredentialBadge,
+    boostCategoryMetadata,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { mapCategoryToBoostEnum, parseBadgeType, parseSkills } from './bulkImport.helpers';
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from 'apps/learn-card-app/src/components/boost/boost-options/boostOptions';
 import {
     getBoostCredentialPreview,
     getBoostVerificationPreview,
@@ -249,7 +247,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         const file = event.target.files[0];
         if (!file || !file.name.endsWith('.zip')) {
             presentToast('Please upload a valid ZIP file', {
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
             });
             return;
         }
@@ -296,12 +294,12 @@ const AdminToolsBulkBoostImportOption: React.FC<{
 
             setZipUploaded(true);
             presentToast(`Successfully processed ${imageMap.size} images from ZIP file`, {
-                toastType: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Success,
             });
         } catch (error) {
             console.error('Error extracting ZIP file:', error);
             presentToast('Error extracting ZIP file', {
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
             });
         } finally {
             setIsLoading(false);
@@ -440,7 +438,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         // Check for missing images
         if (hasMissingImages) {
             presentToast('Please upload all required images before publishing', {
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 duration: 5000,
             });
             return;
@@ -457,7 +455,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
 
     const csvRowToState = async (csvRow: any) => {
         const category = mapCategoryToBoostEnum(csvRow[DataKeys.category]);
-        const defaultBadgeThumb = boostCategoryOptions[category].CategoryImage;
+        const defaultBadgeThumb = boostCategoryMetadata[category].CategoryImage;
         const isID = category === BoostCategoryOptionsEnum.id;
 
         // assumes images (thumb + background) have already been uploaded to filestack if necessary
@@ -527,7 +525,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
             presentToast('Boosts imported successfully!', {
                 duration: 5000,
                 hasDismissButton: true,
-                toastType: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Success,
             });
         } catch (e) {
             console.error('Failed to bulk import boosts: ', e?.message);
@@ -535,7 +533,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
             presentToast(`Bulk boost import failed! ${e?.message}`, {
                 duration: 5000,
                 hasDismissButton: true,
-                toastType: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
             });
         } finally {
             setNumBoostsCreated(0);

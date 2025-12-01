@@ -10,15 +10,15 @@ import {
     InfiniteData,
 } from '@tanstack/react-query';
 import { BoostQuery, CredentialRecord } from '@learncard/types';
-import { newCredsStore, switchedProfileStore, useWallet } from 'learn-card-base';
+import { categoryMetadata, newCredsStore, switchedProfileStore, useWallet } from 'learn-card-base';
 
 import { getIssuanceDate } from 'learn-card-base/helpers/credentialHelpers';
 import { getCategoryForCredential } from 'learn-card-base/hooks/useWallet';
-import { CredentialCategory, CredentialCategoryEnum } from '../../types/credentials';
+import { CredentialCategory } from '../../types/credentials';
 import { VC, PaginationOptionsType } from '@learncard/types';
 import { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import { credentialWithEditsHelper } from 'learn-card-base';
+import { credentialWithEditsHelper, CredentialCategoryEnum } from 'learn-card-base';
 import {
     ConsentRecord,
     ConsentedContract,
@@ -986,8 +986,17 @@ export const useGetSummaryInfo = (summaryUri?: string) => {
                 limit: 100,
             });
 
-            const topicBoost = records.find(r => r.category === 'ai-topic');
-            const assessmentBoost = records.find(r => r.category === 'ai-assessment');
+            const topicBoost = records.find(
+                r =>
+                    r.category ===
+                    categoryMetadata[CredentialCategoryEnum.aiTopic].contractCredentialTypeOverride
+            );
+            const assessmentBoost = records.find(
+                r =>
+                    r.category ===
+                    categoryMetadata[CredentialCategoryEnum.aiAssessment]
+                        .contractCredentialTypeOverride
+            );
 
             const topicRecord = topicBoost
                 ? await getOrFetchCredentialRecordForBoost(topicBoost.uri, initWallet, queryClient)

@@ -42,7 +42,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     isPostConsent,
     headerClass,
 }) => {
-    const { closeModal, closeAllModals } = useModal();
+    const { closeModal } = useModal();
     const { presentToast } = useToast();
 
     const { updateTerms, updatingTerms } = useConsentFlow(contractDetails, app);
@@ -337,11 +337,11 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                             await updateTerms(terms, shareDuration);
                             closeModal();
                             presentToast('Successfully updated!', {
-                                toastType: ToastTypeEnum.CopySuccess,
+                                type: ToastTypeEnum.Success,
                             });
                         } catch (e) {
                             presentToast(`Failed to update terms: ${e.message}`, {
-                                toastType: ToastTypeEnum.CopyFail,
+                                type: ToastTypeEnum.Error,
                             });
                         }
                     }

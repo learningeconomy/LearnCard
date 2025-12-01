@@ -4,12 +4,7 @@ import { RouteComponentProps } from 'react-router-dom';
 import useLCNGatedAction from '../../network-prompts/hooks/useLCNGatedAction';
 import BoostVCTypeOptions from '../boost-options/boostVCTypeOptions/BoostVCTypeOptions';
 
-import {
-    useModal,
-    ModalTypes,
-    BoostCategoryOptionsEnum,
-    CredentialCategoryEnum,
-} from 'learn-card-base';
+import { useModal, ModalTypes, CredentialCategoryEnum } from 'learn-card-base';
 import { BoostUserTypeEnum } from '../boost-options/boostOptions';
 
 const useBoostModal = (
@@ -56,4 +51,3 @@ const useBoostModal = (
 };
 
 export default useBoostModal;
-

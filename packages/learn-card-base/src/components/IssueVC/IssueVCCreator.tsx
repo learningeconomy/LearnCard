@@ -8,16 +8,16 @@ import {
     IonTextarea,
     IonCheckbox,
     IonSpinner,
-    useIonToast,
 } from '@ionic/react';
 import { addCredentialSelfAttest } from './helpers';
 import { Capacitor } from '@capacitor/core';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import { CATEGORY_TO_TEMPLATE_LIST } from './constants';
 import { useImmer, Updater } from 'use-immer';
-import { CredentialCategory } from 'learn-card-base/types/credentials';
+import { CredentialCategory } from 'learn-card-base';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { KnownAchievementType } from '@learncard/types';
+import { useToast, ToastTypeEnum } from 'learn-card-base';
 
 /** Generates a default generic VC template state */
 const genericVCTemplateState = {
@@ -135,7 +135,7 @@ const IssueVCCreator: React.FC<{ category: CredentialCategory; closeModal?: any 
     const [templateTitle, setTemplateTitle] = useState('credential');
     const [loading, setLoading] = useState(false);
     const [valid, setValid] = useState(false);
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const [templateState, setTemplateState] = useImmer(genericVCTemplateState);
 
@@ -219,18 +219,16 @@ const IssueVCCreator: React.FC<{ category: CredentialCategory; closeModal?: any 
                 await addVCtoWallet({ uri: issuedVcUri });
                 setLoading(false);
                 closeModal?.();
-                presentToast({
-                    message: `Successfully created ${templateTitle}`,
-                    duration: 3000,
-                    cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                presentToast(`Successfully created ${templateTitle}`, {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
                 });
             } catch (e) {
                 console.log('error', e);
                 closeModal?.();
-                presentToast({
-                    message: `Error creating ${templateTitle}`,
-                    duration: 3000,
-                    cssClass: 'toast-custom-class ion-toast-bottom-nav-offset',
+                presentToast(`Error creating ${templateTitle}`, {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             }
         } else {

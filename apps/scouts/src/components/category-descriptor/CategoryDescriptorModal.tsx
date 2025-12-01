@@ -4,7 +4,7 @@ import { IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
 
 import CategoryDescriptor from '../../components/category-descriptor/CategoryDescriptor';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';

@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
-import { TYPE_TO_IMG_SRC } from '@learncard/react';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
 import { VC } from '@learncard/types';
+import { categoryMetadata } from 'learn-card-base';
 
 type ShareCredentialModalProps = {
     credential: VC;
@@ -21,8 +20,7 @@ export const ShareCredentialModal: React.FC<ShareCredentialModalProps> = ({
     origin,
 }) => {
     const category = getDefaultCategoryForCredential(credential) || 'Achievement';
-    const categoryImgUrl = TYPE_TO_IMG_SRC[CATEGORY_TO_WALLET_SUBTYPE[category]];
-    const credentialName = credential?.name || credential?.credentialSubject?.name || 'Credential';
+    const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
 
     return (
         <div className="flex flex-col h-full w-full bg-grayscale-100">
@@ -38,7 +36,8 @@ export const ShareCredentialModal: React.FC<ShareCredentialModalProps> = ({
                 </h2>
                 {origin && (
                     <p className="text-sm text-grayscale-600 text-center mt-2">
-                        <span className="font-semibold">{origin}</span> is requesting access to this credential
+                        <span className="font-semibold">{origin}</span> is requesting access to this
+                        credential
                     </p>
                 )}
             </div>

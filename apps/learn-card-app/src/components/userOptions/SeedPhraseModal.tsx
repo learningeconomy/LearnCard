@@ -47,12 +47,11 @@ const SeedPhraseModal: React.FC<{}> = () => {
         try {
             await Clipboard.write({ string: currentUser?.privateKey });
             presentToast('Seed Phrase copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy seed phrase to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

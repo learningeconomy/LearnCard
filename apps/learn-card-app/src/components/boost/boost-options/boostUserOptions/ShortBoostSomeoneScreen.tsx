@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 
-import { useModal } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata, useModal } from 'learn-card-base';
 
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import CredentialGeneralPlus from '../../../svgs/CredentialGeneralPlus';
@@ -10,7 +10,6 @@ import BoostAddressBookContactItem from '../../boostCMS/boostCMSForms/boostCMSIs
 import { BoostCMSState } from '../../boost';
 import { BoostAddressBookEditMode } from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBook';
 import { BoostCMSIssueTo, ShortBoostState } from '../../boost';
-import { BoostCategoryOptionsEnum, boostCategoryOptions } from '../boostOptions';
 
 type ShortBoostSomeoneScreenProps = {
     boostUri: string;
@@ -56,7 +55,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
     const { closeModal } = useModal();
     const sectionPortal = document.getElementById('section-cancel-portal');
 
-    const color = boostCategoryOptions[category]?.color;
+    const color = boostCategoryMetadata[category].color;
 
     const issueButtonDisabled = issuedTo.length === 0;
 

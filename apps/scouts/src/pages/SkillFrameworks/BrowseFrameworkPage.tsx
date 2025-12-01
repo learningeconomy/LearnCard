@@ -703,7 +703,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                             presentToast(`Error updating skills: ${error}`, {
                                 title: 'Update Failed',
                                 hasDismissButton: true,
-                                toastType: ToastTypeEnum.Error,
+                                type: ToastTypeEnum.Error,
                                 duration: 10000,
                             });
                             console.error('Error updating skills:', error);

@@ -1,4 +1,4 @@
-import { BoostCategoryOptionsEnum } from '../boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
@@ -367,8 +367,7 @@ export const initializeTroopState = (viewMode: TroopsCMSViewModeEnum): TroopsCMS
         const categoryType = BoostCategoryOptionsEnum.globalAdminId;
         const achievementType = AchievementTypes.Global;
 
-        const { image, backgroundImage } =
-            troopsCMSViewModeDefaults[TroopsCMSViewModeEnum.global]!;
+        const { image, backgroundImage } = troopsCMSViewModeDefaults[TroopsCMSViewModeEnum.global]!;
         const idDefaults = troopsIDDefaults?.global;
 
         return {

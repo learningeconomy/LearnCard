@@ -4,7 +4,7 @@ import SocialBadges from '../../../svgs/SocialBadges';
 import SocialServices from '../../../svgs/SocialServices';
 import FamilyBoostListItem from './FamilyBoostListItem';
 
-import { BoostCategoryOptionsEnum } from '../../../boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import useBoostModal from '../../../boost/hooks/useBoostModal';
 

@@ -42,6 +42,8 @@
         "localforage": "^1.9.0",
         "lodash": "^4.17.19",
         "moment": "^2.29.4",
+        "moment-timezone": "^0.5.40",
+        "motion": "^12.23.24",
         "nanostores": "^0.11.3",
         "prop-types": "^15.7.2",
         "query-string": "^7.1.1",

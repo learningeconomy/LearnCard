@@ -4,8 +4,12 @@ import { useHistory } from 'react-router-dom';
 import { IonTextarea } from '@ionic/react';
 
 import { BoostUserTypeEnum } from '../boost-options/boostOptions';
-import { constructCustomBoostType, useModal } from 'learn-card-base';
-import { BoostCategoryOptionsEnum, boostCategoryOptions } from '../boost-options/boostOptions';
+import {
+    BoostCategoryOptionsEnum,
+    boostCategoryMetadata,
+    constructCustomBoostType,
+    useModal,
+} from 'learn-card-base';
 
 type BoostTemplateTypeModalProps = {
     selectedCategory: BoostCategoryOptionsEnum;
@@ -29,7 +33,7 @@ const BoostTemplateTypeModal: React.FC<BoostTemplateTypeModalProps> = ({
     }
 
     const { titleSingular, IconWithShape, AltIconWithShapeForColorBg, lightColor, color } =
-        boostCategoryOptions[selectedCategory];
+        boostCategoryMetadata[selectedCategory];
 
     const continueDisabled = boostType.length === 0;
 

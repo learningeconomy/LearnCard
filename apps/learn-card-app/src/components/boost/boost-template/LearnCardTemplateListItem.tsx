@@ -1,15 +1,8 @@
 import React from 'react';
-import {
-    BoostUserTypeEnum,
-    CredentialCategory,
-    CredentialCategoryEnum,
-    useModal,
-} from 'learn-card-base';
+import { BoostUserTypeEnum, CredentialCategory, categoryMetadata, useModal } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
-import { getDefaultAchievementTypeImage, getDefaultDisplayType } from '../boostHelpers';
-import { boostCategoryOptions } from '../boost-options/boostOptions';
-import { BoostCMSAppearanceDisplayTypeEnum } from '../boost';
+import { getDefaultAchievementTypeImage } from '../boostHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
 import CredentialGeneralPlus from '../../svgs/CredentialGeneralPlus';
 
@@ -39,37 +32,12 @@ const LearnCardTemplateListItem: React.FC<LearnCardTemplateListItemProps> = ({
     const badgeThumbnail = getDefaultAchievementTypeImage(
         categoryType,
         subType,
-        boostCategoryOptions[categoryType]?.CategoryImage,
+        categoryMetadata[categoryType].CategoryImage,
         boostAppearanceBadgeList
     );
 
-    const displayType: BoostCMSAppearanceDisplayTypeEnum = getDefaultDisplayType(categoryType);
-
-    const categoryColors = {
-        [CredentialCategoryEnum.learningHistory]: 'emerald-700',
-        [CredentialCategoryEnum.socialBadge]: 'cyan-700',
-        [CredentialCategoryEnum.achievement]: 'pink-400',
-        [CredentialCategoryEnum.accomplishment]: 'yellow-400',
-        [CredentialCategoryEnum.workHistory]: 'cyan-400',
-        [CredentialCategoryEnum.accommodation]: 'violet-400',
-        [CredentialCategoryEnum.id]: 'teal-500',
-        [CredentialCategoryEnum.membership]: 'teal-400',
-    };
-    const textColor = categoryColors[categoryType];
-
-    const bgColors = {
-        [CredentialCategoryEnum.learningHistory]: 'bg-emerald-700',
-        [CredentialCategoryEnum.socialBadge]: 'bg-blue-400',
-        [CredentialCategoryEnum.achievement]: 'bg-pink-400',
-        [CredentialCategoryEnum.accomplishment]: 'bg-yellow-400',
-        [CredentialCategoryEnum.workHistory]: 'bg-cyan-400',
-        [CredentialCategoryEnum.accommodation]: 'bg-violet-400',
-        [CredentialCategoryEnum.id]: 'bg-blue-500',
-        [CredentialCategoryEnum.membership]: 'bg-teal-400',
-    };
-
     const achievementTypeDisplay = getAchievementTypeDisplayText(subType, categoryType);
-    const { color } = boostCategoryOptions[categoryType];
+    const { color } = categoryMetadata[categoryType];
 
     return (
         <div

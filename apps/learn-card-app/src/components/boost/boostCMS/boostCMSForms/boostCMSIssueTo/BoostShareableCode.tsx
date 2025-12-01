@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Clipboard } from '@capacitor/clipboard';
 import moment from 'moment';
 import base64url from 'base64url';
 import { createPortal } from 'react-dom';
+import { Clipboard } from '@capacitor/clipboard';
 
 import useDebounce from 'apps/learn-card-app/src/hooks/useDebounce';
 import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
@@ -18,14 +18,21 @@ import {
     IonInput,
 } from '@ionic/react';
 
-import { ModalTypes, useModal, useSigningAuthority, useWallet, walletStore } from 'learn-card-base';
+import {
+    ModalTypes,
+    useModal,
+    useSigningAuthority,
+    useWallet,
+    walletStore,
+    ToastTypeEnum,
+    useToast,
+} from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
 
 import CopyStack from 'apps/learn-card-app/src/components/svgs/CopyStack';
 import Calendar from 'apps/learn-card-app/src/components/svgs/Calendar';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import BoostShareableQRCode from './BoostShareableQRCode';
-import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
 
@@ -236,12 +243,11 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                 string: getCurrentClaimLink(),
             });
             presentToast('Boost link copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy boost link to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

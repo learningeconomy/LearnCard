@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo, useCallback } from 'react';
-import { IonList, IonItem, useIonToast } from '@ionic/react';
+import { IonList, IonItem } from '@ionic/react';
 import { Clipboard } from '@capacitor/clipboard';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
@@ -26,6 +26,8 @@ import {
     useGetBoostRecipients,
     UserProfilePicture,
     useResolveBoost,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import { VC } from '@learncard/types';
@@ -73,7 +75,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
     credential,
 }) => {
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const history = useHistory();
 
     const _boostUriForClaimLink = boostUriForClaimLink || credential?.boostId;
@@ -94,19 +96,6 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
     const { data: myProfile } = useGetProfile();
     const { handleSubmitExistingBoostOther } = useBoost(history);
 
-    const showToast = useCallback(
-        async ({ message, duration = 3000, position = 'top', cssClass }: ToastConfig) => {
-            await presentToast({
-                message,
-                duration,
-                position,
-                cssClass,
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-            });
-        },
-        [presentToast]
-    );
-
     const handleBoostOther = async (localState: typeof INITIAL_STATE) => {
         if (!myProfile?.profileId) return;
 
@@ -122,9 +111,9 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
             closeAllModals();
         } catch (error) {
             console.error('Error handling boost:', error);
-            await showToast({
-                message: 'Failed to process boost',
-                cssClass: 'error-toast',
+            presentToast('Failed to process boost', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -179,9 +168,9 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
             }
         } catch (error) {
             console.error('Error generating claim link:', error);
-            await showToast({
-                message: 'Failed to generate claim link',
-                cssClass: 'error-toast',
+            presentToast('Failed to generate claim link', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         } finally {
             setLinkLoading(false);
@@ -191,14 +180,14 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
     const copyTroopLinkToClipBoard = async () => {
         try {
             await Clipboard.write({ string: claimLink });
-            await showToast({
-                message: 'Troop link copied to clipboard',
-                cssClass: 'success-toast',
+            presentToast('Troop link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (error) {
-            await showToast({
-                message: 'Unable to copy Troop link',
-                cssClass: 'error-toast',
+            presentToast('Unable to copy Troop link', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

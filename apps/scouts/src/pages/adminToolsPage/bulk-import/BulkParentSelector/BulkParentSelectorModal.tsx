@@ -3,15 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { IonInput } from '@ionic/react';
 import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import BulkImportWithPlusIcon from 'learn-card-base/svgs/BulkImportWithPlusIcon';
 import BulkParentSelectorCredentialList from './BulkParentSelectorCredentialList';
 import BulkParentSelectorCategoryFilter from './BulkParentSelectoCategoryFilter';
 
-import { ModalTypes, useModal } from 'learn-card-base';
-import {
-    BoostCategoryOptionsEnum,
-    boostCategoryOptions,
-} from '../../../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum, ModalTypes, useModal } from 'learn-card-base';
+import { boostCategoryOptions } from 'apps/scouts/src/components/boost/boost-options/boostOptions';
 
 type ViewAllManagedBoostsProps = {
     parentUri?: string;

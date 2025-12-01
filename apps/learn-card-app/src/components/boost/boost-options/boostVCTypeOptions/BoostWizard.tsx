@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
-import { useModal } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata, useModal } from 'learn-card-base';
 import { IonTextarea, IonRow, IonCol, IonGrid } from '@ionic/react';
 import Wand from 'learn-card-base/svgs/Wand';
 import {
@@ -15,13 +15,12 @@ import {
 import { createBoost, sendBoostCredential } from '../../boostHelpers';
 import { LCNBoostStatusEnum, BoostCMSState } from '../../boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
-import { BoostUserTypeEnum, BoostCategoryOptionsEnum } from '../boostOptions';
-import { boostCategoryOptions, boostVCTypeOptions } from '../boostOptions';
+import { BoostUserTypeEnum } from '../boostOptions';
+import { boostVCTypeOptions } from '../boostOptions';
 const BoostCMS = lazyWithRetry(() => import('../../boostCMS/BoostCMS'));
 import BoostDescriptionInput from './BoostDescriptionInput';
 import X from 'learn-card-base/svgs/X';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
-import BoostTemplateSelector from '../../boost-template/BoostTemplateSelector';
 import AiSessionLoader from '../../../new-ai-session/AiSessionLoader';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
@@ -156,12 +155,14 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                 })(),
             ]);
 
-            const matchedCategory = Object.keys(boostCategoryOptions)[0];
+            const matchedCategory = Object.keys(
+                boostCategoryMetadata
+            )[0] as BoostCategoryOptionsEnum; // 🤨
             // Object.keys(boostCategoryOptions).find(
             //     key => key.toLowerCase() === category.toLowerCase()
             // ) || Object.keys(boostCategoryOptions)[0];
 
-            const { title: categoryTitle, CategoryImage } = boostCategoryOptions[matchedCategory];
+            const { title: categoryTitle, CategoryImage } = boostCategoryMetadata[matchedCategory];
 
             return {
                 title: title,

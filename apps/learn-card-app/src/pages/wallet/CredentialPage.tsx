@@ -13,10 +13,9 @@ import {
     useGetCredentialCount,
     useIsCurrentUserLCNUser,
     useGetPaginatedManagedBoosts,
-    BoostPageViewMode,
-    BoostPageViewModeType,
     CredentialCategoryEnum,
     CredentialListTabEnum,
+    categoryMetadata,
 } from 'learn-card-base';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
@@ -26,7 +25,6 @@ import BoostManagedList from '../../components/boost/boost-managed-card/BoostMan
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import EarnedAndManagedTabs from '../../components/EarnedAndManagedTabs/EarnedAndManagedTabs';
 
-import { TYPE_TO_IMG_SRC } from '@learncard/react';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -185,7 +183,9 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
     const idImageOverride = 'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag';
     const listProps = {
         viewMode,
-        defaultImg: isId ? idImageOverride : TYPE_TO_IMG_SRC[config?.boostCategory] || '',
+        defaultImg: isId
+            ? idImageOverride
+            : categoryMetadata[config?.boostCategory].defaultImageSrc,
         category: config?.boostCategory,
         title: config?.title,
         bgFillerColor: `!bg-${backgroundSecondaryColor}`,

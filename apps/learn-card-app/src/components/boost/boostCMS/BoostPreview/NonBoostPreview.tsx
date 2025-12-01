@@ -9,8 +9,13 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 
 import { VC, VerificationItem } from '@learncard/types';
-import { useWallet, useModal, ModalTypes, useDeviceTypeByWidth } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from '../../boost-options/boostOptions';
+import {
+    BoostCategoryOptionsEnum,
+    useWallet,
+    useModal,
+    ModalTypes,
+    useDeviceTypeByWidth,
+} from 'learn-card-base';
 
 type IssueHistory = {
     id?: string | number;

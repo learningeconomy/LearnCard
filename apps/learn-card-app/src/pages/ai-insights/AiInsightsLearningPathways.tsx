@@ -3,7 +3,12 @@ import React, { useEffect } from 'react';
 import LockSimple from 'learn-card-base/svgs/LockSimple';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
-import { useAiInsightCredential, useWallet } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    categoryMetadata,
+    useAiInsightCredential,
+    useWallet,
+} from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { useHistory } from 'react-router-dom';
 
@@ -72,7 +77,10 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                         }
                                     );
                                     const topic = family?.records?.find(
-                                        (r: any) => r?.category === 'ai-topic'
+                                        (r: any) =>
+                                            r?.category ===
+                                            categoryMetadata[CredentialCategoryEnum.aiTopic]
+                                                .contractCredentialTypeOverride
                                     );
                                     topicUri = topic?.uri;
                                 } catch (e) {

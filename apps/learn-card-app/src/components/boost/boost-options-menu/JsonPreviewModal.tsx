@@ -4,10 +4,8 @@ import { Clipboard } from '@capacitor/clipboard';
 import X from '../../svgs/X';
 import CopyStack from '../../svgs/CopyStack';
 
-import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
-
 import { UnsignedVC, VC } from '@learncard/types';
-import { ModalTypes, useModal } from 'learn-card-base';
+import { ModalTypes, useModal, ToastTypeEnum, useToast } from 'learn-card-base';
 
 export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
     const { closeModal } = useModal({
@@ -21,25 +19,21 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
     const templateId = boost?.boostId;
 
     const copyToClipBoard = useCallback(async () => {
-        console.log('copyToClipBoard called');
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 await navigator.clipboard.writeText(jsonPrettyPrint);
-                console.log('Copied using navigator.clipboard');
             } else {
                 await Clipboard.write({
                     string: jsonPrettyPrint,
                 });
-                console.log('Copied using Capacitor Clipboard');
             }
             presentToast('JSON copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             console.error('Failed to copy to clipboard:', err);
             presentToast('Unable to copy JSON to clipboard', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }
@@ -51,12 +45,11 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
                 string: templateId,
             });
             presentToast('Template ID copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy template ID to clipboard', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

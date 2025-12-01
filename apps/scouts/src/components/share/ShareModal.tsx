@@ -3,11 +3,11 @@ import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { Share } from '@capacitor/share';
 
-import { useIonToast, IonSpinner } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import User from 'learn-card-base/svgs/User';
 import CopyStack from '../svgs/CopyStack';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 
 const ShareModal: React.FC<{
     handleCloseModal: () => void;
@@ -15,7 +15,7 @@ const ShareModal: React.FC<{
     history?: any;
 }> = ({ handleCloseModal, showCloseButton = true, history }) => {
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const [inviteLink, setInviteLink] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
@@ -51,30 +51,14 @@ const ShareModal: React.FC<{
             await Clipboard.write({
                 string: `https://pass.scout.org/connect?did=${wallet?.id?.did()}`,
             });
-            presentToast({
-                message: 'Profile link copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Profile link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy Profile link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy Profile link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -84,30 +68,14 @@ const ShareModal: React.FC<{
             await Clipboard.write({
                 string: inviteLink,
             });
-            presentToast({
-                message: 'Invite link copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Invite link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy Invite link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy Invite link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

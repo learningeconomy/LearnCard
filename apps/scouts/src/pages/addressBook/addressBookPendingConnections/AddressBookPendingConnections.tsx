@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { IonSpinner, useIonToast } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
@@ -11,6 +11,8 @@ import {
     useGetPendingConnections,
     useCancelConnectionRequestMutation,
     useBlockProfileMutation,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 
@@ -26,7 +28,7 @@ const AddressBookPendingConnections: React.FC<{
     const { mutate } = useCancelConnectionRequestMutation();
     const { mutate: blockProfile } = useBlockProfileMutation();
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     useEffect(() => {
         if (!isLoading && data) {
@@ -57,18 +59,10 @@ const AddressBookPendingConnections: React.FC<{
                 },
                 onError(error, variables, context) {
                     refetch();
-                    presentToast({
+                    presentToast(error?.message || 'An error occurred, unable to cancel request', {
                         // @ts-ignore
-                        message: error?.message || 'An error occurred, unable to cancel request',
-                        duration: 3000,
-                        buttons: [
-                            {
-                                text: 'Dismiss',
-                                role: 'cancel',
-                            },
-                        ],
-                        position: 'top',
-                        cssClass: 'login-link-warning-toast',
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
                     });
                 },
             }
@@ -76,18 +70,10 @@ const AddressBookPendingConnections: React.FC<{
         try {
         } catch (err) {
             console.log('canceledConnectionReq::error', err);
-            presentToast({
+            presentToast(err?.message || 'An error occurred, unable to cancel request', {
                 // @ts-ignore
-                message: err?.message || 'An error occurred, unable to cancel request',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -107,36 +93,20 @@ const AddressBookPendingConnections: React.FC<{
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast({
+                        presentToast(error?.message || 'An error occurred, unable to block user', {
                             // @ts-ignore
-                            message: error?.message || 'An error occurred, unable to block user',
-                            duration: 3000,
-                            buttons: [
-                                {
-                                    text: 'Dismiss',
-                                    role: 'cancel',
-                                },
-                            ],
-                            position: 'top',
-                            cssClass: 'login-link-warning-toast',
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
                         });
                     },
                 }
             );
         } catch (err) {
             console.log('blockProfile::error', err);
-            presentToast({
+            presentToast(err?.message || 'An error occurred, unable to block user', {
                 // @ts-ignore
-                message: err?.message || 'An error occurred, unable to block user',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'login-link-warning-toast',
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

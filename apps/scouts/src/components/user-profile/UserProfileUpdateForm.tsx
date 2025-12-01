@@ -16,9 +16,11 @@ import {
     useGetProfile,
     ModalTypes,
     useModal,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, useIonModal, IonInput, IonSpinner, useIonToast } from '@ionic/react';
+import { IonCol, IonRow, useIonModal, IonInput, IonSpinner } from '@ionic/react';
 import CopyStack from '../svgs/CopyStack';
 import InfoIcon from '../svgs/InfoIcon';
 import TrashBin from '../svgs/TrashBin';
@@ -75,7 +77,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
@@ -257,30 +259,14 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             await Clipboard.write({
                 string: walletDid,
             });
-            presentToast({
-                message: 'DID copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('DID copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy DID to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy DID to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

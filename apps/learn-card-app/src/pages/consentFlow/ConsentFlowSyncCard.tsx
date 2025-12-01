@@ -10,9 +10,8 @@ import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
 
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
-
 import {
+    BoostCategoryOptionsEnum,
     useConsentToContract,
     useContract,
     useCurrentUser,

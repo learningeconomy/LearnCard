@@ -5,12 +5,11 @@ import X from 'learn-card-base/svgs/X';
 import { ThreeDotVertical } from '@learncard/react';
 import EditAPITokenModal from './EditAPITokenModal';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
-import { ModalTypes, useModal } from 'learn-card-base';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 import CopyStack from 'apps/learn-card-app/src/components/svgs/CopyStack';
 
 import { AuthGrant } from '../api-tokens/AdminToolsApiTokensOption';
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum, ModalTypes, useModal } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
@@ -56,7 +55,6 @@ export const AdminToolApiTokenItem: React.FC<{
         try {
             if (tokenStatus === 'expired' || tokenStatus === 'revoked') {
                 presentToast('Unable to copy API Token to clipboard', {
-                    className: ToastTypeEnum.CopyFail,
                     hasDismissButton: true,
                 });
                 return;
@@ -65,14 +63,13 @@ export const AdminToolApiTokenItem: React.FC<{
             await Clipboard.write({ string: token });
             closeModal();
             presentToast('API Token copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             console.error('Failed to copy to clipboard:', err);
             closeModal();
             presentToast('Unable to copy API Token to clipboard', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

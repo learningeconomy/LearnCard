@@ -13,9 +13,11 @@ import {
     useIsCurrentUserLCNUser,
     ModalTypes,
     useModal,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
-import { IonCol, useIonModal, useIonToast, IonLoading } from '@ionic/react';
+import { IonCol, useIonModal, IonLoading } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 
 import LinkChain from 'learn-card-base/svgs/LinkChain';
@@ -50,7 +52,7 @@ const QrCodeUserCard: React.FC<{
     const currentUser = useCurrentUser();
     const { logout } = useWeb3AuthSFA();
     const { clearDB } = useSQLiteStorage();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const queryClient = useQueryClient();
     const { data: isCurrentUserLCNUser, isLoading: isCurrentLCNUserLoading } =
         useIsCurrentUserLCNUser();
@@ -173,10 +175,9 @@ const QrCodeUserCard: React.FC<{
                 console.error('There was an issue logging out', e);
                 setIsLoggingOut(false);
                 handleQRCodeCardModal();
-                presentToast({
-                    message: `Oops, we had an issue logging out.`,
-                    duration: 3000,
-                    cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
+                presentToast('Oops, we had an issue logging out.', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             }
         }, 1000);
@@ -187,30 +188,14 @@ const QrCodeUserCard: React.FC<{
             await Clipboard.write({
                 string: currentLCNUser?.profileId,
             });
-            presentToast({
-                message: 'DID copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('DID copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy DID to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy DID to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

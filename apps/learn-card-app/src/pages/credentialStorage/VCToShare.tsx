@@ -3,10 +3,8 @@ import React, { useState } from 'react';
 import { IonHeader, IonRow, IonCol, IonGrid, IonPage } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BoostEarnedCard from 'apps/learn-card-app/src/components/boost/boost-earned-card/BoostEarnedCard';
-import { TYPE_TO_IMG_SRC } from '@learncard/react';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { CATEGORY_TO_WALLET_SUBTYPE } from 'learn-card-base/helpers/credentialHelpers';
-import { chapiStore, redirectStore } from 'learn-card-base';
+import { categoryMetadata, chapiStore, redirectStore } from 'learn-card-base';
 import { useWallet } from 'learn-card-base';
 
 const VCToShare: React.FC<{
@@ -34,12 +32,12 @@ const VCToShare: React.FC<{
 }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
-    const { initWallet } = useWallet()
+    const { initWallet } = useWallet();
 
     const renderCredentialList = vcsToShare?.map(vc => {
         const categoryFromVc = getDefaultCategoryForCredential(vc);
         const category = categoryFromVc || 'Achievement';
-        const categoryImgUrl = TYPE_TO_IMG_SRC[CATEGORY_TO_WALLET_SUBTYPE[category]];
+        const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
         const uniqueId = getUniqueId(vc);
 
         return (
@@ -91,7 +89,7 @@ const VCToShare: React.FC<{
             const data = await wallet.invoke.issuePresentation(vpToShare, {
                 challenge,
                 domain,
-                proofPurpose: 'authentication'
+                proofPurpose: 'authentication',
             });
 
             console.log('✅ Issued VP', data);

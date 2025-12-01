@@ -1,15 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import { useGetPaginatedManagedBoosts } from 'learn-card-base';
+import {
+    boostCategoryMetadata,
+    BoostCategoryOptionsEnum,
+    CredentialCategory,
+    useGetPaginatedManagedBoosts,
+} from 'learn-card-base';
 
 import { IonSpinner } from '@ionic/react';
 import AdminManagedBoostRow from './AdminManagedBoostRow';
-
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-} from '../../components/boost/boost-options/boostOptions';
 import { Boost } from '@learncard/types';
 
 const ignoredCategories = [
@@ -46,7 +46,10 @@ const AdminManagedBoostsSection: React.FC<AdminManagedBoostsSectionProps> = ({
         isFetching: managedBoostsFetching,
         hasNextPage: managedBoostsHasNextPage,
         fetchNextPage: managedBoostsFetchNextPage,
-    } = useGetPaginatedManagedBoosts(category, { limit: 12 });
+    } = useGetPaginatedManagedBoosts(
+        boostCategoryMetadata[category].credentialType as CredentialCategory,
+        { limit: 12 }
+    );
 
     const managedBoostInfiniteScrollRef = useRef<HTMLDivElement>(null);
     const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '-20px', [
@@ -64,7 +67,7 @@ const AdminManagedBoostsSection: React.FC<AdminManagedBoostsSectionProps> = ({
 
     const isLoading = managedBoostsLoading || managedBoostsFetching;
 
-    const { title, color, IconComponent } = boostCategoryOptions[category];
+    const { title, color, IconComponent } = boostCategoryMetadata[category];
 
     return (
         <div className="w-full">

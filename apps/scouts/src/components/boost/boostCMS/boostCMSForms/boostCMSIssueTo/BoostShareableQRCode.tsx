@@ -7,11 +7,9 @@ import BoostCMSAppearanceController from '../boostCMSAppearance/BoostCMSAppearan
 import BoostCMSIDAppearanceController from '../boostCMSAppearance/BoostCMSIDAppearanceController';
 
 import { BoostCMSState } from '../../../boost';
-import {
-    BoostCategoryOptionsEnum,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-} from '../../../boost-options/boostOptions';
+import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 import { QRCodeSVG } from 'qrcode.react';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 const BoostShareableQRCode: React.FC<{
     handleCloseModal: () => void;

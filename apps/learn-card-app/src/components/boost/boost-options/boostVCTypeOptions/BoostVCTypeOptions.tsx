@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
-import { useModal, ModalTypes, Shapes, CredentialCategoryEnum } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    Shapes,
+    CredentialCategoryEnum,
+    BoostCategoryOptionsEnum,
+} from 'learn-card-base';
 import { IonRow, IonCol, IonGrid } from '@ionic/react';
 import BoostVCTypeOptionButton from './BoostVCTypeOptionButton';
 import CaretLeft from '../../../svgs/CaretLeft';
-import { BoostUserTypeEnum, BoostCategoryOptionsEnum } from '../boostOptions';
+import { BoostUserTypeEnum } from '../boostOptions';
 import BoostWizard from './BoostWizard';
 import BoostWizardIcon from 'learn-card-base/svgs/BoostWizardIcon';
 import { boostVCTypeOptions } from '../boostOptions';
@@ -53,13 +59,8 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
         WalletIcon: AiSessionsIcon,
         type: null,
     };
-    const updatedOptions = boostOptions;
-    const subtext =
-        boostUserType === BoostUserTypeEnum.self
-            ? 'You can issue yourself credentials to tell your story. Your skills are currencies for your future.'
-            : 'Issue credentials to people you know.';
 
-    const boostOptionsItemList = updatedOptions.map(
+    const boostOptionsItemList = boostOptions.map(
         ({ id, title, type, ShapeIcon, shapeColor, WalletIcon, iconStyles }) => {
             if (type === BoostCategoryOptionsEnum.all) {
                 return <React.Fragment key={id}></React.Fragment>;

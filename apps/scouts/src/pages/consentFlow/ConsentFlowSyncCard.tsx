@@ -10,7 +10,7 @@ import RightArrow from 'learn-card-base/svgs/RightArrow';
 import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
 
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import {
     useModal,
@@ -220,7 +220,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                 // } else
             } else {
                 presentToast(`You are now connected with ${contractDetails.name}!`, {
-                    toastType: ToastTypeEnum.CopySuccess,
+                    type: ToastTypeEnum.Success,
                 });
                 history.push(`/`);
                 // history.push(`/launchpad?uri=${contractDetails.uri}`);

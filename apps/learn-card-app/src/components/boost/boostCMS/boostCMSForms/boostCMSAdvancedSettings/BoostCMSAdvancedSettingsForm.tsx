@@ -9,13 +9,14 @@ import LocationIcon from 'learn-card-base/svgs/LocationIcon';
 import LocationSearch from '../../../../locationSearch/LocationSearch';
 
 import { BoostCMSState } from '../../../boost';
-import {
-    BoostCategoryOptionsEnum,
-    boostCategoryOptions,
-} from '../../../boost-options/boostOptions';
 import { AddressSpec } from '../../../../locationSearch/location.helpers';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import {
+    CredentialCategoryEnum,
+    BoostCategoryOptionsEnum,
+    getBoostMetadata,
+} from 'learn-card-base';
 
 const BoostCMSAdvancedSettingsForm: React.FC<{
     state: BoostCMSState;
@@ -29,7 +30,10 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
     const basicInfo = state?.basicInfo;
     const boostType = state?.basicInfo?.type;
 
-    const { title } = boostCategoryOptions?.[boostType];
+    const boostMetadata = getBoostMetadata(
+        boostType as BoostCategoryOptionsEnum | CredentialCategoryEnum
+    );
+    const { title } = boostMetadata || {};
 
     const [showAbout, setShowAbout] = useState<boolean>(false);
 

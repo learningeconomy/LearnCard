@@ -8,7 +8,7 @@ import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModa
 import { useQueryClient } from '@tanstack/react-query';
 import { useAddCredentialToWallet } from '../boost/mutations';
 
-import { IonPage, useIonToast } from '@ionic/react';
+import { IonPage } from '@ionic/react';
 import FamilyCMSHeader from './FamilyCMSHeader/FamilyCMSHeader';
 import FamilyCrest from './FamilyCrest/FamilyCrest';
 import FamilyCMSContentForm from './FamilyCMSContentForm/FamilyCMSContentForm';
@@ -40,6 +40,8 @@ import {
     useGetCurrentLCNUser,
     useGetDidHasPin,
     useWallet,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import {
@@ -85,7 +87,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     });
 
     const { initWallet } = useWallet();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const { data: hasPin, isLoading: hasPinLoading } = useGetDidHasPin();
     const { mutateAsync: createBoost } = useCreateBoost();
@@ -406,12 +408,9 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             console.error('handlePublishBoost::error', e);
-            presentToast({
-                message: `Error issuing boost`,
-                duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+            presentToast(`Error issuing boost`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };
@@ -436,12 +435,9 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             console.error('handlePublishBoost::error', e);
-            presentToast({
-                message: `Error updating boost`,
-                duration: 3000,
-                cssClass: 'login-link-warning-toast ion-toast-bottom-nav-offset',
-                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                swipeGesture: 'vertical',
+            presentToast(`Error updating boost`, {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

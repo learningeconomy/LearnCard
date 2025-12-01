@@ -11,43 +11,16 @@ import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import ScoutsPledge from 'learn-card-base/svgs/ScoutsPledge';
 import ScoutsGlobe from 'learn-card-base/svgs/ScoutsGlobe';
 import BoostOutline2, { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
+import {
+    BoostCategoryMetadata,
+    BoostCategoryOptionsEnum,
+    boostCategoryMetadata,
+} from 'learn-card-base';
 
 export enum BoostUserTypeEnum {
     self = 'self',
     someone = 'someone',
 }
-
-export enum BoostCategoryOptionsEnum {
-    socialBadge = 'Social Badge',
-    achievement = 'Achievement',
-    course = 'Course',
-    job = 'Job',
-    id = 'ID',
-    workHistory = 'Work History',
-    currency = 'Currency',
-    learningHistory = 'Learning History',
-    skill = 'Skill',
-    membership = 'Membership',
-    meritBadge = 'Merit Badge',
-
-    // troops 2.0 ID categories
-    globalAdminId = 'Global Admin ID',
-    nationalNetworkAdminId = 'National Network Admin ID',
-    troopLeaderId = 'Troop Leader ID',
-    scoutId = 'Scout ID',
-    // troops 2.0 ID categories
-}
-
-export type BoostVCTypeOptionButtonProps = {
-    id?: number;
-    IconComponent: React.ReactNode;
-    iconCircleClass?: string;
-    iconClassName?: string;
-    title: string;
-    categoryType: BoostCategoryOptionsEnum;
-    setSelectedCategoryType: React.Dispatch<React.SetStateAction<string | null>>;
-    isActive?: boolean;
-};
 
 // ! MUST ALIGN WITH -> learn-card-base/src/helpers -> credentialHelpers.ts -> { CATEGORY_MAP }
 // ! MUST ALIGN WITH -> learn-card-base/src/components/issueVC -> constants.ts -> { AchievementTypes }
@@ -61,54 +34,6 @@ export const boostVCTypeOptions = {
             iconCircleClass: 'bg-sp-purple-base',
             type: BoostCategoryOptionsEnum.socialBadge,
         },
-        // {
-        //     id: 2,
-        //     title: 'Skill',
-        //     IconComponent: PuzzlePiece,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-indigo-600',
-        //     type: BoostCategoryOptionsEnum.skill,
-        // },
-        // {
-        //     id: 3,
-        //     title: 'Achievement',
-        //     IconComponent: Trophy,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-spice-600',
-        //     type: BoostCategoryOptionsEnum.achievement,
-        // },
-        // {
-        //     id: 4,
-        //     title: 'Learning History',
-        //     IconComponent: Graduation,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-emerald-700',
-        //     type: BoostCategoryOptionsEnum.learningHistory,
-        // },
-        // {
-        //     id: 5,
-        //     title: 'Troop',
-        //     IconComponent: ScoutsGlobe,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-sp-green-dark',
-        //     type: BoostCategoryOptionsEnum.id,
-        // },
-        // {
-        //     id: 6,
-        //     title: 'Troop',
-        //     IconComponent: ScoutsGlobe,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-sp-green-dark',
-        //     type: BoostCategoryOptionsEnum.membership,
-        // },
-        // {
-        //     id: 6,
-        //     title: 'Work History',
-        //     IconComponent: Briefcase,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-rose-600',
-        //     type: BoostCategoryOptionsEnum.workHistory,
-        // },
     ],
     [BoostUserTypeEnum.someone]: [
         {
@@ -127,57 +52,10 @@ export const boostVCTypeOptions = {
             iconCircleClass: 'bg-sp-blue-dark-ocean',
             type: BoostCategoryOptionsEnum.socialBadge,
         },
-        // {
-        //     id: 2,
-        //     title: 'Skill',
-        //     IconComponent: PuzzlePiece,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-indigo-600',
-        //     type: BoostCategoryOptionsEnum.skill,
-        // },
-        // {
-        //     id: 3,
-        //     title: 'Achievement',
-        //     IconComponent: Trophy,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-spice-600',
-        //     type: BoostCategoryOptionsEnum.achievement,
-        // },
-        // {
-        //     id: 4,
-        //     title: 'Learning History',
-        //     IconComponent: Graduation,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-emerald-700',
-        //     type: BoostCategoryOptionsEnum.learningHistory,
-        // },
-        // {
-        //     id: 5,
-        //     title: 'Troop',
-        //     IconComponent: ScoutsGlobe,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-sp-green-dark',
-        //     type: BoostCategoryOptionsEnum.id,
-        // },
-        // {
-        //     id: 6,
-        //     title: 'Troop',
-        //     IconComponent: ScoutsGlobe,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-sp-green-dark',
-        //     type: BoostCategoryOptionsEnum.membership,
-        // },
-        // {
-        //     id: 6,
-        //     title: 'Work History',
-        //     IconComponent: Briefcase,
-        //     iconClassName: 'text-white',
-        //     iconCircleClass: 'bg-rose-600',
-        //     type: BoostCategoryOptionsEnum.workHistory,
-        // },
     ],
 };
 
+// relevant info has been ported to learn-card-base, but there are some differences...
 export const boostCategoryOptions: {
     [key: BoostCategoryOptionsEnum | string]: {
         title: string;
@@ -187,50 +65,41 @@ export const boostCategoryOptions: {
         subColor: string;
         IconComponent: React.ReactNode | string;
         CategoryImage: string;
-    };
+    } & BoostCategoryMetadata;
 } = {
     [BoostCategoryOptionsEnum.socialBadge]: {
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.socialBadge],
         title: 'Social Boosts',
         subTitle: 'Social Boost',
-        value: BoostCategoryOptionsEnum.socialBadge,
         color: 'sp-blue-dark-ocean',
         subColor: 'sp-blue-ocean',
         IconComponent: BlueBoostOutline2,
         CategoryImage: 'https://cdn.filestackcontent.com/EHl1PKEQTPuErCax48Uy',
     },
     [BoostCategoryOptionsEnum.achievement]: {
-        title: 'Achievement',
-        value: BoostCategoryOptionsEnum.achievement,
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.achievement],
         color: 'spice-500',
         subColor: 'spice-400',
         IconComponent: Trophy,
         CategoryImage: 'https://cdn.filestackcontent.com/EHl1PKEQTPuErCax48Uy',
     },
     [BoostCategoryOptionsEnum.course]: {
-        title: 'Course',
-        value: BoostCategoryOptionsEnum.course,
-        color: 'emerald-700',
-        subColor: 'emerald-500',
-        IconComponent: Graduation,
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.course],
         CategoryImage: 'https://cdn.filestackcontent.com/PCIwcDr5QgiiHPv5GYvY',
     },
     [BoostCategoryOptionsEnum.job]: {
-        title: 'Job',
-        value: BoostCategoryOptionsEnum.job,
-        color: 'rose-600',
-        subColor: 'rose-400',
-        IconComponent: Briefcase,
-        CategoryImage: 'https://cdn.filestackcontent.com/2eR985mSrur9mK4V4mzQ',
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.job],
     },
     [BoostCategoryOptionsEnum.id]: {
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.id],
         title: 'Troop',
-        value: BoostCategoryOptionsEnum.id,
         color: 'sp-green-base',
         subColor: 'sp-green-light',
         IconComponent: ScoutsGlobe,
         CategoryImage: 'https://cdn.filestackcontent.com/Otl66rNhTFu66mGf96Iq',
     },
     [BoostCategoryOptionsEnum.membership]: {
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.membership],
         title: 'Troop',
         value: BoostCategoryOptionsEnum.membership,
         color: 'sp-green-base',
@@ -239,6 +108,7 @@ export const boostCategoryOptions: {
         CategoryImage: 'https://cdn.filestackcontent.com/EwXi4MnoT6eDgM6cmJuH',
     },
     [BoostCategoryOptionsEnum.skill]: {
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.skill],
         title: 'Skill',
         value: BoostCategoryOptionsEnum.skill,
         color: 'indigo-600',
@@ -247,6 +117,7 @@ export const boostCategoryOptions: {
         CategoryImage: 'https://cdn.filestackcontent.com/9lKwrJdoRPmv9chLFJQv',
     },
     [BoostCategoryOptionsEnum.learningHistory]: {
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.learningHistory],
         title: 'Learning History',
         value: BoostCategoryOptionsEnum.learningHistory,
         color: 'emerald-700',
@@ -255,6 +126,7 @@ export const boostCategoryOptions: {
         CategoryImage: 'https://cdn.filestackcontent.com/PCIwcDr5QgiiHPv5GYvY',
     },
     [BoostCategoryOptionsEnum.workHistory]: {
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.workHistory],
         title: 'Work History',
         value: BoostCategoryOptionsEnum.workHistory,
         color: 'rose-600',
@@ -263,6 +135,7 @@ export const boostCategoryOptions: {
         CategoryImage: 'https://cdn.filestackcontent.com/2eR985mSrur9mK4V4mzQ',
     },
     [BoostCategoryOptionsEnum.meritBadge]: {
+        ...boostCategoryMetadata[BoostCategoryOptionsEnum.meritBadge],
         title: 'Merit Badge',
         subTitle: 'Merit Badge',
         value: BoostCategoryOptionsEnum.meritBadge,

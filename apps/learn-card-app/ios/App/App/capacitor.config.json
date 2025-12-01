@@ -42,10 +42,11 @@
         "CapacitorUpdater": {
             "appId": "com.learncard.app",
             "autoUpdate": true,
-            "defaultChannel": "production"
+            "defaultChannel": "1.0.1"
         }
     },
     "packageClassList": [
+        "MediaPlugin",
         "CapacitorSQLitePlugin",
         "FirebaseAnalyticsPlugin",
         "FirebaseAuthenticationPlugin",
@@ -54,6 +55,8 @@
         "CAPBrowserPlugin",
         "CAPCameraPlugin",
         "ClipboardPlugin",
+        "FileTransferPlugin",
+        "FilesystemPlugin",
         "HapticsPlugin",
         "KeyboardPlugin",
         "LocalNotificationsPlugin",

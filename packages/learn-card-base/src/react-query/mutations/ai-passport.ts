@@ -95,10 +95,10 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
             closeModal();
             setTimeout(() => {
                 presentToast(`Your journey is now reflected in portable, trusted credentials.`, {
-                    version: 2,
                     title: `${fileType} Successfully Parsed`,
                     hasDismissButton: true,
-                    toastType: ToastTypeEnum.Success,
+                    type: ToastTypeEnum.Success,
+                    hasCheckmark: true,
                     duration: 5000,
                 });
             }, 500);
@@ -112,10 +112,10 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
 
             setTimeout(() => {
                 presentToast(message, {
-                    version: 2,
                     title: 'Error',
                     hasDismissButton: true,
-                    toastType: ToastTypeEnum.Error,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
                     duration: 5000,
                 });
             }, 500);

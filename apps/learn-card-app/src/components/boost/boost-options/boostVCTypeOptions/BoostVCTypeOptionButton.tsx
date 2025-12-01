@@ -1,16 +1,33 @@
 import React from 'react';
 
-import { BoostVCTypeOptionButtonProps } from '../boostOptions';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import {
     useModal,
     ModalTypes,
     useGetCredentialList,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import useLCNGatedAction from '../../../network-prompts/hooks/useLCNGatedAction';
 import NewAiSessionContainer from '../../../new-ai-session/NewAiSessionContainer';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import { SetState } from 'packages/shared-types/dist';
+
+type BoostVCTypeOptionButtonProps = {
+    id?: number;
+    IconComponent?: React.ReactNode;
+    iconCircleClass?: string;
+    iconClassName?: string;
+    title: string;
+    categoryType: BoostCategoryOptionsEnum;
+    setSelectedCategoryType: SetState<string | null>;
+    isActive?: boolean;
+    ShapeIcon?: React.FC<{ className?: string }>;
+    shapeColor?: string;
+    iconStyles?: string;
+    WalletIcon?: React.FC<{ className?: string }>;
+    onClickOverride?: (categoryType: BoostCategoryOptionsEnum) => void;
+};
 
 export const BoostVCTypeOptionButton: React.FC<BoostVCTypeOptionButtonProps> = ({
     IconComponent,

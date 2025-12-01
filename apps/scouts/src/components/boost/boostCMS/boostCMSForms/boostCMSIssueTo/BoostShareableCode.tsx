@@ -10,11 +10,10 @@ import {
     IonSpinner,
     IonToggle,
     IonDatetime,
-    useIonToast,
     IonInput,
 } from '@ionic/react';
 
-import { useWallet, walletStore } from 'learn-card-base';
+import { useWallet, walletStore, useToast, ToastTypeEnum } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
 
 import CopyStack from '../../../../svgs/CopyStack';
@@ -44,7 +43,7 @@ export const BoostShareableCode: React.FC<{
     const [generateClaimLink, setGenerateClaimLink] = useState<boolean>(false);
     const [boostClaimLink, setBoostClaimLink] = useState<string>('');
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const [presentDatePicker] = useIonModal(
         <div className="w-full h-full transparent flex items-center justify-center">
@@ -190,30 +189,14 @@ export const BoostShareableCode: React.FC<{
             await Clipboard.write({
                 string: boostClaimLink,
             });
-            presentToast({
-                message: 'Boost link copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Boost link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy boost link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy boost link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

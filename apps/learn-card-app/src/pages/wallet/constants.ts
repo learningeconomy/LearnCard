@@ -1,4 +1,5 @@
-import { Shapes, WalletIcons, CredentialCategory } from 'learn-card-base';
+import { Shapes, WalletIcons } from 'learn-card-base';
+import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
 const { Square, Circle, Triangle, Diamond, Kite, Pentagon, Hexagon } = Shapes;
 const {
@@ -37,89 +38,12 @@ const {
     SkillsIconWithLightShape,
 } = WalletIcons;
 
-export const WALLET_SUBTYPES = {
-    learnHistory: 'learningHistory',
-    socialBadges: 'socialBadge',
-    achievements: 'achievements',
-    accomplishment: 'accomplishments',
-    skills: 'skills',
-    jobhistory: 'jobhistory',
-    relationship: 'relationships',
-    accommodation: 'accommodations',
-    events: 'events',
-    families: 'families',
-
-    // AI Passport
-    aiSessions: 'aiSessions',
-    aiPathways: 'aiPathways',
-    aiSummaries: 'aiSummaries',
-    aiInsights: 'aiInsights',
-
-    // todo
-    membership: 'membership',
-    goals: 'goals',
-
-    // deprecated
-    currencies: 'currency',
-    ids: 'ids',
-};
-
-export type SubType = (typeof WALLET_SUBTYPES)[keyof typeof WALLET_SUBTYPES];
-
-export const SUBTYPE_TO_CATEGORY: Record<SubType, CredentialCategory | null> = {
-    learningHistory: 'Learning History',
-    jobhistory: 'Work History',
-    socialBadge: 'Social Badge',
-    achievements: 'Achievement',
-    accomplishments: 'Accomplishment',
-    skills: 'Skill',
-    experience: 'Experience',
-    relationship: 'Relationship',
-    accommodations: 'Accommodation',
-    families: 'Family',
-
-    // todo
-    events: 'Events',
-    membership: 'Membership',
-    goals: null,
-
-    // deprecated
-    currency: null,
-    ids: 'ID',
-
-    // AI Passport
-    aiSessions: 'AI Topic',
-    aiPathways: 'AI Pathway',
-    aiSummaries: 'AI Summary',
-    aiInsights: 'AI Insight',
-};
-
-export const CATEGORY_TO_SUBTYPE = {
-    'Learning History': 'learningHistory',
-    'Work History': 'jobhistory',
-    'Social Badge': 'socialBadge',
-    Achievement: 'achievements',
-    Accomplishment: 'accomplishments',
-    Skill: 'skills',
-    Experience: 'experience',
-    Relationship: 'relationship',
-    Accommodation: 'accommodations',
-    Family: 'families',
-    Events: 'events',
-    Membership: 'membership',
-    ID: 'ids',
-    'AI Topic': 'aiSessions',
-    'AI Pathway': 'aiPathways',
-    'AI Summary': 'aiSummaries',
-    'AI Insight': 'aiInsights',
-};
-
 export type WalletPageItem = {
     id: number;
     title: string;
     bgColor: string;
     bgColorSecondary: string;
-    subtype: SubType;
+    subtype: WalletCategoryTypes;
     ShapeIcon: React.FC<{ className?: string }>;
     shapeColor: string;
     WalletIcon: React.FC<{ className?: string }>;
@@ -139,7 +63,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'AI Sessions',
         bgColor: 'bg-cyan-301',
         bgColorSecondary: 'bg-cyan-501',
-        subtype: WALLET_SUBTYPES.aiSessions,
+        subtype: WalletCategoryTypes.aiSessions,
         ShapeIcon: Circle,
         shapeColor: 'text-cyan-401 w-[80px] h-[80px]',
         iconStyles: 'h-[110px] w-[110px]',
@@ -155,7 +79,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'AI Pathways',
         bgColor: 'bg-teal-300',
         bgColorSecondary: 'bg-teal-500',
-        subtype: WALLET_SUBTYPES.aiPathways,
+        subtype: WalletCategoryTypes.aiPathways,
         ShapeIcon: Triangle,
         shapeColor: 'text-teal-400 w-[100px] h-[100px]',
         WalletIcon: AiPathwaysIcon,
@@ -173,7 +97,7 @@ export const walletPageData: WalletPageItem[] = [
         IconWithShape: AiInsightsIconWithShape,
         IconWithLightShape: AiInsightsIconWithLightShape,
         bgColorSecondary: 'bg-lime-500',
-        subtype: WALLET_SUBTYPES.aiInsights,
+        subtype: WalletCategoryTypes.aiInsights,
         ShapeIcon: Diamond,
         shapeColor: 'text-lime-400 w-[100px] h-[100px]',
         iconStyles: 'h-[100px] w-[100px]',
@@ -188,7 +112,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'Skills',
         bgColor: 'bg-violet-300', // bg
         bgColorSecondary: 'bg-violet-500', // header bg
-        subtype: WALLET_SUBTYPES.skills,
+        subtype: WalletCategoryTypes.skills,
         ShapeIcon: Square,
         shapeColor: 'text-violet-400 w-[100px] h-[100px]',
         iconStyles: 'h-[110px] w-[110px]',
@@ -205,7 +129,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'Boosts',
         bgColor: 'bg-blue-300',
         bgColorSecondary: 'bg-blue-500',
-        subtype: WALLET_SUBTYPES.socialBadges,
+        subtype: WalletCategoryTypes.socialBadges,
         ShapeIcon: Kite,
         shapeColor: 'text-blue-400 w-[100px] h-[100px]',
         iconStyles: 'h-[90px] w-[90px]',
@@ -223,7 +147,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'Achievements',
         bgColor: 'bg-pink-300',
         bgColorSecondary: 'bg-pink-500',
-        subtype: WALLET_SUBTYPES.achievements,
+        subtype: WalletCategoryTypes.achievements,
         ShapeIcon: Pentagon,
         shapeColor: 'text-pink-400',
         iconStyles: 'h-[110px] w-[110px]',
@@ -240,7 +164,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'Studies',
         bgColor: 'bg-emerald-401',
         bgColorSecondary: 'bg-emerald-601',
-        subtype: WALLET_SUBTYPES.learnHistory,
+        subtype: WalletCategoryTypes.learningHistory,
         ShapeIcon: Hexagon,
         shapeColor: 'text-emerald-501 w-[100px] h-[100px]',
         iconStyles: 'h-[90px] w-[90px]',
@@ -257,7 +181,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'Portfolio',
         bgColor: 'bg-yellow-300',
         bgColorSecondary: 'bg-yellow-500',
-        subtype: WALLET_SUBTYPES.accomplishment,
+        subtype: WalletCategoryTypes.accomplishments,
         ShapeIcon: Triangle,
         shapeColor: 'text-yellow-400 rotate-180 w-[100px] h-[100px]',
         iconStyles: 'h-[90px] w-[90px]',
@@ -274,7 +198,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'Assistance',
         bgColor: 'bg-violet-300',
         bgColorSecondary: 'bg-violet-500',
-        subtype: WALLET_SUBTYPES.accommodation,
+        subtype: WalletCategoryTypes.accommodations,
         ShapeIcon: Square,
         shapeColor: 'text-violet-400 w-[110px] h-[110px]',
         iconStyles: 'h-[90px] w-[90px]',
@@ -291,7 +215,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'Experiences',
         bgColor: 'bg-cyan-401',
         bgColorSecondary: 'bg-cyan-601',
-        subtype: WALLET_SUBTYPES.jobhistory,
+        subtype: WalletCategoryTypes.jobHistory,
         ShapeIcon: Circle,
         shapeColor: 'text-cyan-501 w-[90px] h-[90px]',
         WalletIcon: ExperiencesIcon,
@@ -307,7 +231,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'Families',
         bgColor: 'bg-amber-400',
         bgColorSecondary: 'bg-amber-600',
-        subtype: WALLET_SUBTYPES.families,
+        subtype: WalletCategoryTypes.families,
         ShapeIcon: Kite,
         shapeColor: 'text-amber-500',
         WalletIcon: FamiliesIcon,
@@ -322,7 +246,7 @@ export const walletPageData: WalletPageItem[] = [
         title: 'IDs',
         bgColor: 'bg-blue-300',
         bgColorSecondary: 'bg-blue-500',
-        subtype: WALLET_SUBTYPES.ids,
+        subtype: WalletCategoryTypes.ids,
         ShapeIcon: Hexagon,
         shapeColor: 'text-blue-400 w-[90px] h-[90px]',
         WalletIcon: IDsIcon,

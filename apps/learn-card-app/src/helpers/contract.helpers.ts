@@ -5,13 +5,43 @@ import {
 } from '@learncard/types';
 import BrokenLink from '../components/svgs/BrokenLink';
 import {
+    BoostCategoryOptionsEnum,
+    CredentialCategoryEnum,
     CurrentUser,
     LaunchPadAppListItem,
-    boostCategoryOptions,
+    boostCategoryMetadata,
+    categoryMetadata,
     getBaseUrl,
 } from 'learn-card-base';
 import { walletPageData } from '../pages/wallet/constants';
 import { getAiAppBackgroundStylesForApp } from '../components/ai-passport-apps/aiPassport-apps.helpers';
+
+// Note: The actual value used in contracts needs to be categoryMetadata[category].contractCredentialTypeOverride
+const AI_CONTRACT_CATEGORIES = [
+    CredentialCategoryEnum.aiSummary,
+    CredentialCategoryEnum.aiTopic,
+    CredentialCategoryEnum.aiAssessment,
+    CredentialCategoryEnum.aiInsight,
+    CredentialCategoryEnum.aiPathway,
+];
+
+export const AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES: string[] = AI_CONTRACT_CATEGORIES.map(
+    category => {
+        return categoryMetadata[category].contractCredentialTypeOverride || category;
+    }
+);
+
+export const CONTRACT_CATEGORIES: (CredentialCategoryEnum | string)[] = [
+    CredentialCategoryEnum.socialBadge,
+    CredentialCategoryEnum.achievement,
+    CredentialCategoryEnum.learningHistory,
+    CredentialCategoryEnum.accomplishment,
+    CredentialCategoryEnum.accommodation,
+    CredentialCategoryEnum.workHistory,
+    CredentialCategoryEnum.id,
+
+    ...AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES,
+];
 
 export const contractAnonImageSrc = 'https://cdn.filestackcontent.com/52hRlXLIQVBi4fYpB1xw';
 
@@ -85,7 +115,7 @@ export const getMinimumTermsForContract = (
 };
 
 export const getInfoFromContractKey = (key: string) => {
-    const options = boostCategoryOptions[key];
+    const options = boostCategoryMetadata[key as BoostCategoryOptionsEnum];
 
     // prefer the wallet title + icon
     const walletOptions = walletPageData.find(data => {
@@ -150,15 +180,6 @@ export const getContractTermsInfo = (contract: ConsentFlowContractDetails) => {
     };
 };
 
-export enum AI_CREDENTIAL_TYPE {
-    AI_SUMMARY = 'ai-summary',
-    AI_ASSESSMENT = 'ai-assessment',
-    AI_TOPIC = 'ai-topic',
-    LEARNING_PATHWAY = 'learning-pathway',
-}
-
-export const ALL_AI_CREDENTIAL_TYPES = Object.values(AI_CREDENTIAL_TYPE);
-
 export const getPrivacyAndDataInfo = (
     contractDetails: ConsentFlowContractDetails,
     app?: LaunchPadAppListItem
@@ -171,17 +192,4 @@ export const getPrivacyAndDataInfo = (
     const appStyles = app ? getAiAppBackgroundStylesForApp(app) : { backgroundColor: '#18224E' };
 
     return { name, image, appStyles };
-};
-
-export const rawAiCategoryToDisplayName = (category: string) => {
-    const displayName = category
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ')
-        .replace('Ai', 'AI');
-
-    // Special case for 'AI Summary' -> 'AI Summaries'
-    if (displayName === 'AI Summary') return 'AI Summaries';
-
-    return displayName + 's';
 };

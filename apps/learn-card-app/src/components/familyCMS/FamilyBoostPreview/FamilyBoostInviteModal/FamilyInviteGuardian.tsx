@@ -8,9 +8,11 @@ import {
     useModal,
     useWallet,
     walletStore,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
-import { useIonToast, IonPage, useIonModal } from '@ionic/react';
+import { IonPage, useIonModal } from '@ionic/react';
 import CopyStack from 'apps/learn-card-app/src/components/svgs/CopyStack';
 import BoostShareableQRCode from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableQRCode';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
@@ -49,7 +51,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
     const [generateClaimLink, setGenerateClaimLink] = useState<boolean>(true);
     const [boostClaimLink, setBoostClaimLink] = useState<string>('');
 
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const getExpirationInSeconds = () => {
         const today = moment(); // now
@@ -156,30 +158,14 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
             await Clipboard.write({
                 string: boostClaimLink,
             });
-            presentToast({
-                message: 'Boost link copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Boost link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy boost link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy boost link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

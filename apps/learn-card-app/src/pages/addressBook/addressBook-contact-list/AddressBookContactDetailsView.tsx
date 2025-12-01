@@ -112,12 +112,11 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                 string: privateKey,
             });
             presentToast('DID copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy DID to clipboard', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

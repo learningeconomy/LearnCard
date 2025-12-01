@@ -19,12 +19,8 @@ import X from '../../svgs/X';
 import { useGetPaginatedManagedBoostsQuery } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { useLoadingLine } from '../../../stores/loadingStore';
-import {
-    boostCategoryOptions,
-    BoostCategoryOptionsEnum,
-    CATEGORY_TO_SUBCATEGORY_LIST,
-} from '../boost-options/boostOptions';
-import { BrandingEnum, CredentialCategory, useGetBoosts } from 'learn-card-base';
+import { boostCategoryOptions, CATEGORY_TO_SUBCATEGORY_LIST } from '../boost-options/boostOptions';
+import { BrandingEnum, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { LCNBoostStatusEnum } from '../boost';
 import {
     BadgePackOption,

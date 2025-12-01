@@ -4,9 +4,8 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import { IonContent, IonFooter, IonPage, IonRow, IonToolbar } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
-import { useWallet } from 'learn-card-base';
+import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
-import { BoostCategoryOptionsEnum } from '../../boost-options/boostOptions';
 import FatArrow from 'learn-card-base/svgs/FatArrow';
 
 type IssueHistory = {

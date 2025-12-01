@@ -15,6 +15,7 @@ import {
     CredentialCategoryEnum,
     useModal,
     useGetVCInfo,
+    categoryMetadata,
 } from 'learn-card-base';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
@@ -23,11 +24,7 @@ import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 
-import {
-    CATEGORY_TO_WALLET_SUBTYPE,
-    getCredentialSubject,
-    getUrlFromImage,
-} from 'learn-card-base/helpers/credentialHelpers';
+import { getCredentialSubject, getUrlFromImage } from 'learn-card-base/helpers/credentialHelpers';
 import {
     getImageUrlFromCredential,
     getCredentialName,
@@ -108,8 +105,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     useLoadingLine(credentialBackgroundFetching);
 
-    const type =
-        CATEGORY_TO_WALLET_SUBTYPE?.[categoryType] ?? CATEGORY_TO_WALLET_SUBTYPE.Achievement;
+    const type = categoryMetadata[categoryType].walletSubtype;
     const isCertificate = cred?.display?.displayType === 'certificate';
     const isID = cred?.display?.displayType === 'id' || categoryType === 'ID';
     const isMeritBadge = categoryType === CredentialCategoryEnum.meritBadge;

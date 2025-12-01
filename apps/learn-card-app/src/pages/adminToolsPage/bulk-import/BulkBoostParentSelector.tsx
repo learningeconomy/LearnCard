@@ -4,7 +4,7 @@ import { IonSpinner } from '@ionic/react';
 import BulkBoostParentSelectorModal from './BulkParentSelector/BulkParentSelectorModal';
 import X from 'apps/learn-card-app/src/components/svgs/X';
 
-import { boostCategoryOptions, ModalTypes, useGetBoost, useModal } from 'learn-card-base';
+import { boostCategoryMetadata, ModalTypes, useGetBoost, useModal } from 'learn-card-base';
 import BulkImportWithPlusIcon from 'learn-card-base/svgs/BulkImportWithPlusIcon';
 
 type BulkBoostParentSelectorProps = {
@@ -21,7 +21,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
     const { data: parentBoost, isLoading } = useGetBoost(parentUri);
 
     const { category, name, boost } = parentBoost ?? {};
-    const color = boostCategoryOptions[category]?.color;
+    const color = boostCategoryMetadata[category]?.color;
 
     const presentModal = () => {
         newModal(

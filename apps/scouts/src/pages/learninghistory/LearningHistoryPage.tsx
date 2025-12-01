@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { IonContent, IonPage, IonCol, IonRow, IonGrid } from '@ionic/react';
-import { TYPE_TO_IMG_SRC, WALLET_SUBTYPES } from '@learncard/react';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -16,12 +15,13 @@ import {
     useIsCurrentUserLCNUser,
     VC_WITH_URI,
     BrandingEnum,
-    useGetBoosts
+    useGetBoosts,
+    categoryMetadata,
 } from 'learn-card-base';
 
 import { usePathQuery } from 'learn-card-base';
 
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 import Lottie from 'react-lottie-player';
 import HourGlass from '../../assets/lotties/hourglass.json';
@@ -57,7 +57,7 @@ const LearningHistoryPage: React.FC = () => {
         _activeTab ?? CredentialListTabEnum.Earned
     );
 
-    const imgSrc = TYPE_TO_IMG_SRC[WALLET_SUBTYPES.LEARNING_HISTORY];
+    const imgSrc = categoryMetadata[CredentialCategoryEnum.learningHistory].defaultImageSrc;
 
     // Upon initially loading component, read wallet contents
     /* the filtering step is to handle old wallets that may have different VCs on their index that have the same uri */
@@ -105,7 +105,11 @@ const LearningHistoryPage: React.FC = () => {
     return (
         <IonPage className="bg-white">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
-                <MainHeader showBackButton subheaderType={SubheaderTypeEnum.Learning} branding={BrandingEnum.scoutPass}>
+                <MainHeader
+                    showBackButton
+                    subheaderType={SubheaderTypeEnum.Learning}
+                    branding={BrandingEnum.scoutPass}
+                >
                     {currentLCNUser && (
                         <EarnedAndManagedTabs
                             handleActiveTab={setActiveTab}
@@ -116,18 +120,20 @@ const LearningHistoryPage: React.FC = () => {
                 </MainHeader>
                 <IonContent fullscreen className="skills-page" color="emerald-700">
                     <CurvedBackdropEl className="bg-emerald-300" />
-                    {loading && activeTab === CredentialListTabEnum.Earned && !earnedBoostsError && (
-                        <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <div className="max-w-[280px] mt-[-40px]">
-                                <Lottie
-                                    loop
-                                    animationData={HourGlass}
-                                    play
-                                    style={{ width: '100%', height: '100%' }}
-                                />
-                            </div>
-                        </section>
-                    )}
+                    {loading &&
+                        activeTab === CredentialListTabEnum.Earned &&
+                        !earnedBoostsError && (
+                            <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
+                                <div className="max-w-[280px] mt-[-40px]">
+                                    <Lottie
+                                        loop
+                                        animationData={HourGlass}
+                                        play
+                                        style={{ width: '100%', height: '100%' }}
+                                    />
+                                </div>
+                            </section>
+                        )}
                     {!loading &&
                         vcs?.length > 0 &&
                         activeTab === CredentialListTabEnum.Earned &&

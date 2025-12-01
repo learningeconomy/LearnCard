@@ -15,7 +15,7 @@ import BoostListItem from 'learn-card-base/components/boost/BoostListItem';
 
 import { BoostRecipientInfo, VC } from '@learncard/types';
 import { BoostPageViewMode, BoostPageViewModeType, CredentialListTabEnum } from 'learn-card-base';
-import { BoostCategoryOptionsEnum } from '../../components/boost/boost-options/boostOptions';
+import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
 import BoostTextSkeleton, {
     BoostSkeleton,

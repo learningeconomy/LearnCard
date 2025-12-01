@@ -28,12 +28,11 @@ const ShareContractModal: React.FC<ShareContractModalProps> = ({ contract }) => 
                 string: shareUrl,
             });
             presentToast('Contract link copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy contract link to clipboard', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }
@@ -45,12 +44,11 @@ const ShareContractModal: React.FC<ShareContractModalProps> = ({ contract }) => 
                 string: uri,
             });
             presentToast('Contract URI copied to clipboard', {
-                className: ToastTypeEnum.CopySuccess,
                 hasDismissButton: true,
             });
         } catch (err) {
             presentToast('Unable to copy contract URI to clipboard', {
-                className: ToastTypeEnum.CopyFail,
+                type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }

@@ -1,4 +1,5 @@
 // obv3 achievementType spec -> https://1edtech.github.io/openbadges-specification/ob_v3p0.html#achievementtype-enumeration
+//   new link: https://www.imsglobal.org/spec/ob/v3p0/#achievementtype-enumeration
 // The type of achievement, for example 'Award' or 'Certification'.
 // This is an extensible enumerated vocabulary. Extending the vocabulary makes use of a naming convention
 // ! MUST ALIGN WITH -> learn-card-base/src/helpers -> credentialHelpers.ts -> { CATEGORY_MAP }

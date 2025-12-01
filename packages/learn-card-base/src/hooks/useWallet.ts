@@ -13,11 +13,8 @@ import {
     getDefaultCategoryForCredential,
     isBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
-import {
-    CredentialCategory,
-    CredentialCategoryEnum,
-    IndexMetadata,
-} from 'learn-card-base/types/credentials';
+import { CredentialCategory, IndexMetadata } from 'learn-card-base/types/credentials';
+import { CredentialCategoryEnum, contractCategoryNameToCategoryMetadata } from 'learn-card-base';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
@@ -48,19 +45,8 @@ export const getCategoryForCredential = async (
             if (boost?.category) {
                 if (!mapAiCredentials) return boost.category as CredentialCategory;
 
-                if (boost.category === 'ai-summary' || boost.category === 'summaryInfo') {
-                    return CredentialCategoryEnum.aiSummary;
-                } else if (boost.category === 'ai-topic' || boost.category === 'topicInfo') {
-                    return CredentialCategoryEnum.aiTopic;
-                } else if (
-                    boost.category === 'ai-pathway' ||
-                    boost.category === 'learningPathway'
-                ) {
-                    return CredentialCategoryEnum.aiPathway;
-                } else if (boost.category === 'ai-assessment' || boost.category === 'assessment') {
-                    return 'AI Assessment';
-                }
-                return boost.category as CredentialCategory;
+                return (contractCategoryNameToCategoryMetadata(boost.category)?.credentialType ??
+                    boost.category) as CredentialCategory;
             }
         } catch (error) {
             console.warn('Failed to resolve boost for categorization:', error);

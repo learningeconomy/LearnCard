@@ -4,7 +4,7 @@ import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import moment from 'moment';
 
-import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime, useIonToast } from '@ionic/react';
+import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import OnboardingRoleItem from '../onboardingRoles/OnboardingRoleItem';
 import OnboardingHeader from '../onboardingHeader/OnboardingHeader';
@@ -35,6 +35,8 @@ import {
     SocialLoginTypes,
     ModalTypes,
     BrandingEnum,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -114,7 +116,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const [profileIdErrors, setProfileIdErrors] = useState<Record<string, string[]>>({});
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
 
     const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
 
@@ -432,7 +434,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         );
     };
 
-
     const presentUSConsentNoticeModal = () => {
         newModal(
             <USConsentNoticeModalContent
@@ -507,13 +508,13 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         const success = await ensureProfileApprovedFalse();
                         if (success) closeModal();
                         else
-                            presentToast({
-                                message:
-                                    'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
-                                duration: 3000,
-                                position: 'top',
-                                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                            });
+                            presentToast(
+                                'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
+                                {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                }
+                            );
                     } catch (e) {
                         console.log('ensureProfileApprovedFalse::error', e);
                     } finally {
@@ -564,13 +565,13 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             const success = await ensureProfileApprovedFalse();
                             if (success) closeModal();
                             else
-                                presentToast({
-                                    message:
-                                        'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
-                                    duration: 3000,
-                                    position: 'top',
-                                    buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                                });
+                                presentToast(
+                                    'Could not create your profile. You can still request parental consent now. Please try profile setup again later.',
+                                    {
+                                        type: ToastTypeEnum.Error,
+                                        hasDismissButton: true,
+                                    }
+                                );
                         } catch (e) {
                             console.log('ensureProfileApprovedFalse::error', e);
                         } finally {

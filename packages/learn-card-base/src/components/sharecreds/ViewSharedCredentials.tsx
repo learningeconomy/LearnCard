@@ -11,12 +11,11 @@ import {
     IonToolbar,
     IonButtons,
     IonSpinner,
-    useIonToast,
     useIonAlert,
 } from '@ionic/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { getBaseUrl, useGetCredentialsListFromIDX } from 'learn-card-base';
+import { getBaseUrl, useGetCredentialsListFromIDX, useToast, ToastTypeEnum } from 'learn-card-base';
 export const baseUrl = getBaseUrl();
 
 type IDXBundle = {
@@ -32,7 +31,7 @@ const ViewSharedCredentials = ({
     onDismiss: (data?: string | null | undefined | number, role?: string) => void;
 }) => {
     const [page, setPage] = useState('application');
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const [vpUri, setVpUri] = useState<string>();
     const currentUser = useCurrentUser();
     const [presentAlert] = useIonAlert();
@@ -47,30 +46,14 @@ const ViewSharedCredentials = ({
             await Clipboard.write({
                 string: link,
             });
-            presentToast({
-                message: 'Verified resume link copied to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-success-copy-toast',
+            presentToast('Verified resume link copied to clipboard', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
             });
         } catch (err) {
-            presentToast({
-                message: 'Unable to copy verified resume link to clipboard',
-                duration: 3000,
-                buttons: [
-                    {
-                        text: 'Dismiss',
-                        role: 'cancel',
-                    },
-                ],
-                position: 'top',
-                cssClass: 'user-did-copy-success-toast',
+            presentToast('Unable to copy verified resume link to clipboard', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         }
     };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouteMatch } from 'react-router-dom';
-import { IonContent, IonPage, IonSpinner, useIonToast, IonRow, IonGrid } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner, IonRow, IonGrid } from '@ionic/react';
 
 import { AddressBookHeader } from './addressBook-header/AddressBookHeader';
 import AddressBookContactList from './addressBook-contact-list/AddressBookContactList';
@@ -25,6 +25,8 @@ import {
     ModalTypes,
     useGetResolvedCredential,
     useGetIDs,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 
 import CaretDown from '../../components/svgs/CaretDown';
@@ -52,7 +54,7 @@ const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
 
 const AddressBook: React.FC = () => {
     const { url } = useRouteMatch();
-    const [presentToast] = useIonToast();
+    const { presentToast } = useToast();
     const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
     const searchInputRef = useRef<HTMLIonInputElement>(null);
 
@@ -100,25 +102,21 @@ const AddressBook: React.FC = () => {
                         },
                         onError: (error: any) => {
                             refetch();
-                            presentToast({
-                                message:
-                                    error?.message || 'An error occurred, unable to block user',
-                                duration: 3000,
-                                buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                                position: 'top',
-                                cssClass: 'login-link-warning-toast',
-                            });
+                            presentToast(
+                                error?.message || 'An error occurred, unable to block user',
+                                {
+                                    type: ToastTypeEnum.Error,
+                                    hasDismissButton: true,
+                                }
+                            );
                         },
                     }
                 );
             } catch (err: any) {
                 console.log('blockProfile::error', err);
-                presentToast({
-                    message: err?.message || 'An error occurred, unable to block user',
-                    duration: 3000,
-                    buttons: [{ text: 'Dismiss', role: 'cancel' }],
-                    position: 'top',
-                    cssClass: 'login-link-warning-toast',
+                presentToast(err?.message || 'An error occurred, unable to block user', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 });
             }
         },

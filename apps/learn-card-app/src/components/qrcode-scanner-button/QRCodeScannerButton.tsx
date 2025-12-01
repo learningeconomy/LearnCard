@@ -50,8 +50,9 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
                 connections={connections ?? []}
                 qrOnly
             />,
-            { sectionClassName: '!max-w-[400px]' },
-            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            // { sectionClassName: '!max-w-[400px]' },
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
     };
 

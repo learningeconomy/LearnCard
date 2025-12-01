@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 
-import { useFilestack, UploadRes, LCAStylesPackRegistryEntry } from 'learn-card-base';
+import {
+    useFilestack,
+    UploadRes,
+    LCAStylesPackRegistryEntry,
+    getBoostMetadata,
+    BoostCategoryOptionsEnum,
+    boostCategoryMetadata,
+} from 'learn-card-base';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -13,26 +20,23 @@ import Lottie from 'react-lottie-player';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';
-import {
-    BoostUserTypeEnum,
-    boostCategoryOptions,
-    boostVCTypeOptions,
-} from '../../../boost-options/boostOptions';
+import { BoostUserTypeEnum, boostVCTypeOptions } from '../../../boost-options/boostOptions';
 import BoostVCTypeOptionButton from '../../../boost-options/boostVCTypeOptions/BoostVCTypeOptionButton';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
+import { SetState } from 'packages/shared-types/dist';
 
 export enum StylePackCategories {
-    all = 'All',
-    socialBadge = 'Social Badge',
-    achievement = 'Achievement',
-    course = 'Course',
-    job = 'Job',
-    id = 'ID',
-    workHistory = 'Work History',
-    currency = 'Currency',
-    learningHistory = 'Learning History',
-    skill = 'Skill',
+    all = BoostCategoryOptionsEnum.all,
+    socialBadge = BoostCategoryOptionsEnum.socialBadge,
+    achievement = BoostCategoryOptionsEnum.achievement,
+    course = BoostCategoryOptionsEnum.course,
+    job = BoostCategoryOptionsEnum.job,
+    id = BoostCategoryOptionsEnum.id,
+    workHistory = BoostCategoryOptionsEnum.workHistory,
+    currency = BoostCategoryOptionsEnum.currency,
+    learningHistory = BoostCategoryOptionsEnum.learningHistory,
+    skill = BoostCategoryOptionsEnum.skill,
 }
 
 const getFilteredStylePack = (
@@ -45,13 +49,13 @@ const getFilteredStylePack = (
 
 type BoostCMSAppearanceBadgeListProps = {
     state: BoostCMSState;
-    setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
+    setState: SetState<BoostCMSState>;
     disabled?: boolean;
     boostUserType: BoostUserTypeEnum;
 
     showStylePackCategoryList: boolean;
-    setShowStylePackCategoryList: React.Dispatch<React.SetStateAction<boolean>>;
-    setActiveForm: React.Dispatch<React.SetStateAction<BoostCMSActiveAppearanceForm>>;
+    setShowStylePackCategoryList: SetState<boolean>;
+    setActiveForm: SetState<BoostCMSActiveAppearanceForm>;
 };
 
 export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListProps> = ({
@@ -65,7 +69,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
 }) => {
     const { data: boostAppearanceBadgeList, isLoading } = useLCAStylesPackRegistry();
 
-    const { CategoryImage } = boostCategoryOptions[state?.basicInfo?.type];
+    const boostMetadata = getBoostMetadata(state?.basicInfo?.type as BoostCategoryOptionsEnum);
+    const { CategoryImage } = boostMetadata || {};
     const isDefaultImage = state?.appearance?.badgeThumbnail === CategoryImage;
 
     const [activeStylePackCategory, setActiveStylePackCategory] = useState<StylePackCategories>(
@@ -227,7 +232,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                 </button>
             );
         } else {
-            const { IconComponent, title, color } = boostCategoryOptions[activeStylePackCategory];
+            const { IconComponent, title, color } = boostCategoryMetadata[activeStylePackCategory];
 
             categoryButton = (
                 <button
