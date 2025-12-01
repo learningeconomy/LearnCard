@@ -2,16 +2,16 @@ name: Publish to App Stores
 
 on:
     schedule:
-      - cron: '0 18 30 * WED' # Every wednesday at 6pm UTC
+        - cron: "0 18 30 * WED" # Every wednesday at 6pm UTC
     workflow_dispatch:
 
-jobs:   
+jobs:
     publish-learn-card-native-apps:
         name: Publish LearnCard Native Apps to App Stores
         uses: ./.github/workflows/fastlane-deploy-native-apps.yml
         with:
-            environment: 'learn-card-app-production'
-            googlePlayReleaseTrack: 'production'
+            environment: "learn-card-app-production"
+            googlePlayReleaseTrack: "internal"
             submitToAppStore: true
-            releaseNotes: '- Critical Bug Fixes and Security Patches'
-        secrets: inherit  
+            releaseNotes: "- Critical Bug Fixes and Security Patches"
+        secrets: inherit
