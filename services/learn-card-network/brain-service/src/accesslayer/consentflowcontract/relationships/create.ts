@@ -18,7 +18,7 @@ import { DbContractType, FlatDbTermsType } from 'types/consentflowcontract';
 import { BoostType } from 'types/boost';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { reconsentTerms } from './update';
+import { reconsentTerms, upsertRequestedForRelationship } from './update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { sendBoost } from '@helpers/boost.helpers';
 import { getBoostUri } from '@helpers/boost.helpers';
@@ -235,7 +235,11 @@ export const consentToContract = async (
                     }
 
                     // Inject OBv3 skill alignments based on boost's framework/skills
-                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost.target, domain);
+                    await injectObv3AlignmentsIntoCredentialForBoost(
+                        boostCredential,
+                        boost.target,
+                        domain
+                    );
 
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,
@@ -301,6 +305,17 @@ export const consentToContract = async (
         },
         data: { transaction },
     });
+
+    try {
+        await upsertRequestedForRelationship(
+            contract.id,
+            consenter.profileId,
+            'accepted',
+            'unseen'
+        );
+    } catch {
+        console.log('Unable to update contract request status');
+    }
 
     return result.summary.counters.containsUpdates();
 };
