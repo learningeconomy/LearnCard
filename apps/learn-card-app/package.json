@@ -3,7 +3,7 @@
     "version": "1.93.1",
     "private": true,
     "dependencies": {
-        "@capacitor-community/media": "7",
+        "@capacitor-community/media": "^8.0.1",
         "@capacitor-community/sqlite": "^7.0.1",
         "@capacitor-firebase/analytics": "7.3.0",
         "@capacitor-firebase/authentication": "^7.3.0",

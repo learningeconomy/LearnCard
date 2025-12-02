@@ -165,8 +165,8 @@ importers:
   apps/learn-card-app:
     dependencies:
       '@capacitor-community/media':
-        specifier: '7'
-        version: 7.0.1(@capacitor/core@7.4.2)
+        specifier: ^8.0.1
+        version: 8.0.1(@capacitor/core@7.4.2)
       '@capacitor-community/sqlite':
         specifier: ^7.0.1
         version: 7.0.2(@capacitor/core@7.4.2)
@@ -5118,10 +5118,10 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
-  '@capacitor-community/media@7.0.1':
-    resolution: {integrity: sha512-SO9cAOakGVKLPS9HGaDU2JoDwskZrBEo7mFCy1L+pjI7qXQhvMseTb24i2BzIiKbJNfYnAcotcDwXLZNmi2pkw==}
+  '@capacitor-community/media@8.0.1':
+    resolution: {integrity: sha512-u4+f7iVQV6BdsDi0MeQigJpwRztfuzsRTskwp1YS6nAS+6Gg5zLFOW/vnQgnpPIJQBO54plb4UZQYE9Wv/1Yxw==}
     peerDependencies:
-      '@capacitor/core': ^6.0.0
+      '@capacitor/core': '>=7.0.0'
 
   '@capacitor-community/sqlite@7.0.2':
     resolution: {integrity: sha512-TkxvuLgVCSmme/NSUEE2xopTVMwMqdT6+zH9pH8g76DMdi2z+ZsPEATQnJchGw4YAhhiQ8vTYxIP9se3/zkhGg==}
@@ -28734,7 +28734,7 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@capacitor-community/media@7.0.1(@capacitor/core@7.4.2)':
+  '@capacitor-community/media@8.0.1(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
 

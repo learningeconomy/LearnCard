@@ -41,8 +41,8 @@
 		},
 		"CapacitorUpdater": {
 			"appId": "com.learncard.app",
-			"autoUpdate": true,
-			"defaultChannel": "1.0.1"
+			"autoUpdate": false,
+			"defaultChannel": "migration"
 		}
 	}
 }
