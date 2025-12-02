@@ -26,6 +26,8 @@ import {
     VC,
     JWE,
     AutoBoostConfigValidator,
+    LCNNotificationTypeEnumValidator,
+    LCNProfileValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
@@ -46,7 +48,11 @@ import {
     getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { constructUri, getIdFromUri, resolveUri } from '@helpers/uri.helpers';
-import { getContractByUri } from '@accesslayer/consentflowcontract/read';
+import {
+    getContractByUri,
+    getConsentFlowContractById,
+    getRequestedForList,
+} from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { areTermsValid } from '@helpers/contract.helpers';
@@ -54,6 +60,7 @@ import { updateDidForProfile } from '@helpers/did.helpers';
 import {
     syncCredentialsToContract,
     updateTerms,
+    upsertRequestedForRelationship,
     withdrawTerms,
 } from '@accesslayer/consentflowcontract/relationships/update';
 import {
@@ -61,7 +68,7 @@ import {
     setAutoBoostForContract,
     setCreatorForContract,
 } from '@accesslayer/consentflowcontract/relationships/create';
-import { getProfileByDid } from '@accesslayer/profile/read';
+import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
@@ -80,6 +87,8 @@ import {
     addAutoBoostsToContractDb,
     removeAutoBoostsFromContractDb,
 } from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { ProfileType } from 'types/profile';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -1644,6 +1653,144 @@ export const contractsRouter = t.router({
             await removeAutoBoostsFromContractDb(contract.id, boostUris, ctx.domain);
 
             return true;
+        }),
+
+    sendAiInsightsContractRequest: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/ai-insights/request',
+                tags: ['Contracts'],
+                summary: 'AI Insights, consent flow notifcation request',
+                description:
+                    'Sends the targeted user an AI insights consent flow request via a notification',
+            },
+        })
+        .input(
+            z.object({
+                contractUri: z.string(),
+                targetProfileId: z.string(),
+                shareLink: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri, targetProfileId, shareLink } = input;
+
+            const contractByUri = await getContractByUri(contractUri);
+
+            if (!contractByUri)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+
+            const contract = await getConsentFlowContractById(contractByUri.id); // model instance
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+            }
+
+            const writers = await getWritersForContract(contractByUri);
+            const isAuthorized = writers.some(writer => writer.profileId === profile.profileId);
+
+            if (!isAuthorized) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not have permission to modify autoboosts for this contract.',
+                });
+            }
+
+            const targetProfile = await getProfileByProfileId(targetProfileId);
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Target profile not found.',
+                });
+            }
+
+            try {
+                await upsertRequestedForRelationship(
+                    contractByUri.id,
+                    targetProfileId,
+                    'pending',
+                    null
+                );
+            } catch (error) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Unable to send request',
+                });
+            }
+
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
+                from: profile,
+                to: targetProfile as ProfileType,
+                message: {
+                    title: 'AI Insights Request',
+                    body: `${profile?.displayName} has requested to view your insights.`,
+                },
+                data: {
+                    metadata: {
+                        type: 'AI Insight',
+                        shareLink,
+                        contractUri,
+                    },
+                },
+            });
+
+            return true;
+        }),
+
+    getContractSentRequests: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contracts/sent-requests',
+                tags: ['Contracts'],
+                summary: 'Get requests sent for a given contract',
+                description:
+                    'Gets a list of users and their request statuses for a given contract.',
+            },
+        })
+        .input(
+            z.object({
+                contractUri: z.string(),
+            })
+        )
+        .output(
+            z.array(
+                z.object({
+                    profile: LCNProfileValidator, // using your existing validator
+                    status: z.enum(['pending', 'accepted', 'denied']).nullable(),
+                    readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
+                })
+            )
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri } = input;
+
+            const contractByUri = await getContractByUri(contractUri);
+
+            if (!contractByUri)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+
+            const writers = await getWritersForContract(contractByUri);
+            const isAuthorized = writers.some(w => w.profileId === profile.profileId);
+
+            if (!isAuthorized) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not have permissions to view requests made for this contract.',
+                });
+            }
+
+            const requests = await getRequestedForList(contractByUri.id);
+
+            return requests;
         }),
 });
 

@@ -1100,6 +1100,29 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            sendAiInsightsContractRequest: async (
+                _learnCard,
+                contractUri,
+                targetProfileId,
+                shareLink
+            ) => {
+                await ensureUser();
+
+                return client.contracts.sendAiInsightsContractRequest.mutate({
+                    contractUri,
+                    targetProfileId,
+                    shareLink,
+                });
+            },
+
+            getContractSentRequests: async (_learnCard, contractUri) => {
+                await ensureUser();
+
+                return client.contracts.getContractSentRequests.query({
+                    contractUri,
+                });
+            },
+
             addDidMetadata: async (_learnCard, metadata) => {
                 await ensureUser();
 
@@ -1228,9 +1251,9 @@ export async function getLearnCardNetworkPlugin(
             },
             finalizeInboxCredentials: async _learnCard => {
                 await ensureUser();
-                
+
                 return client.inbox.finalize.mutate();
-            }, 
+            },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();
 
@@ -1290,7 +1313,11 @@ export async function getLearnCardNetworkPlugin(
             },
             removeSkillTag: async (_learnCard, frameworkId, skillId, slug) => {
                 if (!userData) throw new Error('Please make an account first!');
-                return client.skills.removeSkillTag.mutate({ frameworkId, id: skillId, slug } as any);
+                return client.skills.removeSkillTag.mutate({
+                    frameworkId,
+                    id: skillId,
+                    slug,
+                } as any);
             },
             createManagedSkillFramework: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -1440,10 +1467,23 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.integrations.deleteIntegration.mutate({ id });
             },
-            associateIntegrationWithSigningAuthority: async (_learnCard, integrationId, endpoint, name, did, isPrimary) => {
+            associateIntegrationWithSigningAuthority: async (
+                _learnCard,
+                integrationId,
+                endpoint,
+                name,
+                did,
+                isPrimary
+            ) => {
                 await ensureUser();
 
-                return client.integrations.associateIntegrationWithSigningAuthority.mutate({ integrationId, endpoint, name, did, isPrimary });
+                return client.integrations.associateIntegrationWithSigningAuthority.mutate({
+                    integrationId,
+                    endpoint,
+                    name,
+                    did,
+                    isPrimary,
+                });
             },
 
             resolveFromLCN: async (_learnCard, uri) => {
