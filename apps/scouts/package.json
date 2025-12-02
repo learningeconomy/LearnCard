@@ -112,7 +112,7 @@
         "start-android": "adb reverse tcp:3000 tcp:3000 && ionic cap run android -l --port=3000",
         "ionic:build": "vite build",
         "ionic:serve": "vite",
-        "appflow:install": "npx pnpm install --loglevel=warn --ignore-scripts --no-frozen-lockfile && npx nx build shared-helpers && npx nx build lca-api-plugin",
+        "appflow:install": "npx pnpm install --loglevel=warn --ignore-scripts --no-frozen-lockfile && npx nx build scouts",
         "preview": "vite preview --port=3000",
         "build-and-open-android-app": "SENTRY_ENV='scouts-production', SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.sentry.io/4505432118984704' pnpm install && pnpm build && npx cap sync && npx cap open android",
         "build-and-open-ios-app": "SENTRY_ENV='scouts-production', SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.sentry.io/4505432118984704' pnpm install && pnpm build && npx cap sync && npx cap open ios"

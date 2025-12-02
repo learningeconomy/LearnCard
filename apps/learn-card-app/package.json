@@ -122,7 +122,7 @@
         "start-android": "adb reverse tcp:3000 tcp:3000 && ionic cap run android -l --port=3000",
         "ionic:build": "vite build",
         "ionic:serve": "vite",
-        "appflow:install": "npx pnpm install --loglevel=warn --ignore-scripts --no-frozen-lockfile && npx nx build shared-helpers && npx nx build lca-api-plugin",
+        "appflow:install": "npx pnpm install --loglevel=warn --ignore-scripts --no-frozen-lockfile && npx nx build learn-card-app",
         "preview": "vite preview --host --port=3000",
         "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH"
     },
