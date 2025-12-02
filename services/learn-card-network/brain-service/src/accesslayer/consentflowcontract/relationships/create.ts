@@ -295,15 +295,30 @@ export const consentToContract = async (
         );
     }
 
+    // TODO: Improve notification handling for consent flow contracts
+    let notificationData = {
+        title: 'New Consent Transaction',
+        body: `${consenter.displayName} has just consented to ${contract.name}!`,
+        metadata: {},
+    };
+
+    // TODO: Replace hardcoded string matching with contract type identification
+    // This should check a contract.type field instead of contract.name
+    if (contract.name === 'AI Insights') {
+        notificationData.title = `AI Insights Request`;
+        notificationData.body = `${consenter?.displayName} has approved your request to view their insights.`;
+        notificationData.metadata = { type: 'AI Insight' };
+    }
+
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: consenter,
         to: contractOwner,
         message: {
-            title: 'New Consent Transaction',
-            body: `${consenter.displayName} has just consented to ${contract.name}!`,
+            title: notificationData.title,
+            body: notificationData.body,
         },
-        data: { transaction },
+        data: { transaction, metadata: notificationData.metadata },
     });
 
     try {
