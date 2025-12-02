@@ -1,28 +1,65 @@
 import React from 'react';
 import moment from 'moment';
 
-import { getFirstName, useCurrentUser } from 'learn-card-base';
+import { getFirstName, useCurrentUser, useModal, ModalTypes } from 'learn-card-base';
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
+import LaunchPadActionModal from './LaunchPadActionModal';
 
 export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
     const currentUser = useCurrentUser();
     const currentHour = moment().hour(); // returns 0–23
+    const { newModal } = useModal({
+        desktop: ModalTypes.Freeform,
+        mobile: ModalTypes.Freeform,
+    });
 
     const { emoji, greeting } = getGreetingAndEmoji(currentHour);
 
-    const todaysDate = moment().format('MMMM D');
     const name = getFirstName(currentUser?.name ?? '');
 
     return (
         <div className="w-full flex items-center justify-center bg-white py-4">
-            <div className="w-full flex flex-col items-center justify-center">
-                <p className="text-grayscale-500 font-semibold text-[17px] font-poppins">
-                    {emoji} {todaysDate}
+            <div className="w-full flex flex-col items-center justify-center px-3">
+                <p className="text-grayscale-500 font-semibold text-[17px] font-poppins flex items-center">
+                    <span className="mr-2">{emoji}</span>
+                    <span>
+                        {greeting}
+                        {name ? `, ${name}` : ''}
+                    </span>
                 </p>
-                <h2 className="text-grayscale-700 font-semibold text-[22px] font-poppins">
-                    {greeting}
-                    {name && <span>,</span>} {name}.
-                </h2>
+                <div className="w-full flex items-center justify-center mt-3">
+                    <button
+                        type="button"
+                        onClick={() =>
+                            newModal(<LaunchPadActionModal />, {
+                                className:
+                                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                                sectionClassName: '!max-w-[380px]',
+                            })
+                        }
+                        className="w-full max-w-[600px] flex items-center justify-between px-4 py-3 rounded-2xl bg-[#DCEAFE] shadow-sm"
+                    >
+                        <span className="text-[#273B72] font-poppins font-bold text-[20px]">
+                            What would you like to do?
+                        </span>
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="text-[#273B72]"
+                        >
+                            <path
+                                d="M6 9l6 6 6-6"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     );
