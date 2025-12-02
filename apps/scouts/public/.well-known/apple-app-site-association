@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "5JB5D53PRR.org.scoutpass.app",
+        "paths": ["*", "/uni/*"]
+      }
+    ]
+  }
+}
+

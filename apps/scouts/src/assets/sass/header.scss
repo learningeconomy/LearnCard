@@ -1,0 +1,64 @@
+.learn-card-header {
+    &::after {
+        background: none;
+    }
+}
+
+.main-header-branding,
+.main-header-back-button {
+    display: block;
+}
+
+.main-header-notifications-btn {
+    display: none;
+    margin-right: 10px;
+
+    & > svg {
+        color: currentColor;
+    }
+}
+
+ion-modal.main-header-modal {
+    // --max-height: 500px;
+    // --max-width: 500px;
+    --height: auto;
+}
+
+.sub-header-plus-btn-mobile {
+    display: flex;
+    @media (min-width: 992px) {
+        display: none;
+    }
+}
+
+.sub-header-plus-btn-desktop {
+    display: none;
+    @media (min-width: 992px) {
+        display: flex;
+    }
+}
+
+@media (min-width: 992px) {
+    .main-header-branding,
+    .main-header-back-button {
+        display: none;
+    }
+
+    .main-header-notifications-btn {
+        display: block;
+    }
+}
+
+
+@media (min-width: 992px) {
+    .main-header-branding.main-header-branding-public-route {
+        display: block;
+    }
+}
+
+@media (max-width: 479px) {
+    .main-header-sp-logo {
+        min-width: 200px;
+        max-width: 200px;
+    }
+}

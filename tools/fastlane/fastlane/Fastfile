@@ -1,0 +1,431 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+update_fastlane
+
+default_platform(:android)
+
+platform :ios do
+  desc "Description of what the lane does"
+
+  lane :clean_podfile_lock do
+    sh "rm -f ios/App/Podfile.lock"
+    UI.message("Podfile.lock has been deleted!")
+  end
+
+  lane :certificates do
+    match(type: "development", generate_apple_certs: false)
+    match(type: "appstore", generate_apple_certs: false)
+  end
+
+  lane :nukeandrecertify do
+
+    match_nuke(
+      type: "development", 
+      app_identifier: [ENV["APP_ID"]],
+      verbose: true
+    ) 
+
+    match_nuke(
+      type: "appstore", 
+      app_identifier: [ENV["APP_ID"]],
+      verbose: true
+    ) 
+
+    match(
+      type: "development", 
+      app_identifier: [ENV["APP_ID"]],
+      verbose: true,
+      force: true #Important: to re-generates the new provisioning profiles
+    )
+    match(
+      type: "appstore", 
+      app_identifier: [ENV["APP_ID"]],
+      verbose: true,
+      force: true #Important: to re-generates the new provisioning profiles
+    )
+  end
+
+  lane :release do
+    setup_ci if ENV['CI']
+    # xcodes(version: "15.3") if ENV['CI']
+
+    app_store_connect_api_key(
+      key_id: ENV['APP_STORE_CONNECT_KEY_ID'],
+      issuer_id: ENV['APP_STORE_CONNECT_ISSUER_ID'],
+      is_key_content_base64: true,
+      key_content: ENV['APP_STORE_CONNECT_KEY_CONTENT'],
+      duration: 500,
+      in_house: false
+    )
+    latest_testflight_build_number # This is necessary because it creates SharedValues::LATEST_TESTFLIGHT_VERSION lane context
+ 
+    increment_build_number(
+      build_number: Time.now.strftime("%Y%m%d%H%M%S").to_i,
+      xcodeproj: ENV["XCODE_PROJECT"]
+    )
+
+    current_version_string = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
+    parts = current_version_string.split('.').map(&:to_i)
+    if parts.length == 3 # assuming X.Y.Z
+      parts[2] += 1 # Increment patch (Z)
+    elsif parts.length == 2 # assuming X.Y
+      parts[1] += 1 # Increment minor (Y)
+    else
+      UI.message("Warning: Unrecognized version format. Using 1.0.0.")
+      parts = [1, 0, 0]
+    end
+    new_version_string = parts.join('.')
+
+    increment_version_number(
+      version_number: new_version_string,
+      xcodeproj: ENV["XCODE_PROJECT"]
+    )
+
+    sync_code_signing(type: "appstore", generate_apple_certs: false, readonly: false) 
+
+    profile_mapping = Actions.lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: ENV["XCODE_PROJECT"],
+      profile_name: profile_mapping[ENV["APP_ID"]] # app_identifier could be an environment variable: ENV['APP_ID']
+    )
+
+    #clean_podfile_lock
+    #clear_derived_data
+    #clean_cocoapods_cache
+
+    build_app(scheme: "App",
+              workspace: ENV["XCODE_WORKSPACE"],
+              xcargs: "PROVISIONING_PROFILE_SPECIFIER='" + profile_mapping[ENV["APP_ID"]] + "'")
+    
+#    update_code_signing_settings(
+ #     use_automatic_signing: true,
+  #    path: ENV["XCODE_PROJECT"]
+   # )
+
+    upload_to_app_store(
+      force: true,
+      submit_for_review: ENV['IOS_SUBMIT_TO_APP_REVIEW'],
+      release_notes:  {
+        "default" => ENV['IOS_RELEASE_NOTES'],
+        "en-US" => ENV['IOS_RELEASE_NOTES'],
+      },
+      automatic_release: true,
+      skip_metadata: false,
+      skip_screenshots: true,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_limits_tracking: false,
+        add_id_info_serves_ads: false,
+        add_id_info_tracks_action: false,
+        add_id_info_tracks_install: false,
+        add_id_info_uses_idfa: false,
+        content_rights_has_rights: true,
+        content_rights_contains_third_party_content: true,
+      }
+    )
+  end
+
+  lane :beta do
+    setup_ci if ENV['CI']
+
+    app_store_connect_api_key(
+      key_id: ENV['APP_STORE_CONNECT_KEY_ID'],
+      issuer_id: ENV['APP_STORE_CONNECT_ISSUER_ID'],
+      is_key_content_base64: true,
+      key_content: ENV['APP_STORE_CONNECT_KEY_CONTENT'],
+      duration: 500,
+      in_house: false
+    )
+    latest_testflight_build_number # This is necessary because it creates SharedValues::LATEST_TESTFLIGHT_VERSION lane context
+
+    increment_build_number(
+      build_number: Time.now.strftime("%Y%m%d%H%M%S").to_i,
+      xcodeproj: ENV["XCODE_PROJECT"]
+    )
+
+    current_version_string = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
+    parts = current_version_string.split('.').map(&:to_i)
+    if parts.length == 3 # assuming X.Y.Z
+      parts[2] += 1 # Increment patch (Z)
+    elsif parts.length == 2 # assuming X.Y
+      parts[1] += 1 # Increment minor (Y)
+    else
+      UI.message("Warning: Unrecognized version format. Using 1.0.0.")
+      parts = [1, 0, 0]
+    end
+    new_version_string = parts.join('.')
+
+    increment_version_number(
+      version_number: new_version_string,
+      xcodeproj: ENV["XCODE_PROJECT"]
+    )
+
+    sync_code_signing(type: "appstore", generate_apple_certs: false, readonly: false) 
+    
+    profile_mapping = Actions.lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: ENV["XCODE_PROJECT"],
+      profile_name: profile_mapping[ENV["APP_ID"]] # app_identifier could be an environment variable: ENV['APP_ID']
+    )
+
+    build_app(scheme: "App",
+              workspace: ENV["XCODE_WORKSPACE"],
+              xcargs: "PROVISIONING_PROFILE_SPECIFIER='" + profile_mapping[ENV["APP_ID"]] + "'")
+    
+    update_code_signing_settings(
+      use_automatic_signing: true,
+      path: ENV["XCODE_PROJECT"]
+    )
+
+    upload_to_app_store(
+      force: true,
+      submit_for_review: ENV['IOS_SUBMIT_TO_APP_REVIEW'],
+      release_notes:  {
+        "default" => ENV['IOS_RELEASE_NOTES'],
+        "en-US" => ENV['IOS_RELEASE_NOTES'],
+      },
+      automatic_release: true,
+      skip_metadata: false,
+      skip_screenshots: true,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_limits_tracking: false,
+        add_id_info_serves_ads: false,
+        add_id_info_tracks_action: false,
+        add_id_info_tracks_install: false,
+        add_id_info_uses_idfa: false,
+        content_rights_has_rights: true,
+        content_rights_contains_third_party_content: true,
+      }
+    )
+  end
+
+  lane :upload_to_appetize do
+    setup_ci if ENV['CI']
+
+    app_store_connect_api_key(
+      key_id: ENV['APP_STORE_CONNECT_KEY_ID'],
+      issuer_id: ENV['APP_STORE_CONNECT_ISSUER_ID'],
+      is_key_content_base64: true,
+      key_content: ENV['APP_STORE_CONNECT_KEY_CONTENT'],
+      duration: 500,
+      in_house: false
+    )
+    latest_testflight_build_number # This is necessary because it creates SharedValues::LATEST_TESTFLIGHT_VERSION lane context
+
+    increment_build_number(
+      build_number: Time.now.strftime("%Y%m%d%H%M%S").to_i,
+      xcodeproj: ENV["XCODE_PROJECT"]
+    )
+
+    current_version_string = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
+    parts = current_version_string.split('.').map(&:to_i)
+    if parts.length == 3 # assuming X.Y.Z
+      parts[2] += 1 # Increment patch (Z)
+    elsif parts.length == 2 # assuming X.Y
+      parts[1] += 1 # Increment minor (Y)
+    else
+      UI.message("Warning: Unrecognized version format. Using 1.0.0.")
+      parts = [1, 0, 0]
+    end
+    new_version_string = parts.join('.')
+
+    increment_version_number(
+      version_number: new_version_string,
+      xcodeproj: ENV["XCODE_PROJECT"]
+    )
+
+    sync_code_signing(type: "development", generate_apple_certs: false, readonly: false) 
+
+    profile_mapping = Actions.lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: ENV["XCODE_PROJECT"],
+      profile_name: profile_mapping[ENV["APP_ID"]] # app_identifier could be an environment variable: ENV['APP_ID']
+    )
+
+    derived_data_path = File.expand_path("Derived_Data_Development", Dir.pwd)
+
+    # Create the derived data directory if it doesn't exist
+    FileUtils.mkdir_p(derived_data_path)
+
+    build_app(
+        scheme: "App",
+        workspace: ENV["XCODE_WORKSPACE"],
+        configuration: "Debug",
+        derived_data_path: derived_data_path,
+        skip_package_ipa: true,
+        skip_archive: true,
+        destination: "generic/platform=iOS Simulator",
+        xcargs: "PROVISIONING_PROFILE_SPECIFIER='" + profile_mapping[ENV["APP_ID"]] + "'"
+    )
+
+    # Print contents of the derived data directory for debugging
+    sh("ls -la #{derived_data_path}")
+
+    # Find the .app file
+    app_file_path = Dir["#{derived_data_path}/Build/Products/Debug-iphonesimulator/*.app"].first
+    zip_file_path = "#{app_file_path}.zip"
+
+    puts "Derived Data Path: #{derived_data_path}"
+    puts "App File Path: #{app_file_path}"
+    puts "Zip File Path: #{zip_file_path}"
+
+    # Print contents of the derived data directory
+    sh("ls -la #{derived_data_path}/Build/Products/Debug-iphonesimulator")
+
+    # Zip the .app file
+    sh("cd #{File.dirname(app_file_path)} && zip -r #{zip_file_path} #{File.basename(app_file_path)}")
+
+    appetize(
+      path: zip_file_path,
+      platform: "ios",
+      note: ENV["APPETIZE_NOTE"],
+      api_token: ENV["APPETIZE_API_TOKEN"], # get it from https://appetize.io/docs#request-api-token
+      public_key: ENV["APPETIZE_APP_PK"]
+    )
+
+    # Set the output for GitHub Actions
+    url = lane_context[SharedValues::APPETIZE_APP_URL]
+    File.open(ENV['GITHUB_OUTPUT'], 'a') do |file|
+      file.puts("ios_app_url=#{url}")
+    end
+  end
+end
+
+
+platform :android do
+
+  lane :release do
+    setup_ci if ENV['CI']
+
+    # previous_build_number = google_play_track_version_codes(
+    #   package_name: ENV['APP_ID'],
+    #   track: ENV['GOOGLE_PLAY_RELEASE_TRACK'],
+    #   json_key_data: ENV['JSON_KEY_DATA'],
+    # )[0]
+
+    previous_version_name = google_play_track_release_names(
+      package_name: ENV['APP_ID'],
+      track: ENV['GOOGLE_PLAY_RELEASE_TRACK'],
+      json_key_data: ENV['JSON_KEY_DATA'],
+    )[0]
+
+    if !previous_version_name
+      UI.message("No previous version name found. Using gradle file.")
+      previous_version_name = android_get_version_name(gradle_file: ENV['GRADLE_FILE_PATH'])
+    end
+    
+    current_build_number = ((Time.now - Time.new(1991, 1, 1)) / 60).to_i
+    current_version_name_str = previous_version_name
+    UI.message("Current version name: #{current_version_name_str} Current build number: #{current_build_number}")
+    parts = current_version_name_str.split('.').map(&:to_i)
+    parts[2] = parts[2] + 1 if parts.length == 3 # Increment patch
+    parts[1] = parts[1] + 1 if parts.length == 2 # Increment minor (if no patch)
+    parts[0] = parts[0] + 1 if parts.length == 1 # Increment major (if no minor or patch)
+
+    current_version_name = parts.join('.')
+    UI.message("New version name: #{current_version_name}")
+    UI.message("New build number: #{current_build_number}")
+    UI.message("Building app...")
+    gradle(
+      task: 'bundle',
+      build_type: 'Release',
+      project_dir: ENV['GRADLE_PROJECT_DIRECTORY'],
+      properties: {
+        "android.injected.signing.store.file" => ENV['ANDROID_KEYSTORE_FILE'],
+        "android.injected.signing.store.password" => ENV['ANDROID_KEYSTORE_PASSWORD'],
+        "android.injected.signing.key.alias" => ENV['ANDROID_KEYSTORE_KEY_ALIAS'],
+        "android.injected.signing.key.password" => ENV['ANDROID_KEYSTORE_KEY_PASSWORD'],
+        "android.injected.version.code" => current_build_number,
+        "android.injected.version.name" => current_version_name,
+        "versionCode" => current_build_number,                          
+        "versionName" => current_version_name,   
+      }
+    )
+
+    UI.message("Uploading app to Play Store...")
+    upload_to_play_store(
+      version_name: current_version_name,
+      version_code: current_build_number,
+      json_key_data: ENV['JSON_KEY_DATA'],
+      track: ENV['GOOGLE_PLAY_RELEASE_TRACK'],
+      skip_upload_apk: true,
+      skip_upload_screenshots: true,
+      skip_upload_images: true,
+      skip_upload_changelogs: false,
+    )
+  end
+
+  lane :upload_to_appetize do
+    setup_ci if ENV['CI']
+
+    # previous_build_number = google_play_track_version_codes(
+    #   package_name: ENV['APP_ID'],
+    #   track: ENV['GOOGLE_PLAY_RELEASE_TRACK'],
+    #   json_key_data: ENV['JSON_KEY_DATA'],
+    # )[0]
+
+    previous_version_name = google_play_track_release_names(
+      package_name: ENV['APP_ID'],
+      track: ENV['GOOGLE_PLAY_RELEASE_TRACK'],
+      json_key_data: ENV['JSON_KEY_DATA'],
+    )[0]
+
+    if !previous_version_name
+      UI.message("No previous version name found. Using gradle file.")
+      previous_version_name = android_get_version_name(gradle_file: ENV['GRADLE_FILE_PATH'])
+    end
+    
+    current_build_number = ((Time.now - Time.new(1991, 1, 1)) / 60).to_i
+    current_version_name_str = previous_version_name
+    parts = current_version_name_str.split('.').map(&:to_i)
+    parts[2] = parts[2] + 1 if parts.length == 3 # Increment patch
+    parts[1] = parts[1] + 1 if parts.length == 2 # Increment minor (if no patch)
+    parts[0] = parts[0] + 1 if parts.length == 1 # Increment major (if no minor or patch)
+    current_version_name = parts.join('.')
+
+    gradle(
+      task: 'assemble',
+      build_type: 'Release',
+      project_dir: ENV['GRADLE_PROJECT_DIRECTORY'],
+      properties: {
+        "android.injected.signing.store.file" => ENV['ANDROID_KEYSTORE_FILE'],
+        "android.injected.signing.store.password" => ENV['ANDROID_KEYSTORE_PASSWORD'],
+        "android.injected.signing.key.alias" => ENV['ANDROID_KEYSTORE_KEY_ALIAS'],
+        "android.injected.signing.key.password" => ENV['ANDROID_KEYSTORE_KEY_PASSWORD'],
+        "android.injected.version.code" => current_build_number,
+        "android.injected.version.name" => current_version_name,
+        "versionCode" => current_build_number,                          
+        "versionName" => current_version_name,   
+      }
+    )
+
+    appetize(
+      path: lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH],
+      platform: "android",
+      note: ENV["APPETIZE_NOTE"],
+      api_token: ENV["APPETIZE_API_TOKEN"], # get it from https://appetize.io/docs#request-api-token
+      public_key: ENV["APPETIZE_APP_PK"]
+    )
+
+    # Set the output for GitHub Actions
+    url = lane_context[SharedValues::APPETIZE_APP_URL]
+    File.open(ENV['GITHUB_OUTPUT'], 'a') do |file|
+      file.puts("android_app_url=#{url}")
+    end
+  end
+end

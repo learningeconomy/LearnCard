@@ -46,7 +46,11 @@ const configurations = [
         sourcemap: 'external',
         incremental: true,
         tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
+        // For the ESM build, rely on esbuild's default resolution and
+        // bundle dependencies like @learncard/helpers directly, so we
+        // don't end up importing the CJS helpers build that uses
+        // dynamic require('query-string') in the browser.
+        plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'esm',
         outfile: 'dist/brain-client.esm.js',
