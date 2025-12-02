@@ -3,6 +3,9 @@
 	"appName": "ScoutPass",
 	"webDir": "build",
 	"bundledWebRuntime": false,
+	"android": {
+		"adjustMarginsForEdgeToEdge": "force"
+	},
 	"plugins": {
 		"SplashScreen": {
 			"launchShowDuration": 6000,
@@ -38,8 +41,8 @@
 		},
 		"CapacitorUpdater": {
 			"appId": "org.scoutpass.app",
-			"autoUpdate": true,
-			"defaultChannel": "production"
+			"autoUpdate": false,
+			"defaultChannel": "migration"
 		}
 	}
 }

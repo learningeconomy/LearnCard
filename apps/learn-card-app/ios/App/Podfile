@@ -39,7 +39,7 @@ end
 target 'App' do
   capacitor_pods
   # Add your Pods here
-  pod 'CapacitorFirebaseAuthentication/Google', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.3.0_@capacitor+core@7.4.2_firebase@11.10.0/node_modules/@capacitor-firebase/authentication'
+  pod 'CapacitorFirebaseAuthentication/Google', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.4.0_@capacitor+core@7.4.2_firebase@11.10.0/node_modules/@capacitor-firebase/authentication'
   pod 'CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@7.4.2_firebase@11.10.0/node_modules/@capacitor-firebase/analytics'
   pod 'Firebase/Messaging' # FCM push notifications
 end
