@@ -35,6 +35,7 @@ import {
 
 import useAppStore, { mapTabToCategory } from './useAppStore';
 import AppStoreListItem from './AppStoreListItem';
+import FeaturedCarousel from './FeaturedCarousel';
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
@@ -58,7 +59,7 @@ const LaunchPad: React.FC = () => {
     const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
 
     // App Store hooks
-    const { useBrowseAppStore, useInstalledApps } = useAppStore();
+    const { useBrowseAppStore, useFeaturedCarouselApps, useCuratedListApps, useInstalledApps } = useAppStore();
 
     // Get category filter based on current tab
     const appStoreCategory = useMemo(() => mapTabToCategory(tab), [tab]);
@@ -79,6 +80,12 @@ const LaunchPad: React.FC = () => {
         limit: 50,
     });
 
+    // Fetch featured carousel apps
+    const { data: featuredCarouselApps } = useFeaturedCarouselApps();
+
+    // Fetch curated list apps
+    const { data: curatedListApps } = useCuratedListApps();
+
     const installedApps = installedAppsData?.records ?? [];
     const browseApps = browseAppsData?.records ?? [];
 
@@ -86,6 +93,12 @@ const LaunchPad: React.FC = () => {
     const installedListingIds = new Set(installedApps.map(app => app.listing_id));
 
     const availableApps = browseApps.filter(app => !installedListingIds.has(app.listing_id));
+
+    // Curated apps that aren't installed (for "Featured Apps" section)
+    const curatedAppsNotInstalled = useMemo(
+        () => (curatedListApps ?? []).filter(app => !installedListingIds.has(app.listing_id)),
+        [curatedListApps, installedListingIds]
+    );
 
     const connectToProfileId = (!Array.isArray(connectTo) ? connectTo : undefined) || '';
     const connectChallenge = (!Array.isArray(challenge) ? challenge : undefined) || '';
@@ -245,6 +258,14 @@ const LaunchPad: React.FC = () => {
         });
     }, [installedApps, searchInput, appStoreCategory]);
 
+    // Set of featured carousel and curated app IDs (to avoid duplicates in regular browse)
+    const featuredAndCuratedIds = useMemo(() => {
+        const ids = new Set<string>();
+        (featuredCarouselApps ?? []).forEach(app => ids.add(app.listing_id));
+        (curatedListApps ?? []).forEach(app => ids.add(app.listing_id));
+        return ids;
+    }, [featuredCarouselApps, curatedListApps]);
+
     const filteredAvailableApps = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
 
@@ -260,6 +281,25 @@ const LaunchPad: React.FC = () => {
             return true;
         });
     }, [availableApps, searchInput]);
+
+    // Filtered curated apps (for Featured Apps section)
+    const filteredCuratedApps = useMemo(() => {
+        const lowerSearch = searchInput?.toLowerCase() || '';
+
+        return curatedAppsNotInstalled.filter(app => {
+            if (lowerSearch) {
+                const nameMatch = app.display_name?.toLowerCase().includes(lowerSearch);
+                const taglineMatch = app.tagline?.toLowerCase().includes(lowerSearch);
+                return nameMatch || taglineMatch;
+            }
+            return true;
+        });
+    }, [curatedAppsNotInstalled, searchInput]);
+
+    // Non-promoted available apps (for Discover More section)
+    const nonPromotedAvailableApps = useMemo(() => {
+        return filteredAvailableApps.filter(app => !featuredAndCuratedIds.has(app.listing_id));
+    }, [filteredAvailableApps, featuredAndCuratedIds]);
 
     // Filter legacy apps (non-coming-soon) for display
     const filteredLegacyApps = useMemo(() => {
@@ -376,6 +416,15 @@ const LaunchPad: React.FC = () => {
                     <div className="flex flex-col items-center w-full">
                         <LaunchPadHeader>
                             <div className="flex flex-col just gap-[10px] w-full max-w-[600px] px-3">
+                                {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level */}
+                                {featuredCarouselApps && featuredCarouselApps.length > 0 && tab === LaunchPadTabEnum.all && (
+                                    <FeaturedCarousel
+                                        apps={featuredCarouselApps}
+                                        installedAppIds={installedListingIds}
+                                        onInstallSuccess={refetchInstalledApps}
+                                        hideScrollDots={true}
+                                    />
+                                )}
                                 <LaunchPadAppTabs tab={tab} setTab={setTab} />
                                 <LaunchPadSearch
                                     searchInput={searchInput}
@@ -510,15 +559,34 @@ const LaunchPad: React.FC = () => {
                                         </>
                                     )}
 
-                                    {/* Available App Store Apps (public apps user can install) */}
-                                    {filteredAvailableApps.length > 0 && (
+                                    {/* Featured Apps (Curated List apps) */}
+                                    {filteredCuratedApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    {filteredInstalledApps.length > 0 ? 'Discover More' : 'Featured Apps'}
+                                                    Featured Apps
                                                 </p>
                                             </div>
-                                            {filteredAvailableApps.map(app => (
+                                            {filteredCuratedApps.map(app => (
+                                                <AppStoreListItem
+                                                    key={`curated-${app.listing_id}`}
+                                                    listing={app}
+                                                    isInstalled={false}
+                                                    onInstallSuccess={refetchInstalledApps}
+                                                />
+                                            ))}
+                                        </>
+                                    )}
+
+                                    {/* Discover More (Standard apps) */}
+                                    {nonPromotedAvailableApps.length > 0 && (
+                                        <>
+                                            <div className="px-2 pt-4 pb-2">
+                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                    Discover More
+                                                </p>
+                                            </div>
+                                            {nonPromotedAvailableApps.map(app => (
                                                 <AppStoreListItem
                                                     key={`available-${app.listing_id}`}
                                                     listing={app}

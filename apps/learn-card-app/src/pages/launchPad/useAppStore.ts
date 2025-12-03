@@ -29,20 +29,58 @@ export const useAppStore = () => {
         category?: string;
         limit?: number;
         cursor?: string;
+        promotionLevel?: string;
     }) => {
         return useQuery({
-            queryKey: ['appStore', 'browse', options?.category, options?.limit, options?.cursor],
+            queryKey: ['appStore', 'browse', options?.category, options?.promotionLevel, options?.limit, options?.cursor],
             queryFn: async (): Promise<PaginatedAppStoreListings> => {
                 const wallet = await getWalletOrFallback();
 
                 return wallet.invoke.browseAppStore({
                     category: options?.category,
+                    promotionLevel: options?.promotionLevel,
                     limit: options?.limit ?? 50,
                     cursor: options?.cursor,
                 });
 
             },
             staleTime: 1000 * 60 * 0.1, // 5 minutes
+        });
+    };
+
+    // Query for featured carousel apps (FEATURED_CAROUSEL promotion level)
+    const useFeaturedCarouselApps = () => {
+        return useQuery({
+            queryKey: ['appStore', 'featuredCarousel'],
+            queryFn: async (): Promise<AppStoreListing[]> => {
+                const wallet = await getWalletOrFallback();
+
+                const result = await wallet.invoke.browseAppStore({
+                    promotionLevel: 'FEATURED_CAROUSEL',
+                    limit: 10,
+                });
+
+                return result.records;
+            },
+            staleTime: 1000 * 60 * 0.1, // 5 minutes
+        });
+    };
+
+    // Query for curated list apps (CURATED_LIST promotion level)
+    const useCuratedListApps = () => {
+        return useQuery({
+            queryKey: ['appStore', 'curatedList'],
+            queryFn: async (): Promise<AppStoreListing[]> => {
+                const wallet = await getWalletOrFallback();
+
+                const result = await wallet.invoke.browseAppStore({
+                    promotionLevel: 'CURATED_LIST',
+                    limit: 20,
+                });
+
+                return result.records;
+            },
+            staleTime: 1000 * 60 * 5, // 5 minutes
         });
     };
 
@@ -137,6 +175,8 @@ export const useAppStore = () => {
 
     return {
         useBrowseAppStore,
+        useFeaturedCarouselApps,
+        useCuratedListApps,
         useInstalledApps,
         useIsAppInstalled,
         usePublicListing,

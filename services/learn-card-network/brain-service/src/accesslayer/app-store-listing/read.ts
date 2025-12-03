@@ -63,6 +63,7 @@ export const getListedApps = async (
         promotionLevel,
         status,
         includeAllStatuses = false,
+        excludeDemoted = true,
     }: {
         limit: number;
         cursor?: string;
@@ -70,6 +71,7 @@ export const getListedApps = async (
         promotionLevel?: string;
         status?: string; // When provided, filter by this specific status
         includeAllStatuses?: boolean; // When true, returns all statuses (for admin)
+        excludeDemoted?: boolean; // When true, excludes DEMOTED apps from results (default true)
     }
 ): Promise<AppStoreListingType[]> => {
     const whereClauses: string[] = [];
@@ -96,6 +98,9 @@ export const getListedApps = async (
     if (promotionLevel) {
         whereClauses.push('listing.promotion_level = $promotionLevel');
         params.promotionLevel = promotionLevel;
+    } else if (excludeDemoted) {
+        // Exclude DEMOTED apps by default when no specific promotionLevel is requested
+        whereClauses.push("(listing.promotion_level IS NULL OR listing.promotion_level <> 'DEMOTED')");
     }
 
     const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -123,6 +128,7 @@ export const searchAppStoreListings = async (
         `CALL db.index.fulltext.queryNodes('app_store_listing_name_text_idx', $searchTerm)
          YIELD node, score
          WHERE node.app_listing_status = 'LISTED'
+         AND (node.promotion_level IS NULL OR node.promotion_level <> 'DEMOTED')
          ${cursor ? 'AND node.listing_id < $cursor' : ''}
          RETURN node AS listing
          ORDER BY score DESC, node.listing_id DESC

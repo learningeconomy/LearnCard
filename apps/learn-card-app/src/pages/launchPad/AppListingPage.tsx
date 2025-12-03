@@ -57,7 +57,6 @@ const AppListingPage: React.FC = () => {
     // Fetch public listing
     const { data: listing, isLoading: isLoadingListing, error } = usePublicListing(listingId);
 
-    console.log("Listing", listing)
     const installMutation = useInstallApp();
     const uninstallMutation = useUninstallApp();
 
