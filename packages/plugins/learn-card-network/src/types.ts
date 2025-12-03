@@ -480,6 +480,16 @@ export type LearnCardNetworkPluginMethods = {
         }[]
     >;
 
+    getRequestStatusForProfile: (
+        targetProfileId: string,
+        contractId?: string | undefined,
+        contractUri?: string | undefined
+    ) => Promise<{
+        profile: LCNProfile;
+        status: 'pending' | 'accepted' | 'denied' | null;
+        readStatus?: 'unseen' | 'seen' | null;
+    } | null>;
+
     markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;

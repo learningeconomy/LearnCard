@@ -52,6 +52,8 @@ import {
     getContractByUri,
     getConsentFlowContractById,
     getRequestedForList,
+    getRequestedForForUser,
+    getContractById,
 } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
@@ -1793,6 +1795,60 @@ export const contractsRouter = t.router({
             return requests;
         }),
 
+    getRequestStatusForProfile: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contracts/request-status',
+                tags: ['Contracts'],
+                summary: 'Get request status for a specific profile under a contract',
+                description:
+                    'Returns the request status and read status for a given profile in a specific contract.',
+            },
+        })
+        .input(
+            z.object({
+                contractId: z.string().nullable().optional(),
+                contractUri: z.string().nullable().optional(),
+                targetProfileId: z.string(),
+            })
+        )
+        .output(
+            z
+                .object({
+                    profile: LCNProfileValidator,
+                    status: z.enum(['pending', 'accepted', 'denied']).nullable(),
+                    readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
+                })
+                .nullable()
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            if (!profile)
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Must be logged in to get request status',
+                });
+
+            const { contractId, contractUri, targetProfileId } = input;
+
+            let contract;
+
+            if (contractUri) {
+                contract = await getContractByUri(contractUri);
+            } else if (contractId) {
+                contract = await getContractById(contractId);
+            }
+
+            if (!contract)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+
+            const requests = await getRequestedForForUser(contract.id, targetProfileId);
+
+            return requests?.[0] ?? null;
+        }),
     markContractRequestAsSeen: profileRoute
         .meta({
             openapi: {

@@ -1,4 +1,4 @@
-import { QueryBuilder } from 'neogma';
+import { BindParam, QueryBuilder } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { ConsentFlowContract, ConsentFlowInstance } from '@models';
@@ -70,6 +70,29 @@ export const getRequestedForByStatus = async (
         })
         .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
         .where(`r.status = '${status}'`)
+        .return(['p', 'r'])
+        .run();
+
+    return result.records.map(rec => {
+        const { p, r } = rec.toObject();
+
+        return {
+            profile: p.properties,
+            status: r.properties?.status ?? null,
+            readStatus: r.properties?.readStatus ?? null,
+        };
+    });
+};
+
+export const getRequestedForForUser = async (contractId: string, requesterProfileId: string) => {
+    const result = await new QueryBuilder(new BindParam({ requesterProfileId }))
+        .match({
+            model: ConsentFlowContract,
+            identifier: 'c',
+            where: { id: contractId },
+        })
+        .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
+        .where('p.profileId = $requesterProfileId')
         .return(['p', 'r'])
         .run();
 

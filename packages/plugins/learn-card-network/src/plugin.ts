@@ -1123,6 +1123,21 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            getRequestStatusForProfile: async (
+                _learnCard,
+                targetProfileId,
+                contractId,
+                contractUri
+            ) => {
+                await ensureUser();
+
+                return client.contracts.getRequestStatusForProfile.query({
+                    targetProfileId,
+                    contractId: contractId ?? null,
+                    contractUri: contractUri ?? null,
+                });
+            },
+
             markContractRequestAsSeen: async (_learnCard, contractUri, targetProfileId) => {
                 await ensureUser();
 
