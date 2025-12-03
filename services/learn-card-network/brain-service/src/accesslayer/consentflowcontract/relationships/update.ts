@@ -619,23 +619,21 @@ export const syncCredentialsToContract = async (
 export const upsertRequestedForRelationship = async (
     id: string,
     profileId: string,
-    status: 'pending' | 'accepted' | 'denied',
+    status?: 'pending' | 'accepted' | 'denied',
     readStatus?: 'seen' | 'unseen' | null
 ) => {
-    await neogma.queryRunner.run(
-        `
+    const cypher = `
         MATCH (contract:ConsentFlowContract {id: $id})
         MATCH (profile:Profile {profileId: $profileId})
         MERGE (contract)-[r:REQUESTED_FOR]->(profile)
-        SET r.status = $status
+        ${status !== undefined ? 'SET r.status = $status' : ''}
         ${readStatus !== undefined ? 'SET r.readStatus = $readStatus' : ''}
         RETURN r
-        `,
-        {
-            id,
-            profileId,
-            status,
-            ...(readStatus !== undefined ? { readStatus } : {}),
-        }
-    );
+    `;
+
+    const params: any = { id, profileId };
+    if (status !== undefined) params.status = status;
+    if (readStatus !== undefined) params.readStatus = readStatus;
+
+    await neogma.queryRunner.run(cypher, params);
 };
