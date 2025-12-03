@@ -84,6 +84,8 @@ jobs:
                   SENTRY_ENV: ${{ vars.SENTRY_ENV }}
                   SENTRY_DSN: ${{ vars.SENTRY_DSN }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
+                  WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
 
             - name: Create Release (CapGo)
               run: >-
