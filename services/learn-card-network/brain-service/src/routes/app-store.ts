@@ -58,12 +58,6 @@ const AppStoreListingInputValidator = z.object({
 const transformListingForResponse = (listing: any) => {
     const result = { ...listing };
 
-    console.log('[transformListingForResponse] Input:', {
-        listing_id: listing.listing_id,
-        highlights_json: listing.highlights_json,
-        screenshots_json: listing.screenshots_json,
-    });
-
     if (result.highlights_json) {
         try {
             result.highlights = JSON.parse(result.highlights_json);
@@ -81,12 +75,6 @@ const transformListingForResponse = (listing: any) => {
         }
         delete result.screenshots_json;
     }
-
-    console.log('[transformListingForResponse] Output:', {
-        listing_id: result.listing_id,
-        highlights: result.highlights,
-        screenshots: result.screenshots,
-    });
 
     return result;
 };

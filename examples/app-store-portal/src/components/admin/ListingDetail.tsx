@@ -11,6 +11,8 @@ import {
     Minus,
     ArrowDown,
     RotateCcw,
+    Check,
+    Image,
 } from 'lucide-react';
 import type { AppStoreListing, PromotionLevel } from '../../types/app-store';
 import { LAUNCH_TYPE_INFO, PROMOTION_LEVEL_INFO, CATEGORY_OPTIONS } from '../../types/app-store';
@@ -131,6 +133,54 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                         {listing.full_description}
                     </p>
                 </div>
+
+                {/* Highlights */}
+                {listing.highlights && listing.highlights.length > 0 && (
+                    <div>
+                        <h3 className="text-sm font-medium text-apple-gray-600 mb-3">Highlights</h3>
+
+                        <ul className="space-y-2">
+                            {listing.highlights.map((highlight, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                    <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+
+                                    <span className="text-sm text-apple-gray-500">{highlight}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {/* Screenshots */}
+                {listing.screenshots && listing.screenshots.length > 0 && (
+                    <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Image className="w-4 h-4 text-apple-gray-400" />
+
+                            <h3 className="text-sm font-medium text-apple-gray-600">
+                                Screenshots ({listing.screenshots.length})
+                            </h3>
+                        </div>
+
+                        <div className="flex gap-3 overflow-x-auto pb-2">
+                            {listing.screenshots.map((screenshot, index) => (
+                                <a
+                                    key={index}
+                                    href={screenshot}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-shrink-0 block"
+                                >
+                                    <img
+                                        src={screenshot}
+                                        alt={`Screenshot ${index + 1}`}
+                                        className="h-48 w-auto rounded-apple border border-apple-gray-200 hover:border-apple-blue transition-colors"
+                                    />
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Launch Configuration */}
                 <div>
