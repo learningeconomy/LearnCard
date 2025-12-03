@@ -10,6 +10,7 @@ import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
+import X from 'learn-card-base/svgs/X';
 
 const getIconForActionButton = (label: string) => {
     switch (label) {
@@ -53,8 +54,18 @@ const ActionButton: React.FC<{
 };
 
 const LaunchPadActionModal: React.FC = () => {
+    const { closeModal } = useModal();
+
     return (
-        <div className="w-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
+        <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
+            <button
+                type="button"
+                aria-label="Close modal"
+                onClick={closeModal}
+                className="relative right-[0px] top-[8px] h-[20px] w-[40px] rounded-full bg-transparent text-[#2A2F55] flex items-center justify-center"
+            >
+                <X className="w-[20px] h-[20px]" />
+            </button>
             <div className="rounded-[15px] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px]">
                 <div className="w-full flex items-center justify-center">
                     <ProfilePicture
