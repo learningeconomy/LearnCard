@@ -1,12 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { useHistory } from 'react-router-dom';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
-import { useModal } from 'learn-card-base';
+import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader } from '@ionic/react';
+import { useModal, ModalTypes, useConfirmation } from 'learn-card-base';
+import { ThreeDotVertical } from '@learncard/react';
+import TrashBin from '../../components/svgs/TrashBin';
 
 import useAppStore from './useAppStore';
 import { EmbedIframeModal } from './EmbedIframeModal';
+import useTheme from '../../theme/hooks/useTheme';
 
 interface AppStoreDetailModalProps {
     listing: AppStoreListing | InstalledApp;
@@ -19,8 +21,12 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     isInstalled: initialIsInstalled = false,
     onInstallSuccess,
 }) => {
-    const { closeModal, replaceModal } = useModal();
-    const history = useHistory();
+    const { closeModal, replaceModal, newModal } = useModal();
+    const confirm = useConfirmation();
+
+    const { colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
+    console.log(primaryColor);
 
     const { useInstallApp, useUninstallApp, useInstallCount, useIsAppInstalled } = useAppStore();
 
@@ -66,6 +72,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
         try {
             await uninstallMutation.mutateAsync(listing.listing_id);
+            closeModal();
         } catch (error) {
             console.error('Failed to uninstall app:', error);
         } finally {
@@ -73,9 +80,41 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         }
     };
 
+    const handleUninstallConfirm = async () => {
+        await confirm({
+            text: `Are you sure you want to uninstall ${listing.display_name}?`,
+            onConfirm: handleUninstall,
+            cancelButtonClassName:
+                'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px]',
+            confirmButtonClassName:
+                'confirm-btn bg-red-600 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
+        });
+    };
+
+    const handleOpenOptionsMenu = () => {
+        newModal(
+            <ul className="w-full flex flex-col items-center justify-center ion-padding">
+                <li className="w-full">
+                    <button
+                        className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2"
+                        type="button"
+                        onClick={() => {
+                            closeModal();
+                            handleUninstallConfirm();
+                        }}
+                    >
+                        <p className="text-red-600">Uninstall</p>
+                        <TrashBin className="text-red-600" />
+                    </button>
+                </li>
+            </ul>,
+            { sectionClassName: '!max-w-[400px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+        );
+    };
+
     const handleLaunch = () => {
         if (listing.launch_type === 'EMBEDDED_IFRAME' && launchConfig.url) {
-            console.log('launching iframe', launchConfig.url);
 
             replaceModal(
                 <EmbedIframeModal
@@ -98,120 +137,73 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     return (
         <IonPage className="h-full w-full">
-            <IonContent fullscreen className="ion-padding">
-                <div className="w-full h-full flex flex-col bg-white">
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b">
-                        <button
-                            onClick={closeModal}
-                            className="text-indigo-600 font-medium hover:text-indigo-700"
-                        >
-                            ← Back
-                        </button>
+            {/* Header */}
+            <IonHeader mode="ios" className="ion-no-border">
+                <div className="ion-padding shadow-header bg-white">
+                <div className="flex items-center justify-normal ion-padding">
+                    <div className="h-[65px] w-[65px] mr-3">
+                        <img
+                            className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
+                            alt={`${listing.display_name} logo`}
+                            src={listing.icon_url}
+                            onError={e => {
+                                (e.target as HTMLImageElement).src =
+                                    'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
+                            }}
+                        />
                     </div>
 
-                    {/* App Info */}
-                    <div className="flex-1 overflow-y-auto">
-                        <div className="p-6">
-                            {/* App Header */}
-                            <div className="flex items-start gap-4 mb-6">
-                                <img
-                                    src={listing.icon_url}
-                                    alt={listing.display_name}
-                                    className="w-24 h-24 rounded-2xl object-cover shadow-lg"
-                                    onError={e => {
-                                        (e.target as HTMLImageElement).src =
-                                            'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
-                                    }}
-                                />
+                    <div className="flex flex-col items-start justify-center flex-1 min-w-0">
+                        <p className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[1]">
+                            {listing.display_name}
+                        </p>
 
-                                <div className="flex-1 min-w-0">
-                                    <h1 className="text-2xl font-bold text-grayscale-900 mb-1">
-                                        {listing.display_name}
-                                    </h1>
+                        <p className="text-sm text-grayscale-600 font-poppins mt-1">
+                            {listing.tagline}
+                        </p>
 
-                                    <p className="text-grayscale-600 mb-2">{listing.tagline}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                            {listing.category && (
+                                <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                                    {listing.category}
+                                </span>
+                            )}
 
-                                    {listing.category && (
-                                        <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
-                                            {listing.category}
-                                        </span>
-                                    )}
+                            {installCount !== undefined && (
+                                <span className="text-xs text-grayscale-500">
+                                    {installCount.toLocaleString()} installs
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
 
-                                    {installCount !== undefined && (
-                                        <p className="text-sm text-grayscale-500 mt-2">
-                                            {installCount.toLocaleString()} installs
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
+                </div>
+            </IonHeader>
 
-                            {/* Action Buttons */}
-                            <div className="flex gap-3 mb-8">
-                                {isCheckingInstalled ? (
-                                    <button
-                                        disabled
-                                        className="flex-1 py-3 px-6 rounded-full bg-gray-100 text-gray-400 font-semibold flex items-center justify-center"
-                                    >
-                                        <IonSpinner name="dots" className="w-5 h-5" />
-                                    </button>
-                                ) : isInstalled ? (
-                                    <>
-                                        {canLaunch && (
-                                            <button
-                                                onClick={handleLaunch}
-                                                className="flex-1 py-3 px-6 rounded-full bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors"
-                                            >
-                                                Open
-                                            </button>
-                                        )}
+            <IonContent fullscreen className="ion-padding" style={{ '--background': '#00BA88' } as React.CSSProperties}>
+                <div className="h-full w-full flex flex-col pb-[120px]">
+                    {/* About Section */}
+                    <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                        <h3 className="text-xl text-gray-900 font-notoSans">About</h3>
 
-                                        <button
-                                            onClick={handleUninstall}
-                                            disabled={isProcessing}
-                                            className="py-3 px-6 rounded-full border-2 border-red-200 text-red-600 font-semibold hover:bg-red-50 transition-colors disabled:opacity-50"
-                                        >
-                                            {isProcessing ? (
-                                                <IonSpinner name="dots" className="w-5 h-5" />
-                                            ) : (
-                                                'Uninstall'
-                                            )}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button
-                                        onClick={handleInstall}
-                                        disabled={isProcessing}
-                                        className="flex-1 py-3 px-6 rounded-full bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center"
-                                    >
-                                        {isProcessing ? (
-                                            <IonSpinner name="dots" className="w-5 h-5" />
-                                        ) : (
-                                            'Install'
-                                        )}
-                                    </button>
-                                )}
-                            </div>
+                        <p className="text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap">
+                            {listing.full_description}
+                        </p>
+                    </div>
 
-                            {/* Description */}
-                            <div className="mb-8">
-                                <h2 className="text-lg font-semibold text-grayscale-900 mb-3">
-                                    About this app
-                                </h2>
+                    {/* Links Section */}
+                    {(listing.privacy_policy_url || listing.terms_url) && (
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-3">Links</h3>
 
-                                <p className="text-grayscale-700 whitespace-pre-wrap leading-relaxed">
-                                    {listing.full_description}
-                                </p>
-                            </div>
-
-                            {/* Links */}
                             <div className="space-y-3">
                                 {listing.privacy_policy_url && (
                                     <a
                                         href={listing.privacy_policy_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700"
+                                        className="flex items-center gap-2 text-cyan-700 font-notoSans text-sm"
                                     >
                                         <svg
                                             className="w-5 h-5"
@@ -235,7 +227,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                         href={listing.terms_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700"
+                                        className="flex items-center gap-2 text-cyan-700 font-notoSans text-sm"
                                     >
                                         <svg
                                             className="w-5 h-5"
@@ -255,9 +247,66 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 )}
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </IonContent>
+
+            {/* Footer */}
+            <IonFooter
+                mode="ios"
+                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px]"
+            >
+                <div className="w-full flex items-center justify-center">
+                    <div className="w-full flex items-center justify-between max-w-[600px] ion-padding gap-2">
+                        <button
+                            onClick={closeModal}
+                            className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 shadow-button-bottom flex gap-[5px] justify-center flex-1"
+                        >
+                            Back
+                        </button>
+
+                        {isCheckingInstalled ? (
+                            <button
+                                disabled
+                                className="py-[9px] px-[20px] rounded-[30px] bg-gray-100 text-gray-400 font-notoSans text-[17px] flex items-center justify-center flex-1"
+                            >
+                                <IonSpinner name="dots" className="w-5 h-5" />
+                            </button>
+                        ) : isInstalled ? (
+                            <>
+                                {canLaunch && (
+                                    <button
+                                        onClick={handleLaunch}
+                                        className={`bg-${primaryColor} py-[9px] px-[20px] rounded-[30px] text-white font-notoSans text-[17px] shadow-button-bottom flex items-center justify-center flex-1`}
+                                    >
+                                        Open
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={handleOpenOptionsMenu}
+                                    className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
+                                    aria-label="More options"
+                                >
+                                    <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={handleInstall}
+                                disabled={isProcessing}
+                                className={`bg-${primaryColor} py-[9px] px-[20px] rounded-[30px] text-white font-notoSans text-[17px] shadow-button-bottom disabled:opacity-50 flex items-center justify-center flex-1`}
+                            >
+                                {isProcessing ? (
+                                    <IonSpinner name="dots" className="w-5 h-5" />
+                                ) : (
+                                    'Install'
+                                )}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </IonFooter>
         </IonPage>
     );
 };
