@@ -11,6 +11,7 @@ import { EmbedIframeModal } from './EmbedIframeModal';
 import useTheme from '../../theme/hooks/useTheme';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
 import Checkmark from '../../components/svgs/Checkmark';
+import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -80,7 +81,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         }
     }, [listing.launch_config_json]);
 
-    const handleInstall = async () => {
+    const doInstall = async () => {
         setIsProcessing(true);
 
         try {
@@ -91,6 +92,30 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         } finally {
             setIsProcessing(false);
         }
+    };
+
+    const handleInstall = () => {
+        // Get permissions from launch config
+        const permissions: string[] = launchConfig?.permissions || [];
+
+        // Show consent modal with permissions
+        newModal(
+            <AppInstallConsentModal
+                appName={listing.display_name}
+                appIcon={listing.icon_url}
+                permissions={permissions}
+                onAccept={() => {
+                    closeModal();
+                    doInstall();
+                }}
+                onReject={closeModal}
+            />,
+            {
+                sectionClassName: '!max-w-[500px]',
+                hideButton: true,
+            },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+        );
     };
 
     const handleUninstall = async () => {
