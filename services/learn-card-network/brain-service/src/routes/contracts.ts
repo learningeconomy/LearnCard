@@ -1826,12 +1826,6 @@ export const contractsRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            if (!profile)
-                throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message: 'Must be logged in to get request status',
-                });
-
             const { contractId, contractUri, targetProfileId } = input;
 
             let contract;
@@ -1844,6 +1838,21 @@ export const contractsRouter = t.router({
 
             if (!contract)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+
+            const isCheckingOwnStatus = profile.profileId === targetProfileId;
+
+            if (!isCheckingOwnStatus) {
+                const writers = await getWritersForContract(contract);
+                const isAuthorized = writers.some(w => w.profileId === profile.profileId);
+
+                if (!isAuthorized) {
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message:
+                            'You do not have permission to view this request status. You must be a contract writer or checking your own status.',
+                    });
+                }
+            }
 
             const requests = await getRequestedForForUser(contract.id, targetProfileId);
 
