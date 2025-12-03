@@ -208,7 +208,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             </IonHeader>
 
             <IonContent fullscreen className="ion-padding" style={{ '--background': '#00BA88' } as React.CSSProperties}>
-                <div className="h-full w-full flex flex-col pb-[120px] mb-[800px]">
+                <div className="w-full flex flex-col pb-[120px]">
                     {/* About Section */}
                     <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
                         <h3 className="text-xl text-gray-900 font-notoSans">About</h3>
