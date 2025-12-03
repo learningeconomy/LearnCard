@@ -277,23 +277,27 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
 
                         <div className="space-y-2">
                             {listing.ios_app_store_id && (
-                                <div className="flex items-center gap-2 text-sm text-apple-gray-500">
-                                    <span className="font-medium">iOS App Store ID:</span>
-
-                                    <code className="px-2 py-0.5 bg-apple-gray-100 rounded text-xs">
-                                        {listing.ios_app_store_id}
-                                    </code>
-                                </div>
+                                <a
+                                    href={`https://apps.apple.com/us/app/learncard/id${listing.ios_app_store_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 text-sm text-apple-blue hover:underline"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                    iOS App Store ({listing.ios_app_store_id})
+                                </a>
                             )}
 
                             {listing.android_app_store_id && (
-                                <div className="flex items-center gap-2 text-sm text-apple-gray-500">
-                                    <span className="font-medium">Android Package:</span>
-
-                                    <code className="px-2 py-0.5 bg-apple-gray-100 rounded text-xs">
-                                        {listing.android_app_store_id}
-                                    </code>
-                                </div>
+                                <a
+                                    href={`https://play.google.com/store/apps/details?id=${listing.android_app_store_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 text-sm text-apple-blue hover:underline"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                    Google Play Store ({listing.android_app_store_id})
+                                </a>
                             )}
                         </div>
                     </div>

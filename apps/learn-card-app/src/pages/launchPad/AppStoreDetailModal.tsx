@@ -16,6 +16,24 @@ import Checkmark from '../../components/svgs/Checkmark';
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
     highlights?: string[];
     screenshots?: string[];
+    promo_video_url?: string;
+};
+
+// Helper to convert YouTube/Vimeo URLs to embed URLs
+const getEmbedUrl = (url: string): string | null => {
+    // YouTube
+    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+    if (youtubeMatch) {
+        return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+
+    // Vimeo
+    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeoMatch) {
+        return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+
+    return null;
 };
 
 interface AppStoreDetailModalProps {
@@ -190,7 +208,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             </IonHeader>
 
             <IonContent fullscreen className="ion-padding" style={{ '--background': '#00BA88' } as React.CSSProperties}>
-                <div className="h-full w-full flex flex-col pb-[120px] mb-[350px]">
+                <div className="h-full w-full flex flex-col pb-[120px] mb-[800px]">
                     {/* About Section */}
                     <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
                         <h3 className="text-xl text-gray-900 font-notoSans">About</h3>
@@ -214,6 +232,23 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                     </p>
                                 </div>
                             ))}
+                        </div>
+                    )}
+
+                    {/* Promo Video Section */}
+                    {listing.promo_video_url && getEmbedUrl(listing.promo_video_url) && (
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">Watch</h3>
+
+                            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                                <iframe
+                                    className="absolute top-0 left-0 w-full h-full rounded-lg"
+                                    src={getEmbedUrl(listing.promo_video_url)!}
+                                    title="Promo Video"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                />
+                            </div>
                         </div>
                     )}
 
