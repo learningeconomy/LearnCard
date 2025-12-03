@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Info, Plus, X } from 'lucide-react';
+import { Image, Info, Plus, X, Video, Shield, Smartphone } from 'lucide-react';
 import type { AppStoreListingCreate } from '../../types/app-store';
 import { CATEGORY_OPTIONS } from '../../types/app-store';
 
@@ -268,6 +268,115 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         Add screenshot
                     </button>
                 )}
+            </div>
+
+            {/* Promo Video */}
+            <div>
+                <div className="flex items-center gap-2 mb-2">
+                    <Video className="w-4 h-4 text-apple-gray-400" />
+
+                    <label className="label mb-0">Promo Video URL</label>
+
+                    <span className="text-xs text-apple-gray-400">(optional)</span>
+                </div>
+
+                <input
+                    type="url"
+                    value={data.promo_video_url || ''}
+                    onChange={e => handleChange('promo_video_url', e.target.value)}
+                    placeholder="https://youtube.com/watch?v=..."
+                    className="input"
+                />
+
+                <p className="text-xs text-apple-gray-400 mt-1">
+                    Add a YouTube or Vimeo video URL showcasing your app
+                </p>
+            </div>
+
+            {/* Legal Links */}
+            <div>
+                <div className="flex items-center gap-2 mb-3">
+                    <Shield className="w-4 h-4 text-apple-gray-400" />
+
+                    <label className="label mb-0">Legal &amp; Privacy</label>
+
+                    <span className="text-xs text-apple-gray-400">(optional)</span>
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-medium text-apple-gray-500 mb-1 block">
+                            Privacy Policy URL
+                        </label>
+
+                        <input
+                            type="url"
+                            value={data.privacy_policy_url || ''}
+                            onChange={e => handleChange('privacy_policy_url', e.target.value)}
+                            placeholder="https://example.com/privacy"
+                            className="input"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-medium text-apple-gray-500 mb-1 block">
+                            Terms of Service URL
+                        </label>
+
+                        <input
+                            type="url"
+                            value={data.terms_url || ''}
+                            onChange={e => handleChange('terms_url', e.target.value)}
+                            placeholder="https://example.com/terms"
+                            className="input"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* App Store IDs */}
+            <div>
+                <div className="flex items-center gap-2 mb-3">
+                    <Smartphone className="w-4 h-4 text-apple-gray-400" />
+
+                    <label className="label mb-0">Native App Store Links</label>
+
+                    <span className="text-xs text-apple-gray-400">(optional)</span>
+                </div>
+
+                <p className="text-xs text-apple-gray-400 mb-3">
+                    If you have native mobile apps, provide their store IDs for cross-linking
+                </p>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-medium text-apple-gray-500 mb-1 block">
+                            iOS App Store ID
+                        </label>
+
+                        <input
+                            type="text"
+                            value={data.ios_app_store_id || ''}
+                            onChange={e => handleChange('ios_app_store_id', e.target.value)}
+                            placeholder="e.g., 123456789"
+                            className="input"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-medium text-apple-gray-500 mb-1 block">
+                            Android Package Name / Play Store ID
+                        </label>
+
+                        <input
+                            type="text"
+                            value={data.android_app_store_id || ''}
+                            onChange={e => handleChange('android_app_store_id', e.target.value)}
+                            placeholder="e.g., com.example.myapp"
+                            className="input"
+                        />
+                    </div>
+                </div>
             </div>
 
             {/* Info box */}

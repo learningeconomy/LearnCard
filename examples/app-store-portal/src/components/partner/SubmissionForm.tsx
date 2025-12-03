@@ -49,6 +49,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
             promo_video_url: listing.promo_video_url,
             privacy_policy_url: listing.privacy_policy_url,
             terms_url: listing.terms_url,
+            ios_app_store_id: listing.ios_app_store_id,
+            android_app_store_id: listing.android_app_store_id,
             highlights: listing.highlights,
             screenshots: listing.screenshots,
         };
@@ -185,6 +187,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
                     promo_video_url: formData.promo_video_url,
                     privacy_policy_url: formData.privacy_policy_url,
                     terms_url: formData.terms_url,
+                    ios_app_store_id: formData.ios_app_store_id,
+                    android_app_store_id: formData.android_app_store_id,
                     highlights: formData.highlights,
                     screenshots: formData.screenshots,
                 };
@@ -207,6 +211,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
                     promo_video_url: formData.promo_video_url,
                     privacy_policy_url: formData.privacy_policy_url,
                     terms_url: formData.terms_url,
+                    ios_app_store_id: formData.ios_app_store_id,
+                    android_app_store_id: formData.android_app_store_id,
                     highlights: formData.highlights,
                     screenshots: formData.screenshots,
                 };
@@ -265,6 +271,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
                     promo_video_url: formData.promo_video_url,
                     privacy_policy_url: formData.privacy_policy_url,
                     terms_url: formData.terms_url,
+                    ios_app_store_id: formData.ios_app_store_id,
+                    android_app_store_id: formData.android_app_store_id,
                     highlights: formData.highlights,
                     screenshots: formData.screenshots,
                 };
@@ -289,6 +297,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
                     promo_video_url: formData.promo_video_url,
                     privacy_policy_url: formData.privacy_policy_url,
                     terms_url: formData.terms_url,
+                    ios_app_store_id: formData.ios_app_store_id,
+                    android_app_store_id: formData.android_app_store_id,
                     highlights: formData.highlights,
                     screenshots: formData.screenshots,
                 };

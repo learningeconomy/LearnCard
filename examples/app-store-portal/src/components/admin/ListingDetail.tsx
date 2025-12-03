@@ -232,6 +232,18 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                             </a>
                         )}
 
+                        {listing.promo_video_url && (
+                            <a
+                                href={listing.promo_video_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-sm text-apple-blue hover:underline"
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                                Promo Video
+                            </a>
+                        )}
+
                         {listing.privacy_policy_url && (
                             <a
                                 href={listing.privacy_policy_url}
@@ -257,6 +269,35 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                         )}
                     </div>
                 </div>
+
+                {/* App Store IDs */}
+                {(listing.ios_app_store_id || listing.android_app_store_id) && (
+                    <div>
+                        <h3 className="text-sm font-medium text-apple-gray-600 mb-3">Native App Links</h3>
+
+                        <div className="space-y-2">
+                            {listing.ios_app_store_id && (
+                                <div className="flex items-center gap-2 text-sm text-apple-gray-500">
+                                    <span className="font-medium">iOS App Store ID:</span>
+
+                                    <code className="px-2 py-0.5 bg-apple-gray-100 rounded text-xs">
+                                        {listing.ios_app_store_id}
+                                    </code>
+                                </div>
+                            )}
+
+                            {listing.android_app_store_id && (
+                                <div className="flex items-center gap-2 text-sm text-apple-gray-500">
+                                    <span className="font-medium">Android Package:</span>
+
+                                    <code className="px-2 py-0.5 bg-apple-gray-100 rounded text-xs">
+                                        {listing.android_app_store_id}
+                                    </code>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Promotion Level */}
                 {listing.app_listing_status === 'LISTED' && (
