@@ -80,7 +80,7 @@ export const useAppStore = () => {
 
                 return result.records;
             },
-            staleTime: 1000 * 60 * 5, // 5 minutes
+            staleTime: 1000 * 60 * 0.1, // 5 minutes
         });
     };
 

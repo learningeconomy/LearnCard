@@ -415,7 +415,12 @@ const LaunchPad: React.FC = () => {
                 <IonContent fullscreen scrollY={true} color="grayscale-100">
                     <div className="flex flex-col items-center w-full">
                         <LaunchPadHeader>
-                            <div className="flex flex-col just gap-[10px] w-full max-w-[600px] px-3">
+                            <div className="flex flex-col gap-3 w-full max-w-[600px] px-3">
+                                {/* Section Header */}
+                                <h2 className="text-grayscale-900 font-bold text-xl relative z-10 mt-[-30px] sm:mt-[-50px]">
+                                    App Store
+                                </h2>
+
                                 {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level */}
                                 {featuredCarouselApps && featuredCarouselApps.length > 0 && tab === LaunchPadTabEnum.all && (
                                     <FeaturedCarousel
@@ -578,12 +583,12 @@ const LaunchPad: React.FC = () => {
                                         </>
                                     )}
 
-                                    {/* Discover More (Standard apps) */}
-                                    {nonPromotedAvailableApps.length > 0 && (
+                                    {/* Discover More (Standard apps - only show when searching) */}
+                                    {searchInput.length > 0 && nonPromotedAvailableApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Discover More
+                                                    Search Results
                                                 </p>
                                             </div>
                                             {nonPromotedAvailableApps.map(app => (
