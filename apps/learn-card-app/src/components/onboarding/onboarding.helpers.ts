@@ -9,6 +9,7 @@ export enum LearnCardRolesEnum {
     teacher = 'teacher',
     admin = 'admin',
     counselor = 'counselor',
+    developer = 'developer',
 }
 
 export type LearnCardRoleType = {

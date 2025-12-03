@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { ModalTypes, useModal } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
@@ -11,6 +11,11 @@ import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/Res
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 import X from 'learn-card-base/svgs/X';
+import OnboardingRolesContainer from '../../../components/onboarding/onboardingRoles/OnboardingRolesContainer';
+import {
+    LearnCardRolesEnum,
+    LearnCardRoles,
+} from '../../../components/onboarding/onboarding.helpers';
 
 const getIconForActionButton = (label: string) => {
     switch (label) {
@@ -54,7 +59,9 @@ const ActionButton: React.FC<{
 };
 
 const LaunchPadActionModal: React.FC = () => {
-    const { closeModal } = useModal();
+    const { newModal, closeModal } = useModal();
+    const [role, setRole] = useState<LearnCardRolesEnum | null>(LearnCardRolesEnum.learner);
+    const roleLabel = LearnCardRoles.find(r => r.type === role)?.title ?? 'Learner';
 
     return (
         <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
@@ -76,11 +83,21 @@ const LaunchPadActionModal: React.FC = () => {
                 </div>
 
                 <div className="w-full flex items-center justify-center">
-                    <div className="px-[20px] py-4px] rounded-full border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold">
+                    <button
+                        type="button"
+                        onClick={() =>
+                            newModal(
+                                <OnboardingRolesContainer role={role} setRole={setRole} />,
+                                { sectionClassName: '!max-w-[600px] !mx-auto !max-h-[90%]' },
+                                { mobile: ModalTypes.Center, desktop: ModalTypes.Center }
+                            )
+                        }
+                        className="px-[20px] py-4px] rounded-full border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
+                    >
                         <span className="flex items-center justify-center">
-                            Learner <CaretDown className="ml-[5px]" />
+                            {roleLabel} <CaretDown className="ml-[5px]" />
                         </span>
-                    </div>
+                    </button>
                 </div>
 
                 <h3 className="text-center text-[22px] font-poppins font-semibold text-grayscale-900 mt-[12px]">
