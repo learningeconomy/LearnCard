@@ -1765,7 +1765,7 @@ export const contractsRouter = t.router({
         .output(
             z.array(
                 z.object({
-                    profile: LCNProfileValidator, // using your existing validator
+                    profile: LCNProfileValidator,
                     status: z.enum(['pending', 'accepted', 'denied']).nullable(),
                     readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
                 })
