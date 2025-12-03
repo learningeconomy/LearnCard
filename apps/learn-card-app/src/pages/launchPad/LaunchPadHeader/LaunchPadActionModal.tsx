@@ -30,6 +30,24 @@ const getIconForActionButton = (label: string) => {
             return <StudiesQuickNav className="w-[50px] h-auto" />;
         case 'Add Credential':
             return <CredentialQuickNav className="w-[50px] h-auto" />;
+        case 'Personalize AI Sessions':
+            return <BlueMagicWand className="w-[50px] h-auto" />;
+        case 'Start AI Tutoring Session':
+            return <AISessionsQuickNav className="w-[50px] h-auto" />;
+        case 'Claim Credential':
+            return <CredentialQuickNav className="w-[50px] h-auto" />;
+        case 'Create Credential':
+            return <CredentialQuickNav className="w-[50px] h-auto" />;
+        case 'Manage Skills Frameworks':
+            return <StudiesQuickNav className="w-[50px] h-auto" />;
+        case 'View Learner Insights':
+        case 'Request Learner Insights':
+        case 'View Child Insights':
+            return <ResumeQuickNav className="w-[50px] h-auto" />;
+        case 'Boost Child':
+            return <BoostsQuickNav className="w-[50px] h-auto" />;
+        default:
+            return <SolidCircleIcon className="w-[50px] h-auto" />;
     }
 };
 
@@ -47,8 +65,8 @@ const ActionButton: React.FC<{
             onClick={() => {
                 if (to) {
                     history.push(to);
+                    closeModal();
                 }
-                closeModal();
             }}
             className={`${bg} w-full text-lef flex px-5 py-4  text-[18px] font-poppins font-semibold text-grayscale-900 rounded-[20px] border border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
         >
@@ -76,6 +94,63 @@ const LaunchPadActionModal: React.FC = () => {
     }, [lcNetworkProfile?.role]);
 
     const roleLabel = LearnCardRoles.find(r => r.type === role)?.title ?? 'Learner';
+
+    const RoleActions: Record<LearnCardRolesEnum, string[]> = {
+        [LearnCardRolesEnum.learner]: [
+            'Build My LearnCard',
+            'Understand My Skills',
+            'Personalize AI Sessions',
+            'Start AI Tutoring Session',
+            'Share Insights with Teacher',
+            'Claim Credential',
+        ],
+        [LearnCardRolesEnum.teacher]: [
+            'View Learner Insights',
+            'Request Learner Insights',
+            'Issue Learner Credential',
+            'Create Credential',
+            'Manage Skills Frameworks',
+        ],
+        [LearnCardRolesEnum.guardian]: [
+            'Create Family',
+            'Add Child',
+            'Switch Child',
+            'Boost Child',
+            'View Child Insights',
+        ],
+        [LearnCardRolesEnum.developer]: [
+            'Create API Token',
+            'Create Signing Authority',
+            'Create ConsentFlow',
+            'Switch Network',
+            'Manage Skills Frameworks',
+            'Read Docs',
+        ],
+        [LearnCardRolesEnum.admin]: [
+            'Manage Skills Frameworks',
+            'Import Credentials',
+            'Create Organization',
+            'Switch Account',
+            'Create Credential',
+        ],
+        [LearnCardRolesEnum.counselor]: [
+            'Manage Skills Frameworks',
+            'Import Credentials',
+            'Create Organization',
+            'Switch Account',
+            'Create Credential',
+        ],
+    };
+
+    const actions = RoleActions[(role ?? LearnCardRolesEnum.learner) as LearnCardRolesEnum] ?? [];
+    const bgColors = [
+        'bg-[#7DE3F6]',
+        'bg-[#6E8BFF]',
+        'bg-[#B8F36B]',
+        'bg-[#69D7AE]',
+        'bg-[#F7D54D]',
+        'bg-[#FFD1E5]',
+    ];
 
     return (
         <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
@@ -142,11 +217,13 @@ const LaunchPadActionModal: React.FC = () => {
             </div>
 
             <div className="mt-1 flex flex-col gap-3">
-                <ActionButton label="New AI Session" bg="bg-[#7DE3F6]" to="/ai/topics" />
-                <ActionButton label="Boost Someone" bg="bg-[#6E8BFF]" to="/boost" />
-                <ActionButton label="Create Resume" bg="bg-[#B8F36B]" to="/ai/insights" />
-                <ActionButton label="Add Studies" bg="bg-[#69D7AE]" to="/learninghistory" />
-                <ActionButton label="Add Credential" bg="bg-[#F7D54D]" to="/store" />
+                {actions.map((label, i) => (
+                    <ActionButton
+                        key={`${label}-${i}`}
+                        label={label}
+                        bg={bgColors[i % bgColors.length]}
+                    />
+                ))}
             </div>
         </div>
     );
