@@ -18,8 +18,10 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
-from openapi_client.models.boost_create_boost_request import BoostCreateBoostRequest
+from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
+from openapi_client.models.boost_align_boost_skills_request_skills_inner import BoostAlignBoostSkillsRequestSkillsInner
+from openapi_client.models.boost_create_child_boost_request_boost import BoostCreateChildBoostRequestBoost
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,8 +30,9 @@ class BoostCreateChildBoostRequest(BaseModel):
     BoostCreateChildBoostRequest
     """ # noqa: E501
     parent_uri: StrictStr = Field(alias="parentUri")
-    boost: BoostCreateBoostRequest
-    __properties: ClassVar[List[str]] = ["parentUri", "boost"]
+    boost: BoostCreateChildBoostRequestBoost
+    skills: Optional[Annotated[List[BoostAlignBoostSkillsRequestSkillsInner], Field(min_length=1)]] = None
+    __properties: ClassVar[List[str]] = ["parentUri", "boost", "skills"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -73,6 +76,13 @@ class BoostCreateChildBoostRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of boost
         if self.boost:
             _dict['boost'] = self.boost.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in skills (list)
+        _items = []
+        if self.skills:
+            for _item_skills in self.skills:
+                if _item_skills:
+                    _items.append(_item_skills.to_dict())
+            _dict['skills'] = _items
         return _dict
 
     @classmethod
@@ -86,7 +96,8 @@ class BoostCreateChildBoostRequest(BaseModel):
 
         _obj = cls.model_validate({
             "parentUri": obj.get("parentUri"),
-            "boost": BoostCreateBoostRequest.from_dict(obj["boost"]) if obj.get("boost") is not None else None
+            "boost": BoostCreateChildBoostRequestBoost.from_dict(obj["boost"]) if obj.get("boost") is not None else None,
+            "skills": [BoostAlignBoostSkillsRequestSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None
         })
         return _obj
 

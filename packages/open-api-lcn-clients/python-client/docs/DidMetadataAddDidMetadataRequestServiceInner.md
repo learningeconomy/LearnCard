@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
 **type** | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.md) |  | 
-**service_endpoint** | [**DidMetadataAddDidMetadataRequestServiceInnerServiceEndpoint**](DidMetadataAddDidMetadataRequestServiceInnerServiceEndpoint.md) |  | [optional] 
+**service_endpoint** | **List[object]** |  | [optional] 
 
 ## Example
 
