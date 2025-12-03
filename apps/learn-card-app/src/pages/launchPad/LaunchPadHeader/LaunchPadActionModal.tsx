@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { ModalTypes, useModal } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
@@ -16,6 +16,7 @@ import {
     LearnCardRolesEnum,
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
+import { useWallet, useGetProfile, useToast, ToastTypeEnum } from 'learn-card-base';
 
 const getIconForActionButton = (label: string) => {
     switch (label) {
@@ -60,7 +61,20 @@ const ActionButton: React.FC<{
 
 const LaunchPadActionModal: React.FC = () => {
     const { newModal, closeModal } = useModal();
-    const [role, setRole] = useState<LearnCardRolesEnum | null>(LearnCardRolesEnum.learner);
+    const { initWallet } = useWallet();
+    const { data: lcNetworkProfile } = useGetProfile();
+    const { presentToast } = useToast();
+
+    const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
+
+    useEffect(() => {
+        if (lcNetworkProfile?.role) {
+            setRole(lcNetworkProfile.role as LearnCardRolesEnum);
+        } else if (role === null) {
+            setRole(LearnCardRolesEnum.learner);
+        }
+    }, [lcNetworkProfile?.role]);
+
     const roleLabel = LearnCardRoles.find(r => r.type === role)?.title ?? 'Learner';
 
     return (
@@ -87,7 +101,29 @@ const LaunchPadActionModal: React.FC = () => {
                         type="button"
                         onClick={() =>
                             newModal(
-                                <OnboardingRolesContainer role={role} setRole={setRole} />,
+                                <OnboardingRolesContainer
+                                    role={role}
+                                    setRole={newRole => {
+                                        setRole(newRole);
+                                        (async () => {
+                                            try {
+                                                const wallet = await initWallet();
+                                                await wallet?.invoke?.updateProfile({
+                                                    role: newRole,
+                                                });
+                                                presentToast('Role updated', {
+                                                    type: ToastTypeEnum.Success,
+                                                    hasDismissButton: true,
+                                                });
+                                            } catch (e) {
+                                                presentToast('Unable to update role', {
+                                                    type: ToastTypeEnum.Error,
+                                                    hasDismissButton: true,
+                                                });
+                                            }
+                                        })();
+                                    }}
+                                />,
                                 { sectionClassName: '!max-w-[600px] !mx-auto !max-h-[90%]' },
                                 { mobile: ModalTypes.Center, desktop: ModalTypes.Center }
                             )

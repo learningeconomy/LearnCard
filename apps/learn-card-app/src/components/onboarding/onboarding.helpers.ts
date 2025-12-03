@@ -50,4 +50,10 @@ export const LearnCardRoles: LearnCardRoleType[] = [
         description: 'I support learners in planning their educational or career paths.',
         type: LearnCardRolesEnum.counselor,
     },
+    {
+        id: 6,
+        title: 'Developer',
+        description: 'I manage systems, data, and technology for my organization.',
+        type: LearnCardRolesEnum.developer,
+    },
 ];
