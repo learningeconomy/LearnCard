@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.7.5
+
+### Patch Changes
+
+-   [`b3314bbc1c948e762eb67048439cfbe4391eac45`](https://github.com/learningeconomy/LearnCard/commit/b3314bbc1c948e762eb67048439cfbe4391eac45) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix weird t.once error
+
 ## 3.7.4
 
 ### Patch Changes
