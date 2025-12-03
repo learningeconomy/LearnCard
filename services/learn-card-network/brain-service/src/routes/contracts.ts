@@ -91,6 +91,7 @@ import {
 } from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { ProfileType } from 'types/profile';
+import { removeRequestedForRelationship } from '@accesslayer/consentflowcontract/relationships/delete';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -1911,6 +1912,68 @@ export const contractsRouter = t.router({
             }
 
             return true;
+        }),
+
+    cancelContractRequest: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/cancel-request',
+                tags: ['Contracts'],
+                summary: 'Cancels/removes a contract request',
+                description:
+                    'Removes a REQUESTED_FOR relationship, cancelling the request sent to the specified target profile. Only contract writers are authorized to perform this action.',
+            },
+        })
+        .input(
+            z.object({
+                contractUri: z.string(),
+                targetProfileId: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri, targetProfileId } = input;
+
+            const contractByUri = await getContractByUri(contractUri);
+
+            if (!contractByUri)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+
+            const writers = await getWritersForContract(contractByUri);
+            const isAuthorized = writers.some(w => w.profileId === profile.profileId);
+
+            if (!isAuthorized) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not have permissions to cancel requests for this contract',
+                });
+            }
+
+            try {
+                const result = await removeRequestedForRelationship(
+                    contractByUri.id,
+                    targetProfileId
+                );
+
+                if (!result.existed) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'No request found for this user',
+                    });
+                }
+
+                return true;
+            } catch (error) {
+                if (error instanceof TRPCError) throw error;
+
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Unable to cancel request',
+                });
+            }
         }),
 });
 

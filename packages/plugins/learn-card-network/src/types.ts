@@ -491,6 +491,7 @@ export type LearnCardNetworkPluginMethods = {
     } | null>;
 
     markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
+    cancelContractRequest: (contractUri: string, targetProfileId: string) => Promise<boolean>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
     getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
