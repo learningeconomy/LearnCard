@@ -62,7 +62,7 @@ const LaunchPadActionModal: React.FC = () => {
                 type="button"
                 aria-label="Close modal"
                 onClick={closeModal}
-                className="relative right-[0px] top-[8px] h-[20px] w-[40px] rounded-full bg-transparent text-[#2A2F55] flex items-center justify-center"
+                className="self-end mt-[8px] h-[20px] w-[40px] rounded-full bg-transparent text-[#2A2F55] flex items-center justify-center"
             >
                 <X className="w-[20px] h-[20px]" />
             </button>
