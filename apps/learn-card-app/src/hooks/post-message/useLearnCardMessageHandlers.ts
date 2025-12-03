@@ -127,20 +127,20 @@ export function useLearnCardMessageHandlers({
                     return new Promise(async (resolve) => {
                         try {
                             // Import trusted origins utilities
-                            const { isOriginTrusted, addTrustedOrigin } = await import('./trustedOrigins');
+                            //const { isOriginTrusted, addTrustedOrigin } = await import('./trustedOrigins');
 
                             // Check if already trusted
-                            if (isOriginTrusted(origin)) {
-                                console.log('[PostMessage] Origin already trusted:', origin);
-                                resolve(true);
-                                return;
-                            }
+                            // if (isOriginTrusted(origin)) {
+                            //     console.log('[PostMessage] Origin already trusted:', origin);
+                            //     resolve(true);
+                            //     return;
+                            // }
 
                             // Skip consent if this is an installed app with request_identity permission
                             // The user has already consented by installing the app
                             if (isInstalled && launchConfig?.permissions?.includes('request_identity')) {
                                 console.log('[PostMessage] Skipping consent for installed app with request_identity permission');
-                                addTrustedOrigin(origin, appName);
+                                // addTrustedOrigin(origin, appName);
                                 resolve(true);
                                 return;
                             }
@@ -154,7 +154,7 @@ export function useLearnCardMessageHandlers({
 
                             const handleAccept = () => {
                                 console.log('[PostMessage] User accepted login consent');
-                                addTrustedOrigin(origin, appName);
+                                //addTrustedOrigin(origin, appName);
                                 closeModal();
                                 resolve(true);
                             };
