@@ -20,6 +20,7 @@ interface EmbedIframeModalProps {
     appName?: string;
     launchConfig?: LaunchConfig;
     isInstalled?: boolean;
+    hideFullScreenButton?: boolean;
 }
 
 export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
@@ -28,6 +29,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     appName = 'Partner App',
     launchConfig,
     isInstalled = false,
+    hideFullScreenButton = false
 }) => {
     const { closeModal } = useModal();
     const history = useHistory();
@@ -85,7 +87,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                     <div className="flex items-center justify-between p-4 bg-white border-b">
                         <h2 className="text-xl font-semibold">{appName}</h2>
                         <div className="flex items-center gap-2">
-                            {!Capacitor.isNativePlatform() && (
+                            {!hideFullScreenButton && !Capacitor.isNativePlatform() && (
                                 <button
                                     onClick={handleFullScreen}
                                     className="px-4 py-2 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium flex items-center gap-2"

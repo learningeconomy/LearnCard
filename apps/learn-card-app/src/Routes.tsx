@@ -17,6 +17,9 @@ import LaunchPad from './pages/launchPad/LaunchPad';
 const EmbedAppFullScreen = lazyWithRetry(
     () => import('./pages/launchPad/EmbedAppFullScreen')
 );
+const AppListingPage = lazyWithRetry(
+    () => import('./pages/launchPad/AppListingPage')
+);
 const NotificationsPage = lazyWithRetry(
     () => import('./pages/notificationsPage/NotificationsPage')
 );
@@ -154,6 +157,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/passport" component={WalletPage} />
                         <PrivateRoute exact path="/launchpad" component={LaunchPad} />
                         <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
+                        <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         <PrivateRoute exact path="/contacts" component={AddressBook} />
                         <PrivateRoute exact path="/contacts/pending" component={AddressBook} />

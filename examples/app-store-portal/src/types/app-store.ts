@@ -137,7 +137,7 @@ export const STATUS_INFO: Record<
         bgColor: 'bg-apple-gray-200',
     },
     PENDING_REVIEW: {
-        label: 'Pending Review',
+        label: 'Pending',
         color: 'text-amber-700',
         bgColor: 'bg-amber-100',
     },
