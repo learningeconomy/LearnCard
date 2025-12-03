@@ -8,9 +8,17 @@ import { ActionHandlers } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 
+interface LaunchConfig {
+    url?: string;
+    permissions?: string[];
+    [key: string]: unknown;
+}
+
 interface UseLearnCardMessageHandlersOptions {
     embedOrigin: string;
     onNavigate?: () => void;
+    launchConfig?: LaunchConfig;
+    isInstalled?: boolean;
 }
 
 /**
@@ -20,6 +28,8 @@ interface UseLearnCardMessageHandlersOptions {
 export function useLearnCardMessageHandlers({
     embedOrigin,
     onNavigate,
+    launchConfig,
+    isInstalled = false,
 }: UseLearnCardMessageHandlersOptions): ActionHandlers {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
@@ -122,6 +132,15 @@ export function useLearnCardMessageHandlers({
                             // Check if already trusted
                             if (isOriginTrusted(origin)) {
                                 console.log('[PostMessage] Origin already trusted:', origin);
+                                resolve(true);
+                                return;
+                            }
+
+                            // Skip consent if this is an installed app with request_identity permission
+                            // The user has already consented by installing the app
+                            if (isInstalled && launchConfig?.permissions?.includes('request_identity')) {
+                                console.log('[PostMessage] Skipping consent for installed app with request_identity permission');
+                                addTrustedOrigin(origin, appName);
                                 resolve(true);
                                 return;
                             }

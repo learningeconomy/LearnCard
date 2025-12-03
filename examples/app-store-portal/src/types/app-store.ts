@@ -46,15 +46,32 @@ export interface AppStoreListingCreate {
     screenshots?: string[];
 }
 
+// Permission types for app capabilities
+export type AppPermission =
+    | 'request_identity'
+    | 'send_credential'
+    | 'launch_feature'
+    | 'credential_search'
+    | 'credential_by_id'
+    | 'request_consent'
+    | 'template_issuance';
+
+export const PERMISSION_OPTIONS: { value: AppPermission; label: string; description: string }[] = [
+    { value: 'request_identity', label: 'Request Identity', description: 'Request user identity and DID' },
+    { value: 'send_credential', label: 'Send Credential', description: 'Send credentials to user wallet' },
+    { value: 'launch_feature', label: 'Launch Feature', description: 'Launch wallet features programmatically' },
+    { value: 'credential_search', label: 'Credential Search', description: 'Search user credentials' },
+    { value: 'credential_by_id', label: 'Credential by ID', description: 'Retrieve specific credentials by ID' },
+    { value: 'request_consent', label: 'Request Consent', description: 'Request consent for data sharing' },
+    { value: 'template_issuance', label: 'Template Issuance', description: 'Issue credentials from templates' },
+];
+
 export interface LaunchConfig {
     // Common fields
     url?: string;
 
     // EMBEDDED_IFRAME specific
-    width?: string;
-    height?: string;
-    sandbox?: string[];
-    allow?: string[];
+    permissions?: AppPermission[];
 
     // CONSENT_REDIRECT specific
     contractUri?: string;

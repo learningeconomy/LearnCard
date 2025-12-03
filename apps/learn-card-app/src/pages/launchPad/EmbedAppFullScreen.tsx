@@ -18,8 +18,14 @@ interface EmbedAppParams {
  * 
  * Query params take precedence over location state.
  */
+interface LaunchConfig {
+    url?: string;
+    permissions?: string[];
+    [key: string]: unknown;
+}
+
 export const EmbedAppFullScreen: React.FC = () => {
-    const history = useHistory<{ embedUrl?: string; appName?: string }>();
+    const history = useHistory<{ embedUrl?: string; appName?: string; launchConfig?: LaunchConfig; isInstalled?: boolean }>();
     const { appId } = useParams<EmbedAppParams>();
     const [isLoading, setIsLoading] = React.useState(true);
 
@@ -28,6 +34,8 @@ export const EmbedAppFullScreen: React.FC = () => {
     
     const embedUrl = queryParams.get('embedUrl') || history.location.state?.embedUrl;
     const appName = queryParams.get('appName') || history.location.state?.appName || 'Partner App';
+    const launchConfig = history.location.state?.launchConfig;
+    const isInstalled = history.location.state?.isInstalled ?? false;
 
     // Redirect back if no embedUrl provided
     React.useEffect(() => {
@@ -52,6 +60,8 @@ export const EmbedAppFullScreen: React.FC = () => {
     // Use shared handlers
     const handlers = useLearnCardMessageHandlers({
         embedOrigin,
+        launchConfig,
+        isInstalled,
     });
 
     // Initialize the PostMessage listener with trusted origins

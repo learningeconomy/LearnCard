@@ -8,16 +8,26 @@ import { IonPage, IonContent, IonToast } from '@ionic/react';
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 
+interface LaunchConfig {
+    url?: string;
+    permissions?: string[];
+    [key: string]: unknown;
+}
+
 interface EmbedIframeModalProps {
     embedUrl: string;
     appId?: string | number;
     appName?: string;
+    launchConfig?: LaunchConfig;
+    isInstalled?: boolean;
 }
 
 export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     embedUrl,
     appId,
     appName = 'Partner App',
+    launchConfig,
+    isInstalled = false,
 }) => {
     const { closeModal } = useModal();
     const history = useHistory();
@@ -33,6 +43,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         history.push(`/apps/${appId || 'preview'}`, {
             embedUrl,
             appName,
+            launchConfig,
+            isInstalled,
         });
     };
 
@@ -53,6 +65,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const handlers = useLearnCardMessageHandlers({
         embedOrigin,
         onNavigate: closeModal,
+        launchConfig,
+        isInstalled,
     });
 
     // Initialize the PostMessage listener with trusted origins

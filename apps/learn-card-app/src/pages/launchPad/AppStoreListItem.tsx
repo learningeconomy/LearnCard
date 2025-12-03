@@ -58,6 +58,8 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                     embedUrl={launchConfig.url}
                     appId={listing.listing_id}
                     appName={listing.display_name}
+                    launchConfig={launchConfig}
+                    isInstalled={isInstalled || !!installedAt}
                 />
             );
         } else if (listing.launch_type === 'DIRECT_LINK' && launchConfig.url) {

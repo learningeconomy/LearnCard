@@ -31,10 +31,7 @@ export const MOCK_LISTINGS: AppStoreListing[] = [
         launch_type: 'EMBEDDED_IFRAME',
         launch_config_json: JSON.stringify({
             url: 'https://educonnect.example.com/embed',
-            width: '100%',
-            height: '600px',
-            sandbox: ['allow-scripts', 'allow-same-origin', 'allow-forms'],
-            allow: ['clipboard-read', 'clipboard-write'],
+            permissions: ['request_identity', 'send_credential', 'credential_search'],
         }),
         category: 'education',
         promotion_level: 'CURATED_LIST',

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Code } from 'lucide-react';
-import type { AppStoreListingCreate, LaunchConfig, LaunchType } from '../../types/app-store';
+import type { AppStoreListingCreate, LaunchConfig, LaunchType, AppPermission } from '../../types/app-store';
+import { PERMISSION_OPTIONS } from '../../types/app-store';
 
 interface LaunchConfigStepProps {
     data: Partial<AppStoreListingCreate>;
@@ -51,61 +52,41 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                             {errors.url && <p className="text-sm text-red-500 mt-1">{errors.url}</p>}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="label">Width</label>
-
-                                <input
-                                    type="text"
-                                    value={config.width || ''}
-                                    onChange={e => updateConfig({ width: e.target.value })}
-                                    placeholder="100%"
-                                    className="input"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="label">Height</label>
-
-                                <input
-                                    type="text"
-                                    value={config.height || ''}
-                                    onChange={e => updateConfig({ height: e.target.value })}
-                                    placeholder="600px"
-                                    className="input"
-                                />
-                            </div>
-                        </div>
-
                         <div>
-                            <label className="label">Sandbox Permissions</label>
+                            <label className="label">Permissions Needed</label>
 
-                            <div className="grid grid-cols-2 gap-2 mt-2">
-                                {[
-                                    'allow-scripts',
-                                    'allow-same-origin',
-                                    'allow-forms',
-                                    'allow-popups',
-                                    'allow-modals',
-                                ].map(permission => (
+                            <p className="text-xs text-apple-gray-400 mb-3">
+                                Select the capabilities your app requires from the wallet
+                            </p>
+
+                            <div className="space-y-2">
+                                {PERMISSION_OPTIONS.map(permission => (
                                     <label
-                                        key={permission}
-                                        className="flex items-center gap-2 p-3 bg-apple-gray-50 rounded-apple cursor-pointer hover:bg-apple-gray-100 transition-colors"
+                                        key={permission.value}
+                                        className="flex items-start gap-3 p-3 bg-apple-gray-50 rounded-apple cursor-pointer hover:bg-apple-gray-100 transition-colors"
                                     >
                                         <input
                                             type="checkbox"
-                                            checked={config.sandbox?.includes(permission) || false}
+                                            checked={config.permissions?.includes(permission.value) || false}
                                             onChange={e => {
-                                                const current = config.sandbox || [];
-                                                const newSandbox = e.target.checked
-                                                    ? [...current, permission]
-                                                    : current.filter(p => p !== permission);
-                                                updateConfig({ sandbox: newSandbox });
+                                                const current = config.permissions || [];
+                                                const newPermissions = e.target.checked
+                                                    ? [...current, permission.value]
+                                                    : current.filter((p: AppPermission) => p !== permission.value);
+                                                updateConfig({ permissions: newPermissions });
                                             }}
-                                            className="w-4 h-4 text-apple-blue rounded"
+                                            className="w-4 h-4 text-apple-blue rounded mt-0.5"
                                         />
 
-                                        <span className="text-sm text-apple-gray-600">{permission}</span>
+                                        <div>
+                                            <span className="text-sm font-medium text-apple-gray-700">
+                                                {permission.label}
+                                            </span>
+
+                                            <p className="text-xs text-apple-gray-500 mt-0.5">
+                                                {permission.description}
+                                            </p>
+                                        </div>
                                     </label>
                                 ))}
                             </div>

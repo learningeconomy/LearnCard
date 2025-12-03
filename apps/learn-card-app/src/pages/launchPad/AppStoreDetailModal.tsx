@@ -147,6 +147,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     embedUrl={launchConfig.url}
                     appId={listing.listing_id}
                     appName={listing.display_name}
+                    launchConfig={launchConfig}
+                    isInstalled={isInstalled}
                 />
             );
         } else if (listing.launch_type === 'DIRECT_LINK' && launchConfig.url) {

@@ -14,8 +14,8 @@ import {
     Check,
     Image,
 } from 'lucide-react';
-import type { AppStoreListing, PromotionLevel } from '../../types/app-store';
-import { LAUNCH_TYPE_INFO, PROMOTION_LEVEL_INFO, CATEGORY_OPTIONS } from '../../types/app-store';
+import type { AppStoreListing, PromotionLevel, AppPermission } from '../../types/app-store';
+import { LAUNCH_TYPE_INFO, PROMOTION_LEVEL_INFO, CATEGORY_OPTIONS, PERMISSION_OPTIONS } from '../../types/app-store';
 import { StatusBadge } from '../ui/StatusBadge';
 
 interface ListingDetailProps {
@@ -45,7 +45,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
         // Keep empty
     }
 
-    const sandbox = Array.isArray(parsedConfig.sandbox) ? parsedConfig.sandbox : [];
+    const permissions = Array.isArray(parsedConfig.permissions) ? parsedConfig.permissions as AppPermission[] : [];
 
     const handleApprove = async () => {
         setIsApproving(true);
@@ -198,21 +198,27 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                         </pre>
                     </div>
 
-                    {/* Security Warnings */}
-                    {listing.launch_type === 'EMBEDDED_IFRAME' &&
-                        sandbox.includes('allow-same-origin') && (
-                            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-apple">
-                                <div className="flex gap-2 text-sm text-amber-800">
-                                    <ShieldAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    {/* Permissions Display */}
+                    {listing.launch_type === 'EMBEDDED_IFRAME' && permissions.length > 0 && (
+                        <div className="mt-3">
+                            <h4 className="text-xs font-medium text-apple-gray-500 mb-2">Requested Permissions</h4>
 
-                                    <span>
-                                        <strong>Security Note:</strong> allow-same-origin is
-                                        enabled. Verify this is required for the app's
-                                        functionality.
-                                    </span>
-                                </div>
+                            <div className="flex flex-wrap gap-2">
+                                {permissions.map(permission => {
+                                    const permInfo = PERMISSION_OPTIONS.find(p => p.value === permission);
+                                    return (
+                                        <span
+                                            key={permission}
+                                            className="px-2 py-1 bg-apple-blue/10 text-apple-blue rounded text-xs font-medium"
+                                            title={permInfo?.description}
+                                        >
+                                            {permInfo?.label || permission}
+                                        </span>
+                                    );
+                                })}
                             </div>
-                        )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Links */}
