@@ -1123,6 +1123,15 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            markContractRequestAsSeen: async (_learnCard, contractUri, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.markContractRequestAsSeen.mutate({
+                    contractUri,
+                    targetProfileId,
+                });
+            },
+
             addDidMetadata: async (_learnCard, metadata) => {
                 await ensureUser();
 

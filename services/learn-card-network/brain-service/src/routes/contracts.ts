@@ -1792,6 +1792,61 @@ export const contractsRouter = t.router({
 
             return requests;
         }),
+
+    markContractRequestAsSeen: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/mark-request-as-seen',
+                tags: ['Contracts'],
+                summary: 'Marks a contract request as seen',
+                description:
+                    'Updates the read status of a contract request to "seen" for the specified target profile. Only contract writers are authorized to perform this action.',
+            },
+        })
+        .input(
+            z.object({
+                contractUri: z.string(),
+                targetProfileId: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri, targetProfileId } = input;
+
+            const contractByUri = await getContractByUri(contractUri);
+
+            if (!contractByUri)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+
+            const writers = await getWritersForContract(contractByUri);
+            const isAuthorized = writers.some(w => w.profileId === profile.profileId);
+
+            if (!isAuthorized) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not have permissions to update this contract',
+                });
+            }
+
+            try {
+                await upsertRequestedForRelationship(
+                    contractByUri.id,
+                    targetProfileId,
+                    undefined,
+                    'seen'
+                );
+            } catch (error) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Unable to update request',
+                });
+            }
+
+            return true;
+        }),
 });
 
 export type ContractsRouter = typeof contractsRouter;
