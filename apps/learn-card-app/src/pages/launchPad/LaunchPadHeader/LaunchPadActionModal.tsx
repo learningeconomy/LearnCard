@@ -3,14 +3,17 @@ import { useHistory } from 'react-router-dom';
 import { ModalTypes, useModal } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
+import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
+import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
+import CaretDown from 'learn-card-base/svgs/CaretDown';
 
 const getIconForActionButton = (label: string) => {
     switch (label) {
         case 'New AI Session':
-            return <BlueMagicWand className="w-[50px] h-auto" />;
+            return <AISessionsQuickNav className="w-[50px] h-auto" />;
         case 'Boost Someone':
-            return <BlueMagicWand className="w-[50px] h-auto" />;
+            return <BoostsQuickNav className="w-[50px] h-auto" />;
         case 'Create Resume':
             return <BlueMagicWand className="w-[50px] h-auto" />;
         case 'Add Studies':
@@ -59,8 +62,10 @@ const LaunchPadActionModal: React.FC = () => {
                 </div>
 
                 <div className="w-full flex items-center justify-center">
-                    <div className="px-3 py-1 rounded-full border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold">
-                        Learner ▼
+                    <div className="px-[20px] py-4px] rounded-full border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold">
+                        <span className="flex items-center justify-center">
+                            Learner <CaretDown className="ml-[5px]" />
+                        </span>
                     </div>
                 </div>
 
