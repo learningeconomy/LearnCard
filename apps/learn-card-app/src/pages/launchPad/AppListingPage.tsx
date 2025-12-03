@@ -57,6 +57,7 @@ const AppListingPage: React.FC = () => {
     // Fetch public listing
     const { data: listing, isLoading: isLoadingListing, error } = usePublicListing(listingId);
 
+    console.log("Listing", listing)
     const installMutation = useInstallApp();
     const uninstallMutation = useUninstallApp();
 
@@ -275,26 +276,6 @@ const AppListingPage: React.FC = () => {
                         <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
                         <div className="relative max-w-4xl mx-auto px-4 pt-12 pb-8">
-                            {/* Back button
-                            <button
-                                onClick={() => history.goBack()}
-                                className="flex items-center gap-2 text-grayscale-600 hover:text-grayscale-900 mb-8 transition-colors"
-                            >
-                                <svg
-                                    className="w-5 h-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M15 19l-7-7 7-7"
-                                    />
-                                </svg>
-                                Back
-                            </button> */}
 
                             {/* App Header */}
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">

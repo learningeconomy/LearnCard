@@ -21,7 +21,7 @@ export const mapTabToCategory = (tab: string): string | undefined => {
 };
 
 export const useAppStore = () => {
-    const { initWallet } = useWallet();
+    const { initWallet, getWalletOrFallback } = useWallet();
     const queryClient = useQueryClient();
 
     // Query for browsing public app store listings
@@ -33,13 +33,14 @@ export const useAppStore = () => {
         return useQuery({
             queryKey: ['appStore', 'browse', options?.category, options?.limit, options?.cursor],
             queryFn: async (): Promise<PaginatedAppStoreListings> => {
-                const wallet = await initWallet();
+                const wallet = await getWalletOrFallback();
 
                 return wallet.invoke.browseAppStore({
                     category: options?.category,
                     limit: options?.limit ?? 50,
                     cursor: options?.cursor,
                 });
+
             },
             staleTime: 1000 * 60 * 0.1, // 5 minutes
         });
@@ -79,9 +80,8 @@ export const useAppStore = () => {
         return useQuery({
             queryKey: ['appStore', 'publicListing', listingId],
             queryFn: async (): Promise<AppStoreListing | null> => {
-                const wallet = await initWallet();
+                const wallet = await getWalletOrFallback();
                 const listing = await wallet.invoke.getPublicAppStoreListing(listingId);
-
                 return listing ?? null;
             },
             enabled: !!listingId,
@@ -93,7 +93,7 @@ export const useAppStore = () => {
         return useQuery({
             queryKey: ['appStore', 'installCount', listingId],
             queryFn: async (): Promise<number> => {
-                const wallet = await initWallet();
+                const wallet = await getWalletOrFallback();
 
                 return wallet.invoke.getAppStoreListingInstallCount(listingId);
             },
