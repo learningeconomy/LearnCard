@@ -5,8 +5,11 @@ import { ProfilePicture } from 'learn-card-base';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
 import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
 import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
+import CredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CredentialQuickNav';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
+import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
+import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 
 const getIconForActionButton = (label: string) => {
     switch (label) {
@@ -15,11 +18,11 @@ const getIconForActionButton = (label: string) => {
         case 'Boost Someone':
             return <BoostsQuickNav className="w-[50px] h-auto" />;
         case 'Create Resume':
-            return <BlueMagicWand className="w-[50px] h-auto" />;
+            return <ResumeQuickNav className="w-[50px] h-auto" />;
         case 'Add Studies':
-            return <BlueMagicWand className="w-[50px] h-auto" />;
+            return <StudiesQuickNav className="w-[50px] h-auto" />;
         case 'Add Credential':
-            return <BlueMagicWand className="w-[50px] h-auto" />;
+            return <CredentialQuickNav className="w-[50px] h-auto" />;
     }
 };
 
