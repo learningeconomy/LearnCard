@@ -1,7 +1,8 @@
 import React from 'react';
-import { Image, Info, Plus, X, Video, Shield, Smartphone } from 'lucide-react';
+import { Info, Plus, X, Video, Shield, Smartphone } from 'lucide-react';
 import type { AppStoreListingCreate } from '../../types/app-store';
 import { CATEGORY_OPTIONS } from '../../types/app-store';
+import { ImageUpload, ScreenshotUpload } from '../ui/ImageUpload';
 
 interface AppDetailsStepProps {
     data: Partial<AppStoreListingCreate>;
@@ -45,35 +46,23 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 </p>
             </div>
 
-            {/* Icon Preview */}
+            {/* Icon Upload */}
             <div className="flex flex-col items-center gap-4">
-                <div className="w-24 h-24 rounded-apple-xl bg-apple-gray-100 border-2 border-dashed border-apple-gray-300 flex items-center justify-center overflow-hidden">
-                    {data.icon_url ? (
-                        <img
-                            src={data.icon_url}
-                            alt="App icon"
-                            className="w-full h-full object-cover"
-                        />
-                    ) : (
-                        <Image className="w-8 h-8 text-apple-gray-400" />
-                    )}
-                </div>
+                <label className="label">App Icon</label>
 
-                <div className="w-full max-w-md">
-                    <label className="label">Icon URL</label>
+                <ImageUpload
+                    value={data.icon_url}
+                    onChange={url => handleChange('icon_url', url)}
+                    onRemove={() => handleChange('icon_url', '')}
+                    placeholder="Click to upload icon"
+                    previewClassName="w-24 h-24 rounded-apple-xl"
+                />
 
-                    <input
-                        type="url"
-                        value={data.icon_url || ''}
-                        onChange={e => handleChange('icon_url', e.target.value)}
-                        placeholder="https://example.com/icon.png"
-                        className={`input ${errors.icon_url ? 'input-error' : ''}`}
-                    />
+                <p className="text-xs text-apple-gray-400">512×512px recommended</p>
 
-                    {errors.icon_url && (
-                        <p className="text-sm text-red-500 mt-1">{errors.icon_url}</p>
-                    )}
-                </div>
+                {errors.icon_url && (
+                    <p className="text-sm text-red-500">{errors.icon_url}</p>
+                )}
             </div>
 
             {/* Display Name */}
@@ -220,41 +209,18 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <label className="label">Screenshots</label>
 
                 <p className="text-xs text-apple-gray-400 mb-3">
-                    Add screenshot URLs for app preview (392×696 recommended, 9:16 aspect ratio required)
+                    Upload or paste screenshot URLs (392×696 recommended, 9:16 aspect ratio)
                 </p>
 
                 <div className="space-y-3">
                     {(data.screenshots || []).map((screenshot, index) => (
-                        <div key={index} className="flex gap-2 items-start">
-                            <div className="flex-1">
-                                <input
-                                    type="url"
-                                    value={screenshot}
-                                    onChange={e => updateArrayItem('screenshots', index, e.target.value)}
-                                    placeholder="https://example.com/screenshot.png"
-                                    className="input w-full"
-                                />
-
-                                {screenshot && (
-                                    <img
-                                        src={screenshot}
-                                        alt={`Screenshot ${index + 1}`}
-                                        className="mt-2 h-32 object-contain rounded-apple border border-apple-gray-200"
-                                        onError={e => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                    />
-                                )}
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={() => removeArrayItem('screenshots', index)}
-                                className="p-2 text-apple-gray-400 hover:text-red-500 transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
+                        <ScreenshotUpload
+                            key={index}
+                            value={screenshot}
+                            onChange={url => updateArrayItem('screenshots', index, url)}
+                            onRemove={() => removeArrayItem('screenshots', index)}
+                            index={index}
+                        />
                     ))}
                 </div>
 
