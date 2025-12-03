@@ -28,6 +28,7 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { getProfileByProfileId, getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { cloneDeep } from 'lodash';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
+import { constructUri } from '@helpers/uri.helpers';
 
 export const setCreatorForContract = async (contract: DbContractType, profile: LCNProfile) => {
     return ConsentFlowContract.relateTo({
@@ -307,9 +308,12 @@ export const consentToContract = async (
     if (contract.name === 'AI Insights') {
         notificationData.title = `AI Insights Request`;
         notificationData.body = `${consenter?.displayName} has approved your request to view their insights.`;
-        notificationData.metadata = { type: 'AI Insight' };
+        notificationData.metadata = {
+            type: 'AI Insight',
+            contractId: contract?.id,
+            contractUri: constructUri('contract', contract.id, domain),
+        };
     }
-
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: consenter,
