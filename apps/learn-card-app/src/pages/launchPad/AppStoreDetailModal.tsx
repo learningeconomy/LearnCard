@@ -9,9 +9,17 @@ import TrashBin from '../../components/svgs/TrashBin';
 import useAppStore from './useAppStore';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import useTheme from '../../theme/hooks/useTheme';
+import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
+import Checkmark from '../../components/svgs/Checkmark';
+
+// Extended type to include new fields (until types package is rebuilt)
+type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
+    highlights?: string[];
+    screenshots?: string[];
+};
 
 interface AppStoreDetailModalProps {
-    listing: AppStoreListing | InstalledApp;
+    listing: ExtendedAppStoreListing;
     isInstalled?: boolean;
     onInstallSuccess?: () => void;
 }
@@ -191,6 +199,32 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             {listing.full_description}
                         </p>
                     </div>
+
+                    {/* Highlights Section */}
+                    {listing.highlights && listing.highlights.length > 0 && (
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                            <h3 className="text-xl text-gray-900 font-notoSans">Why Use This App?</h3>
+
+                            {listing.highlights.map((highlight: string, index: number) => (
+                                <div key={index} className="flex items-center justify-start mt-2">
+                                    <Checkmark className="text-grayscale-900 w-[24px] h-auto mr-2 shrink-0" />
+
+                                    <p className="text-grayscale-700 text-sm font-notoSans font-normal">
+                                        {highlight}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Screenshots Section */}
+                    {listing.screenshots && listing.screenshots.length > 0 && (
+                        <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">Preview</h3>
+
+                            <AppScreenshotsSlider appScreenshots={listing.screenshots} />
+                        </div>
+                    )}
 
                     {/* Links Section */}
                     {(listing.privacy_policy_url || listing.terms_url) && (

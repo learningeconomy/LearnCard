@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Info } from 'lucide-react';
+import { Image, Info, Plus, X } from 'lucide-react';
 import type { AppStoreListingCreate } from '../../types/app-store';
 import { CATEGORY_OPTIONS } from '../../types/app-store';
 
@@ -12,6 +12,27 @@ interface AppDetailsStepProps {
 export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, errors }) => {
     const handleChange = (field: keyof AppStoreListingCreate, value: string) => {
         onChange({ ...data, [field]: value });
+    };
+
+    const handleArrayChange = (field: 'highlights' | 'screenshots', values: string[]) => {
+        onChange({ ...data, [field]: values });
+    };
+
+    const addArrayItem = (field: 'highlights' | 'screenshots') => {
+        const currentArray = data[field] || [];
+        handleArrayChange(field, [...currentArray, '']);
+    };
+
+    const updateArrayItem = (field: 'highlights' | 'screenshots', index: number, value: string) => {
+        const currentArray = data[field] || [];
+        const newArray = [...currentArray];
+        newArray[index] = value;
+        handleArrayChange(field, newArray);
+    };
+
+    const removeArrayItem = (field: 'highlights' | 'screenshots', index: number) => {
+        const currentArray = data[field] || [];
+        handleArrayChange(field, currentArray.filter((_, i) => i !== index));
     };
 
     return (
@@ -151,6 +172,104 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 </select>
             </div>
 
+            {/* Highlights */}
+            <div>
+                <label className="label">Highlights</label>
+
+                <p className="text-xs text-apple-gray-400 mb-3">
+                    Add key benefits or reasons to use your app (displayed as bullet points)
+                </p>
+
+                <div className="space-y-2">
+                    {(data.highlights || []).map((highlight, index) => (
+                        <div key={index} className="flex gap-2">
+                            <input
+                                type="text"
+                                value={highlight}
+                                onChange={e => updateArrayItem('highlights', index, e.target.value)}
+                                placeholder="e.g., All your learning stored in one place"
+                                className="input flex-1"
+                                maxLength={200}
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => removeArrayItem('highlights', index)}
+                                className="p-2 text-apple-gray-400 hover:text-red-500 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                {(data.highlights?.length || 0) < 5 && (
+                    <button
+                        type="button"
+                        onClick={() => addArrayItem('highlights')}
+                        className="mt-2 flex items-center gap-2 text-sm text-apple-blue hover:text-apple-blue/80 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add highlight
+                    </button>
+                )}
+            </div>
+
+            {/* Screenshots */}
+            <div>
+                <label className="label">Screenshots</label>
+
+                <p className="text-xs text-apple-gray-400 mb-3">
+                    Add screenshot URLs for app preview (392×696 recommended, 9:16 aspect ratio required)
+                </p>
+
+                <div className="space-y-3">
+                    {(data.screenshots || []).map((screenshot, index) => (
+                        <div key={index} className="flex gap-2 items-start">
+                            <div className="flex-1">
+                                <input
+                                    type="url"
+                                    value={screenshot}
+                                    onChange={e => updateArrayItem('screenshots', index, e.target.value)}
+                                    placeholder="https://example.com/screenshot.png"
+                                    className="input w-full"
+                                />
+
+                                {screenshot && (
+                                    <img
+                                        src={screenshot}
+                                        alt={`Screenshot ${index + 1}`}
+                                        className="mt-2 h-32 object-contain rounded-apple border border-apple-gray-200"
+                                        onError={e => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                    />
+                                )}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => removeArrayItem('screenshots', index)}
+                                className="p-2 text-apple-gray-400 hover:text-red-500 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                {(data.screenshots?.length || 0) < 10 && (
+                    <button
+                        type="button"
+                        onClick={() => addArrayItem('screenshots')}
+                        className="mt-2 flex items-center gap-2 text-sm text-apple-blue hover:text-apple-blue/80 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add screenshot
+                    </button>
+                )}
+            </div>
+
             {/* Info box */}
             <div className="flex gap-3 p-4 bg-apple-blue/5 rounded-apple border border-apple-blue/10">
                 <Info className="w-5 h-5 text-apple-blue flex-shrink-0 mt-0.5" />
@@ -162,6 +281,8 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         <li>• Use a clear, recognizable app icon (512x512px recommended)</li>
                         <li>• Keep your tagline concise and action-oriented</li>
                         <li>• Highlight key features and benefits in your description</li>
+                        <li>• Add 3-5 highlights explaining your app's value</li>
+                        <li>• Include screenshots to showcase your app's interface</li>
                     </ul>
                 </div>
             </div>

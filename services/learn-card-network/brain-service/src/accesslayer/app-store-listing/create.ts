@@ -24,6 +24,8 @@ export const createAppStoreListing = async (
         android_app_store_id: input.android_app_store_id,
         privacy_policy_url: input.privacy_policy_url,
         terms_url: input.terms_url,
+        highlights_json: input.highlights_json,
+        screenshots_json: input.screenshots_json,
     });
 
     const result = await new QueryBuilder(new BindParam({ params }))

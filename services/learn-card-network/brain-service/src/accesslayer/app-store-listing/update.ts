@@ -37,6 +37,10 @@ export const updateAppStoreListing = async (
     if (typeof updates.privacy_policy_url !== 'undefined')
         updatesToPersist.privacy_policy_url = updates.privacy_policy_url;
     if (typeof updates.terms_url !== 'undefined') updatesToPersist.terms_url = updates.terms_url;
+    if (typeof updates.highlights_json !== 'undefined')
+        updatesToPersist.highlights_json = updates.highlights_json;
+    if (typeof updates.screenshots_json !== 'undefined')
+        updatesToPersist.screenshots_json = updates.screenshots_json;
 
     const params: Partial<FlatAppStoreListingType> = updatesToPersist;
 

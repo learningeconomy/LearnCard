@@ -50,7 +50,63 @@ const AppStoreListingInputValidator = z.object({
     android_app_store_id: z.string().optional(),
     privacy_policy_url: z.string().url().optional(),
     terms_url: z.string().url().optional(),
+    highlights: z.array(z.string()).optional(),
+    screenshots: z.array(z.string().url()).optional(),
 });
+
+// Helper to transform listing for API response (JSON strings -> arrays)
+const transformListingForResponse = (listing: any) => {
+    const result = { ...listing };
+
+    console.log('[transformListingForResponse] Input:', {
+        listing_id: listing.listing_id,
+        highlights_json: listing.highlights_json,
+        screenshots_json: listing.screenshots_json,
+    });
+
+    if (result.highlights_json) {
+        try {
+            result.highlights = JSON.parse(result.highlights_json);
+        } catch {
+            result.highlights = [];
+        }
+        delete result.highlights_json;
+    }
+
+    if (result.screenshots_json) {
+        try {
+            result.screenshots = JSON.parse(result.screenshots_json);
+        } catch {
+            result.screenshots = [];
+        }
+        delete result.screenshots_json;
+    }
+
+    console.log('[transformListingForResponse] Output:', {
+        listing_id: result.listing_id,
+        highlights: result.highlights,
+        screenshots: result.screenshots,
+    });
+
+    return result;
+};
+
+// Helper to transform input for storage (arrays -> JSON strings)
+const transformInputForStorage = (input: any) => {
+    const result = { ...input };
+
+    if (result.highlights !== undefined) {
+        result.highlights_json = JSON.stringify(result.highlights);
+        delete result.highlights;
+    }
+
+    if (result.screenshots !== undefined) {
+        result.screenshots_json = JSON.stringify(result.screenshots);
+        delete result.screenshots;
+    }
+
+    return result;
+};
 
 // Regular update validator - excludes admin-only fields
 const AppStoreListingUpdateInputValidator = AppStoreListingInputValidator.partial().omit({
@@ -64,13 +120,22 @@ const AppStoreListingCreateInputValidator = AppStoreListingInputValidator.omit({
     promotion_level: true,
 });
 
+// Extended validator that includes the transformed array fields for API responses
+const AppStoreListingResponseValidator = AppStoreListingValidator.extend({
+    highlights: z.array(z.string()).optional(),
+    screenshots: z.array(z.string()).optional(),
+}).omit({
+    highlights_json: true,
+    screenshots_json: true,
+});
+
 const PaginatedAppStoreListingsValidator = z.object({
     hasMore: z.boolean(),
     cursor: z.string().optional(),
-    records: z.array(AppStoreListingValidator),
+    records: z.array(AppStoreListingResponseValidator),
 });
 
-const InstalledAppValidator = AppStoreListingValidator.extend({
+const InstalledAppValidator = AppStoreListingResponseValidator.extend({
     installed_at: z.string(),
 });
 
@@ -169,11 +234,13 @@ export const appStoreRouter = t.router({
             await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
 
             // New listings always start as DRAFT with STANDARD promotion
-            const listing = await createAppStoreListing({
+            const storageData = transformInputForStorage({
                 ...input.listing,
                 app_listing_status: 'DRAFT',
                 promotion_level: 'STANDARD',
             });
+
+            const listing = await createAppStoreListing(storageData);
 
             await associateListingWithIntegration(listing.listing_id, input.integrationId);
 
@@ -193,14 +260,14 @@ export const appStoreRouter = t.router({
             requiredScope: 'app-store:read',
         })
         .input(z.object({ listingId: z.string() }))
-        .output(AppStoreListingValidator.optional())
+        .output(AppStoreListingResponseValidator.optional())
         .query(async ({ input, ctx }) => {
             const { listing } = await verifyListingOwnership(
                 input.listingId,
                 ctx.user.profile.profileId
             );
 
-            return listing;
+            return transformListingForResponse(listing);
         }),
 
     getListingsForIntegration: profileRoute
@@ -233,8 +300,9 @@ export const appStoreRouter = t.router({
             });
 
             const hasMore = results.length > limit;
-            const records = hasMore ? results.slice(0, limit) : results;
-            const cursor = hasMore ? records[records.length - 1]?.listing_id : undefined;
+            const rawRecords = hasMore ? results.slice(0, limit) : results;
+            const records = rawRecords.map(transformListingForResponse);
+            const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.listing_id : undefined;
 
             return { hasMore, cursor, records };
         }),
@@ -284,7 +352,10 @@ export const appStoreRouter = t.router({
                 ctx.user.profile.profileId
             );
 
-            return updateAppStoreListing(listing, input.updates);
+            console.log("Listing", input.updates);
+            const storageUpdates = transformInputForStorage(input.updates);
+
+            return updateAppStoreListing(listing, storageUpdates);
         }),
 
     submitForReview: profileRoute
@@ -374,8 +445,9 @@ export const appStoreRouter = t.router({
             });
 
             const hasMore = results.length > limit;
-            const records = hasMore ? results.slice(0, limit) : results;
-            const cursor = hasMore ? records[records.length - 1]?.listing_id : undefined;
+            const rawRecords = hasMore ? results.slice(0, limit) : results;
+            const records = rawRecords.map(transformListingForResponse);
+            const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.listing_id : undefined;
 
             return { hasMore, cursor, records };
         }),
@@ -392,7 +464,7 @@ export const appStoreRouter = t.router({
             },
         })
         .input(z.object({ listingId: z.string() }))
-        .output(AppStoreListingValidator.optional())
+        .output(AppStoreListingResponseValidator.optional())
         .query(async ({ input }) => {
             const listing = await readAppStoreListingById(input.listingId);
 
@@ -400,7 +472,7 @@ export const appStoreRouter = t.router({
                 return undefined;
             }
 
-            return listing;
+            return transformListingForResponse(listing);
         }),
 
     getListingInstallCount: openRoute
@@ -527,8 +599,9 @@ export const appStoreRouter = t.router({
             });
 
             const hasMore = results.length > limit;
-            const records = hasMore ? results.slice(0, limit) : results;
-            const cursor = hasMore ? records[records.length - 1]?.installed_at : undefined;
+            const rawRecords = hasMore ? results.slice(0, limit) : results;
+            const records = rawRecords.map(transformListingForResponse);
+            const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.installed_at : undefined;
 
             return { hasMore, cursor, records };
         }),
@@ -661,8 +734,9 @@ export const appStoreRouter = t.router({
             });
 
             const hasMore = results.length > limit;
-            const records = hasMore ? results.slice(0, limit) : results;
-            const cursor = hasMore ? records[records.length - 1]?.listing_id : undefined;
+            const rawRecords = hasMore ? results.slice(0, limit) : results;
+            const records = rawRecords.map(transformListingForResponse);
+            const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.listing_id : undefined;
 
             return { hasMore, cursor, records };
         }),

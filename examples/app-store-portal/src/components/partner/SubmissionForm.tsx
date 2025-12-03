@@ -32,17 +32,25 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
     const initialFormData = useMemo<Partial<AppStoreListingCreate>>(() => {
         if (!editingListing) return {};
 
+        // Type assertion to access new fields until types are rebuilt
+        const listing = editingListing as typeof editingListing & {
+            highlights?: string[];
+            screenshots?: string[];
+        };
+
         return {
-            display_name: editingListing.display_name,
-            tagline: editingListing.tagline,
-            full_description: editingListing.full_description,
-            icon_url: editingListing.icon_url,
-            launch_type: editingListing.launch_type,
-            launch_config_json: editingListing.launch_config_json,
-            category: editingListing.category,
-            promo_video_url: editingListing.promo_video_url,
-            privacy_policy_url: editingListing.privacy_policy_url,
-            terms_url: editingListing.terms_url,
+            display_name: listing.display_name,
+            tagline: listing.tagline,
+            full_description: listing.full_description,
+            icon_url: listing.icon_url,
+            launch_type: listing.launch_type,
+            launch_config_json: listing.launch_config_json,
+            category: listing.category,
+            promo_video_url: listing.promo_video_url,
+            privacy_policy_url: listing.privacy_policy_url,
+            terms_url: listing.terms_url,
+            highlights: listing.highlights,
+            screenshots: listing.screenshots,
         };
     }, [editingListing]);
 
@@ -177,6 +185,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
                     promo_video_url: formData.promo_video_url,
                     privacy_policy_url: formData.privacy_policy_url,
                     terms_url: formData.terms_url,
+                    highlights: formData.highlights,
+                    screenshots: formData.screenshots,
                 };
 
                 const success = await updateListing(editingListing.listing_id, updates);
@@ -197,6 +207,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
                     promo_video_url: formData.promo_video_url,
                     privacy_policy_url: formData.privacy_policy_url,
                     terms_url: formData.terms_url,
+                    highlights: formData.highlights,
+                    screenshots: formData.screenshots,
                 };
 
                 const listingId = await createListing(selectedIntegrationId, listingData);
@@ -253,6 +265,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
                     promo_video_url: formData.promo_video_url,
                     privacy_policy_url: formData.privacy_policy_url,
                     terms_url: formData.terms_url,
+                    highlights: formData.highlights,
+                    screenshots: formData.screenshots,
                 };
 
                 const success = await updateListing(editingListing.listing_id, updates);
@@ -275,6 +289,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({ onSuccess, onBac
                     promo_video_url: formData.promo_video_url,
                     privacy_policy_url: formData.privacy_policy_url,
                     terms_url: formData.terms_url,
+                    highlights: formData.highlights,
+                    screenshots: formData.screenshots,
                 };
 
                 const newListingId = await createListing(selectedIntegrationId, listingData);

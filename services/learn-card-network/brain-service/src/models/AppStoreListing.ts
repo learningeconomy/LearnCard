@@ -56,6 +56,8 @@ export const AppStoreListing = ModelFactory<
             android_app_store_id: { type: 'string', required: false },
             privacy_policy_url: { type: 'string', required: false },
             terms_url: { type: 'string', required: false },
+            highlights_json: { type: 'string', required: false },
+            screenshots_json: { type: 'string', required: false },
         } as any,
         relationships: {
             publishedBy: { model: Integration, direction: 'in', name: 'PUBLISHES_LISTING' },

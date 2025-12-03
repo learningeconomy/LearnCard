@@ -23,6 +23,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     isInstalledLoading = false,
     onInstallSuccess,
 }) => {
+    console.log("Listing", listing)
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.launchPad);
 

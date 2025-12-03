@@ -25,6 +25,8 @@ export interface AppStoreListing {
     android_app_store_id?: string;
     privacy_policy_url?: string;
     terms_url?: string;
+    highlights?: string[];
+    screenshots?: string[];
 }
 
 export interface AppStoreListingCreate {
@@ -40,6 +42,8 @@ export interface AppStoreListingCreate {
     android_app_store_id?: string;
     privacy_policy_url?: string;
     terms_url?: string;
+    highlights?: string[];
+    screenshots?: string[];
 }
 
 export interface LaunchConfig {

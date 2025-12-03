@@ -174,6 +174,7 @@ export const useLearnCardStore = create<LearnCardState>((set, get) => ({
             const result = await learnCard.invoke.getListingsForIntegration(integrationId, {
                 limit: 100,
             });
+
             set({ listings: result.records, isLoadingListings: false });
         } catch (error) {
             console.error('Failed to load listings:', error);
