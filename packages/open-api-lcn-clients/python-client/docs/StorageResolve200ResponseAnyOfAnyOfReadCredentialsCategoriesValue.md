@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **required** | **bool** |  | 
+**default_enabled** | **bool** |  | [optional] 
 
 ## Example
 

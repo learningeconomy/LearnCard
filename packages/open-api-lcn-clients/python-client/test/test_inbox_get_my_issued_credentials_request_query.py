@@ -38,6 +38,7 @@ class TestInboxGetMyIssuedCredentialsRequestQuery(unittest.TestCase):
                 current_status = 'PENDING',
                 id = '',
                 is_signed = True,
+                is_accepted = True,
                 issuer_did = ''
             )
         else:

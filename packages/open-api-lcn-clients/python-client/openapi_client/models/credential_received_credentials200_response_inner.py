@@ -32,7 +32,8 @@ class CredentialReceivedCredentials200ResponseInner(BaseModel):
     var_from: StrictStr = Field(alias="from")
     sent: datetime
     received: Optional[datetime] = None
-    __properties: ClassVar[List[str]] = ["uri", "to", "from", "sent", "received"]
+    metadata: Optional[Dict[str, Any]] = None
+    __properties: ClassVar[List[str]] = ["uri", "to", "from", "sent", "received", "metadata"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -89,7 +90,8 @@ class CredentialReceivedCredentials200ResponseInner(BaseModel):
             "to": obj.get("to"),
             "from": obj.get("from"),
             "sent": obj.get("sent"),
-            "received": obj.get("received")
+            "received": obj.get("received"),
+            "metadata": obj.get("metadata")
         })
         return _obj
 

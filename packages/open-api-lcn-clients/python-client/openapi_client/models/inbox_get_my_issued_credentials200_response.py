@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.inbox_get_my_issued_credentials200_response_records_inner import InboxGetMyIssuedCredentials200ResponseRecordsInner
+from openapi_client.models.inbox_claim200_response_inbox_credential import InboxClaim200ResponseInboxCredential
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,7 +28,7 @@ class InboxGetMyIssuedCredentials200Response(BaseModel):
     InboxGetMyIssuedCredentials200Response
     """ # noqa: E501
     has_more: StrictBool = Field(alias="hasMore")
-    records: List[InboxGetMyIssuedCredentials200ResponseRecordsInner]
+    records: List[InboxClaim200ResponseInboxCredential]
     cursor: Optional[StrictStr] = None
     __properties: ClassVar[List[str]] = ["hasMore", "records", "cursor"]
 
@@ -91,7 +91,7 @@ class InboxGetMyIssuedCredentials200Response(BaseModel):
 
         _obj = cls.model_validate({
             "hasMore": obj.get("hasMore"),
-            "records": [InboxGetMyIssuedCredentials200ResponseRecordsInner.from_dict(_item) for _item in obj["records"]] if obj.get("records") is not None else None,
+            "records": [InboxClaim200ResponseInboxCredential.from_dict(_item) for _item in obj["records"]] if obj.get("records") is not None else None,
             "cursor": obj.get("cursor")
         })
         return _obj

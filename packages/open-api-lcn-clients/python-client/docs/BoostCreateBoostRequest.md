@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **allow_anyone_to_create_children** | **bool** |  | [optional] 
 **credential** | [**BoostCreateBoostRequestCredential**](BoostCreateBoostRequestCredential.md) |  | 
 **claim_permissions** | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |  | [optional] 
+**skills** | [**List[BoostAlignBoostSkillsRequestSkillsInner]**](BoostAlignBoostSkillsRequestSkillsInner.md) |  | [optional] 
 
 ## Example
 
