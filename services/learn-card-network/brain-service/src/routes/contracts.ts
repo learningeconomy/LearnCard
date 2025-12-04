@@ -1943,14 +1943,19 @@ export const contractsRouter = t.router({
             if (!contractByUri)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
 
-            const writers = await getWritersForContract(contractByUri);
-            const isAuthorized = writers.some(w => w.profileId === profile.profileId);
+            const isDenyingRequest = profile.profileId === targetProfileId;
 
-            if (!isAuthorized) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You do not have permissions to cancel requests for this contract',
-                });
+            if (!isDenyingRequest) {
+                const writers = await getWritersForContract(contractByUri);
+                const isAuthorized = writers.some(w => w.profileId === profile.profileId);
+
+                if (!isAuthorized) {
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message:
+                            'You do not have permission to view this request status. You must be a contract writer or checking your own status.',
+                    });
+                }
             }
 
             try {
