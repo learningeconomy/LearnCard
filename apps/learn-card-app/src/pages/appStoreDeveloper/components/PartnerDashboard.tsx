@@ -13,10 +13,14 @@ import {
     ChevronRight,
     Pencil,
     Archive,
+    Play,
 } from 'lucide-react';
+
+import { useModal, ModalTypes } from 'learn-card-base';
 
 import type { ExtendedAppStoreListing, AppListingStatus } from '../types';
 import { StatusBadge } from './StatusBadge';
+import { AppPreviewModal } from './AppPreviewModal';
 
 type Tab = 'DRAFT' | 'PENDING_REVIEW' | 'LISTED' | 'ARCHIVED';
 
@@ -39,9 +43,18 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
     onSubmitForReview,
     onDeleteListing,
 }) => {
+    const { newModal } = useModal();
     const [activeTab, setActiveTab] = useState<Tab>('DRAFT');
     const [selectedListing, setSelectedListing] = useState<ExtendedAppStoreListing | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    const handlePreview = (listing: ExtendedAppStoreListing) => {
+        newModal(
+            <AppPreviewModal listing={listing} />,
+            { hideButton: true },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
 
     const draftListings = listings.filter(l => l.app_listing_status === 'DRAFT');
     const pendingListings = listings.filter(l => l.app_listing_status === 'PENDING_REVIEW');
@@ -307,6 +320,14 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     </button>
 
                                     <button
+                                        onClick={() => handlePreview(selectedListing)}
+                                        className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors"
+                                    >
+                                        <Play className="w-4 h-4" />
+                                        Preview
+                                    </button>
+
+                                    <button
                                         onClick={() => handleSubmitForReview(selectedListing.listing_id)}
                                         disabled={actionLoading === selectedListing.listing_id}
                                         className="flex items-center gap-2 px-3 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50"
@@ -341,6 +362,14 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         Edit
                                     </button>
 
+                                    <button
+                                        onClick={() => handlePreview(selectedListing)}
+                                        className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors"
+                                    >
+                                        <Play className="w-4 h-4" />
+                                        Preview
+                                    </button>
+
                                     <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg flex-1">
                                         <Clock className="w-4 h-4" />
 
@@ -350,11 +379,21 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             )}
 
                             {selectedListing.app_listing_status === 'LISTED' && (
-                                <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg flex-1">
-                                    <CheckCircle2 className="w-4 h-4" />
+                                <>
+                                    <button
+                                        onClick={() => handlePreview(selectedListing)}
+                                        className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors"
+                                    >
+                                        <Play className="w-4 h-4" />
+                                        Preview
+                                    </button>
 
-                                    <span className="text-sm">Your app is live in the App Store</span>
-                                </div>
+                                    <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg flex-1">
+                                        <CheckCircle2 className="w-4 h-4" />
+
+                                        <span className="text-sm">Your app is live in the App Store</span>
+                                    </div>
+                                </>
                             )}
 
                             {selectedListing.app_listing_status === 'ARCHIVED' && (

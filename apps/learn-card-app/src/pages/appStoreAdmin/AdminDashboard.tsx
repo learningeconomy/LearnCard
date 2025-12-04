@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { IonPage, IonContent, IonSpinner, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle } from '@ionic/react';
-import { Search, Filter, Inbox, Loader2, RefreshCw, ExternalLink, ShieldAlert, CheckCircle, XCircle, Star, TrendingUp, Minus, ArrowDown, RotateCcw, Check, Image } from 'lucide-react';
+import { Search, Filter, Inbox, Loader2, RefreshCw, ExternalLink, ShieldAlert, CheckCircle, XCircle, Star, TrendingUp, Minus, ArrowDown, RotateCcw, Check, Image, Play } from 'lucide-react';
+
+import { useModal, ModalTypes } from 'learn-card-base';
 
 import { useDeveloperPortal } from '../appStoreDeveloper/useDeveloperPortal';
 import { StatusBadge } from '../appStoreDeveloper/components/StatusBadge';
 import { AppStoreHeader } from '../appStoreDeveloper/components/AppStoreHeader';
+import { AppPreviewModal } from '../appStoreDeveloper/components/AppPreviewModal';
 import { LAUNCH_TYPE_INFO, CATEGORY_OPTIONS, PERMISSION_OPTIONS, PROMOTION_LEVEL_INFO, type AppListingStatus, type PromotionLevel, type ExtendedAppStoreListing, type AppPermission } from '../appStoreDeveloper/types';
 
 type FilterStatus = AppListingStatus | 'ALL';
@@ -114,6 +117,7 @@ interface ListingDetailProps {
 }
 
 const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, onPromotionChange, isUpdating }) => {
+    const { newModal } = useModal();
     const [isApproving, setIsApproving] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
     const [isUnarchiving, setIsUnarchiving] = useState(false);
@@ -125,6 +129,14 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, 
     let parsedConfig: Record<string, unknown> = {};
     try { parsedConfig = JSON.parse(listing.launch_config_json); } catch {}
     const permissions = Array.isArray(parsedConfig.permissions) ? (parsedConfig.permissions as AppPermission[]) : [];
+
+    const handlePreview = () => {
+        newModal(
+            <AppPreviewModal listing={listing} />,
+            { hideButton: true },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
 
     const handleApprove = async () => { setIsApproving(true); await onStatusChange(listing.listing_id, 'LISTED'); setIsApproving(false); };
     const handleReject = async () => { setIsRejecting(true); await onStatusChange(listing.listing_id, 'ARCHIVED'); setIsRejecting(false); };
@@ -141,7 +153,13 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, 
                     <div className="flex-1">
                         <div className="flex items-start justify-between">
                             <div><h2 className="text-lg font-semibold text-gray-700">{listing.display_name}</h2><p className="text-gray-500 text-sm mt-0.5">{listing.tagline}</p></div>
-                            <StatusBadge status={listing.app_listing_status as AppListingStatus} />
+                            <div className="flex items-center gap-2">
+                                <button onClick={handlePreview} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors">
+                                    <Play className="w-4 h-4" />
+                                    Preview
+                                </button>
+                                <StatusBadge status={listing.app_listing_status as AppListingStatus} />
+                            </div>
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                             {categoryLabel && <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs font-medium text-gray-500">{categoryLabel}</span>}
