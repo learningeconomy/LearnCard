@@ -112,13 +112,12 @@ const createRequestFromEvent = (event: AWSAPIGatewayEvent): IncomingMessage => {
         // Set the parsed body directly
         body: parsedBody,
         // Add required methods for incomingMessageToRequest
+        once: () => {},
+        on: () => {},
+        off: () => {},
         socket: {
-            once: () => {
-                // Required for incomingMessageToRequest
-            },
-            off: () => {
-                // Required for incomingMessageToRequest
-            },
+            once: () => {},
+            off: () => {},
         },
     } as unknown as IncomingMessage;
 
@@ -165,12 +164,9 @@ const createResponseHandler = (): {
             resolvePromise(result);
         },
         // Add required methods for incomingMessageToRequest
-        once: () => {
-            // Required for incomingMessageToRequest
-        },
-        off: () => {
-            // Required for incomingMessageToRequest
-        },
+        once: () => {},
+        on: () => {},
+        off: () => {},
     } as unknown as ServerResponse;
 
     return {

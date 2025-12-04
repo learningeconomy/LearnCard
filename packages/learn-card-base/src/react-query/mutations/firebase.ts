@@ -77,17 +77,10 @@ export const useVerifyContactMethodWithProofOfLogin = () => {
         },
         onSuccess: data => {
             if (!data?.success) {
-                presentAlert({
-                    header: 'Error',
-                    message: data?.error || 'Failed to verify contact method with Proof of Login',
-                    buttons: [
-                        {
-                            text: 'Dismiss',
-                            role: 'cancel',
-                        },
-                    ],
-                });
-                return;
+                console.warn(
+                    'useVerifyContactMethodWithProofOfLogin: Failed to verify contact method with Proof of Login',
+                    data?.error
+                );
             }
         },
     });
