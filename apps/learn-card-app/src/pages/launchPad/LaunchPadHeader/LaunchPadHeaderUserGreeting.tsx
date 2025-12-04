@@ -39,7 +39,7 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                         }
                         className="w-full max-w-[600px] flex items-center justify-between px-4 py-3 rounded-2xl bg-[#DCEAFE] shadow-sm"
                     >
-                        <span className="text-[#273B72] font-poppins font-bold text-[20px]">
+                        <span className="text-[#273B72] font-poppins font-semibold text-[20px]">
                             What would you like to do?
                         </span>
                         <svg

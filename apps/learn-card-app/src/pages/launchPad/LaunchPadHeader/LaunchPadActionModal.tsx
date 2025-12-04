@@ -11,7 +11,7 @@ import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/Res
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 import X from 'learn-card-base/svgs/X';
-import OnboardingRolesContainer from '../../../components/onboarding/onboardingRoles/OnboardingRolesContainer';
+import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import {
     LearnCardRolesEnum,
     LearnCardRoles,
@@ -176,7 +176,7 @@ const LaunchPadActionModal: React.FC = () => {
                         type="button"
                         onClick={() =>
                             newModal(
-                                <OnboardingRolesContainer
+                                <LaunchPadRoleSelector
                                     role={role}
                                     setRole={newRole => {
                                         setRole(newRole);
