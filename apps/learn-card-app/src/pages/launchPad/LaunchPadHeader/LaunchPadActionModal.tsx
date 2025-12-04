@@ -199,8 +199,8 @@ const LaunchPadActionModal: React.FC = () => {
                                         })();
                                     }}
                                 />,
-                                { sectionClassName: '!max-w-[600px] !mx-auto !max-h-[90%]' },
-                                { mobile: ModalTypes.Center, desktop: ModalTypes.Center }
+                                { sectionClassName: '!max-w-[600px] !mx-auto !max-h-[100%]' },
+                                { mobile: ModalTypes.Freeform, desktop: ModalTypes.Freeform }
                             )
                         }
                         className="px-[20px] py-4px] rounded-full border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
