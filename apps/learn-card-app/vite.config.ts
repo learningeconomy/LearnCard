@@ -1,14 +1,15 @@
 import path from 'path';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
-export default defineConfig(async () => {
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), '');
     return {
         plugins: [react(), svgr(), tsconfigPaths({ root: '../../' })],
         build: { target: 'esnext', outDir: path.join(__dirname, 'build') },
@@ -34,12 +35,13 @@ export default defineConfig(async () => {
                 : '"https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704"',
             GOOGLE_MAPS_API_KEY:
                 process.env.GOOGLE_MAPS_API_KEY && `"${process.env.GOOGLE_MAPS_API_KEY}"`,
-            WEB3AUTH_MAINNET_CLIENT_ID:
-                process.env.WEB3AUTH_MAINNET_CLIENT_ID &&
-                `"${process.env.WEB3AUTH_MAINNET_CLIENT_ID}"`,
-            WEB3AUTH_TESTNET_CLIENT_ID:
-                process.env.WEB3AUTH_TESTNET_CLIENT_ID &&
-                `"${process.env.WEB3AUTH_TESTNET_CLIENT_ID}"`,
+            // Use values from .env via loadEnv so they're available at build time
+            WEB3AUTH_MAINNET_CLIENT_ID: env.WEB3AUTH_MAINNET_CLIENT_ID
+                ? JSON.stringify(env.WEB3AUTH_MAINNET_CLIENT_ID)
+                : 'undefined',
+            WEB3AUTH_TESTNET_CLIENT_ID: env.WEB3AUTH_TESTNET_CLIENT_ID
+                ? JSON.stringify(env.WEB3AUTH_TESTNET_CLIENT_ID)
+                : 'undefined',
         },
         resolve: {
             alias: {
