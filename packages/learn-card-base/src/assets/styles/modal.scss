@@ -976,6 +976,16 @@
         transform: translateY(0);
     }
 
+    // Desktop: scroll on the overlay (browser edge) rather than inside the section
+    @media (min-width: 992px) {
+        overflow-y: auto;
+
+        & > .freeform-section {
+            max-height: none;
+            overflow-y: visible;
+        }
+    }
+
     // Specialized variant previously used by some flows
     &.quest-dialog {
         flex-direction: column;

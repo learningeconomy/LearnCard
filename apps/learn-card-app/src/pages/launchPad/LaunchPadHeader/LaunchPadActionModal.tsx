@@ -199,7 +199,10 @@ const LaunchPadActionModal: React.FC = () => {
                                         })();
                                     }}
                                 />,
-                                { sectionClassName: '!max-w-[600px] !mx-auto !max-h-[100%]' },
+                                {
+                                    sectionClassName:
+                                        '!max-w-[600px] !mx-auto !max-h-[100%] disable-scrollbars',
+                                },
                                 { mobile: ModalTypes.Freeform, desktop: ModalTypes.Freeform }
                             )
                         }
