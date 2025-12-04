@@ -54,6 +54,7 @@ import {
     getRequestedForList,
     getRequestedForForUser,
     getContractById,
+    getAllRequestsForTargetProfile,
 } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
@@ -1974,6 +1975,57 @@ export const contractsRouter = t.router({
                     message: 'Unable to cancel request',
                 });
             }
+        }),
+
+    getAllContractRequestsForProfile: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contracts/all-requests-for-profile',
+                tags: ['Contracts'],
+                summary: 'Get all contract requests for a target profile',
+                description:
+                    'Gets all contract requests from all contracts for a specified target profile. Users can query their own requests.',
+            },
+        })
+        .input(
+            z.object({
+                targetProfileId: z.string(),
+            })
+        )
+        .output(
+            z.array(
+                z.object({
+                    contract: ConsentFlowContractValidator.extend({ uri: z.string() }),
+                    profile: LCNProfileValidator,
+                    status: z.enum(['pending', 'accepted', 'denied']).nullable(),
+                    readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
+                })
+            )
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { targetProfileId } = input;
+
+            const isCheckingOwnRequests = profile.profileId === targetProfileId;
+
+            if (!isCheckingOwnRequests) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You can only query your own contract requests.',
+                });
+            }
+
+            const requests = await getAllRequestsForTargetProfile(targetProfileId);
+
+            return requests.map(request => ({
+                ...request,
+                contract: {
+                    ...request.contract,
+                    uri: constructUri('contract', request.contract.id, ctx.domain),
+                },
+            }));
         }),
 });
 

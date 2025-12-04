@@ -490,6 +490,15 @@ export type LearnCardNetworkPluginMethods = {
         readStatus?: 'unseen' | 'seen' | null;
     } | null>;
 
+    getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
+        {
+            contract: ConsentFlowContract & { uri: string };
+            profile: LCNProfile;
+            status: 'pending' | 'accepted' | 'denied' | null;
+            readStatus?: 'unseen' | 'seen' | null;
+        }[]
+    >;
+
     markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
     cancelContractRequest: (contractUri: string, targetProfileId: string) => Promise<boolean>;
 

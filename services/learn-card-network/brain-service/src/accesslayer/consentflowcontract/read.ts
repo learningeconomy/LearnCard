@@ -106,3 +106,26 @@ export const getRequestedForForUser = async (contractId: string, requesterProfil
         };
     });
 };
+
+export const getAllRequestsForTargetProfile = async (targetProfileId: string) => {
+    const result = await new QueryBuilder(new BindParam({ targetProfileId }))
+        .match({
+            model: ConsentFlowContract,
+            identifier: 'c',
+        })
+        .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
+        .where('p.profileId = $targetProfileId')
+        .return(['c', 'p', 'r'])
+        .run();
+
+    return result.records.map(rec => {
+        const { c, p, r } = rec.toObject();
+
+        return {
+            contract: c.properties,
+            profile: p.properties,
+            status: r.properties?.status ?? null,
+            readStatus: r.properties?.readStatus ?? null,
+        };
+    });
+};

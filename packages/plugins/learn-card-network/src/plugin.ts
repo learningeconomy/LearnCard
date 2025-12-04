@@ -1138,6 +1138,14 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            getAllContractRequestsForProfile: async (_learnCard, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.getAllContractRequestsForProfile.query({
+                    targetProfileId,
+                });
+            },
+
             cancelContractRequest: async (_learnCard, contractUri, targetProfileId) => {
                 await ensureUser();
 
