@@ -46,6 +46,9 @@ const LaunchPad: React.FC = () => {
         returnTo,
         suppressContractModal,
         skipLPAction,
+        boostUri,
+        vc_request_url,
+        claim,
         embedUrl,
         appName,
         appImage,
@@ -120,6 +123,18 @@ const LaunchPad: React.FC = () => {
 
         if (contractDetails && !hasConsented && !suppressContractModal) return;
 
+        const claimParam = Array.isArray(claim) ? claim[0] : claim;
+        const isClaiming =
+            claimParam === '1' ||
+            (typeof claimParam === 'string' && claimParam.toLowerCase() === 'true');
+        if (isClaiming) return;
+
+        const boostParam = Array.isArray(boostUri) ? boostUri[0] : boostUri;
+        if (boostParam) return;
+
+        const vcReqParam = Array.isArray(vc_request_url) ? vc_request_url[0] : vc_request_url;
+        if (vcReqParam) return;
+
         const SHOWN_KEY = 'lp_action_shown_after_login';
         if (sessionStorage.getItem(SHOWN_KEY)) return;
 
@@ -143,6 +158,8 @@ const LaunchPad: React.FC = () => {
         hasConsented,
         suppressContractModal,
         skipLPAction,
+        boostUri,
+        vc_request_url,
     ]);
 
     let aiApps = flags?.enableLaunchPadUpdates ? aiPassportApps : [];
