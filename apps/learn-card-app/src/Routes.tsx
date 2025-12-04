@@ -90,6 +90,17 @@ const PostConsentFlowDataFeed = lazyWithRetry(
     () => import('./pages/launchPad/PostConsentFlowDataFeed')
 );
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
+
+// App Store Developer Portal
+const DeveloperPortal = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/DeveloperPortal')
+);
+const SubmissionForm = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/SubmissionForm')
+);
+const AppStoreAdminDashboard = lazyWithRetry(
+    () => import('./pages/appStoreAdmin/AdminDashboard')
+);
 // import ExternalConsentFlowDoor from './pages/consentFlow/ExternalConsentFlowDoor';
 // import CustomWallet from './pages/hidden/CustomWallet';
 // import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
@@ -158,6 +169,17 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/launchpad" component={LaunchPad} />
                         <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
+
+                        {/* App Store Developer Portal */}
+                        <PrivateRoute exact path="/app-store/developer" component={DeveloperPortal} />
+                        <PrivateRoute exact path="/app-store/developer/new" component={SubmissionForm} />
+                        <PrivateRoute
+                            exact
+                            path="/app-store/developer/edit/:listingId"
+                            component={SubmissionForm}
+                        />
+                        <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminDashboard} />
+
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         <PrivateRoute exact path="/contacts" component={AddressBook} />
                         <PrivateRoute exact path="/contacts/pending" component={AddressBook} />
