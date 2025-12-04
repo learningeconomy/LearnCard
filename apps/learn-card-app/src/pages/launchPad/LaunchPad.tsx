@@ -14,6 +14,7 @@ import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 
 import { IonPage, IonContent, IonList } from '@ionic/react';
 import LaunchPadHeader from './LaunchPadHeader/LaunchPadHeader';
+import LaunchPadActionModal from './LaunchPadHeader/LaunchPadActionModal';
 import LaunchPadBecomeAnApp from './LaunchPadBecomeAnApp';
 import LaunchPadAppListItem from './LaunchPadAppListItem';
 import LaunchPadContractListItem from './LaunchPadContractListItem';
@@ -23,6 +24,7 @@ import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadA
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 
 import { aiPassportApps } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
+import { useModal, ModalTypes, useIsCurrentUserLCNUser } from 'learn-card-base';
 import {
     LaunchPadFilterOptionsEnum,
     LaunchPadSortOptionsEnum,
@@ -37,8 +39,16 @@ const LaunchPad: React.FC = () => {
     const flags = useFlags();
     const history = useHistory();
     const { search } = useLocation();
-    const { connectTo, challenge, uri, returnTo, suppressContractModal, embedUrl, appName, appImage } =
-        queryString.parse(search);
+    const {
+        connectTo,
+        challenge,
+        uri,
+        returnTo,
+        suppressContractModal,
+        embedUrl,
+        appName,
+        appImage,
+    } = queryString.parse(search);
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
     const embedUrlParam = Array.isArray(embedUrl) ? embedUrl[0] ?? '' : embedUrl ?? '';
     const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
@@ -52,6 +62,9 @@ const LaunchPad: React.FC = () => {
         LaunchPadSortOptionsEnum.featuredBy
     );
     const [searchInput, setSearchInput] = useState<string>('');
+
+    const { newModal } = useModal({ desktop: ModalTypes.Freeform, mobile: ModalTypes.Freeform });
+    const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
 
     const connectToProfileId = (!Array.isArray(connectTo) ? connectTo : undefined) || '';
     const connectChallenge = (!Array.isArray(challenge) ? challenge : undefined) || '';
@@ -72,6 +85,27 @@ const LaunchPad: React.FC = () => {
             },
         });
     }
+
+    // Auto-open action modal on first LaunchPad load after login for LCN users
+    useEffect(() => {
+        if (isNetworkUserLoading) return;
+        if (!isNetworkUser) return;
+
+        const SHOWN_KEY = 'lp_action_shown_after_login';
+        if (sessionStorage.getItem(SHOWN_KEY)) return;
+
+        // Defer to end of frame to reduce jank with initial render
+        const id = window.requestAnimationFrame(() => {
+            newModal(<LaunchPadActionModal />, {
+                className:
+                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                sectionClassName: '!max-w-[380px] disable-scrollbars',
+            });
+            sessionStorage.setItem(SHOWN_KEY, '1');
+        });
+
+        return () => cancelAnimationFrame(id);
+    }, [isNetworkUser, isNetworkUserLoading]);
 
     const {
         contract: contractDetails,
@@ -252,18 +286,19 @@ const LaunchPad: React.FC = () => {
                                             );
                                         })}
                                     </IonList>
-                                    {filteredAppsAndContracts.length === 0 && !customAppFromQueryParams && (
-                                        <div className="w-full flex items-center justify-center z-10">
-                                            <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
-                                                <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                                    No results found for{' '}
-                                                    <span className="text-black italic">
-                                                        {searchInput}
-                                                    </span>
-                                                </p>
+                                    {filteredAppsAndContracts.length === 0 &&
+                                        !customAppFromQueryParams && (
+                                            <div className="w-full flex items-center justify-center z-10">
+                                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
+                                                    <p className="text-grayscale-800 text-base font-normal font-notoSans">
+                                                        No results found for{' '}
+                                                        <span className="text-black italic">
+                                                            {searchInput}
+                                                        </span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
                                 </>
                             ) : (
                                 <IonList
