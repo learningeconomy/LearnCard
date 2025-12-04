@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { ModalTypes, useModal } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
+import PassportIcon from 'learn-card-base/svgs/PassportIcon';
+import Rocket from 'learn-card-base/svgs/Rocket';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
 import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
 import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
@@ -77,8 +79,9 @@ const ActionButton: React.FC<{
     );
 };
 
-const LaunchPadActionModal: React.FC = () => {
+const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFooterNav }) => {
     const { newModal, closeModal } = useModal();
+    const history = useHistory();
     const { initWallet } = useWallet();
     const { data: lcNetworkProfile } = useGetProfile();
     const { presentToast } = useToast();
@@ -228,6 +231,36 @@ const LaunchPadActionModal: React.FC = () => {
                     />
                 ))}
             </div>
+            {showFooterNav && (
+                <div className="mt-1 grid grid-cols-2 gap-3">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            history.push('/passport');
+                            closeModal();
+                        }}
+                        className="w-full bg-white text-grayscale-900 rounded-[15px] border border-solid border-[#E2E3E9] py-3 shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] flex items-center justify-center gap-2"
+                    >
+                        <PassportIcon className="w-[26px] h-[26px]" />
+                        <span className="text-base font-poppins font-semibold">Passport</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (history.location.pathname === '/launchpad') {
+                                closeModal();
+                            } else {
+                                history.push('/launchpad');
+                                closeModal();
+                            }
+                        }}
+                        className="w-full bg-white text-grayscale-900 rounded-[15px] border border-solid border-[#E2E3E9] py-3 shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] flex items-center justify-center gap-2"
+                    >
+                        <Rocket className="w-[26px] h-[26px]" />
+                        <span className="text-base font-poppins font-semibold">Launchpad</span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

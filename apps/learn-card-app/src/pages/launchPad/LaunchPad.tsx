@@ -139,7 +139,7 @@ const LaunchPad: React.FC = () => {
         if (sessionStorage.getItem(SHOWN_KEY)) return;
 
         const id = window.requestAnimationFrame(() => {
-            newModal(<LaunchPadActionModal />, {
+            newModal(<LaunchPadActionModal showFooterNav={true} />, {
                 className:
                     'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
                 sectionClassName: '!max-w-[380px] disable-scrollbars',
