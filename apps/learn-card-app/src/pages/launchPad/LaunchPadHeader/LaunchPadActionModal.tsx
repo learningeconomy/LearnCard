@@ -39,6 +39,7 @@ const getIconForActionButton = (label: string) => {
         case 'Claim Credential':
             return <CredentialQuickNav className="w-[50px] h-auto" />;
         case 'Create Credential':
+        case 'Issue Learner Credential':
             return <CredentialQuickNav className="w-[50px] h-auto" />;
         case 'Manage Skills Frameworks':
             return <StudiesQuickNav className="w-[50px] h-auto" />;
