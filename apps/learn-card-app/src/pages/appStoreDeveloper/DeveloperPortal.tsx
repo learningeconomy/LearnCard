@@ -94,8 +94,8 @@ const DeveloperPortal: React.FC = () => {
                     {!selectedIntegrationId && !isLoadingIntegrations && integrations?.length === 0 && (
                         <div className="bg-white rounded-xl border border-gray-200 text-center py-12 px-4">
                             <AlertCircle className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                            <h3 className="text-base font-medium text-gray-500 mb-1">No Integrations Yet</h3>
-                            <p className="text-sm text-gray-400">Create an integration using the dropdown in the header to get started</p>
+                            <h3 className="text-base font-medium text-gray-500 mb-1">No Projects Yet</h3>
+                            <p className="text-sm text-gray-400">Create a project using the dropdown in the header to get started</p>
                         </div>
                     )}
                 </div>

@@ -74,7 +74,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                 </div>
             ) : (
                 <p className="text-grayscale-500 text-sm mb-4">
-                    No integrations yet. Create one to get started.
+                    No projects yet. Create one to get started.
                 </p>
             )}
 
