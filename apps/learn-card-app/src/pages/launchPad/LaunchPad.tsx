@@ -45,6 +45,7 @@ const LaunchPad: React.FC = () => {
         uri,
         returnTo,
         suppressContractModal,
+        skipLPAction,
         embedUrl,
         appName,
         appImage,
@@ -86,27 +87,6 @@ const LaunchPad: React.FC = () => {
         });
     }
 
-    // Auto-open action modal on first LaunchPad load after login for LCN users
-    useEffect(() => {
-        if (isNetworkUserLoading) return;
-        if (!isNetworkUser) return;
-
-        const SHOWN_KEY = 'lp_action_shown_after_login';
-        if (sessionStorage.getItem(SHOWN_KEY)) return;
-
-        // Defer to end of frame to reduce jank with initial render
-        const id = window.requestAnimationFrame(() => {
-            newModal(<LaunchPadActionModal />, {
-                className:
-                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
-                sectionClassName: '!max-w-[380px] disable-scrollbars',
-            });
-            sessionStorage.setItem(SHOWN_KEY, '1');
-        });
-
-        return () => cancelAnimationFrame(id);
-    }, [isNetworkUser, isNetworkUserLoading]);
-
     const {
         contract: contractDetails,
         openConsentFlowModal,
@@ -124,6 +104,46 @@ const LaunchPad: React.FC = () => {
             openConsentFlowModal();
         }
     }, [contractDetails, suppressContractModal, consentedContractLoading]);
+
+    useEffect(() => {
+        if (isNetworkUserLoading) return;
+        if (!isNetworkUser) return;
+        if (consentedContractLoading) return;
+
+        const skipParam = Array.isArray(skipLPAction) ? skipLPAction[0] : skipLPAction;
+        const shouldSkip =
+            skipParam === '1' ||
+            (typeof skipParam === 'string' && skipParam.toLowerCase() === 'true');
+        if (shouldSkip) return;
+
+        if (connectToProfileId && connectChallenge) return;
+
+        if (contractDetails && !hasConsented && !suppressContractModal) return;
+
+        const SHOWN_KEY = 'lp_action_shown_after_login';
+        if (sessionStorage.getItem(SHOWN_KEY)) return;
+
+        const id = window.requestAnimationFrame(() => {
+            newModal(<LaunchPadActionModal />, {
+                className:
+                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                sectionClassName: '!max-w-[380px] disable-scrollbars',
+            });
+            sessionStorage.setItem(SHOWN_KEY, '1');
+        });
+
+        return () => cancelAnimationFrame(id);
+    }, [
+        isNetworkUser,
+        isNetworkUserLoading,
+        consentedContractLoading,
+        connectToProfileId,
+        connectChallenge,
+        contractDetails,
+        hasConsented,
+        suppressContractModal,
+        skipLPAction,
+    ]);
 
     let aiApps = flags?.enableLaunchPadUpdates ? aiPassportApps : [];
     let apps = useLaunchPadApps();
