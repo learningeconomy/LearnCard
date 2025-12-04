@@ -168,6 +168,15 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, 
                         {listing.terms_url && <a href={listing.terms_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"><ExternalLink className="w-4 h-4" />Terms of Service</a>}
                     </div>
                 </div>
+                {(listing.ios_app_store_id || listing.android_app_store_id) && (
+                    <div>
+                        <h3 className="text-sm font-medium text-gray-600 mb-2">Native App Links</h3>
+                        <div className="space-y-1.5">
+                            {listing.ios_app_store_id && <a href={`https://apps.apple.com/us/app/id${listing.ios_app_store_id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"><ExternalLink className="w-4 h-4" />iOS App Store ({listing.ios_app_store_id})</a>}
+                            {listing.android_app_store_id && <a href={`https://play.google.com/store/apps/details?id=${listing.android_app_store_id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"><ExternalLink className="w-4 h-4" />Google Play Store ({listing.android_app_store_id})</a>}
+                        </div>
+                    </div>
+                )}
                 {listing.app_listing_status === 'LISTED' && (
                     <div>
                         <h3 className="text-sm font-medium text-gray-600 mb-2">Promotion Level</h3>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, FileText, Settings, Link2 } from 'lucide-react';
+import { CheckCircle2, FileText, Settings, Link2, ExternalLink, Smartphone } from 'lucide-react';
 
 import type { AppStoreListingCreate } from '../types';
 import { LAUNCH_TYPE_INFO, CATEGORY_OPTIONS } from '../types';
@@ -170,6 +170,43 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                                     className="block text-sm text-cyan-600 hover:underline"
                                 >
                                     Terms of Service
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Native App Links */}
+                {(data.ios_app_store_id || data.android_app_store_id) && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Smartphone className="w-4 h-4 text-gray-400" />
+
+                            <h4 className="font-medium text-gray-600 text-sm">Native App Links</h4>
+                        </div>
+
+                        <div className="space-y-2">
+                            {data.ios_app_store_id && (
+                                <a
+                                    href={`https://apps.apple.com/us/app/id${data.ios_app_store_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                    iOS App Store ({data.ios_app_store_id})
+                                </a>
+                            )}
+
+                            {data.android_app_store_id && (
+                                <a
+                                    href={`https://play.google.com/store/apps/details?id=${data.android_app_store_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                    Google Play Store ({data.android_app_store_id})
                                 </a>
                             )}
                         </div>
