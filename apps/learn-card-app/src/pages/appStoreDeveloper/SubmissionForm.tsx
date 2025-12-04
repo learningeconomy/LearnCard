@@ -10,6 +10,7 @@ import { LaunchTypeStep } from './components/LaunchTypeStep';
 import { LaunchConfigStep } from './components/LaunchConfigStep';
 import { ReviewStep } from './components/ReviewStep';
 import { AppStoreHeader } from './components/AppStoreHeader';
+import { ExitConfirmDialog } from './components/ExitConfirmDialog';
 import type { AppStoreListingCreate, ExtendedAppStoreListing } from './types';
 
 const STEPS = [
@@ -78,6 +79,7 @@ const SubmissionForm: React.FC = () => {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [formData, setFormData] = useState<Partial<AppStoreListingCreate>>(initialFormData);
+    const [showExitDialog, setShowExitDialog] = useState(false);
 
     useEffect(() => {
         setFormData(initialFormData);
@@ -114,7 +116,37 @@ const SubmissionForm: React.FC = () => {
 
     const handleNext = () => { if (validateStep(currentStep)) setCurrentStep(prev => Math.min(prev + 1, STEPS.length)); };
     const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 1));
-    const handleBackToDashboard = () => history.push('/app-store/developer');
+    const navigateToDashboard = () => history.push('/app-store/developer');
+
+    // Check if form has any changes from initial state
+    const hasUnsavedChanges = useCallback(() => {
+        const keys: (keyof AppStoreListingCreate)[] = ['display_name', 'tagline', 'full_description', 'icon_url', 'launch_type', 'launch_config_json', 'category', 'promo_video_url', 'privacy_policy_url', 'terms_url', 'ios_app_store_id', 'android_app_store_id'];
+        return keys.some(key => {
+            const initial = initialFormData[key] ?? '';
+            const current = formData[key] ?? '';
+            return initial !== current;
+        });
+    }, [formData, initialFormData]);
+
+    const handleBackToDashboard = () => {
+        if (hasUnsavedChanges() && hasMinimumDataForDraft()) {
+            setShowExitDialog(true);
+        } else {
+            navigateToDashboard();
+        }
+    };
+
+    const handleExitSave = async (): Promise<boolean> => {
+        const success = await saveDraft();
+        if (success) {
+            setTimeout(() => navigateToDashboard(), 100);
+        }
+        return success;
+    };
+
+    const handleExitDiscard = () => {
+        navigateToDashboard();
+    };
 
     const saveDraft = async (): Promise<boolean> => {
         if (!integrationId && !isEditMode) { setSubmitError('Please select an integration first'); return false; }
@@ -168,7 +200,7 @@ const SubmissionForm: React.FC = () => {
                     <div className={`w-16 h-16 mx-auto mb-5 rounded-full flex items-center justify-center ${isPendingReview ? 'bg-amber-100' : 'bg-cyan-100'}`}><FileEdit className={`w-8 h-8 ${isPendingReview ? 'text-amber-600' : 'text-cyan-600'}`} /></div>
                     <h2 className="text-xl font-semibold text-gray-700 mb-2">{isPendingReview ? 'Changes Saved!' : isEditMode ? 'Draft Updated!' : 'Draft Saved!'}</h2>
                     <p className="text-gray-500 text-sm mb-6">Your app "{formData.display_name}" has been {isEditMode ? 'updated' : 'saved as a draft'}.</p>
-                    <button onClick={handleBackToDashboard} className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors">View My Listings</button>
+                    <button onClick={navigateToDashboard} className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors">View My Listings</button>
                 </div>
             </IonContent>
         </IonPage>
@@ -183,7 +215,7 @@ const SubmissionForm: React.FC = () => {
                     <h2 className="text-xl font-semibold text-gray-700 mb-2">Submission Received!</h2>
                     <p className="text-gray-500 text-sm mb-6">Your app "{formData.display_name}" has been submitted for review.</p>
                     <div className="flex gap-3 justify-center">
-                        <button onClick={handleBackToDashboard} className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors">View My Listings</button>
+                        <button onClick={navigateToDashboard} className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors">View My Listings</button>
                         <button onClick={() => { setIsSubmitted(false); setCurrentStep(1); setFormData({}); }} className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">Submit Another App</button>
                     </div>
                 </div>
@@ -214,6 +246,13 @@ const SubmissionForm: React.FC = () => {
                     </div>
                 </div>
             </IonContent>
+
+            <ExitConfirmDialog
+                isOpen={showExitDialog}
+                onSave={handleExitSave}
+                onDiscard={handleExitDiscard}
+                onCancel={() => setShowExitDialog(false)}
+            />
         </IonPage>
     );
 };
