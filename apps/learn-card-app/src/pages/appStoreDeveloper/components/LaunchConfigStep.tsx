@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, Code } from 'lucide-react';
+import { AlertCircle, Code, Play } from 'lucide-react';
 
 import type { AppStoreListingCreate, LaunchConfig, AppPermission } from '../types';
 import { PERMISSION_OPTIONS } from '../types';
@@ -8,9 +8,10 @@ interface LaunchConfigStepProps {
     data: Partial<AppStoreListingCreate>;
     onChange: (data: Partial<AppStoreListingCreate>) => void;
     errors: Record<string, string>;
+    onPreview?: () => void;
 }
 
-export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChange, errors }) => {
+export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChange, errors, onPreview }) => {
     const [config, setConfig] = useState<LaunchConfig>(() => {
         try {
             return data.launch_config_json ? JSON.parse(data.launch_config_json) : {};
@@ -273,6 +274,28 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                     {JSON.stringify(config, null, 2) || '{}'}
                 </pre>
             </div>
+
+            {/* Preview Button */}
+            {data.launch_type === 'EMBEDDED_IFRAME' && config.url && onPreview && (
+                <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="text-sm font-medium text-indigo-800">Test Your Integration</h4>
+                            <p className="text-xs text-indigo-600 mt-0.5">
+                                Preview your app and validate partner-connect API calls
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={onPreview}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"
+                        >
+                            <Play className="w-4 h-4" />
+                            Preview App
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

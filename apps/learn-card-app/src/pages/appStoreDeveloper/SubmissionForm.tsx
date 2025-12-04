@@ -3,6 +3,8 @@ import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { IonPage, IonContent, IonSpinner } from '@ionic/react';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
 
+import { useModal, ModalTypes } from 'learn-card-base';
+
 import { useDeveloperPortal } from './useDeveloperPortal';
 import { StepIndicator } from './components/StepIndicator';
 import { AppDetailsStep } from './components/AppDetailsStep';
@@ -11,6 +13,8 @@ import { LaunchConfigStep } from './components/LaunchConfigStep';
 import { ReviewStep } from './components/ReviewStep';
 import { AppStoreHeader } from './components/AppStoreHeader';
 import { ExitConfirmDialog } from './components/ExitConfirmDialog';
+import { PreviewConfirmDialog } from './components/PreviewConfirmDialog';
+import { AppPreviewModal } from './components/AppPreviewModal';
 import type { AppStoreListingCreate, ExtendedAppStoreListing } from './types';
 
 const STEPS = [
@@ -71,6 +75,7 @@ const SubmissionForm: React.FC = () => {
         };
     }, [existingListing]);
 
+    const { newModal } = useModal();
     const [currentStep, setCurrentStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -80,6 +85,7 @@ const SubmissionForm: React.FC = () => {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [formData, setFormData] = useState<Partial<AppStoreListingCreate>>(initialFormData);
     const [showExitDialog, setShowExitDialog] = useState(false);
+    const [showPreviewDialog, setShowPreviewDialog] = useState(false);
 
     useEffect(() => {
         setFormData(initialFormData);
@@ -146,6 +152,52 @@ const SubmissionForm: React.FC = () => {
 
     const handleExitDiscard = () => {
         navigateToDashboard();
+    };
+
+    // Preview handlers
+    const handlePreviewClick = () => {
+        setShowPreviewDialog(true);
+    };
+
+    const createMockListingForPreview = (): ExtendedAppStoreListing => ({
+        listing_id: 'preview',
+        display_name: formData.display_name || 'Preview App',
+        tagline: formData.tagline || '',
+        full_description: formData.full_description || '',
+        icon_url: formData.icon_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=Preview',
+        launch_type: formData.launch_type || 'EMBEDDED_IFRAME',
+        launch_config_json: formData.launch_config_json || '{}',
+        app_listing_status: 'DRAFT',
+        category: formData.category,
+        promo_video_url: formData.promo_video_url,
+        privacy_policy_url: formData.privacy_policy_url,
+        terms_url: formData.terms_url,
+        ios_app_store_id: formData.ios_app_store_id,
+        android_app_store_id: formData.android_app_store_id,
+        highlights: formData.highlights,
+        screenshots: formData.screenshots,
+    } as ExtendedAppStoreListing);
+
+    const openPreviewModal = () => {
+        const mockListing = createMockListingForPreview();
+        newModal(
+            <AppPreviewModal listing={mockListing} />,
+            { hideButton: true },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
+
+    const handleSaveAndPreview = async (): Promise<boolean> => {
+        const success = await saveDraft();
+        if (success) {
+            // Small delay to ensure state is updated
+            setTimeout(() => openPreviewModal(), 100);
+        }
+        return success;
+    };
+
+    const handlePreviewWithoutSaving = () => {
+        openPreviewModal();
     };
 
     const saveDraft = async (): Promise<boolean> => {
@@ -234,7 +286,7 @@ const SubmissionForm: React.FC = () => {
                     <div className="bg-white rounded-xl border border-gray-200 p-6 min-h-[450px]">
                         {currentStep === 1 && <AppDetailsStep data={formData} onChange={handleFormChange} errors={errors} />}
                         {currentStep === 2 && <LaunchTypeStep data={formData} onChange={handleFormChange} />}
-                        {currentStep === 3 && <LaunchConfigStep data={formData} onChange={handleFormChange} errors={errors} />}
+                        {currentStep === 3 && <LaunchConfigStep data={formData} onChange={handleFormChange} errors={errors} onPreview={handlePreviewClick} />}
                         {currentStep === 4 && <ReviewStep data={formData} />}
                     </div>
                     <div className="flex justify-between mt-6">
@@ -252,6 +304,14 @@ const SubmissionForm: React.FC = () => {
                 onSave={handleExitSave}
                 onDiscard={handleExitDiscard}
                 onCancel={() => setShowExitDialog(false)}
+            />
+
+            <PreviewConfirmDialog
+                isOpen={showPreviewDialog}
+                hasUnsavedChanges={hasUnsavedChanges()}
+                onSaveAndPreview={handleSaveAndPreview}
+                onPreviewWithoutSaving={handlePreviewWithoutSaving}
+                onCancel={() => setShowPreviewDialog(false)}
             />
         </IonPage>
     );
