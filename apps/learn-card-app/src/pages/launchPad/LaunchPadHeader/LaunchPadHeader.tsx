@@ -11,7 +11,7 @@ const LaunchPadHeader: React.FC<{ children: ReactElement }> = ({ children }) => 
             <LaunchPadHeaderUserGreeting />
             <LaunchPadHeaderLinks />
             <LaunchPadHeaderCurvedDivider />
-            <LaunchPadHeaderTitle />
+            {/* <LaunchPadHeaderTitle /> */}
             {children}
         </>
     );

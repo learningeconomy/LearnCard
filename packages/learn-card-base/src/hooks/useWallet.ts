@@ -641,6 +641,17 @@ export const useWallet = () => {
         }
     };
 
+    const getWalletOrFallback = async () => {
+        if (isLoggedIn) {
+            try {
+                return await getWallet();
+            } catch (e) {
+                console.log('getWalletOrFallback::error', e);
+            }
+        }
+        return getBespokeLearnCard('a');
+    };
+
     return {
         initWallet: getWallet,
         installChapi,
@@ -663,6 +674,7 @@ export const useWallet = () => {
         issueTestPresentationVc,
         getDID,
         syncCredentialToContracts,
+        getWalletOrFallback,
     };
 };
 

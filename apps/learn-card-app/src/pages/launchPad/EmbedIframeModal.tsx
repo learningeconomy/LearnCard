@@ -8,16 +8,28 @@ import { IonPage, IonContent, IonToast } from '@ionic/react';
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 
+interface LaunchConfig {
+    url?: string;
+    permissions?: string[];
+    [key: string]: unknown;
+}
+
 interface EmbedIframeModalProps {
     embedUrl: string;
     appId?: string | number;
     appName?: string;
+    launchConfig?: LaunchConfig;
+    isInstalled?: boolean;
+    hideFullScreenButton?: boolean;
 }
 
 export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     embedUrl,
     appId,
     appName = 'Partner App',
+    launchConfig,
+    isInstalled = false,
+    hideFullScreenButton = false
 }) => {
     const { closeModal } = useModal();
     const history = useHistory();
@@ -33,6 +45,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         history.push(`/apps/${appId || 'preview'}`, {
             embedUrl,
             appName,
+            launchConfig,
+            isInstalled,
         });
     };
 
@@ -53,6 +67,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const handlers = useLearnCardMessageHandlers({
         embedOrigin,
         onNavigate: closeModal,
+        launchConfig,
+        isInstalled,
     });
 
     // Initialize the PostMessage listener with trusted origins
@@ -71,7 +87,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                     <div className="flex items-center justify-between p-4 bg-white border-b">
                         <h2 className="text-xl font-semibold">{appName}</h2>
                         <div className="flex items-center gap-2">
-                            {!Capacitor.isNativePlatform() && (
+                            {!hideFullScreenButton && !Capacitor.isNativePlatform() && (
                                 <button
                                     onClick={handleFullScreen}
                                     className="px-4 py-2 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium flex items-center gap-2"

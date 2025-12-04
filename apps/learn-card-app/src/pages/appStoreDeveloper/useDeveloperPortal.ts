@@ -1,0 +1,253 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useWallet } from 'learn-card-base';
+import type {
+    AppStoreListing,
+    AppStoreListingCreateType,
+    AppStoreListingUpdateType,
+    LCNIntegration,
+    AppListingStatus,
+    PromotionLevel,
+} from '@learncard/types';
+
+export const useDeveloperPortal = () => {
+    const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
+    // ========== Integration Hooks ==========
+
+    // Query for user's integrations
+    const useIntegrations = () => {
+        return useQuery({
+            queryKey: ['developer', 'integrations'],
+            queryFn: async (): Promise<LCNIntegration[]> => {
+                const wallet = await initWallet();
+                const result = await wallet.invoke.getIntegrations({ limit: 100 });
+
+                return result.records;
+            },
+            staleTime: 1000 * 60 * 5,
+        });
+    };
+
+    // Mutation for creating an integration
+    const useCreateIntegration = () => {
+        return useMutation({
+            mutationFn: async (name: string): Promise<string> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.addIntegration({ name, whitelistedDomains: [] });
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
+            },
+        });
+    };
+
+    // ========== Listing Hooks ==========
+
+    // Query for listings belonging to an integration
+    const useListingsForIntegration = (integrationId: string | null) => {
+        return useQuery({
+            queryKey: ['developer', 'listings', integrationId],
+            queryFn: async (): Promise<AppStoreListing[]> => {
+                if (!integrationId) return [];
+
+                const wallet = await initWallet();
+                const result = await wallet.invoke.getListingsForIntegration(integrationId, {
+                    limit: 100,
+                });
+
+                return result.records;
+            },
+            enabled: !!integrationId,
+            staleTime: 1000 * 60 * 2,
+        });
+    };
+
+    // Query for a single listing
+    const useListing = (listingId: string | null) => {
+        return useQuery({
+            queryKey: ['developer', 'listing', listingId],
+            queryFn: async (): Promise<AppStoreListing | null> => {
+                if (!listingId) return null;
+
+                const wallet = await initWallet();
+                const listing = await wallet.invoke.getPublicAppStoreListing(listingId);
+
+                return listing ?? null;
+            },
+            enabled: !!listingId,
+        });
+    };
+
+    // Mutation for creating a listing
+    // Using 'any' for listing type since highlights/screenshots may not be in exported types yet
+    const useCreateListing = () => {
+        return useMutation({
+            mutationFn: async ({
+                integrationId,
+                listing,
+            }: {
+                integrationId: string;
+                listing: AppStoreListingCreateType | Record<string, unknown>;
+            }): Promise<string> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.createAppStoreListing(integrationId, listing as AppStoreListingCreateType);
+            },
+            onSuccess: (_, { integrationId }) => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listings', integrationId] });
+            },
+        });
+    };
+
+    // Mutation for updating a listing
+    // Using 'any' for updates type since highlights/screenshots may not be in exported types yet
+    const useUpdateListing = () => {
+        return useMutation({
+            mutationFn: async ({
+                listingId,
+                updates,
+            }: {
+                listingId: string;
+                updates: AppStoreListingUpdateType | Record<string, unknown>;
+            }): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.updateAppStoreListing(listingId, updates as AppStoreListingUpdateType);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listing'] });
+            },
+        });
+    };
+
+    // Mutation for deleting a listing
+    const useDeleteListing = () => {
+        return useMutation({
+            mutationFn: async (listingId: string): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.deleteAppStoreListing(listingId);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
+            },
+        });
+    };
+
+    // Mutation for submitting a listing for review
+    const useSubmitForReview = () => {
+        return useMutation({
+            mutationFn: async (listingId: string): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.submitAppStoreListingForReview(listingId);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listing'] });
+            },
+        });
+    };
+
+    // ========== Admin Hooks ==========
+
+    // Query for checking if user is admin
+    const useIsAdmin = () => {
+        return useQuery({
+            queryKey: ['developer', 'isAdmin'],
+            queryFn: async (): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                try {
+                    return await wallet.invoke.isAppStoreAdmin();
+                } catch {
+                    return false;
+                }
+            },
+            staleTime: 1000 * 60 * 10,
+        });
+    };
+
+    // Query for all listings (admin only)
+    const useAdminListings = (status?: AppListingStatus) => {
+        return useQuery({
+            queryKey: ['admin', 'listings', status],
+            queryFn: async (): Promise<AppStoreListing[]> => {
+                const wallet = await initWallet();
+                const result = await wallet.invoke.adminGetAllListings({
+                    limit: 100,
+                    status,
+                });
+
+                return result.records;
+            },
+            staleTime: 1000 * 60 * 2,
+        });
+    };
+
+    // Mutation for updating listing status (admin)
+    const useAdminUpdateStatus = () => {
+        return useMutation({
+            mutationFn: async ({
+                listingId,
+                status,
+            }: {
+                listingId: string;
+                status: AppListingStatus;
+            }): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.adminUpdateListingStatus(listingId, status);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+            },
+        });
+    };
+
+    // Mutation for updating promotion level (admin)
+    const useAdminUpdatePromotion = () => {
+        return useMutation({
+            mutationFn: async ({
+                listingId,
+                level,
+            }: {
+                listingId: string;
+                level: PromotionLevel;
+            }): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.adminUpdatePromotionLevel(listingId, level);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['admin', 'listings'] });
+                queryClient.invalidateQueries({ queryKey: ['appStore'] });
+            },
+        });
+    };
+
+    return {
+        // Integration hooks
+        useIntegrations,
+        useCreateIntegration,
+
+        // Listing hooks
+        useListingsForIntegration,
+        useListing,
+        useCreateListing,
+        useUpdateListing,
+        useDeleteListing,
+        useSubmitForReview,
+
+        // Admin hooks
+        useIsAdmin,
+        useAdminListings,
+        useAdminUpdateStatus,
+        useAdminUpdatePromotion,
+    };
+};
+
+export default useDeveloperPortal;
