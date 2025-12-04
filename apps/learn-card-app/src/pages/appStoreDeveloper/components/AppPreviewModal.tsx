@@ -101,7 +101,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
             onClose?.();
         },
         launchConfig,
-        isInstalled: false, // Preview mode - treat as not installed
+        isInstalled: true, // Preview mode - treat as installed
     });
 
     // Create wrapped handlers that log diagnostics
