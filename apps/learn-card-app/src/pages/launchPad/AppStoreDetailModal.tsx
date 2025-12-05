@@ -14,6 +14,7 @@ import Checkmark from '../../components/svgs/Checkmark';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
+import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import { Settings } from 'lucide-react';
 
 // Extended type to include new fields (until types package is rebuilt)
@@ -257,8 +258,25 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const handleLaunch = async () => {
         // For consent flow apps, redirect with did and delegate VP
         if (hasConsented && contract) {
+            // Guardian consent apps need profile selection flow
+            if (contract.needsGuardianConsent) {
+                const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
+
+                if (redirectUrl) {
+                    closeModal();
+                    newModal(
+                        <GuardianConsentLaunchModal
+                            contractDetails={contract}
+                            redirectUrl={redirectUrl}
+                        />,
+                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                    );
+                    return;
+                }
+            }
+
             // Prefer app listing URL, then contract redirectUrl
-            console.log("Launch Config", launchConfig);
             const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
 
             if (redirectUrl) {

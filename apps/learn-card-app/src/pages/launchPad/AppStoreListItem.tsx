@@ -10,6 +10,7 @@ import { ColorSetEnum } from '../../theme/colors';
 import AppStoreDetailModal from './AppStoreDetailModal';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
+import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -61,6 +62,23 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     const handleLaunch = async () => {
         // For consent flow apps, redirect with did and delegate VP
         if (hasConsented && contract) {
+            // Guardian consent apps need profile selection flow
+            if (contract.needsGuardianConsent) {
+                const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
+
+                if (redirectUrl) {
+                    newModal(
+                        <GuardianConsentLaunchModal
+                            contractDetails={contract}
+                            redirectUrl={redirectUrl}
+                        />,
+                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                    );
+                    return;
+                }
+            }
+
             // Prefer app listing URL, then contract redirectUrl
             const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
 
