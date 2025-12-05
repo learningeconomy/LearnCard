@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
-import { useModal, ModalTypes, useConfirmation } from 'learn-card-base';
+import { useModal, ModalTypes, useConfirmation, useWithdrawConsent } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
@@ -12,6 +12,7 @@ import useTheme from '../../theme/hooks/useTheme';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
 import Checkmark from '../../components/svgs/Checkmark';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
+import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -81,6 +82,12 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         }
     }, [listing.launch_config_json]);
 
+    // Consent flow hooks for withdraw on uninstall
+    const contractUri: string | undefined = launchConfig?.contractUri;
+    const { consentedContract } = useConsentFlowByUri(contractUri);
+    const termsUri = consentedContract?.uri;
+    const { mutateAsync: withdrawConsent } = useWithdrawConsent(termsUri ?? '');
+
     const doInstall = async () => {
         setIsProcessing(true);
 
@@ -124,6 +131,16 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         setIsProcessing(true);
 
         try {
+            // Withdraw consent if there's a contract
+            if (termsUri) {
+                try {
+                    await withdrawConsent(termsUri);
+                } catch (error) {
+                    console.error('Failed to withdraw consent:', error);
+                    // Continue with uninstall even if consent withdrawal fails
+                }
+            }
+
             await uninstallMutation.mutateAsync(listing.listing_id);
             closeModal();
         } catch (error) {

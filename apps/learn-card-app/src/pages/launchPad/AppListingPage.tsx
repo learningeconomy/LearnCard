@@ -3,7 +3,7 @@ import { useParams, useHistory } from 'react-router-dom';
 import type { AppStoreListing } from '@learncard/types';
 
 import { IonPage, IonContent, IonSpinner } from '@ionic/react';
-import { useModal, ModalTypes, useConfirmation, useIsLoggedIn } from 'learn-card-base';
+import { useModal, ModalTypes, useConfirmation, useIsLoggedIn, useWithdrawConsent } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
@@ -12,6 +12,7 @@ import { EmbedIframeModal } from './EmbedIframeModal';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
 import Checkmark from '../../components/svgs/Checkmark';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
+import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 
 // Extended type to include new fields
 type ExtendedAppStoreListing = AppStoreListing & {
@@ -82,6 +83,12 @@ const AppListingPage: React.FC = () => {
 
     const extendedListing = listing as ExtendedAppStoreListing | undefined;
 
+    // Consent flow hooks for withdraw on uninstall
+    const contractUri: string | undefined = launchConfig?.contractUri;
+    const { consentedContract } = useConsentFlowByUri(contractUri);
+    const termsUri = consentedContract?.uri;
+    const { mutateAsync: withdrawConsent } = useWithdrawConsent(termsUri ?? '');
+
     const doInstall = async () => {
         if (!listing) return;
         setIsProcessing(true);
@@ -132,6 +139,16 @@ const AppListingPage: React.FC = () => {
         setIsProcessing(true);
 
         try {
+            // Withdraw consent if there's a contract
+            if (termsUri) {
+                try {
+                    await withdrawConsent(termsUri);
+                } catch (error) {
+                    console.error('Failed to withdraw consent:', error);
+                    // Continue with uninstall even if consent withdrawal fails
+                }
+            }
+
             await uninstallMutation.mutateAsync(listing.listing_id);
         } catch (error) {
             console.error('Failed to uninstall app:', error);
