@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertCircle, Code } from 'lucide-react';
 import type { AppStoreListingCreate, LaunchConfig, LaunchType, AppPermission } from '../../types/app-store';
 import { PERMISSION_OPTIONS } from '../../types/app-store';
+import { ConsentFlowContractSelector } from './ConsentFlowContractSelector';
 
 interface LaunchConfigStepProps {
     data: Partial<AppStoreListingCreate>;
@@ -121,25 +122,11 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
             case 'CONSENT_REDIRECT':
                 return (
                     <div className="space-y-6">
-                        <div>
-                            <label className="label">Contract URI</label>
-
-                            <input
-                                type="text"
-                                value={config.contractUri || ''}
-                                onChange={e => updateConfig({ contractUri: e.target.value })}
-                                placeholder="lc:network:contract:your-contract-id"
-                                className={`input ${errors.contractUri ? 'input-error' : ''}`}
-                            />
-
-                            {errors.contractUri && (
-                                <p className="text-sm text-red-500 mt-1">{errors.contractUri}</p>
-                            )}
-
-                            <p className="text-sm text-apple-gray-400 mt-2">
-                                The consent flow contract that defines what data your app can access.
-                            </p>
-                        </div>
+                        <ConsentFlowContractSelector
+                            value={config.contractUri || ''}
+                            onChange={(uri) => updateConfig({ contractUri: uri })}
+                            error={errors.contractUri}
+                        />
 
                         <div>
                             <label className="label">Redirect URI</label>
@@ -155,12 +142,20 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                             {errors.redirectUri && (
                                 <p className="text-sm text-red-500 mt-1">{errors.redirectUri}</p>
                             )}
+
+                            <p className="text-sm text-apple-gray-400 mt-2">
+                                Where users will be redirected after granting consent. This can override the contract's redirect URL.
+                            </p>
                         </div>
 
                         <div>
                             <label className="label">Requested Scopes</label>
 
-                            <div className="grid grid-cols-2 gap-2 mt-2">
+                            <p className="text-xs text-apple-gray-400 mb-3">
+                                Additional OAuth-style scopes your app requests
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-2">
                                 {[
                                     'profile:read',
                                     'credentials:read',

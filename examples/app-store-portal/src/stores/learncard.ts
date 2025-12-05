@@ -7,6 +7,8 @@ import type {
     LCNIntegration,
     AppListingStatus,
     PromotionLevel,
+    ConsentFlowContractDetails,
+    ConsentFlowContract,
 } from '@learncard/types';
 
 // Environment variables (in real app, these come from env)
@@ -34,6 +36,11 @@ interface LearnCardState {
     listings: AppStoreListing[];
     isLoadingListings: boolean;
 
+    // Contracts (for consent flow)
+    contracts: ConsentFlowContractDetails[];
+    isLoadingContracts: boolean;
+    isCreatingContract: boolean;
+
     // Actions
     initialize: (seed?: string, networkUrl?: string) => Promise<void>;
     disconnect: () => void;
@@ -54,6 +61,17 @@ interface LearnCardState {
     loadAllListings: (status?: AppListingStatus) => Promise<void>;
     adminUpdateStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
     adminUpdatePromotion: (listingId: string, level: PromotionLevel) => Promise<boolean>;
+
+    // Contract actions
+    loadContracts: () => Promise<void>;
+    createContract: (contract: {
+        name: string;
+        subtitle?: string;
+        description?: string;
+        image?: string;
+        contract: ConsentFlowContract;
+        redirectUrl?: string;
+    }) => Promise<string | null>;
 }
 
 export const useLearnCardStore = create<LearnCardState>((set, get) => ({
@@ -68,6 +86,9 @@ export const useLearnCardStore = create<LearnCardState>((set, get) => ({
     isLoadingIntegrations: false,
     listings: [],
     isLoadingListings: false,
+    contracts: [],
+    isLoadingContracts: false,
+    isCreatingContract: false,
 
     // Initialize LearnCard
     initialize: async (seed?: string, networkUrl?: string) => {
@@ -316,6 +337,43 @@ export const useLearnCardStore = create<LearnCardState>((set, get) => ({
         } catch (error) {
             console.error('Failed to update promotion level:', error);
             return false;
+        }
+    },
+
+    // Contract actions
+    loadContracts: async () => {
+        const { learnCard } = get();
+        if (!learnCard) return;
+
+        set({ isLoadingContracts: true });
+
+        try {
+            const result = await learnCard.invoke.getContracts();
+            set({ contracts: result?.records ?? [], isLoadingContracts: false });
+        } catch (error) {
+            console.error('Failed to load contracts:', error);
+            set({ contracts: [], isLoadingContracts: false });
+        }
+    },
+
+    createContract: async (contractData) => {
+        const { learnCard } = get();
+        if (!learnCard) return null;
+
+        set({ isCreatingContract: true });
+
+        try {
+            const contractUri = await learnCard.invoke.createContract(contractData);
+
+            // Refresh contracts list
+            await get().loadContracts();
+
+            set({ isCreatingContract: false });
+            return contractUri;
+        } catch (error) {
+            console.error('Failed to create contract:', error);
+            set({ isCreatingContract: false });
+            return null;
         }
     },
 }));
