@@ -115,28 +115,28 @@ jobs:
         run: |
           # Check which packages had version changes in this commit
           CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
-          
+
           if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/brain-service/package.json"; then
             echo "brain_service_changed=true" >> $GITHUB_OUTPUT
             echo "Brain service version changed"
           else
             echo "brain_service_changed=false" >> $GITHUB_OUTPUT
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/learn-cloud-service/package.json"; then
             echo "learn_cloud_changed=true" >> $GITHUB_OUTPUT
             echo "LearnCloud version changed"
           else
             echo "learn_cloud_changed=false" >> $GITHUB_OUTPUT
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/lca-api/package.json"; then
             echo "lca_api_changed=true" >> $GITHUB_OUTPUT
             echo "LCA API version changed"
           else
             echo "lca_api_changed=false" >> $GITHUB_OUTPUT
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "apps/learn-card-app/package.json"; then
             echo "lca_app_changed=true" >> $GITHUB_OUTPUT
             echo "LearnCard App version changed"
@@ -339,7 +339,13 @@ jobs:
   # ============================================================================
   deploy-lca-frontend:
     name: Deploy LearnCard App Frontend
-    needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+    needs:
+      [
+        determine-affected,
+        deploy-brain-service,
+        deploy-learn-cloud,
+        deploy-lca-api,
+      ]
     if: |
       always() &&
       !cancelled() &&
@@ -384,12 +390,14 @@ jobs:
 
       # Deploy to Netlify using CLI (works without auto-deploy enabled)
       - name: Deploy to Netlify
+        env:
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_LCA_SITE_ID }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         run: |
           npx netlify-cli deploy \
             --prod \
             --dir=apps/learn-card-app/build \
-            --site=${{ secrets.NETLIFY_LCA_SITE_ID }} \
-            --auth=${{ secrets.NETLIFY_AUTH_TOKEN }}
+            --filter=learn-card-app
 
       # Deploy OTA update to CapGo
       - name: Upload to CapGo
@@ -501,7 +509,13 @@ jobs:
   # ============================================================================
   publish-npm:
     name: Publish NPM Packages
-    needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+    needs:
+      [
+        determine-affected,
+        deploy-brain-service,
+        deploy-learn-cloud,
+        deploy-lca-api,
+      ]
     if: |
       always() &&
       !cancelled() &&
