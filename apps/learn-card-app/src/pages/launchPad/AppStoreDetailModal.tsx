@@ -13,6 +13,8 @@ import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppS
 import Checkmark from '../../components/svgs/Checkmark';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
+import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
+import { Settings } from 'lucide-react';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -82,9 +84,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         }
     }, [listing.launch_config_json]);
 
-    // Consent flow hooks for withdraw on uninstall
+    // Consent flow hooks for withdraw on uninstall and edit permissions
     const contractUri: string | undefined = launchConfig?.contractUri;
-    const { consentedContract } = useConsentFlowByUri(contractUri);
+    const { contract, consentedContract, hasConsented } = useConsentFlowByUri(contractUri);
     const termsUri = consentedContract?.uri;
     const { mutateAsync: withdrawConsent } = useWithdrawConsent(termsUri ?? '');
 
@@ -175,6 +177,23 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         }
     };
 
+    const handleEditPermissions = () => {
+        if (!contract || !consentedContract?.terms) return;
+
+        closeModal(); // Close options menu
+
+        newModal(
+            <ConsentFlowPrivacyAndData
+                contractDetails={contract}
+                terms={consentedContract.terms}
+                setTerms={() => {}} // Not used for direct updates - ConsentFlowPrivacyAndData uses updateTerms internally
+                isPostConsent={true}
+            />,
+            {},
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
+
     const handleOpenOptionsMenu = () => {
         newModal(
             <ul className="w-full flex flex-col items-center justify-center ion-padding">
@@ -200,6 +219,20 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         </svg>
                     </button>
                 </li>
+
+                {hasConsented && contract && (
+                    <li className="w-full border-b border-grayscale-200">
+                        <button
+                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2"
+                            type="button"
+                            onClick={handleEditPermissions}
+                        >
+                            <p className="text-grayscale-900">Edit Permissions</p>
+                            <Settings className="w-5 h-5 text-grayscale-600" />
+                        </button>
+                    </li>
+                )}
+
                 <li className="w-full">
                     <button
                         className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2"
