@@ -18,6 +18,8 @@ import X from 'learn-card-base/svgs/X';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
 import { SwitcherStepEnum } from 'apps/learn-card-app/src/components/learncard/switcher.helpers';
+import FamilyBoostPreviewWrapper from 'apps/learn-card-app/src/components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
+import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
 import {
     LearnCardRolesEnum,
     LearnCardRoles,
@@ -29,6 +31,8 @@ import {
     ToastTypeEnum,
     BoostCategoryOptionsEnum,
     BoostUserTypeEnum,
+    useGetCredentialList,
+    CredentialCategoryEnum,
 } from 'learn-card-base';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 
@@ -70,11 +74,16 @@ const ActionButton: React.FC<{
     label: string;
     bg: string;
     to?: string;
-}> = ({ label, bg, to }) => {
+    onClick?: () => void;
+}> = ({ label, bg, to, onClick }) => {
     const history = useHistory();
     const { newModal, closeModal, closeAllModals } = useModal();
 
     const handleClick = () => {
+        if (onClick) {
+            onClick();
+            return;
+        }
         if (to) {
             history.push(to);
             closeModal();
@@ -168,6 +177,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const { initWallet } = useWallet();
     const { data: lcNetworkProfile } = useGetProfile();
     const { presentToast } = useToast();
+    const { familyCredential } = useGetFamilyCredential();
+    const { data: familyList } = useGetCredentialList(CredentialCategoryEnum.family);
+    const familyUri = (familyList?.pages?.[0]?.records?.[0]?.uri as string) || undefined;
 
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
 
@@ -228,7 +240,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         ],
     };
 
-    const actions = RoleActions[(role ?? LearnCardRolesEnum.learner) as LearnCardRolesEnum] ?? [];
+    let actions = RoleActions[(role ?? LearnCardRolesEnum.learner) as LearnCardRolesEnum] ?? [];
+    if (role === LearnCardRolesEnum.guardian) {
+        if (familyCredential) {
+            actions = ['View Family', ...actions.filter(a => a !== 'Create Family')];
+        } else {
+            actions = actions.filter(a => a !== 'View Family');
+        }
+    }
     const bgColors = [
         'bg-[#7DE3F6]',
         'bg-[#6E8BFF]',
@@ -311,6 +330,21 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         key={`${label}-${i}`}
                         label={label}
                         bg={bgColors[i % bgColors.length]}
+                        onClick={
+                            label === 'View Family' && familyUri
+                                ? () => {
+                                      closeModal();
+                                      newModal(
+                                          <FamilyBoostPreviewWrapper uri={familyUri} />,
+                                          {},
+                                          {
+                                              desktop: ModalTypes.FullScreen,
+                                              mobile: ModalTypes.FullScreen,
+                                          }
+                                      );
+                                  }
+                                : undefined
+                        }
                     />
                 ))}
             </div>
