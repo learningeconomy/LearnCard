@@ -2,13 +2,14 @@ import React, { useMemo } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import { IonItem, IonSpinner } from '@ionic/react';
-import { useModal, ModalTypes } from 'learn-card-base';
+import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
 import AppStoreDetailModal from './AppStoreDetailModal';
 import { EmbedIframeModal } from './EmbedIframeModal';
+import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -23,7 +24,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     isInstalledLoading = false,
     onInstallSuccess,
 }) => {
-    console.log("Listing", listing)
+
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.launchPad);
 
@@ -41,6 +42,12 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
         }
     }, [listing.launch_config_json]);
 
+    // Consent flow hooks for redirect on launch
+    const contractUri: string | undefined = launchConfig?.contractUri;
+    const { contract, hasConsented } = useConsentFlowByUri(contractUri);
+
+    const { initWallet } = useWallet();
+
     const handleOpenDetail = () => {
         newModal(
             <AppStoreDetailModal
@@ -51,7 +58,49 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
         );
     };
 
-    const handleLaunch = () => {
+    const handleLaunch = async () => {
+        // For consent flow apps, redirect with did and delegate VP
+        if (hasConsented && contract) {
+            // Prefer app listing URL, then contract redirectUrl
+            const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
+
+            if (redirectUrl) {
+                const wallet = await initWallet();
+                const urlObj = new URL(redirectUrl);
+
+                // Add user's did to redirect url
+                urlObj.searchParams.set('did', wallet.id.did());
+
+                // Add delegate credential VP if contract has an owner
+                if (contract.owner?.did) {
+                    const unsignedDelegateCredential = wallet.invoke.newCredential({
+                        type: 'delegate',
+                        subject: contract.owner.did,
+                        access: ['read', 'write'],
+                    });
+
+                    const delegateCredential = await wallet.invoke.issueCredential(
+                        unsignedDelegateCredential
+                    );
+
+                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
+                        delegateCredential
+                    );
+
+                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                        proofPurpose: 'authentication',
+                        proofFormat: 'jwt',
+                    })) as any as string;
+
+                    urlObj.searchParams.set('vp', vp);
+                }
+
+                window.open(urlObj.toString(), '_blank');
+                return;
+            }
+        }
+
+        // Default launch behavior
         if (listing.launch_type === 'EMBEDDED_IFRAME' && launchConfig.url) {
             newModal(
                 <EmbedIframeModal

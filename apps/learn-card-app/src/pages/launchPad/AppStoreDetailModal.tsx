@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
-import { useModal, ModalTypes, useConfirmation, useWithdrawConsent } from 'learn-card-base';
+import { useModal, ModalTypes, useConfirmation, useWithdrawConsent, useWallet } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
@@ -89,6 +89,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const { contract, consentedContract, hasConsented } = useConsentFlowByUri(contractUri);
     const termsUri = consentedContract?.uri;
     const { mutateAsync: withdrawConsent } = useWithdrawConsent(termsUri ?? '');
+
+    const { initWallet } = useWallet();
 
     const doInstall = async () => {
         setIsProcessing(true);
@@ -252,9 +254,51 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         );
     };
 
-    const handleLaunch = () => {
-        if (listing.launch_type === 'EMBEDDED_IFRAME' && launchConfig.url) {
+    const handleLaunch = async () => {
+        // For consent flow apps, redirect with did and delegate VP
+        if (hasConsented && contract) {
+            // Prefer app listing URL, then contract redirectUrl
+            console.log("Launch Config", launchConfig);
+            const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
 
+            if (redirectUrl) {
+                const wallet = await initWallet();
+                const urlObj = new URL(redirectUrl);
+
+                // Add user's did to redirect url
+                urlObj.searchParams.set('did', wallet.id.did());
+
+                // Add delegate credential VP if contract has an owner
+                if (contract.owner?.did) {
+                    const unsignedDelegateCredential = wallet.invoke.newCredential({
+                        type: 'delegate',
+                        subject: contract.owner.did,
+                        access: ['read', 'write'],
+                    });
+
+                    const delegateCredential = await wallet.invoke.issueCredential(
+                        unsignedDelegateCredential
+                    );
+
+                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
+                        delegateCredential
+                    );
+
+                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                        proofPurpose: 'authentication',
+                        proofFormat: 'jwt',
+                    })) as any as string;
+
+                    urlObj.searchParams.set('vp', vp);
+                }
+
+                window.open(urlObj.toString(), '_blank');
+                return;
+            }
+        }
+
+        // Default launch behavior for non-consent-flow apps
+        if (listing.launch_type === 'EMBEDDED_IFRAME' && launchConfig.url) {
             replaceModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
@@ -274,7 +318,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const canLaunch =
         listing.launch_type === 'EMBEDDED_IFRAME' ||
         listing.launch_type === 'DIRECT_LINK' ||
-        listing.launch_type === 'SECOND_SCREEN';
+        listing.launch_type === 'SECOND_SCREEN' ||
+        listing.launch_type === 'CONSENT_REDIRECT';
 
     return (
         <IonPage className="h-full w-full">
