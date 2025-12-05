@@ -117,11 +117,31 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     );
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
 
-    // Contract permissions display
-    const readCategories = contractDetails?.contract?.read?.credentials?.categories || {};
-    const writeCategories = contractDetails?.contract?.write?.credentials?.categories || {};
-    const hasReadCategories = Object.keys(readCategories).length > 0;
-    const hasWriteCategories = Object.keys(writeCategories).length > 0;
+    // Contract permissions display - show what the user has actually accepted in their terms
+    // Filter to only show categories where sharing is enabled
+    const acceptedReadCategories = terms?.read?.credentials?.categories
+        ? Object.entries(terms.read.credentials.categories)
+            .filter(([_, config]) => {
+                const cfg = config as { sharing?: boolean };
+                return cfg.sharing !== false;
+            })
+            .map(([category]) => category)
+        : [];
+
+    const acceptedWriteCategories = terms?.write?.credentials?.categories
+        ? Object.entries(terms.write.credentials.categories)
+            .filter(([_, config]) => {
+                // Write categories can be boolean or object with sharing property
+                if (typeof config === 'boolean') return config;
+                const cfg = config as { sharing?: boolean };
+                return cfg.sharing !== false;
+            })
+            .map(([category]) => category)
+        : [];
+
+    const hasReadCategories = acceptedReadCategories.length > 0;
+    const hasWriteCategories = acceptedWriteCategories.length > 0;
+    const hasAnyDataPermissions = contractUri && contractDetails && (hasReadCategories || hasWriteCategories);
 
     const openPrivacyAndData = () => {
         if (!contractDetails || !terms) return;
@@ -264,7 +284,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                 })}
                             </ul>
                         </div>
-                    ) : (
+                    ) : !hasAnyDataPermissions ? (
                         <div className="bg-green-50 rounded-lg p-4 w-full text-left">
                             <div className="flex items-center text-sm text-green-800">
                                 <svg
@@ -284,7 +304,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                 <span>This app doesn't require any special permissions.</span>
                             </div>
                         </div>
-                    )}
+                    ) : null}
 
                     {/* Consent Flow Contract Permissions */}
                     {contractUri && (
@@ -320,7 +340,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
                                         {hasReadCategories ? (
                                             <div className="flex flex-wrap gap-1.5">
-                                                {Object.keys(readCategories).map(category => {
+                                                {acceptedReadCategories.map(category => {
                                                     const metadata = contractCategoryNameToCategoryMetadata(category);
                                                     return (
                                                         <span
@@ -349,7 +369,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
                                         {hasWriteCategories ? (
                                             <div className="flex flex-wrap gap-1.5">
-                                                {Object.keys(writeCategories).map(category => {
+                                                {acceptedWriteCategories.map(category => {
                                                     const metadata = contractCategoryNameToCategoryMetadata(category);
                                                     return (
                                                         <span
