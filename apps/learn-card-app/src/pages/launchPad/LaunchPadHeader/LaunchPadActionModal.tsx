@@ -4,6 +4,8 @@ import { ModalTypes, useModal } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
 import Rocket from 'learn-card-base/svgs/Rocket';
+import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
+import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
 import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
 import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
@@ -60,17 +62,49 @@ const ActionButton: React.FC<{
     to?: string;
 }> = ({ label, bg, to }) => {
     const history = useHistory();
-    const { closeModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
+    const { newModal, closeModal } = useModal();
+
+    const handleClick = () => {
+        if (to) {
+            history.push(to);
+            closeModal();
+            return;
+        }
+
+        switch (label) {
+            case 'Build My LearnCard':
+                closeModal();
+                newModal(
+                    <CheckListContainer />,
+                    { className: '!bg-transparent' },
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                );
+                return;
+            case 'Understand My Skills':
+                history.push('/ai/insights');
+                closeModal();
+                return;
+            case 'Personalize AI Sessions':
+                closeModal();
+                newModal(
+                    <AiPassportPersonalizationContainer />,
+                    { className: '!bg-transparent' },
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                );
+                return;
+            case 'Start AI Tutoring Session':
+                history.push('/ai/topics');
+                closeModal();
+                return;
+            default:
+                return;
+        }
+    };
 
     return (
         <button
             type="button"
-            onClick={() => {
-                if (to) {
-                    history.push(to);
-                    closeModal();
-                }
-            }}
+            onClick={handleClick}
             className={`${bg} w-full text-lef flex px-5 py-4  text-[18px] font-poppins font-semibold text-grayscale-900 rounded-[20px] border border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
         >
             <div className="flex items-center justify-center">
@@ -106,7 +140,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Personalize AI Sessions',
             'Start AI Tutoring Session',
             'Share Insights with Teacher',
-            'Claim Credential',
+            // 'Claim Credential',
         ],
         [LearnCardRolesEnum.teacher]: [
             'View Learner Insights',
