@@ -14,6 +14,7 @@ import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 
 import { IonPage, IonContent, IonList } from '@ionic/react';
 import LaunchPadHeader from './LaunchPadHeader/LaunchPadHeader';
+import LaunchPadActionModal from './LaunchPadHeader/LaunchPadActionModal';
 import LaunchPadBecomeAnApp from './LaunchPadBecomeAnApp';
 import LaunchPadAppListItem from './LaunchPadAppListItem';
 import LaunchPadContractListItem from './LaunchPadContractListItem';
@@ -23,6 +24,7 @@ import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadA
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 
 import { aiPassportApps } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
+import { useModal, ModalTypes, useIsCurrentUserLCNUser } from 'learn-card-base';
 import {
     LaunchPadFilterOptionsEnum,
     LaunchPadSortOptionsEnum,
@@ -37,8 +39,20 @@ const LaunchPad: React.FC = () => {
     const flags = useFlags();
     const history = useHistory();
     const { search } = useLocation();
-    const { connectTo, challenge, uri, returnTo, suppressContractModal, embedUrl, appName, appImage } =
-        queryString.parse(search);
+    const {
+        connectTo,
+        challenge,
+        uri,
+        returnTo,
+        suppressContractModal,
+        skipLPAction,
+        boostUri,
+        vc_request_url,
+        claim,
+        embedUrl,
+        appName,
+        appImage,
+    } = queryString.parse(search);
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
     const embedUrlParam = Array.isArray(embedUrl) ? embedUrl[0] ?? '' : embedUrl ?? '';
     const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
@@ -52,6 +66,9 @@ const LaunchPad: React.FC = () => {
         LaunchPadSortOptionsEnum.featuredBy
     );
     const [searchInput, setSearchInput] = useState<string>('');
+
+    const { newModal } = useModal({ desktop: ModalTypes.Freeform, mobile: ModalTypes.Freeform });
+    const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
 
     const connectToProfileId = (!Array.isArray(connectTo) ? connectTo : undefined) || '';
     const connectChallenge = (!Array.isArray(challenge) ? challenge : undefined) || '';
@@ -90,6 +107,60 @@ const LaunchPad: React.FC = () => {
             openConsentFlowModal();
         }
     }, [contractDetails, suppressContractModal, consentedContractLoading]);
+
+    useEffect(() => {
+        if (isNetworkUserLoading) return;
+        if (!isNetworkUser) return;
+        if (consentedContractLoading) return;
+
+        const skipParam = Array.isArray(skipLPAction) ? skipLPAction[0] : skipLPAction;
+        const shouldSkip =
+            skipParam === '1' ||
+            (typeof skipParam === 'string' && skipParam.toLowerCase() === 'true');
+        if (shouldSkip) return;
+
+        if (connectToProfileId && connectChallenge) return;
+
+        if (contractDetails && !hasConsented && !suppressContractModal) return;
+
+        const claimParam = Array.isArray(claim) ? claim[0] : claim;
+        const isClaiming =
+            claimParam === '1' ||
+            (typeof claimParam === 'string' && claimParam.toLowerCase() === 'true');
+        if (isClaiming) return;
+
+        const boostParam = Array.isArray(boostUri) ? boostUri[0] : boostUri;
+        if (boostParam) return;
+
+        const vcReqParam = Array.isArray(vc_request_url) ? vc_request_url[0] : vc_request_url;
+        if (vcReqParam) return;
+
+        const SHOWN_KEY = 'lp_action_shown_after_login';
+        if (sessionStorage.getItem(SHOWN_KEY)) return;
+
+        const id = window.requestAnimationFrame(() => {
+            newModal(<LaunchPadActionModal showFooterNav={true} />, {
+                className:
+                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                sectionClassName: '!max-w-[380px] disable-scrollbars',
+            });
+            sessionStorage.setItem(SHOWN_KEY, '1');
+        });
+
+        return () => cancelAnimationFrame(id);
+    }, [
+        isNetworkUser,
+        isNetworkUserLoading,
+        consentedContractLoading,
+        connectToProfileId,
+        connectChallenge,
+        contractDetails,
+        hasConsented,
+        suppressContractModal,
+        skipLPAction,
+        boostUri,
+        vc_request_url,
+    ]);
 
     let aiApps = flags?.enableLaunchPadUpdates ? aiPassportApps : [];
     let apps = useLaunchPadApps();
@@ -252,18 +323,19 @@ const LaunchPad: React.FC = () => {
                                             );
                                         })}
                                     </IonList>
-                                    {filteredAppsAndContracts.length === 0 && !customAppFromQueryParams && (
-                                        <div className="w-full flex items-center justify-center z-10">
-                                            <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
-                                                <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                                    No results found for{' '}
-                                                    <span className="text-black italic">
-                                                        {searchInput}
-                                                    </span>
-                                                </p>
+                                    {filteredAppsAndContracts.length === 0 &&
+                                        !customAppFromQueryParams && (
+                                            <div className="w-full flex items-center justify-center z-10">
+                                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
+                                                    <p className="text-grayscale-800 text-base font-normal font-notoSans">
+                                                        No results found for{' '}
+                                                        <span className="text-black italic">
+                                                            {searchInput}
+                                                        </span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
                                 </>
                             ) : (
                                 <IonList

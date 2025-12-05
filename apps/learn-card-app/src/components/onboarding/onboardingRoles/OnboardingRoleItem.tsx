@@ -2,6 +2,7 @@ import React from 'react';
 
 import { LearnCardRolesEnum, LearnCardRoleType } from '../onboarding.helpers';
 import Pencil from '../../svgs/Pencil';
+import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 type OnboardingRoleItemProps = {
     role: LearnCardRolesEnum | null;
@@ -43,7 +44,7 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
                     </p>
                 )}
             </div>
-            {handleEdit && (
+            {handleEdit ? (
                 <button
                     type="button"
                     onClick={e => {
@@ -53,6 +54,8 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
                 >
                     <Pencil className="w-[24px] h-[24px] text-grayscale-900" strokeWidth="2" />
                 </button>
+            ) : (
+                isSelected && <Checkmark className="w-[24px] h-[24px] text-[#2A2F55]" />
             )}
         </li>
     );
