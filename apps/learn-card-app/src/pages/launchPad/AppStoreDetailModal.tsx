@@ -97,6 +97,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const handleInstall = () => {
         // Get permissions from launch config
         const permissions: string[] = launchConfig?.permissions || [];
+        const contractUri: string | undefined = launchConfig?.contractUri;
 
         // Show consent modal with permissions
         newModal(
@@ -104,6 +105,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 appName={listing.display_name}
                 appIcon={listing.icon_url}
                 permissions={permissions}
+                contractUri={contractUri}
                 onAccept={() => {
                     closeModal();
                     doInstall();

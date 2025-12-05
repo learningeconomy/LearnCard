@@ -105,12 +105,14 @@ const AppListingPage: React.FC = () => {
         }
 
         const permissions: string[] = launchConfig?.permissions || [];
+        const contractUri: string | undefined = launchConfig?.contractUri;
 
         newModal(
             <AppInstallConsentModal
                 appName={listing.display_name}
                 appIcon={listing.icon_url}
                 permissions={permissions}
+                contractUri={contractUri}
                 onAccept={() => {
                     closeModal();
                     doInstall();

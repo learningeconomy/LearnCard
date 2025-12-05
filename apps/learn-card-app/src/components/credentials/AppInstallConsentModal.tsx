@@ -1,4 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useImmer } from 'use-immer';
+import { useQuery } from '@tanstack/react-query';
+import { BookOpen, PenTool, Settings, Loader2 } from 'lucide-react';
+
+import {
+    useModal,
+    useWallet,
+    useCurrentUser,
+    useConsentToContract,
+    useSyncConsentFlow,
+    contractCategoryNameToCategoryMetadata,
+    ModalTypes,
+} from 'learn-card-base';
+
+import type { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
+import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
 
 // Permission types matching the app-store-portal
 type AppPermission =
@@ -45,6 +62,7 @@ type AppInstallConsentModalProps = {
     appName: string;
     appIcon?: string;
     permissions: string[];
+    contractUri?: string;
     onAccept: () => void;
     onReject: () => void;
 };
@@ -53,13 +71,96 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     appName,
     appIcon,
     permissions,
+    contractUri,
     onAccept,
     onReject,
 }) => {
+    const { newModal } = useModal();
+    const { initWallet } = useWallet();
+    const currentUser = useCurrentUser();
+    const [isConsenting, setIsConsenting] = useState(false);
+
     // Filter to only known permissions
     const validPermissions = permissions.filter(
         (p): p is AppPermission => p in PERMISSION_INFO
     );
+
+    // Fetch contract details if contractUri is provided
+    const { data: contractDetails, isLoading: isLoadingContract } = useQuery<ConsentFlowContractDetails | null>({
+        queryKey: ['getContract', contractUri],
+        queryFn: async () => {
+            if (!contractUri) return null;
+            try {
+                const wallet = await initWallet();
+                return await wallet.invoke.getContract(contractUri);
+            } catch (error) {
+                console.error('Failed to fetch contract:', error);
+                return null;
+            }
+        },
+        enabled: !!contractUri,
+    });
+
+    // Initialize terms when contract is loaded
+    const [terms, setTerms] = useImmer<ConsentFlowTerms | null>(null);
+
+    useEffect(() => {
+        if (contractDetails?.contract && currentUser) {
+            setTerms(getMinimumTermsForContract(contractDetails.contract, currentUser));
+        }
+    }, [contractDetails, currentUser]);
+
+    // Consent mutation
+    const { mutateAsync: consentToContract } = useConsentToContract(
+        contractUri ?? '',
+        contractDetails?.owner?.did ?? ''
+    );
+    const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
+
+    // Contract permissions display
+    const readCategories = contractDetails?.contract?.read?.credentials?.categories || {};
+    const writeCategories = contractDetails?.contract?.write?.credentials?.categories || {};
+    const hasReadCategories = Object.keys(readCategories).length > 0;
+    const hasWriteCategories = Object.keys(writeCategories).length > 0;
+
+    const openPrivacyAndData = () => {
+        if (!contractDetails || !terms) return;
+
+        newModal(
+            <ConsentFlowPrivacyAndData
+                contractDetails={contractDetails}
+                terms={terms}
+                setTerms={setTerms as any}
+            />,
+            {},
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
+
+    const handleInstall = async () => {
+        // If there's a contract, consent to it first
+        if (contractUri && contractDetails && terms) {
+            setIsConsenting(true);
+            try {
+                await consentToContract({
+                    terms,
+                    expiresAt: undefined,
+                    oneTime: false,
+                });
+
+                // Sync any auto-boost credentials
+                fetchNewContractCredentials();
+            } catch (error) {
+                console.error('Failed to consent to contract:', error);
+                setIsConsenting(false);
+                return;
+            }
+            setIsConsenting(false);
+        }
+
+        // Then proceed with regular app install
+        onAccept();
+    };
 
     return (
         <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
@@ -185,6 +286,99 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                         </div>
                     )}
 
+                    {/* Consent Flow Contract Permissions */}
+                    {contractUri && (
+                        <div className="w-full">
+                            {isLoadingContract ? (
+                                <div className="bg-grayscale-50 rounded-lg p-4 flex items-center justify-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin text-grayscale-400" />
+                                    <span className="text-sm text-grayscale-500">Loading data permissions...</span>
+                                </div>
+                            ) : contractDetails ? (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-semibold text-grayscale-900">
+                                            Data Access Permissions
+                                        </p>
+
+                                        <button
+                                            onClick={openPrivacyAndData}
+                                            disabled={!terms}
+                                            className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium disabled:opacity-50"
+                                        >
+                                            <Settings className="w-3.5 h-3.5" />
+                                            Edit
+                                        </button>
+                                    </div>
+
+                                    {/* Read Permissions */}
+                                    <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3 text-left">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <BookOpen className="w-4 h-4 text-cyan-600" />
+                                            <span className="text-xs font-medium text-cyan-700">Read Access</span>
+                                        </div>
+
+                                        {hasReadCategories ? (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {Object.keys(readCategories).map(category => {
+                                                    const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                    return (
+                                                        <span
+                                                            key={category}
+                                                            className="inline-flex items-center gap-1 px-2 py-1 bg-white text-cyan-700 rounded-full text-xs font-medium border border-cyan-200"
+                                                        >
+                                                            {metadata?.IconWithShape && (
+                                                                <metadata.IconWithShape className="w-3.5 h-3.5" />
+                                                            )}
+                                                            {metadata?.title || category}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-cyan-600 italic">No read permissions requested</p>
+                                        )}
+                                    </div>
+
+                                    {/* Write Permissions */}
+                                    <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-left">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <PenTool className="w-4 h-4 text-emerald-600" />
+                                            <span className="text-xs font-medium text-emerald-700">Write Access</span>
+                                        </div>
+
+                                        {hasWriteCategories ? (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {Object.keys(writeCategories).map(category => {
+                                                    const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                    return (
+                                                        <span
+                                                            key={category}
+                                                            className="inline-flex items-center gap-1 px-2 py-1 bg-white text-emerald-700 rounded-full text-xs font-medium border border-emerald-200"
+                                                        >
+                                                            {metadata?.IconWithShape && (
+                                                                <metadata.IconWithShape className="w-3.5 h-3.5" />
+                                                            )}
+                                                            {metadata?.title || category}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-emerald-600 italic">No write permissions requested</p>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-amber-50 rounded-lg p-3 text-left">
+                                    <p className="text-xs text-amber-700">
+                                        Unable to load data permissions for this app.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Privacy Note */}
                     <p className="text-xs text-grayscale-500 italic">
                         You can uninstall this app at any time from your installed apps.
@@ -203,16 +397,19 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
             >
                 <button
                     onClick={onReject}
-                    className="px-8 py-3 text-lg font-semibold text-grayscale-700 bg-grayscale-100 rounded-full hover:bg-grayscale-200 transition-colors"
+                    disabled={isConsenting}
+                    className="px-8 py-3 text-lg font-semibold text-grayscale-700 bg-grayscale-100 rounded-full hover:bg-grayscale-200 transition-colors disabled:opacity-50"
                 >
                     Cancel
                 </button>
 
                 <button
-                    onClick={onAccept}
-                    className="px-8 py-3 text-lg font-semibold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors"
+                    onClick={handleInstall}
+                    disabled={isConsenting || (!!contractUri && isLoadingContract)}
+                    className="px-8 py-3 text-lg font-semibold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                    Install
+                    {isConsenting && <Loader2 className="w-5 h-5 animate-spin" />}
+                    {isConsenting ? 'Connecting...' : 'Install'}
                 </button>
             </div>
         </div>
