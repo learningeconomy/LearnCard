@@ -1115,6 +1115,15 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            sendAiInsightShareRequest: async (_learnCard, targetProfileId, shareLink) => {
+                await ensureUser();
+
+                return client.contracts.sendAiInsightShareRequest.mutate({
+                    targetProfileId,
+                    shareLink,
+                });
+            },
+
             getContractSentRequests: async (_learnCard, contractUri) => {
                 await ensureUser();
 

@@ -1747,6 +1747,64 @@ export const contractsRouter = t.router({
             return true;
         }),
 
+    sendAiInsightShareRequest: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/ai-insights/share-request',
+                tags: ['Contracts'],
+                summary: 'AI Insights, consent flow share-notifcation request',
+                description: 'Sends the targeted user an AI insights share notification',
+            },
+        })
+        .input(
+            z.object({
+                targetProfileId: z.string(),
+                shareLink: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { targetProfileId, shareLink } = input;
+
+            if (!profile) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Must be logged in to send a share request',
+                });
+            }
+
+            const targetProfile = await getProfileByProfileId(targetProfileId);
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Target profile not found.',
+                });
+            }
+
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
+                from: profile,
+                to: targetProfile as ProfileType,
+                message: {
+                    title: 'AI Insights Request',
+                    body: `${profile?.displayName} would like to share their insights with ${targetProfile?.displayName}.`,
+                },
+                data: {
+                    metadata: {
+                        type: 'AI Insight',
+                        subtype: 'share',
+                        shareLink,
+                    },
+                },
+            });
+
+            return true;
+        }),
+
     getContractSentRequests: profileRoute
         .meta({
             openapi: {

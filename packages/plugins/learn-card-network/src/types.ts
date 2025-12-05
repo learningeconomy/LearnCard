@@ -472,6 +472,8 @@ export type LearnCardNetworkPluginMethods = {
         shareLink: string
     ) => Promise<boolean>;
 
+    sendAiInsightShareRequest: (targetProfileId: string, shareLink: string) => Promise<boolean>;
+
     getContractSentRequests: (contractUri: string) => Promise<
         {
             profile: LCNProfile;
