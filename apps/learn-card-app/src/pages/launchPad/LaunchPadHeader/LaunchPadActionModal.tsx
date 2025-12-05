@@ -16,6 +16,8 @@ import CaretDown from 'learn-card-base/svgs/CaretDown';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 import X from 'learn-card-base/svgs/X';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
+import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
+import { SwitcherStepEnum } from 'apps/learn-card-app/src/components/learncard/switcher.helpers';
 import {
     LearnCardRolesEnum,
     LearnCardRoles,
@@ -78,6 +80,26 @@ const ActionButton: React.FC<{
                     <CheckListContainer />,
                     { className: '!bg-transparent' },
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                );
+                return;
+            case 'Create Family':
+                history.push('/families?createFamily=1');
+                closeModal();
+                return;
+            case 'Switch Child':
+                closeModal();
+                newModal(
+                    <AccountSwitcherModal />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                );
+                return;
+            case 'Add Child':
+                closeModal();
+                newModal(
+                    <AccountSwitcherModal initialStep={SwitcherStepEnum.createChildAccount} />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
             case 'Understand My Skills':

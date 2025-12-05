@@ -43,6 +43,7 @@ type AccountSwitcherModalProps = {
 
     showStepsFooter?: boolean;
     containerClassName?: string;
+    initialStep?: string;
 };
 
 const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
@@ -60,6 +61,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
 
     showStepsFooter = false,
     containerClassName = '',
+    initialStep,
 }) => {
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -68,7 +70,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
         mobile: ModalTypes.FullScreen,
     });
 
-    const [activeStep, setActiveStep] = useState(SwitcherStepEnum.selectProfile);
+    const [activeStep, setActiveStep] = useState(initialStep ?? SwitcherStepEnum.selectProfile);
 
     const { mutate: createChildAccount } = useCreateChildAccount();
 
