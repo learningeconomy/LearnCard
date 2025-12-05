@@ -125,7 +125,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
     return (
         <div className="w-full max-w-lg mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 mt-6">
                 <h2 className="text-xl font-semibold text-gray-900">Create Consent Contract</h2>
 
                 <button
@@ -136,7 +136,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                 </button>
             </div>
 
-            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="space-y-6">
                 {/* Image Upload */}
                 <div className="flex items-start gap-4">
                     <div className="relative">
