@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { AlertCircle, Code, Play } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { AlertCircle, Code, Play, BookOpen, PenTool } from 'lucide-react';
 
 import type { AppStoreListingCreate, LaunchConfig, AppPermission } from '../types';
+import type { ConsentFlowContractDetails } from '@learncard/types';
 import { PERMISSION_OPTIONS } from '../types';
 import { ConsentFlowContractSelector } from './ConsentFlowContractSelector';
+import { contractCategoryNameToCategoryMetadata } from 'learn-card-base';
 
 interface LaunchConfigStepProps {
     data: Partial<AppStoreListingCreate>;
@@ -13,6 +15,8 @@ interface LaunchConfigStepProps {
 }
 
 export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChange, errors, onPreview }) => {
+    const [selectedContract, setSelectedContract] = useState<ConsentFlowContractDetails | null>(null);
+
     const [config, setConfig] = useState<LaunchConfig>(() => {
         try {
             return data.launch_config_json ? JSON.parse(data.launch_config_json) : {};
@@ -128,11 +132,17 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                 );
 
             case 'CONSENT_REDIRECT':
+                const readCategories = selectedContract?.contract?.read?.credentials?.categories || {};
+                const writeCategories = selectedContract?.contract?.write?.credentials?.categories || {};
+                const hasReadCategories = Object.keys(readCategories).length > 0;
+                const hasWriteCategories = Object.keys(writeCategories).length > 0;
+
                 return (
                     <div className="space-y-5">
                         <ConsentFlowContractSelector
                             value={config.contractUri || ''}
                             onChange={(uri) => updateConfig({ contractUri: uri })}
+                            onContractChange={setSelectedContract}
                             error={errors.contractUri}
                         />
 
@@ -158,41 +168,80 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                             </p>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Requested Scopes
-                            </label>
+                        {/* Contract Permissions Display */}
+                        {selectedContract && (
+                            <div className="space-y-4">
+                                <label className="block text-sm font-medium text-gray-600">
+                                    Contract Permissions
+                                </label>
 
-                            <p className="text-xs text-gray-400 mb-2">
-                                Additional OAuth-style scopes your app requests
-                            </p>
+                                {/* Read Permissions */}
+                                <div className="bg-cyan-50 border border-cyan-100 rounded-xl p-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <BookOpen className="w-4 h-4 text-cyan-600" />
+                                        <span className="text-sm font-medium text-cyan-700">Read Access</span>
+                                    </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                                {['profile:read', 'credentials:read', 'credentials:write', 'connections:read'].map(
-                                    scope => (
-                                        <label
-                                            key={scope}
-                                            className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={config.scopes?.includes(scope) || false}
-                                                onChange={e => {
-                                                    const current = config.scopes || [];
-                                                    const newScopes = e.target.checked
-                                                        ? [...current, scope]
-                                                        : current.filter(s => s !== scope);
-                                                    updateConfig({ scopes: newScopes });
-                                                }}
-                                                className="w-4 h-4 text-cyan-600 rounded"
-                                            />
+                                    {hasReadCategories ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.keys(readCategories).map(category => {
+                                                const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                return (
+                                                    <span
+                                                        key={category}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-cyan-700 rounded-full text-xs font-medium border border-cyan-200"
+                                                    >
+                                                        {metadata?.IconWithShape && (
+                                                            <metadata.IconWithShape className="w-4 h-4" />
+                                                        )}
+                                                        {metadata?.title || category}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-cyan-600 italic">No read permissions requested</p>
+                                    )}
+                                </div>
 
-                                            <span className="text-sm text-gray-600">{scope}</span>
-                                        </label>
-                                    )
-                                )}
+                                {/* Write Permissions */}
+                                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <PenTool className="w-4 h-4 text-emerald-600" />
+                                        <span className="text-sm font-medium text-emerald-700">Write Access</span>
+                                    </div>
+
+                                    {hasWriteCategories ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.keys(writeCategories).map(category => {
+                                                const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                return (
+                                                    <span
+                                                        key={category}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-emerald-700 rounded-full text-xs font-medium border border-emerald-200"
+                                                    >
+                                                        {metadata?.IconWithShape && (
+                                                            <metadata.IconWithShape className="w-4 h-4" />
+                                                        )}
+                                                        {metadata?.title || category}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-emerald-600 italic">No write permissions requested</p>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {!selectedContract && config.contractUri && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                <p className="text-sm text-gray-500 italic">
+                                    Select a contract to view its permissions
+                                </p>
+                            </div>
+                        )}
                     </div>
                 );
 

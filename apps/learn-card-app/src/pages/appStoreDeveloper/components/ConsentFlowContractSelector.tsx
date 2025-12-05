@@ -1,21 +1,25 @@
-import React, { useState, useCallback } from 'react';
-import { FileText, Plus, ChevronDown, Check } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { FileText, Plus, ChevronDown, Check, Eye } from 'lucide-react';
 import { IonSpinner } from '@ionic/react';
 
 import { useModal, useGetContracts, ModalTypes } from 'learn-card-base';
 import type { ConsentFlowContractDetails } from '@learncard/types';
 
 import CreateConsentContractModal from './CreateConsentContractModal';
+import FullScreenConsentFlow from '../../consentFlow/FullScreenConsentFlow';
+import FullScreenGameFlow from '../../consentFlow/GameFlow/FullScreenGameFlow';
 
 interface ConsentFlowContractSelectorProps {
     value: string;
     onChange: (uri: string) => void;
+    onContractChange?: (contract: ConsentFlowContractDetails | null) => void;
     error?: string;
 }
 
 export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorProps> = ({
     value,
     onChange,
+    onContractChange,
     error,
 }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Center, mobile: ModalTypes.Center });
@@ -30,6 +34,29 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
     const [isOpen, setIsOpen] = useState(false);
 
     const selectedContract = contracts.find(c => c.uri === value);
+
+    // Notify parent when selected contract changes
+    useEffect(() => {
+        onContractChange?.(selectedContract ?? null);
+    }, [selectedContract, onContractChange]);
+
+    const handlePreview = useCallback(() => {
+        if (!selectedContract) return;
+
+        if (selectedContract.needsGuardianConsent) {
+            newModal(
+                <FullScreenGameFlow contractDetails={selectedContract} isPreview />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        } else {
+            newModal(
+                <FullScreenConsentFlow contractDetails={selectedContract} isPreview />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        }
+    }, [selectedContract, newModal]);
 
     const handleSelect = (contract: ConsentFlowContractDetails) => {
         onChange(contract.uri);
@@ -55,14 +82,15 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
         <div className="relative">
             <label className="block text-sm font-medium text-gray-600 mb-1">Contract URI</label>
 
-            {/* Custom dropdown trigger */}
-            <button
-                type="button"
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-xl text-left transition-colors ${
-                    error ? 'border-red-300' : 'border-gray-200 hover:border-gray-300'
-                }`}
-            >
+            <div className="flex gap-2">
+                {/* Custom dropdown trigger */}
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={`flex-1 flex items-center justify-between px-4 py-3 bg-white border rounded-xl text-left transition-colors ${
+                        error ? 'border-red-300' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                     {isLoadingContracts ? (
                         <>
@@ -111,11 +139,24 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                 </div>
 
                 <ChevronDown
-                    className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${
-                        isOpen ? 'rotate-180' : ''
-                    }`}
-                />
-            </button>
+                        className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${
+                            isOpen ? 'rotate-180' : ''
+                        }`}
+                    />
+                </button>
+
+                {/* Preview button */}
+                <button
+                    type="button"
+                    onClick={handlePreview}
+                    disabled={!selectedContract}
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Preview contract"
+                >
+                    <Eye className="w-4 h-4" />
+                    <span className="hidden sm:inline">Preview</span>
+                </button>
+            </div>
 
             {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
 
