@@ -20,6 +20,13 @@ import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/A
 import { SwitcherStepEnum } from 'apps/learn-card-app/src/components/learncard/switcher.helpers';
 import FamilyBoostPreviewWrapper from 'apps/learn-card-app/src/components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
 import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
+import AdminToolsOptionsContainer from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/AdminToolsOptionsContainer';
+import {
+    adminToolOptions,
+    AdminToolOptionsEnum,
+} from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/admin-tools.helpers';
+import AdminToolsCreateProfileSimple from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
+import useBoostModal from 'apps/learn-card-app/src/components/boost/hooks/useBoostModal';
 import {
     LearnCardRolesEnum,
     LearnCardRoles,
@@ -78,6 +85,7 @@ const ActionButton: React.FC<{
 }> = ({ label, bg, to, onClick }) => {
     const history = useHistory();
     const { newModal, closeModal, closeAllModals } = useModal();
+    const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
 
     const handleClick = () => {
         if (onClick) {
@@ -136,6 +144,50 @@ const ActionButton: React.FC<{
                     { sectionClassName: '!max-w-[400px]' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
+                return;
+            case 'Import Credentials':
+                closeModal();
+                newModal(
+                    <AdminToolsOptionsContainer
+                        option={
+                            adminToolOptions.find(
+                                option => option.type === AdminToolOptionsEnum.BULK_UPLOAD
+                            )!
+                        }
+                    />,
+                    {},
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                );
+                return;
+            case 'Create Organization':
+                closeModal();
+                newModal(
+                    <AdminToolsCreateProfileSimple profileType="organization" />,
+                    {
+                        sectionClassName: 'flex flex-col items-center justify-center',
+                        className: 'w-full h-full',
+                    },
+                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                );
+                return;
+            case 'Switch Account':
+                closeModal();
+                newModal(
+                    <AccountSwitcherModal
+                        showServiceProfiles
+                        containerClassName="max-h-[65vh]"
+                        showStepsFooter
+                    />,
+                    {
+                        sectionClassName:
+                            '!bg-transparent !border-none !shadow-none !max-w-[400px]',
+                        hideButton: true,
+                    }
+                );
+                return;
+            case 'Create Credential':
+                closeModal();
+                handlePresentBoostModal();
                 return;
             case 'Understand My Skills':
                 history.push('/ai/insights');
@@ -342,6 +394,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                               mobile: ModalTypes.FullScreen,
                                           }
                                       );
+                                      history.push('/families');
                                   }
                                 : undefined
                         }
