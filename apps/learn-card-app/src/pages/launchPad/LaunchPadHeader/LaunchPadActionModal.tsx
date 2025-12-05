@@ -24,9 +24,11 @@ import AdminToolsOptionsContainer from 'apps/learn-card-app/src/pages/adminTools
 import {
     adminToolOptions,
     AdminToolOptionsEnum,
+    developerToolOptions,
 } from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/admin-tools.helpers';
 import AdminToolsCreateProfileSimple from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
 import useBoostModal from 'apps/learn-card-app/src/components/boost/hooks/useBoostModal';
+import { openDeveloperDocs } from 'apps/learn-card-app/src/helpers/externalLinkHelpers';
 import {
     LearnCardRolesEnum,
     LearnCardRoles,
@@ -188,6 +190,66 @@ const ActionButton: React.FC<{
             case 'Create Credential':
                 closeModal();
                 handlePresentBoostModal();
+                return;
+            case 'Create API Token':
+                closeModal();
+                newModal(
+                    <AdminToolsOptionsContainer
+                        option={
+                            developerToolOptions.find(
+                                option => option.type === AdminToolOptionsEnum.API_TOKENS
+                            )!
+                        }
+                    />,
+                    {},
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                );
+                return;
+            case 'Create Signing Authority':
+                closeModal();
+                newModal(
+                    <AdminToolsOptionsContainer
+                        option={
+                            developerToolOptions.find(
+                                option => option.type === AdminToolOptionsEnum.SIGNING_AUTHORITY
+                            )!
+                        }
+                    />,
+                    {},
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                );
+                return;
+            case 'Create ConsentFlow':
+                closeModal();
+                newModal(
+                    <AdminToolsOptionsContainer
+                        option={
+                            adminToolOptions.find(
+                                option => option.type === AdminToolOptionsEnum.CONSENT_FLOW
+                            )!
+                        }
+                    />,
+                    {},
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                );
+                return;
+            case 'Switch Network':
+                closeModal();
+                newModal(
+                    <AdminToolsOptionsContainer
+                        option={
+                            developerToolOptions.find(
+                                option => option.type === AdminToolOptionsEnum.NETWORKS
+                            )!
+                        }
+                    />,
+                    {},
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                );
+                return;
+            case 'Read Docs':
+                openDeveloperDocs();
+                closeModal();
                 return;
             case 'Understand My Skills':
                 history.push('/ai/insights');
