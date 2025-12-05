@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.93.4
+
+### Patch Changes
+
+-   [#865](https://github.com/learningeconomy/LearnCard/pull/865) [`b3ebb76c3672159ba0c5c8127128937bc0aa9c4b`](https://github.com/learningeconomy/LearnCard/commit/b3ebb76c3672159ba0c5c8127128937bc0aa9c4b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Test bump
+
 ## 1.93.3
 
 ### Patch Changes
