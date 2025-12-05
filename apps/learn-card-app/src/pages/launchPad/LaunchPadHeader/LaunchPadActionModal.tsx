@@ -22,7 +22,15 @@ import {
     LearnCardRolesEnum,
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
-import { useWallet, useGetProfile, useToast, ToastTypeEnum } from 'learn-card-base';
+import {
+    useWallet,
+    useGetProfile,
+    useToast,
+    ToastTypeEnum,
+    BoostCategoryOptionsEnum,
+    BoostUserTypeEnum,
+} from 'learn-card-base';
+import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 
 const getIconForActionButton = (label: string) => {
     switch (label) {
@@ -64,7 +72,7 @@ const ActionButton: React.FC<{
     to?: string;
 }> = ({ label, bg, to }) => {
     const history = useHistory();
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModal, closeAllModals } = useModal();
 
     const handleClick = () => {
         if (to) {
@@ -98,6 +106,24 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <AccountSwitcherModal initialStep={SwitcherStepEnum.createChildAccount} />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                );
+                return;
+            case 'Boost Child':
+                closeModal();
+                newModal(
+                    <AccountSwitcherModal
+                        childOnly
+                        handlePlayerSwitchOverride={user => {
+                            const baseLink = `/boost?boostUserType=${BoostUserTypeEnum.someone}&boostCategoryType=${BoostCategoryOptionsEnum.socialBadge}&boostSubCategoryType=${AchievementTypes.Aficionado}`;
+                            const link = user?.profileId
+                                ? `${baseLink}&otherUserProfileId=${user.profileId}`
+                                : baseLink;
+                            history.push(link);
+                        }}
+                        onPlayerSwitch={() => closeAllModals()}
+                    />,
                     { sectionClassName: '!max-w-[400px]' },
                     { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
