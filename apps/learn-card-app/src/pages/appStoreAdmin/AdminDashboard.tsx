@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { IonPage, IonContent, IonSpinner, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle } from '@ionic/react';
-import { Search, Filter, Inbox, Loader2, RefreshCw, ExternalLink, ShieldAlert, CheckCircle, XCircle, Star, TrendingUp, Minus, ArrowDown, RotateCcw, Check, Image, Play } from 'lucide-react';
+import { Search, Filter, Inbox, Loader2, RefreshCw, ExternalLink, ShieldAlert, CheckCircle, XCircle, Star, TrendingUp, Minus, ArrowDown, RotateCcw, Check, Image, Play, BookOpen, PenTool, Eye } from 'lucide-react';
 
-import { useModal, ModalTypes } from 'learn-card-base';
+import { useModal, ModalTypes, useWallet, contractCategoryNameToCategoryMetadata } from 'learn-card-base';
+import { useQuery } from '@tanstack/react-query';
 
 import { useDeveloperPortal } from '../appStoreDeveloper/useDeveloperPortal';
 import { StatusBadge } from '../appStoreDeveloper/components/StatusBadge';
 import { AppStoreHeader } from '../appStoreDeveloper/components/AppStoreHeader';
 import { AppPreviewModal } from '../appStoreDeveloper/components/AppPreviewModal';
+import FullScreenConsentFlow from '../consentFlow/FullScreenConsentFlow';
+import FullScreenGameFlow from '../consentFlow/GameFlow/FullScreenGameFlow';
 import { LAUNCH_TYPE_INFO, CATEGORY_OPTIONS, PERMISSION_OPTIONS, PROMOTION_LEVEL_INFO, type AppListingStatus, type PromotionLevel, type ExtendedAppStoreListing, type AppPermission } from '../appStoreDeveloper/types';
+import type { ConsentFlowContractDetails } from '@learncard/types';
 
 type FilterStatus = AppListingStatus | 'ALL';
 
@@ -130,6 +134,39 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, 
     try { parsedConfig = JSON.parse(listing.launch_config_json); } catch {}
     const permissions = Array.isArray(parsedConfig.permissions) ? (parsedConfig.permissions as AppPermission[]) : [];
 
+    // Consent flow contract handling - fetch the specific contract by URI
+    const contractUri = typeof parsedConfig.contractUri === 'string' ? parsedConfig.contractUri : null;
+    const { initWallet } = useWallet();
+
+    const { data: selectedContract, isLoading: isLoadingContract } = useQuery<ConsentFlowContractDetails | null>({
+        queryKey: ['getContract', contractUri],
+        queryFn: async () => {
+            if (!contractUri) return null;
+            try {
+                const wallet = await initWallet();
+                return await wallet.invoke.getContract(contractUri);
+            } catch (error) {
+                console.error('Failed to fetch contract:', error);
+                return null;
+            }
+        },
+        enabled: !!contractUri,
+    });
+
+    const readCategories = selectedContract?.contract?.read?.credentials?.categories || {};
+    const writeCategories = selectedContract?.contract?.write?.credentials?.categories || {};
+    const hasReadCategories = Object.keys(readCategories).length > 0;
+    const hasWriteCategories = Object.keys(writeCategories).length > 0;
+
+    const handlePreviewContract = () => {
+        if (!selectedContract) return;
+        if (selectedContract.needsGuardianConsent) {
+            newModal(<FullScreenGameFlow contractDetails={selectedContract} isPreview />, {}, { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen });
+        } else {
+            newModal(<FullScreenConsentFlow contractDetails={selectedContract} isPreview />, {}, { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen });
+        }
+    };
+
     const handlePreview = () => {
         newModal(
             <AppPreviewModal listing={listing} />,
@@ -177,6 +214,85 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, 
                     <pre className="p-3 bg-gray-800 text-gray-100 rounded-lg text-xs overflow-x-auto"><code>{JSON.stringify(parsedConfig, null, 2)}</code></pre>
                     {listing.launch_type === 'EMBEDDED_IFRAME' && permissions.length > 0 && <div className="mt-2"><h4 className="text-xs font-medium text-gray-500 mb-1.5">Requested Permissions</h4><div className="flex flex-wrap gap-1.5">{permissions.map(p => { const info = PERMISSION_OPTIONS.find(o => o.value === p); return <span key={p} className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs font-medium" title={info?.description}>{info?.label || p}</span>; })}</div></div>}
                 </div>
+                {listing.launch_type === 'CONSENT_REDIRECT' && contractUri && (
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-medium text-gray-600">Consent Flow Contract</h3>
+                            {selectedContract && (
+                                <button onClick={handlePreviewContract} className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-100 text-cyan-700 rounded-lg text-xs font-medium hover:bg-cyan-200 transition-colors">
+                                    <Eye className="w-3.5 h-3.5" />Preview Contract
+                                </button>
+                            )}
+                        </div>
+                        {isLoadingContract ? (
+                            <div className="p-4 bg-gray-50 rounded-lg flex items-center justify-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                                <span className="text-sm text-gray-500">Loading contract...</span>
+                            </div>
+                        ) : selectedContract ? (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                                    {selectedContract.image ? (
+                                        <img src={selectedContract.image} alt={selectedContract.name} className="w-10 h-10 rounded-full object-cover" />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center"><ShieldAlert className="w-5 h-5 text-cyan-600" /></div>
+                                    )}
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-700">{selectedContract.name}</p>
+                                        {selectedContract.subtitle && <p className="text-xs text-gray-400">{selectedContract.subtitle}</p>}
+                                    </div>
+                                </div>
+                                <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <BookOpen className="w-4 h-4 text-cyan-600" />
+                                        <span className="text-xs font-medium text-cyan-700">Read Access</span>
+                                    </div>
+                                    {hasReadCategories ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {Object.keys(readCategories).map(category => {
+                                                const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                return (
+                                                    <span key={category} className="inline-flex items-center gap-1 px-2 py-1 bg-white text-cyan-700 rounded-full text-xs font-medium border border-cyan-200">
+                                                        {metadata?.IconWithShape && <metadata.IconWithShape className="w-3.5 h-3.5" />}
+                                                        {metadata?.title || category}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-cyan-600 italic">No read permissions requested</p>
+                                    )}
+                                </div>
+                                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <PenTool className="w-4 h-4 text-emerald-600" />
+                                        <span className="text-xs font-medium text-emerald-700">Write Access</span>
+                                    </div>
+                                    {hasWriteCategories ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {Object.keys(writeCategories).map(category => {
+                                                const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                return (
+                                                    <span key={category} className="inline-flex items-center gap-1 px-2 py-1 bg-white text-emerald-700 rounded-full text-xs font-medium border border-emerald-200">
+                                                        {metadata?.IconWithShape && <metadata.IconWithShape className="w-3.5 h-3.5" />}
+                                                        {metadata?.title || category}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-emerald-600 italic">No write permissions requested</p>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-3 bg-gray-100 rounded-lg">
+                                <p className="text-xs text-gray-500 font-mono break-all">{contractUri}</p>
+                                <p className="text-xs text-gray-400 mt-1 italic">Contract details not available</p>
+                            </div>
+                        )}
+                    </div>
+                )}
                 <div>
                     <h3 className="text-sm font-medium text-gray-600 mb-2">External Links</h3>
                     <div className="space-y-1.5">
