@@ -10,12 +10,14 @@ import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
 import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
 import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
 import CredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CredentialQuickNav';
-import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
+import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 import X from 'learn-card-base/svgs/X';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
+import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
+import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
 import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
 import { SwitcherStepEnum } from 'apps/learn-card-app/src/components/learncard/switcher.helpers';
 import FamilyBoostPreviewWrapper from 'apps/learn-card-app/src/components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
@@ -45,7 +47,10 @@ import {
 } from 'learn-card-base';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 
-const getIconForActionButton = (label: string) => {
+const getIconForActionButton = (
+    label: string,
+    opts?: { buildMyLCIcon?: string; AiInsightsIcon?: React.FC<{ className?: string }> }
+) => {
     switch (label) {
         case 'New AI Session':
             return <AISessionsQuickNav className="w-[50px] h-auto" />;
@@ -58,7 +63,21 @@ const getIconForActionButton = (label: string) => {
         case 'Add Credential':
             return <CredentialQuickNav className="w-[50px] h-auto" />;
         case 'Personalize AI Sessions':
-            return <BlueMagicWand className="w-[50px] h-auto" />;
+            return <UnicornIcon className="w-[50px] h-auto" />;
+        case 'Understand My Skills':
+            if (opts?.AiInsightsIcon) return <opts.AiInsightsIcon className="w-[50px] h-auto" />;
+            return <SolidCircleIcon className="w-[50px] h-auto" />;
+        case 'Build My LearnCard':
+            if (opts?.buildMyLCIcon) {
+                return (
+                    <img
+                        src={opts.buildMyLCIcon}
+                        alt="Build My LearnCard"
+                        className="w-[50px] h-[50px] object-contain rounded-[8px] bg-white"
+                    />
+                );
+            }
+            return <SolidCircleIcon className="w-[50px] h-auto" />;
         case 'Start AI Tutoring Session':
             return <AISessionsQuickNav className="w-[50px] h-auto" />;
         case 'Claim Credential':
@@ -88,6 +107,10 @@ const ActionButton: React.FC<{
     const history = useHistory();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
+    const { theme, getIconSet } = useTheme();
+    const buildMyLCIcon = theme?.defaults?.buildMyLCIcon;
+    const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
+    const AiInsightsIcon = sideMenuIcons[CredentialCategoryEnum.aiInsight];
 
     const handleClick = () => {
         if (onClick) {
@@ -279,7 +302,10 @@ const ActionButton: React.FC<{
             className={`${bg} w-full text-lef flex px-5 py-4  text-[18px] font-poppins font-semibold text-grayscale-900 rounded-[20px] border border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
         >
             <div className="flex items-center justify-center">
-                <span className="mr-2">{getIconForActionButton(label)}</span> {label}
+                <span className="mr-2">
+                    {getIconForActionButton(label, { buildMyLCIcon, AiInsightsIcon })}
+                </span>{' '}
+                {label}
             </div>
         </button>
     );
