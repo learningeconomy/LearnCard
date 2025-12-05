@@ -322,14 +322,16 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const familyUri = (familyList?.pages?.[0]?.records?.[0]?.uri as string) || undefined;
 
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
+    const [optimisticRole, setOptimisticRole] = useState<LearnCardRolesEnum | null>(null);
 
     useEffect(() => {
+        if (optimisticRole) return;
         if (lcNetworkProfile?.role) {
             setRole(lcNetworkProfile.role as LearnCardRolesEnum);
         } else if (role === null) {
             setRole(LearnCardRolesEnum.learner);
         }
-    }, [lcNetworkProfile?.role]);
+    }, [lcNetworkProfile?.role, optimisticRole]);
 
     const roleLabel = LearnCardRoles.find(r => r.type === role)?.title ?? 'Learner';
 
@@ -425,17 +427,24 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                     role={role}
                                     setRole={newRole => {
                                         setRole(newRole);
+                                        setOptimisticRole(newRole);
                                         (async () => {
                                             try {
                                                 const wallet = await initWallet();
                                                 await wallet?.invoke?.updateProfile({
                                                     role: newRole,
                                                 });
+                                                setOptimisticRole(null);
                                                 presentToast('Role updated', {
                                                     type: ToastTypeEnum.Success,
                                                     hasDismissButton: true,
                                                 });
                                             } catch (e) {
+                                                setOptimisticRole(null);
+                                                setRole(
+                                                    (lcNetworkProfile?.role as LearnCardRolesEnum) ??
+                                                        LearnCardRolesEnum.learner
+                                                );
                                                 presentToast('Unable to update role', {
                                                     type: ToastTypeEnum.Error,
                                                     hasDismissButton: true,
