@@ -59,7 +59,7 @@ const AiSessionAppSelectorItem = ({
                     />
                 </div>
 
-                <p className="text-grayscale-900 text-[17px] font-notoSans font-semibold mt-1">
+                <p className="text-grayscale-900 text-[15px] font-notoSans font-semibold mt-1">
                     {app?.name}
                 </p>
             </div>
@@ -82,19 +82,23 @@ const AiSessionAppSelectorItem = ({
 const AiSessionAppSelector: React.FC<{
     handleSetAiApp: (app: LaunchPadAppListItem) => void;
     minified?: boolean;
-}> = ({ handleSetAiApp, minified }) => {
-    const aiApps = aiPassportApps;
+    apps?: LaunchPadAppListItem[];
+}> = ({ handleSetAiApp, minified, apps }) => {
+    // Use provided apps or fall back to hardcoded aiPassportApps
+    const aiApps = apps || aiPassportApps;
 
     return (
-        <div className="w-full flex items-center justify-around bg-white pb-[24px] pt-4">
-            {aiApps.map((app, index) => (
-                <AiSessionAppSelectorItem
-                    handleSetAiApp={handleSetAiApp}
-                    key={index}
-                    app={app}
-                    minified={minified}
-                />
-            ))}
+        <div className="w-full bg-white pb-[24px] pt-4 overflow-x-auto">
+            <div className="flex items-start justify-start gap-4 px-4 min-w-min">
+                {aiApps.map((app, index) => (
+                    <AiSessionAppSelectorItem
+                        handleSetAiApp={handleSetAiApp}
+                        key={index}
+                        app={app}
+                        minified={minified}
+                    />
+                ))}
+            </div>
         </div>
     );
 };
