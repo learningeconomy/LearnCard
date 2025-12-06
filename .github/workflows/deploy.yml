@@ -72,26 +72,20 @@ jobs:
       lca_api_changed: ${{ steps.check_versions.outputs.lca_api_changed }}
       lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Fetch main for NX comparison
-        run: git fetch --no-tags --prune origin main
-
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
-
-      - name: Get Affected List
-        id: affected
+      # Check these first - no dependencies needed
+      - name: Check if this is a manual dispatch
+        id: check_manual
         run: |
-          affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
-          echo "affected=$affected" >> $GITHUB_OUTPUT
-          echo "Affected projects: $affected"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "is_manual=true" >> $GITHUB_OUTPUT
+            echo "This is a manual dispatch - skipping affected detection"
+          else
+            echo "is_manual=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check if this is a release commit
         id: check_release
+        if: github.event_name != 'workflow_dispatch'
         run: |
           if [[ "${{ github.event.head_commit.message }}" == *"chore(release):"* ]]; then
             echo "is_release=true" >> $GITHUB_OUTPUT
@@ -100,17 +94,31 @@ jobs:
             echo "is_release=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check if this is a manual dispatch
-        id: check_manual
+      # Skip heavy steps for manual dispatch - we already know what to deploy
+      - name: Checkout Repo
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch main for NX comparison
+        if: github.event_name != 'workflow_dispatch'
+        run: git fetch --no-tags --prune origin main
+
+      - name: Use Composite Setup Action
+        if: github.event_name != 'workflow_dispatch'
+        uses: ./.github/actions/setup
+
+      - name: Get Affected List
+        if: github.event_name != 'workflow_dispatch'
+        id: affected
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "is_manual=true" >> $GITHUB_OUTPUT
-            echo "This is a manual dispatch"
-          else
-            echo "is_manual=false" >> $GITHUB_OUTPUT
-          fi
+          affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
+          echo "affected=$affected" >> $GITHUB_OUTPUT
+          echo "Affected projects: $affected"
 
       - name: Check version changes for release
+        if: github.event_name != 'workflow_dispatch'
         id: check_versions
         run: |
           # Check which packages had version changes in this commit
@@ -371,7 +379,11 @@ jobs:
         uses: ./.github/actions/setup
 
       # Deploy to Netlify by pushing to production branch (Netlify auto-deploys from it)
+      # Only for production deploys (release commits or manual production deploy)
       - name: Push to production branch
+        if: |
+          needs.determine-affected.outputs.is_release == 'true' ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production')
         run: git push origin HEAD:production
 
       - name: Get LearnCard App Version
