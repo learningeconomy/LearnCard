@@ -357,12 +357,15 @@ jobs:
       !contains(needs.deploy-learn-cloud.result, 'failure') &&
       !contains(needs.deploy-lca-api.result, 'failure')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-production') || 'learn-card-app-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Use Composite Setup Action
         uses: ./.github/actions/setup
