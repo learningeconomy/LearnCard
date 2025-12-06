@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
+import numeral from 'numeral';
 
 import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
-import { useModal, ModalTypes, useConfirmation, useWithdrawConsent, useWallet } from 'learn-card-base';
+import { useModal, ModalTypes, useConfirmation, useWithdrawConsent, useWallet, useGetAppMetadata, useGetAppReviews, AppStoreAppMetadata, AppStoreAppReview } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
@@ -11,6 +12,8 @@ import { EmbedIframeModal } from './EmbedIframeModal';
 import useTheme from '../../theme/hooks/useTheme';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
 import Checkmark from '../../components/svgs/Checkmark';
+import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticStarRating';
+import AiPassportAppProfileRatings from '../../components/ai-passport-apps/AiPassportAppProfileDetails/AiPassportAppProfileRatings';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
@@ -23,6 +26,7 @@ type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
     highlights?: string[];
     screenshots?: string[];
     promo_video_url?: string;
+    ios_app_store_id?: string;
 };
 
 // Helper to convert YouTube/Vimeo URLs to embed URLs
@@ -74,6 +78,24 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
     // Get install count
     const { data: installCount } = useInstallCount(listing.listing_id);
+
+    // Fetch iOS App Store metadata if ios_app_store_id is available
+    const iosAppId = listing.ios_app_store_id;
+    const { data: iosMetadata } = useGetAppMetadata(iosAppId || '');
+    const { data: iosReviews } = useGetAppReviews(iosAppId || '');
+
+    // Use iOS screenshots as fallback if no screenshots provided in listing
+    const screenshots = useMemo(() => {
+        if (listing.screenshots && listing.screenshots.length > 0) {
+            return listing.screenshots;
+        }
+
+        if (iosMetadata?.screenshotUrls && iosMetadata.screenshotUrls.length > 0) {
+            return iosMetadata.screenshotUrls;
+        }
+
+        return [];
+    }, [listing.screenshots, iosMetadata?.screenshotUrls]);
 
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -383,21 +405,68 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             {listing.tagline}
                         </p>
 
-                        <div className="flex items-center gap-2 mt-2">
+                        {!iosMetadata && <div className="flex items-center gap-2 mt-2">
                             {listing.category && (
                                 <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
                                     {listing.category}
                                 </span>
                             )}
 
-                            {installCount !== undefined && (
+                            {/* {installCount !== undefined && (
                                 <span className="text-xs text-grayscale-500">
                                     {installCount.toLocaleString()} installs
                                 </span>
-                            )}
-                        </div>
+                            )} */}
+                        </div>}
                     </div>
                 </div>
+
+                {/* iOS App Store Metadata Section */}
+                {iosMetadata && (
+                    <div className="flex items-center justify-evenly ">
+                        <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+                            <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
+                                {iosMetadata.userRatingCount >= 1000
+                                    ? numeral(iosMetadata.userRatingCount).format('0.0a')
+                                    : iosMetadata.userRatingCount} Ratings
+                            </p>
+
+                            <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
+                                {iosMetadata.averageUserRating?.toFixed(1)}
+                            </h6>
+
+                            <StaticStarRating rating={iosMetadata.averageUserRating} />
+                        </div>
+
+                        <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+                            <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
+                                AGE
+                            </p>
+
+                            <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
+                                {iosMetadata.contentAdvisoryRating || '12+'}
+                            </h6>
+
+                            <p className="text-xs text-grayscale-400 text-center font-notoSans uppercase">
+                                Years Old
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col items-center justify-center px-4">
+                            <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
+                                Category
+                            </p>
+
+                            <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
+                                {'#2'}
+                            </h6>
+
+                            <p className="text-xs text-grayscale-400 text-center font-notoSans uppercase">
+                                {listing.category || iosMetadata.primaryGenreName || 'App'}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 </div>
             </IonHeader>
@@ -448,11 +517,11 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     )}
 
                     {/* Screenshots Section */}
-                    {listing.screenshots && listing.screenshots.length > 0 && (
+                    {screenshots.length > 0 && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
                             <h3 className="text-xl text-gray-900 font-notoSans mb-4">Preview</h3>
 
-                            <AppScreenshotsSlider appScreenshots={listing.screenshots} />
+                            <AppScreenshotsSlider appScreenshots={screenshots} />
                         </div>
                     )}
 
@@ -511,6 +580,14 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 )}
                             </div>
                         </div>
+                    )}
+
+                    {/* Ratings and Reviews Section - from iOS App Store */}
+                    {iosMetadata && iosReviews && iosReviews.length > 0 && (
+                        <AiPassportAppProfileRatings
+                            appMetaData={iosMetadata as AppStoreAppMetadata}
+                            appReviews={iosReviews as AppStoreAppReview[]}
+                        />
                     )}
                 </div>
             </IonContent>
