@@ -115,6 +115,7 @@ const SubmissionForm: React.FC = () => {
                 if (!config.redirectUri) newErrors.redirectUri = 'Redirect URI is required';
             }
             if (formData.launch_type === 'SERVER_HEADLESS' && !config.webhookUrl) newErrors.webhookUrl = 'Webhook URL is required';
+            if (formData.launch_type === 'AI_TUTOR' && !config.aiTutorUrl) newErrors.aiTutorUrl = 'AI Tutor URL is required';
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;

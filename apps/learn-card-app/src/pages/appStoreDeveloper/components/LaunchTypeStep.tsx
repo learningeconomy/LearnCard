@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, ExternalLink, Link, ShieldCheck, Server, CheckCircle2 } from 'lucide-react';
+import { Layout, ExternalLink, Link, ShieldCheck, Server, CheckCircle2, Sparkles } from 'lucide-react';
 
 import type { AppStoreListingCreate, LaunchType } from '../types';
 import { LAUNCH_TYPE_INFO } from '../types';
@@ -15,6 +15,7 @@ const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
     link: Link,
     'shield-check': ShieldCheck,
     server: Server,
+    sparkles: Sparkles,
 };
 
 export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }) => {
@@ -100,6 +101,9 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
 
                         {data.launch_type === 'SERVER_HEADLESS' &&
                             "You'll configure webhook endpoints for server-to-server integration."}
+
+                        {data.launch_type === 'AI_TUTOR' &&
+                            "You'll provide your AI tutor URL. Users will select a topic and launch to your app with their DID and topic."}
                     </p>
                 </div>
             )}

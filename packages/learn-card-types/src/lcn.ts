@@ -1470,6 +1470,7 @@ export const LaunchTypeValidator = z.enum([
     'DIRECT_LINK',
     'CONSENT_REDIRECT',
     'SERVER_HEADLESS',
+    'AI_TUTOR',
 ]);
 export type LaunchType = z.infer<typeof LaunchTypeValidator>;
 

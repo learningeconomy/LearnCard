@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { AlertCircle, Code, Play, BookOpen, PenTool } from 'lucide-react';
+import { AlertCircle, Code, Play, BookOpen, PenTool, Sparkles, Info } from 'lucide-react';
 
 import type { AppStoreListingCreate, LaunchConfig, AppPermission } from '../types';
 import type { ConsentFlowContractDetails } from '@learncard/types';
@@ -281,6 +281,74 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                         Your webhook endpoint should verify the signature of incoming
                                         requests. API keys will be provided after approval.
                                     </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'AI_TUTOR':
+                return (
+                    <div className="space-y-5">
+                        <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl">
+                            <div className="flex gap-3">
+                                <Sparkles className="w-5 h-5 text-violet-600 flex-shrink-0" />
+
+                                <div className="text-sm text-violet-800">
+                                    <p className="font-medium">AI Tutor Integration</p>
+
+                                    <p className="mt-1">
+                                        AI Tutor apps let users select or create learning topics, then launch
+                                        your tutor app with the topic and user DID for personalized sessions.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                AI Tutor URL <span className="text-red-500">*</span>
+                            </label>
+
+                            <input
+                                type="url"
+                                value={config.aiTutorUrl || ''}
+                                onChange={e => updateConfig({ aiTutorUrl: e.target.value })}
+                                placeholder="https://yourtutor.com"
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                    errors.aiTutorUrl ? 'border-red-300' : 'border-gray-200'
+                                }`}
+                            />
+
+                            {errors.aiTutorUrl && (
+                                <p className="text-sm text-red-500 mt-1">{errors.aiTutorUrl}</p>
+                            )}
+
+                            <p className="text-sm text-gray-400 mt-1">
+                                Users will be redirected to <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{config.aiTutorUrl || 'https://yourtutor.com'}/chats?did=...&topic=...</code>
+                            </p>
+                        </div>
+
+                        <ConsentFlowContractSelector
+                            value={config.contractUri || ''}
+                            onChange={(uri) => updateConfig({ contractUri: uri })}
+                            onContractChange={setSelectedContract}
+                            error={errors.contractUri}
+                        />
+
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                            <div className="flex gap-3">
+                                <Info className="w-5 h-5 text-gray-500 flex-shrink-0" />
+
+                                <div className="text-sm text-gray-600">
+                                    <p className="font-medium">How AI Tutor Launch Works</p>
+
+                                    <ol className="mt-2 space-y-1 list-decimal list-inside text-xs">
+                                        <li>User clicks "Open" on your AI Tutor app</li>
+                                        <li>They select "New Topic" or "Revisit Topic"</li>
+                                        <li>User enters or selects a learning topic</li>
+                                        <li>App opens with <code className="bg-white px-1 py-0.5 rounded">?did=...&topic=...</code></li>
+                                    </ol>
                                 </div>
                             </div>
                         </div>

@@ -9,6 +9,7 @@ export const LaunchType = z.enum([
     'DIRECT_LINK',
     'CONSENT_REDIRECT',
     'SERVER_HEADLESS',
+    'AI_TUTOR',
 ]);
 export type LaunchTypeEnum = z.infer<typeof LaunchType>;
 

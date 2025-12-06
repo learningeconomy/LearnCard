@@ -11,6 +11,7 @@ import AppStoreDetailModal from './AppStoreDetailModal';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
+import AiTutorConnectedView from './AiTutorConnectedView';
 
 type AppStoreListItemProps = {
     listing: AppStoreListing | InstalledApp;
@@ -116,6 +117,20 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                 window.open(urlObj.toString(), '_blank');
                 return;
             }
+        }
+
+        // AI Tutor apps - open full connected view with topics
+        if ((listing.launch_type as string) === 'AI_TUTOR' && launchConfig.aiTutorUrl) {
+            newModal(
+                <AiTutorConnectedView
+                    listing={listing}
+                    launchConfig={{
+                        aiTutorUrl: launchConfig.aiTutorUrl,
+                        contractUri: launchConfig.contractUri,
+                    }}
+                />
+            );
+            return;
         }
 
         // Default launch behavior

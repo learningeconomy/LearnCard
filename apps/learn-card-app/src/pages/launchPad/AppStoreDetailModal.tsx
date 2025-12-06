@@ -15,6 +15,7 @@ import { AppInstallConsentModal } from '../../components/credentials/AppInstallC
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
+import AiTutorConnectedView from './AiTutorConnectedView';
 import { Settings } from 'lucide-react';
 
 // Extended type to include new fields (until types package is rebuilt)
@@ -315,6 +316,20 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             }
         }
 
+        // AI Tutor apps - open full connected view with topics
+        if ((listing.launch_type as string) === 'AI_TUTOR' && launchConfig.aiTutorUrl) {
+            replaceModal(
+                <AiTutorConnectedView
+                    listing={listing}
+                    launchConfig={{
+                        aiTutorUrl: launchConfig.aiTutorUrl,
+                        contractUri: launchConfig.contractUri,
+                    }}
+                />
+            );
+            return;
+        }
+
         // Default launch behavior for non-consent-flow apps
         if (listing.launch_type === 'EMBEDDED_IFRAME' && launchConfig.url) {
             replaceModal(
@@ -333,11 +348,13 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         }
     };
 
+    const launchType = listing.launch_type as string;
     const canLaunch =
-        listing.launch_type === 'EMBEDDED_IFRAME' ||
-        listing.launch_type === 'DIRECT_LINK' ||
-        listing.launch_type === 'SECOND_SCREEN' ||
-        listing.launch_type === 'CONSENT_REDIRECT';
+        launchType === 'EMBEDDED_IFRAME' ||
+        launchType === 'DIRECT_LINK' ||
+        launchType === 'SECOND_SCREEN' ||
+        launchType === 'CONSENT_REDIRECT' ||
+        launchType === 'AI_TUTOR';
 
     return (
         <IonPage className="h-full w-full">

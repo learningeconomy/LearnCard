@@ -55,6 +55,7 @@ export interface LaunchConfig {
     scopes?: string[];
     webhookUrl?: string;
     apiKey?: string;
+    aiTutorUrl?: string;
 }
 
 export const LAUNCH_TYPE_INFO: Record<
@@ -85,6 +86,11 @@ export const LAUNCH_TYPE_INFO: Record<
         label: 'Server Headless',
         description: 'Backend integration with webhook notifications',
         icon: 'server',
+    },
+    AI_TUTOR: {
+        label: 'AI Tutor',
+        description: 'AI tutoring app with topic selection and session tracking',
+        icon: 'sparkles',
     },
 };
 
