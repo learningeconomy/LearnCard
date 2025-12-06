@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { AlertCircle, Code, Play, BookOpen, PenTool, Sparkles, Info } from 'lucide-react';
+import { AlertCircle, Code, Play, BookOpen, PenTool, Sparkles, Info, HelpCircle } from 'lucide-react';
+
+import { IntegrationGuidePanel } from './IntegrationGuidePanel';
 
 import type { AppStoreListingCreate, LaunchConfig, AppPermission } from '../types';
 import type { ConsentFlowContractDetails } from '@learncard/types';
@@ -16,6 +18,7 @@ interface LaunchConfigStepProps {
 
 export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChange, errors, onPreview }) => {
     const [selectedContract, setSelectedContract] = useState<ConsentFlowContractDetails | null>(null);
+    const [showGuide, setShowGuide] = useState(false);
 
     const [config, setConfig] = useState<LaunchConfig>(() => {
         try {
@@ -363,12 +366,48 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
     return (
         <div className="space-y-6">
             <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-700">Launch Configuration</h2>
+                <div className="flex items-center justify-center gap-2">
+                    <h2 className="text-xl font-semibold text-gray-700">Launch Configuration</h2>
+
+                    {data.launch_type && (
+                        <button
+                            onClick={() => setShowGuide(true)}
+                            className="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                            title="View integration guide"
+                        >
+                            <HelpCircle className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
 
                 <p className="text-sm text-gray-500 mt-1">
                     Configure the technical details for your integration
                 </p>
             </div>
+
+            {/* Integration Guide Helper Button */}
+            {data.launch_type && (
+                <button
+                    onClick={() => setShowGuide(true)}
+                    className="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-cyan-50 to-indigo-50 border border-cyan-200 rounded-xl hover:from-cyan-100 hover:to-indigo-100 transition-colors text-left"
+                >
+                    <div className="p-2 bg-cyan-100 rounded-lg">
+                        <BookOpen className="w-5 h-5 text-cyan-600" />
+                    </div>
+
+                    <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-800">Need help integrating?</h4>
+
+                        <p className="text-xs text-gray-500 mt-0.5">
+                            View step-by-step developer guide with code examples
+                        </p>
+                    </div>
+
+                    <div className="text-cyan-600">
+                        <HelpCircle className="w-5 h-5" />
+                    </div>
+                </button>
+            )}
 
             {renderConfigFields()}
 
@@ -406,6 +445,13 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                     </div>
                 </div>
             )}
+            {/* Integration Guide Panel */}
+            <IntegrationGuidePanel
+                isOpen={showGuide}
+                onClose={() => setShowGuide(false)}
+                launchType={data.launch_type || ''}
+                selectedPermissions={config.permissions || []}
+            />
         </div>
     );
 };
