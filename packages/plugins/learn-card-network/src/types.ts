@@ -466,6 +466,44 @@ export type LearnCardNetworkPluginMethods = {
         categories: Record<string, string[]>
     ) => Promise<boolean>;
 
+    sendAiInsightsContractRequest: (
+        contractUri: string,
+        targetProfileId: string,
+        shareLink: string
+    ) => Promise<boolean>;
+
+    sendAiInsightShareRequest: (targetProfileId: string, shareLink: string) => Promise<boolean>;
+
+    getContractSentRequests: (contractUri: string) => Promise<
+        {
+            profile: LCNProfile;
+            status: 'pending' | 'accepted' | 'denied' | null;
+            readStatus?: 'unseen' | 'seen' | null;
+        }[]
+    >;
+
+    getRequestStatusForProfile: (
+        targetProfileId: string,
+        contractId?: string | undefined,
+        contractUri?: string | undefined
+    ) => Promise<{
+        profile: LCNProfile;
+        status: 'pending' | 'accepted' | 'denied' | null;
+        readStatus?: 'unseen' | 'seen' | null;
+    } | null>;
+
+    getAllContractRequestsForProfile: (targetProfileId: string) => Promise<
+        {
+            contract: ConsentFlowContract & { uri: string };
+            profile: LCNProfile;
+            status: 'pending' | 'accepted' | 'denied' | null;
+            readStatus?: 'unseen' | 'seen' | null;
+        }[]
+    >;
+
+    markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
+    cancelContractRequest: (contractUri: string, targetProfileId: string) => Promise<boolean>;
+
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
     getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
     getMyDidMetadata: () => Promise<Array<Partial<DidDocument> & { id: string }>>;
