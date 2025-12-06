@@ -194,7 +194,7 @@ jobs:
         (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'network-brain-service'))
       )
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production') || needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-network-api-production' || 'learn-cloud-network-api-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-network-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-network-api-production') || 'learn-cloud-network-api-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -243,7 +243,7 @@ jobs:
         (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'learn-cloud-service'))
       )
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production') || needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-storage-api-production' || 'learn-cloud-storage-api-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-storage-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-storage-api-production') || 'learn-cloud-storage-api-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -287,7 +287,7 @@ jobs:
         (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
       )
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production') || needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-api-production' || 'learn-card-app-api-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-api-production') || 'learn-card-app-api-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -357,13 +357,19 @@ jobs:
       !contains(needs.deploy-learn-cloud.result, 'failure') &&
       !contains(needs.deploy-lca-api.result, 'failure')
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production') || needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-production' || 'learn-card-app-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-production') || 'learn-card-app-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Use Composite Setup Action
         uses: ./.github/actions/setup
+
+      # Deploy to Netlify by pushing to production branch (Netlify auto-deploys from it)
+      - name: Push to production branch
+        run: git push origin HEAD:production
 
       - name: Get LearnCard App Version
         id: lca-version
@@ -387,17 +393,6 @@ jobs:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
           WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
           WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
-
-      # Deploy to Netlify using CLI (works without auto-deploy enabled)
-      - name: Deploy to Netlify
-        env:
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_LCA_SITE_ID }}
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        run: |
-          npx netlify-cli deploy \
-            --prod \
-            --dir=apps/learn-card-app/build \
-            --filter=learn-card-app
 
       # Deploy OTA update to CapGo
       - name: Upload to CapGo
