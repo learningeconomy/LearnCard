@@ -1,26 +1,20 @@
 import React from 'react';
-import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
+import { useHistory } from 'react-router-dom';
 
 import { IonItem } from '@ionic/react';
-
-const BECOME_AN_APP_DOCS_LINK = 'https://docs.learncard.com/tutorials/create-a-connected-website';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
 
 export const LaunchPadBecomeAnApp: React.FC = () => {
+    const history = useHistory();
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.launchPad);
 
     const buttonClass = `flex items-center justify-center rounded-full font-[600] rounded-full px-[20px] py-[5px] normal text-sm font-poppins ${colors?.buttons?.unconnected}`;
 
-    const handleLink = async () => {
-        if (Capacitor?.isNativePlatform()) {
-            await Browser?.open({ url: BECOME_AN_APP_DOCS_LINK });
-        } else {
-            window?.open(BECOME_AN_APP_DOCS_LINK);
-        }
+    const handleClick = () => {
+        history.push('/app-store/developer');
     };
 
     return (
@@ -44,8 +38,8 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                     </div>
 
                     <div className="flex app-connect-btn-container items-center min-w-[109px]">
-                        <button className={buttonClass} onClick={handleLink}>
-                            Learn More
+                        <button className={buttonClass} onClick={handleClick}>
+                            Get Started
                         </button>
                     </div>
                 </div>
