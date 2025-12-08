@@ -31,21 +31,21 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
     return (
         <IonHeader className="ion-no-border !overflow-visible">
             <IonToolbar className="!shadow-none border-b border-gray-200 !overflow-visible [&>.toolbar-container]:!overflow-visible">
-                <div className="flex items-center justify-between px-4 py-2 overflow-visible">
+                <div className="flex items-center justify-between px-2 sm:px-4 py-2 overflow-visible">
                     <button
                         onClick={() => history.push('/launchpad')}
-                        className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                        className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity"
                     >
                         <img
                             src="https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb"
                             alt="LearnCard"
-                            className="w-10 h-10 rounded-lg"
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg"
                         />
 
                         <span className={`text-lg font-semibold text-gray-700 ${rightContent ? 'hidden sm:block' : ''}`}>{title}</span>
                     </button>
 
-                    <div className="flex items-center gap-3 overflow-visible">
+                    <div className="flex items-center gap-1.5 sm:gap-3 overflow-visible">
                         {rightContent}
 
                         {isAdmin && (
