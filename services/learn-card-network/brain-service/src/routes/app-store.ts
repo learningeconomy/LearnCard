@@ -1,8 +1,12 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 import { t, openRoute, profileRoute } from '@routes';
-import { isAppStoreAdmin } from 'src/constants/app-store';
+import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getProfilesByProfileIds } from '@accesslayer/profile/read';
+import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
 import { createAppStoreListing } from '@accesslayer/app-store-listing/create';
 import {
@@ -375,7 +379,32 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            return updateAppStoreListing(listing, { app_listing_status: 'PENDING_REVIEW' });
+            const result = await updateAppStoreListing(listing, { app_listing_status: 'PENDING_REVIEW' });
+
+            // Notify all App Store admins about the new submission
+            if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
+                const adminProfiles = await getProfilesByProfileIds(APP_STORE_ADMIN_PROFILE_IDS);
+
+                for (const adminProfile of adminProfiles) {
+                    await addNotificationToQueue({
+                        type: LCNNotificationTypeEnumValidator.enum.APP_LISTING_SUBMITTED,
+                        to: adminProfile,
+                        from: ctx.user.profile,
+                        message: {
+                            title: 'New App Listing Submitted',
+                            body: `"${listing.display_name}" has been submitted for review.`,
+                        },
+                        data: {
+                            metadata: {
+                                listingId: listing.listing_id,
+                                listingName: listing.display_name,
+                            },
+                        },
+                    });
+                }
+            }
+
+            return result;
         }),
 
     deleteListing: profileRoute
@@ -656,8 +685,61 @@ export const appStoreRouter = t.router({
             verifyAppStoreAdmin(ctx.user.profile.profileId);
 
             const listing = await getListingOrThrow(input.listingId);
+            const previousStatus = listing.app_listing_status;
 
-            return updateAppStoreListing(listing, { app_listing_status: input.status });
+            const result = await updateAppStoreListing(listing, { app_listing_status: input.status });
+
+            // Send notification to the listing owner if status changed
+            if (previousStatus !== input.status) {
+                const integration = await getIntegrationForListing(input.listingId);
+
+                if (integration) {
+                    const ownerProfile = await getOwnerProfileForIntegration(integration.id);
+
+                    if (ownerProfile) {
+                        // Approved: status changed to LISTED
+                        if (input.status === 'LISTED') {
+                            await addNotificationToQueue({
+                                type: LCNNotificationTypeEnumValidator.enum.APP_LISTING_APPROVED,
+                                to: ownerProfile,
+                                from: ctx.user.profile,
+                                message: {
+                                    title: 'App Listing Approved!',
+                                    body: `"${listing.display_name}" has been approved and is now live in the App Store.`,
+                                },
+                                data: {
+                                    metadata: {
+                                        listingId: listing.listing_id,
+                                        listingName: listing.display_name,
+                                    },
+                                },
+                            });
+                        }
+
+                        // Rejected: status changed from PENDING_REVIEW to something other than LISTED
+                        if (previousStatus === 'PENDING_REVIEW' && input.status !== 'LISTED') {
+                            await addNotificationToQueue({
+                                type: LCNNotificationTypeEnumValidator.enum.APP_LISTING_REJECTED,
+                                to: ownerProfile,
+                                from: ctx.user.profile,
+                                message: {
+                                    title: 'App Listing Needs Changes',
+                                    body: `"${listing.display_name}" was not approved. Please review and resubmit.`,
+                                },
+                                data: {
+                                    metadata: {
+                                        listingId: listing.listing_id,
+                                        listingName: listing.display_name,
+                                        newStatus: input.status,
+                                    },
+                                },
+                            });
+                        }
+                    }
+                }
+            }
+
+            return result;
         }),
 
     adminUpdatePromotionLevel: profileRoute
