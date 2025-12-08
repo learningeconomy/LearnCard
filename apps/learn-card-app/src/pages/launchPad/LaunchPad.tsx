@@ -27,11 +27,6 @@ import {
     LaunchPadFilterOptionsEnum,
     LaunchPadSortOptionsEnum,
 } from './LaunchPadSearch/launchpad-search.helpers';
-import {
-    comingSoonAiApps,
-    comingSoonGameApps,
-    comingSoonIntegrations,
-} from './launchpad-comingSoon';
 
 import useAppStore, { mapTabToCategory } from './useAppStore';
 import AppStoreListItem from './AppStoreListItem';
@@ -162,16 +157,11 @@ const LaunchPad: React.FC = () => {
         ];
     }, [apps, contracts]);
 
-    // Coming soon apps (shown at the end)
-    const comingSoonApps = useMemo(() => {
-        return [
-            ...comingSoonAiApps,
-            ...comingSoonGameApps,
-            ...comingSoonIntegrations,
-        ];
-    }, []);
+    // Coming soon apps from LaunchDarkly flag
+    const comingSoonApps = useMemo<LaunchPadAppListItemType[]>(() => {
+        return flags.comingSoonApps || [];
+    }, [flags.comingSoonApps]);
 
-    console.log("COMING SOON", comingSoonApps);
     // Combined for backwards compatibility with existing filtering
     const appsAndContracts = useMemo(() => {
         return [...legacyAppsAndContracts, ...comingSoonApps];
