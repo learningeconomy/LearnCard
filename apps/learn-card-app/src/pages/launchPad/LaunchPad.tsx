@@ -171,6 +171,7 @@ const LaunchPad: React.FC = () => {
         ];
     }, []);
 
+    console.log("COMING SOON", comingSoonApps);
     // Combined for backwards compatibility with existing filtering
     const appsAndContracts = useMemo(() => {
         return [...legacyAppsAndContracts, ...comingSoonApps];
