@@ -42,7 +42,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                             className="w-10 h-10 rounded-lg"
                         />
 
-                        <span className="text-lg font-semibold text-gray-700">{title}</span>
+                        <span className={`text-lg font-semibold text-gray-700 ${rightContent ? 'hidden sm:block' : ''}`}>{title}</span>
                     </button>
 
                     <div className="flex items-center gap-3 overflow-visible">

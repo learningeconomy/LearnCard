@@ -10,6 +10,7 @@ import {
     Trash2,
     Send,
     ChevronRight,
+    ChevronLeft,
     Pencil,
     Archive,
     Play,
@@ -251,8 +252,8 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
 
             {/* Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Listings List */}
-                <div className="space-y-2">
+                {/* Listings List - hidden on mobile when a listing is selected */}
+                <div className={`space-y-2 ${selectedListing ? 'hidden lg:block' : ''}`}>
                     {isLoading ? (
                         <div className="text-center py-12">
                             <Loader2 className="w-8 h-8 text-cyan-500 mx-auto animate-spin" />
@@ -325,9 +326,17 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                     )}
                 </div>
 
-                {/* Detail Panel */}
+                {/* Detail Panel - full width on mobile when visible */}
                 {selectedListing ? (
                     <div className="bg-white rounded-xl border border-gray-200 p-5">
+                        {/* Mobile back button */}
+                        <button
+                            onClick={() => setSelectedListing(null)}
+                            className="lg:hidden flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4 -mt-1"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            Back to listings
+                        </button>
                         <div className="flex items-start gap-4 mb-5">
                             <img
                                 src={selectedListing.icon_url}
@@ -497,7 +506,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center text-center py-16">
+                    <div className="hidden lg:flex bg-white rounded-xl border border-gray-200 items-center justify-center text-center py-16">
                         <div>
                             <Eye className="w-10 h-10 text-gray-300 mx-auto mb-2" />
 
