@@ -452,6 +452,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                 launchType={data.launch_type || ''}
                 selectedPermissions={config.permissions || []}
                 contractUri={config.contractUri}
+                webhookUrl={config.webhookUrl}
             />
         </div>
     );

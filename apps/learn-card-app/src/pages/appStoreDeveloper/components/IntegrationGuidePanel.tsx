@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff } from 'lucide-react';
+import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff, Mail, Send, Server, Webhook } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
@@ -22,6 +22,7 @@ interface IntegrationGuidePanelProps {
     launchType: string;
     selectedPermissions?: AppPermission[];
     contractUri?: string;
+    webhookUrl?: string;
 }
 
 // Simple syntax highlighter for TypeScript/JavaScript
@@ -850,12 +851,215 @@ console.log('User consent records:', userConsentData.records);`}
     );
 };
 
+// Server Headless Guide - using Universal Inbox
+const ServerHeadlessGuide: React.FC<{ webhookUrl?: string }> = ({ webhookUrl }) => {
+    return (
+    <div className="space-y-6">
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <p className="text-sm text-emerald-800">
+                Server Headless integration uses the <strong>Universal Inbox API</strong> to issue credentials 
+                directly to users via email or phone — no wallet interaction required from your side.
+            </p>
+        </div>
+
+        <StepCard step={1} title="Create an API Key" icon={<Key className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-4">
+                Generate an API key to authenticate your backend with the LearnCard Network.
+            </p>
+
+            <InlineAPITokenManager />
+        </StepCard>
+
+        <StepCard step={2} title="Initialize LearnCard SDK" icon={<Package className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-3">
+                Install and initialize the LearnCard SDK in your backend application.
+            </p>
+
+            <CodeBlock code={`npm install @learncard/init`} />
+
+            <p className="text-xs text-gray-500 mt-3 mb-3">Then initialize with your API key:</p>
+
+            <CodeBlock
+                code={`import { initLearnCard } from '@learncard/init';
+
+const learnCard = await initLearnCard({ 
+    apiKey: process.env.LEARNCARD_API_KEY,
+    network: true 
+});`}
+            />
+        </StepCard>
+
+        <StepCard step={3} title="Issue Credential via Universal Inbox" icon={<Send className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-3">
+                Send credentials to users by email or phone. LearnCard handles delivery automatically.
+            </p>
+
+            <CodeBlock
+                code={`// Issue a credential to a user's email
+const result = await learnCard.invoke.inbox.issue({
+    // Recipient - just need email or phone!
+    recipient: { 
+        type: 'email', 
+        value: 'user@example.com' 
+    },
+    
+    // Your credential (unsigned - we'll sign it for you)
+    credential: {
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        name: 'Course Completion Badge',
+        credentialSubject: {
+            achievement: {
+                name: 'Introduction to AI',
+                description: 'Successfully completed the course',
+                achievementType: 'Certificate',
+                image: 'https://yoursite.com/badge.png'
+            }
+        }
+    },
+    
+    // Optional configuration
+    configuration: {
+        webhookUrl: '${webhookUrl || 'https://yoursite.com/webhooks/learncard'}',
+        delivery: {
+            template: {
+                model: {
+                    issuer: { 
+                        name: 'Your Organization',
+                        logoUrl: 'https://yoursite.com/logo.png'
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Response
+console.log(result);
+// {
+//   issuanceId: 'abc123',
+//   status: 'ISSUED' | 'PENDING',
+//   claimUrl: 'https://...',  // If user doesn't have wallet yet
+//   recipientDid: 'did:...'   // If user already has wallet
+// }`}
+            />
+
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-4">
+                <p className="text-xs text-blue-800">
+                    <strong>What happens:</strong> If the recipient has a LearnCard wallet linked to that email, 
+                    the credential is delivered instantly. Otherwise, they receive an email with a claim link.
+                </p>
+            </div>
+        </StepCard>
+
+        <StepCard step={4} title="Handle Webhook Events (Optional)" icon={<Webhook className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-3">
+                Receive notifications when credentials are delivered or claimed.
+            </p>
+
+            <CodeBlock
+                code={`// Express webhook handler
+app.post('/webhooks/learncard', (req, res) => {
+    const { type, data } = req.body;
+    
+    switch (type) {
+        case 'ISSUANCE_DELIVERED':
+            console.log('Credential delivered!', {
+                issuanceId: data.inbox.issuanceId,
+                status: data.inbox.status,
+                recipient: data.inbox.recipient
+            });
+            break;
+    }
+    
+    res.json({ received: true });
+});`}
+            />
+        </StepCard>
+
+        <StepCard step={5} title="REST API Alternative" icon={<Server className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-3">
+                You can also use the REST API directly without the SDK.
+            </p>
+
+            <CodeBlock
+                code={`curl -X POST https://api.learncard.com/api/inbox/issue \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "recipient": {
+        "type": "email",
+        "value": "user@example.com"
+    },
+    "credential": {
+        "@context": ["https://www.w3.org/2018/credentials/v1"],
+        "type": ["VerifiableCredential", "OpenBadgeCredential"],
+        "name": "Course Completion",
+        "credentialSubject": {
+            "achievement": {
+                "name": "Course Name",
+                "description": "Completed the course"
+            }
+        }
+    }
+}'`}
+            />
+        </StepCard>
+
+        <div className="p-4 bg-gray-100 rounded-xl">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
+
+            <div className="space-y-2 text-xs text-gray-600">
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">1</div>
+                    <span>Your server calls <code className="bg-white px-1.5 py-0.5 rounded">inbox.issue</code> with email + credential</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">2</div>
+                    <span>LearnCard signs the credential with your signing authority</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">3</div>
+                    <span>If user has wallet → delivered instantly to their inbox</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">4</div>
+                    <span>If new user → email sent with magic link to claim</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">5</div>
+                    <span>Webhook notifies you of delivery status</span>
+                </div>
+            </div>
+        </div>
+
+        <a
+            href="https://docs.learncard.com/api/inbox"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full p-3 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"
+        >
+            View Universal Inbox Documentation
+            <ExternalLink className="w-4 h-4" />
+        </a>
+    </div>
+    );
+};
+
 export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
     isOpen,
     onClose,
     launchType,
     selectedPermissions = [],
     contractUri,
+    webhookUrl,
 }) => {
     const renderGuideContent = () => {
         switch (launchType) {
@@ -863,6 +1067,8 @@ export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
                 return <EmbeddedIframeGuide selectedPermissions={selectedPermissions} />;
             case 'CONSENT_REDIRECT':
                 return <ConsentRedirectGuide contractUri={contractUri} />;
+            case 'SERVER_HEADLESS':
+                return <ServerHeadlessGuide webhookUrl={webhookUrl} />;
             default:
                 return (
                     <div className="p-8 text-center text-gray-500">
