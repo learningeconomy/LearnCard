@@ -26,6 +26,7 @@ export const createAppStoreListing = async (
         terms_url: input.terms_url,
         highlights_json: input.highlights_json,
         screenshots_json: input.screenshots_json,
+        hero_background_color: input.hero_background_color,
     });
 
     const result = await new QueryBuilder(new BindParam({ params }))
