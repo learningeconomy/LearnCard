@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.93.5
+
+### Patch Changes
+
+-   [#868](https://github.com/learningeconomy/LearnCard/pull/868) [`9e3144bb0984f4bb3a68a3c237dad1416dc2ab52`](https://github.com/learningeconomy/LearnCard/commit/9e3144bb0984f4bb3a68a3c237dad1416dc2ab52) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Bump LCA
+
+## 1.93.4
+
+### Patch Changes
+
+-   [#865](https://github.com/learningeconomy/LearnCard/pull/865) [`b3ebb76c3672159ba0c5c8127128937bc0aa9c4b`](https://github.com/learningeconomy/LearnCard/commit/b3ebb76c3672159ba0c5c8127128937bc0aa9c4b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Test bump
+
+## 1.93.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.0.1
+
 ## 1.93.2
 
 ### Patch Changes

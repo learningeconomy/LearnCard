@@ -72,26 +72,20 @@ jobs:
       lca_api_changed: ${{ steps.check_versions.outputs.lca_api_changed }}
       lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Fetch main for NX comparison
-        run: git fetch --no-tags --prune origin main
-
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
-
-      - name: Get Affected List
-        id: affected
+      # Check these first - no dependencies needed
+      - name: Check if this is a manual dispatch
+        id: check_manual
         run: |
-          affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
-          echo "affected=$affected" >> $GITHUB_OUTPUT
-          echo "Affected projects: $affected"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "is_manual=true" >> $GITHUB_OUTPUT
+            echo "This is a manual dispatch - skipping affected detection"
+          else
+            echo "is_manual=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check if this is a release commit
         id: check_release
+        if: github.event_name != 'workflow_dispatch'
         run: |
           if [[ "${{ github.event.head_commit.message }}" == *"chore(release):"* ]]; then
             echo "is_release=true" >> $GITHUB_OUTPUT
@@ -100,43 +94,57 @@ jobs:
             echo "is_release=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check if this is a manual dispatch
-        id: check_manual
+      # Skip heavy steps for manual dispatch - we already know what to deploy
+      - name: Checkout Repo
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch main for NX comparison
+        if: github.event_name != 'workflow_dispatch'
+        run: git fetch --no-tags --prune origin main
+
+      - name: Use Composite Setup Action
+        if: github.event_name != 'workflow_dispatch'
+        uses: ./.github/actions/setup
+
+      - name: Get Affected List
+        if: github.event_name != 'workflow_dispatch'
+        id: affected
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "is_manual=true" >> $GITHUB_OUTPUT
-            echo "This is a manual dispatch"
-          else
-            echo "is_manual=false" >> $GITHUB_OUTPUT
-          fi
+          affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
+          echo "affected=$affected" >> $GITHUB_OUTPUT
+          echo "Affected projects: $affected"
 
       - name: Check version changes for release
+        if: github.event_name != 'workflow_dispatch'
         id: check_versions
         run: |
           # Check which packages had version changes in this commit
           CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
-          
+
           if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/brain-service/package.json"; then
             echo "brain_service_changed=true" >> $GITHUB_OUTPUT
             echo "Brain service version changed"
           else
             echo "brain_service_changed=false" >> $GITHUB_OUTPUT
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/learn-cloud-service/package.json"; then
             echo "learn_cloud_changed=true" >> $GITHUB_OUTPUT
             echo "LearnCloud version changed"
           else
             echo "learn_cloud_changed=false" >> $GITHUB_OUTPUT
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/lca-api/package.json"; then
             echo "lca_api_changed=true" >> $GITHUB_OUTPUT
             echo "LCA API version changed"
           else
             echo "lca_api_changed=false" >> $GITHUB_OUTPUT
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "apps/learn-card-app/package.json"; then
             echo "lca_app_changed=true" >> $GITHUB_OUTPUT
             echo "LearnCard App version changed"
@@ -194,7 +202,7 @@ jobs:
         (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'network-brain-service'))
       )
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production') || needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-network-api-production' || 'learn-cloud-network-api-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-network-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-network-api-production') || 'learn-cloud-network-api-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -243,7 +251,7 @@ jobs:
         (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'learn-cloud-service'))
       )
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production') || needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-storage-api-production' || 'learn-cloud-storage-api-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-storage-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-storage-api-production') || 'learn-cloud-storage-api-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -287,7 +295,7 @@ jobs:
         (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
       )
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production') || needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-api-production' || 'learn-card-app-api-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-api-production') || 'learn-card-app-api-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -339,7 +347,13 @@ jobs:
   # ============================================================================
   deploy-lca-frontend:
     name: Deploy LearnCard App Frontend
-    needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+    needs:
+      [
+        determine-affected,
+        deploy-brain-service,
+        deploy-learn-cloud,
+        deploy-lca-api,
+      ]
     if: |
       always() &&
       !cancelled() &&
@@ -351,13 +365,26 @@ jobs:
       !contains(needs.deploy-learn-cloud.result, 'failure') &&
       !contains(needs.deploy-lca-api.result, 'failure')
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production') || needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-production' || 'learn-card-app-staging' }}
+    permissions:
+      contents: write
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-production') || 'learn-card-app-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Use Composite Setup Action
         uses: ./.github/actions/setup
+
+      # Deploy to Netlify by pushing to production branch (Netlify auto-deploys from it)
+      # Only for production deploys (release commits or manual production deploy)
+      - name: Push to production branch
+        if: |
+          needs.determine-affected.outputs.is_release == 'true' ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production')
+        run: git push origin HEAD:production
 
       - name: Get LearnCard App Version
         id: lca-version
@@ -381,15 +408,6 @@ jobs:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
           WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
           WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
-
-      # Deploy to Netlify using CLI (works without auto-deploy enabled)
-      - name: Deploy to Netlify
-        run: |
-          npx netlify-cli deploy \
-            --prod \
-            --dir=apps/learn-card-app/build \
-            --site=${{ secrets.NETLIFY_LCA_SITE_ID }} \
-            --auth=${{ secrets.NETLIFY_AUTH_TOKEN }}
 
       # Deploy OTA update to CapGo
       - name: Upload to CapGo
@@ -501,7 +519,13 @@ jobs:
   # ============================================================================
   publish-npm:
     name: Publish NPM Packages
-    needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+    needs:
+      [
+        determine-affected,
+        deploy-brain-service,
+        deploy-learn-cloud,
+        deploy-lca-api,
+      ]
     if: |
       always() &&
       !cancelled() &&
