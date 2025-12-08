@@ -87,4 +87,4 @@ RUN pnpm exec nx build:docker lca-api-service
 # Expose common ports used by server
 EXPOSE 3000
 
-CMD ["sh", "-c", "cd services/lca-api && node --enable-source-maps dist/docker-entry.js"]
+CMD ["sh", "-c", "cd services/learn-card-network/lca-api && node --enable-source-maps dist/docker-entry.js"]

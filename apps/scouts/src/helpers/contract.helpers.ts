@@ -3,8 +3,10 @@ import {
     ConsentFlowContractDetails,
     ConsentFlowTerms,
 } from '@learncard/types';
-import { CurrentUser, boostCategoryOptions, getBaseUrl } from 'learn-card-base';
+import { CurrentUser, getBaseUrl } from 'learn-card-base';
+
 import BrokenLink from '../components/svgs/BrokenLink';
+import { boostCategoryOptions } from '../components/boost/boost-options/boostOptions';
 
 export const getPersonalEntry = (key: string, user?: CurrentUser | null, anonymize = true) => {
     if (key.toLowerCase() === 'name') return anonymize ? 'Anonymous' : user?.name ?? '';

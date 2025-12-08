@@ -75,7 +75,22 @@ platform :ios do
       xcodeproj: ENV["XCODE_PROJECT"]
     )
 
-    current_version_string = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
+    # Get both TestFlight and App Store versions, use the higher one
+    testflight_version = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
+    app_store_version = get_app_store_version_number(app_identifier: ENV["APP_ID"]) rescue "1.0.0"
+    
+    # Compare versions and use the higher one
+    tf_parts = testflight_version.split('.').map(&:to_i)
+    as_parts = app_store_version.split('.').map(&:to_i)
+    
+    # Pad arrays to same length for comparison
+    max_len = [tf_parts.length, as_parts.length].max
+    tf_parts += [0] * (max_len - tf_parts.length)
+    as_parts += [0] * (max_len - as_parts.length)
+    
+    current_version_string = (tf_parts <=> as_parts) >= 0 ? testflight_version : app_store_version
+    UI.message("TestFlight version: #{testflight_version}, App Store version: #{app_store_version}, using: #{current_version_string}")
+    
     parts = current_version_string.split('.').map(&:to_i)
     if parts.length == 3 # assuming X.Y.Z
       parts[2] += 1 # Increment patch (Z)
@@ -155,7 +170,22 @@ platform :ios do
       xcodeproj: ENV["XCODE_PROJECT"]
     )
 
-    current_version_string = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
+    # Get both TestFlight and App Store versions, use the higher one
+    testflight_version = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
+    app_store_version = get_app_store_version_number(app_identifier: ENV["APP_ID"]) rescue "1.0.0"
+    
+    # Compare versions and use the higher one
+    tf_parts = testflight_version.split('.').map(&:to_i)
+    as_parts = app_store_version.split('.').map(&:to_i)
+    
+    # Pad arrays to same length for comparison
+    max_len = [tf_parts.length, as_parts.length].max
+    tf_parts += [0] * (max_len - tf_parts.length)
+    as_parts += [0] * (max_len - as_parts.length)
+    
+    current_version_string = (tf_parts <=> as_parts) >= 0 ? testflight_version : app_store_version
+    UI.message("TestFlight version: #{testflight_version}, App Store version: #{app_store_version}, using: #{current_version_string}")
+    
     parts = current_version_string.split('.').map(&:to_i)
     if parts.length == 3 # assuming X.Y.Z
       parts[2] += 1 # Increment patch (Z)
@@ -231,7 +261,22 @@ platform :ios do
       xcodeproj: ENV["XCODE_PROJECT"]
     )
 
-    current_version_string = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
+    # Get both TestFlight and App Store versions, use the higher one
+    testflight_version = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
+    app_store_version = get_app_store_version_number(app_identifier: ENV["APP_ID"]) rescue "1.0.0"
+    
+    # Compare versions and use the higher one
+    tf_parts = testflight_version.split('.').map(&:to_i)
+    as_parts = app_store_version.split('.').map(&:to_i)
+    
+    # Pad arrays to same length for comparison
+    max_len = [tf_parts.length, as_parts.length].max
+    tf_parts += [0] * (max_len - tf_parts.length)
+    as_parts += [0] * (max_len - as_parts.length)
+    
+    current_version_string = (tf_parts <=> as_parts) >= 0 ? testflight_version : app_store_version
+    UI.message("TestFlight version: #{testflight_version}, App Store version: #{app_store_version}, using: #{current_version_string}")
+    
     parts = current_version_string.split('.').map(&:to_i)
     if parts.length == 3 # assuming X.Y.Z
       parts[2] += 1 # Increment patch (Z)
