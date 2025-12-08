@@ -25,7 +25,7 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
     showDescription = true,
 }) => {
     const isSelected = role === roleItem?.type;
-    const activeStyles = isSelected ? 'bg-emerald-50 border-emerald-50' : 'border-grayscale-200';
+    const activeStyles = isSelected ? 'bg-[#CCFBF1] border-[#CCFBF1]' : 'border-grayscale-200';
 
     const roleIcons: Record<LearnCardRolesEnum, string> = {
         [LearnCardRolesEnum.learner]: LearnerIcon,
@@ -38,6 +38,19 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
 
     const iconSrc = roleIcons[roleItem?.type as LearnCardRolesEnum];
 
+    const iconBgColors: Record<LearnCardRolesEnum, string> = {
+        [LearnCardRolesEnum.learner]: 'var(--ion-color-teal-100)',
+        [LearnCardRolesEnum.guardian]: 'var(--ion-color-violet-200)',
+        [LearnCardRolesEnum.teacher]: 'var(--ion-color-amber-100)',
+        [LearnCardRolesEnum.admin]: 'var(--ion-color-cyan-100)',
+        [LearnCardRolesEnum.counselor]: 'var(--ion-color-violet-200)',
+        [LearnCardRolesEnum.developer]: 'var(--ion-color-lime-100)',
+    };
+
+    const iconBgStyle: React.CSSProperties = {
+        backgroundColor: iconBgColors[roleItem?.type as LearnCardRolesEnum],
+    };
+
     return (
         <li
             role="button"
@@ -48,7 +61,10 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
             }}
         >
             <div className="flex items-center gap-3">
-                <span className="flex items-center justify-center h-[36px] w-[36px] rounded-full bg-white">
+                <span
+                    className="flex shrink-0 items-center justify-center h-[36px] w-[36px] rounded-full"
+                    style={iconBgStyle}
+                >
                     <img
                         src={iconSrc}
                         alt={`${roleItem?.title} icon`}
