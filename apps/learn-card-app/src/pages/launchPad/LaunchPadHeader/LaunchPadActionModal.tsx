@@ -10,10 +10,13 @@ import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
 import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
 import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
 import CredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CredentialQuickNav';
+import ClaimCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ClaimCredentialQuickNav';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
 import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
+import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
+import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
 import X from 'learn-card-base/svgs/X';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
@@ -70,8 +73,7 @@ const getIconForActionButton = (
         case 'Personalize AI Sessions':
             return <UnicornIcon className="w-[50px] h-auto" />;
         case 'Understand My Skills':
-            if (opts?.AiInsightsIcon) return <opts.AiInsightsIcon className="w-[50px] h-auto" />;
-            return <SolidCircleIcon className="w-[50px] h-auto" />;
+            return <UnderstandSkillsQuickNav className="w-[50px] h-auto" />;
         case 'Build My LearnCard':
             if (opts?.buildMyLCIcon) {
                 return (
@@ -86,12 +88,14 @@ const getIconForActionButton = (
         case 'New AI Tutoring Session':
             return <AISessionsQuickNav className="w-[50px] h-auto" />;
         case 'Claim Credential':
-            return <CredentialQuickNav className="w-[50px] h-auto" />;
+            return <ClaimCredentialQuickNav className="w-[50px] h-auto" />;
         case 'Create Credential':
         case 'Issue Learner Credential':
             return <CredentialQuickNav className="w-[50px] h-auto" />;
         case 'Manage Skills Frameworks':
             return <StudiesQuickNav className="w-[50px] h-auto" />;
+        case 'Share Insights with Teacher':
+            return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
         case 'View Learner Insights':
         case 'Request Learner Insights':
         case 'View Child Insights':
@@ -423,6 +427,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'bg-[#FFD1E5]',
     ];
 
+    const colorByLabel: Record<string, string> = {
+        'New AI Tutoring Session': 'bg-[var(--ion-color-cyan-300)]',
+        'Understand My Skills': 'bg-[var(--ion-color-violet-300)]',
+        'Claim Credential': 'bg-[var(--ion-color-amber-300)]',
+        'Share Insights with Teacher': 'bg-[var(--ion-color-lime-300)]',
+        'Build My LearnCard': 'bg-[var(--ion-color-teal-200)]',
+    };
+
     return (
         <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
             <button
@@ -513,7 +525,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                     <ActionButton
                         key={`${label}-${i}`}
                         label={label}
-                        bg={bgColors[i % bgColors.length]}
+                        bg={colorByLabel[label] ?? bgColors[i % bgColors.length]}
                         onClick={
                             label === 'View Family' && familyUri
                                 ? () => {
