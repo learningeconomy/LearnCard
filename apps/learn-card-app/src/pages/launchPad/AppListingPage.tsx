@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 import type { AppStoreListing } from '@learncard/types';
 
-import { IonPage, IonContent, IonSpinner } from '@ionic/react';
-import { useModal, ModalTypes, useConfirmation, useIsLoggedIn, useWithdrawConsent } from 'learn-card-base';
+import { IonPage, IonContent, IonSpinner, IonToast } from '@ionic/react';
+import { useModal, ModalTypes, useConfirmation, useIsLoggedIn, useWithdrawConsent, useWallet, useGetAppMetadata, useGetAppReviews, AppStoreAppMetadata, AppStoreAppReview } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
@@ -13,12 +13,18 @@ import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppS
 import Checkmark from '../../components/svgs/Checkmark';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
+import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
+import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
+import AiTutorConnectedView from './AiTutorConnectedView';
+import { Settings } from 'lucide-react';
 
 // Extended type to include new fields
 type ExtendedAppStoreListing = AppStoreListing & {
     highlights?: string[];
     screenshots?: string[];
     promo_video_url?: string;
+    ios_app_store_id?: string;
+    hero_background_color?: string;
 };
 
 // Helper to convert YouTube/Vimeo URLs to embed URLs
@@ -83,11 +89,63 @@ const AppListingPage: React.FC = () => {
 
     const extendedListing = listing as ExtendedAppStoreListing | undefined;
 
-    // Consent flow hooks for withdraw on uninstall
+    // Consent flow hooks for withdraw on uninstall and edit permissions
     const contractUri: string | undefined = launchConfig?.contractUri;
-    const { consentedContract } = useConsentFlowByUri(contractUri);
+    const { contract, consentedContract, hasConsented } = useConsentFlowByUri(contractUri);
     const termsUri = consentedContract?.uri;
     const { mutateAsync: withdrawConsent } = useWithdrawConsent(termsUri ?? '');
+
+    const { initWallet } = useWallet();
+
+    // Fetch iOS App Store metadata if ios_app_store_id is available
+    const iosAppId = extendedListing?.ios_app_store_id;
+    const { data: iosMetadata } = useGetAppMetadata(iosAppId || '');
+    const { data: iosReviews } = useGetAppReviews(iosAppId || '');
+
+    // Use iOS screenshots as fallback if no screenshots provided in listing
+    const screenshots = useMemo(() => {
+        if (extendedListing?.screenshots && extendedListing.screenshots.length > 0) {
+            return extendedListing.screenshots;
+        }
+
+        if (iosMetadata?.screenshotUrls && iosMetadata.screenshotUrls.length > 0) {
+            return iosMetadata.screenshotUrls;
+        }
+
+        return [];
+    }, [extendedListing?.screenshots, iosMetadata?.screenshotUrls]);
+
+    const [showCopiedToast, setShowCopiedToast] = useState(false);
+
+    const handleShareApp = async () => {
+        if (!listing) return;
+        const appUrl = `${window.location.origin}/app/${listing.listing_id}`;
+
+        try {
+            await navigator.clipboard.writeText(appUrl);
+            closeModal();
+            setShowCopiedToast(true);
+        } catch (err) {
+            console.error('Failed to copy link:', err);
+        }
+    };
+
+    const handleEditPermissions = () => {
+        if (!contract || !consentedContract?.terms) return;
+
+        closeModal();
+
+        newModal(
+            <ConsentFlowPrivacyAndData
+                contractDetails={contract}
+                terms={consentedContract.terms}
+                setTerms={() => {}}
+                isPostConsent={true}
+            />,
+            {},
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
 
     const doInstall = async () => {
         if (!listing) return;
@@ -173,6 +231,42 @@ const AppListingPage: React.FC = () => {
         if (!listing) return;
         newModal(
             <ul className="w-full flex flex-col items-center justify-center ion-padding">
+                <li className="w-full border-b border-grayscale-200">
+                    <button
+                        className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2"
+                        type="button"
+                        onClick={handleShareApp}
+                    >
+                        <p className="text-grayscale-900">Share App</p>
+                        <svg
+                            className="w-5 h-5 text-grayscale-600"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                            />
+                        </svg>
+                    </button>
+                </li>
+
+                {hasConsented && contract && (
+                    <li className="w-full border-b border-grayscale-200">
+                        <button
+                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2"
+                            type="button"
+                            onClick={handleEditPermissions}
+                        >
+                            <p className="text-grayscale-900">Edit Permissions</p>
+                            <Settings className="w-5 h-5 text-grayscale-600" />
+                        </button>
+                    </li>
+                )}
+
                 <li className="w-full">
                     <button
                         className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2"
@@ -192,9 +286,84 @@ const AppListingPage: React.FC = () => {
         );
     };
 
-    const handleLaunch = () => {
+    const handleLaunch = async () => {
         if (!listing) return;
 
+        // For consent flow apps, redirect with did and delegate VP
+        if (hasConsented && contract) {
+            // Guardian consent apps need profile selection flow
+            if (contract.needsGuardianConsent) {
+                const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
+
+                if (redirectUrl) {
+                    newModal(
+                        <GuardianConsentLaunchModal
+                            contractDetails={contract}
+                            redirectUrl={redirectUrl}
+                        />,
+                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                    );
+                    return;
+                }
+            }
+
+            // Prefer app listing URL, then contract redirectUrl
+            const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
+
+            if (redirectUrl) {
+                const wallet = await initWallet();
+                const urlObj = new URL(redirectUrl);
+
+                // Add user's did to redirect url
+                urlObj.searchParams.set('did', wallet.id.did());
+
+                // Add delegate credential VP if contract has an owner
+                if (contract.owner?.did) {
+                    const unsignedDelegateCredential = wallet.invoke.newCredential({
+                        type: 'delegate',
+                        subject: contract.owner.did,
+                        access: ['read', 'write'],
+                    });
+
+                    const delegateCredential = await wallet.invoke.issueCredential(
+                        unsignedDelegateCredential
+                    );
+
+                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
+                        delegateCredential
+                    );
+
+                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                        proofPurpose: 'authentication',
+                        proofFormat: 'jwt',
+                    })) as any as string;
+
+                    urlObj.searchParams.set('vp', vp);
+                }
+
+                window.open(urlObj.toString(), '_blank');
+                return;
+            }
+        }
+
+        // AI Tutor apps - open full connected view with topics
+        if ((listing.launch_type as string) === 'AI_TUTOR' && launchConfig.aiTutorUrl) {
+            newModal(
+                <AiTutorConnectedView
+                    listing={listing}
+                    launchConfig={{
+                        aiTutorUrl: launchConfig.aiTutorUrl,
+                        contractUri: launchConfig.contractUri,
+                    }}
+                />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+            return;
+        }
+
+        // Default launch behavior for non-consent-flow apps
         if (listing.launch_type === 'EMBEDDED_IFRAME' && launchConfig.url) {
             newModal(
                 <EmbedIframeModal
@@ -215,10 +384,13 @@ const AppListingPage: React.FC = () => {
         }
     };
 
+    const launchType = listing?.launch_type as string;
     const canLaunch =
-        listing?.launch_type === 'EMBEDDED_IFRAME' ||
-        listing?.launch_type === 'DIRECT_LINK' ||
-        listing?.launch_type === 'SECOND_SCREEN';
+        launchType === 'EMBEDDED_IFRAME' ||
+        launchType === 'DIRECT_LINK' ||
+        launchType === 'SECOND_SCREEN' ||
+        launchType === 'CONSENT_REDIRECT' ||
+        launchType === 'AI_TUTOR';
 
     // Loading state
     if (isLoadingListing) {
@@ -325,7 +497,7 @@ const AppListingPage: React.FC = () => {
                                             </span>
                                         )}
 
-                                        {installCount !== undefined && (
+                                        {/* {installCount !== undefined && (
                                             <span className="text-sm text-grayscale-500 flex items-center gap-1">
                                                 <svg
                                                     className="w-4 h-4"
@@ -342,7 +514,7 @@ const AppListingPage: React.FC = () => {
                                                 </svg>
                                                 {installCount.toLocaleString()} installs
                                             </span>
-                                        )}
+                                        )} */}
                                     </div>
                                 </div>
 
@@ -472,18 +644,15 @@ const AppListingPage: React.FC = () => {
                             )}
 
                         {/* Screenshots Section */}
-                        {extendedListing?.screenshots &&
-                            extendedListing.screenshots.length > 0 && (
-                                <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
-                                    <h2 className="text-xl font-semibold text-grayscale-900 mb-4">
-                                        Preview
-                                    </h2>
+                        {screenshots.length > 0 && (
+                            <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
+                                <h2 className="text-xl font-semibold text-grayscale-900 mb-4">
+                                    Preview
+                                </h2>
 
-                                    <AppScreenshotsSlider
-                                        appScreenshots={extendedListing.screenshots}
-                                    />
-                                </section>
-                            )}
+                                <AppScreenshotsSlider appScreenshots={screenshots} />
+                            </section>
+                        )}
 
                         {/* Links Section */}
                         {(listing.privacy_policy_url || listing.terms_url) && (
@@ -560,6 +729,15 @@ const AppListingPage: React.FC = () => {
                         </p>
                     </div>
                 </div>
+
+                <IonToast
+                    isOpen={showCopiedToast}
+                    onDidDismiss={() => setShowCopiedToast(false)}
+                    message="Link copied to clipboard!"
+                    duration={2000}
+                    position="bottom"
+                    color="success"
+                />
             </IonContent>
         </IonPage>
     );
