@@ -19,7 +19,7 @@ import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
-import { Settings, Eye } from 'lucide-react';
+import { Settings, Eye, ArrowLeft } from 'lucide-react';
 
 // Extended type to include new fields
 type ExtendedAppStoreListing = AppStoreListing & {
@@ -474,9 +474,18 @@ const AppListingPage: React.FC = () => {
             <IonContent fullscreen>
                 {/* Preview Mode Banner */}
                 {isPreviewMode && (
-                    <div className="sticky top-0 z-50 bg-amber-500 text-white px-4 py-2 flex items-center justify-center gap-2 shadow-md">
-                        <Eye className="w-4 h-4" />
-                        <span className="text-sm font-medium">Preview Mode — This is how the public listing page will appear</span>
+                    <div className="sticky top-0 z-50 bg-amber-500 text-white px-4 py-2 flex items-center justify-between shadow-md">
+                        <button onClick={() => history.goBack()} className="flex items-center gap-1 hover:bg-amber-600 rounded-lg px-2 py-1 transition-colors">
+                            <ArrowLeft className="w-4 h-4" />
+                            <span className="text-sm font-medium">Back</span>
+                        </button>
+
+                        <div className="flex items-center gap-2">
+                            <Eye className="w-4 h-4" />
+                            <span className="text-sm font-medium">Preview Mode</span>
+                        </div>
+
+                        <div className="w-16" /> {/* Spacer for centering */}
                     </div>
                 )}
 

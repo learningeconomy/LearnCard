@@ -178,7 +178,7 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, 
     const handlePreviewModal = () => {
         setShowPreviewMenu(false);
         newModal(
-            <AppStoreDetailModal listing={listing} />,
+            <AppStoreDetailModal listing={listing} isPreview />,
             { hideButton: true },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );

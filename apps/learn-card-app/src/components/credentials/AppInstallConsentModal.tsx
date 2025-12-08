@@ -65,6 +65,7 @@ type AppInstallConsentModalProps = {
     contractUri?: string;
     onAccept: () => void;
     onReject: () => void;
+    isPreview?: boolean;
 };
 
 export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
@@ -74,6 +75,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     contractUri,
     onAccept,
     onReject,
+    isPreview = false,
 }) => {
     const { newModal } = useModal();
     const { initWallet } = useWallet();
@@ -425,11 +427,12 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
                 <button
                     onClick={handleInstall}
-                    disabled={isConsenting || (!!contractUri && isLoadingContract)}
-                    className="px-8 py-3 text-lg font-semibold text-white bg-indigo-600 rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    disabled={isPreview || isConsenting || (!!contractUri && isLoadingContract)}
+                    className={`px-8 py-3 text-lg font-semibold text-white rounded-full transition-colors disabled:opacity-50 flex items-center gap-2 ${isPreview ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                    title={isPreview ? 'Install is disabled in preview mode' : undefined}
                 >
                     {isConsenting && <Loader2 className="w-5 h-5 animate-spin" />}
-                    {isConsenting ? 'Connecting...' : 'Install'}
+                    {isPreview ? 'Preview Only' : isConsenting ? 'Connecting...' : 'Install'}
                 </button>
             </div>
         </div>

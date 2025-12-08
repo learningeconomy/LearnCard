@@ -51,12 +51,14 @@ interface AppStoreDetailModalProps {
     listing: ExtendedAppStoreListing;
     isInstalled?: boolean;
     onInstallSuccess?: () => void;
+    isPreview?: boolean;
 }
 
 const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     listing,
     isInstalled: initialIsInstalled = false,
     onInstallSuccess,
+    isPreview = false,
 }) => {
     const { closeModal, replaceModal, newModal } = useModal();
     const confirm = useConfirmation();
@@ -142,6 +144,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 appIcon={listing.icon_url}
                 permissions={permissions}
                 contractUri={contractUri}
+                isPreview={isPreview}
                 onAccept={() => {
                     closeModal();
                     doInstall();
