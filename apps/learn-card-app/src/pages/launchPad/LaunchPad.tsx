@@ -422,7 +422,7 @@ const LaunchPad: React.FC = () => {
                                 </h2>
 
                                 {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level */}
-                                {featuredCarouselApps && featuredCarouselApps.length > 0 && tab === LaunchPadTabEnum.all && (
+                                {featuredCarouselApps && featuredCarouselApps.length > 0 && (
                                     <FeaturedCarousel
                                         apps={featuredCarouselApps}
                                         installedAppIds={installedListingIds}
