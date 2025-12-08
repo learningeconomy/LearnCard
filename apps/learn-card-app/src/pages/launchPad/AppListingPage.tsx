@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
 import type { AppStoreListing } from '@learncard/types';
+import numeral from 'numeral';
 
 import { IonPage, IonContent, IonSpinner, IonToast } from '@ionic/react';
 import { useModal, ModalTypes, useConfirmation, useIsLoggedIn, useWithdrawConsent, useWallet, useGetAppMetadata, useGetAppReviews, AppStoreAppMetadata, AppStoreAppReview } from 'learn-card-base';
@@ -10,6 +11,8 @@ import TrashBin from '../../components/svgs/TrashBin';
 import useAppStore from './useAppStore';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
+import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticStarRating';
+import AiPassportAppProfileRatings from '../../components/ai-passport-apps/AiPassportAppProfileDetails/AiPassportAppProfileRatings';
 import Checkmark from '../../components/svgs/Checkmark';
 import { AppInstallConsentModal } from '../../components/credentials/AppInstallConsentModal';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
@@ -452,6 +455,7 @@ const AppListingPage: React.FC = () => {
         );
     }
 
+    console.log('iosMetadata', listing);
     return (
         <IonPage>
             <IonContent fullscreen>
@@ -490,32 +494,15 @@ const AppListingPage: React.FC = () => {
                                         {listing.tagline}
                                     </p>
 
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        {listing.category && (
-                                            <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
-                                                {listing.category}
-                                            </span>
-                                        )}
-
-                                        {/* {installCount !== undefined && (
-                                            <span className="text-sm text-grayscale-500 flex items-center gap-1">
-                                                <svg
-                                                    className="w-4 h-4"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                                    />
-                                                </svg>
-                                                {installCount.toLocaleString()} installs
-                                            </span>
-                                        )} */}
-                                    </div>
+                                    {!iosMetadata && (
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            {listing.category && (
+                                                <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
+                                                    {listing.category}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Action Buttons */}
@@ -577,6 +564,57 @@ const AppListingPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* iOS App Store Metadata Section */}
+                        {iosMetadata && (
+                            <div className="max-w-4xl mx-auto px-4 mt-6">
+                                <div className="bg-white rounded-2xl shadow-sm p-4">
+                                    <div className="flex items-center justify-evenly divide-x divide-grayscale-200">
+                                        <div className="flex flex-col items-center justify-center px-4">
+                                            <p className="text-xs text-grayscale-400 uppercase tracking-wide mb-1">
+                                                {iosMetadata.userRatingCount >= 1000
+                                                    ? numeral(iosMetadata.userRatingCount).format('0.0a')
+                                                    : iosMetadata.userRatingCount} Ratings
+                                            </p>
+
+                                            <p className="text-xl font-bold text-grayscale-700 mb-1">
+                                                {iosMetadata.averageUserRating?.toFixed(1)}
+                                            </p>
+
+                                            <StaticStarRating rating={iosMetadata.averageUserRating} />
+                                        </div>
+
+                                        <div className="flex flex-col items-center justify-center px-4">
+                                            <p className="text-xs text-grayscale-400 uppercase tracking-wide mb-1">
+                                                Age
+                                            </p>
+
+                                            <p className="text-xl font-bold text-grayscale-700 mb-1">
+                                                {iosMetadata.contentAdvisoryRating || '12+'}
+                                            </p>
+
+                                            <p className="text-xs text-grayscale-400">
+                                                Years Old
+                                            </p>
+                                        </div>
+
+                                        <div className="flex flex-col items-center justify-center px-4">
+                                            <p className="text-xs text-grayscale-400 uppercase tracking-wide mb-1">
+                                                Category
+                                            </p>
+
+                                            <p className="text-xl font-bold text-grayscale-700 mb-1">
+                                                #2
+                                            </p>
+
+                                            <p className="text-xs text-grayscale-400">
+                                                {listing.category || iosMetadata.primaryGenreName || 'App'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Content Sections */}
@@ -656,7 +694,7 @@ const AppListingPage: React.FC = () => {
 
                         {/* Links Section */}
                         {(listing.privacy_policy_url || listing.terms_url) && (
-                            <section className="bg-white rounded-2xl p-6 shadow-sm">
+                            <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
                                 <h2 className="text-xl font-semibold text-grayscale-900 mb-4">
                                     Legal
                                 </h2>
@@ -711,6 +749,14 @@ const AppListingPage: React.FC = () => {
                                     )}
                                 </div>
                             </section>
+                        )}
+
+                        {/* Ratings and Reviews Section - from iOS App Store */}
+                        {iosMetadata && iosReviews && iosReviews.length > 0 && (
+                            <AiPassportAppProfileRatings
+                                appMetaData={iosMetadata as AppStoreAppMetadata}
+                                appReviews={iosReviews as AppStoreAppReview[]}
+                            />
                         )}
                     </div>
 
