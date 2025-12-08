@@ -27,6 +27,7 @@ type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
     screenshots?: string[];
     promo_video_url?: string;
     ios_app_store_id?: string;
+    hero_background_color?: string;
 };
 
 // Helper to convert YouTube/Vimeo URLs to embed URLs
@@ -471,7 +472,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 </div>
             </IonHeader>
 
-            <IonContent fullscreen className="ion-padding" style={{ '--background': '#00BA88' } as React.CSSProperties}>
+            <IonContent fullscreen className="ion-padding" style={{ '--background': listing.hero_background_color || '#00BA88' } as React.CSSProperties}>
                 <div className="w-full flex flex-col pb-[120px]">
                     {/* About Section */}
                     <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">

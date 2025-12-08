@@ -724,7 +724,7 @@ console.log('User Profile:', identity.profile);`}
         </div>
 
         <a
-            href="https://docs.learncard.com/partner-connect"
+            href="https://docs.learncard.com/sdks/partner-connect"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full p-3 bg-cyan-500 text-white rounded-xl text-sm font-medium hover:bg-cyan-600 transition-colors"
@@ -966,7 +966,7 @@ console.log('User consent records:', userConsentData.records);`}
         </StepCard>
 
         <a
-            href="https://docs.learncard.com/consent-flow"
+            href="https://docs.learncard.com/core-concepts/consent-and-permissions"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full p-3 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"

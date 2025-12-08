@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, Plus, X, Video, Shield, Smartphone } from 'lucide-react';
+import { Info, Plus, X, Video, Shield, Smartphone, Palette } from 'lucide-react';
 
 import type { AppStoreListingCreate } from '../types';
 import { CATEGORY_OPTIONS } from '../types';
@@ -158,6 +158,57 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         </option>
                     ))}
                 </select>
+            </div>
+
+            {/* Hero Background Color */}
+            <div>
+                <div className="flex items-center gap-2 mb-1">
+                    <Palette className="w-4 h-4 text-gray-400" />
+
+                    <label className="text-sm font-medium text-gray-600">Listing Background Color</label>
+
+                    <span className="text-xs text-gray-400">(optional)</span>
+                </div>
+
+                <p className="text-xs text-gray-400 mb-2">
+                    Choose a background color for your app's detail page
+                </p>
+
+                <div className="flex items-center gap-3">
+                    <input
+                        type="color"
+                        value={data.hero_background_color || '#00BA88'}
+                        onChange={e => handleChange('hero_background_color', e.target.value)}
+                        className="w-12 h-12 rounded-xl border border-gray-200 cursor-pointer p-0.5 bg-white"
+                        style={{ WebkitAppearance: 'none' }}
+                    />
+
+                    <input
+                        type="text"
+                        value={data.hero_background_color || ''}
+                        onChange={e => handleChange('hero_background_color', e.target.value)}
+                        placeholder="#00BA88"
+                        className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
+                        maxLength={7}
+                    />
+
+                    {data.hero_background_color && (
+                        <button
+                            type="button"
+                            onClick={() => handleChange('hero_background_color', '')}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
+
+                {data.hero_background_color && (
+                    <div
+                        className="mt-2 h-8 rounded-lg border border-gray-200"
+                        style={{ backgroundColor: data.hero_background_color }}
+                    />
+                )}
             </div>
 
             {/* Highlights */}

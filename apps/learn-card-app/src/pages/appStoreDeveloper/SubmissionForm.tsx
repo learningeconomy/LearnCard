@@ -72,6 +72,7 @@ const SubmissionForm: React.FC = () => {
             android_app_store_id: listing.android_app_store_id,
             highlights: listing.highlights,
             screenshots: listing.screenshots,
+            hero_background_color: listing.hero_background_color,
         };
     }, [existingListing]);
 
@@ -127,7 +128,7 @@ const SubmissionForm: React.FC = () => {
 
     // Check if form has any changes from initial state
     const hasUnsavedChanges = useCallback(() => {
-        const keys: (keyof AppStoreListingCreate)[] = ['display_name', 'tagline', 'full_description', 'icon_url', 'launch_type', 'launch_config_json', 'category', 'promo_video_url', 'privacy_policy_url', 'terms_url', 'ios_app_store_id', 'android_app_store_id'];
+        const keys: (keyof AppStoreListingCreate)[] = ['display_name', 'tagline', 'full_description', 'icon_url', 'launch_type', 'launch_config_json', 'category', 'promo_video_url', 'privacy_policy_url', 'terms_url', 'ios_app_store_id', 'android_app_store_id', 'hero_background_color'];
         return keys.some(key => {
             const initial = initialFormData[key] ?? '';
             const current = formData[key] ?? '';
@@ -177,6 +178,7 @@ const SubmissionForm: React.FC = () => {
         android_app_store_id: formData.android_app_store_id,
         highlights: formData.highlights,
         screenshots: formData.screenshots,
+        hero_background_color: formData.hero_background_color,
     } as ExtendedAppStoreListing);
 
     const openPreviewModal = () => {
@@ -212,7 +214,7 @@ const SubmissionForm: React.FC = () => {
                 launch_type: formData.launch_type || 'DIRECT_LINK', launch_config_json: formData.launch_config_json || '{}',
                 category: formData.category, promo_video_url: formData.promo_video_url, privacy_policy_url: formData.privacy_policy_url,
                 terms_url: formData.terms_url, ios_app_store_id: formData.ios_app_store_id, android_app_store_id: formData.android_app_store_id,
-                highlights: formData.highlights, screenshots: formData.screenshots,
+                highlights: formData.highlights, screenshots: formData.screenshots, hero_background_color: formData.hero_background_color,
             };
             if (isEditMode && listingId) await updateMutation.mutateAsync({ listingId, updates: listingData });
             else if (integrationId) await createMutation.mutateAsync({ integrationId, listing: listingData });
@@ -232,7 +234,7 @@ const SubmissionForm: React.FC = () => {
                 icon_url: formData.icon_url!, launch_type: formData.launch_type!, launch_config_json: formData.launch_config_json || '{}',
                 category: formData.category, promo_video_url: formData.promo_video_url, privacy_policy_url: formData.privacy_policy_url,
                 terms_url: formData.terms_url, ios_app_store_id: formData.ios_app_store_id, android_app_store_id: formData.android_app_store_id,
-                highlights: formData.highlights, screenshots: formData.screenshots,
+                highlights: formData.highlights, screenshots: formData.screenshots, hero_background_color: formData.hero_background_color,
             };
             if (isEditMode && listingId) { await updateMutation.mutateAsync({ listingId, updates: listingData }); newListingId = listingId; }
             else if (integrationId) { newListingId = await createMutation.mutateAsync({ integrationId, listing: listingData }); }

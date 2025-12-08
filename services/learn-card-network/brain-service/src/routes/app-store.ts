@@ -52,6 +52,7 @@ const AppStoreListingInputValidator = z.object({
     terms_url: z.string().url().optional(),
     highlights: z.array(z.string()).optional(),
     screenshots: z.array(z.string().url()).optional(),
+    hero_background_color: z.string().optional(),
 });
 
 // Helper to transform listing for API response (JSON strings -> arrays)

@@ -58,6 +58,7 @@ export const AppStoreListing = ModelFactory<
             terms_url: { type: 'string', required: false },
             highlights_json: { type: 'string', required: false },
             screenshots_json: { type: 'string', required: false },
+            hero_background_color: { type: 'string', required: false },
         } as any,
         relationships: {
             publishedBy: { model: Integration, direction: 'in', name: 'PUBLISHES_LISTING' },

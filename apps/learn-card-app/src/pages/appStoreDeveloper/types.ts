@@ -8,6 +8,7 @@ export type PromotionLevel = 'FEATURED_CAROUSEL' | 'CURATED_LIST' | 'STANDARD' |
 export interface ExtendedAppStoreListing extends AppStoreListing {
     highlights?: string[];
     screenshots?: string[];
+    hero_background_color?: string;
 }
 
 export interface AppStoreListingCreate {
@@ -25,6 +26,7 @@ export interface AppStoreListingCreate {
     terms_url?: string;
     highlights?: string[];
     screenshots?: string[];
+    hero_background_color?: string;
 }
 
 // Permission types for app capabilities
