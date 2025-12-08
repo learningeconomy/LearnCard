@@ -109,7 +109,7 @@ const DeveloperPortal: React.FC = () => {
 
                     {!selectedIntegrationId && !isLoadingIntegrations && integrations?.length === 0 && (
                         <div className="max-w-2xl mx-auto py-8">
-                            <div className="text-center mb-10">
+                            <div className="text-center mb-8">
                                 <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
                                     <Rocket className="w-8 h-8 text-white" />
                                 </div>
@@ -123,57 +123,8 @@ const DeveloperPortal: React.FC = () => {
                                 </p>
                             </div>
 
-                            <div className="space-y-4 mb-10">
-                                <div className="flex items-start gap-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-violet-100 text-violet-600">
-                                        <Sparkles className="w-5 h-5" />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Step 1</span>
-
-                                        <h3 className="font-semibold text-gray-800 mb-0.5">Create</h3>
-
-                                        <p className="text-sm text-gray-500">
-                                            Build your app listing with details, icon, screenshots, and integration settings.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-start gap-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-amber-100 text-amber-600">
-                                        <Send className="w-5 h-5" />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Step 2</span>
-
-                                        <h3 className="font-semibold text-gray-800 mb-0.5">Submit</h3>
-
-                                        <p className="text-sm text-gray-500">
-                                            Submit your listing for review. Our team will verify it meets our guidelines.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-start gap-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-emerald-100 text-emerald-600">
-                                        <Rocket className="w-5 h-5" />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Step 3</span>
-
-                                        <h3 className="font-semibold text-gray-800 mb-0.5">Publish</h3>
-
-                                        <p className="text-sm text-gray-500">
-                                            Once approved, your app goes live in the App Store for users to discover.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="max-w-md mx-auto">
+                            {/* Input above the fold */}
+                            <div className="max-w-md mx-auto mb-10">
                                 <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
                                     Name your first project
                                 </label>
@@ -184,7 +135,7 @@ const DeveloperPortal: React.FC = () => {
                                         value={newProjectName}
                                         onChange={e => setNewProjectName(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && handleCreateFirstProject()}
-                                        placeholder="e.g. My Awesome App"
+                                        placeholder="e.g. My Awesome Project"
                                         className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
                                         disabled={createIntegrationMutation.isPending}
                                     />
@@ -205,10 +156,61 @@ const DeveloperPortal: React.FC = () => {
                                     </button>
                                 </div>
 
-                                <p className="text-xs text-gray-400 mt-4 text-center">
+                                <p className="text-xs text-gray-400 mt-3 text-center">
                                     Free to publish • No coding required
                                 </p>
                             </div>
+
+                            {/* How it works - below the fold */}
+                            {/* <div className="border-t border-gray-100 pt-8">
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide text-center mb-4">
+                                    How it works
+                                </p>
+
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 p-4">
+                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-violet-100 text-violet-600">
+                                            <Sparkles className="w-4 h-4" />
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-medium text-gray-800 text-sm">Create</h3>
+
+                                            <p className="text-xs text-gray-500">
+                                                Build your listing with details, icon, and screenshots.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 p-4">
+                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-100 text-amber-600">
+                                            <Send className="w-4 h-4" />
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-medium text-gray-800 text-sm">Submit</h3>
+
+                                            <p className="text-xs text-gray-500">
+                                                Submit for review by our team.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 p-4">
+                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-100 text-emerald-600">
+                                            <Rocket className="w-4 h-4" />
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-medium text-gray-800 text-sm">Publish</h3>
+
+                                            <p className="text-xs text-gray-500">
+                                                Go live in the App Store for users to discover.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> */}
                         </div>
                     )}
                 </div>

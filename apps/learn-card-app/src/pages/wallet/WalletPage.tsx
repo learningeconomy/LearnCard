@@ -154,16 +154,10 @@ const WalletPage: React.FC = () => {
                             <IonRow>
                                 <div className="flex justify-between items-center w-full">
                                     <div className="flex items-center gap-[10px] w-full">
-                                        <Link to="/app-store/developer">
-                                            <h2 className="text-grayscale-900 font-poppins text-[25px] tracking-[0.25px]">
-                                                Developer
-                                            </h2>
-                                        </Link>
-                                        <Link to="/app-store/admin">
-                                            <h2 className="text-grayscale-900 font-poppins text-[25px] tracking-[0.25px]">
-                                                Admin
-                                            </h2>
-                                        </Link>
+                                        <h2 className="text-grayscale-900 font-poppins text-[25px] tracking-[0.25px]">
+                                            Passport
+                                        </h2>
+
                                         {/* 
                                         // TODOS:
                                         - add support for new items count based on categories
