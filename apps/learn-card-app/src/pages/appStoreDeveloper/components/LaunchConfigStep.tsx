@@ -105,6 +105,36 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                 ))}
                             </div>
                         </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Consent Flow Contract <span className="text-gray-400 font-normal">(Optional)</span>
+                            </label>
+
+                            <p className="text-xs text-gray-400 mb-2">
+                                Select a consent flow contract to request data sharing permissions when users install your app.
+                                Consent is automatically withdrawn when users uninstall.
+                            </p>
+
+                            <ConsentFlowContractSelector
+                                value={config.contractUri || ''}
+                                onChange={(uri) => updateConfig({ contractUri: uri })}
+                                onContractChange={setSelectedContract}
+                                error={errors.contractUri}
+                            />
+
+                            {selectedContract && (
+                                <div className="mt-3 p-3 bg-cyan-50 border border-cyan-100 rounded-lg">
+                                    <p className="text-xs text-cyan-700">
+                                        <strong>On Install:</strong> User will be prompted to consent to the selected contract's permissions.
+                                    </p>
+
+                                    <p className="text-xs text-cyan-700 mt-1">
+                                        <strong>On Uninstall:</strong> Consent will be automatically withdrawn.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 );
 
