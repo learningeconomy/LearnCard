@@ -1,13 +1,27 @@
-import React, { useState } from 'react';
-import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff } from 'lucide-react';
+import { Clipboard } from '@capacitor/clipboard';
 
+import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 import type { AppPermission } from '../types';
+
+type AuthGrant = {
+    id: string;
+    name: string;
+    challenge: string;
+    createdAt: string;
+    status: 'revoked' | 'active';
+    scope: string;
+    description?: string;
+    expiresAt?: string | null;
+};
 
 interface IntegrationGuidePanelProps {
     isOpen: boolean;
     onClose: () => void;
     launchType: string;
     selectedPermissions?: AppPermission[];
+    contractUri?: string;
 }
 
 // Simple syntax highlighter for TypeScript/JavaScript
@@ -120,6 +134,241 @@ const StepCard: React.FC<{
         <div className="p-4">{children}</div>
     </div>
 );
+
+// Scope options for API tokens
+const SCOPE_OPTIONS = [
+    { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
+    { label: 'Read Only', value: '*:read', description: 'Read access to all resources' },
+    { label: 'Profile Management', value: 'profile:* profileManager:*', description: 'Manage profiles' },
+    { label: 'Credential Management', value: 'credential:* presentation:* boosts:*', description: 'Manage credentials' },
+    { label: 'Contracts', value: 'contracts:*', description: 'Manage contracts' },
+];
+
+// Inline API Token Manager component
+const InlineAPITokenManager: React.FC = () => {
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+    const confirm = useConfirmation();
+
+    const [authGrants, setAuthGrants] = useState<Partial<AuthGrant>[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [creating, setCreating] = useState(false);
+    const [newTokenName, setNewTokenName] = useState('');
+    const [selectedScope, setSelectedScope] = useState('*:*');
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    const fetchAuthGrants = useCallback(async () => {
+        try {
+            const wallet = await initWallet();
+            setLoading(true);
+            const grants = await wallet.invoke.getAuthGrants();
+            setAuthGrants(grants || []);
+        } catch (err) {
+            console.error('Failed to fetch auth grants:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [initWallet]);
+
+    useEffect(() => {
+        fetchAuthGrants();
+    }, []);
+
+    const createToken = async () => {
+        if (!newTokenName.trim()) return;
+
+        try {
+            setCreating(true);
+            const wallet = await initWallet();
+            await wallet.invoke.addAuthGrant({
+                name: newTokenName.trim(),
+                description: 'Created from Integration Guide',
+                scope: selectedScope,
+            });
+
+            presentToast('API Token created successfully', { hasDismissButton: true });
+            setNewTokenName('');
+            setShowCreateForm(false);
+            fetchAuthGrants();
+        } catch (err) {
+            console.error('Failed to create token:', err);
+            presentToast('Failed to create API Token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const copyToken = async (id: string) => {
+        try {
+            const wallet = await initWallet();
+            const token = await wallet.invoke.getAPITokenForAuthGrant(id);
+            await Clipboard.write({ string: token });
+            setCopiedId(id);
+            setTimeout(() => setCopiedId(null), 2000);
+            presentToast('API Token copied to clipboard', { hasDismissButton: true });
+        } catch (err) {
+            console.error('Failed to copy token:', err);
+            presentToast('Failed to copy API Token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        }
+    };
+
+    const revokeToken = async (grant: Partial<AuthGrant>) => {
+        const confirmed = await confirm({
+            text: `Are you sure you want to ${grant.status === 'active' ? 'revoke' : 'delete'} "${grant.name}"?`,
+            onConfirm: async () => {},
+            cancelButtonClassName: 'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px]',
+            confirmButtonClassName: 'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
+        });
+
+        if (!confirmed) return;
+
+        try {
+            const wallet = await initWallet();
+
+            if (grant.status === 'active') {
+                await wallet.invoke.revokeAuthGrant(grant.id!);
+                presentToast('API Token revoked', { hasDismissButton: true });
+            } else {
+                await wallet.invoke.deleteAuthGrant(grant.id!);
+                presentToast('API Token deleted', { hasDismissButton: true });
+            }
+
+            fetchAuthGrants();
+        } catch (err) {
+            console.error('Failed to revoke/delete token:', err);
+            presentToast('Failed to update API Token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        }
+    };
+
+    const activeGrants = authGrants.filter(g => g.status === 'active');
+
+    return (
+        <div className="space-y-3">
+            {/* Header with create button */}
+            <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-600">
+                    {loading ? 'Loading...' : `${activeGrants.length} active token${activeGrants.length !== 1 ? 's' : ''}`}
+                </p>
+
+                {!showCreateForm && (
+                    <button
+                        onClick={() => setShowCreateForm(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 text-white rounded-lg text-xs font-medium hover:bg-indigo-600 transition-colors"
+                    >
+                        <Plus className="w-3 h-3" />
+                        New Token
+                    </button>
+                )}
+            </div>
+
+            {/* Create form */}
+            {showCreateForm && (
+                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-3">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Token Name</label>
+                        <input
+                            type="text"
+                            value={newTokenName}
+                            onChange={(e) => setNewTokenName(e.target.value)}
+                            placeholder="e.g., Production API"
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Scope / Permissions</label>
+                        <select
+                            value={selectedScope}
+                            onChange={(e) => setSelectedScope(e.target.value)}
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                            {SCOPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                            {SCOPE_OPTIONS.find(o => o.value === selectedScope)?.description}
+                        </p>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                        <button
+                            onClick={createToken}
+                            disabled={creating || !newTokenName.trim()}
+                            className="flex-1 px-3 py-2 bg-indigo-500 text-white rounded-lg text-sm font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50"
+                        >
+                            {creating ? 'Creating...' : 'Create Token'}
+                        </button>
+
+                        <button
+                            onClick={() => { setShowCreateForm(false); setNewTokenName(''); setSelectedScope('*:*'); }}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Token list */}
+            {!loading && activeGrants.length > 0 && (
+                <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                    {activeGrants.map((grant) => (
+                        <div key={grant.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-800 truncate">{grant.name}</p>
+                                <p className="text-xs text-gray-500">
+                                    Created {new Date(grant.createdAt!).toLocaleDateString()}
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => copyToken(grant.id!)}
+                                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                    title="Copy token"
+                                >
+                                    {copiedId === grant.id ? (
+                                        <Check className="w-4 h-4 text-green-500" />
+                                    ) : (
+                                        <Copy className="w-4 h-4 text-gray-500" />
+                                    )}
+                                </button>
+
+                                <button
+                                    onClick={() => revokeToken(grant)}
+                                    className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Revoke token"
+                                >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Empty state */}
+            {!loading && activeGrants.length === 0 && !showCreateForm && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                    <Key className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">No API tokens yet</p>
+                    <p className="text-xs text-gray-500 mt-1">Create one to authenticate your backend</p>
+                </div>
+            )}
+
+            {/* Security note */}
+            <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-800">
+                    <strong>Security:</strong> Never expose your API key in client-side code.
+                </p>
+            </div>
+        </div>
+    );
+};
 
 // Map permissions to their corresponding API methods
 const PERMISSION_TO_METHODS: Record<AppPermission, { method: string; description: string; code: string }> = {
@@ -359,16 +608,261 @@ console.log('User Profile:', identity.profile);`}
     );
 };
 
+const ConsentRedirectGuide: React.FC<{ contractUri?: string }> = ({ contractUri }) => {
+    const displayContractUri = contractUri || 'lc:contract:example123...';
+    const hasContractUri = Boolean(contractUri);
+
+    return (
+    <div className="space-y-6">
+        <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+            <p className="text-sm text-indigo-800">
+                Use the Consent Redirect flow to collect user consent and credentials from your external application. 
+                Users will be redirected to LearnCard to grant permissions, then back to your app with their credentials.
+            </p>
+        </div>
+
+        <StepCard step={1} title="Create a Consent Flow Contract" icon={<Globe className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-3">
+                First, create or select a Consent Flow Contract that defines what permissions your app needs. 
+                You can do this in the Developer Portal or via the API.
+            </p>
+
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                <p className="text-xs text-amber-800">
+                    <strong>Important:</strong> Copy and save your Contract URI — you'll need it to send credentials later.
+                </p>
+            </div>
+
+            {hasContractUri ? (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-3">
+                    <p className="text-xs text-green-800 mb-2">
+                        <strong>✓ Contract Selected:</strong> Your consent flow contract URI:
+                    </p>
+                    <code className="text-xs bg-green-100 px-2 py-1 rounded break-all block">
+                        {contractUri}
+                    </code>
+                </div>
+            ) : (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
+                    <p className="text-xs text-gray-600">
+                        Select a consent flow contract above to see your URI here.
+                    </p>
+                </div>
+            )}
+
+            <CodeBlock
+                code={`// Your Contract URI
+const consentFlowContractURI = '${displayContractUri}';`}
+            />
+        </StepCard>
+
+        <StepCard step={2} title="Set Up Your Redirect Handler" icon={<Code className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-3">
+                Create an endpoint to handle the redirect from LearnCard. The user's DID and Delegate VP JWT 
+                will be included in the URL parameters.
+            </p>
+
+            <CodeBlock
+                code={`// Example: /api/learncard/callback or /auth/learncard/redirect
+
+app.get('/api/learncard/callback', (req, res) => {
+    // Extract the user's DID and Delegate VP from URL params
+    const { did, delegateVpJwt } = req.query;
+    
+    // Store these with the user's account in your system
+    await saveUserLearnCardCredentials(userId, {
+        did: did,
+        delegateVpJwt: delegateVpJwt
+    });
+    
+    // Redirect to your app's success page
+    res.redirect('/dashboard?connected=true');
+});`}
+            />
+
+            <p className="text-xs text-gray-500 mt-3">
+                Store the <code className="bg-gray-100 px-1.5 py-0.5 rounded">did</code> and{' '}
+                <code className="bg-gray-100 px-1.5 py-0.5 rounded">delegateVpJwt</code> to identify and 
+                send credentials to this user later.
+            </p>
+        </StepCard>
+
+        <StepCard step={3} title="Create an API Key" icon={<Key className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-4">
+                Generate an API key to authenticate your backend with the LearnCard Network.
+            </p>
+
+            <InlineAPITokenManager />
+        </StepCard>
+
+        <StepCard step={4} title="Initialize LearnCard on Your Backend" icon={<Package className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-3">
+                Install and initialize the LearnCard SDK in your backend application.
+            </p>
+
+            <CodeBlock code={`npm install @learncard/init`} />
+
+            <p className="text-xs text-gray-500 mt-3 mb-3">Then initialize with your API key:</p>
+
+            <CodeBlock
+                code={`import { initLearnCard } from '@learncard/init';
+
+const learnCard = await initLearnCard({ 
+    apiKey: process.env.LEARNCARD_API_KEY,
+    network: true 
+});
+
+console.log('LearnCard DID:', learnCard.id.did());`}
+            />
+        </StepCard>
+
+        <StepCard step={5} title="Create a Boost Template" icon={<Code className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-3">
+                Create a reusable Boost (credential template) that you'll issue to users.
+            </p>
+
+            <CodeBlock
+                code={`// Create your boost template
+const boostTemplate = learnCard.invoke.newCredential({
+    type: 'boost',
+    boostName: 'Example Boost',
+    boostImage: 'https://placehold.co/400x400?text=My+App',
+    achievementType: 'Achievement',
+    achievementName: 'Connected External App',
+    achievementDescription: 'Awarded for connecting to our app.',
+    achievementNarrative: 'Successfully connected and verified.',
+    achievementImage: 'https://placehold.co/400x400?text=Badge',
+});
+
+// Create the boost and get its URI (do this once, reuse the URI)
+const boostMetadata = {
+    name: 'My App Connection Badge',
+    description: 'Issued when users connect their LearnCard'
+};
+
+const boostUri = await learnCard.invoke.createBoost(
+    boostTemplate, 
+    boostMetadata
+);
+
+// Save boostUri for later use`}
+            />
+        </StepCard>
+
+        <StepCard step={6} title="Issue Credentials to Users" icon={<Zap className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-3">
+                When you're ready to send a credential to a user, create and issue it via the consent flow contract.
+            </p>
+
+            <CodeBlock
+                code={`// Get the user's DID (stored from Step 2)
+const userDID = await getUserLearnCardDID(userId);
+
+// Create the credential for this specific user
+const credentialUnsigned = learnCard.invoke.newCredential({
+    type: 'boost',
+    did: learnCard.id.did(),           // Your app's DID (issuer)
+    subject: userDID,                   // User's DID (recipient)
+    boostName: 'Example Boost',
+    boostImage: 'https://placehold.co/400x400?text=My+App',
+    achievementType: 'Achievement',
+    achievementName: 'Connected External App',
+    achievementDescription: 'Awarded for connecting to our app.',
+    achievementNarrative: 'Successfully connected and verified.',
+    achievementImage: 'https://placehold.co/400x400?text=Badge',
+});
+
+// Sign the credential
+const issuedCredential = await learnCard.invoke.issueCredential(
+    credentialUnsigned
+);
+
+// Send it to the user via the consent flow contract
+const credentialUri = await learnCard.invoke.writeCredentialToContract(
+    userDID,                    // Recipient DID
+    consentFlowContractURI,     // Your contract URI from Step 1
+    issuedCredential,           // The signed credential
+    boostUri                    // The boost template URI from Step 5
+);
+
+console.log('Credential sent:', credentialUri);`}
+            />
+        </StepCard>
+
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
+            
+            <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
+                <li>User clicks "Connect with LearnCard" in your app</li>
+                <li>User is redirected to LearnCard to grant consent</li>
+                <li>LearnCard redirects back to your app with their DID</li>
+                <li>Your backend stores the user's DID</li>
+                <li>When ready, your backend issues credentials to that DID</li>
+            </ol>
+        </div>
+
+        <StepCard step={7} title="Additional Functions (Optional)" icon={<Database className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-4">
+                As the contract owner, you can also query consent data and transactions:
+            </p>
+
+            <div className="space-y-4">
+                <div>
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Get all consented data for your contract:</p>
+                    <CodeBlock
+                        code={`// Query all consent records for your contract
+const queryOptions = { limit: 50 };
+
+const consentData = await learnCard.invoke.getConsentFlowData(
+    consentFlowContractURI,
+    queryOptions
+);
+
+console.log('Consented records:', consentData.records);`}
+                    />
+                </div>
+
+                <div>
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Get consent data for a specific user:</p>
+                    <CodeBlock
+                        code={`// Query consent data involving a specific DID
+const userConsentData = await learnCard.invoke.getConsentFlowDataForDid(
+    userDID,
+    queryOptions
+);
+
+console.log('User consent records:', userConsentData.records);`}
+                    />
+                </div>
+            </div>
+        </StepCard>
+
+        <a
+            href="https://docs.learncard.com/consent-flow"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full p-3 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"
+        >
+            View Full Documentation
+            <ExternalLink className="w-4 h-4" />
+        </a>
+    </div>
+    );
+};
+
 export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
     isOpen,
     onClose,
     launchType,
     selectedPermissions = [],
+    contractUri,
 }) => {
     const renderGuideContent = () => {
         switch (launchType) {
             case 'EMBEDDED_IFRAME':
                 return <EmbeddedIframeGuide selectedPermissions={selectedPermissions} />;
+            case 'CONSENT_REDIRECT':
+                return <ConsentRedirectGuide contractUri={contractUri} />;
             default:
                 return (
                     <div className="p-8 text-center text-gray-500">

@@ -451,6 +451,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                 onClose={() => setShowGuide(false)}
                 launchType={data.launch_type || ''}
                 selectedPermissions={config.permissions || []}
+                contractUri={config.contractUri}
             />
         </div>
     );
