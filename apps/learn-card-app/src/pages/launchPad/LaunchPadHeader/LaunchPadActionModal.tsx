@@ -16,6 +16,11 @@ import CaretDown from 'learn-card-base/svgs/CaretDown';
 import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
 import X from 'learn-card-base/svgs/X';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
+import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
+import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
+import TeacherIcon from '../../../assets/images/quicknavroles/teacherappleicon.png';
+import AdminIcon from '../../../assets/images/quicknavroles/adminshieldicon.png';
+import DeveloperIcon from '../../../assets/images/quicknavroles/developeralienicon.png';
 import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
 import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
 import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
@@ -78,7 +83,7 @@ const getIconForActionButton = (
                 );
             }
             return <SolidCircleIcon className="w-[50px] h-auto" />;
-        case 'Start AI Tutoring Session':
+        case 'New AI Tutoring Session':
             return <AISessionsQuickNav className="w-[50px] h-auto" />;
         case 'Claim Credential':
             return <CredentialQuickNav className="w-[50px] h-auto" />;
@@ -286,7 +291,7 @@ const ActionButton: React.FC<{
                     { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                 );
                 return;
-            case 'Start AI Tutoring Session':
+            case 'New AI Tutoring Session':
                 history.push('/ai/topics');
                 closeModal();
                 return;
@@ -299,7 +304,7 @@ const ActionButton: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            className={`${bg} w-full text-lef flex px-5 py-4  text-[18px] font-poppins font-semibold text-grayscale-900 rounded-[20px] border border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            className={`${bg} w-full text-left flex px-5 py-4  text-[18px] font-poppins font-semibold text-grayscale-900 rounded-[20px] border border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
         >
             <div className="flex items-center justify-center">
                 <span className="mr-2">
@@ -335,14 +340,33 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const roleLabel = LearnCardRoles.find(r => r.type === role)?.title ?? 'Learner';
 
+    const activeRole = (role ?? LearnCardRolesEnum.learner) as LearnCardRolesEnum;
+    const roleIcons: Record<LearnCardRolesEnum, string> = {
+        [LearnCardRolesEnum.learner]: LearnerIcon,
+        [LearnCardRolesEnum.guardian]: GuardianIcon,
+        [LearnCardRolesEnum.teacher]: TeacherIcon,
+        [LearnCardRolesEnum.admin]: AdminIcon,
+        [LearnCardRolesEnum.counselor]: TeacherIcon,
+        [LearnCardRolesEnum.developer]: DeveloperIcon,
+    };
+    const iconBgColors: Record<LearnCardRolesEnum, string> = {
+        [LearnCardRolesEnum.learner]: 'var(--teal-200, #99F6E4)',
+        [LearnCardRolesEnum.guardian]: 'var(--ion-color-violet-200)',
+        [LearnCardRolesEnum.teacher]: 'var(--ion-color-amber-100)',
+        [LearnCardRolesEnum.admin]: 'var(--ion-color-cyan-100)',
+        [LearnCardRolesEnum.counselor]: 'var(--ion-color-violet-200)',
+        [LearnCardRolesEnum.developer]: 'var(--lime-300, #BEF264)',
+    };
+    const roleIconSrc = roleIcons[activeRole];
+    const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
+
     const RoleActions: Record<LearnCardRolesEnum, string[]> = {
         [LearnCardRolesEnum.learner]: [
-            'Build My LearnCard',
+            'New AI Tutoring Session',
             'Understand My Skills',
-            'Personalize AI Sessions',
-            'Start AI Tutoring Session',
+            'Claim Credential',
             'Share Insights with Teacher',
-            // 'Claim Credential',
+            'Build My LearnCard',
         ],
         [LearnCardRolesEnum.teacher]: [
             'View Learner Insights',
@@ -460,10 +484,21 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                 { mobile: ModalTypes.Freeform, desktop: ModalTypes.Freeform }
                             )
                         }
-                        className="px-[20px] py-4px] rounded-full border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
+                        className="rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
                     >
-                        <span className="flex items-center justify-center">
-                            {roleLabel} <CaretDown className="ml-[5px]" />
+                        <span className="px-[3px] flex items-center justify-center gap-2">
+                            <span
+                                className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
+                                style={roleIconBgStyle}
+                            >
+                                <img
+                                    src={roleIconSrc}
+                                    alt={`${roleLabel} icon`}
+                                    className="h-[20px] w-[20px] object-contain"
+                                />
+                            </span>
+                            <span>{roleLabel}</span>
+                            <CaretDown className="ml-[5px]" />
                         </span>
                     </button>
                 </div>

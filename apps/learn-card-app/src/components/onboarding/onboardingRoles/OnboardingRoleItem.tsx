@@ -39,12 +39,12 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
     const iconSrc = roleIcons[roleItem?.type as LearnCardRolesEnum];
 
     const iconBgColors: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: 'var(--ion-color-teal-100)',
+        [LearnCardRolesEnum.learner]: 'var(--teal-200, #99F6E4)',
         [LearnCardRolesEnum.guardian]: 'var(--ion-color-violet-200)',
         [LearnCardRolesEnum.teacher]: 'var(--ion-color-amber-100)',
         [LearnCardRolesEnum.admin]: 'var(--ion-color-cyan-100)',
         [LearnCardRolesEnum.counselor]: 'var(--ion-color-violet-200)',
-        [LearnCardRolesEnum.developer]: 'var(--ion-color-lime-100)',
+        [LearnCardRolesEnum.developer]: 'var(--lime-300, #BEF264)',
     };
 
     const iconBgStyle: React.CSSProperties = {
