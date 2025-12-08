@@ -498,7 +498,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         }
                         className="rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
                     >
-                        <span className="px-[3px] flex items-center justify-center gap-2">
+                        <span className="p-[3px] flex items-center justify-center gap-2">
                             <span
                                 className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
                                 style={roleIconBgStyle}
