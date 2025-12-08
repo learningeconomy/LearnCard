@@ -137,13 +137,13 @@ const LaunchPad: React.FC = () => {
     let apps = useLaunchPadApps();
     let contracts = useLaunchPadContracts();
 
-    aiApps = aiApps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.aiLearning] }));
-    apps = apps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.integrations] }));
+    aiApps = aiApps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.ai] }));
+    apps = apps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.tools] }));
     contracts = contracts.map(contract => ({
         ...contract,
         launchPadTab: contract.data?.needsGuardianConsent
             ? [LaunchPadTabEnum.games]
-            : [LaunchPadTabEnum.integrations],
+            : [LaunchPadTabEnum.tools],
     }));
 
     const aiAppContracts = aiApps.map(app => app.contractUri);
@@ -175,8 +175,8 @@ const LaunchPad: React.FC = () => {
             const appName = item?.name?.toLowerCase() || '';
 
             if (
-                tab === LaunchPadTabEnum.aiLearning &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.aiLearning) &&
+                tab === LaunchPadTabEnum.ai &&
+                !item?.launchPadTab?.includes(LaunchPadTabEnum.ai) &&
                 !item?.appType?.includes(LaunchPadAppType.AI)
             ) {
                 return false;
@@ -196,8 +196,8 @@ const LaunchPad: React.FC = () => {
                 return false;
             }
             if (
-                tab === LaunchPadTabEnum.integrations &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.integrations) &&
+                tab === LaunchPadTabEnum.tools &&
+                !item?.launchPadTab?.includes(LaunchPadTabEnum.tools) &&
                 !item?.appType?.includes(LaunchPadAppType.INTEGRATION)
             ) {
                 return false;
@@ -278,14 +278,20 @@ const LaunchPad: React.FC = () => {
         const lowerSearch = searchInput?.toLowerCase() || '';
 
         return curatedAppsNotInstalled.filter(app => {
+            // Filter by category if one is selected
+            if (appStoreCategory && app.category?.toLowerCase() !== appStoreCategory.toLowerCase()) {
+                return false;
+            }
+
             if (lowerSearch) {
                 const nameMatch = app.display_name?.toLowerCase().includes(lowerSearch);
                 const taglineMatch = app.tagline?.toLowerCase().includes(lowerSearch);
                 return nameMatch || taglineMatch;
             }
+
             return true;
         });
-    }, [curatedAppsNotInstalled, searchInput]);
+    }, [curatedAppsNotInstalled, searchInput, appStoreCategory]);
 
     // Non-promoted available apps (for Discover More section)
     const nonPromotedAvailableApps = useMemo(() => {
@@ -302,8 +308,8 @@ const LaunchPad: React.FC = () => {
 
             // Tab filtering
             if (
-                tab === LaunchPadTabEnum.aiLearning &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.aiLearning) &&
+                tab === LaunchPadTabEnum.ai &&
+                !item?.launchPadTab?.includes(LaunchPadTabEnum.ai) &&
                 !item?.appType?.includes(LaunchPadAppType.AI)
             ) {
                 return false;
@@ -326,8 +332,8 @@ const LaunchPad: React.FC = () => {
             }
 
             if (
-                tab === LaunchPadTabEnum.integrations &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.integrations) &&
+                tab === LaunchPadTabEnum.tools &&
+                !item?.launchPadTab?.includes(LaunchPadTabEnum.tools) &&
                 !item?.appType?.includes(LaunchPadAppType.INTEGRATION)
             ) {
                 return false;
@@ -348,8 +354,8 @@ const LaunchPad: React.FC = () => {
 
             // Tab filtering
             if (
-                tab === LaunchPadTabEnum.aiLearning &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.aiLearning) &&
+                tab === LaunchPadTabEnum.ai &&
+                !item?.launchPadTab?.includes(LaunchPadTabEnum.ai) &&
                 !item?.appType?.includes(LaunchPadAppType.AI)
             ) {
                 return false;
@@ -372,8 +378,8 @@ const LaunchPad: React.FC = () => {
             }
 
             if (
-                tab === LaunchPadTabEnum.integrations &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.integrations) &&
+                tab === LaunchPadTabEnum.tools &&
+                !item?.launchPadTab?.includes(LaunchPadTabEnum.tools) &&
                 !item?.appType?.includes(LaunchPadAppType.INTEGRATION)
             ) {
                 return false;
@@ -622,7 +628,7 @@ const LaunchPad: React.FC = () => {
                                                 if (
                                                     item?.data &&
                                                     (tab === LaunchPadTabEnum.all ||
-                                                        tab === LaunchPadTabEnum.integrations ||
+                                                        tab === LaunchPadTabEnum.tools ||
                                                         tab === LaunchPadTabEnum.games)
                                                 ) {
                                                     const data = item?.data;
@@ -635,7 +641,7 @@ const LaunchPad: React.FC = () => {
                                                         return undefined;
 
                                                     if (
-                                                        tab === LaunchPadTabEnum.integrations &&
+                                                        tab === LaunchPadTabEnum.tools &&
                                                         data.needsGuardianConsent
                                                     )
                                                         return undefined;

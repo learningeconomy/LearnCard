@@ -98,17 +98,12 @@ export const LAUNCH_TYPE_INFO: Record<
 };
 
 export const CATEGORY_OPTIONS = [
-    { value: 'education', label: 'Education' },
-    { value: 'credentials', label: 'Credentials & Verification' },
-    { value: 'employment', label: 'Employment' },
-    { value: 'finance', label: 'Finance' },
-    { value: 'healthcare', label: 'Healthcare' },
-    { value: 'government', label: 'Government' },
-    { value: 'social', label: 'Social' },
-    { value: 'utilities', label: 'Utilities' },
-    { value: 'developer', label: 'Developer Tools' },
-    { value: 'ai', label: 'AI & Machine Learning' },
+    { value: 'ai', label: 'AI' },
+    { value: 'learning', label: 'Learning' },
     { value: 'games', label: 'Games' },
+    { value: 'tools', label: 'Tools' },
+    { value: 'employment', label: 'Employment' },
+    { value: 'credentials', label: 'Credentials' },
     { value: 'other', label: 'Other' },
 ];
 

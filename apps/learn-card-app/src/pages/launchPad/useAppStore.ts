@@ -3,9 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
 import type { AppStoreListing, InstalledApp, PaginatedAppStoreListings, PaginatedInstalledApps } from '@learncard/types';
 
-export type AppStoreCategory = 'All' | 'AI' | 'Learning' | 'Games' | 'Integrations';
+export type AppStoreCategory = 'All' | 'AI' | 'Learning' | 'Games' | 'Tools' | 'Employment' | 'Credentials' | 'Other';
 
-export const APP_STORE_CATEGORIES: AppStoreCategory[] = ['All', 'AI', 'Learning', 'Games', 'Integrations'];
+export const APP_STORE_CATEGORIES: AppStoreCategory[] = ['All', 'AI', 'Learning', 'Games', 'Tools', 'Employment', 'Credentials', 'Other'];
 
 // Map LaunchPad tab categories to app store categories
 export const mapTabToCategory = (tab: string): string | undefined => {
@@ -14,7 +14,10 @@ export const mapTabToCategory = (tab: string): string | undefined => {
         'AI': 'ai',
         'Learning': 'learning',
         'Games': 'games',
-        'Integrations': 'integrations',
+        'Tools': 'tools',
+        'Employment': 'employment',
+        'Credentials': 'credentials',
+        'Other': 'other',
     };
 
     return mapping[tab];
