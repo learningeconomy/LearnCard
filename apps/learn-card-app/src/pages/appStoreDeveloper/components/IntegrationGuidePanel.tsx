@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff, Mail, Send, Server, Webhook, Shield, CheckCircle2, Loader2 } from 'lucide-react';
+import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff, Mail, Send, Server, Webhook, Shield, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
@@ -1176,7 +1176,7 @@ app.post('/webhooks/learncard', (req, res) => {
         </div>
 
         <a
-            href="https://docs.learncard.com/api/inbox"
+            href="https://docs.learncard.com/how-to-guides/send-credentials"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full p-3 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"
@@ -1185,6 +1185,196 @@ app.post('/webhooks/learncard', (req, res) => {
             <ExternalLink className="w-4 h-4" />
         </a>
     </div>
+    );
+};
+
+// Direct Link Guide
+const DirectLinkGuide: React.FC<{ url?: string }> = ({ url }) => {
+    return (
+        <div className="space-y-6">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <p className="text-sm text-blue-800">
+                    Direct Link is the simplest integration — users click your app and are 
+                    redirected to your URL with optional query parameters for user context.
+                </p>
+            </div>
+
+            <StepCard step={1} title="Configure Your Redirect URL" icon={<Globe className="w-5 h-5 text-gray-500" />}>
+                <p className="text-sm text-gray-600 mb-3">
+                    Provide the URL where users will be redirected when they launch your app.
+                </p>
+
+                <CodeBlock code={url || 'https://yourapp.com'} />
+
+                <p className="text-xs text-gray-500 mt-3">
+                    This URL is configured in the Launch Configuration step.
+                </p>
+            </StepCard>
+
+            <StepCard step={2} title="Handle User Context (Optional)" icon={<Code className="w-5 h-5 text-gray-500" />}>
+                <p className="text-sm text-gray-600 mb-3">
+                    LearnCard can append the user's DID as a query parameter for identification.
+                </p>
+
+                <CodeBlock
+                    code={`// Your app receives:
+${url || 'https://yourapp.com'}?did=did:web:user.learncard.com
+
+// Extract the DID in your app
+const urlParams = new URLSearchParams(window.location.search);
+const userDid = urlParams.get('did');
+
+if (userDid) {
+    // User is authenticated via LearnCard
+    console.log('User DID:', userDid);
+}`}
+                />
+            </StepCard>
+
+            <StepCard step={3} title="Verify User Identity (Optional)" icon={<Key className="w-5 h-5 text-gray-500" />}>
+                <p className="text-sm text-gray-600 mb-3">
+                    If you need to verify the user's identity, you can resolve their DID.
+                </p>
+
+                <CodeBlock
+                    code={`import { initLearnCard } from '@learncard/init';
+
+const learnCard = await initLearnCard({ network: true });
+
+// Resolve the user's DID document
+const didDocument = await learnCard.invoke.resolveDid(userDid);
+console.log('User Profile:', didDocument);`}
+                />
+            </StepCard>
+
+            <div className="p-4 bg-gray-100 rounded-xl">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">When to Use Direct Link</h4>
+
+                <ul className="space-y-1 text-xs text-gray-600">
+                    <li className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        Simple web apps that don't need wallet interaction
+                    </li>
+
+                    <li className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        External services or portals
+                    </li>
+
+                    <li className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        Apps that only need user identification
+                    </li>
+                </ul>
+            </div>
+        </div>
+    );
+};
+
+// AI Tutor Guide
+const AITutorGuide: React.FC<{ aiTutorUrl?: string }> = ({ aiTutorUrl }) => {
+    return (
+        <div className="space-y-6">
+            <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl">
+                <p className="text-sm text-violet-800">
+                    AI Tutor apps let users select learning topics and launch personalized 
+                    tutoring sessions. LearnCard handles topic selection and passes context to your app.
+                </p>
+            </div>
+
+            <StepCard step={1} title="Configure Your AI Tutor URL" icon={<Sparkles className="w-5 h-5 text-gray-500" />}>
+                <p className="text-sm text-gray-600 mb-3">
+                    Provide your AI tutor's base URL. Users will be redirected with topic and DID parameters.
+                </p>
+
+                <CodeBlock code={aiTutorUrl || 'https://yourtutor.com'} />
+
+                <p className="text-xs text-gray-500 mt-3">
+                    Users will be redirected to: <code className="bg-gray-100 px-1 rounded">{aiTutorUrl || 'https://yourtutor.com'}/chats?did=...&topic=...</code>
+                </p>
+            </StepCard>
+
+            <StepCard step={2} title="Handle Launch Parameters" icon={<Code className="w-5 h-5 text-gray-500" />}>
+                <p className="text-sm text-gray-600 mb-3">
+                    Your app receives the user's DID and selected topic as query parameters.
+                </p>
+
+                <CodeBlock
+                    code={`// Extract parameters from URL
+const urlParams = new URLSearchParams(window.location.search);
+const userDid = urlParams.get('did');
+const topic = urlParams.get('topic');
+
+console.log('Starting session for:', { userDid, topic });
+
+// Initialize your AI tutor with the topic
+initTutorSession({
+    userDid,
+    topic,
+    // Your tutor configuration...
+});`}
+                />
+            </StepCard>
+
+            <StepCard step={3} title="Track Learning Progress (Optional)" icon={<Database className="w-5 h-5 text-gray-500" />}>
+                <p className="text-sm text-gray-600 mb-3">
+                    Store session data and issue credentials for completed learning milestones.
+                </p>
+
+                <CodeBlock
+                    code={`// After a learning milestone is achieved
+const credential = {
+    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    type: ['VerifiableCredential', 'LearningAchievement'],
+    credentialSubject: {
+        id: userDid,
+        achievement: {
+            name: topic,
+            description: 'Completed AI tutoring session',
+            achievementType: 'LearningMilestone'
+        }
+    }
+};
+
+// Issue via Universal Inbox
+await learnCard.invoke.inbox.issue({
+    recipient: { type: 'did', value: userDid },
+    credential
+});`}
+                />
+            </StepCard>
+
+            <div className="p-4 bg-gray-100 rounded-xl">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">User Flow</h4>
+
+                <div className="space-y-2 text-xs text-gray-600">
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">1</div>
+                        <span>User clicks "Open" on your AI Tutor app</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">2</div>
+                        <span>Topic selection modal appears (New Topic or Revisit)</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">3</div>
+                        <span>User enters or selects a learning topic</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">4</div>
+                        <span>Redirected to your app with <code className="bg-white px-1 rounded">?did=...&topic=...</code></span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">5</div>
+                        <span>Your AI tutor starts the personalized session</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -1204,6 +1394,10 @@ export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
                 return <ConsentRedirectGuide contractUri={contractUri} />;
             case 'SERVER_HEADLESS':
                 return <ServerHeadlessGuide webhookUrl={webhookUrl} />;
+            case 'DIRECT_LINK':
+                return <DirectLinkGuide />;
+            case 'AI_TUTOR':
+                return <AITutorGuide />;
             default:
                 return (
                     <div className="p-8 text-center text-gray-500">

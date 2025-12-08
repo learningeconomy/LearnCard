@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { AlertCircle, Code, Play, BookOpen, PenTool, Sparkles, Info, HelpCircle } from 'lucide-react';
+import { AlertCircle, Code, Play, BookOpen, PenTool, Sparkles, Info, HelpCircle, Server } from 'lucide-react';
 
 import { IntegrationGuidePanel } from './IntegrationGuidePanel';
 
@@ -251,38 +251,16 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
             case 'SERVER_HEADLESS':
                 return (
                     <div className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-1">Webhook URL</label>
-
-                            <input
-                                type="url"
-                                value={config.webhookUrl || ''}
-                                onChange={e => updateConfig({ webhookUrl: e.target.value })}
-                                placeholder="https://yourserver.com/webhooks/learncard"
-                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
-                                    errors.webhookUrl ? 'border-red-300' : 'border-gray-200'
-                                }`}
-                            />
-
-                            {errors.webhookUrl && (
-                                <p className="text-sm text-red-500 mt-1">{errors.webhookUrl}</p>
-                            )}
-
-                            <p className="text-sm text-gray-400 mt-1">
-                                LearnCard will send event notifications to this endpoint.
-                            </p>
-                        </div>
-
-                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                             <div className="flex gap-3">
-                                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                                <Server className="w-5 h-5 text-emerald-600 flex-shrink-0" />
 
-                                <div className="text-sm text-amber-800">
-                                    <p className="font-medium">Security Note</p>
+                                <div className="text-sm text-emerald-800">
+                                    <p className="font-medium">Server-to-Server Integration</p>
 
                                     <p className="mt-1">
-                                        Your webhook endpoint should verify the signature of incoming
-                                        requests. API keys will be provided after approval.
+                                        Use the Universal Inbox API to issue credentials directly from your server.
+                                        No additional configuration needed — see the integration guide for setup steps.
                                     </p>
                                 </div>
                             </div>

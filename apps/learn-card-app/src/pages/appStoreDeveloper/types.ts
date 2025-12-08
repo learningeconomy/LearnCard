@@ -60,7 +60,7 @@ export interface LaunchConfig {
 
 export const LAUNCH_TYPE_INFO: Record<
     LaunchType,
-    { label: string; description: string; icon: string }
+    { label: string; description: string; icon: string; comingSoon?: boolean }
 > = {
     EMBEDDED_IFRAME: {
         label: 'Embedded Iframe',
@@ -71,6 +71,7 @@ export const LAUNCH_TYPE_INFO: Record<
         label: 'Second Screen',
         description: 'Opens your app in a new window or tab alongside the wallet',
         icon: 'external-link',
+        comingSoon: true,
     },
     DIRECT_LINK: {
         label: 'Direct Link',
