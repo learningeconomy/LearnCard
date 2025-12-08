@@ -109,6 +109,29 @@ const DeveloperPortal: React.FC = () => {
 
                     {!selectedIntegrationId && !isLoadingIntegrations && integrations?.length === 0 && (
                         <div className="max-w-2xl mx-auto py-8">
+                            {/* Beta Banner */}
+                            <div className="mb-6 mx-auto max-w-md">
+                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                                    <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                                        <Sparkles className="w-4 h-4 text-amber-600" />
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-amber-800">
+                                            Developer Portal Beta
+                                        </p>
+
+                                        <p className="text-xs text-amber-600">
+                                            Early access — features may change as we improve
+                                        </p>
+                                    </div>
+
+                                    <span className="flex-shrink-0 px-2 py-0.5 bg-amber-200 text-amber-800 text-xs font-semibold rounded-full uppercase">
+                                        Beta
+                                    </span>
+                                </div>
+                            </div>
+
                             <div className="text-center mb-8">
                                 <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
                                     <Rocket className="w-8 h-8 text-white" />
