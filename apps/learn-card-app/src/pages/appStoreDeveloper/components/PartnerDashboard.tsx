@@ -9,11 +9,12 @@ import {
     Eye,
     Trash2,
     Send,
-    AlertCircle,
     ChevronRight,
     Pencil,
     Archive,
     Play,
+    Sparkles,
+    Rocket,
 } from 'lucide-react';
 
 import { useModal, ModalTypes } from 'learn-card-base';
@@ -100,6 +101,94 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
         { id: 'LISTED' as Tab, label: 'Published', icon: CheckCircle2, count: listedListings.length },
         { id: 'ARCHIVED' as Tab, label: 'Rejected', icon: Archive, count: archivedListings.length },
     ];
+
+    // Show welcome/onboarding view when no listings exist
+    if (!isLoading && listings.length === 0) {
+        const steps = [
+            {
+                number: 1,
+                title: 'Create',
+                description: 'Build your app listing with details, icon, screenshots, and integration settings.',
+                icon: Sparkles,
+                color: 'bg-violet-100 text-violet-600',
+            },
+            {
+                number: 2,
+                title: 'Submit',
+                description: 'Submit your listing for review. Our team will verify it meets our guidelines.',
+                icon: Send,
+                color: 'bg-amber-100 text-amber-600',
+            },
+            {
+                number: 3,
+                title: 'Publish',
+                description: 'Once approved, your app goes live in the App Store for users to discover.',
+                icon: Rocket,
+                color: 'bg-emerald-100 text-emerald-600',
+            },
+        ];
+
+        return (
+            <div className="max-w-2xl mx-auto py-8">
+                <div className="text-center mb-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
+                        <Rocket className="w-8 h-8 text-white" />
+                    </div>
+
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+                        Publish Your App
+                    </h2>
+
+                    <p className="text-gray-500 max-w-md mx-auto">
+                        Share your app with thousands of users. It only takes a few minutes to get started.
+                    </p>
+                </div>
+
+                <div className="space-y-4 mb-10">
+                    {steps.map((step, index) => (
+                        <div
+                            key={step.number}
+                            className="flex items-start gap-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm"
+                        >
+                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${step.color}`}>
+                                <step.icon className="w-5 h-5" />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                                        Step {step.number}
+                                    </span>
+                                </div>
+
+                                <h3 className="font-semibold text-gray-800 mb-0.5">{step.title}</h3>
+
+                                <p className="text-sm text-gray-500">{step.description}</p>
+                            </div>
+
+                            {index < steps.length - 1 && (
+                                <div className="absolute left-[2.15rem] top-[4.5rem] w-px h-4 bg-gray-200" />
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                <div className="text-center">
+                    <button
+                        onClick={onCreateNew}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl text-base font-medium hover:bg-cyan-600 transition-colors shadow-lg shadow-cyan-200"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Create Your First Listing
+                    </button>
+
+                    <p className="text-xs text-gray-400 mt-4">
+                        Free to publish • No coding required
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-5">
