@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff, Mail, Send, Server, Webhook } from 'lucide-react';
+import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff, Mail, Send, Server, Webhook, Shield, CheckCircle2, Loader2 } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
@@ -366,6 +366,133 @@ const InlineAPITokenManager: React.FC = () => {
                 <p className="text-xs text-red-800">
                     <strong>Security:</strong> Never expose your API key in client-side code.
                 </p>
+            </div>
+        </div>
+    );
+};
+
+// Inline Signing Authority Setup component
+const InlineSigningAuthoritySetup: React.FC = () => {
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+
+    const [loading, setLoading] = useState(true);
+    const [creating, setCreating] = useState(false);
+    const [primarySAName, setPrimarySAName] = useState<string | null>(null);
+
+    const fetchSigningAuthority = useCallback(async () => {
+        try {
+            setLoading(true);
+            const wallet = await initWallet();
+            const primary = await wallet.invoke.getPrimaryRegisteredSigningAuthority();
+            setPrimarySAName(primary?.relationship?.name ?? null);
+        } catch (err) {
+            console.error('Failed to fetch signing authority:', err);
+            setPrimarySAName(null);
+        } finally {
+            setLoading(false);
+        }
+    }, [initWallet]);
+
+    useEffect(() => {
+        fetchSigningAuthority();
+    }, []);
+
+    const createDefaultSigningAuthority = async () => {
+        try {
+            setCreating(true);
+            const wallet = await initWallet();
+
+            // Create and register signing authority with default name
+            const authority = await wallet.invoke.createSigningAuthority('integration-sa');
+
+            if (!authority) {
+                throw new Error('Failed to create signing authority');
+            }
+
+            await wallet.invoke.registerSigningAuthority(
+                authority.endpoint!,
+                authority.name,
+                authority.did!
+            );
+
+            // Set as primary/default
+            await wallet.invoke.setPrimaryRegisteredSigningAuthority(
+                authority.endpoint!,
+                authority.name
+            );
+
+            presentToast('Signing authority created successfully', { hasDismissButton: true });
+            fetchSigningAuthority();
+        } catch (err) {
+            console.error('Failed to create signing authority:', err);
+            presentToast('Failed to create signing authority', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <div className="flex items-center gap-2 text-gray-500">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Checking signing authority...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (primarySAName) {
+        return (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    </div>
+
+                    <div className="flex-1">
+                        <p className="text-sm font-medium text-emerald-800">Signing Authority Configured</p>
+                        <p className="text-xs text-emerald-600 mt-0.5">
+                            Using: <code className="bg-emerald-100 px-1 rounded">{primarySAName}</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-5 h-5 text-amber-600" />
+                </div>
+
+                <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-800">No Signing Authority Found</p>
+                    <p className="text-xs text-amber-700 mt-1">
+                        A signing authority is required to sign credentials. Create one to continue.
+                    </p>
+
+                    <button
+                        onClick={createDefaultSigningAuthority}
+                        disabled={creating}
+                        className="mt-3 flex items-center gap-2 px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+                    >
+                        {creating ? (
+                            <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Creating...
+                            </>
+                        ) : (
+                            <>
+                                <Plus className="w-3 h-3" />
+                                Create Default Signing Authority
+                            </>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -862,7 +989,15 @@ const ServerHeadlessGuide: React.FC<{ webhookUrl?: string }> = ({ webhookUrl }) 
             </p>
         </div>
 
-        <StepCard step={1} title="Create an API Key" icon={<Key className="w-5 h-5 text-gray-500" />}>
+        <StepCard step={1} title="Configure Signing Authority" icon={<Shield className="w-5 h-5 text-gray-500" />}>
+            <p className="text-sm text-gray-600 mb-4">
+                A signing authority is required to sign credentials on your behalf.
+            </p>
+
+            <InlineSigningAuthoritySetup />
+        </StepCard>
+
+        <StepCard step={2} title="Create an API Key" icon={<Key className="w-5 h-5 text-gray-500" />}>
             <p className="text-sm text-gray-600 mb-4">
                 Generate an API key to authenticate your backend with the LearnCard Network.
             </p>
@@ -870,7 +1005,7 @@ const ServerHeadlessGuide: React.FC<{ webhookUrl?: string }> = ({ webhookUrl }) 
             <InlineAPITokenManager />
         </StepCard>
 
-        <StepCard step={2} title="Initialize LearnCard SDK" icon={<Package className="w-5 h-5 text-gray-500" />}>
+        <StepCard step={3} title="Initialize LearnCard SDK" icon={<Package className="w-5 h-5 text-gray-500" />}>
             <p className="text-sm text-gray-600 mb-3">
                 Install and initialize the LearnCard SDK in your backend application.
             </p>
@@ -889,7 +1024,7 @@ const learnCard = await initLearnCard({
             />
         </StepCard>
 
-        <StepCard step={3} title="Issue Credential via Universal Inbox" icon={<Send className="w-5 h-5 text-gray-500" />}>
+        <StepCard step={4} title="Issue Credential via Universal Inbox" icon={<Send className="w-5 h-5 text-gray-500" />}>
             <p className="text-sm text-gray-600 mb-3">
                 Send credentials to users by email or phone. LearnCard handles delivery automatically.
             </p>
@@ -955,7 +1090,7 @@ console.log(result);
             </div>
         </StepCard>
 
-        <StepCard step={4} title="Handle Webhook Events (Optional)" icon={<Webhook className="w-5 h-5 text-gray-500" />}>
+        <StepCard step={5} title="Handle Webhook Events (Optional)" icon={<Webhook className="w-5 h-5 text-gray-500" />}>
             <p className="text-sm text-gray-600 mb-3">
                 Receive notifications when credentials are delivered or claimed.
             </p>
@@ -980,7 +1115,7 @@ app.post('/webhooks/learncard', (req, res) => {
             />
         </StepCard>
 
-        <StepCard step={5} title="REST API Alternative" icon={<Server className="w-5 h-5 text-gray-500" />}>
+        <StepCard step={6} title="REST API Alternative" icon={<Server className="w-5 h-5 text-gray-500" />}>
             <p className="text-sm text-gray-600 mb-3">
                 You can also use the REST API directly without the SDK.
             </p>
