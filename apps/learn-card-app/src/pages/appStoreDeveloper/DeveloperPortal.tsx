@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { Sparkles, Send, Rocket, Plus } from 'lucide-react';
+import { Sparkles, Send, Rocket, ArrowRight, Loader2 } from 'lucide-react';
 
 import { useDeveloperPortal } from './useDeveloperPortal';
 import { HeaderIntegrationSelector } from './components/HeaderIntegrationSelector';
@@ -15,10 +15,13 @@ const DeveloperPortal: React.FC = () => {
 
     const {
         useIntegrations,
+        useCreateIntegration,
         useListingsForIntegration,
         useDeleteListing,
         useSubmitForReview,
     } = useDeveloperPortal();
+
+    const [newProjectName, setNewProjectName] = useState('');
 
     const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
 
@@ -32,6 +35,19 @@ const DeveloperPortal: React.FC = () => {
 
     const deleteMutation = useDeleteListing();
     const submitMutation = useSubmitForReview();
+    const createIntegrationMutation = useCreateIntegration();
+
+    const handleCreateFirstProject = async () => {
+        if (!newProjectName.trim()) return;
+
+        try {
+            const integrationId = await createIntegrationMutation.mutateAsync(newProjectName.trim());
+            setSelectedIntegrationId(integrationId);
+            setNewProjectName('');
+        } catch (error) {
+            console.error('Failed to create project:', error);
+        }
+    };
 
     const handleCreateNew = () => {
         if (selectedIntegrationId) {
@@ -74,10 +90,10 @@ const DeveloperPortal: React.FC = () => {
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto">
-                    <div className="text-center mb-6">
+                    {/* (<div className="text-center mb-6">
                         <h1 className="text-2xl font-semibold text-gray-700 tracking-tight">Partner Portal</h1>
                         <p className="text-gray-500 mt-1">Manage your app listings and track their approval status</p>
-                    </div>
+                    </div>)} */}
 
                     {selectedIntegrationId && (
                         <PartnerDashboard
@@ -157,14 +173,39 @@ const DeveloperPortal: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="text-center">
-                                <div className="bg-cyan-50 border border-cyan-100 rounded-xl p-4 mb-4">
-                                    <p className="text-sm text-cyan-700">
-                                        <span className="font-medium">To get started:</span> Use the dropdown in the header to create your first project.
-                                    </p>
+                            <div className="max-w-md mx-auto">
+                                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                                    Name your first project
+                                </label>
+
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newProjectName}
+                                        onChange={e => setNewProjectName(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleCreateFirstProject()}
+                                        placeholder="e.g. My Awesome App"
+                                        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
+                                        disabled={createIntegrationMutation.isPending}
+                                    />
+
+                                    <button
+                                        onClick={handleCreateFirstProject}
+                                        disabled={!newProjectName.trim() || createIntegrationMutation.isPending}
+                                        className="px-5 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-200 flex items-center gap-2"
+                                    >
+                                        {createIntegrationMutation.isPending ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <>
+                                                Get Started
+                                                <ArrowRight className="w-4 h-4" />
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
 
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-gray-400 mt-4 text-center">
                                     Free to publish • No coding required
                                 </p>
                             </div>
