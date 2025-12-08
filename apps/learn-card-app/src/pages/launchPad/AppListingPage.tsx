@@ -19,7 +19,7 @@ import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import ConsentFlowPrivacyAndData from '../consentFlow/ConsentFlowPrivacyAndData';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
-import { Settings } from 'lucide-react';
+import { Settings, Eye } from 'lucide-react';
 
 // Extended type to include new fields
 type ExtendedAppStoreListing = AppStoreListing & {
@@ -49,12 +49,22 @@ interface AppListingParams {
     listingId: string;
 }
 
+interface LocationState {
+    listing?: ExtendedAppStoreListing;
+    isPreview?: boolean;
+}
+
 const AppListingPage: React.FC = () => {
     const { listingId } = useParams<AppListingParams>();
-    const history = useHistory();
+    const history = useHistory<LocationState>();
+    const location = history.location;
     const isLoggedIn = useIsLoggedIn();
     const { newModal, closeModal, replaceModal } = useModal();
     const confirm = useConfirmation();
+
+    // Check if we have a preview listing from route state (for admin preview)
+    const previewListing = (location.state?.listing as ExtendedAppStoreListing) || null;
+    const isPreviewMode = location.state?.isPreview || false;
 
     const {
         usePublicListing,
@@ -64,8 +74,11 @@ const AppListingPage: React.FC = () => {
         useIsAppInstalled,
     } = useAppStore();
 
-    // Fetch public listing
-    const { data: listing, isLoading: isLoadingListing, error } = usePublicListing(listingId);
+    // Fetch public listing (skip if we have preview data)
+    const { data: fetchedListing, isLoading: isLoadingListing, error } = usePublicListing(listingId);
+
+    // Use preview listing if available, otherwise use fetched
+    const listing = previewListing || fetchedListing;
 
     const installMutation = useInstallApp();
     const uninstallMutation = useUninstallApp();
@@ -459,6 +472,14 @@ const AppListingPage: React.FC = () => {
     return (
         <IonPage>
             <IonContent fullscreen>
+                {/* Preview Mode Banner */}
+                {isPreviewMode && (
+                    <div className="sticky top-0 z-50 bg-amber-500 text-white px-4 py-2 flex items-center justify-center gap-2 shadow-md">
+                        <Eye className="w-4 h-4" />
+                        <span className="text-sm font-medium">Preview Mode — This is how the public listing page will appear</span>
+                    </div>
+                )}
+
                 <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-emerald-50">
                     {/* Hero Section */}
                     <div className="relative overflow-hidden">

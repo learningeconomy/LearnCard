@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent, IonSpinner, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle } from '@ionic/react';
-import { Search, Filter, Inbox, Loader2, RefreshCw, ExternalLink, ShieldAlert, CheckCircle, XCircle, Star, TrendingUp, Minus, ArrowDown, RotateCcw, Check, Image, Play, BookOpen, PenTool, Eye, ChevronLeft } from 'lucide-react';
+import { Search, Filter, Inbox, Loader2, RefreshCw, ExternalLink, ShieldAlert, CheckCircle, XCircle, Star, TrendingUp, Minus, ArrowDown, RotateCcw, Check, Image, Play, BookOpen, PenTool, Eye, ChevronLeft, ChevronDown, Monitor, Layout } from 'lucide-react';
 
 import { useModal, ModalTypes, useWallet, contractCategoryNameToCategoryMetadata } from 'learn-card-base';
 import { useQuery } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { useDeveloperPortal } from '../appStoreDeveloper/useDeveloperPortal';
 import { StatusBadge } from '../appStoreDeveloper/components/StatusBadge';
 import { AppStoreHeader } from '../appStoreDeveloper/components/AppStoreHeader';
 import { AppPreviewModal } from '../appStoreDeveloper/components/AppPreviewModal';
+import AppStoreDetailModal from '../launchPad/AppStoreDetailModal';
 import FullScreenConsentFlow from '../consentFlow/FullScreenConsentFlow';
 import FullScreenGameFlow from '../consentFlow/GameFlow/FullScreenGameFlow';
 import { LAUNCH_TYPE_INFO, CATEGORY_OPTIONS, PERMISSION_OPTIONS, PROMOTION_LEVEL_INFO, type AppListingStatus, type PromotionLevel, type ExtendedAppStoreListing, type AppPermission } from '../appStoreDeveloper/types';
@@ -125,11 +127,13 @@ interface ListingDetailProps {
 
 const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, onPromotionChange, isUpdating, onBack }) => {
     const { newModal } = useModal();
+    const history = useHistory();
     const [isApproving, setIsApproving] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
     const [isUnarchiving, setIsUnarchiving] = useState(false);
     const [isUnlisting, setIsUnlisting] = useState(false);
     const [showPromotionMenu, setShowPromotionMenu] = useState(false);
+    const [showPreviewMenu, setShowPreviewMenu] = useState(false);
 
     const launchTypeInfo = LAUNCH_TYPE_INFO[listing.launch_type];
     const categoryLabel = CATEGORY_OPTIONS.find(c => c.value === listing.category)?.label;
@@ -170,7 +174,28 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, 
         }
     };
 
-    const handlePreview = () => {
+    // Preview as Modal (how it appears in LaunchPad)
+    const handlePreviewModal = () => {
+        setShowPreviewMenu(false);
+        newModal(
+            <AppStoreDetailModal listing={listing} />,
+            { hideButton: true },
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
+
+    // Preview as Page (public listing page)
+    const handlePreviewPage = () => {
+        setShowPreviewMenu(false);
+        history.push({
+            pathname: `/app/${listing.listing_id}`,
+            state: { listing, isPreview: true },
+        });
+    };
+
+    // Developer/Embed test preview
+    const handlePreviewDeveloper = () => {
+        setShowPreviewMenu(false);
         newModal(
             <AppPreviewModal listing={listing} />,
             { hideButton: true },
@@ -202,10 +227,31 @@ const ListingDetail: React.FC<ListingDetailProps> = ({ listing, onStatusChange, 
                                 <h2 className="text-sm sm:text-base font-semibold text-gray-700 leading-tight">{listing.display_name}</h2>
                                 <p className="text-gray-500 text-xs mt-0.5 line-clamp-1">{listing.tagline}</p>
                             </div>
-                            <button onClick={handlePreview} className="flex-shrink-0 flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-3 md:py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-xs md:text-sm font-medium hover:bg-indigo-200 transition-colors">
-                                <Play className="w-3 h-3 md:w-4 md:h-4" />
-                                <span className="hidden sm:inline">Preview</span>
-                            </button>
+                            <div className="relative">
+                                <button onClick={() => setShowPreviewMenu(!showPreviewMenu)} className="flex-shrink-0 flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-3 md:py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-xs md:text-sm font-medium hover:bg-indigo-200 transition-colors">
+                                    <Eye className="w-3 h-3 md:w-4 md:h-4" />
+                                    <span className="hidden sm:inline">Preview</span>
+                                    <ChevronDown className="w-3 h-3" />
+                                </button>
+                                {showPreviewMenu && (
+                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                                        <button onClick={handlePreviewModal} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                            <Layout className="w-4 h-4 text-gray-400" />
+                                            Preview Modal
+                                        </button>
+                                        <button onClick={handlePreviewPage} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                            <Monitor className="w-4 h-4 text-gray-400" />
+                                            Preview Page
+                                        </button>
+                                        {listing.launch_type === 'EMBEDDED_IFRAME' && (
+                                            <button onClick={handlePreviewDeveloper} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-t border-gray-100">
+                                                <Play className="w-4 h-4 text-gray-400" />
+                                                Test Embed
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                             {categoryLabel && <span className="px-1.5 py-0.5 bg-gray-100 rounded text-xs font-medium text-gray-500">{categoryLabel}</span>}
