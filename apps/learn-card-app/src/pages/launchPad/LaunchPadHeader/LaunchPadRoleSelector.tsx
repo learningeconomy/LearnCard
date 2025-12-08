@@ -27,7 +27,7 @@ const LaunchPadRoleSelector: React.FC<LaunchPadRoleSelectorProps> = ({ role, set
 
     return (
         <div className="flex items-center justify-center w-full h-full">
-            <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[600px]">
+            <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
                 <button
                     type="button"
                     aria-label="Close modal"
@@ -45,9 +45,12 @@ const LaunchPadRoleSelector: React.FC<LaunchPadRoleSelectorProps> = ({ role, set
                             customSize={120}
                         />
                     </div>
-                    <h3 className="text-center text-[20px] font-poppins font-semibold text-[#2A2F55] mt-[10px]">
-                        Select Role
-                    </h3>
+                    <div className="w-full flex items-center justify-center mt-[10px]">
+                        <span className="inline-flex items-center gap-2 px-[12px] py-[6px] rounded-[10px] bg-[#E7E9F1] text-[#2A2F55] text-sm font-poppins font-semibold">
+                            Select Role
+                            <X className="w-[12px] h-[12px]" />
+                        </span>
+                    </div>
 
                     <div className="mt-[10px]">
                         <OnboardingRoles role={_role} setRole={_setRole} />
