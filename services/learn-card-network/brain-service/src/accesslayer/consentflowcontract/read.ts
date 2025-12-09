@@ -62,14 +62,14 @@ export const getRequestedForByStatus = async (
     id: string,
     status: 'pending' | 'accepted' | 'denied'
 ) => {
-    const result = await new QueryBuilder()
+    const result = await new QueryBuilder(new BindParam({ status }))
         .match({
             model: ConsentFlowContract,
             identifier: 'c',
             where: { id },
         })
         .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
-        .where(`r.status = '${status}'`)
+        .where('r.status = $status')
         .return(['p', 'r'])
         .run();
 
