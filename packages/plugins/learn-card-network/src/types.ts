@@ -472,7 +472,11 @@ export type LearnCardNetworkPluginMethods = {
         shareLink: string
     ) => Promise<boolean>;
 
-    sendAiInsightShareRequest: (targetProfileId: string, shareLink: string) => Promise<boolean>;
+    sendAiInsightShareRequest: (
+        targetProfileId: string,
+        shareLink: string,
+        childProfileId?: string
+    ) => Promise<boolean>;
 
     getContractSentRequests: (contractUri: string) => Promise<
         {
@@ -503,6 +507,11 @@ export type LearnCardNetworkPluginMethods = {
 
     markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
     cancelContractRequest: (contractUri: string, targetProfileId: string) => Promise<boolean>;
+    forwardContractRequestToProfile: (
+        contractUri: string,
+        targetProfileId: string,
+        parentProfileId: string
+    ) => Promise<boolean>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
     getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;

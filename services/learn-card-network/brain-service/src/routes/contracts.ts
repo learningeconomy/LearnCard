@@ -93,6 +93,7 @@ import {
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { ProfileType } from 'types/profile';
 import { removeRequestedForRelationship } from '@accesslayer/consentflowcontract/relationships/delete';
+import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -1760,6 +1761,7 @@ export const contractsRouter = t.router({
         })
         .input(
             z.object({
+                childProfileId: z.string().optional(),
                 targetProfileId: z.string(),
                 shareLink: z.string(),
             })
@@ -1767,7 +1769,7 @@ export const contractsRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { targetProfileId, shareLink } = input;
+            const { childProfileId, targetProfileId, shareLink } = input;
 
             if (!profile) {
                 throw new TRPCError({
@@ -1785,13 +1787,23 @@ export const contractsRouter = t.router({
                 });
             }
 
+            let fromProfile: ProfileType | null = profile;
+            if (childProfileId) fromProfile = await getProfileByProfileId(childProfileId);
+
+            if (!fromProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'From profile not found.',
+                });
+            }
+
             await addNotificationToQueue({
                 type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
-                from: profile,
+                from: fromProfile,
                 to: targetProfile as ProfileType,
                 message: {
-                    title: 'AI Insights Request',
-                    body: `${profile?.displayName} would like to share their insights with ${targetProfile?.displayName}.`,
+                    title: 'AI Insights',
+                    body: `${fromProfile?.displayName} would like to share their insights with ${targetProfile?.displayName}.`,
                 },
                 data: {
                     metadata: {
@@ -2089,6 +2101,69 @@ export const contractsRouter = t.router({
                     uri: constructUri('contract', request.contract.id, ctx.domain),
                 },
             }));
+        }),
+    forwardContractRequestToProfile: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/forward-request-to-profile',
+                tags: ['Contracts'],
+                summary: 'Forward a contract request',
+                description: 'Forwards a contract request to another profile',
+            },
+        })
+        .input(
+            z.object({
+                parentProfileId: z.string(),
+                targetProfileId: z.string(), // teacher OR user we want to share insights with
+                contractUri: z.string().optional(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri, targetProfileId, parentProfileId } = input;
+
+            const parentProfile = await getProfileByProfileId(parentProfileId);
+            const targetProfile = await getProfileByProfileId(targetProfileId);
+
+            if (!parentProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Parent profile not found.',
+                });
+            }
+
+            const managers = await getProfilesThatManageAProfile(profile.profileId);
+            const isChild = managers.some(m => m.profileId === parentProfile.profileId);
+
+            if (!isChild) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a child of the parent profile',
+                });
+            }
+
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
+                from: profile,
+                to: parentProfile as ProfileType,
+                message: {
+                    title: 'AI Insights',
+                    body: `${profile?.displayName} would like to share their insights with ${targetProfile?.displayName}.`,
+                },
+                data: {
+                    metadata: {
+                        type: 'AI Insight',
+                        subtype: 'forwarded-share',
+                        targetProfileId,
+                        contractUri,
+                    },
+                },
+            });
+
+            return true;
         }),
 });
 

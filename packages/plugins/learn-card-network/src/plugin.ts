@@ -1115,12 +1115,18 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
-            sendAiInsightShareRequest: async (_learnCard, targetProfileId, shareLink) => {
+            sendAiInsightShareRequest: async (
+                _learnCard,
+                targetProfileId,
+                shareLink,
+                childProfileId
+            ) => {
                 await ensureUser();
 
                 return client.contracts.sendAiInsightShareRequest.mutate({
                     targetProfileId,
                     shareLink,
+                    childProfileId,
                 });
             },
 
@@ -1152,6 +1158,21 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.contracts.getAllContractRequestsForProfile.query({
                     targetProfileId,
+                });
+            },
+
+            forwardContractRequestToProfile: async (
+                _learnCard,
+                contractUri,
+                targetProfileId,
+                parentProfileId
+            ) => {
+                await ensureUser();
+
+                return client.contracts.forwardContractRequestToProfile.mutate({
+                    contractUri,
+                    targetProfileId,
+                    parentProfileId,
                 });
             },
 
