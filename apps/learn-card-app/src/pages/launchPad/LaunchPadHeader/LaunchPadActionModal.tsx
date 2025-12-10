@@ -18,6 +18,7 @@ import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/St
 import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
 import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
 import X from 'learn-card-base/svgs/X';
+import FamiliesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/FamiliesQuickNav';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
 import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
@@ -71,6 +72,12 @@ const getIconForActionButton = (
             return <StudiesQuickNav className="w-[50px] h-auto" />;
         case 'Add Credential':
             return <CredentialQuickNav className="w-[50px] h-auto" />;
+        case 'Create Family':
+        case 'View Family':
+            return <FamiliesQuickNav className="w-[50px] h-auto" />;
+        case 'Add Child':
+        case 'Switch Child':
+            return <CredentialQuickNav className="w-[50px] h-auto" />;
         case 'Personalize AI Sessions':
             return <UnicornIcon className="w-[50px] h-auto" />;
         case 'Understand My Skills':
@@ -97,9 +104,10 @@ const getIconForActionButton = (
             return <StudiesQuickNav className="w-[50px] h-auto" />;
         case 'Share Insights with Teacher':
             return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
+        case 'View Child Insights':
+            return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
         case 'View Learner Insights':
         case 'Request Learner Insights':
-        case 'View Child Insights':
             return <ResumeQuickNav className="w-[50px] h-auto" />;
         case 'Boost Child':
             return <BoostsQuickNav className="w-[50px] h-auto" />;
@@ -438,6 +446,13 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Claim Credential': 'bg-[var(--ion-color-amber-300)]',
         'Share Insights with Teacher': 'bg-[var(--ion-color-lime-300)]',
         'Build My LearnCard': 'bg-[var(--ion-color-teal-200)]',
+        // Guardian role labels
+        'Create Family': 'bg-[var(--ion-color-amber-200)]',
+        'View Family': 'bg-[var(--ion-color-amber-300)]',
+        'Boost Child': 'bg-[var(--ion-color-blue-400)]',
+        'Add Child': 'bg-[var(--ion-color-cyan-200)]',
+        'Switch Child': 'bg-[var(--ion-color-yellow-300)]',
+        'View Child Insights': 'bg-[var(--ion-color-lime-300)]',
     };
 
     return (
