@@ -522,7 +522,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                 />
                             </span>
                             <span>{roleLabel}</span>
-                            <CaretDown className="ml-[5px]" />
+                            {!isChildProfile && <CaretDown className="ml-[5px]" />}
                         </span>
                     </button>
                 </div>
