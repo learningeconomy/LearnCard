@@ -1,6 +1,7 @@
 import { VC, VCValidator } from '@learncard/types';
 import { useWallet, CredentialCategory } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 
 export interface FileInfo {
     name?: string;
@@ -37,6 +38,12 @@ export interface UploadOptions {
 export const useUploadVcFromText = () => {
     const { initWallet } = useWallet();
 
+    const isOpenBadgeV2 = (obj: any) => {
+        const ctx = obj?.['@context'];
+        if (typeof ctx === 'string' && ctx.includes('openbadges/v2')) return true;
+        return false;
+    };
+
     const validateTextVC = (vcText: string) => {
         if (!vcText) return undefined;
 
@@ -48,8 +55,19 @@ export const useUploadVcFromText = () => {
             rawCredential = JSON.stringify(vcText);
         }
 
+        let parsed: any;
         try {
-            const vcValidation = VCValidator.safeParse(JSON.parse(rawCredential));
+            parsed = JSON.parse(rawCredential);
+        } catch (err: any) {
+            return [err.message];
+        }
+
+        if (isOpenBadgeV2(parsed)) {
+            return undefined;
+        }
+
+        try {
+            const vcValidation = VCValidator.safeParse(parsed);
             if (vcValidation.error) {
                 const flattened = vcValidation.error.flatten();
                 const fieldErrors = Object.entries(flattened.fieldErrors).flatMap(
@@ -70,14 +88,60 @@ export const useUploadVcFromText = () => {
     const uploadVcFromText = async (input: string | File, options: UploadOptions = {}) => {
         const { fileInfo, id, uploadType } = options;
         const wallet = await initWallet();
-        let text: string;
+        // Handle both string and File inputs
+        const text = input instanceof File ? await input.text() : input;
+        let parsed: any;
 
         try {
-            // Handle both string and File inputs
-            text = input instanceof File ? await input.text() : input;
-            const rawCredential = JSON.parse(text);
+            parsed = JSON.parse(text);
+        } catch (err: any) {
+            return {
+                success: false,
+                error: `Invalid JSON format: ${err.message}`,
+            };
+        }
 
-            const errors = validateTextVC(text);
+        if (isOpenBadgeV2(parsed)) {
+            // Handle Open Badge V2 flow
+            try {
+                const walletWithObv2 = await wallet.addPlugin(openBadgeV2Plugin(wallet));
+                const newVC = await walletWithObv2.invoke.wrapOpenBadgeV2(parsed);
+                const credURI = await walletWithObv2?.store?.LearnCloud?.uploadEncrypted?.(newVC);
+                const categoryObvV2 = getDefaultCategoryForCredential(newVC);
+
+                const name =
+                    fileInfo?.name ||
+                    parsed?.name ||
+                    parsed?.badge?.name ||
+                    'Open Badge V2 Credential';
+
+                return {
+                    success: true,
+                    credentialUri: credURI,
+                    storedVC: await walletWithObv2.index.LearnCloud.add({
+                        id: id || crypto.randomUUID(),
+                        uri: credURI,
+                        category: categoryObvV2,
+                        fileName: name,
+                        fileSize: fileInfo?.size,
+                        fileType: fileInfo?.type,
+                        uploadType,
+                    }),
+                    category: categoryObvV2,
+                    fileInfo: fileInfo || {},
+                };
+            } catch (err: any) {
+                return {
+                    success: false,
+                    error: `Failed to add Open Badge V2 credential: ${err.message}`,
+                    fileInfo: fileInfo || {},
+                };
+            }
+        }
+
+        //Handle regular VC
+        try {
+            const errors = validateTextVC(parsed);
             if (errors) {
                 return {
                     success: false,
@@ -85,21 +149,21 @@ export const useUploadVcFromText = () => {
                 };
             }
 
-            const category = getDefaultCategoryForCredential(rawCredential) as CredentialCategory;
+            const category = getDefaultCategoryForCredential(parsed) as CredentialCategory;
 
             let credentialUri, storedVC;
 
             try {
                 // Upload the credential to LearnCloud
-                credentialUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(rawCredential);
+                credentialUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(parsed);
 
                 if (credentialUri) {
                     // Add to index if credentialUri was successfully obtained
                     try {
                         const name =
                             fileInfo?.name ||
-                            rawCredential?.name ||
-                            rawCredential?.credentialSubject?.achievement?.name ||
+                            parsed?.name ||
+                            parsed?.credentialSubject?.achievement?.name ||
                             'JSON Credential';
 
                         storedVC = await wallet.index.LearnCloud.add({
