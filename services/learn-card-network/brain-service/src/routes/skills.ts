@@ -78,16 +78,8 @@ export const skillsRouter = t.router({
             })
         )
         .output(PaginatedSkillTreeValidator)
-        .query(async ({ ctx, input }) => {
-            const profileId = ctx.user.profile.profileId;
+        .query(async ({ input }) => {
             const { id: frameworkId, rootsLimit, childrenLimit, cursor } = input;
-
-            const manages = await doesProfileManageFramework(profileId, frameworkId);
-            if (!manages)
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You do not manage this framework',
-                });
 
             return buildLocalSkillTreePage(frameworkId, rootsLimit, childrenLimit, cursor ?? null);
         }),
@@ -114,21 +106,8 @@ export const skillsRouter = t.router({
             })
         )
         .output(PaginatedSkillTreeValidator)
-        .query(async ({ ctx, input }) => {
-            const profileId = ctx.user.profile.profileId;
+        .query(async ({ input }) => {
             const { id: parentId, frameworkId, limit, cursor } = input;
-
-            // Require that the caller manages the specified framework and it contains this skill
-            const allowed = await doesProfileManageSkillInFramework(
-                profileId,
-                frameworkId,
-                parentId
-            );
-            if (!allowed)
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You do not manage this framework or it does not contain this skill',
-                });
 
             const page = await getChildrenForSkillInFrameworkPaged(
                 frameworkId,
@@ -542,15 +521,8 @@ export const skillsRouter = t.router({
         })
         .input(z.object({ frameworkId: z.string(), id: z.string() }))
         .output(TagValidator.array())
-        .query(async ({ ctx, input }): Promise<TagType[]> => {
-            const profileId = ctx.user.profile.profileId;
+        .query(async ({ input }): Promise<TagType[]> => {
             const { frameworkId, id } = input;
-            const allowed = await doesProfileManageFramework(profileId, frameworkId);
-            if (!allowed)
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You do not manage a framework containing this skill',
-                });
 
             return listTagsForSkill(frameworkId, id);
         }),
@@ -627,17 +599,8 @@ export const skillsRouter = t.router({
         })
         .input(CountSkillsInputValidator)
         .output(CountSkillsResultValidator)
-        .query(async ({ ctx, input }) => {
-            const profileId = ctx.user.profile.profileId;
+        .query(async ({ input }) => {
             const { frameworkId, skillId, recursive, onlyCountCompetencies } = input;
-
-            const manages = await doesProfileManageFramework(profileId, frameworkId);
-            if (!manages) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You do not manage this framework',
-                });
-            }
 
             const count = await countSkillsInFramework(
                 frameworkId,
@@ -664,17 +627,8 @@ export const skillsRouter = t.router({
         })
         .input(GetFullSkillTreeInputValidator)
         .output(GetFullSkillTreeResultValidator)
-        .query(async ({ ctx, input }) => {
-            const profileId = ctx.user.profile.profileId;
+        .query(async ({ input }) => {
             const { frameworkId } = input;
-
-            const manages = await doesProfileManageFramework(profileId, frameworkId);
-            if (!manages) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You do not manage this framework',
-                });
-            }
 
             const flatSkills = await getFullSkillTree(frameworkId);
             const skills = buildFullSkillTree(frameworkId, flatSkills);
@@ -697,17 +651,8 @@ export const skillsRouter = t.router({
         })
         .input(GetSkillPathInputValidator)
         .output(GetSkillPathResultValidator)
-        .query(async ({ ctx, input }) => {
-            const profileId = ctx.user.profile.profileId;
+        .query(async ({ input }) => {
             const { frameworkId, skillId } = input;
-
-            const manages = await doesProfileManageFramework(profileId, frameworkId);
-            if (!manages) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You do not manage this framework',
-                });
-            }
 
             const path = await getSkillPath(frameworkId, skillId);
 
