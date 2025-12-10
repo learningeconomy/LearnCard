@@ -17,9 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,10 +27,15 @@ class BoostSendBoostRequestCredentialAnyOfEvidenceAnyOf(BaseModel):
     """
     BoostSendBoostRequestCredentialAnyOfEvidenceAnyOf
     """ # noqa: E501
-    type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
     id: Optional[StrictStr] = None
+    type: Annotated[List[StrictStr], Field(min_length=1)]
+    name: Optional[StrictStr] = None
+    narrative: Optional[StrictStr] = None
+    description: Optional[StrictStr] = None
+    genre: Optional[StrictStr] = None
+    audience: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["type", "id"]
+    __properties: ClassVar[List[str]] = ["id", "type", "name", "narrative", "description", "genre", "audience"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -73,9 +78,6 @@ class BoostSendBoostRequestCredentialAnyOfEvidenceAnyOf(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of type
-        if self.type:
-            _dict['type'] = self.type.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
@@ -93,8 +95,13 @@ class BoostSendBoostRequestCredentialAnyOfEvidenceAnyOf(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
-            "id": obj.get("id")
+            "id": obj.get("id"),
+            "type": obj.get("type"),
+            "name": obj.get("name"),
+            "narrative": obj.get("narrative"),
+            "description": obj.get("description"),
+            "genre": obj.get("genre"),
+            "audience": obj.get("audience")
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

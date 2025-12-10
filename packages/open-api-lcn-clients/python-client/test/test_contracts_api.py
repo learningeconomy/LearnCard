@@ -33,6 +33,13 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_cancel_contract_request(self) -> None:
+        """Test case for contracts_cancel_contract_request
+
+        Cancels/removes a contract request
+        """
+        pass
+
     def test_contracts_consent_to_contract(self) -> None:
         """Test case for contracts_consent_to_contract
 
@@ -51,6 +58,20 @@ class TestContractsApi(unittest.TestCase):
         """Test case for contracts_delete_consent_flow_contract
 
         Delete a Consent Flow Contract
+        """
+        pass
+
+    def test_contracts_forward_contract_request_to_profile(self) -> None:
+        """Test case for contracts_forward_contract_request_to_profile
+
+        Forward a contract request
+        """
+        pass
+
+    def test_contracts_get_all_contract_requests_for_profile(self) -> None:
+        """Test case for contracts_get_all_contract_requests_for_profile
+
+        Get all contract requests for a target profile
         """
         pass
 
@@ -103,10 +124,24 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_get_contract_sent_requests(self) -> None:
+        """Test case for contracts_get_contract_sent_requests
+
+        Get requests sent for a given contract
+        """
+        pass
+
     def test_contracts_get_credentials_for_contract(self) -> None:
         """Test case for contracts_get_credentials_for_contract
 
         Get credentials issued via a contract
+        """
+        pass
+
+    def test_contracts_get_request_status_for_profile(self) -> None:
+        """Test case for contracts_get_request_status_for_profile
+
+        Get request status for a specific profile under a contract
         """
         pass
 
@@ -117,10 +152,31 @@ class TestContractsApi(unittest.TestCase):
         """
         pass
 
+    def test_contracts_mark_contract_request_as_seen(self) -> None:
+        """Test case for contracts_mark_contract_request_as_seen
+
+        Marks a contract request as seen
+        """
+        pass
+
     def test_contracts_remove_auto_boosts_from_contract(self) -> None:
         """Test case for contracts_remove_auto_boosts_from_contract
 
         Remove autoboosts from a contract
+        """
+        pass
+
+    def test_contracts_send_ai_insight_share_request(self) -> None:
+        """Test case for contracts_send_ai_insight_share_request
+
+        AI Insights, consent flow share-notifcation request
+        """
+        pass
+
+    def test_contracts_send_ai_insights_contract_request(self) -> None:
+        """Test case for contracts_send_ai_insights_contract_request
+
+        AI Insights, consent flow notifcation request
         """
         pass
 

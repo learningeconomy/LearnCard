@@ -35,16 +35,7 @@ class TestBoostGetBoostsRequest(unittest.TestCase):
         model = BoostGetBoostsRequest()
         if include_optional:
             return BoostGetBoostsRequest(
-                query = openapi_client.models.boost_get_boosts_request_query.boost_getBoosts_request_query(
-                    uri = null, 
-                    name = null, 
-                    type = null, 
-                    category = null, 
-                    meta = {
-                        'key' : null
-                        }, 
-                    status = null, 
-                    auto_connect_recipients = True, )
+                query = None
             )
         else:
             return BoostGetBoostsRequest(
