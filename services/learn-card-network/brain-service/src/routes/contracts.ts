@@ -1701,7 +1701,7 @@ export const contractsRouter = t.router({
             if (!isAuthorized) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'You do not have permission to modify autoboosts for this contract.',
+                    message: 'You do not have permission to send requests for this contract.',
                 });
             }
 
