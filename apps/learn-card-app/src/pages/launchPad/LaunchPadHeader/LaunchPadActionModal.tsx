@@ -52,6 +52,7 @@ import {
     BoostUserTypeEnum,
     useGetCredentialList,
     CredentialCategoryEnum,
+    switchedProfileStore,
 } from 'learn-card-base';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 
@@ -342,9 +343,13 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         }
     }, [lcNetworkProfile?.role, optimisticRole]);
 
-    const roleLabel = LearnCardRoles.find(r => r.type === role)?.title ?? 'Learner';
+    const profileType = switchedProfileStore.use.profileType();
+    const isChildProfile = profileType === 'child';
 
-    const activeRole = (role ?? LearnCardRolesEnum.learner) as LearnCardRolesEnum;
+    const activeRole = (
+        isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
+    ) as LearnCardRolesEnum;
+    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
     const roleIcons: Record<LearnCardRolesEnum, string> = {
         [LearnCardRolesEnum.learner]: LearnerIcon,
         [LearnCardRolesEnum.guardian]: GuardianIcon,
@@ -410,8 +415,8 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         ],
     };
 
-    let actions = RoleActions[(role ?? LearnCardRolesEnum.learner) as LearnCardRolesEnum] ?? [];
-    if (role === LearnCardRolesEnum.guardian) {
+    let actions = RoleActions[activeRole] ?? [];
+    if (activeRole === LearnCardRolesEnum.guardian) {
         if (familyCredential) {
             actions = ['View Family', ...actions.filter(a => a !== 'Create Family')];
         } else {
@@ -457,44 +462,51 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 <div className="w-full flex items-center justify-center">
                     <button
                         type="button"
-                        onClick={() =>
-                            newModal(
-                                <LaunchPadRoleSelector
-                                    role={role}
-                                    setRole={newRole => {
-                                        setRole(newRole);
-                                        setOptimisticRole(newRole);
-                                        (async () => {
-                                            try {
-                                                const wallet = await initWallet();
-                                                await wallet?.invoke?.updateProfile({
-                                                    role: newRole,
-                                                });
-                                                setOptimisticRole(null);
-                                                presentToast('Role updated', {
-                                                    type: ToastTypeEnum.Success,
-                                                    hasDismissButton: true,
-                                                });
-                                            } catch (e) {
-                                                setOptimisticRole(null);
-                                                setRole(
-                                                    (lcNetworkProfile?.role as LearnCardRolesEnum) ??
-                                                        LearnCardRolesEnum.learner
-                                                );
-                                                presentToast('Unable to update role', {
-                                                    type: ToastTypeEnum.Error,
-                                                    hasDismissButton: true,
-                                                });
-                                            }
-                                        })();
-                                    }}
-                                />,
-                                {
-                                    sectionClassName:
-                                        '!max-w-[600px] !mx-auto !max-h-[100%] disable-scrollbars',
-                                },
-                                { mobile: ModalTypes.Freeform, desktop: ModalTypes.Freeform }
-                            )
+                        disabled={isChildProfile}
+                        onClick={
+                            isChildProfile
+                                ? undefined
+                                : () =>
+                                      newModal(
+                                          <LaunchPadRoleSelector
+                                              role={role}
+                                              setRole={newRole => {
+                                                  setRole(newRole);
+                                                  setOptimisticRole(newRole);
+                                                  (async () => {
+                                                      try {
+                                                          const wallet = await initWallet();
+                                                          await wallet?.invoke?.updateProfile({
+                                                              role: newRole,
+                                                          });
+                                                          setOptimisticRole(null);
+                                                          presentToast('Role updated', {
+                                                              type: ToastTypeEnum.Success,
+                                                              hasDismissButton: true,
+                                                          });
+                                                      } catch (e) {
+                                                          setOptimisticRole(null);
+                                                          setRole(
+                                                              (lcNetworkProfile?.role as LearnCardRolesEnum) ??
+                                                                  LearnCardRolesEnum.learner
+                                                          );
+                                                          presentToast('Unable to update role', {
+                                                              type: ToastTypeEnum.Error,
+                                                              hasDismissButton: true,
+                                                          });
+                                                      }
+                                                  })();
+                                              }}
+                                          />,
+                                          {
+                                              sectionClassName:
+                                                  '!max-w-[600px] !mx-auto !max-h-[100%] disable-scrollbars',
+                                          },
+                                          {
+                                              mobile: ModalTypes.Freeform,
+                                              desktop: ModalTypes.Freeform,
+                                          }
+                                      )
                         }
                         className="rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
                     >
