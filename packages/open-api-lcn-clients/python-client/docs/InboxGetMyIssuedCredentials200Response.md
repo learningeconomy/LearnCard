@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **has_more** | **bool** |  | 
-**records** | [**List[InboxGetMyIssuedCredentials200ResponseRecordsInner]**](InboxGetMyIssuedCredentials200ResponseRecordsInner.md) |  | 
+**records** | [**List[InboxClaim200ResponseInboxCredential]**](InboxClaim200ResponseInboxCredential.md) |  | 
 **cursor** | **str** |  | [optional] 
 
 ## Example
