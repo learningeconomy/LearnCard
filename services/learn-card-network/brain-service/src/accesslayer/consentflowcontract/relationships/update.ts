@@ -9,6 +9,7 @@ import {
     UnsignedVC,
 } from '@learncard/types';
 import { ConsentFlowTerms, ConsentFlowTransaction, ConsentFlowContract } from '@models';
+import { neogma } from '@instance';
 import { flattenObject } from '@helpers/objects.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { DbContractType, DbTermsType } from 'types/consentflowcontract';
@@ -18,6 +19,7 @@ import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
+import { removeRequestedForRelationship } from './delete';
 
 export const reconsentTerms = async (
     relationship: {
@@ -153,7 +155,11 @@ export const reconsentTerms = async (
 
                     // Issue the credential using contract owner's signing authority
                     // Inject OBv3 skill alignments based on boost's framework/skills
-                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boostRel.target, domain);
+                    await injectObv3AlignmentsIntoCredentialForBoost(
+                        boostCredential,
+                        boostRel.target,
+                        domain
+                    );
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,
                         boostCredential,
@@ -360,7 +366,11 @@ export const updateTerms = async (
 
                     // Issue the credential using contract owner's signing authority
                     // Inject OBv3 skill alignments based on boost's framework/skills
-                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost.target, domain);
+                    await injectObv3AlignmentsIntoCredentialForBoost(
+                        boostCredential,
+                        boost.target,
+                        domain
+                    );
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,
                         boostCredential,
@@ -471,6 +481,15 @@ export const withdrawTerms = async (relationship: {
         },
         data: { transaction },
     });
+
+    try {
+        await removeRequestedForRelationship(
+            relationship.contract.id,
+            relationship.consenter.profileId
+        );
+    } catch (error) {
+        console.log('No request found to remove');
+    }
 
     return result.summary.counters.containsUpdates();
 };
@@ -595,4 +614,26 @@ export const syncCredentialsToContract = async (
     });
 
     return result.summary.counters.containsUpdates();
+};
+
+export const upsertRequestedForRelationship = async (
+    id: string,
+    profileId: string,
+    status?: 'pending' | 'accepted' | 'denied',
+    readStatus?: 'seen' | 'unseen' | null
+) => {
+    const cypher = `
+        MATCH (contract:ConsentFlowContract {id: $id})
+        MATCH (profile:Profile {profileId: $profileId})
+        MERGE (contract)-[r:REQUESTED_FOR]->(profile)
+        ${status !== undefined ? 'SET r.status = $status' : ''}
+        ${readStatus !== undefined ? 'SET r.readStatus = $readStatus' : ''}
+        RETURN r
+    `;
+
+    const params: any = { id, profileId };
+    if (status !== undefined) params.status = status;
+    if (readStatus !== undefined) params.readStatus = readStatus;
+
+    await neogma.queryRunner.run(cypher, params);
 };
