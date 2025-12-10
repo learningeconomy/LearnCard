@@ -19,6 +19,8 @@ import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quick
 import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
 import X from 'learn-card-base/svgs/X';
 import FamiliesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/FamiliesQuickNav';
+import RequestInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/RequestInsightsQuickNav';
+import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
 import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
@@ -102,13 +104,16 @@ const getIconForActionButton = (
             return <CredentialQuickNav className="w-[50px] h-auto" />;
         case 'Manage Skills Frameworks':
             return <StudiesQuickNav className="w-[50px] h-auto" />;
+        case 'Edit Skills Frameworks':
+            return <SkillsIconWithShape className="w-[50px] h-auto" />;
         case 'Share Insights with Teacher':
             return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
         case 'View Child Insights':
             return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
         case 'View Learner Insights':
+            return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
         case 'Request Learner Insights':
-            return <ResumeQuickNav className="w-[50px] h-auto" />;
+            return <RequestInsightsQuickNav className="w-[50px] h-auto" />;
         case 'Boost Child':
             return <BoostsQuickNav className="w-[50px] h-auto" />;
         default:
@@ -390,7 +395,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Request Learner Insights',
             'Issue Learner Credential',
             'Create Credential',
-            'Manage Skills Frameworks',
+            'Edit Skills Frameworks',
         ],
         [LearnCardRolesEnum.guardian]: [
             'Create Family',
@@ -453,6 +458,12 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Add Child': 'bg-[var(--ion-color-cyan-200)]',
         'Switch Child': 'bg-[var(--ion-color-yellow-300)]',
         'View Child Insights': 'bg-[var(--ion-color-lime-300)]',
+        // Teacher role labels
+        'View Learner Insights': 'bg-[var(--ion-color-lime-300)]',
+        'Request Learner Insights': 'bg-[var(--ion-color-indigo-200)]',
+        'Issue Learner Credential': 'bg-[var(--ion-color-cyan-200)]',
+        'Create Credential': 'bg-[var(--ion-color-amber-300)]',
+        'Edit Skills Frameworks': 'bg-[var(--ion-color-violet-300)]',
     };
 
     return (
