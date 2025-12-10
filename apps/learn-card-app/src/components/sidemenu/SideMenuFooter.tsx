@@ -1,6 +1,7 @@
 import React from 'react';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 
 const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version }) => {
     const currentYear = new Date().getFullYear();
@@ -19,23 +20,13 @@ const SideMenuFooter: React.FC<{ version?: string | undefined }> = ({ version })
             </p>
 
             <p className="mt-4">
-                <a
-                    className={`text-${primaryColor} font-bold no-underline`}
-                    href="https://www.learncard.com/learncard-privacy-policy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
+                <button className={`text-${primaryColor} font-bold no-underline`} onClick={openPP}>
                     Privacy Policy
-                </a>{' '}
+                </button>{' '}
                 <span className={`text-${primaryColor}`}> • </span>{' '}
-                <a
-                    className={`text-${primaryColor} font-bold no-underline`}
-                    href="https://www.learncard.com/learncard-terms-of-service"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
+                <button className={`text-${primaryColor} font-bold no-underline`} onClick={openToS}>
                     Terms of Service
-                </a>
+                </button>
             </p>
 
             <p className="text-grayscale-600 text-xs font-notoSans mt-4">
