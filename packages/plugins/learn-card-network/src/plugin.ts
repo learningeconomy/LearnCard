@@ -1163,25 +1163,16 @@ export async function getLearnCardNetworkPlugin(
 
             forwardContractRequestToProfile: async (
                 _learnCard,
-                contractUri,
+                parentProfileId,
                 targetProfileId,
-                parentProfileId
+                contractUri
             ) => {
                 await ensureUser();
 
                 return client.contracts.forwardContractRequestToProfile.mutate({
-                    contractUri,
-                    targetProfileId,
                     parentProfileId,
-                });
-            },
-
-            cancelContractRequest: async (_learnCard, contractUri, targetProfileId) => {
-                await ensureUser();
-
-                return client.contracts.cancelContractRequest.mutate({
-                    contractUri,
                     targetProfileId,
+                    contractUri,
                 });
             },
 
@@ -1189,6 +1180,15 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.contracts.markContractRequestAsSeen.mutate({
+                    contractUri,
+                    targetProfileId,
+                });
+            },
+
+            cancelContractRequest: async (_learnCard, contractUri, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.cancelContractRequest.mutate({
                     contractUri,
                     targetProfileId,
                 });

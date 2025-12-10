@@ -1,4 +1,4 @@
-import { BindParam, QueryBuilder } from 'neogma';
+import { QueryBuilder, BindParam } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { ConsentFlowContract, ConsentFlowInstance } from '@models';
@@ -62,14 +62,14 @@ export const getRequestedForByStatus = async (
     id: string,
     status: 'pending' | 'accepted' | 'denied'
 ) => {
-    const result = await new QueryBuilder(new BindParam({ status }))
+    const result = await new QueryBuilder()
         .match({
             model: ConsentFlowContract,
             identifier: 'c',
             where: { id },
         })
         .match('(c)-[r:REQUESTED_FOR]->(p:Profile)')
-        .where('r.status = $status')
+        .where(`r.status = '${status}'`)
         .return(['p', 'r'])
         .run();
 

@@ -1,5 +1,4 @@
 import { QueryBuilder } from 'neogma';
-
 import { ConsentFlowTerms, Profile, ConsentFlowContract } from '@models';
 
 export const deleteTermsById = async (id: string): Promise<number> => {

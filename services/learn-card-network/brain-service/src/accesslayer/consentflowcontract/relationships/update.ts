@@ -1,5 +1,4 @@
 import { QueryBuilder, BindParam } from 'neogma';
-import { neogma } from '@instance';
 import { v4 as uuid } from 'uuid';
 import {
     ConsentFlowTerms as ConsentFlowTermsType,
@@ -10,6 +9,7 @@ import {
     UnsignedVC,
 } from '@learncard/types';
 import { ConsentFlowTerms, ConsentFlowTransaction, ConsentFlowContract } from '@models';
+import { neogma } from '@instance';
 import { flattenObject } from '@helpers/objects.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { DbContractType, DbTermsType } from 'types/consentflowcontract';

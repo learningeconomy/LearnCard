@@ -58,6 +58,7 @@ import {
 } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
+import { removeRequestedForRelationship } from '@accesslayer/consentflowcontract/relationships/delete';
 import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile } from '@helpers/did.helpers';
 import {
@@ -85,6 +86,7 @@ import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority
 import { getDidWeb } from '@helpers/did.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
+import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
 import {
     addAutoBoostsToContractDb,
@@ -92,8 +94,6 @@ import {
 } from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { ProfileType } from 'types/profile';
-import { removeRequestedForRelationship } from '@accesslayer/consentflowcontract/relationships/delete';
-import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -1733,7 +1733,7 @@ export const contractsRouter = t.router({
                 from: profile,
                 to: targetProfile as ProfileType,
                 message: {
-                    title: 'AI Insights Request',
+                    title: 'AI Insights',
                     body: `${profile?.displayName} has requested to view your insights.`,
                 },
                 data: {
@@ -1851,7 +1851,6 @@ export const contractsRouter = t.router({
 
             if (!contractByUri)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
-
             const writers = await getWritersForContract(contractByUri);
             const isAuthorized = writers.some(w => w.profileId === profile.profileId);
 
@@ -1930,6 +1929,7 @@ export const contractsRouter = t.router({
 
             return requests?.[0] ?? null;
         }),
+
     markContractRequestAsSeen: profileRoute
         .meta({
             openapi: {
@@ -2083,6 +2083,7 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { targetProfileId } = input;
 
+            // Users can query their own requests
             const isCheckingOwnRequests = profile.profileId === targetProfileId;
 
             if (!isCheckingOwnRequests) {
@@ -2094,6 +2095,7 @@ export const contractsRouter = t.router({
 
             const requests = await getAllRequestsForTargetProfile(targetProfileId);
 
+            // Construct URIs for contracts
             return requests.map(request => ({
                 ...request,
                 contract: {
@@ -2102,6 +2104,7 @@ export const contractsRouter = t.router({
                 },
             }));
         }),
+
     forwardContractRequestToProfile: profileRoute
         .meta({
             openapi: {

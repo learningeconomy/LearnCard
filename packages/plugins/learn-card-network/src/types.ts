@@ -505,13 +505,14 @@ export type LearnCardNetworkPluginMethods = {
         }[]
     >;
 
+    forwardContractRequestToProfile: (
+        parentProfileId: string,
+        targetProfileId: string,
+        contractUri?: string
+    ) => Promise<boolean>;
+
     markContractRequestAsSeen: (contractUri: string, targetProfileId: string) => Promise<boolean>;
     cancelContractRequest: (contractUri: string, targetProfileId: string) => Promise<boolean>;
-    forwardContractRequestToProfile: (
-        contractUri: string,
-        targetProfileId: string,
-        parentProfileId: string
-    ) => Promise<boolean>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
     getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;

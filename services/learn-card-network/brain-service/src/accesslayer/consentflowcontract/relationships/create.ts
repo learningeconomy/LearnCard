@@ -314,6 +314,7 @@ export const consentToContract = async (
             contractUri: constructUri('contract', contract.id, domain),
         };
     }
+
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: consenter,
