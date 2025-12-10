@@ -1803,7 +1803,7 @@ export const contractsRouter = t.router({
                 to: targetProfile as ProfileType,
                 message: {
                     title: 'AI Insights',
-                    body: `${fromProfile?.displayName} would like to share their insights with ${targetProfile?.displayName}.`,
+                    body: `${fromProfile?.displayName} is inviting you to view their insights. Request access to continue.`,
                 },
                 data: {
                     metadata: {

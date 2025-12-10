@@ -306,8 +306,8 @@ export const consentToContract = async (
     // TODO: Replace hardcoded string matching with contract type identification
     // This should check a contract.type field instead of contract.name
     if (contract.name === 'AI Insights') {
-        notificationData.title = `AI Insights Request`;
-        notificationData.body = `${consenter?.displayName} has approved your request to view their insights.`;
+        notificationData.title = `AI Insights`;
+        notificationData.body = `${consenter?.displayName} has shared their insights with you.`;
         notificationData.metadata = {
             type: 'AI Insight',
             contractId: contract?.id,
