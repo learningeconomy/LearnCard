@@ -38,25 +38,136 @@ import {
     AppStoreListingValidator,
 } from 'types/app-store-listing';
 
-// Zod validators for API
+// =============================================================================
+// VALIDATION HELPERS
+// =============================================================================
+
+// Allowed image hosting domains for security
+const ALLOWED_IMAGE_DOMAINS = [
+    'cdn.filestackcontent.com',
+    'learncard.com',
+    'amazonaws.com',
+    's3.amazonaws.com',
+    'cloudfront.net',
+    'imgur.com',
+    'i.imgur.com',
+];
+
+// JSON validation helper
+const isValidJson = (str: string): boolean => {
+    try {
+        JSON.parse(str);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+// URL domain validation helper
+const isAllowedImageUrl = (url: string): boolean => {
+    try {
+        const parsed = new URL(url);
+        return ALLOWED_IMAGE_DOMAINS.some(
+            domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
+        );
+    } catch {
+        return false;
+    }
+};
+
+// Validate iframe URL for XSS prevention
+const isValidIframeUrl = (url: string): boolean => {
+    try {
+        const parsed = new URL(url);
+        // Only allow https URLs for iframes
+        if (parsed.protocol !== 'https:') return false;
+        // Block javascript: and data: schemes (already handled by URL parsing, but be explicit)
+        if (url.toLowerCase().startsWith('javascript:') || url.toLowerCase().startsWith('data:')) {
+            return false;
+        }
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+// Basic content filtering - check for suspicious patterns
+const containsSuspiciousContent = (text: string): boolean => {
+    const suspiciousPatterns = [
+        /<script\b[^>]*>/i,
+        /javascript:/i,
+        /on\w+\s*=/i, // onclick=, onerror=, etc.
+        /<iframe\b[^>]*>/i,
+        /<object\b[^>]*>/i,
+        /<embed\b[^>]*>/i,
+    ];
+    return suspiciousPatterns.some(pattern => pattern.test(text));
+};
+
+// Zod refinements for validation
+const jsonStringValidator = z.string().refine(isValidJson, {
+    message: 'Must be valid JSON',
+});
+
+const safeImageUrlValidator = z.string().url().refine(
+    url => isAllowedImageUrl(url),
+    { message: 'Image URL must be from an allowed domain' }
+);
+
+const safeContentValidator = z.string().refine(
+    text => !containsSuspiciousContent(text),
+    { message: 'Content contains potentially unsafe patterns' }
+);
+
+// =============================================================================
+// ZOD VALIDATORS FOR API
+// =============================================================================
+
 const AppStoreListingInputValidator = z.object({
-    display_name: z.string().min(1).max(100),
-    tagline: z.string().min(1).max(200),
-    full_description: z.string().min(1).max(5000),
-    icon_url: z.string().url(),
+    display_name: z.string().min(1).max(100).refine(
+        text => !containsSuspiciousContent(text),
+        { message: 'Display name contains potentially unsafe patterns' }
+    ),
+    tagline: z.string().min(1).max(200).refine(
+        text => !containsSuspiciousContent(text),
+        { message: 'Tagline contains potentially unsafe patterns' }
+    ),
+    full_description: safeContentValidator.pipe(z.string().min(1).max(5000)),
+    icon_url: safeImageUrlValidator,
     app_listing_status: AppListingStatus,
     launch_type: LaunchType,
-    launch_config_json: z.string(),
-    category: z.string().optional(),
+    launch_config_json: jsonStringValidator,
+    category: z.string().max(50).optional(),
     promo_video_url: z.string().url().optional(),
     promotion_level: PromotionLevel.optional(),
-    ios_app_store_id: z.string().optional(),
-    android_app_store_id: z.string().optional(),
+    ios_app_store_id: z.string().max(20).optional(),
+    android_app_store_id: z.string().max(100).optional(),
     privacy_policy_url: z.string().url().optional(),
     terms_url: z.string().url().optional(),
-    highlights: z.array(z.string()).optional(),
-    screenshots: z.array(z.string().url()).optional(),
-    hero_background_color: z.string().optional(),
+    highlights: z.array(z.string().max(200).refine(
+        text => !containsSuspiciousContent(text),
+        { message: 'Highlight contains potentially unsafe patterns' }
+    )).max(10).optional(),
+    screenshots: z.array(safeImageUrlValidator).max(10).optional(),
+    hero_background_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, {
+        message: 'Must be a valid hex color (e.g., #FF5733)',
+    }).optional(),
+}).superRefine((data, ctx) => {
+    // Validate iframe URL for EMBEDDED_IFRAME launch type
+    if (data.launch_type === 'EMBEDDED_IFRAME') {
+        try {
+            const config = JSON.parse(data.launch_config_json);
+            if (config.iframeUrl && !isValidIframeUrl(config.iframeUrl)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'Iframe URL must be a valid HTTPS URL',
+                    path: ['launch_config_json'],
+                });
+            }
+        } catch {
+            // JSON parsing already validated above
+        }
+    }
 });
 
 // Helper to transform listing for API response (JSON strings -> arrays)
@@ -85,15 +196,62 @@ const transformListingForResponse = (listing: any) => {
 };
 
 // Helper to transform input for storage (arrays -> JSON strings)
-const transformInputForStorage = (input: any) => {
+// Validates that arrays are properly formatted before stringifying
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const transformInputForStorage = (input: any): any => {
     const result = { ...input };
 
     if (result.highlights !== undefined) {
+        if (!Array.isArray(result.highlights)) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'highlights must be an array of strings',
+            });
+        }
+
+        // Validate each highlight is a string
+        const validHighlights = result.highlights.every(
+            (h: unknown): h is string => typeof h === 'string'
+        );
+
+        if (!validHighlights) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Each highlight must be a string',
+            });
+        }
+
         result.highlights_json = JSON.stringify(result.highlights);
         delete result.highlights;
     }
 
     if (result.screenshots !== undefined) {
+        if (!Array.isArray(result.screenshots)) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'screenshots must be an array of URLs',
+            });
+        }
+
+        // Validate each screenshot is a valid URL string
+        const validScreenshots = result.screenshots.every((s: unknown): s is string => {
+            if (typeof s !== 'string') return false;
+
+            try {
+                new URL(s);
+                return true;
+            } catch {
+                return false;
+            }
+        });
+
+        if (!validScreenshots) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Each screenshot must be a valid URL',
+            });
+        }
+
         result.screenshots_json = JSON.stringify(result.screenshots);
         delete result.screenshots;
     }
