@@ -18,10 +18,10 @@
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
-    "homepage": "https://github.com/learningeconomy/LearnCard#readme",
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-helpers/README.md",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/learningeconomy/LearnCard.git"
+        "url": "https://github.com/learningeconomy/LearnCard"
     },
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"

@@ -1,41 +1,49 @@
 {
-  "name": "@learncard/embed-sdk",
-  "version": "0.1.1",
-  "description": "LearnCard Embed SDK for credential claim modal (MVP V1)",
-  "main": "dist/learncard.js",
-  "module": "dist/learncard.esm.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/learncard.esm.js",
-      "require": "./dist/learncard.js",
-      "default": "./dist/learncard.js",
-      "types": "./dist/index.d.ts"
+    "name": "@learncard/embed-sdk",
+    "version": "0.1.1",
+    "description": "LearnCard Embed SDK for credential claim modal (MVP V1)",
+    "main": "dist/learncard.js",
+    "module": "dist/learncard.esm.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/learncard.esm.js",
+            "require": "./dist/learncard.js",
+            "default": "./dist/learncard.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "sideEffects": false,
+    "scripts": {
+        "build": "rollup -c",
+        "dev": "rollup -c -w",
+        "typecheck": "tsc --noEmit",
+        "test": "jest -c jest.config.js",
+        "test:watch": "jest -c jest.config.js --watch"
+    },
+    "license": "MIT",
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "devDependencies": {
+        "@rollup/plugin-commonjs": "^22.0.2",
+        "@rollup/plugin-node-resolve": "^13.3.0",
+        "@rollup/plugin-replace": "^5.0.2",
+        "@types/node": "^18.19.64",
+        "rollup-plugin-delete": "^2.0.0",
+        "rollup-plugin-dts": "^4.2.2",
+        "rollup": "^2.79.1",
+        "rollup-plugin-esbuild": "^4.9.1",
+        "rollup-plugin-string": "^3.0.0",
+        "typescript": "^5.4.5"
+    },
+    "files": [
+        "dist/**"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-embed-sdk/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
-  },
-  "sideEffects": false,
-  "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
-    "typecheck": "tsc --noEmit",
-    "test": "jest -c jest.config.js",
-    "test:watch": "jest -c jest.config.js --watch"
-  },
-  "license": "MIT",
-  "author": "Learning Economy Foundation (www.learningeconomy.io)",
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "^22.0.2",
-    "@rollup/plugin-node-resolve": "^13.3.0",
-    "@rollup/plugin-replace": "^5.0.2",
-    "@types/node": "^18.19.64",
-    "rollup-plugin-delete": "^2.0.0",
-    "rollup-plugin-dts": "^4.2.2",
-    "rollup": "^2.79.1",
-    "rollup-plugin-esbuild": "^4.9.1",
-    "rollup-plugin-string": "^3.0.0",
-    "typescript": "^5.4.5"
-  },
-  "files": [
-    "dist/**"
-  ]
 }
