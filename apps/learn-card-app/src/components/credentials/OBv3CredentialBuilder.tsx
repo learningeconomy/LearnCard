@@ -13,7 +13,12 @@ import {
     Calendar,
     Link as LinkIcon,
     HelpCircle,
+    Upload,
+    Loader2,
 } from 'lucide-react';
+
+import { useFilestack, BoostCategoryOptionsEnum, BoostPageViewMode, useWallet } from 'learn-card-base';
+import { BoostEarnedCard } from '../boost/boost-earned-card/BoostEarnedCard';
 
 // Valid OBv3 Achievement Types
 const ACHIEVEMENT_TYPES = [
@@ -140,8 +145,34 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
 }) => {
     const [data, setData] = useState<CredentialData>({ ...DEFAULT_DATA, ...initialData });
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const [activeTab, setActiveTab] = useState<'build' | 'preview'>('build');
+    const [activeTab, setActiveTab] = useState<'build' | 'preview' | 'visual'>('build');
     const [copied, setCopied] = useState(false);
+    const [userDid, setUserDid] = useState<string>('did:web:preview.learncard.com');
+
+    // Get user's wallet for DID
+    const { initWallet } = useWallet();
+
+    React.useEffect(() => {
+        const fetchDid = async () => {
+            try {
+                const wallet = await initWallet();
+                const did = wallet.id.did();
+                if (did) setUserDid(did);
+            } catch (e) {
+                // Keep default preview DID
+            }
+        };
+
+        if (isOpen) fetchDid();
+    }, [isOpen, initWallet]);
+
+    // Filestack for image upload
+    const { handleFileSelect, isLoading: isUploading } = useFilestack({
+        onUpload: (url: string) => {
+            updateField('achievementImage', url);
+        },
+        fileType: 'image/*',
+    });
 
     const updateField = <K extends keyof CredentialData>(field: K, value: CredentialData[K]) => {
         setData((prev) => ({ ...prev, [field]: value }));
@@ -261,6 +292,20 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                     </button>
 
                     <button
+                        onClick={() => setActiveTab('visual')}
+                        className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                            activeTab === 'visual'
+                                ? 'text-cyan-600 border-b-2 border-cyan-500 bg-cyan-50/50'
+                                : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <Award className="w-4 h-4" />
+                            Preview
+                        </div>
+                    </button>
+
+                    <button
                         onClick={() => setActiveTab('preview')}
                         className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                             activeTab === 'preview'
@@ -270,7 +315,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                     >
                         <div className="flex items-center justify-center gap-2">
                             <Eye className="w-4 h-4" />
-                            Preview JSON
+                            JSON
                         </div>
                     </button>
                 </div>
@@ -325,15 +370,62 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                     </p>
                                 </div>
 
-                                <InputField
-                                    label="Badge Image URL"
-                                    value={data.achievementImage}
-                                    onChange={(v) => updateField('achievementImage', v)}
-                                    placeholder="https://example.com/badge.png"
-                                    type="url"
-                                    optional
-                                    tooltip="A square image representing this credential (PNG or SVG recommended)"
-                                />
+                                {/* Badge Image with Upload */}
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <label className="text-sm font-medium text-gray-700">Badge Image</label>
+                                        <span className="text-xs text-gray-400">(optional)</span>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="url"
+                                            value={data.achievementImage}
+                                            onChange={(e) => updateField('achievementImage', e.target.value)}
+                                            placeholder="https://example.com/badge.png"
+                                            disabled={isUploading}
+                                            className="flex-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 placeholder:text-gray-400 disabled:opacity-50"
+                                        />
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleFileSelect()}
+                                            disabled={isUploading}
+                                            className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                        >
+                                            {isUploading ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Upload className="w-4 h-4" />
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {data.achievementImage && (
+                                        <div className="mt-2 flex items-center gap-3">
+                                            <img
+                                                src={data.achievementImage}
+                                                alt="Badge preview"
+                                                className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                            />
+
+                                            <button
+                                                type="button"
+                                                onClick={() => updateField('achievementImage', '')}
+                                                className="text-xs text-red-500 hover:text-red-600"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <p className="text-xs text-gray-500">
+                                        Upload or paste a URL for a square image (PNG or SVG recommended)
+                                    </p>
+                                </div>
                             </div>
 
                             {/* Advanced Toggle */}
@@ -450,6 +542,67 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                             tooltip="Override the credential name shown in wallets (defaults to achievement name)"
                                         />
                                     </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : activeTab === 'visual' ? (
+                        <div className="space-y-6">
+                            <p className="text-sm text-gray-600 text-center">
+                                Click the credential to see the full preview:
+                            </p>
+
+                            {/* Full Credential Preview using BoostEarnedCard */}
+                            <div className="flex justify-center py-4">
+                                <div className="w-[180px]">
+                                    <BoostEarnedCard
+                                        credential={{
+                                            '@context': [
+                                                'https://www.w3.org/2018/credentials/v1',
+                                                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                                            ],
+                                            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                                            issuer: {
+                                                id: userDid,
+                                                type: 'Profile',
+                                                name: 'You (Preview)',
+                                            },
+                                            issuanceDate: new Date().toISOString(),
+                                            name: data.credentialName || data.achievementName || 'Untitled Credential',
+                                            credentialSubject: {
+                                                achievement: {
+                                                    type: ['Achievement'],
+                                                    name: data.achievementName || 'Untitled',
+                                                    description: data.achievementDescription || '',
+                                                    achievementType: data.achievementType,
+                                                    ...(data.achievementImage && {
+                                                        image: {
+                                                            id: data.achievementImage,
+                                                            type: 'Image',
+                                                        },
+                                                    }),
+                                                },
+                                            },
+                                        } as any}
+                                        categoryType={BoostCategoryOptionsEnum.socialBadge}
+                                        boostPageViewMode={BoostPageViewMode.Card}
+                                        useWrapper={false}
+                                        className="shadow-lg"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+                                <p className="text-xs text-cyan-800 text-center">
+                                    <strong>Tip:</strong> Click the credential card above to open the full detail view, 
+                                    just like users will see it in their wallet.
+                                </p>
+                            </div>
+
+                            {!data.achievementImage && (
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <p className="text-xs text-amber-800 text-center">
+                                        <strong>Note:</strong> Add a badge image to make your credential more visually distinctive!
+                                    </p>
                                 </div>
                             )}
                         </div>
