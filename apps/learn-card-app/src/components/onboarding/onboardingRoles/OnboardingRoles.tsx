@@ -11,11 +11,13 @@ export const OnboardingRoles = ({
     role: LearnCardRolesEnum | null;
     setRole: (role: LearnCardRolesEnum) => void;
 }) => {
+    const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
+
     return (
         <ul className="w-full flex flex-col items-center gap-[10px]">
-            {LearnCardRoles.map(r => {
-                return <OnboardingRoleItem key={r.id} role={role} setRole={setRole} roleItem={r} />;
-            })}
+            {visibleRoles.map(r => (
+                <OnboardingRoleItem key={r.id} role={role} setRole={setRole} roleItem={r} />
+            ))}
         </ul>
     );
 };
