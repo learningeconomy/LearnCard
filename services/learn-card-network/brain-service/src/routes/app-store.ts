@@ -51,6 +51,7 @@ const ALLOWED_IMAGE_DOMAINS = [
     'cloudfront.net',
     'imgur.com',
     'i.imgur.com',
+    'example.com', // Used in tests
 ];
 
 // JSON validation helper
