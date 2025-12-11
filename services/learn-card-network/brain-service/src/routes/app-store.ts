@@ -123,7 +123,8 @@ const safeContentValidator = z.string().refine(
 // ZOD VALIDATORS FOR API
 // =============================================================================
 
-const AppStoreListingInputValidator = z.object({
+// Base schema without superRefine (so we can use .partial() and .omit())
+const AppStoreListingBaseSchema = z.object({
     display_name: z.string().min(1).max(100).refine(
         text => !containsSuspiciousContent(text),
         { message: 'Display name contains potentially unsafe patterns' }
@@ -152,11 +153,14 @@ const AppStoreListingInputValidator = z.object({
     hero_background_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, {
         message: 'Must be a valid hex color (e.g., #FF5733)',
     }).optional(),
-}).superRefine((data, ctx) => {
-    // Validate iframe URL for EMBEDDED_IFRAME launch type
-    if (data.launch_type === 'EMBEDDED_IFRAME') {
+});
+
+// Iframe URL validation refinement (applied to schemas that include launch_type)
+const iframeUrlRefinement = (data: { launch_type?: string; launch_config_json?: string }, ctx: z.RefinementCtx) => {
+    if (data.launch_type === 'EMBEDDED_IFRAME' && data.launch_config_json) {
         try {
             const config = JSON.parse(data.launch_config_json);
+
             if (config.iframeUrl && !isValidIframeUrl(config.iframeUrl)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -168,7 +172,7 @@ const AppStoreListingInputValidator = z.object({
             // JSON parsing already validated above
         }
     }
-});
+};
 
 // Helper to transform listing for API response (JSON strings -> arrays)
 const transformListingForResponse = (listing: any) => {
@@ -259,17 +263,16 @@ const transformInputForStorage = (input: any): any => {
     return result;
 };
 
-// Regular update validator - excludes admin-only fields
-const AppStoreListingUpdateInputValidator = AppStoreListingInputValidator.partial().omit({
-    app_listing_status: true,
-    promotion_level: true,
-});
+// Regular update validator - excludes admin-only fields, all fields optional
+const AppStoreListingUpdateInputValidator = AppStoreListingBaseSchema
+    .omit({ app_listing_status: true, promotion_level: true })
+    .partial()
+    .superRefine(iframeUrlRefinement);
 
 // Create validator - new listings start as DRAFT, no promotion level
-const AppStoreListingCreateInputValidator = AppStoreListingInputValidator.omit({
-    app_listing_status: true,
-    promotion_level: true,
-});
+const AppStoreListingCreateInputValidator = AppStoreListingBaseSchema
+    .omit({ app_listing_status: true, promotion_level: true })
+    .superRefine(iframeUrlRefinement);
 
 // Extended validator that includes the transformed array fields for API responses
 const AppStoreListingResponseValidator = AppStoreListingValidator.extend({
