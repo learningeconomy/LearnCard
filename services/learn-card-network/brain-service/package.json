@@ -80,9 +80,9 @@
         "neogma": "1.13.0",
         "postmark": "^4.0.5",
         "sift": "^17.0.1",
-        "trpc-openapi": "^1.2.0",
-        "trpc-to-openapi": "^2.3.1",
+        "trpc-to-openapi": "^3.1.0",
         "tsc-alias": "^1.8.10",
+        "zod-openapi": "^5.0.1",
         "twilio": "^5.7.1",
         "uuid": "^9.0.0"
     }
