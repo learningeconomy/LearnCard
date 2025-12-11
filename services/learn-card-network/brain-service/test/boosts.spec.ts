@@ -45,8 +45,14 @@ describe('Boosts', () => {
                 credential: testUnsignedBoost,
             });
 
-            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw1 });
-            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw2 });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw1,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw2,
+            });
 
             // Filter by id using $in
             const page1 = await userA.clients.fullAuth.boost.getBoostFrameworks({
@@ -84,10 +90,19 @@ describe('Boosts', () => {
                 credential: testUnsignedBoost,
             });
 
-            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw1 });
-            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw2 });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw1,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw2,
+            });
 
-            const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri, limit: 10 });
+            const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
             const ids = (frameworks.records as Array<{ id: string }>).map(f => f.id).sort();
             expect(ids).toEqual([fw1, fw2].sort());
         });
@@ -1430,6 +1445,80 @@ describe('Boosts', () => {
             expect(
                 await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })
             ).toMatchObject(beforeUpdateBoostCredential);
+        });
+
+        it('should normalize alignment type and construct targetUrl when updating credential with alignments', async () => {
+            const frameworkId = `fw-alignment-${crypto.randomUUID()}`;
+            const skillId = `${frameworkId}-skill`;
+
+            // Create a draft boost (no need for framework/skill setup as we're testing credential alignments)
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: BoostStatus.enum.DRAFT,
+            });
+
+            // Create a credential with an alignment that has:
+            // - type: 'Alignment' (string, not array) - needs normalization
+            // - frameworkId and id present but missing targetUrl - needs to be constructed
+            // This mimics what the frontend sends when a user adds a new alignment
+            const credentialWithAlignment = {
+                ...testUnsignedBoost,
+                credentialSubject: {
+                    ...(testUnsignedBoost.credentialSubject as any),
+                    achievement: {
+                        ...(testUnsignedBoost.credentialSubject as any).achievement,
+                        alignment: [
+                            {
+                                id: skillId,
+                                targetName: 'Alignment Test Skill',
+                                targetCode: 'ATS001',
+                                targetDescription: 'A test skill for alignment normalization',
+                                targetFramework: frameworkId,
+                                frameworkId: frameworkId, // Used to construct targetUrl
+                                icon: '🧪',
+                                type: 'Alignment', // STRING - should be normalized to ['Alignment']
+                                // Note: targetUrl is intentionally missing
+                            },
+                        ],
+                    },
+                },
+            };
+
+            // Update the boost with the credential containing the malformed alignment
+            await userA.clients.fullAuth.boost.updateBoost({
+                uri,
+                updates: { credential: credentialWithAlignment as any },
+            });
+
+            // Resolve the updated credential and check the alignments
+            const resolvedCredential = await userA.clients.fullAuth.storage.resolve({ uri });
+
+            // Check that alignments exist and have proper format
+            const credentialSubject = resolvedCredential.credentialSubject;
+            const achievement = Array.isArray(credentialSubject)
+                ? credentialSubject[0]?.achievement
+                : (credentialSubject as any)?.achievement;
+
+            expect(achievement).toBeDefined();
+            expect(achievement.alignment).toBeDefined();
+            expect(Array.isArray(achievement.alignment)).toBe(true);
+            expect(achievement.alignment.length).toBeGreaterThan(0);
+
+            // Find our alignment
+            const alignment = achievement.alignment.find(
+                (a: any) => a.id === skillId || a.targetCode === 'ATS001'
+            );
+            expect(alignment).toBeDefined();
+
+            // Verify the alignment type was normalized from string to array
+            expect(Array.isArray(alignment.type)).toBe(true);
+            expect(alignment.type).toContain('Alignment');
+
+            // Verify targetUrl was constructed from frameworkId and id
+            expect(typeof alignment.targetUrl).toBe('string');
+            expect(alignment.targetUrl.length).toBeGreaterThan(0);
+            expect(alignment.targetUrl).toContain(frameworkId);
+            expect(alignment.targetUrl).toContain(skillId);
         });
     });
 

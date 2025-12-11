@@ -24,7 +24,7 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
             case VerificationStatusEnum.Error:
                 return <ExclamationPoint />;
             case VerificationStatusEnum.Failed:
-                return <X />;
+                return <X className="w-[15px] h-[15px]" />;
         }
     };
 
