@@ -12,7 +12,8 @@ const finalBuildObj = {
     format: 'cjs',
     outdir: 'dist',
     target: 'node20',
-    external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'],
+    external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '@learncard/init'],
+    conditions: ['require', 'node', 'default'],
     plugins,
     minify: true,
 };
