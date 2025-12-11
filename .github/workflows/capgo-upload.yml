@@ -102,7 +102,6 @@ jobs:
             - name: Set Release (CapGo)
               run: >-
                   npx @capgo/cli@latest channel set ${{ inputs.channel }}
-                  -s default
-                  -a ${{ secrets.CAPGO_TOKEN }}
-                  -b ${{ inputs.version }}
+                  --apikey ${{ secrets.CAPGO_TOKEN }}
+                  --bundle ${{ inputs.version }}
                   ${{ inputs.app_id }}

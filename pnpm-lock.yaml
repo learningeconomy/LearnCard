@@ -254,6 +254,9 @@ importers:
       '@learncard/lca-api-plugin':
         specifier: workspace:*
         version: link:../../packages/plugins/lca-api-plugin
+      '@learncard/open-badge-v2-plugin':
+        specifier: workspace:*
+        version: link:../../packages/plugins/open-badge-v2
       '@learncard/react':
         specifier: workspace:^
         version: link:../../packages/react-learn-card

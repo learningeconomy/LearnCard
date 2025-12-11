@@ -75,21 +75,29 @@ platform :ios do
       xcodeproj: ENV["XCODE_PROJECT"]
     )
 
-    # Get both TestFlight and App Store versions, use the higher one
+    # Get TestFlight, live App Store, and pending App Store versions - use the highest
     testflight_version = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION] || "1.0.0"
-    app_store_version = get_app_store_version_number(app_identifier: ENV["APP_ID"]) rescue "1.0.0"
+    app_store_live_version = get_app_store_version_number(app_identifier: ENV["APP_ID"]) rescue "1.0.0"
     
-    # Compare versions and use the higher one
-    tf_parts = testflight_version.split('.').map(&:to_i)
-    as_parts = app_store_version.split('.').map(&:to_i)
+    # Also check for any pending/editable version that may already exist
+    app = Spaceship::ConnectAPI::App.find(ENV["APP_ID"])
+    pending_version = app.get_edit_app_store_version rescue nil
+    app_store_pending_version = pending_version&.version_string || app_store_live_version
     
-    # Pad arrays to same length for comparison
-    max_len = [tf_parts.length, as_parts.length].max
-    tf_parts += [0] * (max_len - tf_parts.length)
-    as_parts += [0] * (max_len - as_parts.length)
+    # Helper to compare version strings
+    compare_versions = ->(v1, v2) {
+      p1 = v1.split('.').map(&:to_i)
+      p2 = v2.split('.').map(&:to_i)
+      max_len = [p1.length, p2.length].max
+      p1 += [0] * (max_len - p1.length)
+      p2 += [0] * (max_len - p2.length)
+      p1 <=> p2
+    }
     
-    current_version_string = (tf_parts <=> as_parts) >= 0 ? testflight_version : app_store_version
-    UI.message("TestFlight version: #{testflight_version}, App Store version: #{app_store_version}, using: #{current_version_string}")
+    # Find the highest version among all sources
+    versions = [testflight_version, app_store_live_version, app_store_pending_version]
+    current_version_string = versions.max { |a, b| compare_versions.call(a, b) }
+    UI.message("TestFlight: #{testflight_version}, App Store live: #{app_store_live_version}, App Store pending: #{app_store_pending_version}, using: #{current_version_string}")
     
     parts = current_version_string.split('.').map(&:to_i)
     if parts.length == 3 # assuming X.Y.Z
