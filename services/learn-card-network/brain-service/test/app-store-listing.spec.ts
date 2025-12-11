@@ -1619,5 +1619,413 @@ describe('AppStoreListing', () => {
                 expect(result).toBe(true);
             });
         });
+
+        describe('Array Field Handling', () => {
+            it('stores and retrieves highlights as arrays', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const highlights = [
+                    'Feature one',
+                    'Feature two',
+                    'Feature three with special chars: & < > "quotes"',
+                ];
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({ highlights }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.highlights).toEqual(highlights);
+                expect(Array.isArray(listing?.highlights)).toBe(true);
+            });
+
+            it('stores and retrieves screenshots as arrays', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const screenshots = [
+                    'https://example.com/screenshot1.png',
+                    'https://example.com/screenshot2.png',
+                    'https://example.com/screenshot3.png',
+                ];
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({ screenshots }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.screenshots).toEqual(screenshots);
+                expect(Array.isArray(listing?.screenshots)).toBe(true);
+            });
+
+            it('handles empty arrays for highlights and screenshots', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        highlights: [],
+                        screenshots: [],
+                    }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.highlights).toEqual([]);
+                expect(listing?.screenshots).toEqual([]);
+            });
+
+            it('updates arrays correctly', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Add highlights via update
+                await userA.clients.fullAuth.appStore.updateListing({
+                    listingId,
+                    updates: {
+                        highlights: ['New highlight 1', 'New highlight 2'],
+                    },
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.highlights).toEqual(['New highlight 1', 'New highlight 2']);
+            });
+        });
+
+        describe('Launch Type Configurations', () => {
+            it('creates DIRECT_LINK listing with url config', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        launch_type: 'DIRECT_LINK',
+                        launch_config_json: JSON.stringify({
+                            url: 'https://example.com/app',
+                        }),
+                    }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.launch_type).toBe('DIRECT_LINK');
+
+                const config = JSON.parse(listing?.launch_config_json || '{}');
+                expect(config.url).toBe('https://example.com/app');
+            });
+
+            it('creates CONSENT_REDIRECT listing with contractUri config', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        launch_type: 'CONSENT_REDIRECT',
+                        launch_config_json: JSON.stringify({
+                            contractUri: 'lc:contract:example',
+                            redirectUrl: 'https://example.com/callback',
+                        }),
+                    }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.launch_type).toBe('CONSENT_REDIRECT');
+
+                const config = JSON.parse(listing?.launch_config_json || '{}');
+                expect(config.contractUri).toBe('lc:contract:example');
+            });
+
+            it('creates SECOND_SCREEN listing with app store IDs', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        launch_type: 'SECOND_SCREEN',
+                        launch_config_json: JSON.stringify({
+                            url: 'https://example.com/second-screen',
+                        }),
+                        ios_app_store_id: '123456789',
+                        android_app_store_id: 'com.example.app',
+                    }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.launch_type).toBe('SECOND_SCREEN');
+                expect(listing?.ios_app_store_id).toBe('123456789');
+                expect(listing?.android_app_store_id).toBe('com.example.app');
+            });
+
+            it('creates EMBEDDED_IFRAME listing with permissions', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        launch_type: 'EMBEDDED_IFRAME',
+                        launch_config_json: JSON.stringify({
+                            iframeUrl: 'https://example.com/embed',
+                            permissions: ['camera', 'microphone'],
+                        }),
+                    }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.launch_type).toBe('EMBEDDED_IFRAME');
+
+                const config = JSON.parse(listing?.launch_config_json || '{}');
+                expect(config.iframeUrl).toBe('https://example.com/embed');
+                expect(config.permissions).toEqual(['camera', 'microphone']);
+            });
+
+            it('creates AI_TUTOR listing', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        launch_type: 'AI_TUTOR',
+                        launch_config_json: JSON.stringify({
+                            tutorConfig: { subject: 'Math' },
+                        }),
+                    }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.launch_type).toBe('AI_TUTOR');
+            });
+
+            it('creates SERVER_HEADLESS listing', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        launch_type: 'SERVER_HEADLESS',
+                        launch_config_json: JSON.stringify({
+                            apiEndpoint: 'https://api.example.com',
+                        }),
+                    }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.launch_type).toBe('SERVER_HEADLESS');
+            });
+        });
+
+        describe('Edge Cases and Error Handling', () => {
+            it('returns NOT_FOUND for non-existent listing', async () => {
+                await expect(
+                    userA.clients.fullAuth.appStore.getListing({
+                        listingId: 'non-existent-listing-id',
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+
+            it('returns NOT_FOUND when updating non-existent listing', async () => {
+                await expect(
+                    userA.clients.fullAuth.appStore.updateListing({
+                        listingId: 'non-existent-listing-id',
+                        updates: { display_name: 'New Name' },
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+
+            it('returns NOT_FOUND when deleting non-existent listing', async () => {
+                await expect(
+                    userA.clients.fullAuth.appStore.deleteListing({
+                        listingId: 'non-existent-listing-id',
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+
+            it('handles maximum length fields correctly', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                // Create listing with max-length fields
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        display_name: 'A'.repeat(100), // max 100
+                        tagline: 'B'.repeat(200), // max 200
+                        full_description: 'C'.repeat(5000), // max 5000
+                    }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+                expect(listing?.display_name.length).toBe(100);
+                expect(listing?.tagline.length).toBe(200);
+                expect(listing?.full_description.length).toBe(5000);
+            });
+
+            it('rejects fields exceeding maximum length', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            display_name: 'A'.repeat(101), // exceeds max 100
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('handles listing with all optional fields populated', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        display_name: 'Complete App',
+                        tagline: 'All features included',
+                        full_description: 'A comprehensive app with all optional fields.',
+                        category: 'Productivity',
+                        promo_video_url: 'https://example.com/promo.mp4',
+                        privacy_policy_url: 'https://example.com/privacy',
+                        terms_url: 'https://example.com/terms',
+                        ios_app_store_id: '987654321',
+                        android_app_store_id: 'com.complete.app',
+                        hero_background_color: '#4A90D9',
+                        highlights: ['Feature 1', 'Feature 2', 'Feature 3'],
+                        screenshots: [
+                            'https://example.com/ss1.png',
+                            'https://example.com/ss2.png',
+                        ],
+                    }),
+                });
+
+                const listing = await userA.clients.fullAuth.appStore.getListing({ listingId });
+
+                expect(listing?.display_name).toBe('Complete App');
+                expect(listing?.category).toBe('Productivity');
+                expect(listing?.promo_video_url).toBe('https://example.com/promo.mp4');
+                expect(listing?.privacy_policy_url).toBe('https://example.com/privacy');
+                expect(listing?.terms_url).toBe('https://example.com/terms');
+                expect(listing?.ios_app_store_id).toBe('987654321');
+                expect(listing?.android_app_store_id).toBe('com.complete.app');
+                expect(listing?.hero_background_color).toBe('#4A90D9');
+                expect(listing?.highlights).toHaveLength(3);
+                expect(listing?.screenshots).toHaveLength(2);
+            });
+
+            it('uninstalling does not affect other users installations', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Set to LISTED so it can be installed
+                await setListingStatus(listingId, 'LISTED');
+
+                // Create profile for userB if needed
+                await seedProfile(userB, 'userb').catch(() => {});
+
+                // Both users install the app
+                await userA.clients.fullAuth.appStore.installApp({ listingId });
+                await userB.clients.fullAuth.appStore.installApp({ listingId });
+
+                // Verify both installed
+                expect(await userA.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(true);
+                expect(await userB.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(true);
+
+                // UserA uninstalls
+                await userA.clients.fullAuth.appStore.uninstallApp({ listingId });
+
+                // UserA should no longer have it, but UserB should still have it
+                expect(await userA.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(false);
+                expect(await userB.clients.fullAuth.appStore.isAppInstalled({ listingId })).toBe(true);
+            });
+
+            it('deleting a listing removes it from browse results', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Deletable App',
+                });
+
+                // Set to LISTED
+                await setListingStatus(listingId, 'LISTED');
+
+                // Verify it appears in browse
+                let browseResults = await noAuthClient.appStore.browseListedApps();
+                expect(browseResults.records.some(r => r.listing_id === listingId)).toBe(true);
+
+                // Delete the listing
+                await userA.clients.fullAuth.appStore.deleteListing({ listingId });
+
+                // Verify it no longer appears in browse
+                browseResults = await noAuthClient.appStore.browseListedApps();
+                expect(browseResults.records.some(r => r.listing_id === listingId)).toBe(false);
+            });
+
+            it('unlisting an app removes it from public browse', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId, {
+                    display_name: 'Unlistable App',
+                });
+
+                // Set to LISTED
+                await setListingStatus(listingId, 'LISTED');
+
+                // Verify it appears in browse
+                let browseResults = await noAuthClient.appStore.browseListedApps();
+                expect(browseResults.records.some(r => r.listing_id === listingId)).toBe(true);
+
+                // Admin unlists (sets to ARCHIVED)
+                await adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                    listingId,
+                    status: 'ARCHIVED',
+                });
+
+                // Verify it no longer appears in browse
+                browseResults = await noAuthClient.appStore.browseListedApps();
+                expect(browseResults.records.some(r => r.listing_id === listingId)).toBe(false);
+            });
+        });
+
+        describe('Pagination Edge Cases', () => {
+            it('handles empty results gracefully', async () => {
+                // No listings exist at this point
+                const results = await noAuthClient.appStore.browseListedApps();
+
+                expect(results.records).toEqual([]);
+                expect(results.hasMore).toBe(false);
+                expect(results.cursor).toBeUndefined();
+            });
+
+            it('handles single item without hasMore', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+                await setListingStatus(listingId, 'LISTED');
+
+                const results = await noAuthClient.appStore.browseListedApps({ limit: 10 });
+
+                expect(results.records.length).toBe(1);
+                expect(results.hasMore).toBe(false);
+            });
+
+            it('correctly indicates hasMore when more results exist', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                // Create 3 listings
+                for (let i = 0; i < 3; i++) {
+                    const id = await seedListingViaRouter(userA, integrationId, {
+                        display_name: `App ${i}`,
+                    });
+                    await setListingStatus(id, 'LISTED');
+                }
+
+                // Request with limit of 2
+                const page1 = await noAuthClient.appStore.browseListedApps({ limit: 2 });
+
+                expect(page1.records.length).toBe(2);
+                expect(page1.hasMore).toBe(true);
+                expect(page1.cursor).toBeDefined();
+
+                // Get remaining
+                const page2 = await noAuthClient.appStore.browseListedApps({
+                    limit: 2,
+                    cursor: page1.cursor,
+                });
+
+                expect(page2.records.length).toBe(1);
+                expect(page2.hasMore).toBe(false);
+            });
+        });
     });
 });

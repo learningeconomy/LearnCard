@@ -189,7 +189,6 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({
     const name = contractDetails?.name ?? 'Unknown App';
     const image = contractDetails?.image;
     const redirectUrl = contractDetails?.redirectUrl?.trim();
-    console.log("Contract details", contractDetails)
 
     const handleEditPermissions = () => {
         if (!contractDetails || !contract.terms) return;
