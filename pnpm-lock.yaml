@@ -1747,11 +1747,8 @@ importers:
         specifier: workspace:*
         version: link:../../../services/learn-card-network/simple-signing-service
       '@trpc/client':
-        specifier: ^10.17.0
-        version: 10.45.2(@trpc/server@10.45.2)
-      '@trpc/server':
-        specifier: ^10.17.0
-        version: 10.45.2
+        specifier: ^11.7.2
+        version: 11.7.2(@trpc/server@11.7.1(typescript@5.6.2))(typescript@5.6.2)
     devDependencies:
       '@esbuild-plugins/node-resolve':
         specifier: ^0.1.4
@@ -11135,11 +11132,6 @@ packages:
     peerDependencies:
       jest-environment-node: '>=25'
 
-  '@trpc/client@10.45.2':
-    resolution: {integrity: sha512-ykALM5kYWTLn1zYuUOZ2cPWlVfrXhc18HzBDyRhoPYN0jey4iQHEFSEowfnhg1RvYnrAVjNBgHNeSAXjrDbGwg==}
-    peerDependencies:
-      '@trpc/server': 10.45.2
-
   '@trpc/client@11.3.0':
     resolution: {integrity: sha512-O8fih4Tj+mGqN7bPM1inXJ7/3SFYI3/0D/AKYDc/G6Bq7GNNX+1st0YMMdtFk+Vv3e8K95h6233ZOwRX0qiwOg==}
     peerDependencies:
@@ -11151,9 +11143,6 @@ packages:
     peerDependencies:
       '@trpc/server': 11.7.2
       typescript: 5.6.2
-
-  '@trpc/server@10.45.2':
-    resolution: {integrity: sha512-wOrSThNNE4HUnuhJG6PfDRp4L2009KDVxsd+2VYH8ro6o/7/jwYZ8Uu5j+VaW+mOmc8EHerHzGcdbGNQSAUPgg==}
 
   '@trpc/server@11.7.1':
     resolution: {integrity: sha512-N3U8LNLIP4g9C7LJ/sLkjuPHwqlvE3bnspzC4DEFVdvx2+usbn70P80E3wj5cjOTLhmhRiwJCSXhlB+MHfGeCw==}
@@ -38073,10 +38062,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@trpc/client@10.45.2(@trpc/server@10.45.2)':
-    dependencies:
-      '@trpc/server': 10.45.2
-
   '@trpc/client@11.3.0(@trpc/server@11.7.1(typescript@5.6.2))(typescript@5.6.2)':
     dependencies:
       '@trpc/server': 11.7.1(typescript@5.6.2)
@@ -38086,8 +38071,6 @@ snapshots:
     dependencies:
       '@trpc/server': 11.7.1(typescript@5.6.2)
       typescript: 5.6.2
-
-  '@trpc/server@10.45.2': {}
 
   '@trpc/server@11.7.1(typescript@5.6.2)':
     dependencies:
