@@ -1289,28 +1289,30 @@ initTutorSession({
 
             <StepCard step={3} title="Track Learning Progress (Optional)" icon={<Database className="w-5 h-5 text-gray-500" />}>
                 <p className="text-sm text-gray-600 mb-3">
-                    Store session data and issue credentials for completed learning milestones.
+                    Issue credentials for completed learning milestones.
                 </p>
 
                 <CodeBlock
                     code={`// After a learning milestone is achieved
-const credential = {
-    '@context': ['https://www.w3.org/2018/credentials/v1'],
-    type: ['VerifiableCredential', 'LearningAchievement'],
-    credentialSubject: {
-        id: userDid,
-        achievement: {
+await learnCard.invoke.send({
+    recipient: userDid,
+    template: {
+        credential: {
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
+            ],
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
             name: topic,
-            description: 'Completed AI tutoring session',
-            achievementType: 'LearningMilestone'
+            credentialSubject: {
+                achievement: {
+                    name: topic,
+                    description: 'Completed AI tutoring session',
+                    achievementType: 'Achievement'
+                }
+            }
         }
     }
-};
-
-// Issue via Universal Inbox
-await learnCard.invoke.inbox.issue({
-    recipient: { type: 'did', value: userDid },
-    credential
 });`}
                 />
             </StepCard>
