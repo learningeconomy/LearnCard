@@ -549,9 +549,6 @@ jobs:
       - name: Use Composite Setup Action
         uses: ./.github/actions/setup
 
-      - name: Update npm for OIDC support
-        run: npm install -g npm@latest
-
       - name: Build packages
         run: pnpm exec nx run-many --target=build --exclude docs
 
