@@ -1209,5 +1209,259 @@ describe('AppStoreListing', () => {
                 expect(listing?.promotion_level).toBe('STANDARD');
             });
         });
+
+        describe('Input Validation', () => {
+            it('rejects invalid JSON in launch_config_json', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            launch_config_json: 'not valid json',
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            launch_config_json: '{ invalid: json }',
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('rejects icon_url from disallowed domains', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            icon_url: 'https://malicious-site.com/icon.png',
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('accepts icon_url from allowed domains', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                // Should accept example.com (allowed for tests)
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        icon_url: 'https://example.com/icon.png',
+                    }),
+                });
+                expect(typeof listingId).toBe('string');
+
+                // Should accept cdn.filestackcontent.com
+                const listingId2 = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        icon_url: 'https://cdn.filestackcontent.com/abc123',
+                    }),
+                });
+                expect(typeof listingId2).toBe('string');
+            });
+
+            it('rejects screenshots from disallowed domains', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            screenshots: ['https://evil-site.com/screenshot.png'],
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('rejects non-HTTPS iframe URLs for EMBEDDED_IFRAME launch type', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            launch_type: 'EMBEDDED_IFRAME',
+                            launch_config_json: JSON.stringify({
+                                iframeUrl: 'http://insecure-app.example.com',
+                            }),
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('accepts HTTPS iframe URLs for EMBEDDED_IFRAME launch type', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        launch_type: 'EMBEDDED_IFRAME',
+                        launch_config_json: JSON.stringify({
+                            iframeUrl: 'https://secure-app.example.com',
+                        }),
+                    }),
+                });
+                expect(typeof listingId).toBe('string');
+            });
+
+            it('rejects display_name with XSS patterns', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            display_name: '<script>alert("xss")</script>',
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            display_name: 'App onclick=alert(1)',
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('rejects tagline with XSS patterns', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            tagline: 'Cool app <iframe src="evil.com">',
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('rejects full_description with XSS patterns', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            full_description: 'Check out this app javascript:alert(1)',
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('rejects highlights with XSS patterns', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            highlights: [
+                                'Safe highlight',
+                                '<script>evil()</script>',
+                            ],
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('accepts valid content without XSS patterns', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        display_name: 'Legitimate App Name',
+                        tagline: 'A great app for learning!',
+                        full_description: 'This app helps users learn new skills. Features include video tutorials and quizzes.',
+                        highlights: [
+                            'Easy to use interface',
+                            'Progress tracking',
+                            'Offline mode available',
+                        ],
+                    }),
+                });
+                expect(typeof listingId).toBe('string');
+            });
+
+            it('rejects invalid hex color for hero_background_color', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            hero_background_color: 'not-a-color',
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+                await expect(
+                    userA.clients.fullAuth.appStore.createListing({
+                        integrationId,
+                        listing: makeRouterListingInput({
+                            hero_background_color: '#FFF', // Too short
+                        }),
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('accepts valid hex color for hero_background_color', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+
+                const listingId = await userA.clients.fullAuth.appStore.createListing({
+                    integrationId,
+                    listing: makeRouterListingInput({
+                        hero_background_color: '#FF5733',
+                    }),
+                });
+                expect(typeof listingId).toBe('string');
+            });
+
+            it('validates updates with the same rules as creation', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Should reject XSS in update
+                await expect(
+                    userA.clients.fullAuth.appStore.updateListing({
+                        listingId,
+                        updates: {
+                            display_name: '<script>alert("xss")</script>',
+                        },
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+                // Should reject disallowed domain in update
+                await expect(
+                    userA.clients.fullAuth.appStore.updateListing({
+                        listingId,
+                        updates: {
+                            icon_url: 'https://malicious-site.com/icon.png',
+                        },
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+                // Should accept valid update
+                const result = await userA.clients.fullAuth.appStore.updateListing({
+                    listingId,
+                    updates: {
+                        display_name: 'Updated Valid Name',
+                    },
+                });
+                expect(result).toBe(true);
+            });
+        });
     });
 });

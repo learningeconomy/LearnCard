@@ -507,7 +507,6 @@ export const appStoreRouter = t.router({
                 ctx.user.profile.profileId
             );
 
-            console.log("Listing", input.updates);
             const storageUpdates = transformInputForStorage(input.updates);
 
             return updateAppStoreListing(listing, storageUpdates);
