@@ -1,5 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff, Mail, Send, Server, Webhook, Shield, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { X, Copy, Check, ExternalLink, ChevronRight, Code, Globe, Package, Zap, Key, Database, Plus, Trash2, MoreVertical, Eye, EyeOff, Mail, Send, Server, Webhook, Shield, CheckCircle2, Loader2, Sparkles, Award } from 'lucide-react';
+
+import { OBv3CredentialBuilder } from '../../../components/credentials/OBv3CredentialBuilder';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
@@ -740,8 +742,67 @@ const ConsentRedirectGuide: React.FC<{ contractUri?: string }> = ({ contractUri 
     const displayContractUri = contractUri || 'lc:contract:example123...';
     const hasContractUri = Boolean(contractUri);
 
+    const [showCredentialBuilder, setShowCredentialBuilder] = useState(false);
+    const [builtCredential, setBuiltCredential] = useState<Record<string, unknown> | null>(null);
+
+    // Generate the code sample based on built credential or default
+    const credentialCodeSample = useMemo(() => {
+        if (builtCredential) {
+            // Format the credential nicely for the code block
+            const credJson = JSON.stringify(builtCredential, null, 12)
+                .split('\n')
+                .map((line, i) => (i === 0 ? line : `            ${line}`))
+                .join('\n');
+
+            return `// Get the user's DID (stored from Step 2)
+const userDID = await getUserLearnCardDID(userId);
+
+// Send a credential to the user
+await learnCard.invoke.send({
+    recipient: userDID,
+    contractUri: consentFlowContractURI,
+    template: {
+        credential: ${credJson}
+    }
+});`;
+        }
+
+        return `// Get the user's DID (stored from Step 2)
+const userDID = await getUserLearnCardDID(userId);
+
+// Send a credential to the user
+await learnCard.invoke.send({
+    recipient: userDID,
+    contractUri: consentFlowContractURI,
+    template: {
+        credential: {
+            // Open Badges 3.0 credential
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
+            ],
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            name: 'Course Completion',
+            credentialSubject: {
+                achievement: {
+                    name: 'Connected External App',
+                    description: 'Awarded for connecting to our app.',
+                    achievementType: 'Achievement',
+                    image: 'https://placehold.co/400x400?text=Badge'
+                }
+            }
+        }
+    }
+});`;
+    }, [builtCredential]);
+
     return (
     <div className="space-y-6">
+        <OBv3CredentialBuilder
+            isOpen={showCredentialBuilder}
+            onClose={() => setShowCredentialBuilder(false)}
+            onSave={(cred) => setBuiltCredential(cred)}
+        />
         <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
             <p className="text-sm text-indigo-800">
                 Use the Consent Redirect flow to collect user consent and credentials from your external application. 
@@ -850,35 +911,25 @@ console.log('LearnCard DID:', learnCard.id.did());`}
                 This handles credential creation, signing, and delivery in one call.
             </p>
 
-            <CodeBlock
-                code={`// Get the user's DID (stored from Step 2)
-const userDID = await getUserLearnCardDID(userId);
+            {/* Credential Builder Button */}
+            <div className="mb-4">
+                <button
+                    onClick={() => setShowCredentialBuilder(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-medium hover:from-cyan-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+                >
+                    <Award className="w-4 h-4" />
+                    Build Your Credential
+                </button>
 
-// Send a credential to the user
-await learnCard.invoke.send({
-    recipient: userDID,
-    contractUri: consentFlowContractURI,
-    template: {
-        credential: {
-            // Open Badges 3.0 credential
-            '@context': [
-                'https://www.w3.org/2018/credentials/v1',
-                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
-            ],
-            type: ['VerifiableCredential', 'OpenBadgeCredential'],
-            name: 'Course Completion',
-            credentialSubject: {
-                achievement: {
-                    name: 'Connected External App',
-                    description: 'Awarded for connecting to our app.',
-                    achievementType: 'Achievement',
-                    image: 'https://placehold.co/400x400?text=Badge'
-                }
-            }
-        }
-    }
-});`}
-            />
+                {builtCredential && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-emerald-600">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Custom credential added to code below</span>
+                    </div>
+                )}
+            </div>
+
+            <CodeBlock code={credentialCodeSample} />
 
             <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
                 <p className="text-xs text-cyan-800">
