@@ -9,7 +9,6 @@ import {
 } from '@accesslayer/skill-framework/read';
 import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
 import {
-    doesProfileManageSkillInFramework,
     getChildrenForSkillInFrameworkPaged,
     getSkillById,
     searchSkillsInFramework,
