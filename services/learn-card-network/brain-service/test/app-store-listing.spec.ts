@@ -765,6 +765,75 @@ describe('AppStoreListing', () => {
             });
         });
 
+        describe('submitForReview', () => {
+            it('requires ownership of the listing', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                await expect(
+                    userB.clients.fullAuth.appStore.submitForReview({ listingId })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('changes status from DRAFT to PENDING_REVIEW', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Verify starts as DRAFT
+                const before = await readAppStoreListingById(listingId);
+                expect(before?.app_listing_status).toBe('DRAFT');
+
+                // Submit for review
+                const result = await userA.clients.fullAuth.appStore.submitForReview({
+                    listingId,
+                });
+                expect(result).toBe(true);
+
+                // Verify status changed to PENDING_REVIEW
+                const after = await readAppStoreListingById(listingId);
+                expect(after?.app_listing_status).toBe('PENDING_REVIEW');
+            });
+
+            it('rejects submission of non-DRAFT listings', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Set to LISTED
+                await setListingStatus(listingId, 'LISTED');
+
+                // Try to submit - should fail
+                await expect(
+                    userA.clients.fullAuth.appStore.submitForReview({ listingId })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('rejects submission of ARCHIVED listings', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Set to ARCHIVED
+                await setListingStatus(listingId, 'ARCHIVED');
+
+                // Try to submit - should fail
+                await expect(
+                    userA.clients.fullAuth.appStore.submitForReview({ listingId })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('rejects re-submission of PENDING_REVIEW listings', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // Submit for review first time
+                await userA.clients.fullAuth.appStore.submitForReview({ listingId });
+
+                // Try to re-submit - should fail
+                await expect(
+                    userA.clients.fullAuth.appStore.submitForReview({ listingId })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+        });
+
         describe('browseListedApps (public)', () => {
             it('returns only LISTED apps without auth', async () => {
                 const integrationId = await seedIntegrationViaRouter(userA);
@@ -1207,6 +1276,93 @@ describe('AppStoreListing', () => {
                 // Protected fields should remain unchanged
                 expect(listing?.app_listing_status).toBe('DRAFT');
                 expect(listing?.promotion_level).toBe('STANDARD');
+            });
+
+            it('complete approval workflow: DRAFT → PENDING_REVIEW → LISTED', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // 1. Start as DRAFT
+                let listing = await readAppStoreListingById(listingId);
+                expect(listing?.app_listing_status).toBe('DRAFT');
+
+                // 2. Developer submits for review
+                await userA.clients.fullAuth.appStore.submitForReview({ listingId });
+                listing = await readAppStoreListingById(listingId);
+                expect(listing?.app_listing_status).toBe('PENDING_REVIEW');
+
+                // 3. Admin approves (sets to LISTED)
+                await adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                    listingId,
+                    status: 'LISTED',
+                });
+                listing = await readAppStoreListingById(listingId);
+                expect(listing?.app_listing_status).toBe('LISTED');
+
+                // 4. App is now browsable publicly
+                const publicListing = await noAuthClient.appStore.getPublicListing({ listingId });
+                expect(publicListing).not.toBeNull();
+                expect(publicListing?.display_name).toBe('Test App');
+            });
+
+            it('rejection workflow: PENDING_REVIEW → ARCHIVED', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // 1. Developer submits for review
+                await userA.clients.fullAuth.appStore.submitForReview({ listingId });
+
+                // 2. Admin rejects (sets to ARCHIVED)
+                await adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                    listingId,
+                    status: 'ARCHIVED',
+                });
+
+                const listing = await readAppStoreListingById(listingId);
+                expect(listing?.app_listing_status).toBe('ARCHIVED');
+
+                // 3. App is NOT browsable publicly
+                const publicListing = await noAuthClient.appStore.getPublicListing({ listingId });
+                expect(publicListing).toBeUndefined();
+            });
+
+            it('re-submission workflow: ARCHIVED → DRAFT → PENDING_REVIEW', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId);
+
+                // 1. Submit and get rejected
+                await userA.clients.fullAuth.appStore.submitForReview({ listingId });
+                await adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                    listingId,
+                    status: 'ARCHIVED',
+                });
+
+                // 2. Admin sends back to DRAFT for revision
+                await adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                    listingId,
+                    status: 'DRAFT',
+                });
+                let listing = await readAppStoreListingById(listingId);
+                expect(listing?.app_listing_status).toBe('DRAFT');
+
+                // 3. Developer makes changes and re-submits
+                await userA.clients.fullAuth.appStore.updateListing({
+                    listingId,
+                    updates: { display_name: 'Improved App' },
+                });
+                await userA.clients.fullAuth.appStore.submitForReview({ listingId });
+
+                listing = await readAppStoreListingById(listingId);
+                expect(listing?.app_listing_status).toBe('PENDING_REVIEW');
+
+                // 4. Admin approves the revised listing
+                await adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                    listingId,
+                    status: 'LISTED',
+                });
+                listing = await readAppStoreListingById(listingId);
+                expect(listing?.app_listing_status).toBe('LISTED');
+                expect(listing?.display_name).toBe('Improved App');
             });
         });
 
