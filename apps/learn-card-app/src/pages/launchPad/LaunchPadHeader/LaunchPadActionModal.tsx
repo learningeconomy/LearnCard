@@ -21,6 +21,9 @@ import X from 'learn-card-base/svgs/X';
 import FamiliesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/FamiliesQuickNav';
 import RequestInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/RequestInsightsQuickNav';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
+import AddUserQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddUserQuickNav';
+import ImportCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ImportCredentialQuickNav';
+import SwitchAccountQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchAccountQuickNav';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
 import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
@@ -106,6 +109,13 @@ const getIconForActionButton = (
             return <StudiesQuickNav className="w-[50px] h-auto" />;
         case 'Edit Skills Frameworks':
             return <SkillsIconWithShape className="w-[50px] h-auto" />;
+        case 'Import Credential':
+        case 'Import Credentials':
+            return <ImportCredentialQuickNav className="w-[50px] h-auto" />;
+        case 'Create Organization':
+            return <AddUserQuickNav className="w-[50px] h-auto" />;
+        case 'Switch Account':
+            return <SwitchAccountQuickNav className="w-[50px] h-auto" />;
         case 'Share Insights with Teacher':
             return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
         case 'View Child Insights':
@@ -413,11 +423,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Read Docs',
         ],
         [LearnCardRolesEnum.admin]: [
-            'Manage Skills Frameworks',
-            'Import Credentials',
+            'Edit Skills Frameworks',
+            'Import Credential',
             'Create Organization',
-            'Switch Account',
             'Create Credential',
+            'Switch Account',
         ],
         [LearnCardRolesEnum.counselor]: [
             'Manage Skills Frameworks',
@@ -464,6 +474,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Issue Learner Credential': 'bg-[var(--ion-color-cyan-200)]',
         'Create Credential': 'bg-[var(--ion-color-amber-300)]',
         'Edit Skills Frameworks': 'bg-[var(--ion-color-violet-300)]',
+        // Admin role labels
+        'Import Credential': 'bg-[var(--ion-color-blue-300)]',
+        'Create Organization': 'bg-[var(--ion-color-lime-300)]',
+        'Switch Account': 'bg-[var(--ion-color-cyan-200)]',
     };
 
     return (
