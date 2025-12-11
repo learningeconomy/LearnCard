@@ -844,77 +844,48 @@ console.log('LearnCard DID:', learnCard.id.did());`}
             />
         </StepCard>
 
-        <StepCard step={5} title="Create a Boost Template" icon={<Code className="w-5 h-5 text-gray-500" />}>
+        <StepCard step={5} title="Send Credentials to Users" icon={<Zap className="w-5 h-5 text-gray-500" />}>
             <p className="text-sm text-gray-600 mb-3">
-                Create a reusable Boost (credential template) that you'll issue to users.
-            </p>
-
-            <CodeBlock
-                code={`// Create your boost template
-const boostTemplate = learnCard.invoke.newCredential({
-    type: 'boost',
-    boostName: 'Example Boost',
-    boostImage: 'https://placehold.co/400x400?text=My+App',
-    achievementType: 'Achievement',
-    achievementName: 'Connected External App',
-    achievementDescription: 'Awarded for connecting to our app.',
-    achievementNarrative: 'Successfully connected and verified.',
-    achievementImage: 'https://placehold.co/400x400?text=Badge',
-});
-
-// Create the boost and get its URI (do this once, reuse the URI)
-const boostMetadata = {
-    name: 'My App Connection Badge',
-    description: 'Issued when users connect their LearnCard'
-};
-
-const boostUri = await learnCard.invoke.createBoost(
-    boostTemplate, 
-    boostMetadata
-);
-
-// Save boostUri for later use`}
-            />
-        </StepCard>
-
-        <StepCard step={6} title="Issue Credentials to Users" icon={<Zap className="w-5 h-5 text-gray-500" />}>
-            <p className="text-sm text-gray-600 mb-3">
-                When you're ready to send a credential to a user, create and issue it via the consent flow contract.
+                When you're ready to send a credential to a user, use the simplified <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">send</code> method. 
+                This handles credential creation, signing, and delivery in one call.
             </p>
 
             <CodeBlock
                 code={`// Get the user's DID (stored from Step 2)
 const userDID = await getUserLearnCardDID(userId);
 
-// Create the credential for this specific user
-const credentialUnsigned = learnCard.invoke.newCredential({
-    type: 'boost',
-    did: learnCard.id.did(),           // Your app's DID (issuer)
-    subject: userDID,                   // User's DID (recipient)
-    boostName: 'Example Boost',
-    boostImage: 'https://placehold.co/400x400?text=My+App',
-    achievementType: 'Achievement',
-    achievementName: 'Connected External App',
-    achievementDescription: 'Awarded for connecting to our app.',
-    achievementNarrative: 'Successfully connected and verified.',
-    achievementImage: 'https://placehold.co/400x400?text=Badge',
-});
-
-// Sign the credential
-const issuedCredential = await learnCard.invoke.issueCredential(
-    credentialUnsigned
-);
-
-// Send it to the user via the consent flow contract
-const credentialUri = await learnCard.invoke.writeCredentialToContract(
-    userDID,                    // Recipient DID
-    consentFlowContractURI,     // Your contract URI from Step 1
-    issuedCredential,           // The signed credential
-    boostUri                    // The boost template URI from Step 5
-);
-
-console.log('Credential sent:', credentialUri);`}
+// Send a credential to the user
+await learnCard.invoke.send({
+    recipient: userDID,
+    contractUri: consentFlowContractURI,
+    template: {
+        credential: {
+            // Open Badges 3.0 credential
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
+            ],
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            name: 'Course Completion',
+            credentialSubject: {
+                achievement: {
+                    name: 'Connected External App',
+                    description: 'Awarded for connecting to our app.',
+                    achievementType: 'Achievement',
+                    image: 'https://placehold.co/400x400?text=Badge'
+                }
+            }
+        }
+    }
+});`}
             />
+
+            <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+                <p className="text-xs text-cyan-800">
+                    <strong>What this does:</strong> Creates a credential template, issues it to the user, 
+                    and writes it to your consent flow contract — all in one call.
+                </p>
+            </div>
         </StepCard>
 
         <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
@@ -929,7 +900,7 @@ console.log('Credential sent:', credentialUri);`}
             </ol>
         </div>
 
-        <StepCard step={7} title="Additional Functions (Optional)" icon={<Database className="w-5 h-5 text-gray-500" />}>
+        <StepCard step={6} title="Additional Functions (Optional)" icon={<Database className="w-5 h-5 text-gray-500" />}>
             <p className="text-sm text-gray-600 mb-4">
                 As the contract owner, you can also query consent data and transactions:
             </p>
