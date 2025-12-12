@@ -18,7 +18,7 @@
     },
     "dependencies": {
         "@learncard/learn-cloud-service": "workspace:*",
-        "@trpc/client": "^11.3.0"
+        "@trpc/client": "^11.7.1"
     },
     "repository": {
         "type": "git",

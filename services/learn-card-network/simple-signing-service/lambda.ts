@@ -1,9 +1,10 @@
 import serverlessHttp from 'serverless-http';
 import type { Context, APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { createOpenApiAwsLambdaHandler } from 'trpc-openapi';
+import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-to-openapi';
 import * as Sentry from '@sentry/serverless';
-import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
+
+import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
 
 import app from './src/openapi';
 import didWebApp from './src/dids';
@@ -30,6 +31,15 @@ export const didWebHandler = serverlessHttp(didWebApp);
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
+    responseMeta: () => {
+        return {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+            },
+        };
+    },
     createContext,
     onError: ({ error, ctx, path }) => {
         error.stack = error.stack?.replace('Mr: ', '');

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
@@ -157,6 +157,7 @@ const WalletPage: React.FC = () => {
                                         <h2 className="text-grayscale-900 font-poppins text-[25px] tracking-[0.25px]">
                                             Passport
                                         </h2>
+
                                         {/* 
                                         // TODOS:
                                         - add support for new items count based on categories

@@ -12,6 +12,7 @@ import NotificationBoostCard from './NotificationBoostCard';
 import ConnectionRequestCard from './ConnectionRequestCard';
 import NotificationConsentFlowCard from './NotificationConsentFlowCard';
 import NotificationProfileApprovalCard from './NotificationProfileApprovalCard';
+import NotificationAppStoreCard from './NotificationAppStoreCard';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIonAlert } from '@ionic/react';
 
@@ -29,6 +30,9 @@ export const NOTIFICATION_TYPES = {
     CONSENT_FLOW_TRANSACTION: 'CONSENT_FLOW_TRANSACTION',
     CREDENTIAL_RECEIVED: 'CREDENTIAL_RECEIVED',
     PROFILE_PARENT_APPROVED: 'PROFILE_PARENT_APPROVED',
+    APP_LISTING_SUBMITTED: 'APP_LISTING_SUBMITTED',
+    APP_LISTING_APPROVED: 'APP_LISTING_APPROVED',
+    APP_LISTING_REJECTED: 'APP_LISTING_REJECTED',
 };
 
 export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
@@ -310,6 +314,39 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     /* Someone made a transaction on your ConsentFlow contract (e.g. Accepted / updated) */
     if (type === NOTIFICATION_TYPES.CONSENT_FLOW_TRANSACTION) {
         return <NotificationConsentFlowCard notification={notification} />;
+    }
+
+    /* App Store: A new listing was submitted for review (admin notification) */
+    if (type === NOTIFICATION_TYPES.APP_LISTING_SUBMITTED) {
+        return (
+            <NotificationAppStoreCard
+                notification={notification}
+                onRead={handleMarkAsRead}
+                variant="submitted"
+            />
+        );
+    }
+
+    /* App Store: Your listing was approved */
+    if (type === NOTIFICATION_TYPES.APP_LISTING_APPROVED) {
+        return (
+            <NotificationAppStoreCard
+                notification={notification}
+                onRead={handleMarkAsRead}
+                variant="approved"
+            />
+        );
+    }
+
+    /* App Store: Your listing was rejected / needs changes */
+    if (type === NOTIFICATION_TYPES.APP_LISTING_REJECTED) {
+        return (
+            <NotificationAppStoreCard
+                notification={notification}
+                onRead={handleMarkAsRead}
+                variant="rejected"
+            />
+        );
     }
 
     return (

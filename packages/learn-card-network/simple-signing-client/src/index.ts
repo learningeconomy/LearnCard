@@ -1,9 +1,9 @@
-import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, TRPCClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '@learncard/simple-signing-service';
 
 import { callbackLink } from './callbackLink';
 
-export type Client = CreateTRPCProxyClient<AppRouter>;
+export type Client = TRPCClient<AppRouter>;
 
 export const getClient = async (
     url: string,
@@ -11,7 +11,7 @@ export const getClient = async (
 ): Promise<Client> => {
     let challenges: string[] = [];
 
-    const challengeRequester = createTRPCProxyClient<AppRouter>({
+    const challengeRequester = createTRPCClient<AppRouter>({
         links: [
             httpBatchLink({ url, headers: { Authorization: `Bearer ${await didAuthFunction()}` } }),
         ],
@@ -25,7 +25,7 @@ export const getClient = async (
 
     getChallenges().then(result => (challenges = result));
 
-    const trpc = createTRPCProxyClient<AppRouter>({
+    const trpc = createTRPCClient<AppRouter>({
         links: [
             callbackLink(async () => {
                 challenges = await getChallenges();

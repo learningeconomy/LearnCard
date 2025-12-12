@@ -8,6 +8,8 @@ import { ConsentFlowTransaction } from './ConsentFlowTransaction';
 import { SkillFramework } from './SkillFramework';
 import { Skill } from './Skill';
 import { Tag } from './Tag';
+import { AppStoreListing } from './AppStoreListing';
+import { Integration } from './Integration';
 
 Credential.addRelationships({
     credentialReceived: {
@@ -53,6 +55,33 @@ SkillFramework.addRelationships({
 Skill.addRelationships({
     childOf: { model: Skill, direction: 'out', name: 'IS_CHILD_OF' },
     hasTag: { model: Tag, direction: 'out', name: 'HAS_TAG' },
+});
+
+// App Store relationships
+Integration.addRelationships({
+    publishesListing: {
+        model: AppStoreListing,
+        direction: 'out',
+        name: 'PUBLISHES_LISTING',
+    },
+});
+
+Profile.addRelationships({
+    installs: {
+        model: AppStoreListing,
+        direction: 'out',
+        name: 'INSTALLS',
+        properties: {
+            listing_id: {
+                property: 'listing_id',
+                schema: { type: 'string', required: true },
+            },
+            installed_at: {
+                property: 'installed_at',
+                schema: { type: 'string', required: true },
+            },
+        },
+    },
 });
 
 // Use an IIFE to create indices without top-level await
@@ -188,6 +217,31 @@ Skill.addRelationships({
             'CREATE INDEX presentation_received_date_idx IF NOT EXISTS FOR ()-[r:PRESENTATION_RECEIVED]-() ON (r.date)'
         ),
 
+        // AppStoreListing indexes
+        neogma.queryRunner.run(
+            'CREATE INDEX app_store_listing_id_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.listing_id)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX app_store_listing_status_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.app_listing_status)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX app_store_listing_category_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.category)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX app_store_listing_promotion_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.promotion_level)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE TEXT INDEX app_store_listing_name_text_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.display_name)'
+        ),
+
+        // Relationship property indexes for AppStoreListing
+        neogma.queryRunner.run(
+            'CREATE INDEX installs_listing_id_idx IF NOT EXISTS FOR ()-[r:INSTALLS]-() ON (r.listing_id)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX installs_installed_at_idx IF NOT EXISTS FOR ()-[r:INSTALLS]-() ON (r.installed_at)'
+        ),
+
         // Constraints
         neogma.queryRunner.run(
             'CREATE CONSTRAINT contact_method_type_value_unique IF NOT EXISTS FOR (c:ContactMethod) REQUIRE (c.type, c.value) IS UNIQUE'
@@ -220,3 +274,4 @@ export * from './SkillFramework';
 export * from './Skill';
 export * from './Tag';
 export * from './Integration';
+export * from './AppStoreListing';

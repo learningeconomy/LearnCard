@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import type { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
 import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
-import { OpenApiMeta } from 'trpc-openapi';
+import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 

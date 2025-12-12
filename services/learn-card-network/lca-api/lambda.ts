@@ -2,7 +2,7 @@ import serverlessHttp from 'serverless-http';
 import type { Context, APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
 import * as Sentry from '@sentry/serverless';
-import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
+import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-to-openapi';
 
 import app from './src/openapi';
 import didWebApp from './src/dids';

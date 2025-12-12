@@ -1,11 +1,10 @@
-import { OpenAPIV3 } from 'openapi-types';
-import { generateOpenApiDocument } from 'trpc-openapi';
+import { generateOpenApiDocument } from 'trpc-to-openapi';
 import express, { Express } from 'express';
 
 import { appRouter } from './app';
 
 // Generate OpenAPI schema document
-export const openApiDocument: OpenAPIV3.Document<{}> = generateOpenApiDocument(appRouter, {
+export const openApiDocument = generateOpenApiDocument(appRouter, {
     title: 'LearnCard App API',
     description: 'This is the API for interacting with a LearnCard App API',
     version: '1.0.0',

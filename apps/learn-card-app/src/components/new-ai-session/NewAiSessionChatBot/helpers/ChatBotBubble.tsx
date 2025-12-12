@@ -18,6 +18,7 @@ import {
     aiPassportApps,
     getAiPassportAppByContractUri,
 } from '../../../ai-passport-apps/aiPassport-apps.helpers';
+import useAppStore from '../../../../pages/launchPad/useAppStore';
 
 export const ChatBotBubbleAnswer: React.FC<{
     qa: ChatBotQA;
@@ -36,11 +37,15 @@ export const ChatBotBubbleAnswer: React.FC<{
     const animationDelay = `${index * 150}ms`;
 
     let image = null;
-    let app = null;
+    let app: { name?: string; img?: string } | null | undefined = null;
+
+    // Fetch installed apps to look up app store listings
+    const { useInstalledApps } = useAppStore();
+    const { data: installedAppsData } = useInstalledApps();
 
     const { data, isLoading } = useGetEnrichedSession(
-        qa?.answer || '',
-        qa?.type === ChatBotQuestionsEnum.ResumeTopic && qa?.answer
+        String(qa?.answer || ''),
+        qa?.type === ChatBotQuestionsEnum.ResumeTopic && !!qa?.answer
     );
 
     let answer = useMemo(() => {
@@ -63,7 +68,21 @@ export const ChatBotBubbleAnswer: React.FC<{
         );
         containerStyles = 'items-center';
     } else if (qa.type === ChatBotQuestionsEnum.AppSelection) {
-        app = aiPassportApps.find(a => a.id === Number(qa.answer));
+        // First try to find in hardcoded apps (numeric id)
+        app = aiPassportApps.find(a => a.id.toString() === qa.answer);
+        
+        // If not found, check installed app store listings (string id)
+        if (!app && installedAppsData?.records) {
+            const installedApp = installedAppsData.records.find(a => a.listing_id === qa.answer);
+
+            if (installedApp) {
+                app = {
+                    name: installedApp.display_name,
+                    img: installedApp.icon_url,
+                };
+            }
+        }
+
         answer = app?.name;
         containerStyles = 'items-center';
         image = (
