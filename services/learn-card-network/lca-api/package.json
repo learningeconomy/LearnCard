@@ -69,5 +69,13 @@
         "postmark": "^4.0.5",
         "trpc-to-openapi": "^3.1.0",
         "uuid": "^9.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/services/learn-card-network/lca-api/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

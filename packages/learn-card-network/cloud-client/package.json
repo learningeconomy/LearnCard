@@ -19,5 +19,13 @@
     "dependencies": {
         "@learncard/learn-cloud-service": "workspace:*",
         "@trpc/client": "^11.7.1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-network/cloud-client/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

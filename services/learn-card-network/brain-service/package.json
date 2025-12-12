@@ -85,5 +85,13 @@
         "zod-openapi": "^5.0.1",
         "twilio": "^5.7.1",
         "uuid": "^9.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/services/learn-card-network/brain-service/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

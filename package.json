@@ -2,6 +2,9 @@
     "name": "learncard-monorepo",
     "private": true,
     "version": "1.0.1",
+    "repository": {
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
     "scripts": {
         "preinstall": "npx only-allow pnpm",
         "build": "nx run-many -t build --all --exclude=docs,chapi-example,snap-chapi-example,snap-example-dapp",

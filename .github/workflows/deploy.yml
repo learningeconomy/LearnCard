@@ -537,6 +537,9 @@ jobs:
       !contains(needs.deploy-learn-cloud.result, 'failure') &&
       !contains(needs.deploy-lca-api.result, 'failure')
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -548,9 +551,6 @@ jobs:
 
       - name: Build packages
         run: pnpm exec nx run-many --target=build --exclude docs
-
-      - name: Setup NPM authentication
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
 
       - name: Publish to NPM
         run: pnpm publish -r --no-git-checks
