@@ -82,8 +82,13 @@ const isValidIframeUrl = (url: string): boolean => {
         const parsed = new URL(url);
         // Only allow https URLs for iframes
         if (parsed.protocol !== 'https:') return false;
-        // Block javascript: and data: schemes (already handled by URL parsing, but be explicit)
-        if (url.toLowerCase().startsWith('javascript:') || url.toLowerCase().startsWith('data:')) {
+        // Block javascript:, data:, and vbscript: schemes (already handled by URL parsing, but be explicit)
+        const lowerUrl = url.toLowerCase();
+        if (
+            lowerUrl.startsWith('javascript:') ||
+            lowerUrl.startsWith('data:') ||
+            lowerUrl.startsWith('vbscript:')
+        ) {
             return false;
         }
         return true;
@@ -97,6 +102,8 @@ const containsSuspiciousContent = (text: string): boolean => {
     const suspiciousPatterns = [
         /<script\b[^>]*>/i,
         /javascript:/i,
+        /data:/i,
+        /vbscript:/i,
         /on\w+\s*=/i, // onclick=, onerror=, etc.
         /<iframe\b[^>]*>/i,
         /<object\b[^>]*>/i,
