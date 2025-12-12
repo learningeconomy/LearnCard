@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useImmer } from 'use-immer';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useImmer, Updater } from 'use-immer';
 import { useQuery } from '@tanstack/react-query';
 import { BookOpen, PenTool, Settings, Loader2 } from 'lucide-react';
 
@@ -145,6 +145,23 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     const hasWriteCategories = acceptedWriteCategories.length > 0;
     const hasAnyDataPermissions = contractUri && contractDetails && (hasReadCategories || hasWriteCategories);
 
+    // Wrapper to adapt setTerms type for ConsentFlowPrivacyAndData
+    // ConsentFlowPrivacyAndData expects Updater<ConsentFlowTerms> but our state is ConsentFlowTerms | null
+    const setTermsWrapper: Updater<ConsentFlowTerms> = useCallback(
+        (updater) => {
+            setTerms((draft) => {
+                if (draft === null) return;
+
+                if (typeof updater === 'function') {
+                    updater(draft);
+                } else {
+                    return updater;
+                }
+            });
+        },
+        [setTerms]
+    );
+
     const openPrivacyAndData = () => {
         if (!contractDetails || !terms) return;
 
@@ -152,7 +169,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
             <ConsentFlowPrivacyAndData
                 contractDetails={contractDetails}
                 terms={terms}
-                setTerms={setTerms as any}
+                setTerms={setTermsWrapper}
             />,
             {},
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
