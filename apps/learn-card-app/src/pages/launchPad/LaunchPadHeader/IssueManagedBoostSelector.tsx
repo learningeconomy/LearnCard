@@ -8,6 +8,7 @@ import {
     BoostCategoryOptionsEnum,
     categoryMetadata,
     ModalTypes,
+    CredentialCategory,
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import X from 'learn-card-base/svgs/X';
@@ -17,6 +18,7 @@ import { IonInput, IonSpinner } from '@ionic/react';
 import BoostTemplateListItem from '../../../components/boost/boost-template/BoostTemplateListItem';
 
 const ALLOWED_CATEGORIES = [
+    BoostCategoryOptionsEnum.all,
     BoostCategoryOptionsEnum.socialBadge,
     BoostCategoryOptionsEnum.achievement,
     BoostCategoryOptionsEnum.id,
@@ -82,7 +84,7 @@ const CategorySelectorModal: React.FC<{
 const IssueManagedBoostSelector: React.FC = () => {
     const { closeModal, newModal } = useModal();
     const [selectedCategory, setSelectedCategory] = useState<BoostCategoryOptionsEnum>(
-        BoostCategoryOptionsEnum.socialBadge
+        BoostCategoryOptionsEnum.all
     );
 
     const [searchInput, setSearchInput] = useState('');
@@ -101,7 +103,13 @@ const IssueManagedBoostSelector: React.FC = () => {
         hasNextPage: boostsHasNextPage,
         fetchNextPage: boostsFetchNextPage,
         isFetchingNextPage: boostsIsFetchingNextPage,
-    } = useGetPaginatedManagedBoostsQuery({ category: selectedCategory }, { limit: 12 });
+    } = useGetPaginatedManagedBoostsQuery(
+        {
+            category:
+                selectedCategory === BoostCategoryOptionsEnum.all ? undefined : selectedCategory,
+        },
+        { limit: 12 }
+    );
 
     const boostInfiniteScrollRef = useRef<HTMLDivElement>(null);
     const boostsOnScreen = useOnScreen(boostInfiniteScrollRef as any, '200px', [
@@ -114,10 +122,6 @@ const IssueManagedBoostSelector: React.FC = () => {
 
     const searchResults = searchManagedBoostsFromCache(boosts, debouncedSearchInput);
     const searchResultsUris = searchResults?.map(r => r.uri);
-
-    const currentWalletSubtype =
-        categoryMetadata[boostCategoryMetadata[selectedCategory].credentialType].walletSubtype;
-    const imgSrc = walletSubtypeToDefaultImageSrc(currentWalletSubtype);
 
     const categoryMeta = boostCategoryMetadata[selectedCategory];
 
@@ -136,15 +140,29 @@ const IssueManagedBoostSelector: React.FC = () => {
         boosts?.pages?.flatMap(page =>
             page?.records
                 ?.filter(record => !debouncedSearchInput || searchResultsUris?.includes(record.uri))
-                .map((record, index) => (
-                    <BoostTemplateListItem
-                        key={record.uri || index}
-                        boost={record}
-                        defaultImg={imgSrc}
-                        categoryType={record.category}
-                        loading={boostsLoading}
-                    />
-                ))
+                .map((record, index) => {
+                    const credType =
+                        boostCategoryMetadata[record.category as BoostCategoryOptionsEnum]
+                            ?.credentialType;
+                    const walletSubtype = credType
+                        ? categoryMetadata[credType]?.walletSubtype
+                        : undefined;
+                    const imgSrc = walletSubtype
+                        ? walletSubtypeToDefaultImageSrc(walletSubtype)
+                        : '';
+
+                    if (!credType) return null;
+
+                    return (
+                        <BoostTemplateListItem
+                            key={record.uri || index}
+                            boost={record}
+                            defaultImg={imgSrc}
+                            categoryType={credType as unknown as CredentialCategory}
+                            loading={boostsLoading}
+                        />
+                    );
+                })
         ) ?? [];
 
     return (
