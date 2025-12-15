@@ -5,7 +5,7 @@
     "private": true,
     "repository": {
         "type": "git",
-        "url": "https://github.com/WeLibraryOS/LearnCard.git"
+        "url": "https://github.com/learningeconomy/LearnCard"
     },
     "license": "MIT",
     "main": "dist/cjs/index.js",
@@ -48,5 +48,9 @@
     },
     "dependencies": {
         "@learncard/core": "workspace:*"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/services/meta-mask-snap/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

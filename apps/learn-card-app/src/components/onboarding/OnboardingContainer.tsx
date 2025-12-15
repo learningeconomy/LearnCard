@@ -28,21 +28,21 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
     }
 
     return (
-        <div className="w-full h-full bg-white flex flex-col">
-            <div className="max-w-[600px] mx-auto pt-[50px] px-4 overflow-y-scroll h-full pb-[200px] relative">
+        <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative">
+            <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
                 <OnboardingHeader text="Select what best describes you!" />
                 <OnboardingRoles role={role} setRole={setRole} />
+                <OnboardingFooter
+                    overrideSkip={
+                        step === OnboardingStepsEnum.selectRole
+                            ? () => setStep(OnboardingStepsEnum.joinNetwork)
+                            : undefined
+                    }
+                    step={step}
+                    role={role}
+                    setStep={setStep}
+                />
             </div>
-            <OnboardingFooter
-                overrideSkip={
-                    step === OnboardingStepsEnum.selectRole
-                        ? () => setStep(OnboardingStepsEnum.joinNetwork)
-                        : undefined
-                }
-                step={step}
-                role={role}
-                setStep={setStep}
-            />
         </div>
     );
 };

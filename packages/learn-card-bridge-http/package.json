@@ -50,5 +50,13 @@
         "serverless-plugin-typescript": "^2.1.0",
         "shx": "^0.3.4",
         "ts-node": "^10.8.1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-bridge-http/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

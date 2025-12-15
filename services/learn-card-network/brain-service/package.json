@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.7.5",
+    "version": "3.7.7",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -85,5 +85,13 @@
         "tsc-alias": "^1.8.10",
         "twilio": "^5.7.1",
         "uuid": "^9.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/services/learn-card-network/brain-service/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

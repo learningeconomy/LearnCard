@@ -23,5 +23,13 @@
         "@trpc/client": "^10.17.0",
         "@trpc/server": "^10.17.0",
         "@learncard/simple-signing-service": "workspace:*"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-network/simple-signing-client/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

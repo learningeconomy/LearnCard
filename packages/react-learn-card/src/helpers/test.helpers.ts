@@ -103,6 +103,20 @@ export const AllFieldsCredential = {
                 narrative:
                     'You really know your crednetials! Pretty rad. Being able to find and handle all of these fields is incredible! This narrative is going to be pretty long so that we can see if you can handle long blocks of text too. This should probably be truncated off by now or something.',
             },
+            alignment: [
+                {
+                    targetName: 'Alignment 1',
+                    targetDescription: 'Target Description for Alignment 1',
+                    targetFramework: 'Target Framework 1',
+                    targetUrl: 'https://example.com/alignment1',
+                },
+                {
+                    targetName: 'Alignment 2',
+                    targetDescription: 'Target Description for Alignment 2',
+                    targetFramework: 'Target Framework 2',
+                    targetUrl: 'https://example.com/alignment2',
+                },
+            ],
         },
     },
     proof: {

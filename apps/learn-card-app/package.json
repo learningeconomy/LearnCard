@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.93.5",
+    "version": "1.93.7",
     "private": true,
     "dependencies": {
         "@capacitor-community/media": "^8.0.1",
@@ -35,6 +35,7 @@
         "@sentry/browser": "8.34.0",
         "@sentry/react": "8.34.0",
         "@learncard/helpers": "workspace:*",
+        "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/react": "workspace:^",
         "@testing-library/jest-dom": "^5.17.0",
         "@testing-library/react": "^11.2.7",

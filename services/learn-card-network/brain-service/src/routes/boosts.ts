@@ -90,6 +90,7 @@ import { deleteBoost } from '@accesslayer/boost/delete';
 import {
     injectObv3AlignmentsIntoCredentialForBoost,
     buildObv3AlignmentsForBoost,
+    normalizeCredentialAlignments,
 } from '@services/skills-provider/inject';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -283,7 +284,9 @@ export const boostsRouter = t.router({
                  RETURN collect({ frameworkId: f.id, id: s.id }) AS found`,
                 { refs: skills }
             );
-            const foundPairs = (verify.records[0]?.get('found') as Array<{ frameworkId?: string; id?: string }>) || [];
+            const foundPairs =
+                (verify.records[0]?.get('found') as Array<{ frameworkId?: string; id?: string }>) ||
+                [];
             const foundSet = new Set(foundPairs.map(p => `${p.frameworkId}:${p.id}`));
             const missingPairs = skills.filter(sr => !foundSet.has(`${sr.frameworkId}:${sr.id}`));
             if (missingPairs.length > 0) {
@@ -557,7 +560,10 @@ export const boostsRouter = t.router({
                         credential: VCValidator.or(UnsignedVCValidator),
                         claimPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
-                skills: z.array(z.object({ frameworkId: z.string(), id: z.string() })).min(1).optional(),
+                skills: z
+                    .array(z.object({ frameworkId: z.string(), id: z.string() }))
+                    .min(1)
+                    .optional(),
             })
         )
         .output(z.string())
@@ -1538,6 +1544,12 @@ export const boostsRouter = t.router({
                 if (type) actualUpdates.type = type;
                 if (status) actualUpdates.status = status;
                 if (credential) {
+                    // First normalize existing alignments in the credential
+                    // (converts type: 'Alignment' to type: ['Alignment'] and constructs targetUrl)
+                    normalizeCredentialAlignments(credential, ctx.domain);
+                    // Then inject any additional alignments from the boost's linked skills
+                    //   I don't think this is necessary since it would've been done in createBoost
+                    // await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, ctx.domain);
                     actualUpdates.boost = convertCredentialToBoostTemplateJSON(
                         credential,
                         getDidWeb(ctx.domain, profile.profileId)

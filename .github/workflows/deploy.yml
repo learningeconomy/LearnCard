@@ -537,6 +537,9 @@ jobs:
       !contains(needs.deploy-learn-cloud.result, 'failure') &&
       !contains(needs.deploy-lca-api.result, 'failure')
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -551,8 +554,6 @@ jobs:
 
       - name: Publish to NPM
         run: pnpm publish -r --no-git-checks
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # ============================================================================
   # CHANGESET PR MANAGEMENT (only on non-release, non-manual pushes)

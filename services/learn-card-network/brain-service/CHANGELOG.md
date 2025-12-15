@@ -1,5 +1,17 @@
 # @learncard/network-brain-service
 
+## 3.7.7
+
+### Patch Changes
+
+-   [#871](https://github.com/learningeconomy/LearnCard/pull/871) [`057d9dd390e5900a0da19c097101c7b504c96183`](https://github.com/learningeconomy/LearnCard/commit/057d9dd390e5900a0da19c097101c7b504c96183) Thanks [@smurflo2](https://github.com/smurflo2)! - Remove permission check for reading framework and skill data
+
+## 3.7.6
+
+### Patch Changes
+
+-   [#867](https://github.com/learningeconomy/LearnCard/pull/867) [`d04dc8022457ed50c65c2eb878929d0e5653c91a`](https://github.com/learningeconomy/LearnCard/commit/d04dc8022457ed50c65c2eb878929d0e5653c91a) Thanks [@gerardopar](https://github.com/gerardopar)! - Lc 1406 insights
+
 ## 3.7.5
 
 ### Patch Changes

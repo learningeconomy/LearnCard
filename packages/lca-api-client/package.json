@@ -23,5 +23,13 @@
     "dependencies": {
         "@trpc/client": "11.3.0",
         "@learncard/lca-api-service": "workspace:*"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/lca-api-client/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

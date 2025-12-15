@@ -48,6 +48,7 @@ const CREDENTIAL_TYPES = {
     ALUMNI_OF: 'AlumniCredential',
     PERM_RESIDENT: 'PermanentResidentCard',
     CERTIFIED_BOOST: 'CertifiedBoostCredential',
+    LEGACY_CRED: 'LegacyOpenBadgeCredential',
 };
 
 const CREDENTIAL_CONTEXTS = {
@@ -564,11 +565,17 @@ export const getCredentialSubject = (credential: UnsignedVC) => {
 };
 
 export const getCredentialSubjectAchievementData = (credential: UnsignedVC) => {
-    const achievement = getCredentialSubjectAchievement(credential);
-
-    const description = achievement?.description;
-    const criteria = achievement?.criteria?.narrative;
-    const alignment = achievement?.alignment;
+    let description, criteria, alignment;
+    if (credential?.type?.includes(CREDENTIAL_TYPES.LEGACY_CRED)) {
+        description = credential?.legacyAssertion?.badge?.description;
+        criteria = credential?.legacyAssertion?.badge?.narrative;
+        alignment = credential?.legacyAssertion?.badge?.alignment;
+    } else {
+        const achievement = getCredentialSubjectAchievement(credential);
+        description = achievement?.description;
+        criteria = achievement?.criteria?.narrative;
+        alignment = achievement?.alignment;
+    }
 
     return {
         description,
@@ -667,6 +674,17 @@ export const getImageUrlFromCredential = (
     // Try to get image from various sources in order of preference
     let imgSrc: string | undefined;
 
+    if (credential?.type?.includes(CREDENTIAL_TYPES.LEGACY_CRED)) {
+        const image = credential.legacyAssertion?.image;
+
+        if (typeof image === 'string') return image;
+        if (image?.id) return image.id;
+        if (!image && credCategory) {
+            return getFallBackImage(credCategory);
+        }
+        return '';
+    }
+
     if (credential?.image) {
         imgSrc = credential.image;
     } else if (credSubject?.image) {
@@ -719,6 +737,9 @@ export const getPotentialNameFieldsFromType = (credentialTypes: string[], creden
     }
     if (credentialTypes?.includes(CREDENTIAL_TYPES.CERTIFIED_BOOST)) {
         name = credentialSubject?.achievement?.name;
+    }
+    if (credentialTypes?.includes(CREDENTIAL_TYPES.LEGACY_CRED)) {
+        name = credential?.legacyAssertion?.badge?.name || 'Open Badge';
     }
     return name;
 };
@@ -859,7 +880,6 @@ export const getAllSortedCredentials = async (credentials: VC[]) => {
     };
 
     if (credentials) {
-        // console.log('///credentials', credentials);
         // sort credentials by credential category
         await Promise.all(
             credentials.map(async vc => {

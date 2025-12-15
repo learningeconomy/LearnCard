@@ -661,8 +661,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const isContinueDisabled = !hasValidDob || !hasValidCountry || !hasValidProfileId || isLoading;
 
     return (
-        <div className="w-full h-full bg-white relative">
-            <div className="max-w-[600px] mx-auto pt-[50px] px-4 overflow-y-scroll h-full pb-[200px] relative">
+        <div className="w-full h-full bg-white relative overflow-y-auto">
+            <div className="max-w-[600px] mx-auto pt-[50px] px-4 relative">
                 <OnboardingHeader text="Set up your profile to get started!" />
                 {isLoading && (
                     <div className="absolute top-0 left-0 w-full h-full z-[10000] flex flex-col items-center justify-center bg-white bg-opacity-70 backdrop-blur-[3px]">
