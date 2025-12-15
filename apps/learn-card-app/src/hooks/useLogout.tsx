@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { useHistory } from 'react-router-dom';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 import { auth } from '../firebase/firebase';
@@ -21,6 +22,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 const useLogout = () => {
     const firebaseAuth = auth();
+    const history = useHistory();
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
@@ -94,7 +96,10 @@ const useLogout = () => {
 
                 closeAllModals();
 
-                await logout(redirectUrl);
+                await logout();
+
+                // handle redirect from within LCA over web3Auth redirect
+                history.push(redirectUrl);
             } catch (e) {
                 console.error('There was an issue logging out', e);
                 setIsLoggingOut(false);
