@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.93.7
+
+### Patch Changes
+
+-   [#875](https://github.com/learningeconomy/LearnCard/pull/875) [`e689dc1b200e81f8f999bd210af4fc40deeac667`](https://github.com/learningeconomy/LearnCard/commit/e689dc1b200e81f8f999bd210af4fc40deeac667) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: IOS builds
+
 ## 1.93.6
 
 ### Patch Changes
