@@ -2,7 +2,7 @@ import React from 'react';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { DisplayTypeEnum, getDisplayIcon } from '../../helpers/display.helpers';
-import { CertDisplayCardSkillsCount } from '../CertificateDisplayCard';
+import AlignmentSkillsCount from './AlignmentSkillsCount';
 import ThreeDotVertical from '../svgs/ThreeDotVertical';
 import { CircleCheckButton } from '../CircleCheckButton';
 
@@ -124,11 +124,11 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                         )}
 
                         {/* Skills count if in modal */}
-                        {isInSkillsModal && (
-                            <CertDisplayCardSkillsCount
-                                skills={credential?.skills || []}
+                        {isInSkillsModal && credential && (
+                            <AlignmentSkillsCount
+                                credential={credential}
                                 onClick={handleInnerClick}
-                                isInSkillsModal={isInSkillsModal}
+                                className="mt-[16px]"
                             />
                         )}
                     </div>

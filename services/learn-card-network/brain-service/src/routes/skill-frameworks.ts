@@ -398,15 +398,8 @@ export const skillFrameworksRouter = t.router({
                 skills: PaginatedSkillTreeValidator,
             })
         )
-        .query(async ({ ctx, input }) => {
-            const profileId = ctx.user.profile.profileId;
+        .query(async ({ input }) => {
             const { id, limit, childrenLimit, cursor } = input;
-            const manages = await doesProfileManageFramework(profileId, id);
-            if (!manages)
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You do not manage this framework',
-                });
 
             const provider = getSkillsProvider();
             const fw = await provider.getFrameworkById(id);
