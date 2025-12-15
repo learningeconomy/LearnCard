@@ -248,8 +248,8 @@ const ActionButton: React.FC<{
                 closeModal();
                 newModal(
                     <IssueManagedBoostSelector />,
-                    {},
-                    { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
+                    { hideButton: true, sectionClassName: '!max-w-[500px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                 );
                 return;
             case 'Create Credential':
