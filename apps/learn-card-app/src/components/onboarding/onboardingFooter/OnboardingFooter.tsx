@@ -30,8 +30,7 @@ export const OnboardingFooter: React.FC<{
     disabled,
 }) => {
     const { closeModal } = useModal();
-    const isDisabled =
-        (disabled ?? false) || (step === OnboardingStepsEnum.selectRole && !role);
+    const isDisabled = (disabled ?? false) || (step === OnboardingStepsEnum.selectRole && !role);
     const activeStyles = isDisabled
         ? 'bg-grayscale-200 text-grayscale-500 cursor-not-allowed'
         : 'bg-emerald-700 text-white';
@@ -66,7 +65,7 @@ export const OnboardingFooter: React.FC<{
     }
 
     return (
-        <IonFooter className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] ion-padding bg-white absolute bottom-0">
+        <IonFooter className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] ion-padding bg-white">
             <IonToolbar color="transparent">
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex flex-col items-center justify-between max-w-[600px]">
