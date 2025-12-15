@@ -1,25 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import authStore from 'learn-card-base/stores/authStore';
-import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
-import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
-import { BrandingEnum } from 'learn-card-base';
-import { pushUtilities } from 'learn-card-base';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+
 import { auth } from '../firebase/firebase';
-import { useWeb3AuthSFA, useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
+import authStore from 'learn-card-base/stores/authStore';
+
+import {
+    useModal,
+    BrandingEnum,
+    pushUtilities,
+    LOGIN_REDIRECTS,
+    SocialLoginTypes,
+    useWeb3AuthSFA,
+    useToast,
+    useWallet,
+    ToastTypeEnum,
+    useSQLiteStorage,
+} from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
-import { IonLoading } from '@ionic/react';
 
 const useLogout = () => {
-    const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
-    const { logout, loggingOut: web3AuthLoggingOut } = useWeb3AuthSFA();
-    const { clearDB } = useSQLiteStorage();
     const firebaseAuth = auth();
     const { initWallet } = useWallet();
-    const { presentToast } = useToast();
     const queryClient = useQueryClient();
+    const { clearDB } = useSQLiteStorage();
+    const { logout, loggingOut: web3AuthLoggingOut } = useWeb3AuthSFA();
+
+    const { closeAllModals } = useModal();
+    const { presentToast } = useToast();
+
+    const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
     const handleLogout = async (
         branding: BrandingEnum,
@@ -81,6 +91,8 @@ const useLogout = () => {
                 } catch (e) {
                     console.error(e);
                 }
+
+                closeAllModals();
 
                 await logout(redirectUrl);
             } catch (e) {
