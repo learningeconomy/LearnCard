@@ -25,6 +25,7 @@ import AddUserQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/Ad
 import ImportCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ImportCredentialQuickNav';
 import SwitchAccountQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchAccountQuickNav';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
+import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
 import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
 import TeacherIcon from '../../../assets/images/quicknavroles/teacherappleicon.png';
@@ -103,7 +104,7 @@ const getIconForActionButton = (
         case 'Claim Credential':
             return <ClaimCredentialQuickNav className="w-[50px] h-auto" />;
         case 'Create Credential':
-        case 'Issue Learner Credential':
+        case 'Issue Credential':
             return <CredentialQuickNav className="w-[50px] h-auto" />;
         case 'Manage Skills Frameworks':
             return <StudiesQuickNav className="w-[50px] h-auto" />;
@@ -241,6 +242,14 @@ const ActionButton: React.FC<{
                             '!bg-transparent !border-none !shadow-none !max-w-[400px]',
                         hideButton: true,
                     }
+                );
+                return;
+            case 'Issue Credential':
+                closeModal();
+                newModal(
+                    <IssueManagedBoostSelector />,
+                    {},
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
                 );
                 return;
             case 'Create Credential':
@@ -403,7 +412,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         [LearnCardRolesEnum.teacher]: [
             'View Learner Insights',
             'Request Learner Insights',
-            'Issue Learner Credential',
+            'Issue Credential',
             'Create Credential',
             'Edit Skills Frameworks',
         ],
@@ -471,7 +480,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         // Teacher role labels
         'View Learner Insights': 'bg-[var(--ion-color-lime-300)]',
         'Request Learner Insights': 'bg-[var(--ion-color-indigo-200)]',
-        'Issue Learner Credential': 'bg-[var(--ion-color-cyan-200)]',
+        'Issue Credential': 'bg-[var(--ion-color-cyan-200)]',
         'Create Credential': 'bg-[var(--ion-color-amber-300)]',
         'Edit Skills Frameworks': 'bg-[var(--ion-color-violet-300)]',
         // Admin role labels
