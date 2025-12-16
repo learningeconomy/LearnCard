@@ -168,7 +168,7 @@ const IssueManagedBoostSelector: React.FC = () => {
         ) ?? [];
 
     return (
-        <div className="relative w-full h-full flex flex-col bg-white overflow-hidden">
+        <div className="relative w-full h-[95vh] md:h-[650px] flex flex-col bg-white overflow-hidden">
             <div className="flex flex-col p-5 border-b border-grayscale-200 bg-white z-10">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-[22px] font-poppins font-semibold text-grayscale-900">
@@ -215,7 +215,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 h-[500px]">
+            <div className="flex-1 overflow-y-auto p-5">
                 <div
                     className={`flex flex-col gap-3 ${
                         isSearching ? 'opacity-50 pointer-events-none' : ''
