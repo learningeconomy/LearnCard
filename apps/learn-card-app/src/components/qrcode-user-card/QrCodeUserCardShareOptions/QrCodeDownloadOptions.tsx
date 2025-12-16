@@ -8,6 +8,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { useModal, useWallet, useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
+import { IonSpinner } from '@ionic/react';
 import { QrCodeDownloadOptionsEnum, userQrCodeDownloadOptions } from './user-share-options.helpers';
 
 const APP_ALBUM_NAME = 'LearnCard';
@@ -17,6 +18,8 @@ const QrCodeUserCardShareOptions: React.FC = () => {
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
 
     const [walletDid, setWalletDid] = useState<string>('');
+    const [isSavingPng, setIsSavingPng] = useState<boolean>(false);
+    const [isSavingPdf, setIsSavingPdf] = useState<boolean>(false);
 
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { closeModal } = useModal();
@@ -86,6 +89,7 @@ const QrCodeUserCardShareOptions: React.FC = () => {
         if (!element) return;
 
         try {
+            setIsSavingPng(true);
             const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
@@ -121,9 +125,11 @@ const QrCodeUserCardShareOptions: React.FC = () => {
                 ...(albumIdentifier ? { albumIdentifier } : {}),
             });
 
-            alert('QR Code saved to Photos!');
             closeModal();
+            setIsSavingPng(false);
+            alert('QR Code saved to Photos!');
         } catch (err) {
+            setIsSavingPng(false);
             console.error('QR save failed:', err);
             alert('Failed to save QR Code.');
         }
@@ -135,6 +141,7 @@ const QrCodeUserCardShareOptions: React.FC = () => {
         if (!element) return;
 
         try {
+            setIsSavingPdf(true);
             const canvas = await html2canvas(element, {
                 useCORS: true,
             });
@@ -166,12 +173,13 @@ const QrCodeUserCardShareOptions: React.FC = () => {
                     data: pdfData,
                     directory: Directory.Documents,
                 });
-
-                alert('QR Code saved to Documents!');
             }
 
             closeModal();
+            setIsSavingPdf(false);
+            if (Capacitor.isNativePlatform()) alert('QR Code saved to Documents!');
         } catch (err) {
+            setIsSavingPdf(false);
             console.error('PDF save failed:', err);
             alert('Failed to save QR Code PDF.');
         }
@@ -195,16 +203,38 @@ const QrCodeUserCardShareOptions: React.FC = () => {
                     Share or print your LearnCard QR code.
                 </p>
 
-                {userQrCodeDownloadOptions.map(option => (
-                    <button
-                        key={option.id}
-                        onClick={() => handleDownloadOptionClick(option.type)}
-                        className="flex items-center my-6 text-grayscale-700 text-lg w-full text-left"
-                    >
-                        <option.icon className="w-[35px] mr-2" />
-                        {option.label}
-                    </button>
-                ))}
+                {userQrCodeDownloadOptions.map(option => {
+                    let text = option.label;
+                    let icon = <option.icon className="w-[35px] mr-2" />;
+
+                    if (isSavingPng && option.type === QrCodeDownloadOptionsEnum.saveToPhotos) {
+                        text = 'Saving...';
+                        icon = (
+                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                        );
+                    }
+
+                    if (isSavingPdf && option.type === QrCodeDownloadOptionsEnum.saveToFiles) {
+                        text = 'Saving...';
+                        icon = (
+                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                        );
+                    }
+
+                    return (
+                        <button
+                            key={option.id}
+                            onClick={() => handleDownloadOptionClick(option.type)}
+                            disabled={isSavingPng || isSavingPdf}
+                            className={`flex items-center my-6 text-grayscale-700 text-lg w-full text-left ${
+                                isSavingPng || isSavingPdf ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                        >
+                            {icon}
+                            {text}
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );
