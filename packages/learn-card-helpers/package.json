@@ -33,7 +33,7 @@
         "@types/react": "^18.0.0",
         "aqu": "0.4.3",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.14.38",
+        "esbuild": "^0.27.1",
         "esbuild-jest": "^0.5.0",
         "jest": "^28.1.3",
         "jest-environment-jsdom": "^28.1.3",

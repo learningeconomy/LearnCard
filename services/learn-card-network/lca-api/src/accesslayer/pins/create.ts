@@ -15,7 +15,7 @@ export const createPin = async (did: string, pin: string): Promise<string | bool
 
         if (!validation.success) {
             throw new Error(
-                `Validation failed: ${validation.error.errors.map(e => e.message).join(', ')}`
+                `Validation failed: ${validation.error.issues.map(e => e.message).join(', ')}`
             );
         }
 

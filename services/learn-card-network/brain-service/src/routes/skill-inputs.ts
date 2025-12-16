@@ -36,7 +36,7 @@ const RawSkillTreeNodeInputValidator: z.ZodType<SkillTreeInput> = z.lazy(() =>
 export const SkillTreeNodeInputValidator =
     process.env.NODE_ENV === 'test'
         ? RawSkillTreeNodeInputValidator
-        : RawSkillTreeNodeInputValidator.openapi({ ref: 'SkillTreeNodeInputValidator' });
+        : RawSkillTreeNodeInputValidator.meta({ id: 'SkillTreeNodeInputValidator' });
 
 export const normalizeSkillStatus = (status?: string): 'active' | 'archived' =>
     status === 'archived' ? 'archived' : 'active';

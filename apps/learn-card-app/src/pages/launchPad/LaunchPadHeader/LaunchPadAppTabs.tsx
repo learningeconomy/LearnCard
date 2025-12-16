@@ -6,10 +6,13 @@ import { StyleSetEnum } from '../../../theme/styles/index';
 
 export enum LaunchPadTabEnum {
     all = 'All',
-    aiLearning = 'AI',
+    ai = 'AI',
     learning = 'Learning',
     games = 'Games',
-    integrations = 'Integrations',
+    tools = 'Tools',
+    employment = 'Employment',
+    credentials = 'Credentials',
+    other = 'Other',
 }
 
 type LaunchPadAppTabsProps = {

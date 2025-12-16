@@ -1,56 +1,69 @@
 import React from 'react';
-import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
-
-import { IonItem } from '@ionic/react';
-
-const BECOME_AN_APP_DOCS_LINK = 'https://docs.learncard.com/tutorials/create-a-connected-website';
-
-import useTheme from '../../theme/hooks/useTheme';
-import { ColorSetEnum } from '../../theme/colors';
+import { useHistory } from 'react-router-dom';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import { Sparkles, ArrowRight, Code2, Rocket } from 'lucide-react';
 
 export const LaunchPadBecomeAnApp: React.FC = () => {
-    const { getColorSet } = useTheme();
-    const colors = getColorSet(ColorSetEnum.launchPad);
+    const history = useHistory();
+    const flags = useFlags();
 
-    const buttonClass = `flex items-center justify-center rounded-full font-[600] rounded-full px-[20px] py-[5px] normal text-sm font-poppins ${colors?.buttons?.unconnected}`;
-
-    const handleLink = async () => {
-        if (Capacitor?.isNativePlatform()) {
-            await Browser?.open({ url: BECOME_AN_APP_DOCS_LINK });
-        } else {
-            window?.open(BECOME_AN_APP_DOCS_LINK);
-        }
+    const handleClick = () => {
+        history.push('/app-store/developer');
     };
 
+    // Only show if the feature flag is enabled
+    if (!flags.joinOurDeveloperCommunityAd) {
+        return null;
+    }
+
     return (
-        <IonItem
-            lines="none"
-            className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex  bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-sm"
-        >
-            <div className="flex items-center justify-start w-full bg-white">
-                <div className="rounded-lg shadow-3xl overflow-hidden w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
-                    <img
-                        className="w-full h-full object-cover bg-white rounded-lg overflow-hidden"
-                        src={'https://cdn.filestackcontent.com/34lUXCrGRlGp33M51v2F'}
-                    />
-                </div>
-                <div className="right-side flex justify-between w-full">
-                    <div className="flex flex-col items-start justify-center text-left">
-                        <p className="text-grayscale-900 font-medium line-clamp-1">Your App Here</p>
-                        <p className="text-grayscale-600 font-medium text-[12px] line-clamp-1">
-                            Create Your Own Apps
-                        </p>
+        <div className="w-full max-w-[600px] mt-4 px-2">
+            <button
+                onClick={handleClick}
+                className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 p-[1px] transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.99]"
+            >
+                {/* Inner container */}
+                <div className="relative overflow-hidden rounded-[15px] bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 px-5 py-5">
+                    {/* Decorative background elements */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-cyan-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+                    
+                    {/* Floating icons */}
+                    <div className="absolute top-3 right-4 opacity-20">
+                        <Code2 className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute bottom-3 right-16 opacity-15">
+                        <Rocket className="w-6 h-6 text-white rotate-45" />
                     </div>
 
-                    <div className="flex app-connect-btn-container items-center min-w-[109px]">
-                        <button className={buttonClass} onClick={handleLink}>
-                            Learn More
-                        </button>
+                    {/* Content */}
+                    <div className="relative flex items-center gap-4">
+                        {/* Icon */}
+                        <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-lg">
+                            <Sparkles className="w-7 h-7 text-white" />
+                        </div>
+
+                        {/* Text content */}
+                        <div className="flex-1 text-left">
+                            <p className="text-white/70 text-xs font-medium uppercase tracking-wider mb-0.5">
+                                Developer Program
+                            </p>
+                            <h3 className="text-white text-lg font-bold leading-tight">
+                                Build Your Own App
+                            </h3>
+                            <p className="text-white/80 text-sm mt-0.5">
+                                Join our developer community today
+                            </p>
+                        </div>
+
+                        {/* Arrow */}
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:bg-white/30 transition-colors">
+                            <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                     </div>
                 </div>
-            </div>
-        </IonItem>
+            </button>
+        </div>
     );
 };
 
