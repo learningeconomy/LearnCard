@@ -72,9 +72,11 @@ export const spilledCupSchema = z.object({
 
 export const placeholderCategoryMapSchema = z.record(
     z.union([z.nativeEnum(CredentialCategoryEnum), z.literal('defaults')]),
-    z.object({
-        spilledCup: spilledCupSchema,
-    })
+    z
+        .object({
+            spilledCup: spilledCupSchema,
+        })
+        .optional()
 );
 
 export const placeholdersSchema = z.object({

@@ -782,7 +782,9 @@ export const boostsRouter = t.router({
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 query: BoostQueryValidator.optional(),
-            }).default({})
+            }).default({
+                limit: 25,
+            })
         )
         .output(PaginatedBoostsValidator)
         .query(async ({ ctx, input }) => {
@@ -1056,7 +1058,7 @@ export const boostsRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
                 query: BoostQueryValidator.optional(),
-                numberOfGenerations: z.number().default(1),
+                numberOfGenerations: z.number().or(z.literal(Infinity)).default(1),
             })
         )
         .output(PaginatedBoostsValidator)
@@ -1109,7 +1111,7 @@ export const boostsRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
                 includeUnacceptedBoosts: z.boolean().default(true),
-                numberOfGenerations: z.number().default(1),
+                numberOfGenerations: z.number().or(z.literal(Infinity)).default(1),
                 boostQuery: BoostQueryValidator.optional(),
                 profileQuery: LCNProfileQueryValidator.optional(),
             })
@@ -1177,7 +1179,7 @@ export const boostsRouter = t.router({
             z.object({
                 uri: z.string(),
                 includeUnacceptedBoosts: z.boolean().default(true),
-                numberOfGenerations: z.number().default(1),
+                numberOfGenerations: z.number().or(z.literal(Infinity)).default(1),
                 boostQuery: BoostQueryValidator.optional(),
                 profileQuery: LCNProfileQueryValidator.optional(),
             })
@@ -1216,7 +1218,7 @@ export const boostsRouter = t.router({
             z.object({
                 uri: z.string(),
                 query: BoostQueryValidator.optional(),
-                numberOfGenerations: z.number().default(1),
+                numberOfGenerations: z.number().or(z.literal(Infinity)).default(1),
             })
         )
         .output(z.number())
@@ -1325,8 +1327,8 @@ export const boostsRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
                 query: BoostQueryValidator.optional(),
-                parentGenerations: z.number().default(1),
-                childGenerations: z.number().default(1),
+                parentGenerations: z.number().or(z.literal(Infinity)).default(1),
+                childGenerations: z.number().or(z.literal(Infinity)).default(1),
                 includeExtendedFamily: z.boolean().default(false),
             })
         )
@@ -1389,8 +1391,8 @@ export const boostsRouter = t.router({
             z.object({
                 uri: z.string(),
                 query: BoostQueryValidator.optional(),
-                parentGenerations: z.number().default(1),
-                childGenerations: z.number().default(1),
+                parentGenerations: z.number().or(z.literal(Infinity)).default(1),
+                childGenerations: z.number().or(z.literal(Infinity)).default(1),
                 includeExtendedFamily: z.boolean().default(false),
             })
         )
@@ -1429,7 +1431,7 @@ export const boostsRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
                 query: BoostQueryValidator.optional(),
-                numberOfGenerations: z.number().default(1),
+                numberOfGenerations: z.number().or(z.literal(Infinity)).default(1),
             })
         )
         .output(PaginatedBoostsValidator)
@@ -1480,7 +1482,7 @@ export const boostsRouter = t.router({
             z.object({
                 uri: z.string(),
                 query: BoostQueryValidator.optional(),
-                numberOfGenerations: z.number().default(1),
+                numberOfGenerations: z.number().or(z.literal(Infinity)).default(1),
             })
         )
         .output(z.number())

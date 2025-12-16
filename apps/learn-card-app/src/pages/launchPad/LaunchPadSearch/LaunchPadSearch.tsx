@@ -13,6 +13,8 @@ type LaunchPadSearchProps = {
     setFilterBy: React.Dispatch<React.SetStateAction<LaunchPadFilterOptionsEnum>>;
     sortBy: LaunchPadSortOptionsEnum;
     setSortBy: React.Dispatch<React.SetStateAction<LaunchPadSortOptionsEnum>>;
+    onFocus?: () => void;
+    onBlur?: () => void;
 };
 
 export const LaunchPadSearch: React.FC<LaunchPadSearchProps> = ({
@@ -22,6 +24,8 @@ export const LaunchPadSearch: React.FC<LaunchPadSearchProps> = ({
     setFilterBy,
     sortBy,
     setSortBy,
+    onFocus,
+    onBlur,
 }) => {
     return (
         <div className="w-full flex items-center justify-center">
@@ -33,8 +37,10 @@ export const LaunchPadSearch: React.FC<LaunchPadSearchProps> = ({
                     <IonInput
                         type="text"
                         value={searchInput}
-                        placeholder="Search"
-                        onIonInput={e => setSearchInput(e.detail.value)}
+                        placeholder="Search apps..."
+                        onIonInput={e => setSearchInput(e.detail.value ?? '')}
+                        onIonFocus={onFocus}
+                        onIonBlur={onBlur}
                         className="bg-grayscale-200 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[44px]"
                     />
                 </div>

@@ -8,9 +8,8 @@ import {
     IssueInboxCredentialResponseValidator,
     InboxCredentialValidator,
     PaginatedInboxCredentialsValidator,
-    InboxCredentialQueryValidator, 
+    InboxCredentialQueryValidator,
     ContactMethodQueryValidator,
-
     ClaimInboxCredentialValidator,
     // For finalize flow
     LCNNotificationTypeEnumValidator,
@@ -27,15 +26,25 @@ import {
     markGuardianApprovalTokenAsUsed,
 } from '@helpers/guardian-approval.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
-import { getAcceptedPendingInboxCredentialsForContactMethodId, getInboxCredentialsForProfile } from '@accesslayer/inbox-credential/read';
+import {
+    getAcceptedPendingInboxCredentialsForContactMethodId,
+    getInboxCredentialsForProfile,
+} from '@accesslayer/inbox-credential/read';
 import { readIntegrationByPublishableKey } from '@accesslayer/integration/read';
-import { getPrimarySigningAuthorityForIntegration, getSigningAuthoritiesForIntegrationByName, getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import {
+    getPrimarySigningAuthorityForIntegration,
+    getSigningAuthoritiesForIntegrationByName,
+    getSigningAuthorityForUserByName,
+} from '@accesslayer/signing-authority/relationships/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 import { isDomainWhitelisted } from '@helpers/integrations.helpers';
 import { getContactMethodsForProfile } from '@accesslayer/contact-method/read';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import { updateProfile } from '@accesslayer/profile/update';
-import { markInboxCredentialAsIsAccepted, markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
+import {
+    markInboxCredentialAsIsAccepted,
+    markInboxCredentialAsIssued,
+} from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
@@ -145,8 +154,10 @@ export const inboxRouter = t.router({
             const validation = await validateGuardianApprovalTokenDetailed(token);
             if (!validation.valid) {
                 const errorMessages = {
-                    invalid: 'Invalid approval token. The token may not exist or has been corrupted.',
-                    expired: 'This approval token has expired. Please request a new approval email.',
+                    invalid:
+                        'Invalid approval token. The token may not exist or has been corrupted.',
+                    expired:
+                        'This approval token has expired. Please request a new approval email.',
                     already_used: 'This approval token has already been used.',
                 };
                 throw new TRPCError({
@@ -184,12 +195,16 @@ export const inboxRouter = t.router({
 
                 // Send email notification to the approved user
                 const contactMethods = await getContactMethodsForProfile(requester.did);
-                const emailContact = contactMethods.find(cm => cm.type === 'email' && cm.isVerified) 
-                    || contactMethods.find(cm => cm.type === 'email');
+                const emailContact =
+                    contactMethods.find(cm => cm.type === 'email' && cm.isVerified) ||
+                    contactMethods.find(cm => cm.type === 'email');
 
                 if (emailContact) {
                     try {
-                        const deliveryService = getDeliveryService({ type: 'email', value: emailContact.value });
+                        const deliveryService = getDeliveryService({
+                            type: 'email',
+                            value: emailContact.value,
+                        });
                         await deliveryService.send({
                             contactMethod: { type: 'email', value: emailContact.value },
                             templateId: 'account-approved-email',
@@ -236,8 +251,10 @@ export const inboxRouter = t.router({
             const validation = await validateGuardianApprovalTokenDetailed(token);
             if (!validation.valid) {
                 const errorMessages = {
-                    invalid: 'Invalid approval token. The token may not exist or has been corrupted.',
-                    expired: 'This approval token has expired. Please request a new approval email.',
+                    invalid:
+                        'Invalid approval token. The token may not exist or has been corrupted.',
+                    expired:
+                        'This approval token has expired. Please request a new approval email.',
                     already_used: 'This approval token has already been used.',
                 };
                 throw new TRPCError({
@@ -274,12 +291,16 @@ export const inboxRouter = t.router({
 
                 // Send email notification to the approved user
                 const contactMethods = await getContactMethodsForProfile(requester.did);
-                const emailContact = contactMethods.find(cm => cm.type === 'email' && cm.isVerified) 
-                    || contactMethods.find(cm => cm.type === 'email');
+                const emailContact =
+                    contactMethods.find(cm => cm.type === 'email' && cm.isVerified) ||
+                    contactMethods.find(cm => cm.type === 'email');
 
                 if (emailContact) {
                     try {
-                        const deliveryService = getDeliveryService({ type: 'email', value: emailContact.value });
+                        const deliveryService = getDeliveryService({
+                            type: 'email',
+                            value: emailContact.value,
+                        });
                         await deliveryService.send({
                             contactMethod: { type: 'email', value: emailContact.value },
                             templateId: 'account-approved-email',
@@ -373,41 +394,50 @@ export const inboxRouter = t.router({
                 tags: ['Universal Inbox'],
                 summary: 'Claim Universal Inbox Credential',
                 description: 'Claim a credential from the inbox',
-            }
+            },
         })
         .input(ClaimInboxCredentialValidator)
-        .output(z.object({
-            inboxCredential: InboxCredentialValidator,
-            status: z.string(),
-            recipientDid: z.string().optional(),
-        }))
+        .output(
+            z.object({
+                inboxCredential: InboxCredentialValidator,
+                status: z.string(),
+                recipientDid: z.string().optional(),
+            })
+        )
         .mutation(async ({ ctx, input }) => {
             const { contactMethod, domain } = ctx;
             const { credential, configuration } = input;
 
-            if (!credential) throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found' });
+            if (!credential)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found' });
 
-            if (!configuration) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Configuration is required' });
+            if (!configuration)
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Configuration is required' });
             const { publishableKey } = configuration;
 
             const integration = await readIntegrationByPublishableKey(publishableKey);
-            if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+            if (!integration)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
 
-            if (!isDomainWhitelisted(domain, integration.whitelistedDomains)) throw new TRPCError({ code: 'UNAUTHORIZED' });
- 
+            if (!isDomainWhitelisted(domain, integration.whitelistedDomains))
+                throw new TRPCError({ code: 'UNAUTHORIZED' });
+
             const signingAuthorityRel = configuration?.signingAuthorityName
-                ? (await getSigningAuthoritiesForIntegrationByName(
-                      integration,
-                      configuration.signingAuthorityName.toLowerCase()
-                  )).at(0)
+                ? (
+                      await getSigningAuthoritiesForIntegrationByName(
+                          integration,
+                          configuration.signingAuthorityName.toLowerCase()
+                      )
+                  ).at(0)
                 : await getPrimarySigningAuthorityForIntegration(integration);
 
             if (!signingAuthorityRel)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Signing Authority not found' });
 
             const issuerProfile = await getOwnerProfileForIntegration(integration.id);
-            if (!issuerProfile) throw new TRPCError({ code: 'NOT_FOUND', message: 'Issuer Profile not found' });
-            
+            if (!issuerProfile)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Issuer Profile not found' });
+
             // Claim Credential into Contact Method's inbox
             const result = await claimIntoInbox(
                 issuerProfile,
@@ -436,17 +466,20 @@ export const inboxRouter = t.router({
                 path: '/inbox/finalize',
                 tags: ['Universal Inbox'],
                 summary: 'Finalize Universal Inbox Credentials',
-                description: 'Sign and issue all pending inbox credentials for verified contact methods of the authenticated profile',
+                description:
+                    'Sign and issue all pending inbox credentials for verified contact methods of the authenticated profile',
             },
             requiredScope: 'inbox:write',
         })
         .input(z.object({}).default({}))
-        .output(z.object({
-            processed: z.number(),
-            claimed: z.number(),
-            errors: z.number(),
-            verifiableCredentials: z.array(VCValidator),
-        }))
+        .output(
+            z.object({
+                processed: z.number(),
+                claimed: z.number(),
+                errors: z.number(),
+                verifiableCredentials: z.array(VCValidator),
+            })
+        )
         .mutation(async ({ ctx }) => {
             const { profile } = ctx.user;
 
@@ -460,7 +493,10 @@ export const inboxRouter = t.router({
 
             // Preload LC DID for webhooks
             let lcDid: string | null = null;
-            try { const lc = await getLearnCard(); lcDid = lc.id.did(); } catch {}
+            try {
+                const lc = await getLearnCard();
+                lcDid = lc.id.did();
+            } catch {}
 
             const verifiableCredentials: VC[] = [];
 
@@ -472,11 +508,16 @@ export const inboxRouter = t.router({
                         let finalCredential: VC;
 
                         if (!inboxCredential.isSigned) {
-                            const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
+                            const unsignedCredential = JSON.parse(
+                                inboxCredential.credential
+                            ) as UnsignedVC;
 
-                            const endpoint = (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
-                            const name = (inboxCredential.signingAuthority?.name as string) ?? undefined;
-                            if (!endpoint || !name) throw new Error('Inbox credential missing signing authority info');
+                            const endpoint =
+                                (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
+                            const name =
+                                (inboxCredential.signingAuthority?.name as string) ?? undefined;
+                            if (!endpoint || !name)
+                                throw new Error('Inbox credential missing signing authority info');
 
                             const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                             if (!issuerProfile) throw new Error('Issuer profile not found');
@@ -486,16 +527,21 @@ export const inboxRouter = t.router({
                                 endpoint,
                                 name
                             );
-                            if (!signingAuthorityForUser) throw new Error('Signing authority not found');
+                            if (!signingAuthorityForUser)
+                                throw new Error('Signing authority not found');
 
                             // Set subject DID to the authenticated user's DID
                             if (Array.isArray(unsignedCredential.credentialSubject)) {
-                                unsignedCredential.credentialSubject = unsignedCredential.credentialSubject.map(sub => ({
-                                    ...sub,
-                                    id: (sub as any).did || (sub as any).id || profile.did,
-                                }));
+                                unsignedCredential.credentialSubject =
+                                    unsignedCredential.credentialSubject.map(sub => ({
+                                        ...sub,
+                                        id: (sub as any).did || (sub as any).id || profile.did,
+                                    }));
                             } else {
-                                (unsignedCredential.credentialSubject as any).id = (unsignedCredential as any).credentialSubject?.did || (unsignedCredential as any).credentialSubject?.id || profile.did;
+                                (unsignedCredential.credentialSubject as any).id =
+                                    (unsignedCredential as any).credentialSubject?.did ||
+                                    (unsignedCredential as any).credentialSubject?.id ||
+                                    profile.did;
                             }
 
                             // Set issuer from signing authority
@@ -508,14 +554,17 @@ export const inboxRouter = t.router({
                                 ctx.domain,
                                 false
                             )) as VC;
-                        }
-                        else {
+                        } else {
                             finalCredential = JSON.parse(inboxCredential.credential) as VC;
                         }
 
                         await markInboxCredentialAsIssued(inboxCredential.id);
                         await markInboxCredentialAsIsAccepted(inboxCredential.id);
-                        await createClaimedRelationship(profile.profileId, inboxCredential.id, 'finalize');
+                        await createClaimedRelationship(
+                            profile.profileId,
+                            inboxCredential.id,
+                            'finalize'
+                        );
 
                         // Trigger webhook if configured
                         if (inboxCredential.webhookUrl) {
@@ -550,7 +599,10 @@ export const inboxRouter = t.router({
                         claimed += 1;
                         verifiableCredentials.push(finalCredential);
                     } catch (error) {
-                        console.error(`Failed to finalize inbox credential ${inboxCredential.id}:`, error);
+                        console.error(
+                            `Failed to finalize inbox credential ${inboxCredential.id}:`,
+                            error
+                        );
 
                         // Error webhook if configured
                         if (inboxCredential.webhookUrl) {
@@ -562,7 +614,10 @@ export const inboxRouter = t.router({
                                     to: { did: inboxCredential.issuerDid },
                                     message: {
                                         title: 'Credential Issuance Error from Inbox',
-                                        body: error instanceof Error ? error.message : `${cm.value} failed to claim a credential from their inbox.`,
+                                        body:
+                                            error instanceof Error
+                                                ? error.message
+                                                : `${cm.value} failed to claim a credential from their inbox.`,
                                     },
                                     data: {
                                         inbox: {
@@ -607,7 +662,7 @@ export const inboxRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 query: InboxCredentialQueryValidator.optional(),
                 recipient: ContactMethodQueryValidator.optional(),
-            }).default({})
+            }).default({ limit: 25 })
         )
         .output(PaginatedInboxCredentialsValidator)
         .query(async ({ ctx, input }) => {

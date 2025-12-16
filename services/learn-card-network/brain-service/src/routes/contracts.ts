@@ -305,7 +305,7 @@ export const contractsRouter = t.router({
             PaginationOptionsValidator.extend({
                 query: ConsentFlowContractQueryValidator.default({}),
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-            }).default({})
+            }).default({ limit: 25, query: {} })
         )
         .output(PaginatedConsentFlowContractsValidator)
         .query(async ({ input, ctx }) => {
@@ -512,7 +512,7 @@ export const contractsRouter = t.router({
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 query: ConsentFlowDataQueryValidator.default({}),
-            }).default({})
+            }).default({ limit: 25, query: {} })
         )
         .output(PaginatedConsentFlowDataValidator)
         .query(async ({ ctx, input }) => {
@@ -944,7 +944,7 @@ export const contractsRouter = t.router({
                 const clientId = process.env.SMART_RESUME_CLIENT_ID;
                 const accessKey = process.env.SMART_RESUME_ACCESS_KEY;
 
-                const accessTokenResponse = await fetch(`${srUrl}api/v1/token`, {
+                const accessTokenResponse = (await fetch(`${srUrl}api/v1/token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
@@ -954,52 +954,62 @@ export const contractsRouter = t.router({
                         grant_type: 'client_credentials',
                         scope: 'delete readonly replace',
                     }),
-                }).then(res => res.json());
+                }).then(res => res.json())) as { access_token?: string };
 
                 const accessToken = accessTokenResponse.access_token;
+                if (!accessToken) throw new Error('Missing access_token for SmartResume');
 
-                const categories = terms.read.credentials.categories;
+                const parsedTerms = ConsentFlowTermsValidator.parse(terms);
+
+                const categories = parsedTerms.read.credentials.categories;
+                const categoryValues = Object.values(categories) as Array<{ shared?: string[] }>;
+
                 const allSharedCredentialUris = [
                     // filter out duplicates
-                    ...new Set(
-                        Object.values(categories).flatMap(category => category.shared || [])
-                    ),
+                    ...new Set(categoryValues.flatMap(({ shared }) => shared ?? [])),
                 ];
 
-                const credentials = (
-                    await Promise.all(
-                        allSharedCredentialUris.map(async uri => {
-                            try {
-                                return await resolveUri(uri);
-                            } catch (error) {
-                                console.error(`Error resolving URI ${uri}:`, error);
-                                return undefined;
-                            }
-                        })
+                const resolvedCredentials = await Promise.all(
+                    allSharedCredentialUris.map(async uri => {
+                        try {
+                            return await resolveUri(uri);
+                        } catch (error) {
+                            console.error(`Error resolving URI ${uri}:`, error);
+                            return undefined;
+                        }
+                    })
+                );
+
+                type ResolvedCredential = {
+                    issuer?: string | { id: string };
+                    id?: string;
+                    boostCredential?: Record<string, unknown>;
+                } & Record<string, unknown>;
+
+                const credentials = resolvedCredentials
+                    .filter(
+                        (cred): cred is ResolvedCredential =>
+                            typeof cred === 'object' && cred !== null
                     )
-                )
-                    .filter(cred => cred !== undefined && cred !== '')
-                    .map(cred => {
-                        return cred?.boostCredential
-                            ? { ...cred?.boostCredential, id: cred?.id } // unwrap credential, preserve id
-                            : cred;
-                    });
+                    .map(cred =>
+                        cred.boostCredential && typeof cred.boostCredential === 'object'
+                            ? ({ ...cred.boostCredential, id: cred.id } as ResolvedCredential) // unwrap credential, preserve id
+                            : cred
+                    );
 
                 const transformedCredentials = credentials.map(cred => {
-                    // If issuer is a string, convert it to an object with an id property
                     const issuer =
                         typeof cred.issuer === 'string'
                             ? { id: cred.issuer }
                             : cred.issuer || { id: '' };
 
-                    // Return the transformed credential
                     return {
                         ...cred,
                         issuer,
                     };
                 });
 
-                const { name, email } = terms.read.personal;
+                const { name, email } = parsedTerms.read.personal;
 
                 const body = JSON.stringify({
                     '@context': [
@@ -1007,25 +1017,21 @@ export const contractsRouter = t.router({
                         'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
                         'https://w3id.org/security/suites/ed25519-2020/v1',
                     ],
-                    'recipienttoken': recipientToken,
-                    'recipient': {
-                        'id': ctx.user.did,
-                        'givenName': name && name !== 'Anonymous' ? name : '',
-                        'familyName': '', // this is neecessary in order for givenName to be respected
-                        // 'additionalName': '',
-                        'email': email && email !== 'anonymous@hidden.com' ? email : '',
-                        // 'phone': '',
-                        // 'studentId': '',
-                        // 'signupOrganization': '',
+                    recipienttoken: recipientToken,
+                    recipient: {
+                        id: ctx.user.did,
+                        givenName: name && name !== 'Anonymous' ? name : '',
+                        familyName: '', // this is neecessary in order for givenName to be respected
+                        email: email && email !== 'anonymous@hidden.com' ? email : '',
                     },
-                    'credentials': transformedCredentials,
+                    credentials: transformedCredentials,
                 });
 
                 try {
                     const response = await fetch(`${srUrl}api/v1/credentials`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${accessToken}`,
+                            Authorization: `Bearer ${accessToken}`,
                             'Content-Type': 'application/json',
                         },
                         body,
@@ -1035,7 +1041,7 @@ export const contractsRouter = t.router({
                         throw new Error(`Error (${response.status}): ${await response.text()}`);
                     }
 
-                    const result = await response.json();
+                    const result = (await response.json()) as { redirect_url?: string };
                     redirectUrl = result.redirect_url;
                 } catch (error) {
                     console.error('Error uploading credentials to SmartResume:', error);
@@ -1081,7 +1087,7 @@ export const contractsRouter = t.router({
             PaginationOptionsValidator.extend({
                 query: ConsentFlowTermsQueryValidator.default({}),
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-            }).default({})
+            }).default({ limit: 25, query: {} })
         )
         .output(PaginatedConsentFlowTermsValidator)
         .query(async ({ input, ctx }) => {
@@ -1364,7 +1370,7 @@ export const contractsRouter = t.router({
         .input(
             z.object({
                 termsUri: z.string(),
-                categories: z.record(z.string().array()),
+                categories: z.record(z.string(), z.string().array()),
             })
         )
         .output(z.boolean())
@@ -1530,7 +1536,7 @@ export const contractsRouter = t.router({
             PaginationOptionsValidator.extend({
                 includeReceived: z.boolean().default(false),
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-            }).default({})
+            }).default({ includeReceived: false, limit: 25 })
         )
         .output(PaginatedContractCredentialsValidator)
         .query(async ({ ctx, input }) => {

@@ -15,7 +15,7 @@
         "@learncard/helpers": "workspace:*",
         "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.16.16"
+        "esbuild": "^0.27.1"
     },
     "dependencies": {
         "@learncard/network-brain-service": "workspace:*",

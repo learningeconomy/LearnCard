@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 import { ChatBotBubbleAnswer, ChatBotBubbleQuestion } from './helpers/ChatBotBubble';
 import AiSessionAppSelector from '../AiSessionAppSelector/AiSessionAppSelector';
@@ -14,6 +14,14 @@ import { LaunchPadAppListItem, useDeviceTypeByWidth } from 'learn-card-base';
 import { aiPassportApps } from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 import { sessionLoadingText } from '../newAiSession.helpers';
+import useAppStore from '../../../pages/launchPad/useAppStore';
+
+// Extended type to include url for launching
+type AiTutorApp = LaunchPadAppListItem & { 
+    url: string;
+    isAppStoreListing?: boolean;
+    listingId?: string;
+};
 
 export const NewAiAppSessionChatBotContainer: React.FC<{}> = () => {
     const { isDesktop } = useDeviceTypeByWidth();
@@ -26,6 +34,46 @@ export const NewAiAppSessionChatBotContainer: React.FC<{}> = () => {
     const [showLoader, setShowLoader] = useState<boolean>(false);
 
     const { currentLCNUser } = useGetCurrentLCNUser();
+
+    // Fetch installed AI_TUTOR apps from app store
+    const { useInstalledApps } = useAppStore();
+    const { data: installedAppsData } = useInstalledApps();
+
+    // Convert installed AI_TUTOR apps to the same format as hardcoded apps
+    const installedAiTutorApps: AiTutorApp[] = useMemo(() => {
+        if (!installedAppsData?.records) return [];
+
+        return installedAppsData.records
+            .filter(app => (app.launch_type as string) === 'AI_TUTOR')
+            .map(app => {
+                let launchConfig: { aiTutorUrl?: string; contractUri?: string } = {};
+
+                try {
+                    launchConfig = JSON.parse(app.launch_config_json);
+                } catch {}
+
+                return {
+                    id: app.listing_id,
+                    name: app.display_name,
+                    description: app.tagline,
+                    img: app.icon_url,
+                    isConnected: true,
+                    displayInLaunchPad: true,
+                    handleConnect: () => {},
+                    handleView: () => {},
+                    contractUri: launchConfig.contractUri,
+                    url: launchConfig.aiTutorUrl || '',
+                    isAppStoreListing: true,
+                    listingId: app.listing_id,
+                };
+            })
+            .filter(app => app.url); // Only include apps with valid URL
+    }, [installedAppsData]);
+
+    // Combine hardcoded apps with installed AI_TUTOR apps
+    const allAiTutorApps: AiTutorApp[] = useMemo(() => {
+        return [...aiPassportApps, ...installedAiTutorApps];
+    }, [installedAiTutorApps]);
 
     useEffect(() => {
         setVisibleIndexes([0]);
@@ -130,10 +178,17 @@ export const NewAiAppSessionChatBotContainer: React.FC<{}> = () => {
                 qa => qa.type === ChatBotQuestionsEnum.AppSelection
             )?.answer;
 
-            const url = aiPassportApps.find(app => app.id === appAnswer)?.url;
-            window.location.href = `${url}/chat?topic=${encodeURIComponent(
-                topicAnswer || ''
-            )}&did=${currentLCNUser?.did}`;
+            // Find the app from combined list (hardcoded + installed)
+            const selectedApp = allAiTutorApps.find(app => app.id.toString() === appAnswer);
+
+            if (selectedApp?.url) {
+                // App store listings use /chats path, hardcoded apps use /chat
+                const path = selectedApp.isAppStoreListing ? '/chats' : '/chat';
+
+                window.location.href = `${selectedApp.url}${path}?topic=${encodeURIComponent(
+                    topicAnswer || ''
+                )}&did=${currentLCNUser?.did}`;
+            }
         }, 3000);
     };
 
@@ -198,7 +253,10 @@ export const NewAiAppSessionChatBotContainer: React.FC<{}> = () => {
                             )}
 
                         {isIntro && !hasAnswer && (
-                            <AiSessionAppSelector handleSetAiApp={handleSetAiApp} />
+                            <AiSessionAppSelector 
+                                handleSetAiApp={handleSetAiApp} 
+                                apps={allAiTutorApps}
+                            />
                         )}
 
                         {showStartButton && (
