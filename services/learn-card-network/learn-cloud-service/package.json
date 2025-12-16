@@ -29,7 +29,7 @@
         "@types/node": "^18.0.0",
         "@types/uuid": "^9.0.0",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.16.16",
+        "esbuild": "^0.27.1",
         "jest-dev-server": "^8.0.5",
         "jest-fetch-mock": "^3.0.3",
         "mongodb-memory-server": "^10.1.3",

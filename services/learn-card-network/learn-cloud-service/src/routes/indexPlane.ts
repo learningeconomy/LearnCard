@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { zx } from '@traversable/zod';
 import { setTimeout } from 'timers/promises';
 import { client } from '@mongo';
 
@@ -50,11 +51,16 @@ export const indexRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-                query: z.record(z.any()).or(JWEValidator).optional(),
+                query: z.record(z.string(), z.any()).or(JWEValidator).optional(),
                 encrypt: z.boolean().default(true),
                 sort: z.enum(['newestFirst', 'oldestFirst']).default('newestFirst'),
                 includeAssociatedDids: z.boolean().default(true),
-            }).default({})
+            }).default({
+                limit: 25,
+                encrypt: true,
+                sort: 'newestFirst',
+                includeAssociatedDids: true,
+            })
         )
         .output(PaginatedEncryptedCredentialRecordsValidator.or(JWEValidator))
         .query(async ({ ctx, input }) => {
@@ -136,11 +142,11 @@ export const indexRouter = t.router({
         .input(
             z
                 .object({
-                    query: z.record(z.any()).or(JWEValidator).optional(),
+                    query: z.record(z.string(), z.any()).or(JWEValidator).optional(),
                     encrypt: z.boolean().default(true),
                     includeAssociatedDids: z.boolean().default(true),
                 })
-                .default({})
+                .default({ encrypt: true, includeAssociatedDids: true })
         )
         .output(z.number().int().positive().or(JWEValidator))
         .query(async ({ ctx, input }) => {
@@ -261,7 +267,7 @@ export const indexRouter = t.router({
         .input(
             z.object({
                 id: z.string(),
-                updates: EncryptedCredentialRecordValidator.deepPartial().or(JWEValidator),
+                updates: zx.deepPartial(EncryptedCredentialRecordValidator).or(JWEValidator),
             })
         )
         .output(z.boolean())

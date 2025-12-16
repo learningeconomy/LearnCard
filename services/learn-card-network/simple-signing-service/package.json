@@ -28,7 +28,7 @@
         "@types/node": "^18.0.0",
         "@types/uuid": "^9.0.0",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.16.16",
+        "esbuild": "^0.27.1",
         "mongodb-memory-server": "^9.2.0",
         "nodemon": "^2.0.16",
         "openapi-types": "^12.1.0",
