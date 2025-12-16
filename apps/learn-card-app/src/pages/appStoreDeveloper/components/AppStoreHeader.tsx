@@ -1,11 +1,7 @@
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonHeader, IonToolbar } from '@ionic/react';
-<<<<<<< HEAD
 import { Shield, Code2, Hammer } from 'lucide-react';
-=======
-import { Shield, Code2 } from 'lucide-react';
->>>>>>> 279e0491c5f284f9343ef0c39f3c38cd76e608f9
 
 import QRCodeScannerButton from '../../../components/qrcode-scanner-button/QRCodeScannerButton';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
@@ -56,7 +52,6 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                     <div className="flex items-center gap-1.5 sm:gap-3 overflow-visible">
                         {rightContent}
 
-<<<<<<< HEAD
                         {/* Navigation tabs */}
                         <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-0.5">
                             <button
@@ -96,8 +91,6 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                             )}
                         </button>
 
-=======
->>>>>>> 279e0491c5f284f9343ef0c39f3c38cd76e608f9
                         {isAdmin && (
                             <button
                                 onClick={handlePortalToggle}
