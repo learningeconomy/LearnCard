@@ -2,13 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     useModal,
     useGetPaginatedManagedBoostsQuery,
-    searchManagedBoostsFromCache,
     boostCategoryMetadata,
     walletSubtypeToDefaultImageSrc,
     BoostCategoryOptionsEnum,
     categoryMetadata,
     ModalTypes,
     CredentialCategory,
+    CredentialCategoryEnum,
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import X from 'learn-card-base/svgs/X';
@@ -103,13 +103,22 @@ const IssueManagedBoostSelector: React.FC = () => {
         hasNextPage: boostsHasNextPage,
         fetchNextPage: boostsFetchNextPage,
         isFetchingNextPage: boostsIsFetchingNextPage,
+        isFetching: boostsIsFetching,
     } = useGetPaginatedManagedBoostsQuery(
         {
             category:
-                selectedCategory === BoostCategoryOptionsEnum.all ? undefined : selectedCategory,
+                selectedCategory === BoostCategoryOptionsEnum.all
+                    ? undefined
+                    : (selectedCategory as unknown as CredentialCategoryEnum),
+            ...(debouncedSearchInput && {
+                name: { $regex: new RegExp(debouncedSearchInput, 'i') },
+            }),
         },
         { limit: 12 }
     );
+
+    const isSearching =
+        searchInput !== debouncedSearchInput || (boostsIsFetching && !boostsIsFetchingNextPage);
 
     const boostInfiniteScrollRef = useRef<HTMLDivElement>(null);
     const boostsOnScreen = useOnScreen(boostInfiniteScrollRef as any, '200px', [
@@ -119,9 +128,6 @@ const IssueManagedBoostSelector: React.FC = () => {
     useEffect(() => {
         if (boostsOnScreen && boostsHasNextPage) boostsFetchNextPage();
     }, [boostsFetchNextPage, boostsHasNextPage, boostsOnScreen]);
-
-    const searchResults = searchManagedBoostsFromCache(boosts, debouncedSearchInput);
-    const searchResultsUris = searchResults?.map(r => r.uri);
 
     const categoryMeta = boostCategoryMetadata[selectedCategory];
 
@@ -138,31 +144,27 @@ const IssueManagedBoostSelector: React.FC = () => {
 
     const displayBoosts =
         boosts?.pages?.flatMap(page =>
-            page?.records
-                ?.filter(record => !debouncedSearchInput || searchResultsUris?.includes(record.uri))
-                .map((record, index) => {
-                    const credType =
-                        boostCategoryMetadata[record.category as BoostCategoryOptionsEnum]
-                            ?.credentialType;
-                    const walletSubtype = credType
-                        ? categoryMetadata[credType]?.walletSubtype
-                        : undefined;
-                    const imgSrc = walletSubtype
-                        ? walletSubtypeToDefaultImageSrc(walletSubtype)
-                        : '';
+            page?.records?.map((record, index) => {
+                const credType =
+                    boostCategoryMetadata[record.category as BoostCategoryOptionsEnum]
+                        ?.credentialType;
+                const walletSubtype = credType
+                    ? categoryMetadata[credType]?.walletSubtype
+                    : undefined;
+                const imgSrc = walletSubtype ? walletSubtypeToDefaultImageSrc(walletSubtype) : '';
 
-                    if (!credType) return null;
+                if (!credType) return null;
 
-                    return (
-                        <BoostTemplateListItem
-                            key={record.uri || index}
-                            boost={record}
-                            defaultImg={imgSrc}
-                            categoryType={credType as unknown as CredentialCategory}
-                            loading={boostsLoading}
-                        />
-                    );
-                })
+                return (
+                    <BoostTemplateListItem
+                        key={record.uri || index}
+                        boost={record}
+                        defaultImg={imgSrc}
+                        categoryType={credType as unknown as CredentialCategory}
+                        loading={boostsLoading}
+                    />
+                );
+            })
         ) ?? [];
 
     return (
@@ -196,7 +198,11 @@ const IssueManagedBoostSelector: React.FC = () => {
 
                     <div className="relative w-full">
                         <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
-                            <Search className="text-grayscale-500 w-[20px] h-[20px]" />
+                            {isSearching ? (
+                                <IonSpinner name="crescent" className="w-[20px] h-[20px]" />
+                            ) : (
+                                <Search className="text-grayscale-500 w-[20px] h-[20px]" />
+                            )}
                         </div>
                         <IonInput
                             type="text"
@@ -209,8 +215,12 @@ const IssueManagedBoostSelector: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
-                <div className="flex flex-col gap-3">
+            <div className="flex-1 overflow-y-auto p-5 h-[500px]">
+                <div
+                    className={`flex flex-col gap-3 ${
+                        isSearching ? 'opacity-50 pointer-events-none' : ''
+                    }`}
+                >
                     {boostsLoading && !displayBoosts.length && (
                         <div className="flex justify-center p-4">
                             <IonSpinner color="dark" />
