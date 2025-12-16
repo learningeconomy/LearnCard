@@ -53,7 +53,7 @@ description: 'Tutorial: Implementing a Basic ConsentFlow'
       console.warn('Could not create service profile (it might already exist):', e.message);
     }
     ```
-3. **Basic Understanding:** Familiarity with [DIDs](../../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) and [Verifiable Credentials (VCs)](../../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) will be helpful.
+3. **Basic Understanding:** Familiarity with [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) and [Verifiable Credentials (VCs)](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) will be helpful.
 4. **Web Environment:** You'll need a way to simulate a user clicking a link and your application handling a redirect (e.g., a simple HTML page and some client-side JavaScript for testing).
 
 ***
@@ -396,8 +396,8 @@ You've now learned the end-to-end process of:
 
 This is a foundational flow for many powerful applications. From here, you can explore more advanced ConsentFlow features like:
 
-* [Updating and withdrawing consent.](../../sdks/learncard-core/construction.md#retrieving-profiles-5)
-* Using [Auto-Boosts](../../core-concepts/consent-and-permissions/auto-boosts.md) to automatically issue credentials upon consent.
+* [Updating and withdrawing consent.](../sdks/learncard-core/construction.md#retrieving-profiles-5)
+* Using [Auto-Boosts](../core-concepts/consent-and-permissions/auto-boosts.md) to automatically issue credentials upon consent.
 * More complex data queries.
 
-Check out our Core Concept pages on [Consent Contracts](../../core-concepts/consent-and-permissions/consent-contracts.md), [User Consent & Terms](../../core-concepts/consent-and-permissions/user-consent-and-terms.md), and [Accessing Consented Data](../../core-concepts/consent-and-permissions/accessing-consented-data.md) for more details.
+Check out our Core Concept pages on [Consent Contracts](../core-concepts/consent-and-permissions/consent-contracts.md), [User Consent & Terms](../core-concepts/consent-and-permissions/user-consent-and-terms.md), and [Accessing Consented Data](../core-concepts/consent-and-permissions/accessing-consented-data.md) for more details.

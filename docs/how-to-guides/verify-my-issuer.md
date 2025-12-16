@@ -38,7 +38,7 @@ Before you start, gather all the details listed in the "What you'll need" sectio
 
 The LEF Member Trusted Issuer Registry is a JSON file located in the LearnCard repository.
 
-* **Click this link to go directly to the file:** [https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-registries/trusted/registry.json](https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-registries/trusted/registry.json)
+* **Click this link to go directly to the file:** [https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-registries/trusted/registry.json](../../packages/learn-card-registries/trusted/registry.json)
 
 ### **Step 3: Edit the `registry.json` File**
 

@@ -2,11 +2,11 @@
 description: Store and Retrieve Credentials however you like!
 ---
 
-# URIs
+# Credential URIs
 
 ## What are LearnCard URIs?
 
-The LearnCard URI is a [URI](https://en.wikipedia.org/wiki/Uniform\_Resource\_Identifier) that allows a Universal Wallet to resolve a credential. It is freely extensible and any plugin can add to it in any way. However standard plugins will adhere to a format of `lc:${method}:${location}`. For example, the Ceramic plugin adds `lc:ceramic:${streamID}` URI support.
+The LearnCard URI is a [URI](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) that allows a Universal Wallet to resolve a credential. It is freely extensible and any plugin can add to it in any way. However standard plugins will adhere to a format of `lc:${method}:${location}`. For example, the Ceramic plugin adds `lc:ceramic:${streamID}` URI support.
 
 ## Why use LearnCard URIs?
 

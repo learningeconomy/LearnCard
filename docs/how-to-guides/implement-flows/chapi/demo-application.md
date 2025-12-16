@@ -157,7 +157,7 @@ Then, open up a browser and go to `https://localhost:3000` (take great care to m
 **Hint:** If you get a warning about the site being insecure, that is okay! You may just click "proceed anyway" and continue your local development.
 {% endhint %}
 
-<figure><img src="../../../.gitbook/assets/image (9) (1).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/image (21).png" alt=""><figcaption></figcaption></figure>
 
 Let's remove all this default content and get a basic skeleton app for a simple wallet.&#x20;
 
@@ -194,7 +194,7 @@ html {
 
 The site should now look like this:
 
-<figure><img src="../../../.gitbook/assets/image (11).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/image (23).png" alt=""><figcaption></figcaption></figure>
 
 It's not much, but it's a start! Let's stop that loading text from lying to us and actually add in a wallet! For the purposes of this demo app, let's hardcode the seed `'1234'`. In a real app, you would never want to hardcode the seed used for the wallet, preferring instead to use a truly random source to generate a seed, then securely storing it, but for now, we will be fine simply hardcoding `'1234'`.
 
@@ -237,7 +237,7 @@ import Layout from "@layouts/Layout.astro";
 
 This will update our UI to reveal that a wallet has been loaded! Great!
 
-<figure><img src="../../../.gitbook/assets/image (13).png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/image (25).png" alt=""><figcaption></figcaption></figure>
 
 Once we've got CHAPI set up and we're able to store credentials in our wallet, we'll come back to this page and display the credentials we've stored, but for now, we can call it a day on this Landing Page! Phew! 😅
 
@@ -551,9 +551,9 @@ export default CredentialStorage;
 
 Phew! That was a lot of code! But now let's test it out! Head on over to [https://playground.chapi.io/issuer](https://playground.chapi.io/issuer) and try issuing yourself a credential! You should ultimately land on a page like this:
 
-<figure><img src="../../../.gitbook/assets/image (7).png" alt=""><figcaption><p>CredentialStorage in action!</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/image (8).png" alt=""><figcaption><p>CredentialStorage in action!</p></figcaption></figure>
 
-<figure><img src="../../../.gitbook/assets/image (2) (1) (1).png" alt=""><figcaption><p>Backside of VC Card</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/image (13).png" alt=""><figcaption><p>Backside of VC Card</p></figcaption></figure>
 
 ## Managing Credentials
 

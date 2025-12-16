@@ -21,15 +21,9 @@
 * [Connect Systems](how-to-guides/connect-systems/README.md)
   * [Connect a Website](how-to-guides/connect-systems/connect-a-website.md)
   * [Connect a Game](how-to-guides/connect-systems/connect-a-game.md)
-  * [Connect an LMS](how-to-guides/connect-systems/connect-an-lms.md)
-  * [Connect a Bot](how-to-guides/connect-systems/connect-a-bot.md)
-  * [Connect AI Tutor](how-to-guides/connect-systems/connect-ai-tutor.md)
   * [Connect AI Agent](how-to-guides/connect-systems/connect-ai-agent.md)
-  * [Access Wallet Data](how-to-guides/connect-systems/access-wallet-data.md)
-  * [Embed a Wallet](how-to-guides/connect-systems/embed-a-wallet.md)
 * [Implement Flows](how-to-guides/implement-flows/README.md)
   * [Claim Data after Guardian Consent](how-to-guides/implement-flows/claim-data-after-guardian-consent.md)
-  * [Login with LearnCard](how-to-guides/implement-flows/login-with-learncard.md)
   * [Connect via CHAPI](how-to-guides/implement-flows/chapi/README.md)
     * [⭐ CHAPI Wallet Setup Guide](how-to-guides/implement-flows/chapi/chapi-wallet-setup-guide.md)
     * [↔️ Translating to CHAPI documentation](how-to-guides/implement-flows/chapi/translating-to-chapi-documentation.md)
@@ -61,7 +55,6 @@
 * [LearnCard Wallet SDK](sdks/learncard-core/README.md)
   * [Authentication](sdks/learncard-core/authentication.md)
   * [Usage Examples](sdks/learncard-core/construction.md)
-  * [Architecture](sdks/learncard-core/architecture.md)
   * [SDK Reference](https://api.docs.learncard.com/docs/core/modules)
   * [Plugin API Reference](sdks/learncard-core/writing-plugins.md)
   * [Integration Strategies](sdks/learncard-core/architectural-patterns.md)
@@ -99,11 +92,6 @@
           spec: learn-cloud-storage-openapi
     ```
   * [xAPI Reference](sdks/learncloud-storage-api/xapi-reference.md)
-* [LearnCloud AI API](sdks/learncloud-ai-api/README.md)
-  * [Authentication](sdks/learncloud-ai-api/authentication.md)
-  * [Core Concepts](sdks/learncloud-ai-api/core-concepts.md)
-  * [Usage Examples](sdks/learncloud-ai-api/usage-examples.md)
-  * [API Reference](sdks/learncloud-ai-api/api-reference.md)
 * [LearnCard App API](sdks/learncard-app-api.md)
 * [Plugins](sdks/official-plugins/README.md)
   * [Crypto](sdks/official-plugins/crypto.md)
@@ -166,5 +154,5 @@
 
 ## 🔗 Development
 
-* [Roadmap](development/roadmap.md)
 * [Contributing](development/contributing.md)
+* [Roadmap](https://roadmap.learncard.com/)

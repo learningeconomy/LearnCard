@@ -2,7 +2,7 @@
 description: Remote Key Management System (KMS) for LearnCard
 ---
 
-# Managing Seed Phrases
+# Remote Key Management
 
 This documentation will guide you through the process of implementing a remote Key Management System (KMS) for deriving a deterministic, 64-character seed phrase to construct your LearnCard wallet.
 

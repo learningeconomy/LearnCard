@@ -2,7 +2,7 @@
 description: How to translate LearnCard's methods into the CHAPI documentation's methods
 ---
 
-# ↔ Translating to CHAPI documentation
+# ↔️ Translating to CHAPI documentation
 
 ## For Wallets
 

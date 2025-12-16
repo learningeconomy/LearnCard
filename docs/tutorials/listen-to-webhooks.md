@@ -32,7 +32,7 @@ Webhooks enable you to:
 
 ## Part 1: How LearnCloud Notifications Work
 
-Before we build, let's look at the flow (as shown in ["Notifications & Webhook Reference"](../../sdks/learncard-network/notifications.md)):
+Before we build, let's look at the flow (as shown in ["Notifications & Webhook Reference"](../sdks/learncard-network/notifications.md)):
 
 ```mermaid
 sequenceDiagram
@@ -260,7 +260,7 @@ Message: Profile A DisplayName has sent you a connection request!
 * **Security:** Always use `https` for your webhook URLs in production. Ngrok provides this automatically.
 * **Asynchronous Processing:** As mentioned, respond with `200 OK` quickly. If you need to do significant processing (like database updates, sending other API calls), do it after sending the response, perhaps by adding the task to an internal queue.
 * **Error Handling & Retries:** Build robust error handling in your listener. Be aware that LearnCloud might retry sending a notification if it doesn't receive a timely success response. Design your processing to be **idempotent** (processing the same notification multiple times doesn't cause unintended side effects).
-* **Payload Reference:** This tutorial focused on `CONNECTION_REQUEST`. Refer to the [LearnCloud Network API Notifications Documentation](../../sdks/learncard-network/notifications.md) for the structure of all other notification types (`CREDENTIAL_RECEIVED`, `CONSENT_FLOW_TRANSACTION`, etc.) and expand your listener to handle them as needed.
+* **Payload Reference:** This tutorial focused on `CONNECTION_REQUEST`. Refer to the [LearnCloud Network API Notifications Documentation](../sdks/learncard-network/notifications.md) for the structure of all other notification types (`CREDENTIAL_RECEIVED`, `CONSENT_FLOW_TRANSACTION`, etc.) and expand your listener to handle them as needed.
 
 ***
 

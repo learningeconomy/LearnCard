@@ -2,7 +2,7 @@
 description: Sending and Receiving Credentials across interoperable Wallets
 ---
 
-# CHAPI
+# Connect via CHAPI
 
 ## What is CHAPI?
 

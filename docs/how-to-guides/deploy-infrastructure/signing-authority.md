@@ -62,7 +62,7 @@ pnpm install
 
 The `simple-signing-service` is designed for serverless deployment. Key configurations are managed via `serverless.yml` and environment variables.
 
-1. **Review `serverless.yml`:** Open the [`serverless.yml`](https://github.com/learningeconomy/LearnCard/blob/main/services/learn-card-network/simple-signing-service/serverless.yml) file in the [`simple-signing-service`](https://github.com/learningeconomy/LearnCard/blob/main/services/learn-card-network/simple-signing-service) directory. Familiarize yourself with its structure. It defines the AWS Lambda function, API Gateway trigger, and expected environment variables.
+1. **Review `serverless.yml`:** Open the [`serverless.yml`](../../../services/learn-card-network/simple-signing-service/serverless.yml) file in the [`simple-signing-service`](../../../services/learn-card-network/simple-signing-service) directory. Familiarize yourself with its structure. It defines the AWS Lambda function, API Gateway trigger, and expected environment variables.
 2.  Set Environment Variables for Deployment:
 
     For AWS deployment, environment variables should not be hardcoded in a .env file that gets committed. Instead, they should be configured securely for your Lambda function. You can do this via the environment section in serverless.yml (for values safe to commit, or using Serverless Framework's variable system like ${env:VAR\_NAME} or ${ssm:/path/to/param} for secrets), or directly in the AWS Lambda console after deployment (less ideal for IaC).

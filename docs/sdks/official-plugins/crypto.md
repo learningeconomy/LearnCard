@@ -18,7 +18,7 @@ pnpm i @learncard/crypto-plugin
 
 > The **Web Crypto API** is an interface allowing a script to use cryptographic primitives in order to build systems using cryptography.
 
-In order to learn more, see the [MDN docs](https://developer.mozilla.org/en-US/docs/Web/API/Web\_Crypto\_API).
+In order to learn more, see the [MDN docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API).
 
 ### Use Cases
 

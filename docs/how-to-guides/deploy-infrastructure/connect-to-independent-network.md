@@ -2,7 +2,7 @@
 description: Setting Up ConsentFlow with an Independent Network
 ---
 
-# Connect a Website to Independent Network
+# Connect to Independent Network
 
 ConsentFlow contracts allow third-party applications to read from and write to a LearnCard with the consent of the LearnCard owner. This guide will walk you through setting up a ConsentFlow with an Independent **Network** (instead of the default LearnCard Network) and Independent **Wallet** (instead of the default LearnCard App) to connect your external, 3rd party application.
 

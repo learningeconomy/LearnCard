@@ -41,7 +41,7 @@ Here's a brief overview of the available methods in the `LearnCardNetworkPluginM
 6. **Storage**: Resolve a URI to a credential or presentation.
 7. **Signing Authorities**: Register and retrieve signing authorities for the LearnCard Network.
 
-For detailed information on the method signatures and their parameters, refer to the [type definitions](https://github.com/learningeconomy/LearnCard/blob/main/packages/plugins/learn-card-network/src/types.ts) provided in the [`@learncard/network-plugin` package](https://github.com/learningeconomy/LearnCard/tree/main/packages/plugins/learn-card-network).
+For detailed information on the method signatures and their parameters, refer to the [type definitions](../../../packages/plugins/learn-card-network/src/types.ts) provided in the [`@learncard/network-plugin` package](https://github.com/learningeconomy/LearnCard/tree/main/packages/plugins/learn-card-network).
 
 #### Examples
 

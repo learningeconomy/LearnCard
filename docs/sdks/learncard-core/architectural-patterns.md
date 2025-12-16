@@ -2,7 +2,7 @@
 description: Common architectural patterns for LearnCard SDK integration
 ---
 
-# Architectural Patterns for LearnCard SDK
+# Integration Strategies
 
 This guide describes common architectural patterns for integrating LearnCard SDK into your applications, with real-world examples and implementation recommendations.
 
@@ -10,13 +10,13 @@ This guide describes common architectural patterns for integrating LearnCard SDK
 
 LearnCard can be integrated into various architectures depending on your specific requirements:
 
-| Architecture | Best For | Considerations |
-|--------------|----------|----------------|
-| Browser-based client-side | Personal wallets, user-controlled credentials | Private key security, WASM loading |
-| Server-side API | Credential issuer services, verification services | Key management, scaling |
-| Mobile apps | Personal wallets with native integration | Storage, secure enclave |
-| Serverless functions | Verification workflows, on-demand issuance | Cold starts, timeouts |
-| Hybrid | Enterprise solutions with mixed requirements | Complexity, security boundaries |
+| Architecture              | Best For                                          | Considerations                     |
+| ------------------------- | ------------------------------------------------- | ---------------------------------- |
+| Browser-based client-side | Personal wallets, user-controlled credentials     | Private key security, WASM loading |
+| Server-side API           | Credential issuer services, verification services | Key management, scaling            |
+| Mobile apps               | Personal wallets with native integration          | Storage, secure enclave            |
+| Serverless functions      | Verification workflows, on-demand issuance        | Cold starts, timeouts              |
+| Hybrid                    | Enterprise solutions with mixed requirements      | Complexity, security boundaries    |
 
 ## Pattern 1: Browser-Based Personal Wallet
 
