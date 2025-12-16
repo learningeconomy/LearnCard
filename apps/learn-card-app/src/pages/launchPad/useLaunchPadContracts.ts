@@ -5,19 +5,20 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 
 export const useLaunchPadContracts = () => {
     const { initWallet } = useWallet();
-    const { data: consentedContracts } = useConsentedContracts();
+    // Let's disable consented contracts for now
+    //const { data: consentedContracts } = useConsentedContracts();
 
     const flags = useFlags();
 
     const smartResumeContract = flags.smartResumeContractUri;
 
-    const consentedContractUris = consentedContracts?.map(c => c.contract.uri) ?? [];
+    //const consentedContractUris = consentedContracts?.map(c => c.contract.uri) ?? [];
 
     const launchPadContractUris: string[] = [
         ...(flags.contracts ?? []),
-        ...consentedContractUris.filter(
-            uri => !flags.contracts?.includes(uri) && uri !== smartResumeContract
-        ),
+        // ...consentedContractUris.filter(
+        //     uri => !flags.contracts?.includes(uri) && uri !== smartResumeContract
+        // ),
     ];
 
     return useQueries({

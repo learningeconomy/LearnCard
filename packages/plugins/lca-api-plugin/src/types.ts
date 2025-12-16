@@ -53,7 +53,7 @@ const UserRecordSchema = z.object({
         creationTime: z.string(),
         lastSignInTime: z.string().nullable(),
     }),
-    customClaims: z.record(z.any()).optional(),
+    customClaims: z.record(z.string(), z.any()).optional(),
 });
 
 export type UserRecordType = z.infer<typeof UserRecordSchema>;

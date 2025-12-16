@@ -36,7 +36,11 @@ export const utilitiesRouter = t.router({
                     'Generates an arbitrary number of valid challenges for a did, then returns them',
             },
         })
-        .input(z.object({ amount: z.number().int().positive().lte(100).default(100) }).default({}))
+        .input(
+            z
+                .object({ amount: z.number().int().positive().lte(100).default(100) })
+                .default({ amount: 100 })
+        )
         .output(z.string().array())
         .query(async ({ input, ctx }) => {
             const challenges = getChallenges(input.amount);

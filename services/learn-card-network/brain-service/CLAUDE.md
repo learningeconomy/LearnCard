@@ -11,8 +11,10 @@
 ## Test Commands
 
 -   Run all tests: `pnpm test`
+-   Run all tests once (non-watch): `pnpm test -- run` (equivalent to `vitest run`)
 -   Watch mode: `pnpm test:watch`
 -   Run single test: `pnpm test test/consentflow.spec.ts`
+-   Run single test once (non-watch): `pnpm test -- run test/consentflow.spec.ts`
 -   Run specific test: `pnpm test -t "should allow setting and retrieving the image field for a contract"`
 
 ## Code Style Guidelines
@@ -224,9 +226,9 @@ LearnCard supports creating and managing profile connection invitation links wit
 
     ```json
     {
-      "expiration": 2592000,
-      "challenge": "optional-custom-string",
-      "maxUses": 1
+        "expiration": 2592000,
+        "challenge": "optional-custom-string",
+        "maxUses": 1
     }
     ```
 
@@ -240,9 +242,9 @@ LearnCard supports creating and managing profile connection invitation links wit
 
     ```json
     {
-      "profileId": "alice",
-      "challenge": "uuid-or-custom",
-      "expiresIn": 2592000
+        "profileId": "alice",
+        "challenge": "uuid-or-custom",
+        "expiresIn": 2592000
     }
     ```
 
@@ -258,18 +260,18 @@ LearnCard supports creating and managing profile connection invitation links wit
 
     ```json
     [
-      {
-        "challenge": "abc123",
-        "expiresIn": 1200,
-        "usesRemaining": 2,
-        "maxUses": 5
-      },
-      {
-        "challenge": "unlimited",
-        "expiresIn": null,
-        "usesRemaining": null,
-        "maxUses": null
-      }
+        {
+            "challenge": "abc123",
+            "expiresIn": 1200,
+            "usesRemaining": 2,
+            "maxUses": 5
+        },
+        {
+            "challenge": "unlimited",
+            "expiresIn": null,
+            "usesRemaining": null,
+            "maxUses": null
+        }
     ]
     ```
 

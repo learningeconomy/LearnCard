@@ -1,6 +1,6 @@
 packages:
   - 'apps/*'
-  - 'docs'
+  - 'reference'
   - 'examples/*'
   - 'packages/*'
   - 'packages/learn-card-network/*'

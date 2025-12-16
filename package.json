@@ -3,11 +3,12 @@
     "private": true,
     "version": "1.0.1",
     "repository": {
+        "type": "git",
         "url": "https://github.com/learningeconomy/LearnCard"
     },
     "scripts": {
         "preinstall": "npx only-allow pnpm",
-        "build": "nx run-many -t build --all --exclude=docs,chapi-example,snap-chapi-example,snap-example-dapp",
+        "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
         "test:e2e": "nx run e2e:test:e2e",
         "run-network-tests": "nx run network-brain-service:build && cd services/learn-card-network/brain-service && pnpm test"
     },
@@ -48,6 +49,7 @@
         "@tanstack/react-query": "^5.54.1",
         "@tanstack/react-query-devtools": "^5.54.1",
         "@tanstack/react-query-persist-client": "^5.54.1",
+        "@traversable/zod": "^0.0.57",
         "core-js": "^3.25.1",
         "firebase": "11.10.0",
         "history": "4.10.1",
@@ -58,9 +60,9 @@
         "react-router-dom": "5.3.3",
         "regenerator-runtime": "0.13.7",
         "tslib": "^2.4.0",
-        "typescript": "5.6.2",
-        "zod": "3.25.76",
-        "zod-openapi": "4.2.4"
+        "typescript": "5.9.3",
+        "zod": "4.1.13",
+        "zod-openapi": "5.4.5"
     },
     "pnpm": {
         "overrides": {
@@ -68,7 +70,10 @@
             "did-jwt": "5.9.0",
             "typescript": "5.6.2",
             "uint8arrays": "^3.0.0",
-            "zod": "3.25.76",
+            "serverless": "3.40.0",
+            "zod": "4.1.13",
+            "zod-openapi": "5.4.5",
+            "trpc-to-openapi": "3.1.0",
             "@ceramicnetwork/streamid": "2.7.0",
             "@ionic/react": "8.7.2",
             "@ionic/react-router": "8.7.2",
