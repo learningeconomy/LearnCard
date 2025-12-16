@@ -11,7 +11,7 @@ Whether you're building edtech apps, issuing credentials, or designing learner-f
 ### Why Use LearnCard?
 
 * **Portable**: Credentials travel with the learner—not locked into one system.
-* **Consentful**: Learners control who sees what, and when.
+* **Consent-Driven**: Learners control who sees their data, and when.
 * **Open**: Built on interoperable, community-driven standards.
 * **Developer-Friendly**: Plug in easily to existing apps with modern APIs and tools.
 
@@ -33,13 +33,11 @@ LearnCard is already used to:
 
 This documentation is your guide to building with LearnCard. Here’s how to navigate it:
 
-* [**Core Concepts**](/broken/pages/Wc9n2nCjCt5tw1mOV0fz): Understand the philosophy and structure of the ecosystem.
-* [**Use Cases & Possibilities**](introduction/use-cases-and-possibilities.md): Explore real-world implementations.
-* [**Quick Start**](/broken/pages/d2FIDNQNWgVkGckv2wh2): Go from zero to integrated in minutes.
-* [**Tutorials**](/broken/pages/Y9wXsPvJ08m2dhSpoAPZ): Learn by building key example projects with LearnCard SDK and APIs.&#x20;
-* [**How-To Guides**](/broken/pages/Y9wXsPvJ08m2dhSpoAPZ)**:** Step-by-step recipes for with key workflows and integrations.
-* [**SDK & API Reference**](/broken/pages/2CFJ0iVopfhxEzxav7hh): Deep dive into our SDKs and REST APIs.
-* [**Development**](/broken/pages/tg4rp5RrLHvu021foafS): Links to contributing, roadmap, etc.
+* [**Quick Start**](quick-start/your-first-integration.md): Go from zero to integrated in minutes.
+* [**Tutorials**](tutorials/create-a-credential.md): Learn by building — create credentials, boosts, and connected apps.
+* [**How-To Guides**](how-to-guides/send-credentials.md): Step-by-step recipes for common workflows.
+* [**Core Concepts**](core-concepts/credentials-and-data/verifiable-credentials-vcs.md): Understand credentials, DIDs, consent, and the plugin system.
+* [**SDK Reference**](sdks/learncard-core/README.md): Deep dive into our SDK and APIs.
 
 If you're new, start with [**Your First Integration**](quick-start/your-first-integration.md) under the Quick Start section.
 
@@ -47,10 +45,13 @@ If you're new, start with [**Your First Integration**](quick-start/your-first-in
 
 ### How to Implement LearnCard
 
-1. **Pick your flow**: Do you want to issue credentials, verify them, or manage a user's digital wallet?
-2. [**Install the SDK**](sdks/learncard-core/): Use the `@learncard/init` SDK, or interact via our APIs.
-3. **Use open schemas**: LearnCard supports OBv3, CLR, LTI, and more—no need to reinvent standards.
-4. **Add advanced features**: Selective disclosure, zero-knowledge proofs, guardianship models, bots, and more.
+1. **Pick your flow**: Issue credentials, verify them, or manage a user's wallet.
+2. **Install the SDK**: 
+   ```bash
+   npm install @learncard/init
+   ```
+3. **Use open standards**: LearnCard supports [Open Badges 3.0](https://www.imsglobal.org/spec/ob/v3p0/), W3C Verifiable Credentials, and more.
+4. **Scale up**: Add consent flows, network features, and advanced cryptography as needed.
 
 Whether you're building a web app, mobile experience, backend service, or bot, LearnCard has the primitives and integrations to make it seamless.
 
@@ -60,7 +61,7 @@ Whether you're building a web app, mobile experience, backend service, or bot, L
 
 This stack was built by developers, for developers. It supports open standards and real-world interoperability from day one. We’re glad you’re here—let’s build a more learner-friendly future together.
 
-### Comments, Questions, or Palpitations of the Heart?
+### Questions or Feedback?
 
 The best way to start engaging in the community is to participate in our [Github Discussions](https://github.com/learningeconomy/LearnCard/discussions):&#x20;
 

@@ -92,26 +92,7 @@
           spec: learn-cloud-storage-openapi
     ```
   * [xAPI Reference](sdks/learncloud-storage-api/xapi-reference.md)
-* [LearnCard App API](sdks/learncard-app-api.md)
 * [Plugins](sdks/official-plugins/README.md)
-  * [Crypto](sdks/official-plugins/crypto.md)
-  * [DIDKit](sdks/official-plugins/didkit.md)
-  * [DID Key](sdks/official-plugins/did-key.md)
-  * [Dynamic Loader](sdks/official-plugins/dynamic-loader.md)
-  * [VC](sdks/official-plugins/vc/README.md)
-    * [Expiration Sub-Plugin](sdks/official-plugins/vc/expiration-sub-plugin.md)
-  * [VC-Templates](sdks/official-plugins/vc-templates.md)
-  * [VC-API](sdks/official-plugins/vc-api.md)
-  * [Ceramic](sdks/official-plugins/ceramic.md)
-  * [IDX](sdks/official-plugins/idx.md)
-  * [VPQR](sdks/official-plugins/vpqr.md)
-  * [Ethereum](sdks/official-plugins/ethereum.md)
-  * [CHAPI](sdks/official-plugins/chapi.md)
-  * [LearnCard Network](sdks/official-plugins/learncard-network.md)
-  * [LearnCloud](sdks/official-plugins/learncloud.md)
-  * [LearnCard](sdks/official-plugins/learncard.md)
-  * [Simple Signing](sdks/official-plugins/simple-signing.md)
-  * [Claimable Boosts](sdks/official-plugins/claimable-boosts.md)
 * [LearnCard CLI](sdks/learncard-cli.md)
 
 ## 🧠 Core Concepts
