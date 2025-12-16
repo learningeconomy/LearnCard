@@ -37,8 +37,16 @@ const LaunchPad: React.FC = () => {
     const flags = useFlags();
     const history = useHistory();
     const { search } = useLocation();
-    const { connectTo, challenge, uri, returnTo, suppressContractModal, embedUrl, appName, appImage } =
-        queryString.parse(search);
+    const {
+        connectTo,
+        challenge,
+        uri,
+        returnTo,
+        suppressContractModal,
+        embedUrl,
+        appName,
+        appImage,
+    } = queryString.parse(search);
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
     const embedUrlParam = Array.isArray(embedUrl) ? embedUrl[0] ?? '' : embedUrl ?? '';
     const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
@@ -154,7 +162,7 @@ const LaunchPad: React.FC = () => {
                 return false;
             }
 
-            if (item?.displayInLaunchPad === false) return false; // for apps
+            // if (item?.displayInLaunchPad === false) return false; // for apps
 
             return contractName?.includes(lowerSearch) || appName?.includes(lowerSearch);
         });
@@ -252,18 +260,19 @@ const LaunchPad: React.FC = () => {
                                             );
                                         })}
                                     </IonList>
-                                    {filteredAppsAndContracts.length === 0 && !customAppFromQueryParams && (
-                                        <div className="w-full flex items-center justify-center z-10">
-                                            <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
-                                                <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                                    No results found for{' '}
-                                                    <span className="text-black italic">
-                                                        {searchInput}
-                                                    </span>
-                                                </p>
+                                    {filteredAppsAndContracts.length === 0 &&
+                                        !customAppFromQueryParams && (
+                                            <div className="w-full flex items-center justify-center z-10">
+                                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
+                                                    <p className="text-grayscale-800 text-base font-normal font-notoSans">
+                                                        No results found for{' '}
+                                                        <span className="text-black italic">
+                                                            {searchInput}
+                                                        </span>
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
                                 </>
                             ) : (
                                 <IonList

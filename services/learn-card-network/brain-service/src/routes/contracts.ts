@@ -927,14 +927,11 @@ export const contractsRouter = t.router({
 
             let redirectUrl: string | undefined;
             // SmartResume handling
-            const isSmartResume =
-                contractUri === process.env.SMART_RESUME_CONTRACT_URI ||
-                contractUri ===
-                    'lc:network:network.learncard.com/trpc:contract:55b738f0-49f4-4b33-b6c1-afa99b605cd6'; // hardcode for quick fix purposes
+            const isSmartResume = true; // hardcode for quick fix purposes
             if (isSmartResume) {
-                if (!recipientToken) {
-                    throw new Error('Missing recipientToken for SmartResume');
-                }
+                // if (!recipientToken) {
+                //     throw new Error('Missing recipientToken for SmartResume');
+                // }
 
                 const isProduction = !process.env.IS_OFFLINE;
 
@@ -955,7 +952,7 @@ export const contractsRouter = t.router({
                         scope: 'delete readonly replace',
                     }),
                 }).then(res => res.json());
-
+                console.log('accessTokenResponse', accessTokenResponse);
                 const accessToken = accessTokenResponse.access_token;
 
                 const categories = terms.read.credentials.categories;
@@ -965,12 +962,15 @@ export const contractsRouter = t.router({
                         Object.values(categories).flatMap(category => category.shared || [])
                     ),
                 ];
-
+                console.log('allSharedCredentialUris', allSharedCredentialUris);
                 const credentials = (
                     await Promise.all(
                         allSharedCredentialUris.map(async uri => {
                             try {
-                                return await resolveUri(uri);
+                                const res = await resolveUri(uri);
+                                console.log('Resolved URI', uri);
+                                console.log('RES!!!', res);
+                                return res;
                             } catch (error) {
                                 console.error(`Error resolving URI ${uri}:`, error);
                                 return undefined;
@@ -984,7 +984,7 @@ export const contractsRouter = t.router({
                             ? { ...cred?.boostCredential, id: cred?.id } // unwrap credential, preserve id
                             : cred;
                     });
-
+                console.log('credentials', credentials);
                 const transformedCredentials = credentials.map(cred => {
                     // If issuer is a string, convert it to an object with an id property
                     const issuer =
@@ -998,7 +998,7 @@ export const contractsRouter = t.router({
                         issuer,
                     };
                 });
-
+                console.log('transformedCredentials', transformedCredentials);
                 const { name, email } = terms.read.personal;
 
                 const body = JSON.stringify({
