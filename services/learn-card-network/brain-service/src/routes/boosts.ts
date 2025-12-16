@@ -142,8 +142,7 @@ export const boostsRouter = t.router({
         })
         .input(z.object({ uri: z.string() }))
         .output(
-            z
-                .object({
+            z.object({
                     targetCode: z.string().optional(),
                     targetName: z.string().optional(),
                     targetDescription: z.string().optional(),

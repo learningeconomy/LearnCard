@@ -1,7 +1,7 @@
 import React from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonHeader, IonToolbar } from '@ionic/react';
-import { Shield, Code2 } from 'lucide-react';
+import { Shield, Code2, Hammer } from 'lucide-react';
 
 import QRCodeScannerButton from '../../../components/qrcode-scanner-button/QRCodeScannerButton';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
@@ -19,6 +19,10 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
     const { data: isAdmin } = useIsAdmin();
 
     const isOnAdminPage = location.pathname.includes('/app-store/admin');
+    const isOnGuidesPage = location.pathname.includes('/app-store/developer/guides');
+    const isOnDeveloperPage = location.pathname === '/app-store/developer' || 
+        location.pathname.startsWith('/app-store/developer/new') ||
+        location.pathname.startsWith('/app-store/developer/edit');
 
     const handlePortalToggle = () => {
         if (isOnAdminPage) {
@@ -47,6 +51,45 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
 
                     <div className="flex items-center gap-1.5 sm:gap-3 overflow-visible">
                         {rightContent}
+
+                        {/* Navigation tabs */}
+                        <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-0.5">
+                            <button
+                                onClick={() => history.push('/app-store/developer')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                                    isOnDeveloperPage
+                                        ? 'bg-white text-gray-800 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <Code2 className="w-4 h-4" />
+                                Apps
+                            </button>
+
+                            <button
+                                onClick={() => history.push('/app-store/developer/guides')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                                    isOnGuidesPage
+                                        ? 'bg-white text-gray-800 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                <Hammer className="w-4 h-4" />
+                                Build
+                            </button>
+                        </div>
+
+                        {/* Mobile nav toggle for guides */}
+                        <button
+                            onClick={() => history.push(isOnGuidesPage ? '/app-store/developer' : '/app-store/developer/guides')}
+                            className="sm:hidden flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                            {isOnGuidesPage ? (
+                                <Code2 className="w-4 h-4" />
+                            ) : (
+                                <Hammer className="w-4 h-4" />
+                            )}
+                        </button>
 
                         {isAdmin && (
                             <button

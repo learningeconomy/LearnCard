@@ -19,7 +19,7 @@ export interface SkillTreeInput {
     children?: SkillTreeInput[];
 }
 
-const RawSkillTreeNodeInputValidator: z.ZodType<SkillTreeInput> = z.lazy(() =>
+const RawSkillTreeNodeInputValidator =
     z.object({
         id: z.string().optional(),
         statement: z.string(),
@@ -30,7 +30,6 @@ const RawSkillTreeNodeInputValidator: z.ZodType<SkillTreeInput> = z.lazy(() =>
         status: SkillStatusEnum.optional(),
         children: z.array(SkillTreeNodeInputValidator).optional(),
     })
-);
 
 // Annoying hack because the unit tests don't want to play nice with the zod-openapi plugin.
 export const SkillTreeNodeInputValidator =

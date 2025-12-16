@@ -101,6 +101,12 @@ const SubmissionForm = lazyWithRetry(
 const AppStoreAdminDashboard = lazyWithRetry(
     () => import('./pages/appStoreAdmin/AdminDashboard')
 );
+const IntegrationHub = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/guides/IntegrationHub')
+);
+const GuidePage = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/guides/GuidePage')
+);
 // import ExternalConsentFlowDoor from './pages/consentFlow/ExternalConsentFlowDoor';
 // import CustomWallet from './pages/hidden/CustomWallet';
 // import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
@@ -178,6 +184,8 @@ export const Routes: React.FC = () => {
                             path="/app-store/developer/edit/:listingId"
                             component={SubmissionForm}
                         />
+                        <PrivateRoute exact path="/app-store/developer/guides" component={IntegrationHub} />
+                        <PrivateRoute exact path="/app-store/developer/guides/:useCase" component={GuidePage} />
                         <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminDashboard} />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
