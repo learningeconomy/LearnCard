@@ -45,8 +45,14 @@ describe('Boosts', () => {
                 credential: testUnsignedBoost,
             });
 
-            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw1 });
-            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw2 });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw1,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw2,
+            });
 
             // Filter by id using $in
             const page1 = await userA.clients.fullAuth.boost.getBoostFrameworks({
@@ -84,10 +90,19 @@ describe('Boosts', () => {
                 credential: testUnsignedBoost,
             });
 
-            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw1 });
-            await userA.clients.fullAuth.boost.attachFrameworkToBoost({ boostUri, frameworkId: fw2 });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw1,
+            });
+            await userA.clients.fullAuth.boost.attachFrameworkToBoost({
+                boostUri,
+                frameworkId: fw2,
+            });
 
-            const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri, limit: 10 });
+            const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({
+                uri: boostUri,
+                limit: 10,
+            });
             const ids = (frameworks.records as Array<{ id: string }>).map(f => f.id).sort();
             expect(ids).toEqual([fw1, fw2].sort());
         });
@@ -699,6 +714,125 @@ describe('Boosts', () => {
                     from: userAProfile.profileId,
                 })
             ).toHaveLength(1);
+        });
+    });
+
+    describe('send', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'ergonomic-sa',
+                did: userA.learnCard.id.did(),
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+        });
+
+        it('should allow sending a boost with an existing boostUri', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: boostUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBe(boostUri);
+        });
+
+        it('should allow sending a boost by creating a new boost', async () => {
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                template: {
+                    credential: testUnsignedBoost,
+                },
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBeDefined();
+        });
+
+        it('should allow sending a boost using did instead of profileId', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: userBProfile!.did,
+                templateUri: boostUri,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBe(boostUri);
+        });
+
+        it('should reject if neither profileId nor did is provided', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    templateUri: boostUri,
+                } as any)
+            ).rejects.toThrow();
+        });
+
+        it('should reject if neither boostUri nor boost is provided', async () => {
+            await expect(
+                userA.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'userb',
+                } as any)
+            ).rejects.toThrow();
+        });
+
+        it('should not allow non-admins to send a boost', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'usera',
+                    templateUri: boostUri,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should not allow sending a draft boost', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: 'DRAFT',
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'userb',
+                    templateUri: boostUri,
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
         });
     });
 

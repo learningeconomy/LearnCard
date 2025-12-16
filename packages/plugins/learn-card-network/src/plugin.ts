@@ -955,6 +955,64 @@ export async function getLearnCardNetworkPlugin(
                 return client.boost.claimBoostWithLink.mutate({ boostUri, challenge });
             },
 
+            send: async (_learnCard, input) => {
+                await ensureUser();
+
+                if (input.type === 'boost') {
+                    const canIssueLocally = 'issueCredential' in _learnCard.invoke;
+
+                    if (canIssueLocally && input.templateUri) {
+                        const result = await _learnCard.invoke.resolveFromLCN(input.templateUri);
+                        const data = await UnsignedVCValidator.spa(result);
+
+                        if (data.success) {
+                            let targetDid: string;
+
+                            if (input.recipient.startsWith('did:')) {
+                                targetDid = input.recipient;
+                            } else {
+                                const targetProfile = await _learnCard.invoke.getProfile(
+                                    input.recipient
+                                );
+                                if (!targetProfile) return client.boost.send.mutate(input);
+                                targetDid = targetProfile.did;
+                            }
+
+                            let boost = data.data;
+
+                            if (isVC2Format(boost)) {
+                                boost.validFrom = new Date().toISOString();
+                            } else {
+                                boost.issuanceDate = new Date().toISOString();
+                            }
+
+                            boost.issuer = _learnCard.id.did();
+
+                            if (Array.isArray(boost.credentialSubject)) {
+                                boost.credentialSubject = boost.credentialSubject.map(subject => ({
+                                    ...subject,
+                                    id: targetDid,
+                                }));
+                            } else {
+                                boost.credentialSubject.id = targetDid;
+                            }
+
+                            if (boost?.type?.includes('BoostCredential'))
+                                boost.boostId = input.templateUri;
+
+                            const signedCredential = await _learnCard.invoke.issueCredential(boost);
+
+                            return client.boost.send.mutate({
+                                ...input,
+                                signedCredential,
+                            } as any);
+                        }
+                    }
+                }
+
+                return client.boost.send.mutate(input);
+            },
+
             createContract: async (_learnCard, contract) => {
                 await ensureUser();
 
@@ -1228,9 +1286,9 @@ export async function getLearnCardNetworkPlugin(
             },
             finalizeInboxCredentials: async _learnCard => {
                 await ensureUser();
-                
+
                 return client.inbox.finalize.mutate();
-            }, 
+            },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();
 
@@ -1290,7 +1348,11 @@ export async function getLearnCardNetworkPlugin(
             },
             removeSkillTag: async (_learnCard, frameworkId, skillId, slug) => {
                 if (!userData) throw new Error('Please make an account first!');
-                return client.skills.removeSkillTag.mutate({ frameworkId, id: skillId, slug } as any);
+                return client.skills.removeSkillTag.mutate({
+                    frameworkId,
+                    id: skillId,
+                    slug,
+                } as any);
             },
             createManagedSkillFramework: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -1440,10 +1502,23 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.integrations.deleteIntegration.mutate({ id });
             },
-            associateIntegrationWithSigningAuthority: async (_learnCard, integrationId, endpoint, name, did, isPrimary) => {
+            associateIntegrationWithSigningAuthority: async (
+                _learnCard,
+                integrationId,
+                endpoint,
+                name,
+                did,
+                isPrimary
+            ) => {
                 await ensureUser();
 
-                return client.integrations.associateIntegrationWithSigningAuthority.mutate({ integrationId, endpoint, name, did, isPrimary });
+                return client.integrations.associateIntegrationWithSigningAuthority.mutate({
+                    integrationId,
+                    endpoint,
+                    name,
+                    did,
+                    isPrimary,
+                });
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

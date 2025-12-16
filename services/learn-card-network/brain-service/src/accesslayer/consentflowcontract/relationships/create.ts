@@ -56,6 +56,16 @@ export const setAutoBoostForContract = async (
     });
 };
 
+export const setRelatedBoostForContract = async (
+    contract: DbContractType,
+    boost: BoostType
+): Promise<void> => {
+    await ConsentFlowContract.relateTo({
+        alias: 'relatedTo',
+        where: { source: { id: contract.id }, target: { id: boost.id } },
+    });
+};
+
 export const consentToContract = async (
     consenter: LCNProfile,
     { contract, contractOwner }: { contract: DbContractType; contractOwner: LCNProfile },
@@ -235,7 +245,11 @@ export const consentToContract = async (
                     }
 
                     // Inject OBv3 skill alignments based on boost's framework/skills
-                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost.target, domain);
+                    await injectObv3AlignmentsIntoCredentialForBoost(
+                        boostCredential,
+                        boost.target,
+                        domain
+                    );
 
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,

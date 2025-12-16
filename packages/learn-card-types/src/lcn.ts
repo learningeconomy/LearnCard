@@ -339,6 +339,48 @@ export const AutoBoostConfigValidator = z.object({
 });
 export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
 
+const SendBoostTemplateValidator = BoostValidator.partial()
+    .omit({ uri: true, claimPermissions: true })
+    .extend({
+        credential: VCValidator.or(UnsignedVCValidator),
+        claimPermissions: BoostPermissionsValidator.partial().optional(),
+        skills: z
+            .array(z.object({ frameworkId: z.string(), id: z.string() }))
+            .min(1)
+            .optional(),
+    });
+
+const SendBoostInputBaseValidator = z.object({
+    type: z.literal('boost'),
+    recipient: z.string(),
+    contractUri: z.string().optional(),
+    templateUri: z.string().optional(),
+    template: SendBoostTemplateValidator.optional(),
+    signedCredential: VCValidator.optional(),
+});
+
+const SendBoostResponseValidator = z.object({
+    type: z.literal('boost'),
+    credentialUri: z.string(),
+    uri: z.string(),
+});
+
+export const SendInputValidator = z
+    .discriminatedUnion('type', [SendBoostInputBaseValidator])
+    .superRefine((data, ctx) => {
+        if (data.type === 'boost' && !data.templateUri && !data.template) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Either templateUri or template creation data must be provided.',
+                path: ['templateUri'],
+            });
+        }
+    });
+export type SendInput = z.infer<typeof SendInputValidator>;
+
+export const SendResponseValidator = z.discriminatedUnion('type', [SendBoostResponseValidator]);
+export type SendResponse = z.infer<typeof SendResponseValidator>;
+
 export const ConsentFlowTermsStatusValidator = z.enum(['live', 'stale', 'withdrawn']);
 export type ConsentFlowTermsStatus = z.infer<typeof ConsentFlowTermsStatusValidator>;
 
