@@ -103,6 +103,7 @@ const QrCodeUserCardShareOptions: React.FC = () => {
                 link.download = 'qrcode-card.png';
                 link.href = imgData;
                 link.click();
+                setIsSavingPng(false);
                 closeModal();
                 return;
             }
@@ -125,8 +126,8 @@ const QrCodeUserCardShareOptions: React.FC = () => {
                 ...(albumIdentifier ? { albumIdentifier } : {}),
             });
 
-            closeModal();
             setIsSavingPng(false);
+            closeModal();
             alert('QR Code saved to Photos!');
         } catch (err) {
             setIsSavingPng(false);
@@ -175,8 +176,8 @@ const QrCodeUserCardShareOptions: React.FC = () => {
                 });
             }
 
-            closeModal();
             setIsSavingPdf(false);
+            closeModal();
             if (Capacitor.isNativePlatform()) alert('QR Code saved to Documents!');
         } catch (err) {
             setIsSavingPdf(false);
