@@ -132,6 +132,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 verificationItems={verifications}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 existingEndorsements={existingEndorsements}
+                isEarnedBoost={isEarnedBoost}
             />,
             {
                 className: '!bg-transparent',

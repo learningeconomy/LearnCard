@@ -272,6 +272,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 presentShareBoostLink(true);
             },
             formattedDisplayType: formattedAchievementType,
+            isEarnedBoost: true,
         };
 
         const earnedBoostModalProps = {

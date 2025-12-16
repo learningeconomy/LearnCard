@@ -191,6 +191,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 displayType={displayType}
                 existingEndorsements={existingEndorsements}
+                isEarnedBoost={isEarnedBoost}
             />,
             {
                 className: '!bg-transparent',

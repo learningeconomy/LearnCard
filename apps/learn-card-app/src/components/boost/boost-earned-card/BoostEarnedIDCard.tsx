@@ -261,6 +261,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
             presentShareBoostLink(true);
         },
         formattedDisplayType: formattedDisplayType,
+        isEarnedBoost: true,
     };
 
     const presentModal = () => {
