@@ -48,7 +48,7 @@ If you're new, start with [**Your First Integration**](quick-start/your-first-in
 ### How to Implement LearnCard
 
 1. **Pick your flow**: Do you want to issue credentials, verify them, or manage a user's digital wallet?
-2. [**Install the SDK**](sdks/learncard-core/): Use the `@learncard/core` SDK, or interact via our APIs.
+2. [**Install the SDK**](sdks/learncard-core/): Use the `@learncard/init` SDK, or interact via our APIs.
 3. **Use open schemas**: LearnCard supports OBv3, CLR, LTI, and more—no need to reinvent standards.
 4. **Add advanced features**: Selective disclosure, zero-knowledge proofs, guardianship models, bots, and more.
 

@@ -35,9 +35,9 @@ const storageLearnCard = await initLearnCard({
 
 {% tab title="Add Plugin" %}
 ```typescript
-import { initLearnCard } from '@learncard/core'
-import { getLearnCloudPlugin } from '@learncard/network-plugin';
-import didkit from '@learncard/core/dist/didkit/didkit_wasm_bg.wasm?url';
+import { initLearnCard } from '@learncard/init';
+import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
+import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
 const storageAPI = 'https://cloud.learncard.com/trpc';
 
