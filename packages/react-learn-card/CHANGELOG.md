@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.62
+
+### Patch Changes
+
+-   [#878](https://github.com/learningeconomy/LearnCard/pull/878) [`4b833c0e2e1e2be48488f265c4b98f17f1260b44`](https://github.com/learningeconomy/LearnCard/commit/4b833c0e2e1e2be48488f265c4b98f17f1260b44) Thanks [@smurflo2](https://github.com/smurflo2)! - Update style for alignments on BoostGenericCard
+
 ## 2.8.61
 
 ### Patch Changes

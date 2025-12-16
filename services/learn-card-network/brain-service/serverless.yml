@@ -121,6 +121,7 @@ provider:
         SMART_RESUME_ACCESS_KEY: ${env:SMART_RESUME_ACCESS_KEY, ""}
         SMART_RESUME_CONTRACT_URI: ${env:SMART_RESUME_CONTRACT_URI, ""}
         LOGIN_PROVIDER_DID: ${env:LOGIN_PROVIDER_DID, ""}
+        APP_STORE_ADMIN_PROFILE_IDS: ${env:APP_STORE_ADMIN_PROFILE_IDS, ""}
     tracing:
         apiGateway: true
         lambda: true

@@ -21,7 +21,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -32,7 +31,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -44,7 +42,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         // For the ESM build, rely on esbuild's default resolution and
         // bundle dependencies like @learncard/helpers directly, so we

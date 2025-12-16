@@ -1158,6 +1158,100 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            sendAiInsightsContractRequest: async (
+                _learnCard,
+                contractUri,
+                targetProfileId,
+                shareLink
+            ) => {
+                await ensureUser();
+
+                return client.contracts.sendAiInsightsContractRequest.mutate({
+                    contractUri,
+                    targetProfileId,
+                    shareLink,
+                });
+            },
+
+            sendAiInsightShareRequest: async (
+                _learnCard,
+                targetProfileId,
+                shareLink,
+                childProfileId
+            ) => {
+                await ensureUser();
+
+                return client.contracts.sendAiInsightShareRequest.mutate({
+                    targetProfileId,
+                    shareLink,
+                    childProfileId,
+                });
+            },
+
+            getContractSentRequests: async (_learnCard, contractUri) => {
+                await ensureUser();
+
+                return client.contracts.getContractSentRequests.query({
+                    contractUri,
+                });
+            },
+
+            getRequestStatusForProfile: async (
+                _learnCard,
+                targetProfileId,
+                contractId,
+                contractUri
+            ) => {
+                await ensureUser();
+
+                return client.contracts.getRequestStatusForProfile.query({
+                    targetProfileId,
+                    contractId: contractId ?? null,
+                    contractUri: contractUri ?? null,
+                });
+            },
+
+            getAllContractRequestsForProfile: async (_learnCard, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.getAllContractRequestsForProfile.query({
+                    targetProfileId,
+                });
+            },
+
+            forwardContractRequestToProfile: async (
+                _learnCard,
+                parentProfileId,
+                targetProfileId,
+                contractUri
+            ) => {
+                await ensureUser();
+
+                return client.contracts.forwardContractRequestToProfile.mutate({
+                    parentProfileId,
+                    targetProfileId,
+                    contractUri,
+                });
+            },
+
+            markContractRequestAsSeen: async (_learnCard, contractUri, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.markContractRequestAsSeen.mutate({
+                    contractUri,
+                    targetProfileId,
+                });
+            },
+
+            cancelContractRequest: async (_learnCard, contractUri, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.cancelContractRequest.mutate({
+                    contractUri,
+                    targetProfileId,
+                });
+            },
+
             addDidMetadata: async (_learnCard, metadata) => {
                 await ensureUser();
 
@@ -1519,6 +1613,121 @@ export async function getLearnCardNetworkPlugin(
                     did,
                     isPrimary,
                 });
+            },
+
+            // App Store
+            createAppStoreListing: async (_learnCard, integrationId, listing) => {
+                await ensureUser();
+
+                return client.appStore.createListing.mutate({ integrationId, listing });
+            },
+
+            getAppStoreListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.getListing.query({ listingId });
+            },
+
+            updateAppStoreListing: async (_learnCard, listingId, updates) => {
+                await ensureUser();
+
+                return client.appStore.updateListing.mutate({ listingId, updates });
+            },
+
+            deleteAppStoreListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.deleteListing.mutate({ listingId });
+            },
+
+            submitAppStoreListingForReview: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.submitForReview.mutate({ listingId });
+            },
+
+            getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {
+                await ensureUser();
+
+                return client.appStore.getListingsForIntegration.query({
+                    integrationId,
+                    ...options,
+                });
+            },
+
+            countListingsForIntegration: async (_learnCard, integrationId) => {
+                await ensureUser();
+
+                return client.appStore.countListingsForIntegration.query({ integrationId });
+            },
+
+            browseAppStore: async (_learnCard, options) => {
+                return client.appStore.browseListedApps.query(options);
+            },
+
+            getPublicAppStoreListing: async (_learnCard, listingId) => {
+                return client.appStore.getPublicListing.query({ listingId });
+            },
+
+            getAppStoreListingInstallCount: async (_learnCard, listingId) => {
+                return client.appStore.getListingInstallCount.query({ listingId });
+            },
+
+            installApp: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.installApp.mutate({ listingId });
+            },
+
+            uninstallApp: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.uninstallApp.mutate({ listingId });
+            },
+
+            getInstalledApps: async (_learnCard, options = {}) => {
+                await ensureUser();
+
+                return client.appStore.getInstalledApps.query(options);
+            },
+
+            countInstalledApps: async _learnCard => {
+                await ensureUser();
+
+                return client.appStore.countInstalledApps.query();
+            },
+
+            isAppInstalled: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.isAppInstalled.query({ listingId });
+            },
+
+            isAppStoreAdmin: async _learnCard => {
+                await ensureUser();
+
+                return client.appStore.isAdmin.query();
+            },
+
+            adminUpdateListingStatus: async (_learnCard, listingId, status) => {
+                await ensureUser();
+
+                return client.appStore.adminUpdateListingStatus.mutate({ listingId, status });
+            },
+
+            adminUpdatePromotionLevel: async (_learnCard, listingId, promotionLevel) => {
+                await ensureUser();
+
+                return client.appStore.adminUpdatePromotionLevel.mutate({
+                    listingId,
+                    promotionLevel,
+                });
+            },
+
+            adminGetAllListings: async (_learnCard, options) => {
+                await ensureUser();
+
+                return client.appStore.adminGetAllListings.query(options);
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

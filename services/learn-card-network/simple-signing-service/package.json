@@ -28,7 +28,7 @@
         "@types/node": "^18.0.0",
         "@types/uuid": "^9.0.0",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.16.16",
+        "esbuild": "^0.27.1",
         "mongodb-memory-server": "^9.2.0",
         "nodemon": "^2.0.16",
         "openapi-types": "^12.1.0",
@@ -56,8 +56,8 @@
         "@learncard/types": "workspace:*",
         "@sentry/esbuild-plugin": "2.5.0",
         "@sentry/serverless": "7.61.0",
-        "@trpc/client": "^10.17.0",
-        "@trpc/server": "^10.17.0",
+        "@trpc/client": "^11.7.1",
+        "@trpc/server": "^11.7.1",
         "cors": "^2.8.5",
         "dotenv": "^16.0.3",
         "express": "^4.18.2",
@@ -68,7 +68,16 @@
         "libsodium-wrappers": "^0.7.11",
         "mongodb": "^6.2.0",
         "multiformats": "^11.0.1",
-        "trpc-openapi": "^1.2.0",
+        "trpc-to-openapi": "^3.1.0",
+        "zod-openapi": "^5.0.1",
         "uuid": "^9.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/services/learn-card-network/simple-signing-service/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

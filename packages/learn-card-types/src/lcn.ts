@@ -1,6 +1,5 @@
-import { extendZodWithOpenApi } from 'zod-openapi';
+import type {} from 'zod-openapi';
 import { z } from 'zod';
-extendZodWithOpenApi(z);
 
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
@@ -139,9 +138,9 @@ export const SentCredentialInfoValidator = z.object({
     uri: z.string(),
     to: z.string(),
     from: z.string(),
-    sent: z.string().datetime(),
-    received: z.string().datetime().optional(),
-    metadata: z.record(z.unknown()).optional(),
+    sent: z.iso.datetime(),
+    received: z.iso.datetime().optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
@@ -156,7 +155,7 @@ export const BoostPermissionsValidator = z.object({
     canEditChildren: z.string(),
     canRevokeChildren: z.string(),
     canManageChildrenPermissions: z.string(),
-    canManageChildrenProfiles: z.boolean().default(false).optional(),
+    canManageChildrenProfiles: z.boolean().optional(),
     canViewAnalytics: z.boolean(),
 });
 export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
@@ -184,7 +183,7 @@ export type ClaimHookType = z.infer<typeof ClaimHookTypeValidator>;
 
 export const ClaimHookValidator = z.discriminatedUnion('type', [
     z.object({
-        type: z.literal(ClaimHookTypeValidator.Values.GRANT_PERMISSIONS),
+        type: z.literal(ClaimHookTypeValidator.enum.GRANT_PERMISSIONS),
         data: z.object({
             claimUri: z.string(),
             targetUri: z.string(),
@@ -192,26 +191,26 @@ export const ClaimHookValidator = z.discriminatedUnion('type', [
         }),
     }),
     z.object({
-        type: z.literal(ClaimHookTypeValidator.Values.ADD_ADMIN),
+        type: z.literal(ClaimHookTypeValidator.enum.ADD_ADMIN),
         data: z.object({ claimUri: z.string(), targetUri: z.string() }),
     }),
     z.object({
-        type: z.literal(ClaimHookTypeValidator.Values.AUTO_CONNECT),
+        type: z.literal(ClaimHookTypeValidator.enum.AUTO_CONNECT),
         data: z.object({ claimUri: z.string(), targetUri: z.string() }),
     }),
 ]);
 export type ClaimHook = z.infer<typeof ClaimHookValidator>;
 
-export const ClaimHookQueryValidator = z
-    .object({
-        type: StringQuery,
-        data: z.object({
+export const ClaimHookQueryValidator = z.object({
+    type: StringQuery,
+    data: z
+        .object({
             claimUri: StringQuery,
             targetUri: StringQuery,
-            permissions: BoostPermissionsQueryValidator,
-        }),
-    })
-    .deepPartial();
+            permissions: BoostPermissionsQueryValidator.partial(),
+        })
+        .partial(),
+});
 export type ClaimHookQuery = z.infer<typeof ClaimHookQueryValidator>;
 
 export const FullClaimHookValidator = z
@@ -234,7 +233,7 @@ export const BoostValidator = z.object({
     category: z.string().optional(),
     status: LCNBoostStatus.optional(),
     autoConnectRecipients: z.boolean().optional(),
-    meta: z.record(z.any()).optional(),
+    meta: z.record(z.string(), z.any()).optional(),
     claimPermissions: BoostPermissionsValidator.optional(),
     allowAnyoneToCreateChildren: z.boolean().optional(),
 });
@@ -246,7 +245,7 @@ const BaseBoostQueryValidator = z
         name: StringQuery,
         type: StringQuery,
         category: StringQuery,
-        meta: z.record(StringQuery),
+        meta: z.record(z.string(), StringQuery),
         status: LCNBoostStatus.or(z.object({ $in: LCNBoostStatus.array() })),
         autoConnectRecipients: z.boolean(),
     })
@@ -392,6 +391,7 @@ export const ConsentFlowContractValidator = z.object({
                 .object({
                     categories: z
                         .record(
+                            z.string(),
                             z.object({
                                 required: z.boolean(),
                                 defaultEnabled: z.boolean().optional(),
@@ -399,18 +399,22 @@ export const ConsentFlowContractValidator = z.object({
                         )
                         .default({}),
                 })
-                .default({}),
+                .prefault({ categories: {} }),
             personal: z
-                .record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() }))
+                .record(
+                    z.string(),
+                    z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })
+                )
                 .default({}),
         })
-        .default({}),
+        .prefault({ credentials: { categories: {} }, personal: {} }),
     write: z
         .object({
             credentials: z
                 .object({
                     categories: z
                         .record(
+                            z.string(),
                             z.object({
                                 required: z.boolean(),
                                 defaultEnabled: z.boolean().optional(),
@@ -418,12 +422,15 @@ export const ConsentFlowContractValidator = z.object({
                         )
                         .default({}),
                 })
-                .default({}),
+                .prefault({ categories: {} }),
             personal: z
-                .record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() }))
+                .record(
+                    z.string(),
+                    z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })
+                )
                 .default({}),
         })
-        .default({}),
+        .prefault({ credentials: { categories: {} }, personal: {} }),
 });
 export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
 export type ConsentFlowContractInput = z.input<typeof ConsentFlowContractValidator>;
@@ -455,8 +462,8 @@ export const PaginatedConsentFlowContractsValidator = PaginationResponseValidato
 export type PaginatedConsentFlowContracts = z.infer<typeof PaginatedConsentFlowContractsValidator>;
 
 export const ConsentFlowContractDataValidator = z.object({
-    credentials: z.object({ categories: z.record(z.string().array()).default({}) }),
-    personal: z.record(z.string()).default({}),
+    credentials: z.object({ categories: z.record(z.string(), z.string().array()).default({}) }),
+    personal: z.record(z.string(), z.string()).default({}),
     date: z.string(),
 });
 export type ConsentFlowContractData = z.infer<typeof ConsentFlowContractDataValidator>;
@@ -468,7 +475,7 @@ export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataVa
 
 export const ConsentFlowContractDataForDidValidator = z.object({
     credentials: z.object({ category: z.string(), uri: z.string() }).array(),
-    personal: z.record(z.string()).default({}),
+    personal: z.record(z.string(), z.string()).default({}),
     date: z.string(),
     contractUri: z.string(),
 });
@@ -497,23 +504,24 @@ export const ConsentFlowTermsValidator = z.object({
                 .object({
                     shareAll: z.boolean().optional(),
                     sharing: z.boolean().optional(),
-                    categories: z.record(ConsentFlowTermValidator).default({}),
+                    categories: z.record(z.string(), ConsentFlowTermValidator).default({}),
                 })
-                .default({}),
-            personal: z.record(z.string()).default({}),
+                .prefault({ categories: {} }),
+            personal: z.record(z.string(), z.string()).default({}),
         })
-        .default({}),
+        .prefault({ credentials: { categories: {} }, personal: {} }),
     write: z
         .object({
-            credentials: z.object({ categories: z.record(z.boolean()).default({}) }).default({}),
-            personal: z.record(z.boolean()).default({}),
+            credentials: z
+                .object({ categories: z.record(z.string(), z.boolean()).default({}) })
+                .prefault({ categories: {} }),
+            personal: z.record(z.string(), z.boolean()).default({}),
         })
-        .default({}),
+        .prefault({ credentials: { categories: {} }, personal: {} }),
     deniedWriters: z.array(z.string()).optional(),
 });
 export type ConsentFlowTerms = z.infer<typeof ConsentFlowTermsValidator>;
 export type ConsentFlowTermsInput = z.input<typeof ConsentFlowTermsValidator>;
-
 export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.extend({
     records: z
         .object({
@@ -535,20 +543,28 @@ export const ConsentFlowContractQueryValidator = z.object({
             anonymize: z.boolean().optional(),
             credentials: z
                 .object({
-                    categories: z.record(z.object({ required: z.boolean().optional() })).optional(),
+                    categories: z
+                        .record(z.string(), z.object({ required: z.boolean().optional() }))
+                        .optional(),
                 })
                 .optional(),
-            personal: z.record(z.object({ required: z.boolean().optional() })).optional(),
+            personal: z
+                .record(z.string(), z.object({ required: z.boolean().optional() }))
+                .optional(),
         })
         .optional(),
     write: z
         .object({
             credentials: z
                 .object({
-                    categories: z.record(z.object({ required: z.boolean().optional() })).optional(),
+                    categories: z
+                        .record(z.string(), z.object({ required: z.boolean().optional() }))
+                        .optional(),
                 })
                 .optional(),
-            personal: z.record(z.object({ required: z.boolean().optional() })).optional(),
+            personal: z
+                .record(z.string(), z.object({ required: z.boolean().optional() }))
+                .optional(),
         })
         .optional(),
 });
@@ -557,15 +573,15 @@ export type ConsentFlowContractQueryInput = z.input<typeof ConsentFlowContractQu
 
 export const ConsentFlowDataQueryValidator = z.object({
     anonymize: z.boolean().optional(),
-    credentials: z.object({ categories: z.record(z.boolean()).optional() }).optional(),
-    personal: z.record(z.boolean()).optional(),
+    credentials: z.object({ categories: z.record(z.string(), z.boolean()).optional() }).optional(),
+    personal: z.record(z.string(), z.boolean()).optional(),
 });
 export type ConsentFlowDataQuery = z.infer<typeof ConsentFlowDataQueryValidator>;
 export type ConsentFlowDataQueryInput = z.input<typeof ConsentFlowDataQueryValidator>;
 
 export const ConsentFlowDataForDidQueryValidator = z.object({
-    credentials: z.object({ categories: z.record(z.boolean()).optional() }).optional(),
-    personal: z.record(z.boolean()).optional(),
+    credentials: z.object({ categories: z.record(z.string(), z.boolean()).optional() }).optional(),
+    personal: z.record(z.string(), z.boolean()).optional(),
     id: StringQuery.optional(),
 });
 export type ConsentFlowDataForDidQuery = z.infer<typeof ConsentFlowDataForDidQueryValidator>;
@@ -579,16 +595,20 @@ export const ConsentFlowTermsQueryValidator = z.object({
                 .object({
                     shareAll: z.boolean().optional(),
                     sharing: z.boolean().optional(),
-                    categories: z.record(ConsentFlowTermValidator.optional()).optional(),
+                    categories: z
+                        .record(z.string(), ConsentFlowTermValidator.optional())
+                        .optional(),
                 })
                 .optional(),
-            personal: z.record(z.string()).optional(),
+            personal: z.record(z.string(), z.string()).optional(),
         })
         .optional(),
     write: z
         .object({
-            credentials: z.object({ categories: z.record(z.boolean()).optional() }).optional(),
-            personal: z.record(z.boolean()).optional(),
+            credentials: z
+                .object({ categories: z.record(z.string(), z.boolean()).optional() })
+                .optional(),
+            personal: z.record(z.string(), z.boolean()).optional(),
         })
         .optional(),
 });
@@ -692,6 +712,9 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'ISSUANCE_DELIVERED',
     'ISSUANCE_ERROR',
     'PROFILE_PARENT_APPROVED',
+    'APP_LISTING_SUBMITTED',
+    'APP_LISTING_APPROVED',
+    'APP_LISTING_REJECTED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -726,7 +749,7 @@ export const LCNNotificationInboxValidator = z.object({
         contactMethod: LCNInboxContactMethodValidator.optional(),
         learnCardId: z.string().optional(),
     }),
-    timestamp: z.string().datetime().optional(),
+    timestamp: z.iso.datetime().optional(),
 });
 
 export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>;
@@ -737,9 +760,9 @@ export const LCNNotificationDataValidator = z
         vpUris: z.array(z.string()).optional(),
         transaction: ConsentFlowTransactionValidator.optional(),
         inbox: LCNNotificationInboxValidator.optional(),
-        metadata: z.record(z.unknown()).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
     })
-    .passthrough();
+    .loose();
 export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 
 export const LCNNotificationValidator = z.object({
@@ -748,7 +771,7 @@ export const LCNNotificationValidator = z.object({
     from: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),
-    sent: z.string().datetime().optional(),
+    sent: z.iso.datetime().optional(),
     webhookUrl: z.string().optional(),
 });
 
@@ -766,16 +789,15 @@ export const AuthGrantValidator = z.object({
         .min(10, { message: 'Challenge is too short' })
         .max(100, { message: 'Challenge is too long' }),
     status: z.enum(['revoked', 'active'], {
-        required_error: 'Status is required',
-        invalid_type_error: 'Status must be either active or revoked',
+        error: issue => {
+            if (issue.code === 'invalid_value') return 'Status must be either active or revoked';
+            return 'Status is required';
+        },
     }),
     scope: z.string(),
-    createdAt: z
-        .string()
-        .datetime({ message: 'createdAt must be a valid ISO 8601 datetime string' }),
-    expiresAt: z
-        .string()
-        .datetime({ message: 'expiresAt must be a valid ISO 8601 datetime string' })
+    createdAt: z.iso.datetime({ error: 'createdAt must be a valid ISO 8601 datetime string' }),
+    expiresAt: z.iso
+        .datetime({ error: 'expiresAt must be a valid ISO 8601 datetime string' })
         .nullish()
         .optional(),
 });
@@ -949,9 +971,8 @@ export const IssueInboxCredentialValidator = z.object({
     // === CORE DATA (Required) ===
     // WHAT is being sent and WHO is it for?
     recipient: ContactMethodQueryValidator.describe('The recipient of the credential'),
-    credential: VCValidator.passthrough()
-        .or(VPValidator.passthrough())
-        .or(UnsignedVCValidator.passthrough())
+    credential: VCValidator.or(VPValidator)
+        .or(UnsignedVCValidator)
         .describe(
             'The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'
         ),
@@ -1075,9 +1096,8 @@ export type IssueInboxCredentialResponseType = z.infer<
 >;
 
 export const ClaimInboxCredentialValidator = z.object({
-    credential: VCValidator.passthrough()
-        .or(VPValidator.passthrough())
-        .or(UnsignedVCValidator.passthrough())
+    credential: VCValidator.or(VPValidator)
+        .or(UnsignedVCValidator)
         .describe('The credential to issue.'),
     configuration: z
         .object({
@@ -1241,7 +1261,7 @@ export const SkillTreeNodeValidator: z.ZodType<SkillTreeNode> = SkillValidator.e
     children: z.array(z.lazy(() => SkillTreeNodeValidator)),
     hasChildren: z.boolean(),
     childrenCursor: z.string().nullable().optional(),
-}).openapi({ ref: 'SkillTreeNode' }) as any;
+});
 
 export const PaginatedSkillTreeValidator = z.object({
     hasMore: z.boolean(),
@@ -1262,20 +1282,18 @@ export interface SkillTreeInput {
     children?: SkillTreeInput[];
 }
 
-export const SkillTreeNodeInputValidator: z.ZodType<SkillTreeInput> = z
-    .lazy(() =>
-        z.object({
-            id: z.string().optional(),
-            statement: z.string(),
-            description: z.string().optional(),
-            code: z.string().optional(),
-            icon: z.string().optional(),
-            type: z.string().optional(),
-            status: SkillStatusEnum.optional(),
-            children: z.array(SkillTreeNodeInputValidator).optional(),
-        })
-    )
-    .openapi({ ref: 'SkillTreeNodeInput' });
+export const SkillTreeNodeInputValidator: z.ZodType<SkillTreeInput> = z.lazy(() =>
+    z.object({
+        id: z.string().optional(),
+        statement: z.string(),
+        description: z.string().optional(),
+        code: z.string().optional(),
+        icon: z.string().optional(),
+        type: z.string().optional(),
+        status: SkillStatusEnum.optional(),
+        children: z.array(SkillTreeNodeInputValidator).optional(),
+    })
+);
 
 export const LinkProviderFrameworkInputValidator = z.object({
     frameworkId: z.string(),
@@ -1501,3 +1519,82 @@ export type FrameworkWithSkills = z.infer<typeof FrameworkWithSkillsValidator>;
 
 // Aliases used by the plugin type definitions
 export type CreateSkillTreeInput = SkillTreeInput;
+
+// App Store Listing
+export const AppListingStatusValidator = z.enum(['DRAFT', 'PENDING_REVIEW', 'LISTED', 'ARCHIVED']);
+export type AppListingStatus = z.infer<typeof AppListingStatusValidator>;
+
+export const LaunchTypeValidator = z.enum([
+    'EMBEDDED_IFRAME',
+    'SECOND_SCREEN',
+    'DIRECT_LINK',
+    'CONSENT_REDIRECT',
+    'SERVER_HEADLESS',
+    'AI_TUTOR',
+]);
+export type LaunchType = z.infer<typeof LaunchTypeValidator>;
+
+export const PromotionLevelValidator = z.enum([
+    'FEATURED_CAROUSEL',
+    'CURATED_LIST',
+    'STANDARD',
+    'DEMOTED',
+]);
+export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
+
+export const AppStoreListingValidator = z.object({
+    listing_id: z.string(),
+    display_name: z.string(),
+    tagline: z.string(),
+    full_description: z.string(),
+    icon_url: z.string(),
+    app_listing_status: AppListingStatusValidator,
+    launch_type: LaunchTypeValidator,
+    launch_config_json: z.string(),
+    category: z.string().optional(),
+    promo_video_url: z.string().optional(),
+    promotion_level: PromotionLevelValidator.optional(),
+    ios_app_store_id: z.string().optional(),
+    android_app_store_id: z.string().optional(),
+    privacy_policy_url: z.string().optional(),
+    terms_url: z.string().optional(),
+    highlights: z.array(z.string()).optional(),
+    screenshots: z.array(z.string()).optional(),
+    hero_background_color: z.string().optional(),
+});
+
+export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;
+
+export const AppStoreListingCreateValidator = AppStoreListingValidator.omit({
+    listing_id: true,
+    app_listing_status: true,
+    promotion_level: true,
+});
+
+export type AppStoreListingCreateType = z.infer<typeof AppStoreListingCreateValidator>;
+
+export const AppStoreListingUpdateValidator = AppStoreListingValidator.partial().omit({
+    listing_id: true,
+    app_listing_status: true,
+    promotion_level: true,
+});
+
+export type AppStoreListingUpdateType = z.infer<typeof AppStoreListingUpdateValidator>;
+
+export const InstalledAppValidator = AppStoreListingValidator.extend({
+    installed_at: z.string(),
+});
+
+export type InstalledApp = z.infer<typeof InstalledAppValidator>;
+
+export const PaginatedAppStoreListingsValidator = PaginationResponseValidator.extend({
+    records: AppStoreListingValidator.array(),
+});
+
+export type PaginatedAppStoreListings = z.infer<typeof PaginatedAppStoreListingsValidator>;
+
+export const PaginatedInstalledAppsValidator = PaginationResponseValidator.extend({
+    records: InstalledAppValidator.array(),
+});
+
+export type PaginatedInstalledApps = z.infer<typeof PaginatedInstalledAppsValidator>;

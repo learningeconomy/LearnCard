@@ -35,8 +35,8 @@ const config: CapacitorConfig = {
         },
         CapacitorUpdater: {
             appId: 'com.learncard.app',
-            autoUpdate: false,
-            defaultChannel: 'migration',
+            autoUpdate: true,
+            defaultChannel: 'production',
         },
     },
 };

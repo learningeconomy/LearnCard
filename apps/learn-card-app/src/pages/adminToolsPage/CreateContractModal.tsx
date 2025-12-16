@@ -48,7 +48,7 @@ export enum ContractType {
 }
 
 type CreateContractModalProps = {
-    onSuccess?: () => void;
+    onSuccess?: (contractUri?: string) => void;
 };
 
 // based on CustomWalletCreateContract.tsx
@@ -212,7 +212,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
                 })
             );
 
-            onSuccess?.();
+            onSuccess?.(contractUri);
 
             presentToast(`Contract "${contract.name}" created successfully!`);
             closeModal();
@@ -637,7 +637,8 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
 
                     {error && <span className="text-red-500">{error}</span>}
 
-                    {sectionPortal &&
+                    {/* Render buttons via portal if available, otherwise render inline */}
+                    {sectionPortal ? (
                         createPortal(
                             <div className="flex flex-col justify-center items-center relative !border-none max-w-[500px]">
                                 <button
@@ -661,7 +662,30 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
                                 </button>
                             </div>,
                             sectionPortal
-                        )}
+                        )
+                    ) : (
+                        <div className="flex flex-col justify-center items-center relative !border-none w-full mt-6 px-4">
+                            <button
+                                onClick={handleSubmit}
+                                type="button"
+                                disabled={
+                                    loading ||
+                                    isInvalidExpiresAt ||
+                                    isExpiresAtInThePast ||
+                                    !contract.name
+                                }
+                                className="bg-emerald-700 text-white text-lg font-notoSans py-3 px-6 rounded-[20px] font-semibold w-full disabled:opacity-70"
+                            >
+                                {loading ? 'Creating...' : 'Create Contract'}
+                            </button>
+                            <button
+                                onClick={closeModal}
+                                className="bg-white text-grayscale-900 text-lg font-notoSans py-3 px-6 rounded-[20px] w-full shadow-bottom mt-[10px]"
+                            >
+                                Back
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </>

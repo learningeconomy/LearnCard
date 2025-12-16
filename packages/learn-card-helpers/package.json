@@ -18,10 +18,10 @@
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
-    "homepage": "https://github.com/learningeconomy/LearnCard#readme",
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-helpers/README.md",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/learningeconomy/LearnCard.git"
+        "url": "https://github.com/learningeconomy/LearnCard"
     },
     "bugs": {
         "url": "https://github.com/learningeconomy/LearnCard/issues"
@@ -33,7 +33,7 @@
         "@types/react": "^18.0.0",
         "aqu": "0.4.3",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.14.38",
+        "esbuild": "^0.27.1",
         "esbuild-jest": "^0.5.0",
         "jest": "^28.1.3",
         "jest-environment-jsdom": "^28.1.3",

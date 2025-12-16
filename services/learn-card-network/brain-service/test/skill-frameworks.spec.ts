@@ -144,7 +144,7 @@ describe('Skill Frameworks (provider-based)', () => {
         expect(child?.type).toBe('skill');
     });
 
-    it('enforces management permissions on getById', async () => {
+    it('allows non-managers to read framework info with getById', async () => {
         await createProfileFor(userA, 'usera');
         await userA.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });
 
@@ -152,7 +152,7 @@ describe('Skill Frameworks (provider-based)', () => {
 
         await expect(
             userB.clients.fullAuth.skillFrameworks.getById({ id: FW_ID })
-        ).rejects.toThrow();
+        ).resolves.not.toThrow();
     });
 
     it('returns NOT_FOUND when linking a non-existent provider framework', async () => {
@@ -292,7 +292,10 @@ describe('Skill Frameworks (custom CRUD)', () => {
             boostUris: [boostUri],
         });
 
-        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri, limit: 10 });
+        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({
+            uri: boostUri,
+            limit: 10,
+        });
 
         expect(frameworks.records.map(fw => fw.id)).toContain(frameworkId);
     });
@@ -380,7 +383,10 @@ describe('Skill Frameworks (custom CRUD)', () => {
             ],
         });
 
-        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({ uri: boostUri, limit: 10 });
+        const frameworks = await userA.clients.fullAuth.boost.getBoostFrameworks({
+            uri: boostUri,
+            limit: 10,
+        });
 
         expect(frameworks.records.map(fw => fw.id)).toContain(frameworkId);
     });
@@ -873,26 +879,31 @@ describe('Skill Frameworks (custom CRUD)', () => {
         }
 
         // Test: $or with multiple $regex patterns
-        const multiOrResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
-            id: frameworkId,
-            query: {
-                $or: [
-                    { name: { $regex: /Python/i } },
-                    { name: { $regex: /Ruby/i } },
-                    { name: { $regex: /TypeScript/i } }
-                ]
-            },
-        });
+        const multiOrResult =
+            await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+                id: frameworkId,
+                query: {
+                    $or: [
+                        { name: { $regex: /Python/i } },
+                        { name: { $regex: /Ruby/i } },
+                        { name: { $regex: /TypeScript/i } },
+                    ],
+                },
+            });
 
         expect(multiOrResult.records).toHaveLength(3);
         const multiOrNames = multiOrResult.records.map(b => b.name).sort();
-        expect(multiOrNames).toEqual(['Python Expert Badge', 'Ruby on Rails Developer', 'TypeScript Guru']);
+        expect(multiOrNames).toEqual([
+            'Python Expert Badge',
+            'Ruby on Rails Developer',
+            'TypeScript Guru',
+        ]);
 
         // Test: $in with type field
         const inResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
             id: frameworkId,
             query: {
-                type: { $in: ['certification', 'badge'] }
+                type: { $in: ['certification', 'badge'] },
             },
         });
 
@@ -902,19 +913,17 @@ describe('Skill Frameworks (custom CRUD)', () => {
             'Java Certification',
             'Python Expert Badge',
             'Senior JavaScript Developer',
-            'TypeScript Guru'
+            'TypeScript Guru',
         ]);
 
         // Test: Combined $or with different fields
-        const combinedOrResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
-            id: frameworkId,
-            query: {
-                $or: [
-                    { type: { $in: ['skill'] } },
-                    { name: { $regex: /Expert/i } }
-                ]
-            },
-        });
+        const combinedOrResult =
+            await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+                id: frameworkId,
+                query: {
+                    $or: [{ type: { $in: ['skill'] } }, { name: { $regex: /Expert/i } }],
+                },
+            });
 
         expect(combinedOrResult.records).toHaveLength(2);
         const combinedNames = combinedOrResult.records.map(b => b.name).sort();
@@ -925,7 +934,7 @@ describe('Skill Frameworks (custom CRUD)', () => {
             id: frameworkId,
             query: {
                 type: 'badge',
-                name: { $regex: /Python/i }
+                name: { $regex: /Python/i },
             },
         });
 
@@ -1041,10 +1050,11 @@ describe('Skill Frameworks (custom CRUD)', () => {
         expect(result.records).toHaveLength(4);
 
         // Query without case-insensitive flag should only match lowercase
-        const caseSensitiveResult = await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
-            id: frameworkId,
-            query: { name: { $regex: /python/ } },
-        });
+        const caseSensitiveResult =
+            await userA.clients.fullAuth.skillFrameworks.getBoostsThatUseFramework({
+                id: frameworkId,
+                query: { name: { $regex: /python/ } },
+            });
 
         expect(caseSensitiveResult.records).toHaveLength(1);
         expect(caseSensitiveResult.records[0]?.name).toBe('python expert');
@@ -1118,8 +1128,8 @@ describe('Skill Frameworks (custom CRUD)', () => {
             query: {
                 $or: [
                     { name: { $regex: /Python/i }, type: 'certification' },
-                    { name: { $regex: /JavaScript/i }, type: 'badge' }
-                ]
+                    { name: { $regex: /JavaScript/i }, type: 'badge' },
+                ],
             },
         });
 
@@ -1192,20 +1202,18 @@ describe('Skill Frameworks (custom CRUD)', () => {
         expect(allResult.count).toBe(5);
 
         // Count only Python-related
-        const pythonResult = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
-            id: frameworkId,
-            query: { name: { $regex: /Python/i } },
-        });
+        const pythonResult =
+            await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
+                id: frameworkId,
+                query: { name: { $regex: /Python/i } },
+            });
         expect(pythonResult.count).toBe(3);
 
         // Count with $or query
         const orResult = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
             id: frameworkId,
             query: {
-                $or: [
-                    { name: { $regex: /Expert/i } },
-                    { name: { $regex: /Programmer/i } }
-                ]
+                $or: [{ name: { $regex: /Expert/i } }, { name: { $regex: /Programmer/i } }],
             },
         });
         expect(orResult.count).toBe(2);
@@ -1282,10 +1290,11 @@ describe('Skill Frameworks (custom CRUD)', () => {
         const query = { name: { $regex: /Python/i } };
 
         // Get count
-        const countResult = await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
-            id: frameworkId,
-            query,
-        });
+        const countResult =
+            await userA.clients.fullAuth.skillFrameworks.countBoostsThatUseFramework({
+                id: frameworkId,
+                query,
+            });
 
         // Get all pages
         const allBoosts = [];

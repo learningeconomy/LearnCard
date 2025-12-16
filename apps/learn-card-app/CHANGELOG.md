@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.93.7
+
+### Patch Changes
+
+-   [#875](https://github.com/learningeconomy/LearnCard/pull/875) [`e689dc1b200e81f8f999bd210af4fc40deeac667`](https://github.com/learningeconomy/LearnCard/commit/e689dc1b200e81f8f999bd210af4fc40deeac667) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: IOS builds
+
+## 1.93.6
+
+### Patch Changes
+
+-   [#870](https://github.com/learningeconomy/LearnCard/pull/870) [`001b33143a244933d674f1521087af5c8738d03a`](https://github.com/learningeconomy/LearnCard/commit/001b33143a244933d674f1521087af5c8738d03a) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-1482] Move onboarding modal scrollbar to outer wrapper instead of inner div
+
+-   [#874](https://github.com/learningeconomy/LearnCard/pull/874) [`8c7174c1141c93eb7f0bda26e4ad15e85b8d972a`](https://github.com/learningeconomy/LearnCard/commit/8c7174c1141c93eb7f0bda26e4ad15e85b8d972a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Sync
+
 ## 1.93.5
 
 ### Patch Changes

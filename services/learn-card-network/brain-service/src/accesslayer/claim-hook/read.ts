@@ -23,11 +23,14 @@ export const getClaimHooksForBoost = async (
         limit,
         cursor,
         query: matchQuery = {},
-    }: { domain: string; limit: number; cursor?: string; query?: ClaimHookQuery }
+    }: { domain: string; limit: number; cursor?: string; query?: Partial<ClaimHookQuery> }
 ): Promise<FullClaimHook[]> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
-    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('hook', convertedQuery as any);
-    
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder(
+        'hook',
+        convertedQuery as any
+    );
+
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [

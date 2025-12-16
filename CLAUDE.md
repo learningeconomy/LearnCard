@@ -4,6 +4,7 @@
 
 -   Build project: `pnpm build` or `pnpm exec nx build <package-name>`
 -   Test all packages: `pnpm test` or `pnpm exec nx test`
+-   (Vitest packages) Run tests once (non-watch): `pnpm test -- run` (equivalent to `vitest run`)
 -   Run single test: `pnpm exec nx test <package-name> --testFile=path/to/test.spec.ts`
 -   Run e2e tests: `pnpm exec nx test:e2e e2e`
 
@@ -219,4 +220,3 @@ Plugins are merged into the LearnCard via `addPlugin`, which rebuilds the wallet
 6. **Test** the new route in `tests/e2e` using the top-level script: `pnpm test:e2e`.
 
 These steps ensure types flow consistently from definition to testing and help avoid stale builds by relying on Nx-managed scripts.
-

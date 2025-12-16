@@ -152,3 +152,59 @@ export async function buildObv3AlignmentsForBoost(
         return [];
     }
 }
+
+/**
+ * Normalizes existing alignments in a credential.
+ * This ensures:
+ * 1. `type` is an array ['Alignment'] (not a string 'Alignment')
+ * 2. `targetUrl` is constructed if missing (using frameworkId and id)
+ *
+ * Mutates the credential in-place.
+ */
+export function normalizeCredentialAlignments(credential: UnsignedVC | VC, domain: string): void {
+    try {
+        const normalizeAlignment = (alignment: any): any => {
+            // Normalize type to array format
+            if (alignment.type === 'Alignment') {
+                alignment.type = ['Alignment'];
+            } else if (!alignment.type) {
+                alignment.type = ['Alignment'];
+            } else if (!Array.isArray(alignment.type)) {
+                alignment.type = [alignment.type];
+            }
+
+            // Construct targetUrl if missing but we have the necessary data
+            if (!alignment.targetUrl && alignment.frameworkId && alignment.id) {
+                alignment.targetUrl = `https://${domain}/frameworks/${alignment.frameworkId}/skills/${alignment.id}`;
+            }
+
+            return alignment;
+        };
+
+        const normalizeSubjectAlignments = (subject: any) => {
+            if (!subject) return;
+
+            // Handle achievement.alignment[]
+            if (subject.achievement?.alignment && Array.isArray(subject.achievement.alignment)) {
+                subject.achievement.alignment =
+                    subject.achievement.alignment.map(normalizeAlignment);
+            }
+
+            // Handle direct subject.alignment[]
+            if (subject.alignment && Array.isArray(subject.alignment)) {
+                subject.alignment = subject.alignment.map(normalizeAlignment);
+            }
+        };
+
+        if (Array.isArray(credential.credentialSubject)) {
+            credential.credentialSubject.forEach(normalizeSubjectAlignments);
+        } else {
+            normalizeSubjectAlignments(credential.credentialSubject as any);
+        }
+    } catch (e) {
+        // Non-fatal: normalization should never break updates
+        if (process.env.NODE_ENV !== 'test') {
+            console.warn('[skills-provider] Failed to normalize credential alignments:', e);
+        }
+    }
+}

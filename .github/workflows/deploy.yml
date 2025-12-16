@@ -220,6 +220,7 @@ jobs:
           SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
           SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
           SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
+          APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
           SEED: ${{ secrets.SEED }}
           DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
           NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
@@ -537,6 +538,9 @@ jobs:
       !contains(needs.deploy-learn-cloud.result, 'failure') &&
       !contains(needs.deploy-lca-api.result, 'failure')
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -551,8 +555,6 @@ jobs:
 
       - name: Publish to NPM
         run: pnpm publish -r --no-git-checks
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # ============================================================================
   # CHANGESET PR MANAGEMENT (only on non-release, non-manual pushes)

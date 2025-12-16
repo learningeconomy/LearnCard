@@ -108,7 +108,7 @@ export const isAuthGrantChallengeValidForDID = async (
         .match({
             model: AuthGrant,
             identifier: 'authGrant',
-            where: { challenge, status: AuthGrantStatusValidator.Values.active },
+            where: { challenge, status: AuthGrantStatusValidator.enum.active },
         })
         .raw(`WHERE (authGrant.expiresAt IS NULL OR authGrant.expiresAt >= '${currentTime}')`)
         .match({
