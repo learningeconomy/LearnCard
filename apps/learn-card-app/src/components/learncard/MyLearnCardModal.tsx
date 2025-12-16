@@ -514,7 +514,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                         {!hideLogout && (
                             <button
-                                onClick={() => handleLogout(branding)}
+                                onClick={() =>
+                                    handleLogout(branding, { overrideRedirectUrl: '/login' })
+                                }
                                 className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
                                 disabled={isLoggingOut}
                             >
