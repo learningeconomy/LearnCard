@@ -316,7 +316,7 @@ export async function getOrCreateAdditionL1Boost(): Promise<string> {
     if (additionL1BoostUri) return additionL1BoostUri;
     const learnCard = await getGameLearnCard();
     const badgeTemplate = { /* ... Define your badge VC structure ... */ 
-        "@context": ["https://www.w3.org/2018/credentials/v1", "https://purl.imsglobal.org/spec/ob/v3p0/context.json", "https://ctx.learncard.com/boosts/1.0.0.json"],
+        "@context": ["https://www.w3.org/2018/credentials/v1", "https://purl.imsglobal.org/spec/ob/v3p0/context.json", "https://ctx.learncard.com/boosts/1.0.3.json"],
         type: ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"],
         name: ADDITION_L1_BOOST_NAME,
         credentialSubject: {
@@ -376,7 +376,7 @@ export async function awardAdditionLevel1Badge(internalPlayerId: string, playerN
         const boostUriToIssue = await getOrCreateAdditionL1Boost();
 
         const credentialForPlayer = {
-            "@context": ["https://www.w3.org/2018/credentials/v1", "https://purl.imsglobal.org/spec/ob/v3p0/context.json", "https://ctx.learncard.com/boosts/1.0.0.json"],
+            "@context": ["https://www.w3.org/2018/credentials/v1", "https://purl.imsglobal.org/spec/ob/v3p0/context.json", "https://ctx.learncard.com/boosts/1.0.3.json"],
             id: "urn:uuid:" + randomUUID(),
             type: ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential", "AchievementCredential"],
             issuer: learnCard.id.did(), // Game's DID

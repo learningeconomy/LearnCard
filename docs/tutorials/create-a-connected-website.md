@@ -638,7 +638,7 @@ async function getOrCreatePixelPetBoost() {
         "@context": [
             "https://www.w3.org/2018/credentials/v1",
             "https://purl.imsglobal.org/spec/ob/v3p0/context.json",
-            "https://ctx.learncard.com/boosts/1.0.0.json"
+            "https://ctx.learncard.com/boosts/1.0.3.json"
         ],
         type: ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"],
         name: PIXELPET_BADGE_BOOST_NAME, // This will be part of the issued VC name
@@ -719,7 +719,7 @@ app.post('/api/issue-pet-badge', async (req, res) => {
             "@context": [
                 "https://www.w3.org/2018/credentials/v1",
                 "https://purl.imsglobal.org/spec/ob/v3p0/context.json",
-                "https://ctx.learncard.com/boosts/1.0.0.json"
+                "https://ctx.learncard.com/boosts/1.0.3.json"
             ],
             id: "urn:uuid:" + require('crypto').randomUUID(), // Unique ID for THIS credential instance
             type: ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"],

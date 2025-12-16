@@ -312,7 +312,7 @@ export async function getOrCreateJsFundamentalsBoost(): Promise<string> {
         "@context": [
             "https://www.w3.org/2018/credentials/v1",
             "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json", // Open Badges context
-            "https://ctx.learncard.com/boosts/1.0.0.json" // LearnCard Boosts context
+            "https://ctx.learncard.com/boosts/1.0.3.json" // LearnCard Boosts context
         ],
         type: ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"],
         name: JS_FUNDAMENTALS_BOOST_NAME, // Name of the credential instances
@@ -396,7 +396,7 @@ export async function issueJsBadgeToUser(internalUserId: string, userFullName: s
             "@context": [ // Contexts from your Boost template are often inherited or merged
                 "https://www.w3.org/2018/credentials/v1",
                 "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json",
-                "https://ctx.learncard.com/boosts/1.0.0.json"
+                "https://ctx.learncard.com/boosts/1.0.3.json"
             ],
             id: "urn:uuid:" + randomUUID(), // Unique ID for this specific credential instance
             type: ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential", "AchievementCredential"], // Ensure "Achievement" is in your contract's write.credentials.categories
