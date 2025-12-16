@@ -8,6 +8,7 @@ import {
     ToastTypeEnum,
     LaunchPadAppListItem,
     useWallet,
+    useUpdateTerms,
 } from 'learn-card-base';
 import useConsentFlow from './useConsentFlow';
 
@@ -30,6 +31,10 @@ type ConsentFlowPrivacyAndDataProps = {
 
     isPostConsent?: boolean;
     headerClass?: string;
+
+    // Optional: pass these directly to avoid lookup issues
+    termsUri?: string;
+    ownerDid?: string;
 };
 
 // Based on ConsentFlowEditAccess
@@ -41,11 +46,35 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     isPostConsent,
     headerClass,
+
+    termsUri: propTermsUri,
+    ownerDid: propOwnerDid,
 }) => {
     const { closeModal } = useModal();
     const { presentToast } = useToast();
 
-    const { updateTerms, updatingTerms } = useConsentFlow(contractDetails, app);
+    // Use passed termsUri/ownerDid if provided (e.g., from ManageDataSharingModal)
+    // Otherwise fall back to useConsentFlow lookup
+    const { updateTerms: hookUpdateTerms, updatingTerms: hookUpdatingTerms } = useConsentFlow(contractDetails, app);
+
+    // Direct update mutation when we have the termsUri
+    const { mutateAsync: directUpdateTerms, isPending: directUpdatingTerms } = useUpdateTerms(
+        propTermsUri ?? '',
+        propOwnerDid ?? contractDetails?.owner?.did ?? ''
+    );
+
+    const hasDirectUri = !!propTermsUri;
+    const updatingTerms = hasDirectUri ? directUpdatingTerms : hookUpdatingTerms;
+
+    const updateTerms = hasDirectUri
+        ? async (terms: ConsentFlowTerms, shareDuration: { oneTimeShare: boolean; customDuration: string }) => {
+            await directUpdateTerms({
+                terms,
+                oneTime: shareDuration.oneTimeShare,
+                expiresAt: shareDuration.customDuration,
+            });
+        }
+        : hookUpdateTerms;
 
     const [terms, setTerms] = useImmer(initialTerms);
     const [shareDuration, setShareDuration] = useState<{

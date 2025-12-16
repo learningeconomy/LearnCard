@@ -20,7 +20,7 @@ export const createPreferences = async (
 
         if (!validation.success) {
             throw new Error(
-                `Validation failed: ${validation.error.errors.map(e => e.message).join(', ')}`
+                `Validation failed: ${validation.error.issues.map(e => e.message).join(', ')}`
             );
         }
 

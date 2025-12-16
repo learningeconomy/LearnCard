@@ -28,6 +28,8 @@ import LogoutLoadingPage from '../../pages/login/LoginPageLoader/LogoutLoader';
 import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
 import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
 import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
+import ManageDataSharingModal from '../data-sharing/ManageDataSharingModal';
+import DataSharingIcon from 'learn-card-base/svgs/DataSharingIcon';
 import LearnCardIDCMS, { LearnCardIdCMSEditorModeEnum } from '../learncardID-CMS/LearnCardIDCMS';
 
 import {
@@ -314,20 +316,36 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     }
 
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
-        rows.push({
-            title: 'Admin Tools',
-            Icon: WrenchColorFillIcon,
-            caretText: '',
-            onClick: async () => {
-                const { prompted } = await gate();
-                if (prompted) return;
-                newModal(
-                    <AdminToolsModal />,
-                    {},
-                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-                );
+        rows.push(
+            {
+                title: 'Manage Data Sharing',
+                Icon: DataSharingIcon,
+                caretText: '',
+                onClick: async () => {
+                    const { prompted } = await gate();
+                    if (prompted) return;
+                    newModal(
+                        <ManageDataSharingModal />,
+                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                    );
+                },
             },
-        });
+            {
+                title: 'Admin Tools',
+                Icon: WrenchColorFillIcon,
+                caretText: '',
+                onClick: async () => {
+                    const { prompted } = await gate();
+                    if (prompted) return;
+                    newModal(
+                        <AdminToolsModal />,
+                        {},
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                    );
+                },
+            }
+        );
     }
 
     // if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
@@ -496,7 +514,9 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                         {!hideLogout && (
                             <button
-                                onClick={() => handleLogout(branding)}
+                                onClick={() =>
+                                    handleLogout(branding, { overrideRedirectUrl: '/login' })
+                                }
                                 className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
                                 disabled={isLoggingOut}
                             >

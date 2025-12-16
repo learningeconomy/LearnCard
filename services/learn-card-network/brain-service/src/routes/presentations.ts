@@ -88,7 +88,7 @@ export const presentationsRouter = t.router({
                     limit: z.number().int().positive().lt(100).default(25),
                     from: z.string().optional(),
                 })
-                .default({})
+                .default({ limit: 25 })
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, from }, ctx }) => {
@@ -116,7 +116,7 @@ export const presentationsRouter = t.router({
                     limit: z.number().int().positive().lt(100).default(25),
                     to: z.string().optional(),
                 })
-                .default({})
+                .default({ limit: 25 })
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, to }, ctx }) => {
@@ -144,7 +144,7 @@ export const presentationsRouter = t.router({
                     limit: z.number().int().positive().lt(100).default(25),
                     from: z.string().optional(),
                 })
-                .default({})
+                .default({ limit: 25 })
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, from }, ctx }) => {

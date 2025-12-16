@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.89.5
+
+### Patch Changes
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/lca-api-plugin@1.1.0
+    -   @learncard/helpers@1.2.0
+    -   @learncard/react@2.9.0
+
 ## 1.89.4
 
 ### Patch Changes
