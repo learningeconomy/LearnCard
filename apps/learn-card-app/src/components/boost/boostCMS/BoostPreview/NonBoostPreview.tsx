@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
+import { boostPreviewStore } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
 
 import { IonPage } from '@ionic/react';
@@ -50,6 +52,7 @@ type NonBoostPreviewProps = {
     customLinkedCredentialsComponent?: React.ReactNode;
     showEndorsementBadge?: boolean;
     existingEndorsements?: VC[];
+    isEarnedBoost?: boolean;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -78,9 +81,15 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     customLinkedCredentialsComponent,
     showEndorsementBadge,
     existingEndorsements,
+    isEarnedBoost,
 }) => {
     const { initWallet } = useWallet();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
+
+    useEffect(() => {
+        // Reset to Details tab whenever the credential changes
+        boostPreviewStore.set.updateSelectedTab(BoostPreviewTabsEnum.Details);
+    }, [credential?.id]);
     const [isFront, setIsFront] = useState(true);
     const { newModal, closeModal } = useModal();
 
@@ -220,6 +229,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         verificationItems={verifications}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                         existingEndorsements={existingEndorsements}
+                        isEarnedBoost={isEarnedBoost}
                     />
                 )}
             </div>

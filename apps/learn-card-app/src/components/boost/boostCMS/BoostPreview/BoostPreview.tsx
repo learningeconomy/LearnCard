@@ -3,6 +3,8 @@ import { Capacitor } from '@capacitor/core';
 
 import { IonPage } from '@ionic/react';
 import { VCDisplayCard2 } from '@learncard/react';
+import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
+import { boostPreviewStore } from 'learn-card-base';
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
@@ -63,6 +65,7 @@ export type BoostPreviewProps = {
     showEndorsementBadge?: boolean;
     existingEndorsements?: VC[];
     previewType?: PreviewTypeEnum;
+    isEarnedBoost?: boolean;
 };
 
 export const useVerification = (credential: VC) => {
@@ -130,9 +133,15 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     displayType,
     existingEndorsements,
     previewType,
+    isEarnedBoost,
 }) => {
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
+
+    useEffect(() => {
+        // Reset to Details tab whenever the credential changes
+        boostPreviewStore.set.updateSelectedTab(BoostPreviewTabsEnum.Details);
+    }, [credentialWithEdits?.id]);
     const credential = credentialWithEdits ?? unwrappedCredential;
     const { newModal, closeModal } = useModal();
 
@@ -287,6 +296,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                         displayType={displayType}
                         existingEndorsements={existingEndorsements}
+                        isEarnedBoost={isEarnedBoost}
                     />
                 )}
             </div>

@@ -302,6 +302,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             customLinkedCredentialsComponent,
             previewType,
             displayType: displayType,
+            isEarnedBoost: true,
         };
 
         const bgImage = isCertificate || isID || isAwardDisplay ? backgroundImage : undefined;
