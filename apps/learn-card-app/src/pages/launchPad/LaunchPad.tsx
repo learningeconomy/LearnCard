@@ -7,6 +7,7 @@ import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
     LaunchPadAppType,
 } from 'learn-card-base';
+import { UseQueryResult } from '@tanstack/react-query';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import useAppConnectModal from '../../hooks/useConnectAppModal';
 import { useLaunchPadContracts } from './useLaunchPadContracts';
@@ -33,6 +34,14 @@ import {
 import useAppStore, { mapTabToCategory } from './useAppStore';
 import AppStoreListItem from './AppStoreListItem';
 import FeaturedCarousel from './FeaturedCarousel';
+
+type LaunchPadItem = Partial<LaunchPadAppListItemType> &
+    Partial<UseQueryResult> & {
+        launchPadTab?: LaunchPadTabEnum[];
+        url?: string;
+        pending?: boolean;
+        data?: any;
+    };
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
@@ -202,9 +211,11 @@ const LaunchPad: React.FC = () => {
         vc_request_url,
     ]);
 
-    let aiApps = flags?.enableLaunchPadUpdates ? aiPassportApps : [];
-    let apps = useLaunchPadApps();
-    let contracts = useLaunchPadContracts();
+    let aiApps: LaunchPadItem[] = flags?.enableLaunchPadUpdates
+        ? (aiPassportApps as unknown as LaunchPadItem[])
+        : [];
+    let apps: LaunchPadItem[] = useLaunchPadApps() as unknown as LaunchPadItem[];
+    let contracts: LaunchPadItem[] = useLaunchPadContracts() as any;
 
     aiApps = aiApps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.ai] }));
     apps = apps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.tools] }));
@@ -218,21 +229,21 @@ const LaunchPad: React.FC = () => {
     const aiAppContracts = aiApps.map(app => app.contractUri);
 
     // Separate legacy apps from coming soon apps
-    const legacyAppsAndContracts = useMemo(() => {
+    const legacyAppsAndContracts = useMemo<LaunchPadItem[]>(() => {
         return [
             ...aiApps,
             ...apps,
             ...contracts?.filter(contract => !aiAppContracts.includes(contract?.data?.uri)),
         ];
-    }, [apps, contracts]);
+    }, [aiApps, apps, contracts, aiAppContracts]);
 
     // Coming soon apps from LaunchDarkly flag
-    const comingSoonApps = useMemo<LaunchPadAppListItemType[]>(() => {
-        return flags.comingSoonApps || [];
+    const comingSoonApps = useMemo<LaunchPadItem[]>(() => {
+        return (flags.comingSoonApps || []) as unknown as LaunchPadItem[];
     }, [flags.comingSoonApps]);
 
     // Combined for backwards compatibility with existing filtering
-    const appsAndContracts = useMemo(() => {
+    const appsAndContracts = useMemo<LaunchPadItem[]>(() => {
         return [...legacyAppsAndContracts, ...comingSoonApps];
     }, [legacyAppsAndContracts, comingSoonApps]);
 
