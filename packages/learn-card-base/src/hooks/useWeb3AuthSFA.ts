@@ -212,7 +212,7 @@ export const useWeb3AuthSFA = () => {
     };
 
     const logout = async (
-        redirectUrl: string = 'https://learncard.app/',
+        redirectUrl?: string,
         _branding: BrandingEnum = BrandingEnum.learncard
     ) => {
         try {

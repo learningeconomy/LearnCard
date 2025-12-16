@@ -20,6 +20,7 @@ const AlignmentSkillsCount: React.FC<AlignmentSkillsCountProps> = ({
     let alignmentCount = achievement?.alignment?.length || 0;
 
     if (alignmentCount === 0 && credential.skills?.length > 0) {
+        // fallback to legacy skills field if present and no alignments
         const skillsMap = categorizeSkills(credential.skills ?? []);
 
         // Calculate total count of skills and subskills
