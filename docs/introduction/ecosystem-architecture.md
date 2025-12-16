@@ -14,7 +14,7 @@ Use this guide to understand how each part connects—from low-level credential 
 
 Choose your stack:
 
-* `@learncard/core` SDK for programmatic control
+* `@learncard/init` SDK for programmatic control
 * LearnCloud Network API for backend integrations
 * LearnCloud Storage API for encrypted storage
 * LearnCloud AI API for AI-enabled credential flows

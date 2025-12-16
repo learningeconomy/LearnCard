@@ -1,5 +1,22 @@
 # Usage Examples
 
+This page provides comprehensive examples for using the LearnCard SDK. If you're just getting started, we recommend beginning with the [Quick Start guide](../../quick-start/your-first-integration.md).
+
+## Table of Contents
+
+| Section | Description |
+|---------|-------------|
+| [Initialize SDK Client](#initialize-sdk-client) | Basic wallet initialization |
+| [Key Generation](#key-generation) | Generating secure seeds |
+| [Create Credentials](#create-credentials) | Building unsigned credentials |
+| [Issue Credentials](#issue-credentials) | Signing credentials |
+| [Verify Credentials](#verify-credentials) | Validating credential proofs |
+| [Issue/Verify Presentations](#issueverify-presentations) | Working with VPs |
+| [Storing/Retrieving Credentials](#storingretrieving-credentials) | URIs and storage |
+| [LearnCloud Network](#learncloud-network) | Profiles, connections, boosts |
+
+---
+
 ## Initialize SDK Client
 
 Depending on your use-case and specific needs, constructing a LearnCard is likely as simple as the following code:
@@ -148,9 +165,9 @@ In it's most basic form, you can create a Boost credential using the following s
 ```json
 {
   "@context": [
-    "https://www.w3.org/2018/credentials/v1",
-    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json",
-    "https://ctx.learncard.com/boosts/1.0.0.json",
+    "https://www.w3.org/ns/credentials/v2",
+    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+    "https://ctx.learncard.com/boosts/1.0.3.json"
   ],
   "credentialSubject": {
     "achievement": {

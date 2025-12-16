@@ -62,26 +62,26 @@ cd simple-plugin
 If you'd like to publish your plugin to npm for others to use, please see our documentation on [publishing plugins](the-simplest-plugin.md#publish-your-plugin-to-npm)
 {% endhint %}
 
-### Install @learncard/core
+### Install Dependencies
 
-Using your preferred package manager, install `@learncard/core`
+Using your preferred package manager, install `@learncard/core` (for the `Plugin` type) and `@learncard/init` (for initializing LearnCard):
 
 {% tabs %}
 {% tab title="pnpm" %}
 ```bash
-pnpm i @learncard/core
+pnpm i @learncard/core @learncard/init
 ```
 {% endtab %}
 
 {% tab title="yarn" %}
 ```bash
-yarn add @learncard/core
+yarn add @learncard/core @learncard/init
 ```
 {% endtab %}
 
 {% tab title="npm" %}
 ```bash
-npm i @learncard/core
+npm i @learncard/core @learncard/init
 ```
 {% endtab %}
 {% endtabs %}
@@ -145,7 +145,7 @@ Then, write your test:
 
 {% code title="test/index.test.ts" lineNumbers="true" %}
 ```typescript
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 import { MyPlugin } from '../src/index';
 
 describe('MyPlugin', () => {
@@ -170,10 +170,12 @@ If all looks good, you should be able to `pnpm test` and successfully pass the t
 Now you can add it to a LearnCard object:
 
 ```typescript
+import { initLearnCard } from '@learncard/init';
+
 const learnCard = await initLearnCard();
 const learnCardWithMyPlugin = await learnCard.addPlugin(MyPlugin);
 
-console.log(learnCard.invoke.getFavoriteNumber()); // 4
+console.log(learnCardWithMyPlugin.invoke.getFavoriteNumber()); // 4
 ```
 
 ### Publish Your Plugin to NPM
