@@ -62,7 +62,8 @@ const LaunchPad: React.FC = () => {
     const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
 
     // App Store hooks
-    const { useBrowseAppStore, useFeaturedCarouselApps, useCuratedListApps, useInstalledApps } = useAppStore();
+    const { useBrowseAppStore, useFeaturedCarouselApps, useCuratedListApps, useInstalledApps } =
+        useAppStore();
 
     // Get category filter based on current tab
     const appStoreCategory = useMemo(() => mapTabToCategory(tab), [tab]);
@@ -75,10 +76,7 @@ const LaunchPad: React.FC = () => {
     } = useInstalledApps({ limit: 50 });
 
     // Fetch browsable apps (for search/discovery)
-    const {
-        data: browseAppsData,
-        isLoading: isLoadingBrowseApps,
-    } = useBrowseAppStore({
+    const { data: browseAppsData, isLoading: isLoadingBrowseApps } = useBrowseAppStore({
         category: appStoreCategory,
         limit: 50,
     });
@@ -241,7 +239,10 @@ const LaunchPad: React.FC = () => {
 
         return installedApps.filter(app => {
             // Filter by category/tab
-            if (appStoreCategory && app.category?.toLowerCase() !== appStoreCategory.toLowerCase()) {
+            if (
+                appStoreCategory &&
+                app.category?.toLowerCase() !== appStoreCategory.toLowerCase()
+            ) {
                 return false;
             }
 
@@ -287,7 +288,10 @@ const LaunchPad: React.FC = () => {
 
         return curatedAppsNotInstalled.filter(app => {
             // Filter by category if one is selected
-            if (appStoreCategory && app.category?.toLowerCase() !== appStoreCategory.toLowerCase()) {
+            if (
+                appStoreCategory &&
+                app.category?.toLowerCase() !== appStoreCategory.toLowerCase()
+            ) {
                 return false;
             }
 
@@ -529,18 +533,19 @@ const LaunchPad: React.FC = () => {
                                         )}
                                     </IonList>
 
-                                    {filteredAppsAndContracts.length === 0 && 
-                                     filteredInstalledApps.length === 0 && 
-                                     filteredAvailableApps.length === 0 && 
-                                     !customAppFromQueryParams && (
-                                        <div className="w-full flex items-center justify-center z-10">
-                                            <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
-                                                <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                                    No results found for{' '}
-                                                    <span className="text-black italic">
-                                                        {searchInput}
-                                                    </span>
-                                                </p>
+                                    {filteredAppsAndContracts.length === 0 &&
+                                        filteredInstalledApps.length === 0 &&
+                                        filteredAvailableApps.length === 0 &&
+                                        !customAppFromQueryParams && (
+                                            <div className="w-full flex items-center justify-center z-10">
+                                                <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
+                                                    <p className="text-grayscale-800 text-base font-normal font-notoSans">
+                                                        No results found for{' '}
+                                                        <span className="text-black italic">
+                                                            {searchInput}
+                                                        </span>
+                                                    </p>
+                                                </div>
                                             </div>
                                         )}
                                 </>
@@ -588,31 +593,30 @@ const LaunchPad: React.FC = () => {
                                     )}
 
                                     {/* Discover More (Standard apps - only show when searching) */}
-                                    {searchInput.length > 0 && nonPromotedAvailableApps.length > 0 && (
-                                        <>
-                                            <div className="px-2 pt-4 pb-2">
-                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Search Results
-                                                </p>
-                                            </div>
-                                            {nonPromotedAvailableApps.map(app => (
-                                                <AppStoreListItem
-                                                    key={`available-${app.listing_id}`}
-                                                    listing={app}
-                                                    isInstalled={false}
-                                                    onInstallSuccess={refetchInstalledApps}
-                                                />
-                                            ))}
-                                        </>
-                                    )}
+                                    {searchInput.length > 0 &&
+                                        nonPromotedAvailableApps.length > 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        Search Results
+                                                    </p>
+                                                </div>
+                                                {nonPromotedAvailableApps.map(app => (
+                                                    <AppStoreListItem
+                                                        key={`available-${app.listing_id}`}
+                                                        listing={app}
+                                                        isInstalled={false}
+                                                        onInstallSuccess={refetchInstalledApps}
+                                                    />
+                                                ))}
+                                            </>
+                                        )}
 
                                     {/* Consent Flow Contract (if applicable) */}
                                     {contractDetails &&
                                         !hasConsented &&
                                         tab === LaunchPadTabEnum.all && (
-                                            <LaunchPadContractListItem
-                                                contract={contractDetails}
-                                            />
+                                            <LaunchPadContractListItem contract={contractDetails} />
                                         )}
 
                                     {customAppFromQueryParams && (
@@ -628,7 +632,10 @@ const LaunchPad: React.FC = () => {
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    {(filteredInstalledApps.length > 0 || filteredAvailableApps.length > 0) ? 'More Apps' : 'Apps'}
+                                                    {filteredInstalledApps.length > 0 ||
+                                                    filteredAvailableApps.length > 0
+                                                        ? 'More Apps'
+                                                        : 'Apps'}
                                                 </p>
                                             </div>
                                             {filteredLegacyApps.map((item, index) => {
