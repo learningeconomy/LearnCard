@@ -9,6 +9,7 @@ overrides:
   did-jwt: 5.9.0
   typescript: 5.6.2
   uint8arrays: ^3.0.0
+  serverless: 3.40.0
   zod: 4.1.13
   zod-openapi: 5.4.5
   trpc-to-openapi: 3.1.0
@@ -868,49 +869,6 @@ importers:
         specifier: 4.2.3
         version: 4.2.3(typescript@5.6.2)(vite@4.5.14(@types/node@12.20.55)(less@4.2.2)(lightningcss@1.27.0)(sass@1.94.2)(terser@5.39.0))
 
-  docs:
-    dependencies:
-      '@docusaurus/core':
-        specifier: 2.1.0
-        version: 2.1.0(@docusaurus/types@2.4.3(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@swc/core@1.15.3(@swc/helpers@0.5.17))(bufferutil@4.0.9)(esbuild@0.27.1)(eslint@8.57.1)(lightningcss@1.27.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.6.2)(utf-8-validate@5.0.10)
-      '@docusaurus/preset-classic':
-        specifier: 2.1.0
-        version: 2.1.0(@algolia/client-search@5.23.0)(@swc/core@1.15.3(@swc/helpers@0.5.17))(@types/react@18.3.27)(bufferutil@4.0.9)(esbuild@0.27.1)(eslint@8.57.1)(lightningcss@1.27.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(typescript@5.6.2)(utf-8-validate@5.0.10)
-      '@mdx-js/react':
-        specifier: ^1.6.22
-        version: 1.6.22(react@18.3.1)
-      clsx:
-        specifier: ^1.2.1
-        version: 1.2.1
-      prism-react-renderer:
-        specifier: ^1.3.5
-        version: 1.3.5(react@18.3.1)
-      react:
-        specifier: ^18.0.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.0.0
-        version: 18.3.1(react@18.3.1)
-    devDependencies:
-      '@docusaurus/module-type-aliases':
-        specifier: 2.1.0
-        version: 2.1.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@docusaurus/types':
-        specifier: ^2.1.0
-        version: 2.4.3(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@tsconfig/docusaurus':
-        specifier: ^1.0.5
-        version: 1.0.7
-      docusaurus-plugin-typedoc:
-        specifier: ^0.17.5
-        version: 0.17.5(typedoc-plugin-markdown@3.17.1(typedoc@0.23.28(typescript@5.6.2)))(typedoc@0.23.28(typescript@5.6.2))
-      typedoc:
-        specifier: ^0.23.14
-        version: 0.23.28(typescript@5.6.2)
-      typedoc-plugin-markdown:
-        specifier: ^3.13.6
-        version: 3.17.1(typedoc@0.23.28(typescript@5.6.2))
-
   examples/chapi-example:
     dependencies:
       '@astrojs/react':
@@ -1393,7 +1351,7 @@ importers:
         version: 2.0.22
       serverless-plugin-typescript:
         specifier: ^2.1.0
-        version: 2.1.5(serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(typescript@5.6.2)
+        version: 2.1.5(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(typescript@5.6.2)
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -2974,6 +2932,49 @@ importers:
         specifier: ^3.0.24
         version: 3.4.17(ts-node@10.9.2(@swc/core@1.15.3(@swc/helpers@0.5.17))(@types/node@22.13.14)(typescript@5.6.2))
 
+  reference:
+    dependencies:
+      '@docusaurus/core':
+        specifier: 2.1.0
+        version: 2.1.0(@docusaurus/types@2.4.3(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@swc/core@1.15.3(@swc/helpers@0.5.17))(bufferutil@4.0.9)(esbuild@0.27.1)(eslint@8.57.1)(lightningcss@1.27.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.6.2)(utf-8-validate@5.0.10)
+      '@docusaurus/preset-classic':
+        specifier: 2.1.0
+        version: 2.1.0(@algolia/client-search@5.23.0)(@swc/core@1.15.3(@swc/helpers@0.5.17))(@types/react@18.3.27)(bufferutil@4.0.9)(esbuild@0.27.1)(eslint@8.57.1)(lightningcss@1.27.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(typescript@5.6.2)(utf-8-validate@5.0.10)
+      '@mdx-js/react':
+        specifier: ^1.6.22
+        version: 1.6.22(react@18.3.1)
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      prism-react-renderer:
+        specifier: ^1.3.5
+        version: 1.3.5(react@18.3.1)
+      react:
+        specifier: ^18.0.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.0.0
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@docusaurus/module-type-aliases':
+        specifier: 2.1.0
+        version: 2.1.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@docusaurus/types':
+        specifier: ^2.1.0
+        version: 2.4.3(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tsconfig/docusaurus':
+        specifier: ^1.0.5
+        version: 1.0.7
+      docusaurus-plugin-typedoc:
+        specifier: ^0.17.5
+        version: 0.17.5(typedoc-plugin-markdown@3.17.1(typedoc@0.23.28(typescript@5.6.2)))(typedoc@0.23.28(typescript@5.6.2))
+      typedoc:
+        specifier: ^0.23.14
+        version: 0.23.28(typescript@5.6.2)
+      typedoc-plugin-markdown:
+        specifier: ^3.13.6
+        version: 3.17.1(typedoc@0.23.28(typescript@5.6.2))
+
   services/learn-card-discord-bot:
     dependencies:
       '@learncard/init':
@@ -3234,8 +3235,8 @@ importers:
         specifier: ^12.1.0
         version: 12.1.3
       serverless:
-        specifier: 3.39.0
-        version: 3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: 3.40.0
+        version: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       serverless-certificate-creator:
         specifier: 1.6.0
         version: 1.6.0
@@ -3250,10 +3251,10 @@ importers:
         version: 3.2.0
       serverless-lift:
         specifier: 1.31.0
-        version: 1.31.0(serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+        version: 1.31.0(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       serverless-offline:
         specifier: ^14.4.0
-        version: 14.4.0(bufferutil@4.0.9)(serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+        version: 14.4.0(bufferutil@4.0.9)(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -3388,8 +3389,8 @@ importers:
         specifier: ^12.1.0
         version: 12.1.3
       serverless:
-        specifier: ^3.26.0
-        version: 3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: 3.40.0
+        version: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       serverless-certificate-creator:
         specifier: ^1.6.0
         version: 1.6.0
@@ -3404,7 +3405,7 @@ importers:
         version: 3.2.0
       serverless-offline:
         specifier: ^12.0.4
-        version: 12.0.4(bufferutil@4.0.9)(serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+        version: 12.0.4(bufferutil@4.0.9)(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -3521,7 +3522,7 @@ importers:
         version: 1.14.1
       serverless-offline:
         specifier: ^12.0.4
-        version: 12.0.4(bufferutil@4.0.9)(serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+        version: 12.0.4(bufferutil@4.0.9)(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       simple-redis-mutex:
         specifier: ^1.3.1
         version: 1.4.0(ioredis@5.6.0)
@@ -3590,8 +3591,8 @@ importers:
         specifier: ^12.1.0
         version: 12.1.3
       serverless:
-        specifier: 3.39.0
-        version: 3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: 3.40.0
+        version: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       serverless-certificate-creator:
         specifier: 1.6.0
         version: 1.6.0
@@ -3741,8 +3742,8 @@ importers:
         specifier: ^12.1.0
         version: 12.1.3
       serverless:
-        specifier: 3.26.0
-        version: 3.26.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+        specifier: 3.40.0
+        version: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       serverless-certificate-creator:
         specifier: 1.6.0
         version: 1.6.0
@@ -3757,7 +3758,7 @@ importers:
         version: 3.1.1
       serverless-offline:
         specifier: ^12.0.4
-        version: 12.0.4(bufferutil@4.0.9)(serverless@3.26.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+        version: 12.0.4(bufferutil@4.0.9)(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -9674,10 +9675,6 @@ packages:
     resolution: {integrity: sha512-W1KoRlFUjprlh3t86DZPFxLfM6mzjRzshVfMY7vRlJFymBelJsnJ3A1lPeBZM9nCraOSiw6GtOWu6k5BAkiGIg==}
     engines: {node: '>=14.18'}
 
-  '@serverless/dashboard-plugin@6.4.0':
-    resolution: {integrity: sha512-2yJQym94sXZhEFbcOVRMJgJ4a2H9Qly94UeUesPwf8bfWCxtiB4l5rxLnCB2aLTuUf/djcuD5/VrNPY1pRU7DA==}
-    engines: {node: '>=12.0'}
-
   '@serverless/dashboard-plugin@7.2.3':
     resolution: {integrity: sha512-Vu4TKJLEQ5F8ZipfCvd8A/LMIdH8kNGe448sX9mT4/Z0JVUaYmMc3BwkQ+zkNIh3QdBKAhocGn45TYjHV6uPWQ==}
     engines: {node: '>=12.0'}
@@ -14858,10 +14855,6 @@ packages:
 
   dotenv-expand@11.0.7:
     resolution: {integrity: sha512-zIHwmZPRshsCdpMDyVsqGmgyP0yT8GAgXUnkdAoJisxvf33k7yO6OuoKmcTGuXPWSsm8Oh88nZicRLA9Y0rUeA==}
-    engines: {node: '>=12'}
-
-  dotenv-expand@9.0.0:
-    resolution: {integrity: sha512-uW8Hrhp5ammm9x7kBLR6jDfujgaDarNA02tprvZdyrJ7MpdzD1KyrIHG4l+YoC2fJ2UcdFdNWNWIjt+sexBHJw==}
     engines: {node: '>=12'}
 
   dotenv@10.0.0:
@@ -23290,37 +23283,32 @@ packages:
     resolution: {integrity: sha512-dl2WymoMcEOYT6OI5cLwgeYN54jMLUH5mj8Wioe7AAXqFRNIpFJBQ9BVVBdB+YEKTO32Eu5vcAJBC6mqyPq3lA==}
     engines: {node: '>=14.15.0'}
     peerDependencies:
-      serverless: ^2.36.0 || ^3 || ^4
+      serverless: 3.40.0
 
   serverless-offline@12.0.4:
     resolution: {integrity: sha512-G256wDHI12vE0CJ0uTJMBlfnaN7o7td4GgClvQtuedt/n7vKoUfN0och+LybD6YVGsR5h1xpYjPPPLy2QFqWaA==}
     engines: {node: '>=14.18.0'}
     peerDependencies:
-      serverless: ^3.2.0
+      serverless: 3.40.0
 
   serverless-offline@14.4.0:
     resolution: {integrity: sha512-PKNDc33HwFH6qD/VIOjhhiu6bKffIIMTG4DjOR1Kh2lv3zriIuW5bCzPUzGS7aP/x7rQbz/LDNWxftzsp6uizQ==}
     engines: {node: '>=18.12.0'}
     peerDependencies:
-      serverless: ^4.0.0
+      serverless: 3.40.0
 
   serverless-plugin-typescript@2.1.5:
     resolution: {integrity: sha512-7OO6eJzv57dvfz0v9huU1JVBgdzgvvz+6GCwwkR2bfdVHKs1tifx+fSgjbQcBpXNNHf8Dx2Mo7evtYTkA/TDDA==}
     engines: {node: '>=10.0'}
     peerDependencies:
-      serverless: 2 || 3
+      serverless: 3.40.0
       typescript: 5.6.2
 
   serverless-plugin-warmup@8.3.0:
     resolution: {integrity: sha512-FBPPfY6CFdg/BAbvR+UrgHUFNgkUsQxXApSUVwoBqoaLH7amc2aCUYxYncJaD+kRLHTD4WKB0VC7QuyfUPJ+XQ==}
 
-  serverless@3.26.0:
-    resolution: {integrity: sha512-drVr4akkQwm2Pj7ZN9boh5PoI2nKvlXmy+Cb8Hh1Zv8ybsf47ZUQE6t7dakGA4irYf4SQCbVc72nKqISfarMCQ==}
-    engines: {node: '>=12.0'}
-    hasBin: true
-
-  serverless@3.39.0:
-    resolution: {integrity: sha512-FHI3fhe4TRS8+ez/KA7HmO3lt3fAynO+N1pCCzYRThMWG0J8RWCI0BI+K0mw9+sEV+QpBCpZRZbuGyUaTsaQew==}
+  serverless@3.40.0:
+    resolution: {integrity: sha512-6vUSIUqBkhZeIpFz0howqKlT1BNjYxOrucvvSICKCEsxVS9MbTJokGkykDrpr/k4Io3WI8tcvrf25+U5Ynf3lw==}
     engines: {node: '>=12.0'}
     hasBin: true
 
@@ -27829,7 +27817,7 @@ snapshots:
   '@babel/plugin-proposal-object-rest-spread@7.12.1(@babel/core@7.12.9)':
     dependencies:
       '@babel/core': 7.12.9
-      '@babel/helper-plugin-utils': 7.10.4
+      '@babel/helper-plugin-utils': 7.26.5
       '@babel/plugin-syntax-object-rest-spread': 7.8.3(@babel/core@7.12.9)
       '@babel/plugin-transform-parameters': 7.25.9(@babel/core@7.12.9)
 
@@ -29419,7 +29407,7 @@ snapshots:
       combine-promises: 1.2.0
       commander: 5.1.0
       copy-webpack-plugin: 11.0.0(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1))
-      core-js: 3.41.0
+      core-js: 3.44.0
       css-loader: 6.11.0(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1))
       css-minimizer-webpack-plugin: 4.2.2(clean-css@5.3.3)(esbuild@0.27.1)(lightningcss@1.27.0)(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1))
       cssnano: 5.1.15(postcss@8.5.3)
@@ -29449,7 +29437,7 @@ snapshots:
       react-router-config: 5.1.1(react-router@5.3.3(react@18.3.1))(react@18.3.1)
       react-router-dom: 5.3.3(react@18.3.1)
       rtl-detect: 1.1.2
-      semver: 7.7.1
+      semver: 7.7.3
       serve-handler: 6.1.6
       shelljs: 0.8.5
       terser-webpack-plugin: 5.3.14(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1))
@@ -29513,7 +29501,7 @@ snapshots:
       combine-promises: 1.2.0
       commander: 5.1.0
       copy-webpack-plugin: 11.0.0(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1))
-      core-js: 3.41.0
+      core-js: 3.44.0
       css-loader: 6.11.0(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1))
       css-minimizer-webpack-plugin: 4.2.2(clean-css@5.3.3)(esbuild@0.27.1)(lightningcss@1.27.0)(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1))
       cssnano: 5.1.15(postcss@8.5.3)
@@ -29543,7 +29531,7 @@ snapshots:
       react-router-config: 5.1.1(react-router@5.3.3(react@18.3.1))(react@18.3.1)
       react-router-dom: 5.3.3(react@18.3.1)
       rtl-detect: 1.1.2
-      semver: 7.7.1
+      semver: 7.7.3
       serve-handler: 6.1.6
       shelljs: 0.8.5
       terser-webpack-plugin: 5.3.14(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1))
@@ -29650,7 +29638,7 @@ snapshots:
       '@docusaurus/react-loadable': 5.5.2(react@18.3.1)
       '@docusaurus/types': 2.1.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@types/history': 4.7.11
-      '@types/react': 17.0.84
+      '@types/react': 18.3.27
       '@types/react-router-config': 5.0.11
       '@types/react-router-dom': 5.3.3
       react: 18.3.1
@@ -30078,7 +30066,7 @@ snapshots:
   '@docusaurus/types@2.4.3(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@types/history': 4.7.11
-      '@types/react': 17.0.84
+      '@types/react': 18.3.27
       commander: 5.1.0
       joi: 17.13.3
       react: 18.3.1
@@ -35481,35 +35469,6 @@ snapshots:
     dependencies:
       '@sentry/types': 8.34.0
 
-  '@serverless/dashboard-plugin@6.4.0(bufferutil@4.0.9)(supports-color@8.1.1)(utf-8-validate@5.0.10)':
-    dependencies:
-      '@serverless/event-mocks': 1.1.1
-      '@serverless/platform-client': 4.5.1(bufferutil@4.0.9)(supports-color@8.1.1)(utf-8-validate@5.0.10)
-      '@serverless/utils': 6.15.0
-      child-process-ext: 3.0.2
-      chokidar: 3.6.0
-      flat: 5.0.2
-      fs-extra: 9.1.0
-      js-yaml: 4.1.0
-      jszip: 3.10.1
-      lodash: 4.17.21
-      memoizee: 0.4.17
-      ncjsm: 4.3.2
-      node-dir: 0.1.17
-      node-fetch: 2.7.0
-      open: 7.4.2
-      semver: 7.7.1
-      simple-git: 3.27.0(supports-color@8.1.1)
-      type: 2.7.3
-      uuid: 8.3.2
-      yamljs: 0.3.0
-    transitivePeerDependencies:
-      - bufferutil
-      - debug
-      - encoding
-      - supports-color
-      - utf-8-validate
-
   '@serverless/dashboard-plugin@7.2.3(bufferutil@4.0.9)(supports-color@8.1.1)(utf-8-validate@5.0.10)':
     dependencies:
       '@aws-sdk/client-cloudformation': 3.775.0
@@ -35529,7 +35488,7 @@ snapshots:
       node-dir: 0.1.17
       node-fetch: 2.7.0
       open: 7.4.2
-      semver: 7.7.1
+      semver: 7.7.3
       simple-git: 3.27.0(supports-color@8.1.1)
       timers-ext: 0.1.8
       type: 2.7.3
@@ -35545,7 +35504,7 @@ snapshots:
 
   '@serverless/event-mocks@1.1.1':
     dependencies:
-      '@types/lodash': 4.17.16
+      '@types/lodash': 4.17.21
       lodash: 4.17.21
 
   '@serverless/platform-client@4.5.1(bufferutil@4.0.9)(supports-color@8.1.1)(utf-8-validate@5.0.10)':
@@ -36768,7 +36727,7 @@ snapshots:
       util: 0.12.5
       util-deprecate: 1.0.2
       watchpack: 2.4.2
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - encoding
@@ -43182,8 +43141,6 @@ snapshots:
       dotenv: 16.4.7
     optional: true
 
-  dotenv-expand@9.0.0: {}
-
   dotenv@10.0.0: {}
 
   dotenv@16.4.7: {}
@@ -45212,7 +45169,7 @@ snapshots:
       memfs: 3.5.3
       minimatch: 3.1.2
       schema-utils: 2.7.0
-      semver: 7.7.1
+      semver: 7.7.3
       tapable: 1.1.3
       typescript: 5.6.2
       webpack: 5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)
@@ -48146,7 +48103,7 @@ snapshots:
       jest-util: 29.7.0
       natural-compare: 1.4.0
       pretty-format: 29.7.0
-      semver: 7.7.1
+      semver: 7.7.3
     transitivePeerDependencies:
       - supports-color
 
@@ -49388,7 +49345,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.7.1
+      semver: 7.7.3
 
   make-error@1.3.6: {}
 
@@ -51329,7 +51286,7 @@ snapshots:
       fs2: 0.3.15
       memoizee: 0.4.17
       node-fetch: 2.7.0
-      semver: 7.7.1
+      semver: 7.7.3
       type: 2.7.3
       validate-npm-package-name: 3.0.0
     transitivePeerDependencies:
@@ -53252,7 +53209,7 @@ snapshots:
 
   react-dev-utils@12.0.1(eslint@8.57.1)(typescript@5.6.2)(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)):
     dependencies:
-      '@babel/code-frame': 7.26.2
+      '@babel/code-frame': 7.27.1
       address: 1.2.2
       browserslist: 4.24.4
       chalk: 4.1.2
@@ -54946,7 +54903,7 @@ snapshots:
 
   serverless-http@3.2.0: {}
 
-  serverless-lift@1.31.0(serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)):
+  serverless-lift@1.31.0(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)):
     dependencies:
       '@aws-cdk/aws-apigatewayv2-alpha': 2.21.1-alpha.0(aws-cdk-lib@2.185.0(constructs@10.2.20))(constructs@10.2.20)
       aws-cdk-lib: 2.185.0(constructs@10.2.20)
@@ -54960,12 +54917,12 @@ snapshots:
       mime-types: 2.1.35
       ora: 5.4.1
       pascal-case: 3.1.2
-      serverless: 3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      serverless: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       stripe: 8.222.0
       toml: 3.0.0
       traverse: 0.6.11
 
-  serverless-offline@12.0.4(bufferutil@4.0.9)(serverless@3.26.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10):
+  serverless-offline@12.0.4(bufferutil@4.0.9)(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10):
     dependencies:
       '@aws-sdk/client-lambda': 3.775.0
       '@hapi/boom': 10.0.1
@@ -54991,7 +54948,7 @@ snapshots:
       object.hasown: 1.1.4
       p-memoize: 7.1.1
       p-retry: 5.1.2
-      serverless: 3.26.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      serverless: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       velocityjs: 2.0.6
       ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
@@ -55001,43 +54958,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  serverless-offline@12.0.4(bufferutil@4.0.9)(serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10):
-    dependencies:
-      '@aws-sdk/client-lambda': 3.775.0
-      '@hapi/boom': 10.0.1
-      '@hapi/h2o2': 10.0.4
-      '@hapi/hapi': 21.4.0
-      '@serverless/utils': 6.15.0
-      array-unflat-js: 0.1.3
-      boxen: 7.1.1
-      chalk: 5.4.1
-      desm: 1.3.1
-      execa: 6.1.0
-      fs-extra: 11.3.0
-      is-wsl: 2.2.0
-      java-invoke-local: 0.0.6
-      jose: 4.15.9
-      js-string-escape: 1.0.1
-      jsonpath-plus: 7.2.0
-      jsonschema: 1.5.0
-      jszip: 3.10.1
-      luxon: 3.6.0
-      node-fetch: 3.3.2
-      node-schedule: 2.1.1
-      object.hasown: 1.1.4
-      p-memoize: 7.1.1
-      p-retry: 5.1.2
-      serverless: 3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      velocityjs: 2.0.6
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-    transitivePeerDependencies:
-      - aws-crt
-      - bufferutil
-      - encoding
-      - supports-color
-      - utf-8-validate
-
-  serverless-offline@14.4.0(bufferutil@4.0.9)(serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10):
+  serverless-offline@14.4.0(bufferutil@4.0.9)(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10):
     dependencies:
       '@aws-sdk/client-lambda': 3.775.0
       '@hapi/boom': 10.0.1
@@ -55061,7 +54982,7 @@ snapshots:
       node-fetch: 3.3.2
       node-schedule: 2.1.1
       p-memoize: 7.1.1
-      serverless: 3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      serverless: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       tree-kill: 1.2.2
       tsx: 4.20.3
       velocityjs: 2.0.6
@@ -55072,78 +54993,17 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  serverless-plugin-typescript@2.1.5(serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(typescript@5.6.2):
+  serverless-plugin-typescript@2.1.5(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(typescript@5.6.2):
     dependencies:
       fs-extra: 7.0.1
       globby: 10.0.2
       lodash: 4.17.21
-      serverless: 3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      serverless: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       typescript: 5.6.2
 
   serverless-plugin-warmup@8.3.0: {}
 
-  serverless@3.26.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
-    dependencies:
-      '@serverless/dashboard-plugin': 6.4.0(bufferutil@4.0.9)(supports-color@8.1.1)(utf-8-validate@5.0.10)
-      '@serverless/platform-client': 4.5.1(bufferutil@4.0.9)(supports-color@8.1.1)(utf-8-validate@5.0.10)
-      '@serverless/utils': 6.15.0
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      archiver: 5.3.2
-      aws-sdk: 2.1692.0
-      bluebird: 3.7.2
-      cachedir: 2.4.0
-      chalk: 4.1.2
-      child-process-ext: 2.1.1
-      ci-info: 3.9.0
-      cli-progress-footer: 2.3.3
-      d: 1.0.2
-      dayjs: 1.11.13
-      decompress: 4.2.1
-      dotenv: 16.4.7
-      dotenv-expand: 9.0.0
-      essentials: 1.2.0
-      ext: 1.7.0
-      fastest-levenshtein: 1.0.16
-      filesize: 10.1.6
-      fs-extra: 10.1.0
-      get-stdin: 8.0.0
-      globby: 11.1.0
-      got: 11.8.6
-      graceful-fs: 4.2.11
-      https-proxy-agent: 5.0.1(supports-color@8.1.1)
-      is-docker: 2.2.1
-      js-yaml: 4.1.0
-      json-cycle: 1.5.0
-      json-refs: 3.0.15(supports-color@8.1.1)
-      lodash: 4.17.21
-      memoizee: 0.4.17
-      micromatch: 4.0.8
-      node-fetch: 2.7.0
-      npm-registry-utilities: 1.0.0
-      object-hash: 3.0.0
-      open: 8.4.2
-      path2: 0.1.0
-      process-utils: 4.0.0
-      promise-queue: 2.2.5
-      require-from-string: 2.0.2
-      semver: 7.7.1
-      signal-exit: 3.0.7
-      strip-ansi: 6.0.1
-      supports-color: 8.1.1
-      tar: 6.2.1
-      timers-ext: 0.1.8
-      type: 2.7.3
-      untildify: 4.0.0
-      uuid: 9.0.1
-      yaml-ast-parser: 0.0.43
-    transitivePeerDependencies:
-      - bufferutil
-      - debug
-      - encoding
-      - utf-8-validate
-
-  serverless@3.39.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
+  serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
       '@aws-sdk/client-api-gateway': 3.775.0
       '@aws-sdk/client-cognito-identity-provider': 3.775.0
@@ -55195,7 +55055,7 @@ snapshots:
       process-utils: 4.0.0
       promise-queue: 2.2.5
       require-from-string: 2.0.2
-      semver: 7.7.1
+      semver: 7.7.3
       signal-exit: 3.0.7
       stream-buffers: 3.0.3
       strip-ansi: 6.0.1
@@ -56335,7 +56195,7 @@ snapshots:
     dependencies:
       bl: 1.2.3
       buffer-alloc: 1.2.0
-      end-of-stream: 1.4.4
+      end-of-stream: 1.4.5
       fs-constants: 1.0.0
       readable-stream: 2.3.8
       to-buffer: 1.1.1
@@ -58174,7 +58034,7 @@ snapshots:
       sockjs: 0.3.24
       spdy: 4.0.2
       webpack-dev-middleware: 5.3.4(webpack@5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1))
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     optionalDependencies:
       webpack: 5.98.0(@swc/core@1.15.3(@swc/helpers@0.5.17))(esbuild@0.27.1)
     transitivePeerDependencies:
