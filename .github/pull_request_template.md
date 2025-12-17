@@ -40,7 +40,7 @@ Quick guide: What docs does your change need?
 - New API/feature → Tutorial or How-To in docs/
 - Complex flow/architecture → Mermaid diagram
 - Internal patterns for AI/devs → CLAUDE.md
-- UI components → Storybook
+- App UI/UX changes → docs/apps/ (LearnCard App, ScoutPass)
 -->
 
 #### 📝 Documentation Checklist
@@ -51,6 +51,7 @@ Quick guide: What docs does your change need?
 - [ ] **How-To Guide** — New workflow or integration (`docs/how-to-guides/`)
 - [ ] **Reference** — New/changed API, config, or SDK method (`docs/sdks/`)
 - [ ] **Concept** — New mental model or architecture explanation (`docs/core-concepts/`)
+- [ ] **App Flows** — Changes to LearnCard App or ScoutPass user flows (`docs/apps/`)
 
 **Internal/AI Docs**
 - [ ] **CLAUDE.md** — New pattern, flow, or context that AI assistants need
@@ -64,11 +65,6 @@ flowchart LR
     A[User] --> B[LearnCard] --> C[Network]
 ```
 -->
-
-- [ ] **Storybook** — New/changed UI components
-
-#### 📜 Documentation Links
-<!-- Link any docs created or updated as part of this PR -->
 
 #### 💭 Documentation Notes
 <!-- If no docs needed, briefly explain why (e.g., "Internal refactor, no API changes") -->

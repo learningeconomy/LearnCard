@@ -55,6 +55,7 @@ jobs:
             | New feature/API | \`docs/tutorials/\` or \`docs/how-to-guides/\` |
             | SDK/API changes | \`docs/sdks/\` |
             | New concepts | \`docs/core-concepts/\` |
+            | App UI/UX flows | \`docs/apps/\` (LearnCard App, ScoutPass) |
             | Internal patterns | \`CLAUDE.md\` |
 
             </details>
