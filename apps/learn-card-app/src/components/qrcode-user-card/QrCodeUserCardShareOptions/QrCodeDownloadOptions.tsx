@@ -12,7 +12,11 @@ import { QrCodeDownloadOptionsEnum, userQrCodeDownloadOptions } from './user-sha
 
 import { QR_CODE_LOGO } from '../UserQRCode/UserQRCode';
 
-const QrCodeUserCardShareOptions: React.FC = () => {
+const QrCodeUserCardShareOptions: React.FC<{
+    contractUri?: string;
+    profileId?: string;
+    overrideShareLink?: string;
+}> = ({ contractUri, profileId, overrideShareLink }) => {
     const { initWallet } = useWallet();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const qrCodeRef = useRef<SVGSVGElement | null>(null);
@@ -214,12 +218,24 @@ const QrCodeUserCardShareOptions: React.FC = () => {
         }
     };
 
+    let link = `learncard.app/connect?connect=true&did=${walletDid}`;
+
+    if (contractUri) {
+        link = `${
+            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
+        }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+    }
+
+    if (overrideShareLink) {
+        link = overrideShareLink;
+    }
+
     return (
         <div className="w-full flex items-center justify-center my-6 px-6">
             <QRCodeSVG
                 ref={qrCodeRef}
                 className="hidden"
-                value={`https://learncard.app/connect?connect=true&did=${walletDid}`}
+                value={link}
                 bgColor="transparent"
                 imageSettings={{
                     src: QR_CODE_LOGO,

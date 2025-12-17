@@ -4,31 +4,16 @@ import { useHistory } from 'react-router-dom';
 import SkillsInsightIcon from 'learn-card-base/svgs/SkillsInsightIcon';
 import SkillsIcon from 'learn-card-base/svgs/wallet/SkillsIcon';
 
-import { useGetCredentialsForSkills } from 'learn-card-base';
-import { mapBoostsToSkills } from '../skills/skills.helpers';
+import { useSkillsCount } from '../../hooks/useSkillsCount';
 
-const AiInsightsCard: React.FC = () => {
+const AiInsightsSkillsCard: React.FC = () => {
     const history = useHistory();
 
     const handleExploreClick = () => {
         history.push('/skills');
     };
 
-    const { data: allResolvedCreds } = useGetCredentialsForSkills();
-
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
-
-    // Calculate total count of skills and subskills
-    const totalSkills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.length || 0),
-        0
-    );
-    const totalSubskills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.totalSubskills || 0),
-        0
-    );
-
-    const total = (totalSkills || 0) + (totalSubskills || 0);
+    const { total } = useSkillsCount();
 
     return (
         <div className="w-full flex items-center justify-center mt-4">
@@ -61,4 +46,4 @@ const AiInsightsCard: React.FC = () => {
     );
 };
 
-export default AiInsightsCard;
+export default AiInsightsSkillsCard;
