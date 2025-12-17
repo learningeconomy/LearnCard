@@ -45,6 +45,7 @@ const {
 const {
     AiSessionsIconFormal,
     AiPathwaysIconFormal,
+    AiPathwaysSideMenuIconFormal,
     AiInsightsIconFormal,
     SkillsIconFormal,
     BoostsIconFormal,
@@ -186,9 +187,11 @@ export const icons = {
             IconWithShape: AiSessionsIconWithShape,
         },
         [CredentialCategoryEnum.aiPathway]: {
+            Icon: AiPathwaysIconWithShape,
             IconWithShape: AiPathwaysIconWithShape,
         },
         [CredentialCategoryEnum.aiInsight]: {
+            Icon: AiInsightsIconWithShape,
             IconWithShape: AiInsightsIconWithShape,
             IconWithLightShape: AiInsightsIconWithLightShape,
         },
@@ -302,7 +305,7 @@ export const icons = {
             adminTools: ThinnerShieldChevron,
             wallet: WalletFormalIcon,
             [CredentialCategoryEnum.aiTopic]: AiSessionFormalIcon,
-            [CredentialCategoryEnum.aiPathway]: AiPathwaysTwoTonedIcon, // need bold icon
+            [CredentialCategoryEnum.aiPathway]: AiPathwaysSideMenuIconFormal, // need bold icon
             [CredentialCategoryEnum.aiInsight]: AiInsightsTwoTonedIcon, // need bold icon
             [CredentialCategoryEnum.skill]: SkillsFormalIcon,
             [CredentialCategoryEnum.socialBadge]: BoostsFormalIcon,
