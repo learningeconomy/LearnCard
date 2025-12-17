@@ -27,6 +27,54 @@
 
 The project uses pnpm workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory
 
+## Documentation (`docs/`)
+
+The `docs/` folder contains **GitBook documentation** that is synced to [docs.learncard.com](https://docs.learncard.com). These docs follow the **Diátaxis framework**, which organizes documentation into four distinct types:
+
+### Diátaxis Structure
+
+| Type | Purpose | Location |
+|------|---------|----------|
+| **Tutorials** | Learning-oriented, hands-on lessons | `docs/tutorials/` |
+| **How-To Guides** | Task-oriented, step-by-step recipes | `docs/how-to-guides/` |
+| **Reference** | Information-oriented, technical descriptions | `docs/sdks/` |
+| **Explanation** | Understanding-oriented, conceptual discussion | `docs/core-concepts/` |
+
+### Key Files
+
+- `docs/README.md` — Landing page (What is LearnCard?)
+- `docs/SUMMARY.md` — Table of contents / sidebar navigation (GitBook uses this)
+- `docs/quick-start/` — Getting started guides
+- `docs/apps/` — User-facing app documentation (LearnCard App, ScoutPass)
+
+### App Documentation (`docs/apps/`)
+
+For changes to user-facing applications in `apps/`:
+
+| App | Doc Location | Focus |
+|-----|--------------|-------|
+| LearnCard App | `docs/apps/learn-card-app/` | Claiming, sharing, wallet flows |
+| ScoutPass | `docs/apps/scouts/` | NSO→Troop→Scout hierarchy, BoostIDs, badge issuance |
+
+Use **Mermaid diagrams** for user flows (e.g., claim flow, share flow, permission flow).
+
+### Editing Guidelines
+
+- **GitBook syntax**: Docs use GitBook-flavored markdown with special directives like `{% tabs %}`, `{% hint %}`, `{% content-ref %}`
+- **Code snippets**: Must be accurate and runnable. Use `@learncard/init` for initialization (not `@learncard/core`)
+- **Links**: Internal links use relative paths. GitBook handles `/broken/pages/` placeholders automatically
+- **Context URLs**: Use current versions (e.g., `https://ctx.learncard.com/boosts/1.0.3.json`)
+- **API patterns**: Use `learnCard.invoke.*` for methods, `learnCard.id.did()` for DID access
+- **Simplicity**: Avoid jargon. Spell out acronyms on first use. Keep examples minimal
+
+### Testing Doc Changes
+
+Docs are not programmatically tested. When editing:
+
+1. Verify code snippets match the actual SDK API
+2. Check that imports reference the correct packages
+3. Ensure `await` is used with async operations like `addPlugin()`
+
 ## LearnCard Plugin System
 
 LearnCard uses a modular plugin system to extend functionality in a composable way. Understanding this architecture is critical for development.

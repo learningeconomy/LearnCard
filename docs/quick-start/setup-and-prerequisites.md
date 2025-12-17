@@ -104,17 +104,13 @@ This installs the essential module to initialize LearnCard
 
 #### LearnCard CLI (Optional)
 
-If you want to script or automate wallet actions via terminal:
+If you want to interactively explore wallet actions via terminal:
 
 ```bash
-npm install -g @learncard/cli
+npx @learncard/cli
 ```
 
-**🔎 Verify:**
-
-```bash
-learncard --version
-```
+This launches an interactive REPL where you can issue credentials, verify them, and explore the SDK.
 
 → See [CLI Documentation](../sdks/learncard-cli.md)
 
@@ -151,8 +147,8 @@ npm -v
 # Verify Git
 git --version
 
-# (Optional) Verify CLI
-learncard --version
+# (Optional) Launch CLI
+npx @learncard/cli
 ```
 
 Need help? Visit our [Troubleshooting Guide ](../sdks/learncard-core/troubleshooting-guide.md)or join the Community for support.
