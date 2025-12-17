@@ -130,6 +130,7 @@ const IssueManagedBoostSelector: React.FC = () => {
     }, [boostsFetchNextPage, boostsHasNextPage, boostsOnScreen]);
 
     const categoryMeta = boostCategoryMetadata[selectedCategory];
+    const CategoryIcon = categoryMeta.IconComponent;
 
     const openCategorySelector = () => {
         newModal(
@@ -189,6 +190,11 @@ const IssueManagedBoostSelector: React.FC = () => {
                         className="flex items-center justify-between w-full p-3 rounded-[15px] border border-grayscale-200 bg-grayscale-50"
                     >
                         <div className="flex items-center gap-3">
+                            <div
+                                className={`p-2 rounded-full bg-${categoryMeta.color} bg-opacity-10 text-${categoryMeta.color}`}
+                            >
+                                <CategoryIcon className="w-6 h-6" />
+                            </div>
                             <span className={`text-${categoryMeta.color} font-medium text-lg`}>
                                 {categoryMeta.title}
                             </span>
