@@ -385,6 +385,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const [optimisticRole, setOptimisticRole] = useState<LearnCardRolesEnum | null>(null);
 
     useEffect(() => {
+        if (lcNetworkProfile?.role && optimisticRole === lcNetworkProfile.role) {
+            setOptimisticRole(null);
+            return;
+        }
         if (optimisticRole) return;
         if (lcNetworkProfile?.role) {
             setRole(lcNetworkProfile.role as LearnCardRolesEnum);
@@ -551,7 +555,6 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                                           await wallet?.invoke?.updateProfile({
                                                               role: newRole,
                                                           });
-                                                          setOptimisticRole(null);
                                                           presentToast('Role updated', {
                                                               type: ToastTypeEnum.Success,
                                                               hasDismissButton: true,
