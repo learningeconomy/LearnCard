@@ -29,6 +29,8 @@ import CreateSigningAuthorityQuickNav from 'apps/learn-card-app/src/components/s
 import CreateConsentFlowQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateConsentFlowQuickNav';
 import SwitchNetworksQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchNetworksQuickNav';
 import ReadDocsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ReadDocsQuickNav';
+import AddChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddChildQuickNav';
+import SwitchChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchChildQuickNav';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
@@ -87,8 +89,9 @@ const getIconForActionButton = (
         case 'View Family':
             return <FamiliesQuickNav className="w-[50px] h-auto" />;
         case 'Add Child':
+            return <AddChildQuickNav className="w-[50px] h-auto" />;
         case 'Switch Child':
-            return <CredentialQuickNav className="w-[50px] h-auto" />;
+            return <SwitchChildQuickNav className="w-[50px] h-auto" />;
         case 'Personalize AI Sessions':
             return <UnicornIcon className="w-[50px] h-auto" />;
         case 'Understand My Skills':
@@ -433,9 +436,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         ],
         [LearnCardRolesEnum.guardian]: [
             'Create Family',
+            'Boost Child',
             'Add Child',
             'Switch Child',
-            'Boost Child',
             'View Child Insights',
         ],
         [LearnCardRolesEnum.developer]: [
@@ -485,9 +488,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Share Insights with Teacher': 'bg-[var(--ion-color-lime-300)]',
         'Build My LearnCard': 'bg-[var(--ion-color-teal-200)]',
         // Guardian role labels
-        'Create Family': 'bg-[var(--ion-color-amber-200)]',
-        'View Family': 'bg-[var(--ion-color-amber-300)]',
-        'Boost Child': 'bg-[var(--ion-color-blue-400)]',
+        'Create Family': 'bg-[var(--ion-color-spice-200)]',
+        'View Family': 'bg-[var(--ion-color-spice-200)]',
+        'Boost Child': 'bg-[var(--ion-color-blue-300)]',
         'Add Child': 'bg-[var(--ion-color-cyan-200)]',
         'Switch Child': 'bg-[var(--ion-color-yellow-300)]',
         'View Child Insights': 'bg-[var(--ion-color-lime-300)]',
