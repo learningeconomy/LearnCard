@@ -139,7 +139,8 @@ export const colors = {
             statusBarColor: 'light',
             headerBrandingTextColor: 'text-grayscale-900',
             backgroundPrimaryColor: '!bg-white',
-            backgroundSecondaryColor: 'violet-200',
+            // backgroundSecondaryColor: 'violet-200',
+            backgroundSecondaryColor: 'grayscale-100',
         },
         [CredentialCategoryEnum.socialBadge]: {
             primaryColor: 'blue-300',
