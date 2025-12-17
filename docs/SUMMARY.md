@@ -137,7 +137,7 @@
 
 * [Apps Overview](apps/README.md)
 * [LearnCard App](apps/learn-card-app/README.md)
-* [Scouts](apps/scouts/README.md)
+* [ScoutPass](apps/scouts/README.md)
 
 ## 🔗 Development
 
