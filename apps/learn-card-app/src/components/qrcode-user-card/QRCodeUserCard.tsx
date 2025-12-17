@@ -43,16 +43,21 @@ const QrCodeUserCard: React.FC = () => {
     const profileId = currentLCNUser?.profileId || getProfileIdFromLCNDidWeb(walletDid);
 
     return (
-        <div className="h-full w-full overflow-y-auto bg-white relative">
-            <QrCodeUserCardHeader showCompact={showCompactHeader} />
+        <>
+            <div className="h-full w-full overflow-y-auto bg-white relative">
+                <QrCodeUserCardHeader showCompact={showCompactHeader} />
 
-            <div ref={basicInfoRef}>
-                <QrCodeUserCardBasicInfo profileId={profileId} walletDid={walletDid} />
+                <div id="qr-code-user-card-screenshot" className="flex flex-col gap-2">
+                    <div ref={basicInfoRef}>
+                        <QrCodeUserCardBasicInfo profileId={profileId} walletDid={walletDid} />
+                    </div>
+
+                    <UserQRCode profileId={profileId} walletDid={walletDid} />
+                </div>
+
+                <QRCodeUserCardShareOptions />
             </div>
-
-            <UserQRCode profileId={profileId} walletDid={walletDid} />
-            <QRCodeUserCardShareOptions />
-        </div>
+        </>
     );
 };
 
