@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
-import { ModalTypes, useModal } from 'learn-card-base';
+import { Capacitor } from '@capacitor/core';
+import { ModalTypes, useModal, QRCodeScannerStore } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
 import Rocket from 'learn-card-base/svgs/Rocket';
@@ -350,6 +351,10 @@ const ActionButton: React.FC<{
                 history.push('/ai/topics');
                 closeModal();
                 return;
+            case 'Claim Credential':
+                closeModal();
+                QRCodeScannerStore.set.showScanner(true);
+                return;
             default:
                 return;
         }
@@ -476,6 +481,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             actions = actions.filter(a => a !== 'View Family');
         }
     }
+
+    if (!Capacitor.isNativePlatform()) {
+        actions = actions.filter(a => a !== 'Claim Credential');
+    }
+
     const bgColors = [
         'bg-[#7DE3F6]',
         'bg-[#6E8BFF]',
