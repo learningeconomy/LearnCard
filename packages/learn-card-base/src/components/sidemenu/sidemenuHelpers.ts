@@ -51,6 +51,7 @@ export enum SideMenuLinksEnum {
     wallet = 'wallet',
     aiTopics = CredentialCategoryEnum.aiTopic,
     aiInsights = CredentialCategoryEnum.aiInsight,
+    aiPathways = CredentialCategoryEnum.aiPathway,
     skills = CredentialCategoryEnum.skill,
     socialBadges = CredentialCategoryEnum.socialBadge,
     achievements = CredentialCategoryEnum.achievement,

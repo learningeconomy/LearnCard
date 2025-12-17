@@ -14,12 +14,8 @@ import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
 import LaunchPad from './pages/launchPad/LaunchPad';
-const EmbedAppFullScreen = lazyWithRetry(
-    () => import('./pages/launchPad/EmbedAppFullScreen')
-);
-const AppListingPage = lazyWithRetry(
-    () => import('./pages/launchPad/AppListingPage')
-);
+const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
+const AppListingPage = lazyWithRetry(() => import('./pages/launchPad/AppListingPage'));
 const NotificationsPage = lazyWithRetry(
     () => import('./pages/notificationsPage/NotificationsPage')
 );
@@ -44,6 +40,7 @@ const BoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/BoostCM
 const UpdateBoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/UpdateBoostCMS'));
 const SkillsPage = lazyWithRetry(() => import('./pages/skills/SkillsPage'));
 const AiInsights = lazyWithRetry(() => import('./pages/ai-insights/AiInsights'));
+const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
 const MembershipPage = lazyWithRetry(() => import('./pages/membership/MembershipPage'));
@@ -68,9 +65,7 @@ const WalletServiceWorker = lazyWithRetry(
     () => import('./pages/walletServiceWorker/WalletServiceWorker')
 );
 const ClaimBoost = lazyWithRetry(() => import('./pages/claimBoost/ClaimBoost'));
-const ApproveAccount = lazyWithRetry(
-    () => import('./pages/approveAccount/ApproveAccount')
-);
+const ApproveAccount = lazyWithRetry(() => import('./pages/approveAccount/ApproveAccount'));
 
 import SocialBadgesPage from './pages/socialBadgesPage/SocialBadgesPage';
 
@@ -92,15 +87,9 @@ const PostConsentFlowDataFeed = lazyWithRetry(
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 
 // App Store Developer Portal
-const DeveloperPortal = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/DeveloperPortal')
-);
-const SubmissionForm = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/SubmissionForm')
-);
-const AppStoreAdminDashboard = lazyWithRetry(
-    () => import('./pages/appStoreAdmin/AdminDashboard')
-);
+const DeveloperPortal = lazyWithRetry(() => import('./pages/appStoreDeveloper/DeveloperPortal'));
+const SubmissionForm = lazyWithRetry(() => import('./pages/appStoreDeveloper/SubmissionForm'));
+const AppStoreAdminDashboard = lazyWithRetry(() => import('./pages/appStoreAdmin/AdminDashboard'));
 // import ExternalConsentFlowDoor from './pages/consentFlow/ExternalConsentFlowDoor';
 // import CustomWallet from './pages/hidden/CustomWallet';
 // import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
@@ -171,14 +160,26 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
 
                         {/* App Store Developer Portal */}
-                        <PrivateRoute exact path="/app-store/developer" component={DeveloperPortal} />
-                        <PrivateRoute exact path="/app-store/developer/new" component={SubmissionForm} />
+                        <PrivateRoute
+                            exact
+                            path="/app-store/developer"
+                            component={DeveloperPortal}
+                        />
+                        <PrivateRoute
+                            exact
+                            path="/app-store/developer/new"
+                            component={SubmissionForm}
+                        />
                         <PrivateRoute
                             exact
                             path="/app-store/developer/edit/:listingId"
                             component={SubmissionForm}
                         />
-                        <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminDashboard} />
+                        <PrivateRoute
+                            exact
+                            path="/app-store/admin"
+                            component={AppStoreAdminDashboard}
+                        />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         <PrivateRoute exact path="/contacts" component={AddressBook} />
@@ -201,6 +202,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/families" component={FamilyPage} />
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
+                        <PrivateRoute exact path="/ai/pathways" component={AiPathways} />
                         <PrivateRoute
                             exact
                             path="/learninghistory"
@@ -269,11 +271,7 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
                         <SentryRoute exact path="/invite" component={InvitePage} />
                         <SentryRoute exact path="/claim/boost" component={ClaimBoost} />
-                        <SentryRoute
-                            exact
-                            path="/approve-account"
-                            component={ApproveAccount}
-                        />
+                        <SentryRoute exact path="/approve-account" component={ApproveAccount} />
                         <SentryRoute
                             exact
                             path="/claim/from-dashboard"
