@@ -26,7 +26,7 @@ const LaunchPadRoleSelector: React.FC<LaunchPadRoleSelectorProps> = ({ role, set
     const activeStyles = isDisabled ? 'bg-grayscale-200 text-white' : 'bg-emerald-700 text-white';
 
     return (
-        <div className="flex items-center justify-center w-full h-full">
+        <div className="flex items-center justify-center w-full h-full disable-scrollbars">
             <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
                 <button
                     type="button"
