@@ -133,6 +133,12 @@
   * [Auth Grants and API Tokens](core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md)
   * [U.S. State API](core-concepts/architecture-and-principles/u.s.-state-api.md)
 
+## 📱 Apps
+
+* [Apps Overview](apps/README.md)
+* [LearnCard App](apps/learn-card-app/README.md)
+* [Scouts](apps/scouts/README.md)
+
 ## 🔗 Development
 
 * [Contributing](development/contributing.md)
