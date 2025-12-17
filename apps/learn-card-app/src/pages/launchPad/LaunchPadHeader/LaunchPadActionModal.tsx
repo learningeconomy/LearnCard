@@ -93,7 +93,7 @@ const getIconForActionButton = (
             return <AddChildQuickNav className="w-[50px] h-auto" />;
         case 'Switch Child':
             return <SwitchChildQuickNav className="w-[50px] h-auto" />;
-        case 'Personalize AI Sessions':
+        case 'Customize AI Sessions':
             return <UnicornIcon className="w-[50px] h-auto" />;
         case 'Understand My Skills':
             return <UnderstandSkillsQuickNav className="w-[50px] h-auto" />;
@@ -339,7 +339,7 @@ const ActionButton: React.FC<{
                 history.push('/ai/insights');
                 closeModal();
                 return;
-            case 'Personalize AI Sessions':
+            case 'Customize AI Sessions':
                 closeModal();
                 newModal(
                     <AiPassportPersonalizationContainer />,
@@ -432,7 +432,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         [LearnCardRolesEnum.learner]: [
             'New AI Tutoring Session',
             'Understand My Skills',
-            'Claim Credential',
+            'Customize AI Sessions',
             'Share Insights with Teacher',
             'Build My LearnCard',
         ],
@@ -483,7 +483,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     }
 
     if (!Capacitor.isNativePlatform()) {
-        actions = actions.filter(a => a !== 'Claim Credential');
+        actions = actions.map(a => (a === 'Claim Credential' ? 'Customize AI Sessions' : a));
     }
 
     const bgColors = [
@@ -496,6 +496,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     ];
 
     const colorByLabel: Record<string, string> = {
+        'Customize AI Sessions': 'bg-[var(--ion-color-amber-300)]',
         'New AI Tutoring Session': 'bg-[var(--ion-color-cyan-300)]',
         'Understand My Skills': 'bg-[var(--ion-color-violet-300)]',
         'Claim Credential': 'bg-[var(--ion-color-amber-300)]',
