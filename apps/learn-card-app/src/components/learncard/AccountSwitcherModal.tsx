@@ -147,7 +147,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
     return (
         <>
             <section
-                className={`bg-white px-[30px] py-[40px] rounded-[20px] shadow-soft-bottom min-w-[350px] overflow-y-scroll ${containerClassName}`}
+                className={`bg-white px-[30px] py-[40px] rounded-[20px] shadow-soft-bottom min-w-[350px] overflow-y-scroll disable-scrollbars ${containerClassName}`}
             >
                 {headerOverrideComponent}
                 {!headerOverrideComponent && (
