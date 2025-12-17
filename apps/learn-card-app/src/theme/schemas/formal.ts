@@ -146,6 +146,11 @@ export const formalTheme: Theme = validateThemeData({
             path: '/ai/insights',
         },
         {
+            id: SideMenuLinksEnum.aiPathways,
+            label: 'AI Pathways',
+            path: '/ai/pathways',
+        },
+        {
             id: SideMenuLinksEnum.skills,
             label: 'Skills',
             path: '/skills',
