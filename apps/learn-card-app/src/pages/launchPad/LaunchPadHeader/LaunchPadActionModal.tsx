@@ -24,6 +24,11 @@ import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import AddUserQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddUserQuickNav';
 import ImportCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ImportCredentialQuickNav';
 import SwitchAccountQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchAccountQuickNav';
+import CreateApiTokenQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateApiTokenQuickNav';
+import CreateSigningAuthorityQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateSigningAuthorityQuickNav';
+import CreateConsentFlowQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateConsentFlowQuickNav';
+import SwitchNetworksQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchNetworksQuickNav';
+import ReadDocsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ReadDocsQuickNav';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
@@ -127,6 +132,16 @@ const getIconForActionButton = (
             return <RequestInsightsQuickNav className="w-[50px] h-auto" />;
         case 'Boost Child':
             return <BoostsQuickNav className="w-[50px] h-auto" />;
+        case 'Create API Token':
+            return <CreateApiTokenQuickNav className="w-[50px] h-auto" />;
+        case 'Create Signing Authority':
+            return <CreateSigningAuthorityQuickNav className="w-[50px] h-auto" />;
+        case 'Create ConsentFlow':
+            return <CreateConsentFlowQuickNav className="w-[50px] h-auto" />;
+        case 'Switch Network':
+            return <SwitchNetworksQuickNav className="w-[50px] h-auto" />;
+        case 'Read Docs':
+            return <ReadDocsQuickNav className="w-[50px] h-auto" />;
         default:
             return <SolidCircleIcon className="w-[50px] h-auto" />;
     }
@@ -428,7 +443,6 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Create Signing Authority',
             'Create ConsentFlow',
             'Switch Network',
-            'Manage Skills Frameworks',
             'Read Docs',
         ],
         [LearnCardRolesEnum.admin]: [
@@ -487,6 +501,12 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Import Credential': 'bg-[var(--ion-color-blue-300)]',
         'Create Organization': 'bg-[var(--ion-color-lime-300)]',
         'Switch Account': 'bg-[var(--ion-color-cyan-200)]',
+        // Developer role labels
+        'Create API Token': 'bg-[var(--ion-color-violet-300)]',
+        'Create Signing Authority': 'bg-[var(--ion-color-blue-200)]',
+        'Create ConsentFlow': 'bg-[var(--ion-color-lime-300)]',
+        'Switch Network': 'bg-[var(--ion-color-yellow-300)]',
+        'Read Docs': 'bg-[var(--ion-color-teal-200)]',
     };
 
     return (
