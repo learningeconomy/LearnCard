@@ -3,23 +3,24 @@
 The **LearnCard App** is a digital wallet for verifiable credentials. It allows users to claim, store, organize, and share their achievements, badges, certifications, and IDs.
 
 Available on:
-- 📱 iOS (App Store)
-- 📱 Android (Google Play)
-- 🌐 Web ([app.learncard.com](https://app.learncard.com))
 
----
+* 📱 iOS ([App Store](https://apps.apple.com/us/app/learncard/id1635841898))
+* 📱 Android ([Google Play](https://play.google.com/store/apps/details?id=com.learncard.app))
+* 🌐 Web ([app.learncard.com](https://app.learncard.com))
+
+***
 
 ## Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **Claim Credentials** | Scan QR codes or click links to add credentials to your wallet |
-| **Organize** | Categorize credentials by type (achievements, IDs, work history, etc.) |
-| **Share** | Generate shareable links or presentations for verifiers |
-| **Connect** | Find and connect with other profiles on the LearnCard Network |
-| **Consent** | Control what data you share and with whom |
+| Feature               | Description                                                            |
+| --------------------- | ---------------------------------------------------------------------- |
+| **Claim Credentials** | Scan QR codes or click links to add credentials to your wallet         |
+| **Organize**          | Categorize credentials by type (achievements, IDs, work history, etc.) |
+| **Share**             | Generate shareable links or presentations for verifiers                |
+| **Connect**           | Find and connect with other profiles on the LearnCard Network          |
+| **Consent**           | Control what data you share and with whom                              |
 
----
+***
 
 ## User Flows
 
@@ -56,14 +57,14 @@ flowchart LR
 1. User selects a credential from their wallet
 2. Taps "Share"
 3. Chooses sharing method:
-   - **QR Code** — For in-person verification
-   - **Link** — For sending digitally
-   - **Presentation** — For formal verification requests
+   * **QR Code** — For in-person verification
+   * **Link** — For sending digitally
+   * **Presentation** — For formal verification requests
 
----
+***
 
 ## Related Documentation
 
-- [Create a Credential](../../tutorials/create-a-credential.md) — For issuers
-- [Verify Credentials](../../tutorials/verify-credentials.md) — For verifiers
-- [ConsentFlow Overview](../../core-concepts/consent-and-permissions/consentflow-overview.md) — Understanding consent
+* [Create a Credential](../../tutorials/create-a-credential.md) — For issuers
+* [Verify Credentials](../../tutorials/verify-credentials.md) — For verifiers
+* [ConsentFlow Overview](../../core-concepts/consent-and-permissions/consentflow-overview.md) — Understanding consent

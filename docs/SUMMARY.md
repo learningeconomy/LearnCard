@@ -67,9 +67,9 @@
   * [Architecture](sdks/learncard-network/architecture.md)
   * [Notifications & Webhooks](sdks/learncard-network/notifications.md)
   * ```yaml
-    type: builtin:openapi
     props:
       models: true
+    type: builtin:openapi
     dependencies:
       spec:
         ref:
@@ -82,9 +82,9 @@
   * [Usage Examples](sdks/learncloud-storage-api/usage-examples.md)
   * [Architecture](sdks/learncloud-storage-api/architecture.md)
   * ```yaml
-    type: builtin:openapi
     props:
       models: true
+    type: builtin:openapi
     dependencies:
       spec:
         ref:
