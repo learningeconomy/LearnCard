@@ -35,11 +35,43 @@
 
 # Documentation
 
-#### 📜 Gitbook
-<!-- Link to gitbook documentation that you created alongside this PR, or describe why documentation is not needed.-->
+<!--
+Quick guide: What docs does your change need?
+- New API/feature → Tutorial or How-To in docs/
+- Complex flow/architecture → Mermaid diagram
+- Internal patterns for AI/devs → CLAUDE.md
+- UI components → Storybook
+-->
 
-#### 📊 Storybook
-<!-- If relevant, Chromatic link to Storybook that you created alongside this PR. -->
+#### 📝 Documentation Checklist
+<!-- Check all that apply. If none, explain why in the notes below. -->
+
+**User-Facing Docs** (`docs/` → [docs.learncard.com](https://docs.learncard.com))
+- [ ] **Tutorial** — New capability that users need to learn (`docs/tutorials/`)
+- [ ] **How-To Guide** — New workflow or integration (`docs/how-to-guides/`)
+- [ ] **Reference** — New/changed API, config, or SDK method (`docs/sdks/`)
+- [ ] **Concept** — New mental model or architecture explanation (`docs/core-concepts/`)
+
+**Internal/AI Docs**
+- [ ] **CLAUDE.md** — New pattern, flow, or context that AI assistants need
+- [ ] **Code comments/JSDoc** — Complex logic that needs inline explanation
+
+**Visual Documentation**
+- [ ] **Mermaid diagram** — Complex flow, state machine, or architecture
+<!-- Add diagrams inline in docs or in a dedicated section. Example:
+```mermaid
+flowchart LR
+    A[User] --> B[LearnCard] --> C[Network]
+```
+-->
+
+- [ ] **Storybook** — New/changed UI components
+
+#### 📜 Documentation Links
+<!-- Link any docs created or updated as part of this PR -->
+
+#### 💭 Documentation Notes
+<!-- If no docs needed, briefly explain why (e.g., "Internal refactor, no API changes") -->
 
 
 # ✅ PR Checklist
@@ -49,7 +81,7 @@
 - [ ] I have **reviewed** my code
 - [ ] I have **commented** my code, particularly where ambiguous
 - [ ] New and existing **unit tests pass** locally with my changes
-- [ ] I have made corresponding changes to **gitbook documentation**
+- [ ] I have completed the **Documentation Checklist** above (or explained why N/A)
 
 ### 🚀 Ready to squash-and-merge?:
 - [ ] Code is backwards compatible
