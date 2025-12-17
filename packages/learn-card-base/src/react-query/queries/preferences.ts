@@ -10,7 +10,7 @@ export const useGetPreferencesForDid = (enabled: boolean = true) => {
         const updateDid = async () => {
             try {
                 const currentDid = await getDID();
-                setDid(currentDid);
+                setDid(currentDid === false ? null : currentDid);
             } catch (error) {
                 console.error('Failed to get DID:', error);
                 setDid(null);
