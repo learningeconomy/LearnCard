@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { PDFDocument } from 'pdf-lib';
-import { QRCodeSVG } from 'qrcode.react';
+import React, { useEffect, useState } from 'react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Capacitor } from '@capacitor/core';
 import { Media } from '@capacitor-community/media';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -8,23 +8,42 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { useModal, useWallet, useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
+import { IonSpinner } from '@ionic/react';
 import { QrCodeDownloadOptionsEnum, userQrCodeDownloadOptions } from './user-share-options.helpers';
 
-import { QR_CODE_LOGO } from '../UserQRCode/UserQRCode';
+const APP_ALBUM_NAME = 'LearnCard';
 
 const QrCodeUserCardShareOptions: React.FC = () => {
     const { initWallet } = useWallet();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const qrCodeRef = useRef<SVGSVGElement | null>(null);
 
     const [walletDid, setWalletDid] = useState<string>('');
+    const [isSavingPng, setIsSavingPng] = useState<boolean>(false);
+    const [isSavingPdf, setIsSavingPdf] = useState<boolean>(false);
 
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { closeModal } = useModal();
 
-    // -----------------------------
-    // Cleanup ─ old QR files (PDF)
-    // -----------------------------
+    const ensureAlbumExists = async (): Promise<string | undefined> => {
+        if (Capacitor.getPlatform() !== 'android') return undefined;
+
+        // fetch existing albums
+        let { albums } = await Media.getAlbums();
+        // find existing LearnCard album
+        let album = albums.find(a => a.name === APP_ALBUM_NAME);
+
+        // return existing album
+        if (album?.identifier) return album?.identifier;
+
+        // create album, if it doesn't exist
+        await Media.createAlbum({ name: APP_ALBUM_NAME });
+        ({ albums } = await Media.getAlbums());
+        album = albums.find(a => a.name === APP_ALBUM_NAME);
+
+        // return created album
+        return album?.identifier;
+    };
+
     useEffect(() => {
         const cleanupDocuments = async () => {
             try {
@@ -40,195 +59,145 @@ const QrCodeUserCardShareOptions: React.FC = () => {
                 );
 
                 const sorted = qrFiles.sort((a, b) => (b.mtime ?? 0) - (a.mtime ?? 0));
-                const oldFiles = sorted.slice(50);
 
-                for (const file of oldFiles) {
+                for (const file of sorted.slice(50)) {
                     await Filesystem.deleteFile({
                         directory: Directory.Documents,
                         path: file.name,
                     });
                 }
-            } catch (err) {
-                console.log('Cleanup not needed:', err);
+            } catch {
+                // no-op
             }
         };
 
         if (Capacitor.isNativePlatform()) cleanupDocuments();
     }, []);
 
-    // -----------------------------
-    // Fetch DID
-    // -----------------------------
     useEffect(() => {
-        const getWalletDid = async () => {
+        const loadWalletDid = async () => {
             const wallet = await initWallet();
-            setWalletDid(wallet?.id?.did());
+            setWalletDid(wallet?.id?.did() || '');
         };
 
-        if (!walletDid) getWalletDid();
-    }, [walletDid]);
+        if (!walletDid) loadWalletDid();
+    }, [walletDid, initWallet]);
 
-    // -----------------------------
-    // Convert SVG → PNG
-    // -----------------------------
-    const convertSvgToPng = async () => {
-        const svg = qrCodeRef.current;
-        if (!svg) return null;
-
-        const svgData = new XMLSerializer().serializeToString(svg);
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml' });
-        const svgUrl = URL.createObjectURL(svgBlob);
-
-        const img = new Image();
-        img.src = svgUrl;
-
-        await new Promise(resolve => (img.onload = resolve));
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        return canvas.toDataURL('image/png');
-    };
-
-    const cleanBase64 = (dataUrl: string) =>
-        dataUrl.replace(/^data:.*;base64,/, '').replace(/[^A-Za-z0-9+/=]/g, '');
-
-    // -----------------------------
-    // Save PNG → Photos/Gallery (Media plugin)
-    // -----------------------------
+    // Save PNG
     const savePng = async () => {
-        try {
-            const pngDataUrl = await convertSvgToPng();
-            if (!pngDataUrl) return;
+        const element = document.getElementById('qr-code-user-card-screenshot');
+        if (!element) return;
 
-            const base64 = cleanBase64(pngDataUrl);
+        try {
+            setIsSavingPng(true);
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+
+            // web
+            if (!Capacitor.isNativePlatform()) {
+                const link = document.createElement('a');
+                link.download = 'qrcode-card.png';
+                link.href = imgData;
+                link.click();
+                setIsSavingPng(false);
+                closeModal();
+                return;
+            }
+
+            // Native
+            const base64 = imgData.split(',')[1];
             const fileName = `qrcode_${Date.now()}.png`;
 
-            // WEB fallback
-            if (!Capacitor.isNativePlatform()) {
-                const link = document.createElement('a');
-                link.href = `data:image/png;base64,${base64}`;
-                link.download = fileName;
-                link.click();
-                closeModal();
-                return;
-            }
-
-            // Write temp file to Documents (Media plugin requires a real file path)
-            const writeResult = await Filesystem.writeFile({
+            const savedFile = await Filesystem.writeFile({
                 path: fileName,
-                directory: Directory.Documents,
                 data: base64,
+                directory: Directory.Documents,
             });
 
-            // writeResult.uri ⇒ file:///... path needed for Media.savePhoto
-            const fileUri = writeResult.uri;
+            const albumIdentifier = await ensureAlbumExists();
 
-            // Save to Photos using Media plugin
             await Media.savePhoto({
-                path: fileUri,
+                path: savedFile.uri,
                 fileName,
+                ...(albumIdentifier ? { albumIdentifier } : {}),
             });
 
-            alert('QR Code saved to Photos!');
+            setIsSavingPng(false);
             closeModal();
-        } catch (error) {
-            console.error('QR Code Save Error:', error);
+            alert('QR Code saved to Photos!');
+        } catch (err) {
+            setIsSavingPng(false);
+            console.error('QR save failed:', err);
             alert('Failed to save QR Code.');
         }
     };
 
-    // -----------------------------
-    // Save PDF → Files app
-    // -----------------------------
+    // save pdf
     const savePdf = async () => {
+        const element = document.getElementById('qr-code-user-card-screenshot');
+        if (!element) return;
+
         try {
-            const pngDataUrl = await convertSvgToPng();
-            if (!pngDataUrl) return;
-
-            const pngBase64 = cleanBase64(pngDataUrl);
-            const fileName = `qrcode_${Date.now()}.pdf`;
-
-            const pdfDoc = await PDFDocument.create();
-            const page = pdfDoc.addPage([500, 500]);
-
-            const pngImage = await pdfDoc.embedPng(pngBase64);
-            const { width, height } = pngImage.scale(1);
-
-            page.drawImage(pngImage, {
-                x: (500 - width) / 2,
-                y: (500 - height) / 2,
-                width,
-                height,
+            setIsSavingPdf(true);
+            const canvas = await html2canvas(element, {
+                useCORS: true,
             });
 
-            const pdfBase64 = cleanBase64(await pdfDoc.saveAsBase64({ dataUri: false }));
+            const imgData = canvas.toDataURL('image/png');
 
-            // Web fallback
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a6',
+            });
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+            // web
             if (!Capacitor.isNativePlatform()) {
-                const url = `data:application/pdf;base64,${pdfBase64}`;
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = fileName;
-                link.click();
-                closeModal();
-                return;
+                pdf.save('qrcode-card.pdf');
+            } else {
+                // native
+                const pdfData = pdf.output('datauristring').split(',')[1];
+                const fileName = `qrcode_${Date.now()}.pdf`;
+
+                await Filesystem.writeFile({
+                    path: fileName,
+                    data: pdfData,
+                    directory: Directory.Documents,
+                });
             }
 
-            // Save PDF to Files
-            await Filesystem.writeFile({
-                path: fileName,
-                directory: Directory.Documents,
-                data: pdfBase64,
-            });
-
-            alert('QR Code saved to Files!');
+            setIsSavingPdf(false);
             closeModal();
-        } catch (error) {
-            console.error('QR Code Save Error:', error);
-            alert('Failed to save QR Code.');
+            if (Capacitor.isNativePlatform()) alert('QR Code saved to Documents!');
+        } catch (err) {
+            setIsSavingPdf(false);
+            console.error('PDF save failed:', err);
+            alert('Failed to save QR Code PDF.');
         }
     };
 
-    // -----------------------------
-    // Download option handler
-    // -----------------------------
-    const handleDownloadOptionClick = (optionType: QrCodeDownloadOptionsEnum) => {
+    const handleDownloadOptionClick = (option: QrCodeDownloadOptionsEnum) => {
         if (!currentLCNUser && !currentLCNUserLoading) {
             closeModal();
             handlePresentJoinNetworkModal();
             return;
         }
 
-        switch (optionType) {
-            case QrCodeDownloadOptionsEnum.saveToPhotos:
-                savePng();
-                break;
-            case QrCodeDownloadOptionsEnum.saveToFiles:
-                savePdf();
-                break;
-        }
+        option === QrCodeDownloadOptionsEnum.saveToPhotos ? savePng() : savePdf();
     };
 
     return (
         <div className="w-full flex items-center justify-center my-6 px-6">
-            <QRCodeSVG
-                ref={qrCodeRef}
-                className="hidden"
-                value={`https://learncard.app/connect?connect=true&did=${walletDid}`}
-                bgColor="transparent"
-                imageSettings={{
-                    src: QR_CODE_LOGO,
-                    height: 40,
-                    width: 40,
-                    excavate: false,
-                }}
-            />
-
             <div className="w-full max-w-[400px]">
                 <h2 className="text-[24px] font-semibold text-grayscale-900">Download QR Code</h2>
                 <p className="text-grayscale-700 text-[17px] my-2">
@@ -236,14 +205,34 @@ const QrCodeUserCardShareOptions: React.FC = () => {
                 </p>
 
                 {userQrCodeDownloadOptions.map(option => {
+                    let text = option.label;
+                    let icon = <option.icon className="w-[35px] mr-2" />;
+
+                    if (isSavingPng && option.type === QrCodeDownloadOptionsEnum.saveToPhotos) {
+                        text = 'Saving...';
+                        icon = (
+                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                        );
+                    }
+
+                    if (isSavingPdf && option.type === QrCodeDownloadOptionsEnum.saveToFiles) {
+                        text = 'Saving...';
+                        icon = (
+                            <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
+                        );
+                    }
+
                     return (
                         <button
                             key={option.id}
                             onClick={() => handleDownloadOptionClick(option.type)}
-                            className="flex items-center my-6 text-grayscale-700 text-lg"
+                            disabled={isSavingPng || isSavingPdf}
+                            className={`flex items-center my-6 text-grayscale-700 text-lg w-full text-left ${
+                                isSavingPng || isSavingPdf ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                         >
-                            <option.icon className="w-[35px] mr-2" />
-                            {option.label}
+                            {icon}
+                            {text}
                         </button>
                     );
                 })}
