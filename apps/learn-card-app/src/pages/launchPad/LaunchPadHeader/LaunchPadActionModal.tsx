@@ -586,7 +586,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                           />,
                                           {
                                               sectionClassName:
-                                                  '!max-w-[600px] !mx-auto !max-h-[100%] disable-scrollbars',
+                                                  '!max-w-[600px] !mx-auto !max-h-[100%]',
                                           },
                                           {
                                               mobile: ModalTypes.Freeform,
