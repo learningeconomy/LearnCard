@@ -30,6 +30,7 @@ export enum SubheaderTypeEnum {
     Achievement = 'achievement',
     Accomplishment = 'accomplishment',
     Skill = 'skill',
+    AiPathways = 'aiPathways',
     AiInsights = 'aiInsights',
     Experience = 'experience',
     Accommodation = 'accommodation',
@@ -122,6 +123,15 @@ export const SubheaderContentType: Record<
         bgColor: 'bg-white',
         helperText: 'Your',
         helperTextClickable: 'AI insights',
+    },
+    [SubheaderTypeEnum.AiPathways]: {
+        title: 'AI Pathways',
+        IconComponent: AiPathwaysIcon,
+        iconColor: 'text-lime-700',
+        textColor: 'text-white',
+        bgColor: 'bg-white',
+        helperText: 'Your',
+        helperTextClickable: 'Lessons and careers.',
     },
     [SubheaderTypeEnum.Job]: {
         title: 'Experiences',
