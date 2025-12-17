@@ -46,6 +46,12 @@ export type ProfileRelationships = {
         { name: string; did: string; isPrimary?: boolean }
     >;
     hasContactMethod: ModelRelatedNodesI<typeof ContactMethod, ContactMethodInstance>;
+    installs: ModelRelatedNodesI<
+        any,
+        any,
+        { listing_id: string; installed_at: string },
+        { listing_id: string; installed_at: string }
+    >;
 };
 
 export type ProfileInstance = NeogmaInstance<FlatProfileType, ProfileRelationships>;

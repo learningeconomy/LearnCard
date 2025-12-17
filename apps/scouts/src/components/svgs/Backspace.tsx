@@ -1,0 +1,36 @@
+import React from 'react';
+
+export const Backspace: React.FC<{ className?: string }> = ({ className }) => {
+    return (
+        <svg
+            width="32"
+            height="31"
+            viewBox="0 0 32 31"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            <path
+                d="M8.58394 5.94682C9.1465 5.15382 10.0585 4.68262 11.0308 4.68262H27.25C28.9069 4.68262 30.25 6.02576 30.25 7.68262V24.1826C30.25 25.8395 28.9069 27.1826 27.25 27.1826H11.0308C10.0585 27.1826 9.1465 26.7114 8.58394 25.9184L1.91046 16.5112C1.66461 16.1647 1.66461 15.7006 1.91046 15.354L8.58394 5.94682Z"
+                stroke="currentColor"
+                strokeWidth="2"
+            />
+            <path
+                d="M14 12.1826L21.5 19.6826"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M14 19.6826L21.5 12.1826"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+};
+
+export default Backspace;

@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "AW9L6U5B2L.com.learncard.app",
+        "paths": ["*", "/uni/*"]
+      }
+    ]
+  }
+}
+

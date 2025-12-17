@@ -38,8 +38,11 @@ export const getAuthGrantsForProfile = async (
     }: { limit: number; cursor?: string; query?: AuthGrantQuery }
 ): Promise<Array<AuthGrantType & { created: string }>> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
-    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('authGrant', convertedQuery as any);
-    
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder(
+        'authGrant',
+        convertedQuery as any
+    );
+
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
@@ -55,11 +58,11 @@ export const getAuthGrantsForProfile = async (
     const results = convertQueryResultToPropertiesObjectArray<{
         authGrant: AuthGrantType;
     }>(
-        await query
+        (await query
             .return('DISTINCT authGrant')
             .orderBy('authGrant.createdAt DESC')
             .limit(limit)
-            .run()
+            .run()) as any
     );
 
     return results.map(result => ({
@@ -105,7 +108,7 @@ export const isAuthGrantChallengeValidForDID = async (
         .match({
             model: AuthGrant,
             identifier: 'authGrant',
-            where: { challenge, status: AuthGrantStatusValidator.Values.active },
+            where: { challenge, status: AuthGrantStatusValidator.enum.active },
         })
         .raw(`WHERE (authGrant.expiresAt IS NULL OR authGrant.expiresAt >= '${currentTime}')`)
         .match({

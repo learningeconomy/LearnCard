@@ -1,5 +1,6 @@
 import { build } from 'esbuild';
 import plugins from './esbuildPlugins.cjs';
+import { sourceMapsEnabled } from 'process';
 
 const startTime = Date.now();
 
@@ -10,11 +11,12 @@ const finalBuildObj = {
     platform: 'node',
     bundle: true,
     format: 'cjs',
-    outdir: 'dist',
+    outdir: 'build',
     target: 'node20',
     external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', 'p-limit'],
     plugins,
     minify: true,
+    sourcemap: true,
 };
 
 if (process.env.NODE_ENV !== 'production') {

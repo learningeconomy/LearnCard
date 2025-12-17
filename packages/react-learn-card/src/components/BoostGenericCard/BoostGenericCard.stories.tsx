@@ -2,6 +2,7 @@ import React from 'react';
 import { Story, Meta } from '@storybook/react';
 import BoostGenericCard from './BoostGenericCard';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
+import { AllFieldsCredential } from '../../helpers/test.helpers';
 
 export default {
     title: 'Boost Generic Card',
@@ -21,4 +22,18 @@ BoostGenericCardTest.args = {
     issuerName: 'Beau Bobby Bruce',
     innerOnClick: () => console.log('innerOnClick'),
     optionsTriggerOnClick: () => console.log('//options trigger click'),
+};
+
+export const InSkillsModal = Template.bind({});
+InSkillsModal.args = {
+    title: 'Title Title Title',
+    type: WalletCategoryTypes.skills,
+    thumbImgSrc: '',
+    bgImgSrc: 'https://picsum.photos/200',
+    dateDisplay: 'May 21, 2022',
+    issuerName: 'Beau Bobby Bruce',
+    innerOnClick: () => console.log('innerOnClick'),
+    optionsTriggerOnClick: () => console.log('//options trigger click'),
+    isInSkillsModal: true,
+    credential: AllFieldsCredential,
 };

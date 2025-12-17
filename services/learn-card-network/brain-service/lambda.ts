@@ -9,7 +9,7 @@ import type {
 } from 'aws-lambda';
 import { LCNNotificationValidator } from '@learncard/types';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
+import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-to-openapi';
 import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';

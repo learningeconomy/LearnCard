@@ -1,0 +1,28 @@
+{
+    "name": "@shared/delete-service",
+    "type": "module",
+    "private": true,
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "nodemon index.js"
+    },
+    "dependencies": {
+        "fastify": "^5.0.0",
+        "ioredis": "^5.2.2",
+        "mongodb": "^6.2.0",
+        "neo4j-driver": "^4.4.5"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.7"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/services/playwright-delete-service/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
+    }
+}
