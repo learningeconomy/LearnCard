@@ -349,32 +349,31 @@ const SendBoostTemplateValidator = BoostValidator.partial()
             .optional(),
     });
 
-const SendBoostInputBaseValidator = z.object({
-    type: z.literal('boost'),
-    recipient: z.string(),
-    contractUri: z.string().optional(),
-    templateUri: z.string().optional(),
-    template: SendBoostTemplateValidator.optional(),
-    signedCredential: VCValidator.optional(),
-});
+// Route-level validator (TRPC requires ZodObject, not discriminatedUnion)
+export const SendBoostInputValidator = z
+    .object({
+        type: z.literal('boost'),
+        recipient: z.string(),
+        contractUri: z.string().optional(),
+        templateUri: z.string().optional(),
+        template: SendBoostTemplateValidator.optional(),
+        signedCredential: VCValidator.optional(),
+    })
+    .refine(data => data.templateUri || data.template, {
+        message: 'Either templateUri or template creation data must be provided.',
+        path: ['templateUri'],
+    });
+export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;
 
-const SendBoostResponseValidator = z.object({
+export const SendBoostResponseValidator = z.object({
     type: z.literal('boost'),
     credentialUri: z.string(),
     uri: z.string(),
 });
+export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
-export const SendInputValidator = z
-    .discriminatedUnion('type', [SendBoostInputBaseValidator])
-    .superRefine((data, ctx) => {
-        if (data.type === 'boost' && !data.templateUri && !data.template) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Either templateUri or template creation data must be provided.',
-                path: ['templateUri'],
-            });
-        }
-    });
+// Plugin-level discriminated union (for extensibility)
+export const SendInputValidator = z.discriminatedUnion('type', [SendBoostInputValidator]);
 export type SendInput = z.infer<typeof SendInputValidator>;
 
 export const SendResponseValidator = z.discriminatedUnion('type', [SendBoostResponseValidator]);

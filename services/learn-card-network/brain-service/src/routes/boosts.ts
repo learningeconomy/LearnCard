@@ -25,8 +25,8 @@ import {
     VC,
     PaginatedBoostRecipientsWithChildrenValidator,
     SkillQueryValidator,
-    SendInputValidator,
-    SendResponseValidator,
+    SendBoostInputValidator,
+    SendBoostResponseValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 
@@ -519,8 +519,8 @@ export const boostsRouter = t.router({
             },
             requiredScope: 'boosts:write',
         })
-        .input(SendInputValidator)
-        .output(SendResponseValidator)
+        .input(SendBoostInputValidator)
+        .output(SendBoostResponseValidator)
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { contractUri } = input;
