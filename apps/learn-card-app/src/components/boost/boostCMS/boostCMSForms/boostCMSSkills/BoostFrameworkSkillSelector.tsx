@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { IonCol, IonRow } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 import { BoostCMSState, SkillFrameworkNode } from '../../../boost';
-import SelectFrameworkToManageModal from 'apps/scouts/src/pages/SkillFrameworks/SelectFrameworkToManageModal';
 import { useModal, ModalTypes, useGetBoostsThatUseFramework } from 'learn-card-base';
 import BrowseFrameworkPage from 'apps/scouts/src/pages/SkillFrameworks/BrowseFrameworkPage';
 import BoostCMSSkillDisplay from './BoostCMSSkillDisplay';
 import { SetState } from 'packages/shared-types/dist';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
+import SelectFrameworkToManageModal from '../../../../../pages/SkillFrameworks/SelectFrameworkToManageModal';
 
 /**
  * New framework-based skill selector for Scouts
