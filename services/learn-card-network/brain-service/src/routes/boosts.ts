@@ -126,6 +126,7 @@ import {
     addClaimPermissionsForBoost,
     addDefaultPermissionsForBoost,
 } from '@accesslayer/role/relationships/create';
+import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationships/update';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 
@@ -1532,8 +1533,11 @@ export const boostsRouter = t.router({
             z.object({
                 uri: z.string(),
                 updates: BoostValidator.partial()
-                    .omit({ id: true, boost: true })
-                    .extend({ credential: VCValidator.or(UnsignedVCValidator).optional() }),
+                    .omit({ id: true, boost: true, defaultPermissions: true })
+                    .extend({
+                        credential: VCValidator.or(UnsignedVCValidator).optional(),
+                        defaultPermissions: BoostPermissionsValidator.partial().optional(),
+                    }),
             })
         )
         .output(z.boolean())
@@ -1541,7 +1545,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates } = input;
-            const { name, type, category, status, credential, meta } = updates;
+            const { name, type, category, status, credential, meta, defaultPermissions } = updates;
 
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
@@ -1576,11 +1580,11 @@ export const boostsRouter = t.router({
                         getDidWeb(ctx.domain, profile.profileId)
                     );
                 }
-            } else if (!meta) {
+            } else if (!meta && !defaultPermissions) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'Published Boosts can only have their meta updated. Draft Boosts can update any field.',
+                        'Published Boosts can only have their meta or defaultPermissions updated. Draft Boosts can update any field.',
                 });
             }
 
@@ -1594,6 +1598,14 @@ export const boostsRouter = t.router({
             if (togglingOff) await removeConnectionsForBoost(boost.id);
 
             if (actualUpdates.boost) await setStorageForUri(uri, JSON.parse(actualUpdates.boost));
+
+            // Handle defaultPermissions update
+            if (defaultPermissions !== undefined) {
+                await updateDefaultPermissionsForBoost(boost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...defaultPermissions,
+                });
+            }
 
             return result;
         }),

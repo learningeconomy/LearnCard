@@ -547,4 +547,168 @@ describe('Default Permissions', () => {
             expect(count).toBe(2);
         });
     });
+
+    describe('updateBoost with defaultPermissions', () => {
+        it('should allow adding defaultPermissions to an existing boost', async () => {
+            // Create boost without defaultPermissions
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // Verify userB cannot issue initially
+            const credentialBefore = await userB.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userB.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userC.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.sendBoost({
+                    profileId: 'userc',
+                    uri: boostUri,
+                    credential: credentialBefore,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            // Update boost to add defaultPermissions
+            await userA.clients.fullAuth.boost.updateBoost({
+                uri: boostUri,
+                updates: {
+                    defaultPermissions: { canIssue: true },
+                },
+            });
+
+            // Now userB should be able to issue
+            const credentialAfter = await userB.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userB.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userC.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            const credentialUri = await userB.clients.fullAuth.boost.sendBoost({
+                profileId: 'userc',
+                uri: boostUri,
+                credential: credentialAfter,
+            });
+
+            expect(credentialUri).toBeDefined();
+        });
+
+        it('should allow changing defaultPermissions on an existing boost', async () => {
+            // Create boost with defaultPermissions.canIssue = true
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canIssue: true },
+            });
+
+            // Verify userB can issue
+            const credential1 = await userB.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userB.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userC.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            const credentialUri1 = await userB.clients.fullAuth.boost.sendBoost({
+                profileId: 'userc',
+                uri: boostUri,
+                credential: credential1,
+            });
+
+            expect(credentialUri1).toBeDefined();
+
+            // Update to remove canIssue
+            await userA.clients.fullAuth.boost.updateBoost({
+                uri: boostUri,
+                updates: {
+                    defaultPermissions: { canIssue: false },
+                },
+            });
+
+            // Now userB should NOT be able to issue
+            const credential2 = await userB.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userB.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userD.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.sendBoost({
+                    profileId: 'userd',
+                    uri: boostUri,
+                    credential: credential2,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should require edit permission to update defaultPermissions', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // userB (not an admin) should not be able to update
+            await expect(
+                userB.clients.fullAuth.boost.updateBoost({
+                    uri: boostUri,
+                    updates: {
+                        defaultPermissions: { canIssue: true },
+                    },
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow admin to update defaultPermissions', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            // Add userB as admin
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: 'userb',
+            });
+
+            // userB (admin) should be able to update (returns false when only relationship changes, not node properties)
+            await userB.clients.fullAuth.boost.updateBoost({
+                uri: boostUri,
+                updates: {
+                    defaultPermissions: { canIssue: true },
+                },
+            });
+
+            // Verify the update took effect - userC can now issue
+            const credential = await userC.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userC.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userD.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            const credentialUri = await userC.clients.fullAuth.boost.sendBoost({
+                profileId: 'userd',
+                uri: boostUri,
+                credential,
+            });
+
+            expect(credentialUri).toBeDefined();
+        });
+    });
 });
