@@ -196,7 +196,7 @@ export const icons = {
             IconWithLightShape: AiInsightsIconWithLightShape,
         },
         [CredentialCategoryEnum.skill]: {
-            Icon: SkillsIcon,
+            Icon: SkillsIconWithShape,
             IconWithShape: SkillsIconWithShape,
             IconWithLightShape: SkillsIconWithLightShape,
         },

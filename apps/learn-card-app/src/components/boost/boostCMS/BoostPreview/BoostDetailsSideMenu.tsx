@@ -35,6 +35,7 @@ type BoostDetailsSideMenuProps = {
     displayType?: DisplayTypeEnum;
     existingEndorsements?: VC[];
     hideEndorsementRequestCard?: boolean;
+    isEarnedBoost?: boolean;
 };
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
@@ -45,6 +46,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     displayType,
     existingEndorsements,
     hideEndorsementRequestCard,
+    isEarnedBoost,
 }) => {
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
@@ -199,6 +201,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                         <BoostPreviewTabs
                             selectedTab={selectedTab}
                             setSelectedTab={boostPreviewStore.set.updateSelectedTab}
+                            isEarnedBoost={isEarnedBoost}
                         />
                         {activeTabDetails}
                     </section>

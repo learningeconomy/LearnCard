@@ -19,6 +19,7 @@ const ConsentFlowHeader: React.FC<ConsentFlowHeaderProps> = ({
     contractImageOnly,
 }) => {
     const currentUser = useCurrentUser();
+
     const { name: contractName, image: contractImage } = contractDetails ?? {};
     const { name: appName, img: appImage } = app ?? {};
 

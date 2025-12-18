@@ -12,7 +12,7 @@ import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import FullScreenConsentFlow from './FullScreenConsentFlow';
 import FullScreenGameFlow from '../consentFlow/GameFlow/FullScreenGameFlow';
 
-import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 
 export const useConsentFlow = (
     contract?: ConsentFlowContractDetails,
@@ -44,7 +44,12 @@ export const useConsentFlow = (
 
     const openConsentFlowModal = async (
         hideProfileButton?: boolean,
-        successCallback?: () => void
+        successCallback?: () => void,
+        insightsProfile?: LCNProfile | string,
+        childInsightsProfile?: LCNProfile | string,
+        disableRedirect?: boolean,
+        onCloseCallback?: () => void,
+        onBackCallback?: () => void
     ) => {
         if (hasConsented && false) {
             // handled by FullScreenConsentFlow with isPostConsent
@@ -66,12 +71,16 @@ export const useConsentFlow = (
                     isPostConsent={hasConsented}
                     hideProfileButton={hideProfileButton}
                     successCallback={successCallback}
+                    insightsProfile={insightsProfile}
+                    childInsightsProfile={childInsightsProfile}
+                    disableRedirect={disableRedirect}
+                    onCloseCallback={onCloseCallback}
+                    onBackCallback={onBackCallback}
                 />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         } else {
-            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
             console.log('Failed to open ConsentFlow modal: contract not yet loaded');
         }
     };

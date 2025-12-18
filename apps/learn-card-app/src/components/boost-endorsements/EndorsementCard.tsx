@@ -28,6 +28,7 @@ export const EndorsementCard: React.FC<{
         backgroundImage,
         backgroundColor,
         displayType,
+        isCurrentUserSubject,
     } = useGetVCInfo(credential, categoryType);
 
     const isAwardDisplay = displayType === 'award';
@@ -43,7 +44,7 @@ export const EndorsementCard: React.FC<{
 
     if (hasEndorsed || !isLoggedIn) return <></>;
 
-    return (
+    return isCurrentUserSubject ? (
         <div className="py-4 pr-4 gap-4 bg-white flex flex-col items-start rounded-[20px] w-full shadow-bottom-2-4">
             <div className="flex items-center w-full">
                 <CredentialBadge
@@ -80,7 +81,7 @@ export const EndorsementCard: React.FC<{
                 <EndorsementButton credential={credential} categoryType={categoryType} />
             </div>
         </div>
-    );
+    ) : null;
 };
 
 export default EndorsementCard;
