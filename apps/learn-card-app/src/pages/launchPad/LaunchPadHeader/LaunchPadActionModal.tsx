@@ -473,7 +473,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         ],
         [LearnCardRolesEnum.admin]: [
             'Edit Skills Frameworks',
-            'Import Credential',
+            'Import Credentials',
             'Create Organization',
             'Create Credential',
             'Switch Account',
@@ -530,7 +530,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Create Credential': 'bg-[var(--ion-color-amber-300)]',
         'Edit Skills Frameworks': 'bg-[var(--ion-color-violet-300)]',
         // Admin role labels
-        'Import Credential': 'bg-[var(--ion-color-blue-300)]',
+        'Import Credentials': 'bg-[var(--ion-color-blue-300)]',
         'Create Organization': 'bg-[var(--ion-color-lime-300)]',
         'Switch Account': 'bg-[var(--ion-color-cyan-200)]',
         // Developer role labels
