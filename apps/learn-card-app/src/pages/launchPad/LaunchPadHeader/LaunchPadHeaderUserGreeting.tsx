@@ -4,6 +4,7 @@ import moment from 'moment';
 import { getFirstName, useCurrentUser, useModal, ModalTypes } from 'learn-card-base';
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import LaunchPadActionModal from './LaunchPadActionModal';
+import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
 
 export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
     const currentUser = useCurrentUser();
@@ -13,9 +14,21 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
         mobile: ModalTypes.Freeform,
     });
 
+    const { gate } = useLCNGatedAction();
+
     const { emoji, greeting } = getGreetingAndEmoji(currentHour);
 
     const name = getFirstName(currentUser?.name ?? '');
+
+    const handleOpenActionModal = async () => {
+        const { prompted } = await gate();
+        if (prompted) return;
+
+        newModal(<LaunchPadActionModal />, {
+            className: 'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+            sectionClassName: '!max-w-[380px] disable-scrollbars',
+        });
+    };
 
     return (
         <div className="w-full flex items-center justify-center bg-white py-4">
@@ -30,13 +43,7 @@ export const LaunchPadHeaderUserGreeting: React.FC<{}> = () => {
                 <div className="w-full flex items-center justify-center mt-3">
                     <button
                         type="button"
-                        onClick={() =>
-                            newModal(<LaunchPadActionModal />, {
-                                className:
-                                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
-                                sectionClassName: '!max-w-[380px] disable-scrollbars',
-                            })
-                        }
+                        onClick={() => void handleOpenActionModal()}
                         className="w-full max-w-[600px] flex items-center justify-between px-4 py-3 rounded-2xl bg-[#DCEAFE] shadow-sm"
                     >
                         <span className="text-[#273B72] font-poppins font-semibold text-[20px]">

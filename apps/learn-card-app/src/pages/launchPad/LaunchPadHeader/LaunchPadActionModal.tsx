@@ -3,8 +3,6 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal, QRCodeScannerStore } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
-import PassportIcon from 'learn-card-base/svgs/PassportIcon';
-import Rocket from 'learn-card-base/svgs/Rocket';
 import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
 import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
@@ -32,8 +30,15 @@ import SwitchNetworksQuickNav from 'apps/learn-card-app/src/components/svgs/quic
 import ReadDocsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ReadDocsQuickNav';
 import AddChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddChildQuickNav';
 import SwitchChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchChildQuickNav';
+import NavBarPassportIcon from 'apps/learn-card-app/src/components/svgs/NavBarPassportIcon';
+import NavBarLaunchPadIcon from 'apps/learn-card-app/src/components/svgs/NavBarLaunchPadIcon';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
+import { AiInsightsTabsEnum } from '../../ai-insights/ai-insight-tabs/ai-insights-tabs.helpers';
+import { RequestInsightsModal } from '../../ai-insights/request-insights/RequestInsightsModal';
+import ShareInsightsModal from '../../ai-insights/share-insights/ShareInsightsModal';
+import { createTeacherStudentContract } from '../../ai-insights/request-insights/request-insights.helpers';
+import { createAiInsightsService } from '../../ai-insights/learner-insights/learner-insights.helpers';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
 import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
 import TeacherIcon from '../../../assets/images/quicknavroles/teacherappleicon.png';
@@ -61,10 +66,12 @@ import {
 import {
     useWallet,
     useGetProfile,
+    useGetCurrentLCNUser,
     useToast,
     ToastTypeEnum,
     BoostCategoryOptionsEnum,
     BoostUserTypeEnum,
+    useGetContracts,
     useGetCredentialList,
     CredentialCategoryEnum,
     switchedProfileStore,
@@ -355,6 +362,14 @@ const ActionButton: React.FC<{
                 closeModal();
                 QRCodeScannerStore.set.showScanner(true);
                 return;
+            case 'Share Insights with Teacher':
+                closeModal();
+                newModal(
+                    <ShareInsightsModal />,
+                    {},
+                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                );
+                return;
             default:
                 return;
         }
@@ -381,10 +396,18 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const history = useHistory();
     const { initWallet } = useWallet();
     const { data: lcNetworkProfile } = useGetProfile();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+    const { data: contractsData, refetch: refetchContracts } = useGetContracts();
     const { presentToast } = useToast();
     const { familyCredential } = useGetFamilyCredential();
     const { data: familyList } = useGetCredentialList(CredentialCategoryEnum.family);
     const familyUri = (familyList?.pages?.[0]?.records?.[0]?.uri as string) || undefined;
+
+    type ConsentFlowContractLike = { name?: string; uri?: string };
+
+    const contracts: ConsentFlowContractLike[] | undefined = Array.isArray(contractsData)
+        ? (contractsData as ConsentFlowContractLike[])
+        : (contractsData as { records?: ConsentFlowContractLike[] } | undefined)?.records;
 
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
     const [optimisticRole, setOptimisticRole] = useState<LearnCardRolesEnum | null>(null);
@@ -459,7 +482,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         ],
         [LearnCardRolesEnum.admin]: [
             'Edit Skills Frameworks',
-            'Import Credential',
+            'Import Credentials',
             'Create Organization',
             'Create Credential',
             'Switch Account',
@@ -516,7 +539,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Create Credential': 'bg-[var(--ion-color-amber-300)]',
         'Edit Skills Frameworks': 'bg-[var(--ion-color-violet-300)]',
         // Admin role labels
-        'Import Credential': 'bg-[var(--ion-color-blue-300)]',
+        'Import Credentials': 'bg-[var(--ion-color-blue-300)]',
         'Create Organization': 'bg-[var(--ion-color-lime-300)]',
         'Switch Account': 'bg-[var(--ion-color-cyan-200)]',
         // Developer role labels
@@ -525,6 +548,70 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Create ConsentFlow': 'bg-[var(--ion-color-lime-300)]',
         'Switch Network': 'bg-[var(--ion-color-yellow-300)]',
         'Read Docs': 'bg-[var(--ion-color-teal-200)]',
+    };
+
+    const handleViewChildInsights = () => {
+        history.push(`/ai/insights?tab=${AiInsightsTabsEnum.ChildInsights}`);
+        closeModal();
+    };
+
+    const handleEditSkillsFrameworks = () => {
+        history.push('/skills?tab=admin-panel');
+        closeModal();
+    };
+
+    const handleViewLearnerInsights = () => {
+        history.push(`/ai/insights?tab=${AiInsightsTabsEnum.LearnerInsights}`);
+        closeModal();
+    };
+
+    const handleRequestLearnerInsights = async () => {
+        try {
+            const wallet = await initWallet();
+
+            if (!wallet || !currentLCNUser) {
+                presentToast('Unable to open Request Insights', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
+            const existingTeacherContract = contracts?.find(
+                contract => contract.name === 'AI Insights'
+            );
+
+            let contractUri = existingTeacherContract?.uri;
+
+            if (!contractUri) {
+                contractUri = await createTeacherStudentContract({
+                    teacherProfile: currentLCNUser,
+                });
+                refetchContracts?.();
+            }
+
+            await createAiInsightsService(
+                wallet,
+                contractUri,
+                currentLCNUser.profileId!,
+                currentLCNUser.did!
+            );
+
+            closeModal();
+            newModal(
+                <RequestInsightsModal contractUri={contractUri} />,
+                {},
+                {
+                    desktop: ModalTypes.FullScreen,
+                    mobile: ModalTypes.FullScreen,
+                }
+            );
+        } catch (e) {
+            presentToast('Unable to open Request Insights', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
     };
 
     return (
@@ -638,6 +725,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                       );
                                       history.push('/families');
                                   }
+                                : label === 'View Learner Insights'
+                                ? handleViewLearnerInsights
+                                : label === 'View Child Insights'
+                                ? handleViewChildInsights
+                                : label === 'Edit Skills Frameworks'
+                                ? handleEditSkillsFrameworks
+                                : label === 'Request Learner Insights'
+                                ? () => void handleRequestLearnerInsights()
                                 : undefined
                         }
                     />
@@ -653,7 +748,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         }}
                         className="w-full bg-white text-grayscale-900 rounded-[15px] border border-solid border-[#E2E3E9] py-3 shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] flex items-center justify-center gap-2"
                     >
-                        <PassportIcon className="w-[26px] h-[26px]" />
+                        <NavBarPassportIcon
+                            version="2"
+                            className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
+                        />
                         <span className="text-base font-poppins font-semibold">Passport</span>
                     </button>
                     <button
@@ -668,7 +766,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         }}
                         className="w-full bg-white text-grayscale-900 rounded-[15px] border border-solid border-[#E2E3E9] py-3 shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] flex items-center justify-center gap-2"
                     >
-                        <Rocket className="w-[26px] h-[26px]" />
+                        <NavBarLaunchPadIcon
+                            version="2"
+                            className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
+                        />
                         <span className="text-base font-poppins font-semibold">Launchpad</span>
                     </button>
                 </div>
