@@ -5,6 +5,7 @@ import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import MainHeader from '../../components/main-header/MainHeader';
 import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
+import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
 
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
@@ -32,8 +33,9 @@ const AiPathways: React.FC = () => {
                         subheaderType={SubheaderTypeEnum.AiPathways}
                         hidePlusBtn={true}
                     />
-                    <div className="flex relative justify-center items-center w-full">
+                    <div className="flex flex-col relative w-full">
                         <AiPathwayCourses />
+                        <AiPathwaySessions />
                     </div>
                 </IonContent>
             </ErrorBoundary>
