@@ -282,6 +282,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                     <AiInsightsConsentFlowHeader
                         profile={insightsProfile}
                         childProfile={childInsightsProfile}
+                        isPostConsent={isPostConsent}
                     />
                 ) : (
                     <ConsentFlowHeader

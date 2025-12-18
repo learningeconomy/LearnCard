@@ -15,6 +15,33 @@ update_fastlane
 
 default_platform(:android)
 
+# Helper to increment version based on bump type (major, minor, patch)
+# Reads from ENV['VERSION_BUMP_TYPE'], defaults to 'patch'
+def increment_version_by_type(current_version_string)
+  bump_type = (ENV['VERSION_BUMP_TYPE'] || 'patch').downcase
+  parts = current_version_string.split('.').map(&:to_i)
+
+  # Ensure we have at least 3 parts (X.Y.Z)
+  while parts.length < 3
+    parts << 0
+  end
+
+  case bump_type
+  when 'major'
+    parts[0] += 1
+    parts[1] = 0
+    parts[2] = 0
+  when 'minor'
+    parts[1] += 1
+    parts[2] = 0
+  else # 'patch' or default
+    parts[2] += 1
+  end
+
+  UI.message("Version bump type: #{bump_type}, #{current_version_string} -> #{parts.join('.')}")
+  parts.join('.')
+end
+
 platform :ios do
   desc "Description of what the lane does"
 
@@ -99,16 +126,7 @@ platform :ios do
     current_version_string = versions.max { |a, b| compare_versions.call(a, b) }
     UI.message("TestFlight: #{testflight_version}, App Store live: #{app_store_live_version}, App Store pending: #{app_store_pending_version}, using: #{current_version_string}")
     
-    parts = current_version_string.split('.').map(&:to_i)
-    if parts.length == 3 # assuming X.Y.Z
-      parts[2] += 1 # Increment patch (Z)
-    elsif parts.length == 2 # assuming X.Y
-      parts[1] += 1 # Increment minor (Y)
-    else
-      UI.message("Warning: Unrecognized version format. Using 1.0.0.")
-      parts = [1, 0, 0]
-    end
-    new_version_string = parts.join('.')
+    new_version_string = increment_version_by_type(current_version_string)
 
     increment_version_number(
       version_number: new_version_string,
@@ -194,16 +212,7 @@ platform :ios do
     current_version_string = (tf_parts <=> as_parts) >= 0 ? testflight_version : app_store_version
     UI.message("TestFlight version: #{testflight_version}, App Store version: #{app_store_version}, using: #{current_version_string}")
     
-    parts = current_version_string.split('.').map(&:to_i)
-    if parts.length == 3 # assuming X.Y.Z
-      parts[2] += 1 # Increment patch (Z)
-    elsif parts.length == 2 # assuming X.Y
-      parts[1] += 1 # Increment minor (Y)
-    else
-      UI.message("Warning: Unrecognized version format. Using 1.0.0.")
-      parts = [1, 0, 0]
-    end
-    new_version_string = parts.join('.')
+    new_version_string = increment_version_by_type(current_version_string)
 
     increment_version_number(
       version_number: new_version_string,
@@ -285,16 +294,7 @@ platform :ios do
     current_version_string = (tf_parts <=> as_parts) >= 0 ? testflight_version : app_store_version
     UI.message("TestFlight version: #{testflight_version}, App Store version: #{app_store_version}, using: #{current_version_string}")
     
-    parts = current_version_string.split('.').map(&:to_i)
-    if parts.length == 3 # assuming X.Y.Z
-      parts[2] += 1 # Increment patch (Z)
-    elsif parts.length == 2 # assuming X.Y
-      parts[1] += 1 # Increment minor (Y)
-    else
-      UI.message("Warning: Unrecognized version format. Using 1.0.0.")
-      parts = [1, 0, 0]
-    end
-    new_version_string = parts.join('.')
+    new_version_string = increment_version_by_type(current_version_string)
 
     increment_version_number(
       version_number: new_version_string,
@@ -385,12 +385,7 @@ platform :android do
     current_build_number = ((Time.now - Time.new(1991, 1, 1)) / 60).to_i
     current_version_name_str = previous_version_name
     UI.message("Current version name: #{current_version_name_str} Current build number: #{current_build_number}")
-    parts = current_version_name_str.split('.').map(&:to_i)
-    parts[2] = parts[2] + 1 if parts.length == 3 # Increment patch
-    parts[1] = parts[1] + 1 if parts.length == 2 # Increment minor (if no patch)
-    parts[0] = parts[0] + 1 if parts.length == 1 # Increment major (if no minor or patch)
-
-    current_version_name = parts.join('.')
+    current_version_name = increment_version_by_type(current_version_name_str)
     UI.message("New version name: #{current_version_name}")
     UI.message("New build number: #{current_build_number}")
     UI.message("Building app...")
@@ -445,11 +440,7 @@ platform :android do
     
     current_build_number = ((Time.now - Time.new(1991, 1, 1)) / 60).to_i
     current_version_name_str = previous_version_name
-    parts = current_version_name_str.split('.').map(&:to_i)
-    parts[2] = parts[2] + 1 if parts.length == 3 # Increment patch
-    parts[1] = parts[1] + 1 if parts.length == 2 # Increment minor (if no patch)
-    parts[0] = parts[0] + 1 if parts.length == 1 # Increment major (if no minor or patch)
-    current_version_name = parts.join('.')
+    current_version_name = increment_version_by_type(current_version_name_str)
 
     gradle(
       task: 'assemble',

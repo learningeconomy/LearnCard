@@ -32,12 +32,11 @@ import {
     NotificationTypeStyles,
 } from '../../../components/notifications/notificationsV2/types';
 
-import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { LCNProfile } from '@learncard/types';
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
 
 type AiInsightsNotificationProps = {
-    notification: NotificationType;
+    notification: any;
     claimStatus?: boolean;
     handleArchive?: () => void;
     cardLoading?: boolean;
@@ -292,7 +291,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                         <div className="notification-count-mobile unread-indicator-dot" />
                     )}
                     <div className="notification-card-left-side px-[0px] flex cursor-pointer">
-                        <div className="w-[90px] h-[90px] min-w-[90px] min-h-[90px] max-w-[90px] max-h-[90px] overflow-hidden rounded-full">
+                        <div className="w-[78px] h-[78px] min-w-[78px] min-h-[78px] max-w-[78px] max-h-[78px] overflow-hidden rounded-full">
                             <UserProfilePicture
                                 user={notification.from}
                                 customImageClass="w-full h-full object-cover"
@@ -300,7 +299,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                             />
                         </div>
 
-                        {isLoading && <div className="w-[90px] h-[90px] rounded-full bg-gray-50" />}
+                        {isLoading && <div className="w-[78px] h-[78px] rounded-full bg-gray-50" />}
                     </div>
                     <div className="flex flex-col justify-center items-start relative w-full">
                         <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
