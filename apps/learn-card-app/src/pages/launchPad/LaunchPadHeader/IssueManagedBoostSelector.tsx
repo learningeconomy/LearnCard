@@ -17,6 +17,8 @@ import CaretDown from 'learn-card-base/svgs/CaretDown';
 import { IonInput, IonSpinner } from '@ionic/react';
 import BoostTemplateListItem from '../../../components/boost/boost-template/BoostTemplateListItem';
 
+const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const ALLOWED_CATEGORIES = [
     BoostCategoryOptionsEnum.all,
     BoostCategoryOptionsEnum.socialBadge,
@@ -111,7 +113,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                     ? undefined
                     : (selectedCategory as unknown as CredentialCategoryEnum),
             ...(debouncedSearchInput && {
-                name: { $regex: new RegExp(debouncedSearchInput, 'i') },
+                name: { $regex: new RegExp(escapeRegex(debouncedSearchInput), 'i') },
             }),
         },
         { limit: 12 }
