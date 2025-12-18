@@ -42,10 +42,8 @@ export const RequestInsightsUserCardOptions: React.FC<{
                         return null;
                     }
 
-                    if (
-                        status === 'pending' &&
-                        option.type === RequestInsightsOptionsEnum.removeConnection
-                    ) {
+                    // TODO: re-enable this option once the remove connection endpoint is implemented
+                    if (option.type === RequestInsightsOptionsEnum.removeConnection) {
                         return null;
                     }
 
