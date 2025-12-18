@@ -675,13 +675,22 @@ export const canProfileEditBoost = async (profile: ProfileType, boost: BoostInst
                 { identifier: 'targetBoost' },
             ],
         })
-        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'targetBoost' },
+                Boost.getRelationshipByAlias('defaultRole'),
+                { model: Role, identifier: 'defaultRole' },
+            ],
+        });
 
     const result = await query
         .return(
             `
             COALESCE(hasRole.canEdit, role.canEdit) AS directCanEdit,
-            COALESCE(parentHasRole.canEditChildren, parentRole.canEditChildren) AS parentCanEditChildren
+            COALESCE(parentHasRole.canEditChildren, parentRole.canEditChildren) AS parentCanEditChildren,
+            defaultRole.canEdit AS defaultCanEdit
 `
         )
         .run();
@@ -691,6 +700,10 @@ export const canProfileEditBoost = async (profile: ProfileType, boost: BoostInst
 
         const directCanEdit = record.get('directCanEdit');
         const parentEditChildren = record.get('parentCanEditChildren');
+        const defaultCanEdit = record.get('defaultCanEdit');
+
+        // Check if defaultPermissions allows editing
+        if (defaultCanEdit === true) return true;
 
         if (!parentEditChildren || parentEditChildren === '{}') return Boolean(directCanEdit);
 

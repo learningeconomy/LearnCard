@@ -711,4 +711,130 @@ describe('Default Permissions', () => {
             expect(credentialUri).toBeDefined();
         });
     });
+
+    describe('defaultPermissions.canEdit', () => {
+        it('should allow any authenticated user to edit boost when defaultPermissions.canEdit is true', async () => {
+            // UserA creates a boost with defaultPermissions.canEdit = true
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canEdit: true },
+            });
+
+            // UserB (not an admin) should be able to update the boost meta
+            const result = await userB.clients.fullAuth.boost.updateBoost({
+                uri: boostUri,
+                updates: {
+                    meta: { customField: 'value from userB' },
+                },
+            });
+
+            expect(result).toBe(true);
+
+            // Verify the update took effect
+            const boost = await userA.clients.fullAuth.boost.getBoost({ uri: boostUri });
+            expect(boost.meta?.customField).toBe('value from userB');
+        });
+
+        it('should not allow non-admin users to edit boost when no defaultPermissions.canEdit', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.updateBoost({
+                    uri: boostUri,
+                    updates: {
+                        meta: { customField: 'value from userB' },
+                    },
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should not allow editing when defaultPermissions.canEdit is false', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canEdit: false },
+            });
+
+            await expect(
+                userB.clients.fullAuth.boost.updateBoost({
+                    uri: boostUri,
+                    updates: {
+                        meta: { customField: 'value from userB' },
+                    },
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow updating defaultPermissions when defaultPermissions.canEdit is true', async () => {
+            // Create boost with canEdit: true
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canEdit: true },
+            });
+
+            // UserB can update defaultPermissions because they have canEdit
+            await userB.clients.fullAuth.boost.updateBoost({
+                uri: boostUri,
+                updates: {
+                    defaultPermissions: { canIssue: true },
+                },
+            });
+
+            // Now userC should be able to issue (because userB set canIssue: true)
+            const credential = await userC.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userC.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userD.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            const credentialUri = await userC.clients.fullAuth.boost.sendBoost({
+                profileId: 'userd',
+                uri: boostUri,
+                credential,
+            });
+
+            expect(credentialUri).toBeDefined();
+        });
+
+        it('should allow combining canEdit and canIssue in defaultPermissions', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canEdit: true, canIssue: true },
+            });
+
+            // UserB can edit
+            const editResult = await userB.clients.fullAuth.boost.updateBoost({
+                uri: boostUri,
+                updates: {
+                    meta: { customField: 'edited by userB' },
+                },
+            });
+
+            expect(editResult).toBe(true);
+
+            // UserC can issue
+            const credential = await userC.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userC.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userD.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            const credentialUri = await userC.clients.fullAuth.boost.sendBoost({
+                profileId: 'userd',
+                uri: boostUri,
+                credential,
+            });
+
+            expect(credentialUri).toBeDefined();
+        });
+    });
 });
