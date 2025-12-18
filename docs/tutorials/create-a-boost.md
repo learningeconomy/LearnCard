@@ -386,6 +386,7 @@ Boosts are a powerful way to manage credentialing at scale. From here, you can e
 
 * **Retrieving Boost Recipients:** Use `learnCard.invoke.getPaginatedBoostRecipients(boostUri)` to see who has been issued a credential from this Boost.
 * **Boost Permissions:** Control who can edit, issue, or manage your Boosts. (See Boost Permission Model).
+* **Default Permissions:** Use `defaultPermissions` to create open Boosts that anyone can issue. (See [Default Permissions](../core-concepts/credentials-and-data/boost-credentials.md#default-permissions)).
 * **Boost Hierarchies:** Organize Boosts into parent-child relationships. (See Boost Hierarchies).
 * Customizing **Display Options** for your Boosts to make them visually appealing in wallets.
 
