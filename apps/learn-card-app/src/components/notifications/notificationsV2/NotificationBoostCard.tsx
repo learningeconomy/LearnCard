@@ -60,8 +60,6 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         mobile: ModalTypes.FullScreen,
     });
 
-    console.log('notification', notification);
-
     const [isClaimed, setIsClaimed] = useState<boolean>(claimStatus || false);
     const [isRead, setIsRead] = useState<boolean>(notification?.read || false);
     const [claimModalOpen, setClaimModalOpen] = useState<boolean>(false);

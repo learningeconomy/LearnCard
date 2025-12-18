@@ -14,11 +14,13 @@ export type Toast = {
 export type ToastOptions = {
     title?: string;
     duration?: number;
+    autoDismiss?: boolean;
     className?: string;
     hasDismissButton?: boolean;
     hasCheckmark?: boolean;
     hasX?: boolean;
     type?: ToastTypeEnum;
+    zIndex?: number;
 };
 
 export const toastStore = createStore('toastStore')(
@@ -28,10 +30,12 @@ export const toastStore = createStore('toastStore')(
             title: '',
             className: '',
             duration: 3000,
+            autoDismiss: true,
             type: ToastTypeEnum.Success,
             hasDismissButton: false,
             hasCheckmark: false,
             hasX: false,
+            zIndex: 999999,
         },
     },
     { persist: { name: 'toastStore', enabled: false } }
@@ -47,6 +51,15 @@ export const toastStore = createStore('toastStore')(
         });
     },
 
+    setOptions: (options: ToastOptions) => {
+        set.state(state => {
+            state.options = {
+                ...state.options,
+                ...options,
+            };
+        });
+    },
+
     dismissToast: () => {
         set.state(state => {
             state.message = '';
@@ -54,10 +67,12 @@ export const toastStore = createStore('toastStore')(
                 title: '',
                 className: '',
                 duration: 3000,
+                autoDismiss: true,
                 type: ToastTypeEnum.Success,
                 hasDismissButton: false,
                 hasCheckmark: false,
                 hasX: false,
+                zIndex: 999999,
             };
         });
     },

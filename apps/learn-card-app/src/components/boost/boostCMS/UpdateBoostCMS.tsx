@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import { IonCol, IonContent, IonGrid, IonPage, IonRow, useIonModal } from '@ionic/react';
@@ -74,6 +75,7 @@ import BoostCMSAchievementTypeSelectorButton from './boostCMSForms/boostCMSAppea
 import BoostIDCardCMSMembersForm from './BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSMembersForm';
 import BoostCMSDisplayTypeSelector from './boostCMSForms/boostCMSAppearance/BoostCMSDisplayTypeSelector';
 import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
+import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
 
 const UpdateBoostCMS: React.FC = () => {
     const history = useHistory();
@@ -159,6 +161,9 @@ const UpdateBoostCMS: React.FC = () => {
                   })
                 : [];
 
+            // Prefer OBv3 alignments if present on the VC; otherwise, derive from legacy skills
+            const derivedAlignments = deriveAlignmentsFromVC(_boostVC);
+
             setState(prevState => {
                 return {
                     ...prevState,
@@ -203,6 +208,7 @@ const UpdateBoostCMS: React.FC = () => {
                     },
                     mediaAttachments: [...state?.mediaAttachments, ...boostVcAttachments],
                     skills: [...state.skills, ...(_boostVC?.skills ?? [])],
+                    alignments: derivedAlignments,
                 };
             });
 
@@ -678,7 +684,12 @@ const UpdateBoostCMS: React.FC = () => {
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                     disabled={isEditDisabled}
                 />
-                <BoostCMSSkillsAttachmentForm state={state} setState={setState} />
+                {/* <BoostCMSSkillsAttachmentForm state={state} setState={setState} /> */}
+                <BoostFrameworkSkillSelector
+                    state={state}
+                    setState={setState}
+                    reloadStateTrigger={isBoostLoading}
+                />
                 <BoostCMSMediaForm state={state} setState={setState} disabled={isEditDisabled} />
                 <BoostCMSBasicInfoForm
                     state={state}

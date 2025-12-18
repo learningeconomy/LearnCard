@@ -12,6 +12,7 @@ import {
     useGetAllAiTopicCredentials,
     useAiInsightCredential,
 } from 'learn-card-base';
+import useAlignments from '../../hooks/useAlignments';
 
 import WalletPageSquare from './WalletPageSquare';
 import WalletPageListItem from './WalletPageListItem';
@@ -60,6 +61,8 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
     const { data: aiInsightCredential, isLoading: aiInsightCredentialLoading } =
         useAiInsightCredential();
 
+    const { alignments } = useAlignments();
+
     let categoryCount = data !== null && data !== undefined ? Number(data) : 0;
     if (enableAiCount) categoryCount = aiTopicsCount?.length ?? 0;
     if (enableSkillsCount) {
@@ -73,7 +76,7 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
             (total, category) => total + (category?.totalSubskills || 0),
             0
         ) as number;
-        const skillsCount = totalSkills + totalSubskills;
+        const skillsCount = totalSkills + totalSubskills + (alignments?.length || 0);
         categoryCount = skillsCount;
     } else if (enableAiInsightCount) {
         categoryCount = quantifyInsights(aiInsightCredential?.insights);

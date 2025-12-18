@@ -45,6 +45,18 @@ The `docs/` folder contains **GitBook documentation** that is synced to [docs.le
 - `docs/README.md` — Landing page (What is LearnCard?)
 - `docs/SUMMARY.md` — Table of contents / sidebar navigation (GitBook uses this)
 - `docs/quick-start/` — Getting started guides
+- `docs/apps/` — User-facing app documentation (LearnCard App, ScoutPass)
+
+### App Documentation (`docs/apps/`)
+
+For changes to user-facing applications in `apps/`:
+
+| App | Doc Location | Focus |
+|-----|--------------|-------|
+| LearnCard App | `docs/apps/learn-card-app/` | Claiming, sharing, wallet flows |
+| ScoutPass | `docs/apps/scouts/` | NSO→Troop→Scout hierarchy, BoostIDs, badge issuance |
+
+Use **Mermaid diagrams** for user flows (e.g., claim flow, share flow, permission flow).
 
 ### Editing Guidelines
 

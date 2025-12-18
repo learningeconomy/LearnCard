@@ -67,9 +67,9 @@
   * [Architecture](sdks/learncard-network/architecture.md)
   * [Notifications & Webhooks](sdks/learncard-network/notifications.md)
   * ```yaml
-    type: builtin:openapi
     props:
       models: true
+    type: builtin:openapi
     dependencies:
       spec:
         ref:
@@ -82,9 +82,9 @@
   * [Usage Examples](sdks/learncloud-storage-api/usage-examples.md)
   * [Architecture](sdks/learncloud-storage-api/architecture.md)
   * ```yaml
-    type: builtin:openapi
     props:
       models: true
+    type: builtin:openapi
     dependencies:
       spec:
         ref:
@@ -132,6 +132,12 @@
   * [Plugin System](core-concepts/architecture-and-principles/plugins.md)
   * [Auth Grants and API Tokens](core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md)
   * [U.S. State API](core-concepts/architecture-and-principles/u.s.-state-api.md)
+
+## 📱 Apps
+
+* [Apps Overview](apps/README.md)
+* [LearnCard App](apps/learn-card-app/README.md)
+* [ScoutPass](apps/scouts/README.md)
 
 ## 🔗 Development
 

@@ -4,6 +4,7 @@ import { BoostCMSAppearanceDisplayTypeEnum } from './boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { RouteComponentProps } from 'react-router-dom';
 import {
+    BoostCMSAlignment,
     BoostCMSState,
     LCAStylesPackRegistryEntry,
     convertAttachmentsToEvidence,
@@ -17,6 +18,7 @@ import {
     getBoostMetadata,
 } from 'learn-card-base';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from './boost-options/boostOptions';
+import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignmentHelpers';
 
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {
     const fallbackName = isCustomBoostType(state.basicInfo.achievementType ?? '')
@@ -147,6 +149,8 @@ export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
                 description: vcInput?.basicInfo?.description, // description
                 name: vcInput?.basicInfo?.name || fallbackCredentialValues?.title, // title
                 image: vcInput?.appearance?.badgeThumbnail, // badge image
+                alignment:
+                    (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []),
             },
         },
         display: {
@@ -217,6 +221,8 @@ export const updateBoost = async (
         evidence, // ! attachments are deprecated in favor of evidence
         attachments,
         skills: vcInput?.skills ?? [],
+        // TODO need to add alignment handling to the backend
+        // alignment: (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []),
         address: vcInput?.address,
         boostID: {
             fontColor: vcInput?.appearance?.fontColor,
@@ -243,6 +249,18 @@ export const updateBoost = async (
     const updatedCredential = await wallet.invoke.newCredential({
         ...credentialPayload,
     });
+
+    // Ensure OBv3 alignments live under credential.credentialSubject.achievement.alignment
+    try {
+        const alignments =
+            (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []);
+        updatedCredential.credentialSubject = updatedCredential.credentialSubject ?? {};
+        (updatedCredential.credentialSubject as any).achievement =
+            (updatedCredential.credentialSubject as any).achievement ?? {};
+        (updatedCredential.credentialSubject as any).achievement.alignment = alignments;
+    } catch (e) {
+        console.warn('Failed to set nested alignments on updatedCredential', e);
+    }
 
     const updatedBoost = await wallet?.invoke?.updateBoost(boostUri, {
         name: vcInput?.basicInfo?.name || fallbackCredentialValues?.title,
@@ -481,6 +499,22 @@ export const createBoost = async (vcInput: BoostCMSState, wallet: BespokeLearnCa
     const walletDid = wallet?.id?.did();
     const currentDate = new Date()?.toISOString();
 
+    // Note: this might not work. Scouts does it differently
+    // Extract skill IDs from alignments for Neo4j-based skill management
+    // Backend will auto-inject alignments when retrieving the boost
+    const skillIds = extractSkillIdsFromAlignments(vcInput?.alignments ?? []);
+
+    // create alignments array for credential (OBv3 format)
+    let alignments: BoostCMSAlignment[] = [];
+    // Prefer new framework-based alignments if present
+    if (vcInput?.alignments && vcInput.alignments.length > 0) {
+        alignments = vcInput.alignments;
+    }
+    // Legacy fallback: convert old-style skills to alignments
+    else if (vcInput?.skills && vcInput.skills.length > 0) {
+        alignments = alignmentsFromSkills(vcInput.skills);
+    }
+
     const newCredential = {
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
@@ -550,6 +584,7 @@ export const createBoost = async (vcInput: BoostCMSState, wallet: BespokeLearnCa
                 description: vcInput?.basicInfo?.description, // description
                 name: vcInput?.basicInfo?.name, // title
                 image: vcInput?.appearance?.badgeThumbnail, // badge image
+                alignment: alignments,
             },
         },
         display: {
@@ -559,7 +594,6 @@ export const createBoost = async (vcInput: BoostCMSState, wallet: BespokeLearnCa
         },
         image: vcInput?.appearance?.badgeThumbnail, // badge image,
         attachments: vcInput?.mediaAttachments, // media attachments
-        //
     };
 
     const vc = await wallet.invoke.issueCredential(newCredential);
@@ -568,6 +602,7 @@ export const createBoost = async (vcInput: BoostCMSState, wallet: BespokeLearnCa
         name: vcInput?.basicInfo?.name,
         type: vcInput?.basicInfo.achievementType,
         category: vcInput?.basicInfo?.type,
+        skillIds, // Backend handles Neo4j relationships and alignment injection
     });
 
     return {
