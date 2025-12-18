@@ -120,7 +120,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                         return {
                                             ...connection,
                                             connectionStatus:
-                                                LCNProfileConnectionStatusEnum?.Enum
+                                                LCNProfileConnectionStatusEnum?.enum
                                                     ?.PENDING_REQUEST_SENT,
                                         };
                                     }
@@ -185,7 +185,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                     return {
                                         ...connection,
                                         connectionStatus:
-                                            LCNProfileConnectionStatusEnum?.Enum?.NOT_CONNECTED,
+                                            LCNProfileConnectionStatusEnum?.enum?.NOT_CONNECTED,
                                     };
                                 }
                                 return {
@@ -245,7 +245,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                         return {
                                             ...connection,
                                             connectionStatus:
-                                                LCNProfileConnectionStatusEnum?.Enum?.CONNECTED,
+                                                LCNProfileConnectionStatusEnum?.enum?.CONNECTED,
                                         };
                                     }
                                     return {
@@ -369,12 +369,12 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     let actionButton = null;
 
     if (showRequestButton) {
-        if (LCNProfileConnectionStatusEnum.Enum.CONNECTED === (contact as any)?.connectionStatus) {
+        if (LCNProfileConnectionStatusEnum.enum.CONNECTED === (contact as any)?.connectionStatus) {
             actionButton = (
                 <button className="text-emerald-600 font-bold text-sm">Connected</button>
             );
         } else if (
-            LCNProfileConnectionStatusEnum.Enum.NOT_CONNECTED === (contact as any)?.connectionStatus
+            LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED === (contact as any)?.connectionStatus
         ) {
             actionButton = (
                 <button
@@ -408,7 +408,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 </button>
             );
         } else if (
-            LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_SENT ===
+            LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT ===
             (contact as any)?.connectionStatus
         ) {
             actionButton = (
@@ -444,7 +444,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 </button>
             );
         } else if (
-            LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_RECEIVED ===
+            LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_RECEIVED ===
             (contact as any)?.connectionStatus
         ) {
             actionButton = (

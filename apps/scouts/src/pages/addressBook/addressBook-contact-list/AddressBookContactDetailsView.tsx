@@ -70,17 +70,17 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     showCloseButton,
     showBoostButton,
     showRequestButton,
-    handleConnectionRequest = () => {},
+    handleConnectionRequest = () => { },
     showDeleteButton,
-    handleRemoveConnection = () => {},
+    handleRemoveConnection = () => { },
     showAcceptButton,
-    handleAcceptConnectionRequest = () => {},
+    handleAcceptConnectionRequest = () => { },
     showCancelButton,
-    handleCancelConnectionRequest = () => {},
+    handleCancelConnectionRequest = () => { },
     showBlockButton,
-    handleBlockUser = () => {},
+    handleBlockUser = () => { },
     showUnblockButton,
-    handleUnblockUser = () => {},
+    handleUnblockUser = () => { },
     history,
 }) => {
     const { presentToast } = useToast();
@@ -138,7 +138,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     let actionButton = null;
 
     if (showRequestButton) {
-        if (LCNProfileConnectionStatusEnum.Enum.CONNECTED === contact?.connectionStatus) {
+        if (LCNProfileConnectionStatusEnum.enum.CONNECTED === contact?.connectionStatus) {
             actionButton = (
                 <button className="w-full flex items-center justify-center bg-white rounded-full px-[18px] py-[12px] text-grayscale-900 text-2xl shadow-lg mb-4">
                     <Checkmark className="ml-[5px] h-[30px] w-[30px] mr-2" />
@@ -146,7 +146,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                 </button>
             );
         } else if (
-            LCNProfileConnectionStatusEnum.Enum.NOT_CONNECTED === contact?.connectionStatus
+            LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED === contact?.connectionStatus
         ) {
             actionButton = (
                 <button
@@ -167,7 +167,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                 </button>
             );
         } else if (
-            LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_SENT === contact?.connectionStatus
+            LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT === contact?.connectionStatus
         ) {
             actionButton = (
                 <button
@@ -188,7 +188,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                 </button>
             );
         } else if (
-            LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_RECEIVED ===
+            LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_RECEIVED ===
             contact?.connectionStatus
         ) {
             actionButton = (
