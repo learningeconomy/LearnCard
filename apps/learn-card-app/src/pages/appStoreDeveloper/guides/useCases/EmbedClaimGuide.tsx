@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     Key, 
     Code, 
@@ -11,13 +11,20 @@ import {
     CheckCircle2,
     Copy,
     Check,
+    Plus,
+    Loader2,
+    Building2,
+    Trash2,
+    RefreshCw,
 } from 'lucide-react';
+import type { LCNIntegration } from '@learncard/types';
 
-import { useToast } from 'learn-card-base';
+import { useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
 
 const STEPS = [
     { id: 'publishable-key', title: 'Get API Key' },
@@ -27,14 +34,51 @@ const STEPS = [
     { id: 'test', title: 'Test It' },
 ];
 
-// Step 1: Publishable Key
+// Step 1: Publishable Key (Integration Management)
 const PublishableKeyStep: React.FC<{
     onComplete: () => void;
     publishableKey: string;
     setPublishableKey: (key: string) => void;
-}> = ({ onComplete, publishableKey, setPublishableKey }) => {
+    selectedIntegration: LCNIntegration | null;
+    setSelectedIntegration: (integration: LCNIntegration | null) => void;
+}> = ({ onComplete, publishableKey, setPublishableKey, selectedIntegration, setSelectedIntegration }) => {
     const { presentToast } = useToast();
     const [copied, setCopied] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [newName, setNewName] = useState('');
+
+    const { useIntegrations, useCreateIntegration } = useDeveloperPortal();
+    const { data: integrations, isLoading, refetch } = useIntegrations();
+    const createMutation = useCreateIntegration();
+
+    // Auto-select first integration if none selected
+    useEffect(() => {
+        if (integrations && integrations.length > 0 && !selectedIntegration) {
+            const first = integrations[0];
+            setSelectedIntegration(first);
+            setPublishableKey(first.publishableKey);
+        }
+    }, [integrations, selectedIntegration, setSelectedIntegration, setPublishableKey]);
+
+    const handleSelectIntegration = (integration: LCNIntegration) => {
+        setSelectedIntegration(integration);
+        setPublishableKey(integration.publishableKey);
+    };
+
+    const handleCreateIntegration = async () => {
+        if (!newName.trim()) return;
+
+        try {
+            await createMutation.mutateAsync(newName.trim());
+            setNewName('');
+            setIsCreating(false);
+            presentToast('Integration created!', { hasDismissButton: true });
+            refetch();
+        } catch (err) {
+            console.error('Failed to create integration:', err);
+            presentToast('Failed to create integration', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        }
+    };
 
     const copyKey = async () => {
         if (!publishableKey) return;
@@ -52,57 +96,166 @@ const PublishableKeyStep: React.FC<{
 
                 <p className="text-gray-600">
                     You need a publishable key to authenticate credential claims from your website.
-                    This key is safe to expose in client-side code.
+                    Each integration has its own publishable key that is safe to expose in client-side code.
                 </p>
             </div>
 
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">Where to get your key</h4>
+            {/* Status */}
+            <StatusIndicator
+                status={isLoading ? 'loading' : (integrations && integrations.length > 0) ? 'ready' : 'warning'}
+                label={isLoading ? 'Loading integrations...' : (integrations && integrations.length > 0) ? `${integrations.length} integration${integrations.length > 1 ? 's' : ''} found` : 'No integrations found'}
+                description={selectedIntegration ? `Using "${selectedIntegration.name}"` : 'Create or select an integration to get started'}
+            />
 
-                <p className="text-sm text-blue-700 mb-3">
-                    Create a publishable key in the Developer Portal under API Keys. If you don't have one yet,
-                    you can create it from the Apps section.
-                </p>
+            {/* Integration List */}
+            {!isLoading && (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium text-gray-700">Your Integrations</label>
 
-                <a
-                    href="/app-store/developer"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:text-blue-800"
-                >
-                    Go to Developer Portal
-                    <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Your Publishable Key</label>
-
-                <div className="flex gap-2">
-                    <input
-                        type="text"
-                        value={publishableKey}
-                        onChange={(e) => setPublishableKey(e.target.value)}
-                        placeholder="pk_live_xxxxxxxx or pk_test_xxxxxxxx"
-                        className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-
-                    {publishableKey && (
                         <button
-                            onClick={copyKey}
-                            className="px-3 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                            onClick={() => refetch()}
+                            className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                         >
-                            {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                            <RefreshCw className="w-3 h-3" />
+                            Refresh
+                        </button>
+                    </div>
+
+                    {integrations && integrations.length > 0 ? (
+                        <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
+                            {integrations.map((integration) => (
+                                <button
+                                    key={integration.id}
+                                    onClick={() => handleSelectIntegration(integration)}
+                                    className={`w-full flex items-center justify-between p-4 text-left transition-colors ${
+                                        selectedIntegration?.id === integration.id
+                                            ? 'bg-cyan-50 border-l-4 border-l-cyan-500'
+                                            : 'hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                            selectedIntegration?.id === integration.id
+                                                ? 'bg-cyan-100'
+                                                : 'bg-gray-100'
+                                        }`}>
+                                            <Building2 className={`w-5 h-5 ${
+                                                selectedIntegration?.id === integration.id
+                                                    ? 'text-cyan-600'
+                                                    : 'text-gray-500'
+                                            }`} />
+                                        </div>
+
+                                        <div>
+                                            <p className="font-medium text-gray-800">{integration.name}</p>
+
+                                            <p className="text-xs text-gray-500 font-mono">
+                                                {integration.publishableKey.substring(0, 20)}...
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {selectedIntegration?.id === integration.id && (
+                                        <CheckCircle2 className="w-5 h-5 text-cyan-600" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="p-6 bg-gray-50 border border-gray-200 rounded-xl text-center">
+                            <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+
+                            <p className="text-gray-600 mb-1">No integrations yet</p>
+
+                            <p className="text-sm text-gray-500">
+                                Create your first integration to get a publishable key
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Create New Integration */}
+                    {isCreating ? (
+                        <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3">
+                            <label className="block text-sm font-medium text-indigo-800">New Integration Name</label>
+
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    placeholder="e.g., My Website, Course Platform"
+                                    className="flex-1 px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleCreateIntegration();
+                                        if (e.key === 'Escape') {
+                                            setIsCreating(false);
+                                            setNewName('');
+                                        }
+                                    }}
+                                />
+
+                                <button
+                                    onClick={handleCreateIntegration}
+                                    disabled={!newName.trim() || createMutation.isPending}
+                                    className="px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+                                >
+                                    {createMutation.isPending ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        'Create'
+                                    )}
+                                </button>
+
+                                <button
+                                    onClick={() => { setIsCreating(false); setNewName(''); }}
+                                    className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setIsCreating(true)}
+                            className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Plus className="w-5 h-5" />
+                            Create New Integration
                         </button>
                     )}
                 </div>
+            )}
 
-                <p className="text-xs text-gray-500 mt-1">
-                    Starts with <code className="bg-gray-100 px-1 rounded">pk_</code>
-                </p>
-            </div>
+            {/* Selected Key Display */}
+            {selectedIntegration && (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium text-emerald-800">Your Publishable Key</label>
+
+                        <button
+                            onClick={copyKey}
+                            className="text-xs text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
+                        >
+                            {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            {copied ? 'Copied!' : 'Copy'}
+                        </button>
+                    </div>
+
+                    <div className="px-3 py-2 bg-white border border-emerald-200 rounded-lg font-mono text-sm text-gray-700 break-all">
+                        {publishableKey}
+                    </div>
+
+                    <p className="text-xs text-emerald-700 mt-2">
+                        This key is safe to use in client-side code. It can only be used to claim credentials.
+                    </p>
+                </div>
+            )}
 
             <button
                 onClick={onComplete}
-                disabled={!publishableKey.startsWith('pk_')}
+                disabled={!publishableKey}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
                 Continue
@@ -570,6 +723,7 @@ const EmbedClaimGuide: React.FC = () => {
     const guideState = useGuideState('embed-claim', STEPS.length);
 
     const [publishableKey, setPublishableKey] = useState('');
+    const [selectedIntegration, setSelectedIntegration] = useState<LCNIntegration | null>(null);
     const [credentialName, setCredentialName] = useState('');
     const [partnerName, setPartnerName] = useState('');
 
@@ -586,6 +740,8 @@ const EmbedClaimGuide: React.FC = () => {
                         onComplete={() => handleStepComplete('publishable-key')}
                         publishableKey={publishableKey}
                         setPublishableKey={setPublishableKey}
+                        selectedIntegration={selectedIntegration}
+                        setSelectedIntegration={setSelectedIntegration}
                     />
                 );
 
