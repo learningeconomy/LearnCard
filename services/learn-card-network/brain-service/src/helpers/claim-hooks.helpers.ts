@@ -3,6 +3,7 @@ import { QueryBuilder } from 'neogma';
 import { CredentialInstance, Credential, Boost, Profile, ClaimHook, Role } from '@models';
 import { ProfileType } from 'types/profile';
 import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
+import { getBoostIdForCredentialInstance } from '@accesslayer/credential/relationships/read';
 import { getAdminRole } from '@accesslayer/role/read';
 
 const processPermissionsClaimHooks = async (
@@ -128,10 +129,10 @@ export const processClaimHooks = async (
     ]);
 
     try {
-        const vc = JSON.parse(credential.credential);
+        const boostId = await getBoostIdForCredentialInstance(credential);
 
-        if (vc.boostId) await clearDidWebCacheForChildProfileManagers(vc.boostId);
+        if (boostId) await clearDidWebCacheForChildProfileManagers(boostId);
     } catch (error) {
-        console.error('Invalid credential JSON?', error);
+        console.error('Could not clear did:web cache for accepted boost credential', error);
     }
 };
