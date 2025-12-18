@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useModal, useGetCurrentUserTroopIdsResolved, useGetMultipleBoosts } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
-import CaretDown from 'apps/scouts/src/components/svgs/CaretDown';
-import ScoutsTroopIcon from 'apps/scouts/src/assets/icons/ScoutsTroopIcon';
 import SkillsFrameworkNetworkSelectorItem from './SkillsFrameworkNetworkSelectorItem';
 
 type SkillsFrameworkNetworkSelectorProps = {
