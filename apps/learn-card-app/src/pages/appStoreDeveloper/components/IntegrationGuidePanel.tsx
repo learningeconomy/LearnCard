@@ -759,12 +759,15 @@ const userDID = await getUserLearnCardDID(userId);
 
 // Send a credential to the user
 await learnCard.invoke.send({
+    type: 'boost',
     recipient: userDID,
     contractUri: consentFlowContractURI,
     template: {
-        credential: ${credJson}
+        credential: ${credJson},
+        name: 'Course Completion',
+        category: 'Achievement',
     }
-});`;
+})`;
         }
 
         return `// Get the user's DID (stored from Step 2)
@@ -772,6 +775,7 @@ const userDID = await getUserLearnCardDID(userId);
 
 // Send a credential to the user
 await learnCard.invoke.send({
+    type: 'boost',
     recipient: userDID,
     contractUri: consentFlowContractURI,
     template: {
@@ -791,9 +795,11 @@ await learnCard.invoke.send({
                     image: 'https://placehold.co/400x400?text=Badge'
                 }
             }
-        }
+        },
+        name: 'Course Completion',
+        category: 'Achievement',
     }
-});`;
+})`;
     }, [builtCredential]);
 
     return (
@@ -1346,6 +1352,7 @@ initTutorSession({
                 <CodeBlock
                     code={`// After a learning milestone is achieved
 await learnCard.invoke.send({
+    type: 'boost',
     recipient: userDid,
     template: {
         credential: {
@@ -1362,7 +1369,9 @@ await learnCard.invoke.send({
                     achievementType: 'Achievement'
                 }
             }
-        }
+        },
+        name: topic,
+        category: 'Achievement',
     }
 });`}
                 />
