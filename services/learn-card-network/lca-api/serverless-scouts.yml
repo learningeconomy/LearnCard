@@ -10,8 +10,12 @@ plugins:
     - serverless-esbuild
     - serverless-domain-manager
     - serverless-certificate-creator
+    - serverless-prune-plugin
 
 custom:
+    prune:
+        automatic: true
+        number: 3
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:

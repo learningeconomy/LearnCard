@@ -12,6 +12,7 @@ plugins:
     - serverless-domain-manager
     - serverless-certificate-creator
     - serverless-lift
+    - serverless-prune-plugin
 
 constructs:
     notifications-queue:
@@ -20,6 +21,9 @@ constructs:
             handler: lambda.notificationsWorker
 
 custom:
+    prune:
+        automatic: true
+        number: 3
     config:
         CACHE_INSTANCE_SIZE: ${env:SERVERLESS_CACHE_INSTANCE_SIZE, 'cache.t2.micro'}
     esbuild:

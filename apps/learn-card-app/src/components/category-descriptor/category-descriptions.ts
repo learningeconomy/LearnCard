@@ -1,13 +1,13 @@
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, CredentialCategoryEnum } from 'learn-card-base';
 
 export const CATEGORY_DESCRIPTIONS: {
     [key: BoostCategoryOptionsEnum | string]: {
         id: number;
         text: string;
-        type: BoostCategoryOptionsEnum;
+        type: CredentialCategoryEnum;
     };
 } = {
-    [BoostCategoryOptionsEnum.learningHistory]: {
+    [CredentialCategoryEnum.learningHistory]: {
         id: 1,
         text: `Studies are structured programs of learning designed to 
         impart knowledge or skills in specific subjects or areas. 
@@ -16,9 +16,9 @@ export const CATEGORY_DESCRIPTIONS: {
         Studies are offered in various formats, including in-person 
         classroom settings, online platforms, or hybrid arrangements.
 `,
-        type: BoostCategoryOptionsEnum.learningHistory,
+        type: CredentialCategoryEnum.learningHistory,
     },
-    [BoostCategoryOptionsEnum.accommodation]: {
+    [CredentialCategoryEnum.accommodation]: {
         id: 2,
         text: `Accommodations are adjustments made to the environment or
         processes to enable students, employees, or participants with
@@ -27,9 +27,9 @@ export const CATEGORY_DESCRIPTIONS: {
         offering sign language interpreters for individuals who are
         deaf, adjusting work schedules for those with medical needs, or
         modifying a workspace for accessibility.`,
-        type: BoostCategoryOptionsEnum.accommodation,
+        type: CredentialCategoryEnum.accommodation,
     },
-    [BoostCategoryOptionsEnum.socialBadge]: {
+    [CredentialCategoryEnum.socialBadge]: {
         id: 3,
         text: `Social Badges are digital icons or labels used on
         online platforms to signify achievements, statuses,
@@ -39,9 +39,9 @@ export const CATEGORY_DESCRIPTIONS: {
         engagement. These badges can denote anything from
         completing tasks, participating in events, to being
         part of specific groups.`,
-        type: BoostCategoryOptionsEnum.socialBadge,
+        type: CredentialCategoryEnum.socialBadge,
     },
-    [BoostCategoryOptionsEnum.achievement]: {
+    [CredentialCategoryEnum.achievement]: {
         id: 4,
         text: `Achievements are milestones or accomplishments that are earned
         through effort, skill, or perseverance. They signify the
@@ -51,18 +51,18 @@ export const CATEGORY_DESCRIPTIONS: {
         Achievements can range from academic degrees, career
         advancements, personal milestones, creative endeavors, to
         competitive victories.`,
-        type: BoostCategoryOptionsEnum.achievement,
+        type: CredentialCategoryEnum.achievement,
     },
-    [BoostCategoryOptionsEnum.accomplishment]: {
+    [CredentialCategoryEnum.accomplishment]: {
         id: 5,
         text: `A portfolio is a curated collection of an individual’s work, 
         projects, or achievements that showcase their skills, experience, and growth over time.
         It serves as tangible proof of capability and creativity, often spanning professional, 
         academic, or personal domains, and is used to demonstrate value to potential collaborators, 
         employers, or audiences`,
-        type: BoostCategoryOptionsEnum.accomplishment,
+        type: CredentialCategoryEnum.accomplishment,
     },
-    [BoostCategoryOptionsEnum.skill]: {
+    [CredentialCategoryEnum.skill]: {
         id: 5,
         text: `Skills are abilities or competencies developed through training,
         practice, or experience that enable an individual to perform
@@ -73,9 +73,9 @@ export const CATEGORY_DESCRIPTIONS: {
         are interpersonal and cognitive abilities that facilitate human
         interactions, such as communication, problem-solving, and
         teamwork.`,
-        type: BoostCategoryOptionsEnum.skill,
+        type: CredentialCategoryEnum.skill,
     },
-    [BoostCategoryOptionsEnum.workHistory]: {
+    [CredentialCategoryEnum.workHistory]: {
         id: 6,
         text: `Experiences are the knowledge and skills gained from
         involvement in various professional roles and activities
@@ -85,9 +85,9 @@ export const CATEGORY_DESCRIPTIONS: {
         Professional experiences contribute significantly to an
         individual's expertise, capabilities, and understanding of
         industry standards and practices.`,
-        type: BoostCategoryOptionsEnum.workHistory,
+        type: CredentialCategoryEnum.workHistory,
     },
-    [BoostCategoryOptionsEnum.id]: {
+    [CredentialCategoryEnum.id]: {
         id: 7,
         text: `IDs are essential digital or physical credentials used 
         to verify an individual's identity in various contexts. They provide 
@@ -96,14 +96,23 @@ export const CATEGORY_DESCRIPTIONS: {
         authentication. Whether used for logging into platforms, verifying age, 
         or gaining entry to secure areas, IDs are a fundamental tool in ensuring 
         privacy, security, and convenience across different domains.`,
-        type: BoostCategoryOptionsEnum.id,
+        type: CredentialCategoryEnum.id,
     },
-    [BoostCategoryOptionsEnum.family]: {
+    [CredentialCategoryEnum.family]: {
         id: 8,
         text: `Families are connected through shared learning journeys and accomplishments.
         This feature helps guardians organize profiles, manage permissions, and track educational progress. 
         With tools for switching accounts, connecting games, and monitoring engagement styles,
         Families fosters growth and celebrates achievements while offering insights into each member’s learning path.`,
-        type: BoostCategoryOptionsEnum.family,
+        type: CredentialCategoryEnum.family,
+    },
+    [CredentialCategoryEnum.aiInsight]: {
+        id: 9,
+        text: `AI Insights are intelligent summaries generated from an individual’s verified credentials, skills, 
+        learning experiences, and achievements. They provide a clear, holistic view of a learner’s progress by analyzing
+         authenticated data to identify strengths, highlight growth areas, and reveal meaningful patterns over time. 
+         These insights help learners understand their development, support educators in guiding their students, and enable more 
+         informed decisions around learning pathways and future opportunities.`,
+        type: CredentialCategoryEnum.aiInsight,
     },
 };

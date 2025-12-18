@@ -242,6 +242,12 @@ importers:
       '@capgo/capacitor-updater':
         specifier: 7.8.7
         version: 7.8.7(@capacitor/core@7.4.2)
+      '@emoji-mart/data':
+        specifier: ^1.2.1
+        version: 1.2.1
+      '@emoji-mart/react':
+        specifier: ^1.1.1
+        version: 1.1.1(emoji-mart@5.6.0)(react@18.3.1)
       '@headlessui/react':
         specifier: ^2.2.4
         version: 2.2.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -3342,6 +3348,9 @@ importers:
       serverless-offline:
         specifier: ^14.4.0
         version: 14.4.0(bufferutil@4.0.9)(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+      serverless-prune-plugin:
+        specifier: ^2.1.0
+        version: 2.1.0(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -3493,6 +3502,9 @@ importers:
       serverless-offline:
         specifier: ^12.0.4
         version: 12.0.4(bufferutil@4.0.9)(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+      serverless-prune-plugin:
+        specifier: ^2.1.0
+        version: 2.1.0(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -3692,6 +3704,9 @@ importers:
       serverless-http:
         specifier: 3.2.0
         version: 3.2.0
+      serverless-prune-plugin:
+        specifier: ^2.1.0
+        version: 2.1.0(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -23163,7 +23178,6 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
-
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qrcode-reader@1.0.4:
@@ -24553,6 +24567,11 @@ packages:
 
   serverless-plugin-warmup@8.3.0:
     resolution: {integrity: sha512-FBPPfY6CFdg/BAbvR+UrgHUFNgkUsQxXApSUVwoBqoaLH7amc2aCUYxYncJaD+kRLHTD4WKB0VC7QuyfUPJ+XQ==}
+
+  serverless-prune-plugin@2.1.0:
+    resolution: {integrity: sha512-++22inpEFECgfw+DR2cRn8huxzcsQVgSii4Rjp5q6cPxKo2eKmFc0dfMaJ81DwQoHEnVhfVipIlGdodkauOm1g==}
+    peerDependencies:
+      serverless: 3.40.0
 
   serverless@3.40.0:
     resolution: {integrity: sha512-6vUSIUqBkhZeIpFz0howqKlT1BNjYxOrucvvSICKCEsxVS9MbTJokGkykDrpr/k4Io3WI8tcvrf25+U5Ynf3lw==}
@@ -30969,7 +30988,7 @@ snapshots:
       '@vladfrangu/async_event_emitter': 2.4.6
       discord-api-types: 0.37.119
       tslib: 2.8.1
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -31810,7 +31829,7 @@ snapshots:
       effect: 3.14.2
       mime: 3.0.0
       undici: 6.21.2
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -32720,7 +32739,7 @@ snapshots:
   '@expo/cli@0.22.22(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       '@0no-co/graphql.web': 1.1.2
-      '@babel/runtime': 7.27.0
+      '@babel/runtime': 7.28.4
       '@expo/code-signing-certificates': 0.0.5
       '@expo/config': 10.0.11
       '@expo/config-plugins': 9.0.17
@@ -38165,7 +38184,7 @@ snapshots:
 
   '@scure/bip32@1.7.0':
     dependencies:
-      '@noble/curves': 1.9.1
+      '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 
@@ -38545,7 +38564,7 @@ snapshots:
       get-stream: 6.0.1
       got: 11.8.6
       inquirer: 8.2.6
-      js-yaml: 4.1.0
+      js-yaml: 4.1.1
       jwt-decode: 3.1.2
       lodash: 4.17.21
       log: 6.3.2
@@ -39761,7 +39780,7 @@ snapshots:
       util: 0.12.5
       util-deprecate: 1.0.2
       watchpack: 2.4.2
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - encoding
@@ -43279,7 +43298,7 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.7.1
       eventemitter3: 5.0.1
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -45317,7 +45336,7 @@ snapshots:
 
   c32check@2.0.0:
     dependencies:
-      '@noble/hashes': 1.7.1
+      '@noble/hashes': 1.8.0
       base-x: 4.0.1
 
   cac@6.7.14: {}
@@ -45361,7 +45380,7 @@ snapshots:
     dependencies:
       clone-response: 1.0.3
       get-stream: 5.2.0
-      http-cache-semantics: 4.1.1
+      http-cache-semantics: 4.2.0
       keyv: 3.1.0
       lowercase-keys: 2.0.0
       normalize-url: 4.5.1
@@ -45371,7 +45390,7 @@ snapshots:
     dependencies:
       clone-response: 1.0.3
       get-stream: 5.2.0
-      http-cache-semantics: 4.1.1
+      http-cache-semantics: 4.2.0
       keyv: 4.5.4
       lowercase-keys: 2.0.0
       normalize-url: 6.1.0
@@ -47497,7 +47516,7 @@ snapshots:
 
   dot-prop@9.0.0:
     dependencies:
-      type-fest: 4.38.0
+      type-fest: 4.41.0
 
   dotenv-expand@10.0.0: {}
 
@@ -48927,7 +48946,7 @@ snapshots:
 
   expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(bufferutil@4.0.9)(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10):
     dependencies:
-      '@babel/runtime': 7.27.0
+      '@babel/runtime': 7.28.4
       '@expo/cli': 0.22.22(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@expo/config': 10.0.11
       '@expo/config-plugins': 9.0.17
@@ -53271,7 +53290,7 @@ snapshots:
       whatwg-encoding: 2.0.0
       whatwg-mimetype: 3.0.0
       whatwg-url: 11.0.0
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       xml-name-validator: 4.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -53338,7 +53357,7 @@ snapshots:
 
   json-schema-resolver@2.0.0:
     dependencies:
-      debug: 4.4.0(supports-color@5.5.0)
+      debug: 4.4.3(supports-color@8.1.1)
       rfdc: 1.4.1
       uri-js: 4.4.1
     transitivePeerDependencies:
@@ -54178,7 +54197,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.7.1
+      semver: 7.7.3
 
   make-error@1.3.6: {}
 
@@ -54714,7 +54733,7 @@ snapshots:
 
   metro-runtime@0.81.4:
     dependencies:
-      '@babel/runtime': 7.27.0
+      '@babel/runtime': 7.28.4
       flow-enums-runtime: 0.0.6
     optional: true
 
@@ -55881,7 +55900,7 @@ snapshots:
 
   nock@13.5.6:
     dependencies:
-      debug: 4.4.0(supports-color@5.5.0)
+      debug: 4.4.3(supports-color@8.1.1)
       json-stringify-safe: 5.0.1
       propagate: 2.0.1
     transitivePeerDependencies:
@@ -57258,7 +57277,7 @@ snapshots:
 
   pm2-axon-rpc@0.7.1:
     dependencies:
-      debug: 4.4.0(supports-color@5.5.0)
+      debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -57266,7 +57285,7 @@ snapshots:
     dependencies:
       amp: 0.3.1
       amp-message: 0.1.2
-      debug: 4.4.0(supports-color@5.5.0)
+      debug: 4.4.3(supports-color@8.1.1)
       escape-string-regexp: 4.0.0
     transitivePeerDependencies:
       - supports-color
@@ -57283,7 +57302,7 @@ snapshots:
   pm2-sysmonit@1.2.8:
     dependencies:
       async: 3.2.6
-      debug: 4.4.0(supports-color@5.5.0)
+      debug: 4.4.3(supports-color@8.1.1)
       pidusage: 2.0.21
       systeminformation: 5.25.11
       tx2: 1.0.5
@@ -58607,7 +58626,7 @@ snapshots:
     dependencies:
       find-up-simple: 1.0.1
       read-pkg: 9.0.1
-      type-fest: 4.38.0
+      type-fest: 4.41.0
 
   read-pkg-up@3.0.0:
     dependencies:
@@ -58638,7 +58657,7 @@ snapshots:
       '@types/normalize-package-data': 2.4.4
       normalize-package-data: 6.0.2
       parse-json: 8.3.0
-      type-fest: 4.38.0
+      type-fest: 4.41.0
       unicorn-magic: 0.1.0
 
   read-yaml-file@1.1.0:
@@ -59513,7 +59532,7 @@ snapshots:
       buffer: 6.0.3
       eventemitter3: 5.0.1
       uuid: 8.3.2
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     optionalDependencies:
       bufferutil: 4.0.9
       utf-8-validate: 5.0.10
@@ -59971,7 +59990,7 @@ snapshots:
       p-retry: 5.1.2
       serverless: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       velocityjs: 2.0.6
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - aws-crt
       - bufferutil
@@ -60007,7 +60026,7 @@ snapshots:
       tree-kill: 1.2.2
       tsx: 4.20.3
       velocityjs: 2.0.6
-      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - aws-crt
       - bufferutil
@@ -60023,6 +60042,11 @@ snapshots:
       typescript: 5.9.3
 
   serverless-plugin-warmup@8.3.0: {}
+
+  serverless-prune-plugin@2.1.0(serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)):
+    dependencies:
+      bluebird: 3.7.2
+      serverless: 3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
 
   serverless@3.40.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
@@ -62879,7 +62903,7 @@ snapshots:
 
   velocityjs@2.0.6:
     dependencies:
-      debug: 4.4.0(supports-color@5.5.0)
+      debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 

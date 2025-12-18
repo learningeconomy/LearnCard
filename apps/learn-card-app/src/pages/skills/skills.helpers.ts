@@ -19,19 +19,7 @@ export interface SkillSummary {
     skills: SkillItem[];
 }
 
-export const mergeSkills = (...skills) => {
-    // Initialize an empty array to store the combined elements
-    let combinedSkills = [];
-
-    // Iterate over each array passed as argument
-    skills.forEach(skill => {
-        // Concatenate the current array with the combinedArray
-        combinedSkills = combinedSkills.concat(skill);
-    });
-
-    // Return the combined array
-    return combinedSkills;
-};
+export const mergeSkills = (...skills: any[]) => skills.flat();
 
 export const categorizeSkills = (skills: any) => {
     let categorizedSkills = skills.reduce((acc, obj) => {
