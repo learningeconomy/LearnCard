@@ -235,6 +235,7 @@ export const BoostValidator = z.object({
     autoConnectRecipients: z.boolean().optional(),
     meta: z.record(z.string(), z.any()).optional(),
     claimPermissions: BoostPermissionsValidator.optional(),
+    defaultPermissions: BoostPermissionsValidator.optional(),
     allowAnyoneToCreateChildren: z.boolean().optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;

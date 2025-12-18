@@ -122,7 +122,10 @@ import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
 import { updateBoost } from '@accesslayer/boost/update';
-import { addClaimPermissionsForBoost } from '@accesslayer/role/relationships/create';
+import {
+    addClaimPermissionsForBoost,
+    addDefaultPermissionsForBoost,
+} from '@accesslayer/role/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 
@@ -508,10 +511,11 @@ export const boostsRouter = t.router({
         })
         .input(
             ConsumerBoostValidator.partial()
-                .omit({ uri: true, claimPermissions: true })
+                .omit({ uri: true, claimPermissions: true, defaultPermissions: true })
                 .extend({
                     credential: VCValidator.or(UnsignedVCValidator),
                     claimPermissions: BoostPermissionsValidator.partial().optional(),
+                    defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     skills: z
                         .array(z.object({ frameworkId: z.string(), id: z.string() }))
                         .min(1)
@@ -521,7 +525,7 @@ export const boostsRouter = t.router({
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { credential, claimPermissions, skills, ...metadata } = input;
+            const { credential, claimPermissions, defaultPermissions, skills, ...metadata } = input;
 
             const boost = await createBoost(credential, profile, metadata, ctx.domain);
 
@@ -533,6 +537,13 @@ export const boostsRouter = t.router({
                 await addClaimPermissionsForBoost(boost, {
                     ...EMPTY_PERMISSIONS,
                     ...claimPermissions,
+                });
+            }
+
+            if (defaultPermissions) {
+                await addDefaultPermissionsForBoost(boost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...defaultPermissions,
                 });
             }
 
@@ -555,10 +566,11 @@ export const boostsRouter = t.router({
             z.object({
                 parentUri: z.string(),
                 boost: ConsumerBoostValidator.partial()
-                    .omit({ uri: true, claimPermissions: true })
+                    .omit({ uri: true, claimPermissions: true, defaultPermissions: true })
                     .extend({
                         credential: VCValidator.or(UnsignedVCValidator),
                         claimPermissions: BoostPermissionsValidator.partial().optional(),
+                        defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
                 skills: z
                     .array(z.object({ frameworkId: z.string(), id: z.string() }))
@@ -571,7 +583,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const {
                 parentUri,
-                boost: { credential, claimPermissions, ...metadata },
+                boost: { credential, claimPermissions, defaultPermissions, ...metadata },
                 skills,
             } = input;
 
@@ -605,6 +617,13 @@ export const boostsRouter = t.router({
                 await addClaimPermissionsForBoost(childBoost, {
                     ...EMPTY_PERMISSIONS,
                     ...claimPermissions,
+                });
+            }
+
+            if (defaultPermissions) {
+                await addDefaultPermissionsForBoost(childBoost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...defaultPermissions,
                 });
             }
 

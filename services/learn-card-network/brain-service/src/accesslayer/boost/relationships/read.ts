@@ -741,13 +741,22 @@ export const canProfileIssueBoost = async (profile: ProfileType, boost: BoostIns
                 { identifier: 'targetBoost' },
             ],
         })
-        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'targetBoost' },
+                Boost.getRelationshipByAlias('defaultRole'),
+                { model: Role, identifier: 'defaultRole' },
+            ],
+        });
 
     const result = await query
         .return(
             `
             COALESCE(hasRole.canIssue, role.canIssue) AS directCanIssue,
-            COALESCE(parentHasRole.canIssueChildren, parentRole.canIssueChildren) AS parentCanIssueChildren
+            COALESCE(parentHasRole.canIssueChildren, parentRole.canIssueChildren) AS parentCanIssueChildren,
+            defaultRole.canIssue AS defaultCanIssue
 `
         )
         .run();
@@ -757,6 +766,10 @@ export const canProfileIssueBoost = async (profile: ProfileType, boost: BoostIns
 
         const directCanIssue = record.get('directCanIssue');
         const parentCanIssueChildren = record.get('parentCanIssueChildren');
+        const defaultCanIssue = record.get('defaultCanIssue');
+
+        // Check if defaultPermissions allows issuance
+        if (defaultCanIssue === true) return true;
 
         if (!parentCanIssueChildren || parentCanIssueChildren === '{}')
             return Boolean(directCanIssue);
