@@ -124,20 +124,22 @@ export const AiPathwaySessions: React.FC = () => {
                         Explore AI Sessions
                     </h2>
                 </div>
-                {learningPathwaysData?.map(
-                    ({ title, description, skills, topicUri, pathwayUri }, index) => {
-                        return (
-                            <AiPathwaySessionsItem
-                                title={title}
-                                description={description}
-                                skills={skills}
-                                topicUri={topicUri}
-                                pathwayUri={pathwayUri}
-                                key={`${pathwayUri || title}-${index}`}
-                            />
-                        );
-                    }
-                )}
+                <div className="w-full flex flex-col items-start justify-start mt-4 gap-4">
+                    {learningPathwaysData?.map(
+                        ({ title, description, skills, topicUri, pathwayUri }, index) => {
+                            return (
+                                <AiPathwaySessionsItem
+                                    title={title}
+                                    description={description}
+                                    skills={skills}
+                                    topicUri={topicUri}
+                                    pathwayUri={pathwayUri}
+                                    key={`${pathwayUri || title}-${index}`}
+                                />
+                            );
+                        }
+                    )}
+                </div>
             </div>
         </div>
     );

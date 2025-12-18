@@ -33,7 +33,7 @@ const AiPathways: React.FC = () => {
                         subheaderType={SubheaderTypeEnum.AiPathways}
                         hidePlusBtn={true}
                     />
-                    <div className="flex flex-col relative w-full">
+                    <div className="flex flex-col relative w-full pb-[50px]">
                         <AiPathwayCourses />
                         <AiPathwaySessions />
                     </div>

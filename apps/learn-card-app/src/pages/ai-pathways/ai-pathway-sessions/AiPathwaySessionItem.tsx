@@ -30,7 +30,7 @@ export const AiPathwaySessionsItem: React.FC<{
     return (
         <div
             role="button"
-            className="flex flex-col items-start justify-between bg-white h-full w-full ion-padding border-solid border-[1px] border-grayscale-100 rounded-[20px] cursor-pointer mb-4 mt-4"
+            className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border-[1px] border-grayscale-200 rounded-xl"
             onClick={() =>
                 handleStart({
                     title,
@@ -55,7 +55,7 @@ export const AiPathwaySessionsItem: React.FC<{
                     {description}
                 </p>
             </div>
-            <div className="w-full overflow-x-auto whitespace-nowrap scrollbar-hide">
+            <div className="w-full overflow-x-auto whitespace-nowrap scrollbar-hide text-left">
                 {skills?.map(({ title }, idx) => (
                     <span
                         key={`${title}-${idx}`}
