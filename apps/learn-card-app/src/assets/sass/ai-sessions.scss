@@ -1,0 +1,33 @@
+.ai-sessions-hamburger-button {
+    background: none;
+    position: absolute;
+    top: 35%;
+    left: 0px;
+    transform: translateY(-50%);
+    height: 35px;
+    width: 41px;
+    z-index: 9999;
+    border-radius: none !important;
+
+    @media (max-width: 414px) {
+        left: 0px;
+    }
+}
+
+.new-ai-sessions-button {
+    position: absolute;
+    // top: -25px;
+    background: transparent;
+    transform: translateX(-65%);
+    z-index: 50;
+    bottom: -10px;
+    height: 100px;
+    width: 100px;
+
+    @media (min-width: 500px) {
+        left: 50%;
+    }
+    @media (max-width: 500px) {
+        left: 54%;
+    }
+}

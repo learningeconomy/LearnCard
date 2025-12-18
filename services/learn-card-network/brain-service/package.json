@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.7.4",
+    "version": "3.8.1",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -8,10 +8,10 @@
         "test": "vitest",
         "test:watch": "vitest --watch",
         "build": "shx rm -rf dist && node esbuild.mjs && tsc --p tsconfig.build.json && tsc --showConfig --p tsconfig.build.json > tsconfig.temp.json && tsc-alias --replacer ./tsc-alias-replacer.cjs -p tsconfig.temp.json && shx rm tsconfig.temp.json",
-        "build:docker": "shx rm -rf dist && node esbuild-docker.mjs",
+        "build:docker": "shx rm -rf build && node esbuild-docker.mjs",
         "start": "PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003 --host 127.0.0.1 --config serverless-local.yml",
         "start-p-4000": "PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003 --host 127.0.0.1 --config serverless-local.yml",
-        "dev": "nodemon --watch src --watch ../../../packages/plugins --watch ../../../packages/learn-card-core --watch ../../../packages/learn-card-types --watch ../../../packages/learn-card-helpers -e ts,js --ignore \"../../**/*.d.ts\" --exec \"pnpm build:docker && node dist/docker-entry.js\"",
+        "dev": "nodemon --watch src --watch ../../../packages/plugins --watch ../../../packages/learn-card-core --watch ../../../packages/learn-card-types --watch ../../../packages/learn-card-helpers -e ts,js --ignore \"../../**/*.d.ts\" --exec \"pnpm build:docker && node --enable-source-maps build/docker-entry.js\"",
         "serverless-deploy": "serverless deploy --verbose"
     },
     "keywords": [],
@@ -27,16 +27,17 @@
         "@types/node": "^18.0.0",
         "@types/uuid": "^9.0.0",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.16.16",
+        "esbuild": "^0.27.1",
         "nodemon": "^2.0.16",
         "openapi-types": "^12.1.0",
-        "serverless": "3.39.0",
+        "serverless": "3.40.0",
         "serverless-certificate-creator": "1.6.0",
         "serverless-domain-manager": "6.3.1",
         "serverless-esbuild": "1.55.0",
         "serverless-http": "3.2.0",
         "serverless-lift": "1.31.0",
         "serverless-offline": "^14.4.0",
+        "serverless-prune-plugin": "^2.1.0",
         "shx": "^0.3.4",
         "testcontainers": "^9.1.1"
     },
@@ -61,7 +62,7 @@
         "@learncard/vc-templates-plugin": "workspace:*",
         "@sentry/esbuild-plugin": "2.16.0",
         "@sentry/serverless": "7.61.0",
-        "@trpc/server": "^11.3.0",
+        "@trpc/server": "11.7.1",
         "@types/lodash": "^4.14.191",
         "base64url": "^3.0.1",
         "cors": "^2.8.5",
@@ -76,14 +77,22 @@
         "lodash": "^4.17.21",
         "messagebird": "^4.0.1",
         "multiformats": "^11.0.1",
-        "neo4j-driver": "^5.18.0",
-        "neogma": "^1.13.0",
+        "neo4j-driver": "5.18.0",
+        "neogma": "1.13.0",
         "postmark": "^4.0.5",
         "sift": "^17.0.1",
-        "trpc-openapi": "^1.2.0",
-        "trpc-to-openapi": "^2.3.1",
+        "trpc-to-openapi": "^3.1.0",
         "tsc-alias": "^1.8.10",
+        "zod-openapi": "^5.0.1",
         "twilio": "^5.7.1",
         "uuid": "^9.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/services/learn-card-network/brain-service/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

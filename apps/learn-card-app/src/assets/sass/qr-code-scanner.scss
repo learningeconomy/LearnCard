@@ -1,0 +1,44 @@
+.qr-code-scanner-overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+
+    .qr-code-scanner-square {
+        height: 320px;
+        width: 320px;
+        position: relative;
+    }
+    .qr-code-scanner-square:before,
+    .qr-code-scanner-square:after,
+    .qr-code-scanner-square > :first-child:before,
+    .qr-code-scanner-square > :first-child:after {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border-color: #6366F1; /* or whatever colour */
+        border-style: solid; /* or whatever style */
+        content: ' ';
+    }
+    .qr-code-scanner-square:before {
+        top: 0;
+        left: 0;
+        border-width: 5px 0 0 5px;
+        border-radius: 5px;
+    }
+    .qr-code-scanner-square:after {
+        top: 0;
+        right: 0;
+        border-width: 5px 5px 0 0;
+        border-radius: 5px;
+    }
+    .qr-code-scanner-square > :first-child:before {
+        bottom: 0;
+        right: 0;
+        border-width: 0 5px 5px 0;
+        border-radius: 5px;
+    }
+    .qr-code-scanner-square > :first-child:after {
+        bottom: 0;
+        left: 0;
+        border-width: 0 0 5px 5px;
+        border-radius: 5px;
+    }
+}

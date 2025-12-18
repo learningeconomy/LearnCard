@@ -1,0 +1,195 @@
+name: fastlane-upload-to-appetize
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        types: ["ready_for_review"]
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Choose Environment"
+                required: true
+                default: "learn-card-app-production"
+                type: environment
+
+jobs:
+    upload-ios-to-appetize:
+        name: ${{ inputs.environment || 'learn-card-app-production' }} iOS Upload
+        runs-on: macos-14
+        environment: ${{ inputs.environment || 'learn-card-app-production' }}
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Select Xcode 15.4
+              uses: maxim-lobanov/setup-xcode@v1
+              with:
+                  xcode-version: "15.4"
+
+            - name: Setup Node.js 20.x
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v3
+              id: pnpm-install
+              with:
+                  version: 9
+                  run_install: false
+
+            - name: Install Workspace dependencies
+              run: pnpm i && pnpm exec nx build learn-card-app
+
+            - name: Install dependencies
+              working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+              run: pnpm install --no-frozen-lockfile
+
+            - name: Build App Files
+              working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+              run: pnpm build
+              env:
+                  NODE_ENV: ${{ vars.NODE_ENV }}
+                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+                  SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+                  SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+                  SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
+                  WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+
+            - name: Sync Capacitor Files to iOS
+              working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+              run: npx cap sync ios
+
+            - name: Select Xcode 16.x
+              uses: maxim-lobanov/setup-xcode@v1
+              with:
+                  xcode-version: "16"
+
+            - name: Upload iOS App to Appetize
+              id: upload_ios
+              run: fastlane ios upload_to_appetize --verbose
+              working-directory: "./tools/fastlane/fastlane"
+              env:
+                  MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+                  MATCH_GIT_DEPLOY_KEY: ${{ secrets.MATCH_GIT_DEPLOY_KEY }}
+                  APP_ID: ${{ vars.APP_ID }}
+                  TEAM_NAME: ${{ vars.TEAM_NAME }}
+                  TEAM_ID: ${{ vars.TEAM_ID }}
+                  APPLE_ID: ${{ vars.APPLE_ID }}
+                  ITC_TEAM_ID: ${{ vars.ITC_TEAM_ID }}
+
+                  MATCH_GIT_BRANCH: ${{ vars.MATCH_GIT_BRANCH }}
+
+                  XCODE_PROJECT: ${{ vars.XCODE_PROJECT }}
+                  XCODE_WORKSPACE: ${{ vars.XCODE_WORKSPACE }}
+
+                  CODE_SIGNING_TYPE: development
+                  CODE_SIGNING_APP_IDENTIFIER: ${{ vars.CODE_SIGNING_APP_IDENTIFIER }}
+
+                  FASTLANE_USER: ${{ vars.FASTLANE_USER }}
+                  FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+
+                  APP_STORE_CONNECT_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
+                  APP_STORE_CONNECT_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
+                  APP_STORE_CONNECT_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
+
+                  APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+                  APPETIZE_NOTE: ${{ github.ref_name }} ${{ github.sha }}
+                  APPETIZE_APP_PK: ${{ github.ref_name == 'main' && vars.APPETIZE_MAIN_APP_PK_IOS || '' }}
+
+            - name: Comment App URL to PR
+              if: github.event_name == 'pull_request'
+              uses: thollander/actions-comment-pull-request@v2
+              with:
+                  create_if_not_exists: true
+                  comment_tag: ios_appetize
+                  message: |
+                      Your iOS App Preview is Ready! ${{ steps.upload_ios.outputs.ios_app_url }} :iphone: :rocket: :wave:
+
+    upload-android-to-appetize:
+        name: ${{ inputs.environment || 'learn-card-app-production' }} Android Upload
+        runs-on: macos-latest
+        environment: ${{ inputs.environment || 'learn-card-app-production' }}
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Setup Node.js 20.x
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v3
+              id: pnpm-install
+              with:
+                  version: 9
+                  run_install: false
+
+            - name: Install Workspace dependencies
+              run: pnpm i && pnpm exec nx build learn-card-app
+
+            - name: Install dependencies
+              working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+              run: pnpm install --no-frozen-lockfile
+
+            - name: Build App Files
+              working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+              run: pnpm build
+              env:
+                  NODE_ENV: ${{ vars.NODE_ENV }}
+                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+                  SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+                  SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+                  SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
+                  WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+
+            - name: Sync Capacitor Files to Android
+              working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+              run: npx cap sync android
+
+            - name: Setup JDK
+              uses: actions/setup-java@v3
+              with:
+                  distribution: "corretto" # See 'Supported distributions' for available options
+                  java-version: "21"
+
+            - name: Decode Keystore File
+              uses: timheuer/base64-to-file@v1
+              id: android_keystore
+              with:
+                  fileName: "android_keystore.keystore"
+                  encodedString: ${{ secrets.KEYSTORE_FILE }}
+
+            - name: Upload Android App to Appetize
+              id: upload_android
+              run: fastlane android upload_to_appetize --verbose
+              working-directory: "./tools/fastlane/fastlane"
+              env:
+                  APP_ID: ${{ vars.APP_ID }}
+
+                  GRADLE_PROJECT_DIRECTORY: ${{ vars.GRADLE_PROJECT_DIRECTORY }}
+                  GRADLE_FILE_PATH: ${{ vars.GRADLE_FILE_PATH }}
+
+                  JSON_KEY_DATA: ${{ secrets.JSON_KEY_DATA }}
+
+                  ANDROID_KEYSTORE_FILE: ${{ steps.android_keystore.outputs.filePath }}
+                  ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+                  ANDROID_KEYSTORE_KEY_ALIAS: ${{ secrets.ANDROID_KEYSTORE_KEY_ALIAS }}
+                  ANDROID_KEYSTORE_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_KEY_PASSWORD }}
+
+                  APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+                  APPETIZE_NOTE: ${{ github.ref_name }} ${{ github.sha }}
+                  APPETIZE_APP_PK: ${{ github.ref_name == 'main' && vars.APPETIZE_MAIN_APP_PK_ANDROID || '' }}
+
+            - name: Comment App URL to PR
+              if: github.event_name == 'pull_request'
+              uses: thollander/actions-comment-pull-request@v2
+              with:
+                  create_if_not_exists: true
+                  comment_tag: android_appetize
+                  message: |
+                      Your Android App Preview is Ready! ${{ steps.upload_android.outputs.android_app_url }} :robot: :rocket: :wave:

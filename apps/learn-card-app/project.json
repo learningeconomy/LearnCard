@@ -1,0 +1,77 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "learn-card-app",
+    "sourceRoot": "apps/learn-card-app/src",
+    "projectType": "application",
+    "root": "apps/learn-card-app",
+    "tags": [],
+    "implicitDependencies": [
+        "learn-card-base",
+        "linked-claims-plugin"
+    ],
+    "namedInputs": {
+        "source": [
+            "{projectRoot}/src/**/*"
+        ],
+        "tests": [
+            "{projectRoot}/tests/**/*"
+        ],
+        "report": [
+            "{projectRoot}/coverage/playwright-report/**/*"
+        ],
+        "dist": [
+            "{projectRoot}/build/**/*"
+        ]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source"
+            ],
+            "outputs": [
+                "dist"
+            ],
+            "options": {
+                "script": "build"
+            }
+        },
+        "docker-build": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source"
+            ],
+            "outputs": [
+                "dist"
+            ],
+            "dependsOn": [
+                "^build"
+            ],
+            "options": {
+                "script": "docker-build"
+            }
+        },
+        "docker-start": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source"
+            ],
+            "dependsOn": [
+                "^build"
+            ],
+            "options": {
+                "script": "docker-start"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source",
+                "tests"
+            ],
+            "options": {
+                "script": "test"
+            }
+        }
+    }
+}

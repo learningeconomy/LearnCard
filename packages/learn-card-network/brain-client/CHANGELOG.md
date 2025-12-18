@@ -1,5 +1,51 @@
 # @learncard/network-brain-client
 
+## 2.5.1
+
+### Patch Changes
+
+-   Updated dependencies [[`4b1d40356ffd974915396fbee05d656f6c16f9c0`](https://github.com/learningeconomy/LearnCard/commit/4b1d40356ffd974915396fbee05d656f6c16f9c0)]:
+    -   @learncard/network-brain-service@3.8.1
+
+## 2.5.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+### Patch Changes
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9), [`bc81280ae6423a19c39f3596f3d88142b8fe0732`](https://github.com/learningeconomy/LearnCard/commit/bc81280ae6423a19c39f3596f3d88142b8fe0732), [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/network-brain-service@3.8.0
+
+## 2.4.19
+
+### Patch Changes
+
+-   Updated dependencies [[`057d9dd390e5900a0da19c097101c7b504c96183`](https://github.com/learningeconomy/LearnCard/commit/057d9dd390e5900a0da19c097101c7b504c96183)]:
+    -   @learncard/network-brain-service@3.7.7
+
+## 2.4.18
+
+### Patch Changes
+
+-   Updated dependencies [[`d04dc8022457ed50c65c2eb878929d0e5653c91a`](https://github.com/learningeconomy/LearnCard/commit/d04dc8022457ed50c65c2eb878929d0e5653c91a)]:
+    -   @learncard/network-brain-service@3.7.6
+
+## 2.4.17
+
+### Patch Changes
+
+-   Updated dependencies [[`b3314bbc1c948e762eb67048439cfbe4391eac45`](https://github.com/learningeconomy/LearnCard/commit/b3314bbc1c948e762eb67048439cfbe4391eac45)]:
+    -   @learncard/network-brain-service@3.7.5
+
 ## 2.4.16
 
 ### Patch Changes

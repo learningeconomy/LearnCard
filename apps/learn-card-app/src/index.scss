@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jacques+Francois&display=swap');
+@import url('https://tetunori.github.io/fluent-emoji-webfont/dist/FluentEmojiFlat.css');
+
+* {
+    font-family: 'Poppins', 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
+        'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+
+body.scanner-active > * {
+    display: none;
+}
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import './assets/sass/modals.scss';
+@import './assets/sass/header.scss';
+@import './assets/sass/notification.scss';
+@import './assets/sass/nav.scss';
+@import './assets/sass/learncard-card.scss';
+@import './assets/sass/learncard-page.scss';
+@import './assets/sass/wallet-page.scss';
+@import './assets/sass//login.scss';
+@import './assets/sass/sidemenu.scss';
+@import './assets/sass/credential-storage.scss';
+@import './assets/sass/delete-user-prompt.scss';
+@import './assets//sass/user-profle.scss';
+@import './assets/sass/boost-cms.scss';
+@import './assets/sass/qr-code-scanner.scss';
+@import './assets/sass/idPage.scss';
+@import './assets/sass/skills-page.scss';
+@import './assets/sass/share-page.scss';
+@import '../../../packages/learn-card-base/src/assets/styles/modal.scss';
+@import './assets/sass/family-cms.scss';
+@import './assets/sass/launchpad.scss';
+@import './assets/sass/ai-sessions.scss';
+
+.disable-scrollbars {
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+
+    /* IE 10+ */
+    &::-webkit-scrollbar {
+        width: 0px;
+        background: transparent;
+        /* Chrome/Safari/Webkit */
+    }
+}
+
+.fs-ion-content-fix {
+    @apply h-full w-full fixed;
+
+    &::part(background) {
+        @apply hidden;
+    }
+
+    &::part(scroll) {
+        @apply fixed top-0 bottom-0 overflow-y-auto h-full w-full flex flex-col justify-center items-center;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    /* For WebKit browsers (Chrome, Safari, Edge) */
+    ::-webkit-scrollbar {
+        width: auto;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: #888888;
+    }
+
+    /* For Firefox */
+    html {
+        scrollbar-width: auto;
+        scrollbar-color: #888888 #f1f1f1;
+    }
+}

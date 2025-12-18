@@ -1,0 +1,59 @@
+.share-page {
+    --background: linear-gradient(180deg, rgba(139,145,167,1) 0%, rgba(24,34,78,1) 100%);
+}
+
+.share-page-footer {
+    display: block;
+
+    @media (max-width: 1120px) {
+        display: none;
+    }
+}
+
+.share-page-footer-mobile {
+    display: none;
+
+    @media (max-width: 1120px) {
+        display: block;
+    }
+}
+
+.share-page-get-learncard-btn {
+    display: block;
+
+    @media (max-width: 579px) {
+        display: none;
+    }
+}
+
+.share-page-verification-block {
+    display: block;
+
+    @media (max-width: 1120px) {
+        display: none;
+    }
+}
+
+.share-page-verification-loggedIn-block {
+    display: block;
+
+    @media (max-width: 1400px) {
+        display: none;
+    }
+}
+
+.share-page-mobile-verification-block {
+    display: none;
+
+    @media (max-width: 1120px) {
+        display: block;
+    }
+}
+
+.share-page-mobile-loggedIn-verification-block {
+    display: none;
+
+    @media (max-width: 1400px) {
+        display: block;
+    }
+}

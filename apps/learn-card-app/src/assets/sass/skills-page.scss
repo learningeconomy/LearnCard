@@ -1,0 +1,19 @@
+.skills-page-skills-container {
+    width: 49%;
+    flex-wrap: wrap;
+
+    @media (max-width: 579px) {
+        width: 100%;
+    }
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.skills-page-skills-wrap {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.skills-page-skills-wrap::-webkit-scrollbar {
+    display: none;
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ScoutPass</string>
+    <string name="title_activity_main">ScoutPass</string>
+    <string name="package_name">org.scoutpass.app</string>
+    <string name="custom_url_scheme">org.scoutpass.app</string>
+</resources>

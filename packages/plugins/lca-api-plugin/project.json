@@ -1,0 +1,24 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "lca-api-plugin",
+    "sourceRoot": "packages/plugins/lca-api-plugin/src",
+    "projectType": "library",
+    "root": "packages/plugins/lca-api-plugin",
+    "tags": [],
+    "implicitDependencies": ["lca-api-client"],
+    "namedInputs": {
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "scripts"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
+
