@@ -546,6 +546,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         closeModal();
     };
 
+    const handleEditSkillsFrameworks = () => {
+        history.push('/skills?tab=admin-panel');
+        closeModal();
+    };
+
     const handleViewLearnerInsights = () => {
         history.push(`/ai/insights?tab=${AiInsightsTabsEnum.LearnerInsights}`);
         closeModal();
@@ -715,6 +720,8 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                 ? handleViewLearnerInsights
                                 : label === 'View Child Insights'
                                 ? handleViewChildInsights
+                                : label === 'Edit Skills Frameworks'
+                                ? handleEditSkillsFrameworks
                                 : label === 'Request Learner Insights'
                                 ? () => void handleRequestLearnerInsights()
                                 : undefined
