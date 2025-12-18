@@ -91,15 +91,18 @@ const NotificationConsentFlowCard: React.FC<NotificationConsentFlowCardProps> = 
                 </div>
 
                 <div className="flex flex-col justify-center items-start relative w-full">
-                    <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
+                    <div className="text-left ml-3 flex flex-col gap-2 items-start justify-start w-full">
                         <h4
                             className="cursor-pointer font-semibold tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title"
                             data-testid="notification-title"
                         >
                             {capitalize(notification.message?.title)}
                         </h4>
+                        <p className="text-left text-sm flex flex-col text-grayscale-600 items-start justify-start w-full line-clamp-2">
+                            {notification.message?.body}
+                        </p>
                         <p
-                            className={`font-bold p-0 my-2 leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text text-indigo-600`}
+                            className={`font-bold p-0 leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text text-indigo-600`}
                             data-testid="notification-type"
                         >
                             {typeText}{' '}
@@ -111,10 +114,6 @@ const NotificationConsentFlowCard: React.FC<NotificationConsentFlowCardProps> = 
                                     • {formattedDate}
                                 </span>
                             )}
-                        </p>
-
-                        <p className="text-left text-sm flex flex-col text-grayscale-600 items-start justify-start w-full line-clamp-2">
-                            {notification.message?.body}
                         </p>
                     </div>
                 </div>
