@@ -3,8 +3,6 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal, QRCodeScannerStore } from 'learn-card-base';
 import { ProfilePicture } from 'learn-card-base';
-import PassportIcon from 'learn-card-base/svgs/PassportIcon';
-import Rocket from 'learn-card-base/svgs/Rocket';
 import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
 import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
@@ -32,6 +30,8 @@ import SwitchNetworksQuickNav from 'apps/learn-card-app/src/components/svgs/quic
 import ReadDocsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ReadDocsQuickNav';
 import AddChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddChildQuickNav';
 import SwitchChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchChildQuickNav';
+import NavBarPassportIcon from 'apps/learn-card-app/src/components/svgs/NavBarPassportIcon';
+import NavBarLaunchPadIcon from 'apps/learn-card-app/src/components/svgs/NavBarLaunchPadIcon';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import { AiInsightsTabsEnum } from '../../ai-insights/ai-insight-tabs/ai-insights-tabs.helpers';
@@ -739,7 +739,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         }}
                         className="w-full bg-white text-grayscale-900 rounded-[15px] border border-solid border-[#E2E3E9] py-3 shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] flex items-center justify-center gap-2"
                     >
-                        <PassportIcon className="w-[26px] h-[26px]" />
+                        <NavBarPassportIcon
+                            version="2"
+                            className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
+                        />
                         <span className="text-base font-poppins font-semibold">Passport</span>
                     </button>
                     <button
@@ -754,7 +757,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         }}
                         className="w-full bg-white text-grayscale-900 rounded-[15px] border border-solid border-[#E2E3E9] py-3 shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] flex items-center justify-center gap-2"
                     >
-                        <Rocket className="w-[26px] h-[26px]" />
+                        <NavBarLaunchPadIcon
+                            version="2"
+                            className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
+                        />
                         <span className="text-base font-poppins font-semibold">Launchpad</span>
                     </button>
                 </div>
