@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { IonSpinner } from '@ionic/react';
 import { ThreeDotVertical } from '@learncard/react';
 import { SkillFrameworkType } from '@learncard/types';
-import Plus from 'apps/scouts/src/components/svgs/Plus';
+import Plus from 'apps/learn-card-app/src/components/svgs/Plus';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import ManageSkills from './ManageSkills';
 import CreateFrameworkModal from './CreateFrameworkModal';

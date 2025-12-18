@@ -1,7 +1,7 @@
 import React from 'react';
 import { useModal, ModalTypes, middleTruncate, useGetSkillChildren } from 'learn-card-base';
 
-import Pencil from 'apps/scouts/src/components/svgs/Pencil';
+import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 import TierRow from './TierRow';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
@@ -15,7 +15,7 @@ import {
     FrameworkNodeRole,
     SkillFramework,
     SkillFrameworkNode,
-} from 'apps/scouts/src/components/boost/boost';
+} from 'apps/learn-card-app/src/components/boost/boost';
 import { convertApiSkillNodesToSkillFrameworkNodes } from '../../helpers/skillFramework.helpers';
 
 type CompetencyRowProps = {

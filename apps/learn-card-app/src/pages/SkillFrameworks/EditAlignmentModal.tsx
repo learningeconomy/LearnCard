@@ -10,7 +10,7 @@ import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import FrameworkImage from './FrameworkImage';
 import AlignmentToggle from './AlignmentToggle';
 import SkillBreadcrumbText from './SkillBreadcrumbText';
-import SkillsFrameworkIcon from 'apps/scouts/src/components/svgs/SkillsFrameworkIcon';
+import SkillsFrameworkIcon from 'apps/learn-card-app/src/components/svgs/SkillsFrameworkIcon';
 import ConfirmAlignmentDeletionModal from './ConfirmAlignmentDeletionModal';
 import { IonFooter, IonInput, IonTextarea } from '@ionic/react';
 
@@ -18,7 +18,7 @@ import {
     FrameworkNodeRole,
     SkillFramework,
     SkillFrameworkNode,
-} from 'apps/scouts/src/components/boost/boost';
+} from 'apps/learn-card-app/src/components/boost/boost';
 
 type EditAlignmentModalProps = {
     framework: SkillFramework;
