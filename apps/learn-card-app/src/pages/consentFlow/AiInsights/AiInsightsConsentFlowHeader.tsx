@@ -5,10 +5,11 @@ import { UserProfilePicture, ProfilePicture, switchedProfileStore } from 'learn-
 
 import { LCNProfile } from '@learncard/types';
 
-const AiInsightsConsentFlowHeader: React.FC<{ profile: LCNProfile; childProfile?: LCNProfile }> = ({
-    profile,
-    childProfile,
-}) => {
+const AiInsightsConsentFlowHeader: React.FC<{
+    profile: LCNProfile;
+    childProfile?: LCNProfile;
+    isPostConsent?: boolean;
+}> = ({ profile, childProfile, isPostConsent }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const profileType = switchedProfileStore.use.profileType();
@@ -31,6 +32,14 @@ const AiInsightsConsentFlowHeader: React.FC<{ profile: LCNProfile; childProfile?
             <p className="text-grayscale-900 text-[17px] text-center">
                 Share <span className="font-semibold">{childName}</span>'s insights with{' '}
                 <span className="font-semibold">{profile?.displayName}</span>
+            </p>
+        );
+    }
+
+    if (isPostConsent) {
+        text = (
+            <p className="text-grayscale-900 text-[22px] font-semibold text-center">
+                You've successfully shared insights with {profile?.displayName}
             </p>
         );
     }

@@ -91,9 +91,8 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             label: 'National Admin',
             icon: (
                 <GirlScoutsIcon
-                    className={`absolute top-[-5px] w-[25px] ${
-                        isDesktop ? 'left-[30px]' : 'left-[20px]'
-                    }`}
+                    className={`absolute top-[-5px] w-[25px] ${isDesktop ? 'left-[30px]' : 'left-[20px]'
+                        }`}
                 />
             ),
         },
@@ -140,10 +139,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         prev?.map((connection: any) =>
                             connection.profileId === profileId
                                 ? {
-                                      ...connection,
-                                      connectionStatus:
-                                          LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_SENT,
-                                  }
+                                    ...connection,
+                                    connectionStatus:
+                                        LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT,
+                                }
                                 : connection
                         )
                     );
@@ -179,10 +178,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         prev?.map((connection: any) =>
                             connection.profileId === profileId
                                 ? {
-                                      ...connection,
-                                      connectionStatus:
-                                          LCNProfileConnectionStatusEnum.Enum.NOT_CONNECTED,
-                                  }
+                                    ...connection,
+                                    connectionStatus:
+                                        LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED,
+                                }
                                 : connection
                         )
                     );
@@ -211,10 +210,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         prev?.map((connection: any) =>
                             connection.profileId === profileId
                                 ? {
-                                      ...connection,
-                                      connectionStatus:
-                                          LCNProfileConnectionStatusEnum.Enum.CONNECTED,
-                                  }
+                                    ...connection,
+                                    connectionStatus:
+                                        LCNProfileConnectionStatusEnum.enum.CONNECTED,
+                                }
                                 : connection
                         )
                     );
@@ -302,9 +301,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     const renderActionButton = () => {
         if (!showRequestButton) return null;
         switch (contact.connectionStatus) {
-            case LCNProfileConnectionStatusEnum.Enum.CONNECTED:
+            case LCNProfileConnectionStatusEnum.enum.CONNECTED:
                 return <button className="text-emerald-600 font-bold text-sm">Connected</button>;
-            case LCNProfileConnectionStatusEnum.Enum.NOT_CONNECTED:
+            case LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED:
                 return (
                     <button
                         onClick={e => {
@@ -333,7 +332,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         {connectLoading ? 'Loading...' : 'Request Connection'}
                     </button>
                 );
-            case LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_SENT:
+            case LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT:
                 return (
                     <button
                         onClick={e => {
@@ -363,7 +362,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         {cancelLoading ? 'Loading...' : 'Cancel'}
                     </button>
                 );
-            case LCNProfileConnectionStatusEnum.Enum.PENDING_REQUEST_RECEIVED:
+            case LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_RECEIVED:
                 return (
                     <button
                         onClick={e => {

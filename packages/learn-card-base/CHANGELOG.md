@@ -1,5 +1,14 @@
 # learn-card-base
 
+## 0.1.1
+
+### Patch Changes
+
+-   [#892](https://github.com/learningeconomy/LearnCard/pull/892) [`72dd77fd6b2cf455f36a9b05a629adb32c144b4b`](https://github.com/learningeconomy/LearnCard/commit/72dd77fd6b2cf455f36a9b05a629adb32c144b4b) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1479] Can't switch themes as an organization account
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.1
+
 ## 0.1.0
 
 ### Minor Changes

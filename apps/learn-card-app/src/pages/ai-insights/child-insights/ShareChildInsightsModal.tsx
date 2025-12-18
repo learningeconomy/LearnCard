@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import X from 'learn-card-base/svgs/X';
 import { IonInput } from '@ionic/react';
 import { IonSpinner } from '@ionic/react';
-import ShareChildInsightsWithUserCard from './ShareChildInsightsWIthUserCard';
+import ShareChildInsightsWithUserCard from './ShareChildInsightsWithUserCard';
 import ShareChildInsightsWithAnyoneController from './ShareChildInsightsWithAnyoneController';
 
 import {

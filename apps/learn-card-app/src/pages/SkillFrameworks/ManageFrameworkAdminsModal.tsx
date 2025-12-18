@@ -3,17 +3,15 @@ import { useModal, useWallet } from 'learn-card-base';
 import { IonSpinner, IonInput } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LCNProfile } from '@learncard/types';
-import CaretDown from 'apps/scouts/src/components/svgs/CaretDown';
-import ScoutsTroopIcon from 'apps/scouts/src/assets/icons/ScoutsTroopIcon';
+import CaretDown from 'apps/learn-card-app/src/components/svgs/CaretDown';
+// import ScoutsTroopIcon from 'apps/learn-card-app/src/assets/icons/ScoutsTroopIcon';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 
 type ManageFrameworkAdminsModalProps = {
     frameworkId: string;
 };
 
-const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
-    frameworkId,
-}) => {
+const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({ frameworkId }) => {
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
@@ -84,7 +82,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
     return (
         <section className="bg-grayscale-100 rounded-[20px] flex flex-col max-w-[600px]">
             <div className="py-[10px] pl-[10px] pr-[20px] flex gap-[10px] items-center shadow-bottom-1-5">
-                <ScoutsTroopIcon className="w-[65px] h-[65px]" />
+                {/* <ScoutsTroopIcon className="w-[65px] h-[65px]" /> */}
                 <p className="text-grayscale-800 font-poppins text-[20px] leading-[130%] tracking-[-0.25px]">
                     Manage Admins
                 </p>
