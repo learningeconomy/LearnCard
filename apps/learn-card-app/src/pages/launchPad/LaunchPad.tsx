@@ -26,6 +26,7 @@ import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary'
 
 import { aiPassportApps } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
 import { useModal, ModalTypes, useIsCurrentUserLCNUser } from 'learn-card-base';
+import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import {
     LaunchPadFilterOptionsEnum,
     LaunchPadSortOptionsEnum,
@@ -118,6 +119,7 @@ const LaunchPad: React.FC = () => {
 
     const { newModal } = useModal({ desktop: ModalTypes.Freeform, mobile: ModalTypes.Freeform });
     const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
+    const { gate } = useLCNGatedAction();
 
     const connectToProfileId = (!Array.isArray(connectTo) ? connectTo : undefined) || '';
     const connectChallenge = (!Array.isArray(challenge) ? challenge : undefined) || '';
@@ -187,20 +189,34 @@ const LaunchPad: React.FC = () => {
         const SHOWN_KEY = 'lp_action_shown_after_login';
         if (sessionStorage.getItem(SHOWN_KEY)) return;
 
-        const id = window.requestAnimationFrame(() => {
-            newModal(<LaunchPadActionModal showFooterNav={true} />, {
-                className:
-                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
-                sectionClassName: '!max-w-[380px] disable-scrollbars',
-            });
-            sessionStorage.setItem(SHOWN_KEY, '1');
-        });
+        let cancelled = false;
+        let rafId: number | null = null;
 
-        return () => cancelAnimationFrame(id);
+        const open = async () => {
+            const { prompted } = await gate();
+            if (cancelled || prompted) return;
+
+            rafId = window.requestAnimationFrame(() => {
+                newModal(<LaunchPadActionModal showFooterNav={true} />, {
+                    className:
+                        'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                    sectionClassName: '!max-w-[380px] disable-scrollbars',
+                });
+                sessionStorage.setItem(SHOWN_KEY, '1');
+            });
+        };
+
+        void open();
+
+        return () => {
+            cancelled = true;
+            if (rafId !== null) cancelAnimationFrame(rafId);
+        };
     }, [
         isNetworkUser,
         isNetworkUserLoading,
         consentedContractLoading,
+        gate,
         connectToProfileId,
         connectChallenge,
         contractDetails,
