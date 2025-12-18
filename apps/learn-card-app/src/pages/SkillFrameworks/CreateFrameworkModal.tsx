@@ -14,11 +14,11 @@ import {
 } from 'learn-card-base';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import Plus from 'apps/scouts/src/components/svgs/Plus';
-import Pencil from 'apps/scouts/src/components/svgs/Pencil';
+import Plus from 'apps/learn-card-app/src/components/svgs/Plus';
+import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 import BoostSearch from '../../components/boost/boost-search/BoostSearch';
 import FrameworkImage from './FrameworkImage';
-import SkillsFrameworkIcon from 'apps/scouts/src/components/svgs/SkillsFrameworkIcon';
+import SkillsFrameworkIcon from 'apps/learn-card-app/src/components/svgs/SkillsFrameworkIcon';
 import SimpleFrameworkAdminDisplay from './SimpleFrameworkAdminDisplay';
 import SimpleAttachedNetworkDisplay from './SimpleAttachedNetworkDisplay';
 import FrameworkCreatedSuccessModal from './FrameworkCreatedSuccessModal';
@@ -73,7 +73,6 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
             enabled: isEdit,
         }
     );
-
 
     useEffect(() => {
         if (existingAdmins) {

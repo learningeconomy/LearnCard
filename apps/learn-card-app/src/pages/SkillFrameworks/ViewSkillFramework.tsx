@@ -1,9 +1,9 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { SkillFramework, SkillFrameworkNode } from 'apps/scouts/src/components/boost/boost';
+import { SkillFramework, SkillFrameworkNode } from 'apps/learn-card-app/src/components/boost/boost';
 import { IonFooter } from '@ionic/react';
 import { useModal } from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
-import Pencil from 'apps/scouts/src/components/svgs/Pencil';
+import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 import { ThreeDotVertical } from '@learncard/react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
