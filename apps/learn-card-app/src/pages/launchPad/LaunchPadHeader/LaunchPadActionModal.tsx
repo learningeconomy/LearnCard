@@ -541,6 +541,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Read Docs': 'bg-[var(--ion-color-teal-200)]',
     };
 
+    const handleViewChildInsights = () => {
+        history.push(`/ai/insights?tab=${AiInsightsTabsEnum.ChildInsights}`);
+        closeModal();
+    };
+
     const handleViewLearnerInsights = () => {
         history.push(`/ai/insights?tab=${AiInsightsTabsEnum.LearnerInsights}`);
         closeModal();
@@ -708,6 +713,8 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                   }
                                 : label === 'View Learner Insights'
                                 ? handleViewLearnerInsights
+                                : label === 'View Child Insights'
+                                ? handleViewChildInsights
                                 : label === 'Request Learner Insights'
                                 ? () => void handleRequestLearnerInsights()
                                 : undefined
