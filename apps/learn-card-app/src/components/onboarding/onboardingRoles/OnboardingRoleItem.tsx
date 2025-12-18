@@ -54,51 +54,60 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
     return (
         <li
             role="button"
-            className={`w-full text-grayscale-900 border-solid flex items-center justify-between border-[1px] rounded-[10px] p-4 text-left list-none ${activeStyles}`}
+            className={`w-full text-grayscale-900 border-solid flex items-start justify-between border-[1px] rounded-[10px] p-4 text-left list-none ${activeStyles}`}
             onClick={e => {
                 e.stopPropagation();
                 setRole(roleItem?.type as LearnCardRolesEnum);
             }}
         >
-            <div className="flex items-center gap-3">
-                <span
-                    className="flex shrink-0 items-center justify-center h-[36px] w-[36px] rounded-full"
-                    style={iconBgStyle}
-                >
-                    <img
-                        src={iconSrc}
-                        alt={`${roleItem?.title} icon`}
-                        className="h-[28px] w-[28px] object-contain"
-                    />
-                </span>
+            <div className="flex flex-1 min-w-0 flex-col items-start gap-[5px]">
+                <div className="flex items-center justify-between w-full gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <span
+                            className="flex shrink-0 items-center justify-center h-[36px] w-[36px] rounded-full"
+                            style={iconBgStyle}
+                        >
+                            <img
+                                src={iconSrc}
+                                alt={`${roleItem?.title} icon`}
+                                className="h-[28px] w-[28px] object-contain"
+                            />
+                        </span>
 
-                <div className="flex flex-col gap-[5px] items-start justify-between">
-                    <p className="font-semibold text-[17px] font-poppins">
-                        {!showDescription && isSelected && (
-                            <span className="text-grayscale-800 font-normal">I'm a {''}</span>
-                        )}
-                        {!showDescription && !isSelected ? 'Select Role' : roleItem?.title}
-                    </p>
-                    {showDescription && (
-                        <p className="text-grayscale-600 text-[14px] font-poppins">
-                            {roleItem?.description}
+                        <p className="font-semibold text-[17px] font-poppins min-w-0">
+                            {!showDescription && isSelected && (
+                                <span className="text-grayscale-800 font-normal">I'm a {''}</span>
+                            )}
+                            {!showDescription && !isSelected ? 'Select Role' : roleItem?.title}
                         </p>
+                    </div>
+
+                    {handleEdit ? (
+                        <button
+                            type="button"
+                            onClick={e => {
+                                e.stopPropagation();
+                                handleEdit?.();
+                            }}
+                        >
+                            <Pencil
+                                className="w-[28px] h-[28px] shrink-0 text-grayscale-900"
+                                strokeWidth="2"
+                            />
+                        </button>
+                    ) : (
+                        isSelected && (
+                            <Checkmark className="w-[20px] h-[20px] text-[#2A2F55] shrink-0 mt-[-6px]" />
+                        )
                     )}
                 </div>
+
+                {showDescription && (
+                    <p className="text-grayscale-600 text-[14px] font-poppins">
+                        {roleItem?.description}
+                    </p>
+                )}
             </div>
-            {handleEdit ? (
-                <button
-                    type="button"
-                    onClick={e => {
-                        e.stopPropagation();
-                        handleEdit?.();
-                    }}
-                >
-                    <Pencil className="w-[24px] h-[24px] text-grayscale-900" strokeWidth="2" />
-                </button>
-            ) : (
-                isSelected && <Checkmark className="w-[24px] h-[24px] text-[#2A2F55]" />
-            )}
         </li>
     );
 };

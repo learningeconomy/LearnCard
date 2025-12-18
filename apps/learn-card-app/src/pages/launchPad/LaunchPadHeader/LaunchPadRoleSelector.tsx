@@ -38,17 +38,9 @@ const LaunchPadRoleSelector: React.FC<LaunchPadRoleSelectorProps> = ({ role, set
                 </button>
 
                 <div className="rounded-[15px] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px]">
-                    <div className="w-full flex items-center justify-center">
-                        <ProfilePicture
-                            customContainerClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[48px] min-h-[48px]"
-                            customImageClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[48px] min-h-[48px]"
-                            customSize={120}
-                        />
-                    </div>
                     <div className="w-full flex items-center justify-center mt-[10px]">
-                        <span className="inline-flex items-center gap-2 px-[12px] py-[6px] rounded-[10px] bg-[#E7E9F1] text-[#2A2F55] text-sm font-poppins font-semibold">
-                            Select Role
-                            <X className="w-[12px] h-[12px]" />
+                        <span className="inline-flex items-center gap-2 px-[12px] py-[6px]  text-[#2A2F55] text-sm font-poppins font-semibold">
+                            Select what best describes you!
                         </span>
                     </div>
 
