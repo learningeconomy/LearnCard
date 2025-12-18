@@ -1,8 +1,11 @@
 import React from 'react';
-import { useModal } from 'learn-card-base';
+
 import X from 'learn-card-base/svgs/X';
 
+import { useModal } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
+
+import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
 type ConsentFlowFooterProps = {
     actionButtonText?: string;
@@ -12,6 +15,12 @@ type ConsentFlowFooterProps = {
 
     secondaryButtonText?: string;
     onSecondaryButtonClick?: () => void;
+
+    showBackButton?: boolean;
+    showFullBackButton?: boolean;
+    showCloseButtonAlt?: boolean;
+    onCloseCallback?: () => void;
+    onBackCallback?: () => void;
 };
 
 const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
@@ -21,8 +30,13 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
     showCloseModalX,
     secondaryButtonText,
     onSecondaryButtonClick,
+    showBackButton,
+    showFullBackButton,
+    showCloseButtonAlt,
+    onCloseCallback,
+    onBackCallback,
 }) => {
-    const { closeModal } = useModal();
+    const { closeModal, closeAllModals } = useModal();
 
     const showActionButton = actionButtonText && onActionButtonClick;
     const showSecondaryButton = secondaryButtonText && onSecondaryButtonClick;
@@ -30,12 +44,37 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
+    const handleCloseButton = () => {
+        onCloseCallback?.();
+        closeModal();
+    };
+
+    const handleBackButton = () => {
+        onBackCallback?.();
+        closeModal();
+    };
+
     return (
         <footer className="absolute bottom-0 left-0 w-full bg-white bg-opacity-70 border-t-[1px] border-solid border-white p-[20px] backdrop-blur-[10px] z-50">
             <div className="max-w-[600px] flex gap-[10px] items-center mx-auto">
+                {showBackButton && (
+                    <button
+                        type="button"
+                        onClick={handleBackButton}
+                        className={`bg-white p-3 h-[45px] rounded-full  flex items-center justify-center shadow-button-bottom text-grayscale-900 ${
+                            showFullBackButton ? 'w-full' : 'w-[45px]'
+                        }`}
+                    >
+                        {showFullBackButton ? (
+                            'Back'
+                        ) : (
+                            <SkinnyCaretRight className="text-grayscale-900 h-[45px] w-[45px] rotate-180" />
+                        )}
+                    </button>
+                )}
                 {showCloseModalX && (
                     <button
-                        onClick={closeModal}
+                        onClick={handleCloseButton}
                         className="rounded-full p-[12px] shadow-button-bottom bg-white text-grayscale-700 h-[44px]"
                     >
                         <X className="h-[20px] w-[20px]" />
@@ -58,6 +97,15 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
                         disabled={actionButtonDisabled}
                     >
                         {actionButtonText}
+                    </button>
+                )}
+                {showCloseButtonAlt && (
+                    <button
+                        type="button"
+                        className="bg-white p-3 rounded-full h-[45px] w-[45px] flex items-center justify-center mr-2 shadow-button-bottom"
+                        onClick={closeAllModals}
+                    >
+                        <X className="text-grayscale-900 h-[45px] w-[45px]" />
                     </button>
                 )}
             </div>

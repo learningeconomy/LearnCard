@@ -4,6 +4,7 @@ import { IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
 
 import CategoryDescriptor from '../../components/category-descriptor/CategoryDescriptor';
+import { CredentialCategoryEnum } from 'learn-card-base';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 import { walletSubtypeToDefaultImageSrc, BoostCategoryOptionsEnum } from 'learn-card-base';
 
@@ -15,6 +16,7 @@ const CategoryDescriptorModal: React.FC<{
         let imgSrc;
         let category;
 
+        // TODO: swap these out to use categories instead of titles!
         switch (title) {
             case 'Studies':
                 imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.learningHistory);
@@ -60,6 +62,11 @@ const CategoryDescriptorModal: React.FC<{
             case 'Families':
                 imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.families);
                 category = BoostCategoryOptionsEnum.family;
+                break;
+
+            case 'AI Insights Hub':
+                imgSrc = 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L';
+                category = CredentialCategoryEnum.aiInsight;
                 break;
 
             default:

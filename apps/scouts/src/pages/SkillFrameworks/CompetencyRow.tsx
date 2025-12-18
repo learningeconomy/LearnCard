@@ -29,7 +29,7 @@ type CompetencyRowProps = {
         numberOfSkillsDeleted: number,
         parentPathIds: string[]
     ) => void;
-    onClick?: () => void; // only used if !isEdit
+    onClick?: (node: SkillFrameworkNode) => void; // only used if !isEdit
     isSelectSkillsFlow?: boolean;
     selectedSkills?: SkillFrameworkNode[];
     handleToggleSkill?: (node: SkillFrameworkNode) => void;
@@ -92,7 +92,7 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
     const handleClick = () => {
         if (isEdit) return;
         else if (isSelectSkillsFlow) handleToggleSkill?.(node);
-        else onClick?.();
+        else onClick?.(node);
     };
 
     return (
@@ -177,7 +177,7 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
                             isNodeInSelectedPath={isNodeInSelectedPath}
                             isEdit={isEdit}
                             framework={framework}
-                            selectedPath={selectedPath}
+                            selectedPath={[...selectedPath, node]}
                             handleEdit={handleEdit}
                             handleDelete={handleDelete}
                             isFullSkillFramework={isFullSkillFramework}
@@ -188,7 +188,7 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
                             framework={framework}
                             node={subskill}
                             isEdit={isEdit}
-                            selectedPath={selectedPath}
+                            selectedPath={[...selectedPath, node]}
                             isSelectSkillsFlow={isSelectSkillsFlow}
                             selectedSkills={selectedSkills}
                             handleEdit={handleEdit}

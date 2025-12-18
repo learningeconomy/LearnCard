@@ -12,6 +12,7 @@ module.exports = {
             montserrat: ['Poppins', 'sans-serif'],
             notoSans: ['Noto Sans', 'Poppins', 'sans-serif'],
             jacques: ['JacquesFrancois', 'Noto Sans', 'Poppins'],
+            fluentEmoji: ['Fluent Emoji Flat'],
         },
         screens: {
             desktop: { min: '992px' },
@@ -96,6 +97,10 @@ module.exports = {
                 'soft-top': '0px -2px 3px 0px rgba(24, 34, 78, 0.20)',
                 header: '0px 1px 5px 0px rgba(0, 0, 0, 0.25);',
                 'soft-bottom': '0px 2px 2px 0px rgba(0, 0, 0, 0.25)',
+                'bottom-3-4': '0px 3px 4px 0px rgba(0, 0, 0, 0.25);',
+                'bottom-1-5': '0px 1px 5px 0px rgba(0, 0, 0, 0.25);',
+                'bottom-0-4': '0px 0px 4px 0px rgba(0, 0, 0, 0.25);',
+                'bottom-3-8': '0px 3px 8px 0px rgba(0, 0, 0, 0.30);',
             },
             backgroundImage: {
                 'gradient-rainbow':
@@ -113,7 +118,13 @@ module.exports = {
                     50: '#FBFBFC',
                 },
                 grayscale: {
+                    10: '#FBFBFC',
+                    20: '#EFF0F5',
+                    30: '#E2E3E9',
                     50: '#FBFBFC',
+                    70: '#6F7590',
+                    80: '#52597A',
+                    90: '#353E64',
                     100: '#EFF0F5',
                     200: '#E2E3E9',
                     300: '#C5C8D3',

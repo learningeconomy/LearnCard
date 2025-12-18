@@ -1,5 +1,48 @@
 # Changelog
 
+## 1.94.1
+
+### Patch Changes
+
+-   [#887](https://github.com/learningeconomy/LearnCard/pull/887) [`317a2d00fea4de1b81d71d92ab2a968874853070`](https://github.com/learningeconomy/LearnCard/commit/317a2d00fea4de1b81d71d92ab2a968874853070) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1466] Hide Endorsement Request button when inappropriate
+
+-   [#889](https://github.com/learningeconomy/LearnCard/pull/889) [`5195a2548a58de77c6703c62253a66d363241f5d`](https://github.com/learningeconomy/LearnCard/commit/5195a2548a58de77c6703c62253a66d363241f5d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1406] - AI Insights (Teacher / Student) UI
+
+-   [#894](https://github.com/learningeconomy/LearnCard/pull/894) [`a9e40b7a26d947ce7a0d4147ec5cecc187b7a258`](https://github.com/learningeconomy/LearnCard/commit/a9e40b7a26d947ce7a0d4147ec5cecc187b7a258) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: AI Insight polishes
+
+-   [#886](https://github.com/learningeconomy/LearnCard/pull/886) [`fc62b1bc98b9b29eb6c2b43776ad4960fbe434fb`](https://github.com/learningeconomy/LearnCard/commit/fc62b1bc98b9b29eb6c2b43776ad4960fbe434fb) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1481] - better QRCode download support
+
+-   [#890](https://github.com/learningeconomy/LearnCard/pull/890) [`89797bd1beb99cdae46ef83e526d140b8a9c6664`](https://github.com/learningeconomy/LearnCard/commit/89797bd1beb99cdae46ef83e526d140b8a9c6664) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1208][LC-1465] feat: Bring Skill Frameworks to LCA + Skills Hub Redesign
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.1
+    -   @learncard/react@2.9.1
+
+## 1.94.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - feat: App Store CRUD & Partner Portal
+
+### Patch Changes
+
+-   [#880](https://github.com/learningeconomy/LearnCard/pull/880) [`1e25b1cb990fb1e2af9d887da77c265e2a875fd5`](https://github.com/learningeconomy/LearnCard/commit/1e25b1cb990fb1e2af9d887da77c265e2a875fd5) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Logout Behavior
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/lca-api-plugin@1.1.0
+    -   @learncard/open-badge-v2-plugin@1.1.0
+    -   @learncard/helpers@1.2.0
+    -   @learncard/react@2.9.0
+
 ## 1.93.7
 
 ### Patch Changes

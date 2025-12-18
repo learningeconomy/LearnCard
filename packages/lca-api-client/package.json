@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-client",
-    "version": "1.0.1",
+    "version": "1.1.1",
     "description": "",
     "main": "dist/index.js",
     "module": "./dist/lca-api-client.esm.js",

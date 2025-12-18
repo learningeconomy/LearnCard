@@ -1051,7 +1051,7 @@ export const getAchievementTypeDisplayText = (
         //   (arbitrarily) default to boostType here, since it's at least generally accurate and properly formatted for display
         //   otherwise, just display whatever was passed in for achievementType.
         //   fallbackText if we need it
-        const boostTypeDisplayText = boostCategoryMetadata[boostType]?.title;
+        const boostTypeDisplayText = boostCategoryMetadata?.[boostType]?.title;
         if (boostTypeDisplayText) displayText = boostTypeDisplayText;
 
         displayText = boostTypeDisplayText || achievementType || fallbackText;

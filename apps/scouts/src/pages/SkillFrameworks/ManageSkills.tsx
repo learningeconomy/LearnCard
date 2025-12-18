@@ -348,12 +348,9 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
         setIsSaving(true);
 
         try {
-            console.log('Adding skills to framework:', selectedFrameworkId);
             const wallet = await initWallet();
 
             const skillsToAdd = convertSkillsToBackendFormat(fileSkillFramework.skills);
-
-            console.log('Adding skills:', skillsToAdd);
 
             // Add skills to the selected framework using createSkills
             const results: ReplaceSkillFrameworkSkillsResult =
@@ -361,8 +358,6 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                     frameworkId: selectedFrameworkId,
                     skills: skillsToAdd,
                 });
-
-            console.log('✅ Skills added successfully!');
 
             // Invalidate queries to refresh data
             await queryClient.invalidateQueries({

@@ -24,6 +24,32 @@ const Pencil: React.FC<{ className?: string; version?: number; strokeWidth?: str
                 />
             </svg>
         );
+    } else if (version === 3) {
+        return (
+            <svg
+                width="40"
+                height="40"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={className}
+            >
+                <path
+                    d="M15 33.7518H7.5C7.16848 33.7518 6.85054 33.6201 6.61612 33.3856C6.3817 33.1512 6.25 32.8333 6.25 32.5018V25.5195C6.25 25.3554 6.28233 25.1928 6.34515 25.0412C6.40797 24.8895 6.50004 24.7517 6.61612 24.6356L25.3661 5.88565C25.6005 5.65123 25.9185 5.51953 26.25 5.51953C26.5815 5.51953 26.8995 5.65123 27.1339 5.88565L34.1161 12.8679C34.3505 13.1023 34.4822 13.4202 34.4822 13.7518C34.4822 14.0833 34.3505 14.4012 34.1161 14.6356L15 33.7518Z"
+                    stroke="currentColor"
+                    strokeWidth={strokeWidth ?? '2.5'}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+                <path
+                    d="M21.25 10L30 18.75"
+                    stroke="currentColor"
+                    strokeWidth={strokeWidth ?? '2.5'}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+            </svg>
+        );
     }
 
     return (
