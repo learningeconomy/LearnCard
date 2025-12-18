@@ -307,7 +307,7 @@ const SigningAuthorityStep: React.FC<{
             if (primary?.relationship) {
                 setPrimarySA({
                     name: primary.relationship.name,
-                    endpoint: primary.relationship.signingAuthorityEndpoint ?? '',
+                    endpoint: primary.signingAuthority?.endpoint ?? '',
                 });
             } else {
                 setPrimarySA(null);
@@ -453,21 +453,41 @@ const networkLC = await learnCard.addPlugin(
 );
 
 // Build the credential
-const credential = networkLC.invoke.newCredential({
-    type: 'Achievement',
+const credential = {
+    '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
     name: '${credentialName}',
-    description: '${credentialDescription}',
-    criteria: 'Completed all required modules',
-});
+    credentialSubject: {
+        achievement: {
+            name: '${credentialName}',
+            description: '${credentialDescription}',
+            achievementType: 'Achievement',
+        }
+    }
+};
 
-// Sign the credential
-const signedCredential = await networkLC.invoke.issueCredential(credential);
+// Send credential via Universal Inbox (for email recipients)${recipientEmail ? `
+await networkLC.invoke.sendCredentialViaInbox({
+    recipient: {
+        type: 'email',
+        value: '${recipientEmail}',
+    },
+    credential,
+});` : `
+// await networkLC.invoke.sendCredentialViaInbox({
+//     recipient: {
+//         type: 'email',
+//         value: 'recipient@example.com',
+//     },
+//     credential,
+// });`}
 
-// Send to recipient${recipientEmail ? `
-await networkLC.invoke.sendCredential('${recipientEmail}', signedCredential);` : `
-// await networkLC.invoke.sendCredential('recipient@example.com', signedCredential);`}
-
-console.log('Credential issued!', signedCredential);`;
+// The recipient will receive an email with a link to claim their credential.
+// Once claimed, the credential is signed and added to their wallet.
+console.log('Credential sent to inbox!');`;
 
     const pythonSnippet = `# Install: pip install learncard
 
@@ -477,33 +497,62 @@ import learncard
 lc = learncard.init(api_token="${apiToken || 'YOUR_API_TOKEN'}")
 
 # Build the credential
-credential = lc.new_credential(
-    type="Achievement",
-    name="${credentialName}",
-    description="${credentialDescription}",
-    criteria="Completed all required modules"
-)
+credential = {
+    "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+    ],
+    "type": ["VerifiableCredential", "OpenBadgeCredential"],
+    "name": "${credentialName}",
+    "credentialSubject": {
+        "achievement": {
+            "name": "${credentialName}",
+            "description": "${credentialDescription}",
+            "achievementType": "Achievement"
+        }
+    }
+}
 
-# Sign and issue
-signed = lc.issue_credential(credential)
+# Send credential via Universal Inbox (for email recipients)${recipientEmail ? `
+lc.send_credential_via_inbox(
+    recipient={
+        "type": "email",
+        "value": "${recipientEmail}"
+    },
+    credential=credential
+)` : `
+# lc.send_credential_via_inbox(
+#     recipient={"type": "email", "value": "recipient@example.com"},
+#     credential=credential
+# )`}
 
-# Send to recipient${recipientEmail ? `
-lc.send_credential("${recipientEmail}", signed)` : `
-# lc.send_credential("recipient@example.com", signed)`}
+# The recipient will receive an email with a link to claim their credential.
+print("Credential sent to inbox!")`;
 
-print("Credential issued!", signed)`;
+    const curlSnippet = `# Issue a credential via Universal Inbox API
 
-    const curlSnippet = `# Issue a credential via the API
-
-curl -X POST https://api.learncard.com/credentials/issue \\
+curl -X POST https://network.learncard.com/api/inbox/issue \\
   -H "Authorization: Bearer ${apiToken || 'YOUR_API_TOKEN'}" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "type": ["VerifiableCredential", "Achievement"],
-    "credentialSubject": {
+    "recipient": {
+      "type": "email",
+      "value": "${recipientEmail || 'recipient@example.com'}"
+    },
+    "credential": {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+      ],
+      "type": ["VerifiableCredential", "OpenBadgeCredential"],
       "name": "${credentialName}",
-      "description": "${credentialDescription}"${recipientEmail ? `,
-      "recipient": "${recipientEmail}"` : ''}
+      "credentialSubject": {
+        "achievement": {
+          "name": "${credentialName}",
+          "description": "${credentialDescription}",
+          "achievementType": "Achievement"
+        }
+      }
     }
   }'`;
 
