@@ -28,7 +28,7 @@ up to 64 characters long. If it is less than 64 characters, `initLearnCard` will
 the string with 0's until it is 64 characters long.
 
 ```js
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 
 const wallet = await initLearnCard({ seed: 'a'.repeat(64) });
 ```

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/core",
-    "version": "9.3.44",
+    "version": "9.4.0",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",

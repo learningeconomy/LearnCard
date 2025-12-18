@@ -18,7 +18,16 @@ export const SkillsChipItem: React.FC<{
     count: number;
     containerClassName?: string;
     countClassName?: string;
-}> = ({ title, count, containerClassName, countClassName }) => {
+    iconClassName?: string;
+    iconFill?: string;
+}> = ({
+    title,
+    count,
+    containerClassName,
+    countClassName,
+    iconClassName,
+    iconFill = '#6D28D9',
+}) => {
     return (
         <div
             className={`text-violet-600 bg-violet-100 rounded-full pl-4 py-[2px] font-semibold text-sm whitespace-nowrap flex items-center ${containerClassName}`}
@@ -27,7 +36,7 @@ export const SkillsChipItem: React.FC<{
             <span
                 className={`ml-2 mr-[1px] flex items-center font-bold bg-white rounded-full px-4 py-[6px] ${countClassName}`}
             >
-                <SkillsIcon className="h-[20px] w-[20px] mr-2" fill="#6D28D9" />
+                <SkillsIcon className={`h-[20px] w-[20px] mr-2 ${iconClassName}`} fill={iconFill} />
                 {count}
             </span>
         </div>

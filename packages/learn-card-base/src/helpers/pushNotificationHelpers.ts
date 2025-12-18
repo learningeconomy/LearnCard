@@ -4,7 +4,7 @@ import { RouteComponentProps } from 'react-router-dom';
 
 export const handlePushNotificationActionPerformed = (
     notificationPayload: ActionPerformed,
-    history: RouteComponentProps["history"]
+    history: RouteComponentProps['history']
 ) => {
     if (!notificationPayload) return;
     if (!history) return;
@@ -16,17 +16,17 @@ export const handlePushNotificationActionPerformed = (
     const recipient = typeof from === 'string' ? from : from?.profileId;
 
     switch (type) {
-        case LCNNotificationTypeEnumValidator.Enum.CONNECTION_REQUEST:
+        case LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST:
             history.push(`/notifications`);
             break;
-        case LCNNotificationTypeEnumValidator.Enum.CONNECTION_ACCEPTED:
+        case LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED:
             history.push(`/contacts`);
             break;
-        case LCNNotificationTypeEnumValidator.Enum.BOOST_RECEIVED:
-        case LCNNotificationTypeEnumValidator.Enum.CREDENTIAL_RECEIVED:
+        case LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED:
+        case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED:
             history.push(`/notifications?uri=${notification?.data?.vcUris?.[0]}&claim=true`);
             break;
-        case LCNNotificationTypeEnumValidator.Enum.PRESENTATION_RECEIVED:
+        case LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED:
             // TODO: handle VP redirect
             break;
         default:

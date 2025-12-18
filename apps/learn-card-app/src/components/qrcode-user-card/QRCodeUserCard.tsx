@@ -7,7 +7,21 @@ import QRCodeUserCardShareOptions from './QrCodeUserCardShareOptions/QrCodeUserC
 import { useWallet, useGetCurrentLCNUser } from 'learn-card-base';
 import { getProfileIdFromLCNDidWeb } from 'learn-card-base/helpers/credentialHelpers';
 
-const QrCodeUserCard: React.FC = () => {
+const QrCodeUserCard: React.FC<{
+    showBackButton?: boolean;
+    handleBackButton?: () => void;
+    handleClose?: () => void;
+    cardTitle?: React.ReactNode | string | null;
+    contractUri?: string;
+    overrideShareLink?: string;
+}> = ({
+    showBackButton,
+    handleBackButton,
+    handleClose,
+    cardTitle = null,
+    contractUri,
+    overrideShareLink,
+}) => {
     const { initWallet } = useWallet();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
@@ -43,16 +57,21 @@ const QrCodeUserCard: React.FC = () => {
     const profileId = currentLCNUser?.profileId || getProfileIdFromLCNDidWeb(walletDid);
 
     return (
-        <div className="h-full w-full overflow-y-auto bg-white relative">
-            <QrCodeUserCardHeader showCompact={showCompactHeader} />
+        <>
+            <div className="h-full w-full overflow-y-auto bg-white relative">
+                <QrCodeUserCardHeader showCompact={showCompactHeader} />
 
-            <div ref={basicInfoRef}>
-                <QrCodeUserCardBasicInfo profileId={profileId} walletDid={walletDid} />
+                <div id="qr-code-user-card-screenshot" className="flex flex-col gap-2">
+                    <div ref={basicInfoRef}>
+                        <QrCodeUserCardBasicInfo profileId={profileId} walletDid={walletDid} />
+                    </div>
+
+                    <UserQRCode profileId={profileId} walletDid={walletDid} />
+                </div>
+
+                <QRCodeUserCardShareOptions />
             </div>
-
-            <UserQRCode profileId={profileId} walletDid={walletDid} />
-            <QRCodeUserCardShareOptions />
-        </div>
+        </>
     );
 };
 

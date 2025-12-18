@@ -57,6 +57,7 @@ import USConsentNoticeModalContent from './components/USConsentNoticeModalConten
 import { requiresEUParentalConsent, isEUCountry } from './helpers/gdpr';
 import { StateValidator, ProfileIDStateValidator, DobValidator } from './helpers/validators';
 import useLogout from '../../../hooks/useLogout';
+import { useGetAiInsightsServicesContract } from '../../../pages/ai-insights/learner-insights/learner-insights.helpers';
 
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
@@ -134,6 +135,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             getWalletDid();
         }
     }, [walletDid]);
+    const { getAiInsightsContractUri } = useGetAiInsightsServicesContract(walletDid, true);
 
     const {
         data: uniqueProfile,
@@ -263,6 +265,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                         await onSuccess?.();
                     }, 1000);
                 }
+
+                if (role === LearnCardRolesEnum.teacher) {
+                    getAiInsightsContractUri().catch(err => {
+                        console.log('getAiInsightsContractUri::error', err);
+                    });
+                }
             } catch (err) {
                 console.log('createProfile::error', err);
                 const message =
@@ -287,6 +295,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 notificationsWebhook: getNotificationsEndpoint(),
                 country: country ?? '',
             });
+
+            if (role === LearnCardRolesEnum.teacher) {
+                getAiInsightsContractUri().catch(err => {
+                    console.log('getAiInsightsContractUri::error', err);
+                });
+            }
         } else {
             await handleJoinLearnCardNetwork();
         }

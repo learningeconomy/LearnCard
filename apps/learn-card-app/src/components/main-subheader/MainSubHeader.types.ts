@@ -4,17 +4,17 @@ import Coins from 'learn-card-base/svgs/Coins';
 import User from 'learn-card-base/svgs/User';
 import Graduation from 'learn-card-base/svgs/Graduation';
 import KeyIcon from 'learn-card-base/svgs/KeyIcon';
+import IDsIcon from 'learn-card-base/svgs/wallet/IDsIcon';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 import { WalletIcons } from 'learn-card-base';
-import IDsIcon from 'learn-card-base/svgs/wallet/IDsIcon';
 
 const {
     AiSessionsIcon,
     AiPathwaysIcon,
     AiInsightsIcon,
-    SkillsIcon,
+    SkillsIconWithShape,
     BoostsIcon,
     AchievementsIcon,
     StudiesIcon,
@@ -106,13 +106,13 @@ export const SubheaderContentType: Record<
         helperTextClickable: 'accomplishments',
     },
     [SubheaderTypeEnum.Skill]: {
-        title: 'Skills',
-        IconComponent: SkillsIcon,
+        title: 'Skills Hub',
+        IconComponent: SkillsIconWithShape,
         iconColor: 'text-indigo-500',
         textColor: 'text-white',
         bgColor: 'bg-white',
         helperText: 'Your',
-        helperTextClickable: 'expertise',
+        helperTextClickable: 'skills library',
     },
     [SubheaderTypeEnum.AiInsights]: {
         title: 'AI Insights',
@@ -120,8 +120,8 @@ export const SubheaderContentType: Record<
         iconColor: 'text-lime-700',
         textColor: 'text-white',
         bgColor: 'bg-white',
-        helperText: 'Your',
-        helperTextClickable: 'AI insights',
+        helperText: 'Explore',
+        helperTextClickable: 'your progress',
     },
     [SubheaderTypeEnum.Job]: {
         title: 'Experiences',

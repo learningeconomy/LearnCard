@@ -1,3 +1,7 @@
+import { z } from 'zod';
+
+import { ConsentFlowContractDetailsValidator } from '@learncard/types';
+
 type Insights = {
     suggestedPathways?: string[];
     roomForGrowth?: Record<string, any>;
@@ -16,3 +20,11 @@ export const quantifyInsights = (insights: Insights): number => {
 
     return totalInsightsCount;
 };
+
+export enum AiInsightsUserCardMode {
+    Request = 'request',
+    Share = 'share',
+    View = 'view',
+    Preview = 'preview',
+    Cancel = 'cancel',
+}

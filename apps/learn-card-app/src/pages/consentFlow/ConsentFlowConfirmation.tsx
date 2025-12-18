@@ -19,17 +19,19 @@ import {
     useWallet,
 } from 'learn-card-base';
 
+import ConsentFlowHeader from './ConsentFlowHeader';
+import ConsentFlowFooter from './ConsentFlowFooter';
 import LockBroken from 'learn-card-base/svgs/LockBroken';
 import BrokenLink from '../../components/svgs/BrokenLink';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
-import ConsentFlowFooter from './ConsentFlowFooter';
-import ConsentFlowHeader from './ConsentFlowHeader';
 import ConsentFlowPrivacyAndData from './ConsentFlowPrivacyAndData';
-import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
+import AiInsightsConsentFlowHeader from './AiInsights/AiInsightsConsentFlowHeader';
 import ContractPermissionsAndDetailsText from './ContractPermissionsAndDetailsText';
+import AiInsightsInlineConsentFlowRequest from './AiInsights/AiInsightsInlineConsentFlowRequest';
+import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
 
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
-import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 
 type ConsentFlowConfirmationProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -41,6 +43,17 @@ type ConsentFlowConfirmationProps = {
     isPreview?: boolean;
     isPostConsent?: boolean;
     hideProfileButton?: boolean;
+    insightsProfile?: LCNProfile;
+    childInsightsProfile?: LCNProfile;
+    isInlineInsightsRequest?: boolean;
+    aiInsightsRequestOptions?: {
+        className?: string;
+        isInline?: boolean;
+        useDarkText?: boolean;
+        hideCloseButton?: boolean;
+    };
+    onCloseCallback?: () => void;
+    onBackCallback?: () => void;
 };
 
 const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
@@ -50,6 +63,12 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     isPreview,
     isPostConsent,
     hideProfileButton,
+    insightsProfile,
+    isInlineInsightsRequest,
+    aiInsightsRequestOptions,
+    childInsightsProfile,
+    onCloseCallback,
+    onBackCallback,
 }) => {
     const { closeModal, newModal, closeAllModals } = useModal({
         desktop: ModalTypes.Right,
@@ -58,7 +77,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     const { presentToast } = useToast();
     const confirm = useConfirmation();
 
-    const currentUser = useCurrentUser()!!!!!!!!!;
+    const currentUser = useCurrentUser();
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
 
     const { consentedContract } = useConsentFlow(contractDetails, app);
@@ -210,6 +229,10 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
 
     let mainFooterButtonText = undefined;
     let mainFooterButtonAction = undefined;
+    let showBackButton = false;
+    let showFullBackButton = false;
+    let showCloseButtonAlt = false;
+    let secondaryButtonText: string | undefined = isPostConsent ? 'Close' : 'Cancel';
 
     if (!isPostConsent) {
         mainFooterButtonText = 'Accept';
@@ -225,48 +248,84 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
         };
     }
 
+    if (insightsProfile) {
+        mainFooterButtonText = 'Share Insights';
+        mainFooterButtonAction = () => handleAccept(terms, shareDuration);
+        showBackButton = true;
+        showCloseButtonAlt = true && !showFullBackButton;
+        secondaryButtonText = undefined;
+
+        if (isPostConsent) {
+            mainFooterButtonAction = undefined;
+            mainFooterButtonText = undefined;
+            showFullBackButton = true;
+            showCloseButtonAlt = false;
+        }
+    }
+
+    if (isInlineInsightsRequest) {
+        return (
+            <AiInsightsInlineConsentFlowRequest
+                contractDetails={contractDetails}
+                handleOpenPrivacyAndData={openPrivacyAndData}
+                handleAccept={() => handleAccept(terms, shareDuration)}
+                insightsProfile={insightsProfile}
+                options={aiInsightsRequestOptions}
+            />
+        );
+    }
+
     return (
         <>
             <div className="w-full flex flex-col justify-center items-center gap-[20px] bg-white rounded-[24px] px-[20px] pt-[30px] pb-[10px] shadow-box-bottom">
-                <ConsentFlowHeader
-                    contractDetails={contractDetails}
-                    showCurrentUserPic={isSwitchedProfile}
-                    app={app}
-                    contractImageOnly={isPostConsent}
-                />
-
-                <div className="flex flex-col gap-[10px]">
-                    {!isPostConsent && (
-                        <div className="flex flex-col">
-                            {!isSwitchedProfile && (
-                                <>
-                                    <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[30px] leading-[130%] tracking-[-0.25px]">
-                                        Add to LearnCard.
-                                    </div>
-                                    <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[10px] leading-[130%] tracking-[-0.25px]">
-                                        Save your progress and skills.
-                                    </div>
-                                </>
-                            )}
-                            {isSwitchedProfile && (
-                                <>
-                                    <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[30px] leading-[130%] tracking-[-0.25px]">
-                                        Add to {currentUser.name}'s
-                                    </div>
-                                    <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[10px] leading-[130%] tracking-[-0.25px]">
-                                        LearnCard
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    )}
-
-                    <ContractPermissionsAndDetailsText
-                        contractDetails={contractDetails}
-                        app={app}
-                        isPostConsent={isPostConsent}
+                {insightsProfile ? (
+                    <AiInsightsConsentFlowHeader
+                        profile={insightsProfile}
+                        childProfile={childInsightsProfile}
                     />
-                </div>
+                ) : (
+                    <ConsentFlowHeader
+                        contractDetails={contractDetails}
+                        showCurrentUserPic={isSwitchedProfile}
+                        app={app}
+                        contractImageOnly={isPostConsent}
+                    />
+                )}
+
+                {!insightsProfile && (
+                    <div className="flex flex-col gap-[10px]">
+                        {!isPostConsent && (
+                            <div className="flex flex-col">
+                                {!isSwitchedProfile && (
+                                    <>
+                                        <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[30px] leading-[130%] tracking-[-0.25px]">
+                                            Add to LearnCard.
+                                        </div>
+                                        <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[10px] leading-[130%] tracking-[-0.25px]">
+                                            Save your progress and skills.
+                                        </div>
+                                    </>
+                                )}
+                                {isSwitchedProfile && (
+                                    <>
+                                        <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[30px] leading-[130%] tracking-[-0.25px]">
+                                            Add to {currentUser.name}'s
+                                        </div>
+                                        <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[10px] leading-[130%] tracking-[-0.25px]">
+                                            LearnCard
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        <ContractPermissionsAndDetailsText
+                            contractDetails={contractDetails}
+                            app={app}
+                            isPostConsent={isPostConsent}
+                        />
+                    </div>
+                )}
 
                 <div className="w-full">
                     <button
@@ -316,8 +375,13 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                 actionButtonText={mainFooterButtonText}
                 onActionButtonClick={mainFooterButtonAction}
                 actionButtonDisabled={isPreview || loadingShareAllCredentials}
-                secondaryButtonText={isPostConsent ? 'Close' : 'Cancel'}
+                secondaryButtonText={secondaryButtonText}
                 onSecondaryButtonClick={closeModal}
+                showBackButton={showBackButton}
+                showFullBackButton={showFullBackButton}
+                showCloseButtonAlt={showCloseButtonAlt}
+                onCloseCallback={onCloseCallback}
+                onBackCallback={onBackCallback}
             />
         </>
     );

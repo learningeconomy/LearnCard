@@ -1,16 +1,27 @@
 import React from 'react';
 import moment from 'moment';
+
+import AiInsightsNotification from '../../../pages/ai-insights/notifications/AiInsightsNotification';
+
 import { ErrorBoundary } from '@sentry/react';
-import { NotificationType } from 'packages/plugins/lca-api-plugin/dist';
+import { CredentialCategoryEnum } from 'learn-card-base';
 import { NotificationTypeEnum, NotificationTypeStyles } from './types';
-// import NotificationSkeleton from './NotificationSkeleton';
+import { NotificationType } from 'packages/plugins/lca-api-plugin/dist';
 
 type NotificationConsentFlowCardProps = {
     notification: NotificationType;
+    claimStatus?: boolean;
+    handleArchive?: () => void;
+    handleRead?: () => void;
+    cardLoading?: boolean;
 };
 
 const NotificationConsentFlowCard: React.FC<NotificationConsentFlowCardProps> = ({
     notification,
+    claimStatus,
+    handleArchive,
+    handleRead,
+    cardLoading,
 }) => {
     const { textStyles, typeText } =
         NotificationTypeStyles[NotificationTypeEnum.consentFlowTransaction];
@@ -20,9 +31,19 @@ const NotificationConsentFlowCard: React.FC<NotificationConsentFlowCardProps> = 
 
     const isLoading = false;
 
-    // if (isLoading) {
-    //     return <NotificationSkeleton />;
-    // }
+    const isAiInsightsNotification =
+        notification.data?.metadata?.type === CredentialCategoryEnum.aiInsight;
+
+    if (isAiInsightsNotification) {
+        return (
+            <AiInsightsNotification
+                notification={notification}
+                claimStatus={claimStatus}
+                handleArchive={handleArchive}
+                cardLoading={cardLoading}
+            />
+        );
+    }
 
     return (
         <ErrorBoundary
@@ -42,7 +63,7 @@ const NotificationConsentFlowCard: React.FC<NotificationConsentFlowCardProps> = 
                     )} */}
                 <div
                     className="notification-card-left-side px-[0px] flex cursor-pointer shrink-0"
-                // onClick={handleCardClick}
+                    // onClick={handleCardClick}
                 >
                     {!isLoading && (
                         <img

@@ -498,7 +498,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                         selectedPath={selectedPath}
                                         handleEdit={handleEdit}
                                         handleDelete={handleDelete}
-                                        onClick={() => handleViewCompetency(node)}
+                                        onClick={node => handleViewCompetency(node)}
                                         isSelectSkillsFlow={isSelectSkillsFlow}
                                         selectedSkills={selectedSkills}
                                         handleToggleSkill={handleToggleSkill}
