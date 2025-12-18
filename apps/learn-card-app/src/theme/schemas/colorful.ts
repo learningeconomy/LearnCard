@@ -41,7 +41,7 @@ export const colorfulTheme: Theme = validateThemeData({
         {
             labels: {
                 singular: 'Skill',
-                plural: 'Skills',
+                plural: 'Skills Hub',
             },
             categoryId: CredentialCategoryEnum.skill,
         },
