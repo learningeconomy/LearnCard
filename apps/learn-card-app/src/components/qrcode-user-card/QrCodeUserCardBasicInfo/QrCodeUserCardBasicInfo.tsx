@@ -3,41 +3,19 @@ import { Clipboard } from '@capacitor/clipboard';
 
 import ChainLink from 'learn-card-base/svgs/LinkChain';
 
-import {
-    useCurrentUser,
-    ProfilePicture,
-    useToast,
-    ToastTypeEnum,
-    UserProfilePicture,
-} from 'learn-card-base';
+import { useCurrentUser, ProfilePicture, useToast, ToastTypeEnum } from 'learn-card-base';
 
-const QrCodeUserCardBasicInfo: React.FC<{
-    walletDid: string;
-    profileId: string;
-    contractUri?: string;
-    overrideShareLink?: string;
-    overrideName?: string;
-    overrideImage?: string;
-}> = ({ walletDid, profileId, contractUri, overrideShareLink, overrideName, overrideImage }) => {
+const QrCodeUserCardBasicInfo: React.FC<{ walletDid: string; profileId: string }> = ({
+    walletDid,
+    profileId,
+}) => {
     const currentUser = useCurrentUser();
     const { presentToast } = useToast();
 
     const copyToClipBoard = async () => {
         try {
-            let link = `learncard.app/connect?connect=true&did=${walletDid}`;
-
-            if (contractUri) {
-                link = `${
-                    IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-                }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
-            }
-
-            if (overrideShareLink) {
-                link = overrideShareLink;
-            }
-
             await Clipboard.write({
-                string: link,
+                string: `https://learncard.app/connect?connect=true&did=${walletDid}`,
             });
             presentToast('Link copied to clipboard', {
                 hasDismissButton: true,
@@ -58,17 +36,8 @@ const QrCodeUserCardBasicInfo: React.FC<{
                 customImageClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[80px] min-h-[80px]"
                 customSize={164}
             />
-            </div>
-        );
-    }
-
-    return (
-        <div className="flex w-full flex-col items-center justify-center my-6">
-            {profilePicture}
-            <p
-                className={`text-2xl capitalize text-center font-medium w-full text-grayscale-900 mt-2`}
-            >
-                {name}
+            <p className={`text-2xl text-center font-medium w-full text-grayscale-900 mt-2`}>
+                {currentUser?.name || currentUser?.email}
             </p>
             {profileId && (
                 <button
