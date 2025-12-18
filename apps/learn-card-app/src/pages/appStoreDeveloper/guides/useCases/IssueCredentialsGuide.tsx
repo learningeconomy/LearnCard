@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { 
     Key, 
     Shield, 
@@ -16,9 +16,21 @@ import {
     Award,
     Sparkles,
     Eye,
+    ChevronDown,
+    ChevronUp,
+    Building2,
+    Link as LinkIcon,
+    BellOff,
+    Webhook,
+    RefreshCw,
+    Send,
+    Clock,
+    Upload,
 } from 'lucide-react';
 
-import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum, useConfirmation, useFilestack } from 'learn-card-base';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
@@ -435,30 +447,133 @@ const SigningAuthorityStep: React.FC<{
     );
 };
 
+// Advanced options type
+interface AdvancedOptions {
+    issuerName: string;
+    issuerLogoUrl: string;
+    recipientName: string;
+    suppressDelivery: boolean;
+    webhookUrl: string;
+}
+
 // Step 3: Build Credential
 const BuildCredentialStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
     apiToken: string;
-}> = ({ onComplete, onBack, apiToken }) => {
+    onTokenChange: (token: string) => void;
+}> = ({ onComplete, onBack, apiToken, onTokenChange }) => {
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
     const [recipientEmail, setRecipientEmail] = useState('');
+    const [userDid, setUserDid] = useState<string>('');
+
+    // API Token selector state
+    const [authGrants, setAuthGrants] = useState<Partial<AuthGrant>[]>([]);
+    const [loadingGrants, setLoadingGrants] = useState(false);
+    const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
+    const [showTokenSelector, setShowTokenSelector] = useState(false);
+
+    const { initWallet } = useWallet();
+
+    // Fetch auth grants and DID on mount
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoadingGrants(true);
+            try {
+                const wallet = await initWallet();
+                
+                // Fetch grants
+                const grants = await wallet.invoke.getAuthGrants() || [];
+                const activeGrants = grants.filter((g: Partial<AuthGrant>) => g.status === 'active');
+                setAuthGrants(activeGrants);
+                
+                // Fetch DID
+                const did = wallet.id.did();
+                setUserDid(did);
+            } catch (err) {
+                console.error('Failed to fetch data:', err);
+            } finally {
+                setLoadingGrants(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    // Select a token
+    const selectToken = async (grantId: string) => {
+        try {
+            const wallet = await initWallet();
+            const token = await wallet.invoke.getAPITokenForAuthGrant(grantId);
+            onTokenChange(token);
+            setSelectedGrantId(grantId);
+            setShowTokenSelector(false);
+        } catch (err) {
+            console.error('Failed to get token:', err);
+        }
+    };
+
     const [credential, setCredential] = useState<Record<string, unknown>>({
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
         ],
         type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: '', // Will be set from user's DID
+        issuanceDate: new Date().toISOString(),
         name: 'Achievement Badge',
         credentialSubject: {
+            type: ['AchievementSubject'],
             achievement: {
+                id: 'urn:uuid:' + crypto.randomUUID(),
                 type: ['Achievement'],
                 name: 'Achievement Badge',
                 description: 'Awarded for completing the course',
                 achievementType: 'Achievement',
+                criteria: {
+                    narrative: 'Completed the required coursework and assessments.',
+                },
             },
         },
     });
+
+    // Update credential issuer when DID is fetched
+    useEffect(() => {
+        if (userDid && credential.issuer !== userDid) {
+            setCredential(prev => ({ ...prev, issuer: userDid }));
+        }
+    }, [userDid, credential.issuer]);
+
+    // Advanced options state
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [advancedOptions, setAdvancedOptions] = useState<AdvancedOptions>({
+        issuerName: '',
+        issuerLogoUrl: '',
+        recipientName: '',
+        suppressDelivery: false,
+        webhookUrl: '',
+    });
+
+    // Logo upload via Filestack
+    const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo } = useFilestack({
+        onUpload: (url: string) => {
+            setAdvancedOptions(prev => ({ ...prev, issuerLogoUrl: url }));
+        },
+        fileType: 'image/*',
+    });
+
+    // Verification polling state
+    const [isPolling, setIsPolling] = useState(false);
+    const [pollResult, setPollResult] = useState<{
+        success: boolean;
+        message: string;
+        count?: number;
+        latestCredential?: string;
+    } | null>(null);
+    const [initialCount, setInitialCount] = useState<number | null>(null);
+    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Get the current network URL (check LCN_API_URL env var first, then store, then default)
+    const networkUrl = LCN_API_URL || networkStore.get.networkUrl() || LEARNCARD_NETWORK_API_URL;
 
     const handleCredentialSave = (newCredential: Record<string, unknown>) => {
         setCredential(newCredential);
@@ -471,73 +586,233 @@ const BuildCredentialStep: React.FC<{
     const credentialDescription = (achievement?.description as string) || '';
     const achievementImage = (achievement?.image as { id?: string })?.id || (achievement?.image as string) || '';
 
+    // Check if any advanced options are set
+    const hasAdvancedOptions = advancedOptions.issuerName || advancedOptions.issuerLogoUrl || 
+        advancedOptions.recipientName || advancedOptions.suppressDelivery || advancedOptions.webhookUrl;
+
+    // Build configuration object for code snippets
+    const buildConfigObject = () => {
+        const config: Record<string, unknown> = {};
+
+        if (advancedOptions.webhookUrl) {
+            config.webhookUrl = advancedOptions.webhookUrl;
+        }
+
+        if (advancedOptions.suppressDelivery || advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
+            config.delivery = {};
+
+            if (advancedOptions.suppressDelivery) {
+                (config.delivery as Record<string, unknown>).suppress = true;
+            }
+
+            if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
+                (config.delivery as Record<string, unknown>).template = {
+                    model: {
+                        ...(advancedOptions.issuerName || advancedOptions.issuerLogoUrl ? {
+                            issuer: {
+                                ...(advancedOptions.issuerName && { name: advancedOptions.issuerName }),
+                                ...(advancedOptions.issuerLogoUrl && { logoUrl: advancedOptions.issuerLogoUrl }),
+                            }
+                        } : {}),
+                        ...(advancedOptions.recipientName ? {
+                            recipient: { name: advancedOptions.recipientName }
+                        } : {}),
+                    }
+                };
+            }
+        }
+
+        return Object.keys(config).length > 0 ? config : null;
+    };
+
+    const configObject = buildConfigObject();
+    const configJson = configObject ? JSON.stringify(configObject, null, 4) : null;
+    const configJsonIndented = configJson ? configJson.split('\n').map((line, i) => i === 0 ? line : '    ' + line).join('\n') : '';
+
     // Format credential JSON for code snippets
     const credentialJson = useMemo(() => JSON.stringify(credential, null, 4), [credential]);
     const credentialJsonIndented = credentialJson.split('\n').map((line, i) => i === 0 ? line : '    ' + line).join('\n');
 
-    const codeSnippet = `// Install: npm install @learncard/network-plugin
+    // Poll for sent credentials
+    const checkSentCredentials = useCallback(async () => {
+        try {
+            const wallet = await initWallet();
+            const result = await wallet.invoke.getMySentInboxCredentials?.({ limit: 10 });
+
+            if (result?.records) {
+                const currentCount = result.records.length;
+
+                if (initialCount === null) {
+                    setInitialCount(currentCount);
+                    return null;
+                }
+
+                if (currentCount > initialCount) {
+                    const latestRecord = result.records[0];
+                    const latestCred = latestRecord?.credential;
+                    const latestName = typeof latestCred === 'object' && latestCred !== null 
+                        ? ((latestCred as Record<string, unknown>).name as string) || 'Credential'
+                        : 'Credential';
+                    return {
+                        success: true,
+                        count: currentCount - initialCount,
+                        latestCredential: latestName,
+                    };
+                }
+            }
+
+            return null;
+        } catch (err) {
+            console.error('Failed to check sent credentials:', err);
+            return null;
+        }
+    }, [initWallet, initialCount]);
+
+    const startPolling = useCallback(async () => {
+        setIsPolling(true);
+        setPollResult(null);
+
+        // Get initial count
+        const wallet = await initWallet();
+        const result = await wallet.invoke.getMySentInboxCredentials?.({ limit: 10 });
+        const count = result?.records?.length ?? 0;
+        setInitialCount(count);
+
+        // Start polling every 3 seconds
+        pollIntervalRef.current = setInterval(async () => {
+            const checkResult = await checkSentCredentials();
+
+            if (checkResult?.success) {
+                setPollResult({
+                    success: true,
+                    message: `New credential sent! "${checkResult.latestCredential}"`,
+                    count: checkResult.count,
+                });
+                stopPolling();
+            }
+        }, 3000);
+
+        // Auto-stop after 2 minutes
+        setTimeout(() => {
+            if (pollIntervalRef.current) {
+                stopPolling();
+                if (!pollResult?.success) {
+                    setPollResult({
+                        success: false,
+                        message: 'Polling timed out. Run your code and try again.',
+                    });
+                }
+            }
+        }, 120000);
+    }, [initWallet, checkSentCredentials, pollResult]);
+
+    const stopPolling = useCallback(() => {
+        if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+        }
+        setIsPolling(false);
+    }, []);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (pollIntervalRef.current) {
+                clearInterval(pollIntervalRef.current);
+            }
+        };
+    }, []);
+
+    const codeSnippet = `// Install: npm install @learncard/init
 
 import { initLearnCard } from '@learncard/init';
-import { getLearnCardNetworkPlugin } from '@learncard/network-plugin';
+
+// Your API token from Step 1
+const API_TOKEN = '${apiToken || 'YOUR_API_TOKEN'}';
 
 // Initialize LearnCard with your API token
-const learnCard = await initLearnCard();
-const networkLC = await learnCard.addPlugin(
-    await getLearnCardNetworkPlugin(learnCard, '${apiToken || 'YOUR_API_TOKEN'}')
-);
+const learnCard = await initLearnCard({ network: true, apiKey: API_TOKEN });
 
 // Your credential (built with Credential Builder)
 const credential = ${credentialJsonIndented};
-
+${configObject ? `
+// Configuration for custom branding, webhooks, etc.
+const configuration = ${configJsonIndented};
+` : ''}
 // Send credential via Universal Inbox (for email recipients)${recipientEmail ? `
-await networkLC.invoke.sendCredentialViaInbox({
+await learnCard.invoke.sendCredentialViaInbox({
     recipient: {
         type: 'email',
         value: '${recipientEmail}',
     },
-    credential,
+    credential,${configObject ? `
+    configuration,` : ''}
 });` : `
-// await networkLC.invoke.sendCredentialViaInbox({
+// await learnCard.invoke.sendCredentialViaInbox({
 //     recipient: {
 //         type: 'email',
 //         value: 'recipient@example.com',
 //     },
-//     credential,
+//     credential,${configObject ? `
+//     configuration,` : ''}
 // });`}
-
+${advancedOptions.suppressDelivery ? `
+// Since delivery is suppressed, get the claim URL from the response:
+// const { claimUrl } = await learnCard.invoke.sendCredentialViaInbox({...});
+// Use claimUrl in your own UI or email system.` : ''}
 // The recipient will receive an email with a link to claim their credential.
 // Once claimed, the credential is signed and added to their wallet.
-console.log('Credential sent to inbox!');`;
+console.log('Credential sent to inbox!');
 
-    const pythonSnippet = `# Install: pip install learncard
+// Verify your credential was sent:
+const sent = await learnCard.invoke.getMySentInboxCredentials();
+console.log('Sent credentials:', sent.records);`;
 
-import learncard
+    const pythonSnippet = `# Install: pip install requests
 
-# Initialize with your API token
-lc = learncard.init(api_token="${apiToken || 'YOUR_API_TOKEN'}")
+import requests
+import json
+
+# Your API token from Step 1
+API_TOKEN = "${apiToken || 'YOUR_API_TOKEN'}"
+
+# API endpoint
+API_URL = "${networkUrl}/inbox/issue"
 
 # Your credential (built with Credential Builder)
-credential = ${credentialJsonIndented}
-
-# Send credential via Universal Inbox (for email recipients)${recipientEmail ? `
-lc.send_credential_via_inbox(
-    recipient={
+credential = ${credentialJsonIndented.replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}
+${configObject ? `
+# Configuration for custom branding, webhooks, etc.
+configuration = ${configJsonIndented.replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}
+` : ''}
+# Build the request payload
+payload = {
+    "recipient": {
         "type": "email",
-        "value": "${recipientEmail}"
+        "value": "${recipientEmail || 'recipient@example.com'}"
     },
-    credential=credential
-)` : `
-# lc.send_credential_via_inbox(
-#     recipient={"type": "email", "value": "recipient@example.com"},
-#     credential=credential
-# )`}
+    "credential": credential${configObject ? `,
+    "configuration": configuration` : ''}
+}
 
-# The recipient will receive an email with a link to claim their credential.
-print("Credential sent to inbox!")`;
+# Send credential via Universal Inbox API
+response = requests.post(
+    API_URL,
+    headers={
+        "Authorization": f"Bearer {API_TOKEN}",
+        "Content-Type": "application/json"
+    },
+    json=payload
+)
 
-    const curlSnippet = `# Issue a credential via Universal Inbox API
+if response.ok:
+    data = response.json()
+    print("Credential sent to inbox!")
+    print(f"Claim URL: {data.get('claimUrl', 'N/A')}")
+else:
+    print(f"Error: {response.status_code} - {response.text}")`;
 
-curl -X POST https://network.learncard.com/api/inbox/issue \\
+    const curlSnippet = `curl -X POST ${networkUrl}/inbox/issue \\
   -H "Authorization: Bearer ${apiToken || 'YOUR_API_TOKEN'}" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -545,8 +820,13 @@ curl -X POST https://network.learncard.com/api/inbox/issue \\
       "type": "email",
       "value": "${recipientEmail || 'recipient@example.com'}"
     },
-    "credential": ${JSON.stringify(credential, null, 6).split('\n').map((line, i) => i === 0 ? line : '      ' + line).join('\n')}
+    "credential": ${JSON.stringify(credential, null, 6).split('\n').map((line, i) => i === 0 ? line : '      ' + line).join('\n')}${configObject ? `,
+    "configuration": ${JSON.stringify(configObject, null, 6).split('\n').map((line, i) => i === 0 ? line : '      ' + line).join('\n')}` : ''}
   }'`;
+
+    // Get selected grant name for display
+    const selectedGrant = authGrants.find(g => g.id === selectedGrantId);
+    const displayTokenName = selectedGrant?.name || (apiToken ? 'Selected Token' : 'No token selected');
 
     return (
         <div className="space-y-6">
@@ -556,6 +836,81 @@ curl -X POST https://network.learncard.com/api/inbox/issue \\
                 <p className="text-gray-600">
                     Design your Open Badges 3.0 credential using our visual builder. The code will update automatically.
                 </p>
+            </div>
+
+            {/* API Token Selector */}
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                            <Key className="w-5 h-5 text-indigo-600" />
+                        </div>
+
+                        <div>
+                            <p className="text-sm font-medium text-gray-700">API Token</p>
+
+                            <p className="text-xs text-gray-500">
+                                {apiToken ? (
+                                    <span className="text-emerald-600 flex items-center gap-1">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        {displayTokenName}
+                                    </span>
+                                ) : (
+                                    <span className="text-amber-600">Select a token to use</span>
+                                )}
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => setShowTokenSelector(!showTokenSelector)}
+                        className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                    >
+                        {showTokenSelector ? 'Hide' : 'Change'}
+                        {showTokenSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                </div>
+
+                {showTokenSelector && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                        {loadingGrants ? (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Loading tokens...
+                            </div>
+                        ) : authGrants.length === 0 ? (
+                            <p className="text-sm text-gray-500">
+                                No API tokens found. <a href="#" onClick={(e) => { e.preventDefault(); onBack(); }} className="text-cyan-600 hover:underline">Go back to create one</a>.
+                            </p>
+                        ) : (
+                            <div className="space-y-2">
+                                {authGrants.map((grant) => (
+                                    <button
+                                        key={grant.id}
+                                        onClick={() => selectToken(grant.id!)}
+                                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                            selectedGrantId === grant.id
+                                                ? 'bg-indigo-50 border-indigo-300'
+                                                : 'bg-white border-gray-200 hover:border-indigo-300'
+                                        }`}
+                                    >
+                                        <div className="text-left">
+                                            <p className="text-sm font-medium text-gray-700">{grant.name}</p>
+
+                                            <p className="text-xs text-gray-500">
+                                                Created {new Date(grant.createdAt!).toLocaleDateString()}
+                                            </p>
+                                        </div>
+
+                                        {selectedGrantId === grant.id && (
+                                            <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Credential preview card */}
@@ -635,13 +990,151 @@ curl -X POST https://network.learncard.com/api/inbox/issue \\
                     value={recipientEmail}
                     onChange={(e) => setRecipientEmail(e.target.value)}
                     placeholder="recipient@example.com"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    style={{ colorScheme: 'light' }}
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
                     Enter an email to see the send code. The recipient will get a claim link.
                 </p>
             </div>
+
+            {/* Advanced Options Toggle */}
+            <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            >
+                {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {showAdvanced ? 'Hide' : 'Show'} Advanced Options
+                {hasAdvancedOptions && <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">Active</span>}
+            </button>
+
+            {/* Advanced Options Panel */}
+            {showAdvanced && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
+                    <p className="text-sm text-gray-600">
+                        Customize branding, webhooks, and delivery options for the Universal Inbox.
+                    </p>
+
+                    {/* Branding Section */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <Building2 className="w-4 h-4 text-indigo-500" />
+                            Email Branding
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Issuer Name</label>
+
+                                <input
+                                    type="text"
+                                    value={advancedOptions.issuerName}
+                                    onChange={(e) => setAdvancedOptions(prev => ({ ...prev, issuerName: e.target.value }))}
+                                    placeholder="Your Organization"
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Logo URL</label>
+
+                                <div className="flex gap-2">
+                                    <input
+                                        type="url"
+                                        value={advancedOptions.issuerLogoUrl}
+                                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, issuerLogoUrl: e.target.value }))}
+                                        placeholder="https://example.com/logo.png"
+                                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        disabled={isUploadingLogo}
+                                        style={{ colorScheme: 'light' }}
+                                    />
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleLogoUpload()}
+                                        disabled={isUploadingLogo}
+                                        className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                        title="Upload image"
+                                    >
+                                        {isUploadingLogo ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Upload className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
+
+                                {advancedOptions.issuerLogoUrl && (
+                                    <img
+                                        src={advancedOptions.issuerLogoUrl}
+                                        alt="Logo preview"
+                                        className="mt-2 h-12 object-contain rounded border border-gray-200"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                    />
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Recipient Name</label>
+
+                                <input
+                                    type="text"
+                                    value={advancedOptions.recipientName}
+                                    onChange={(e) => setAdvancedOptions(prev => ({ ...prev, recipientName: e.target.value }))}
+                                    placeholder="John Doe"
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Webhook Section */}
+                    <div className="space-y-3 pt-3 border-t border-gray-200">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <Webhook className="w-4 h-4 text-emerald-500" />
+                            Webhook Notification
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Webhook URL</label>
+
+                            <input
+                                type="url"
+                                value={advancedOptions.webhookUrl}
+                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                                placeholder="https://your-server.com/webhook"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+
+                            <p className="text-xs text-gray-500 mt-1">
+                                Receive a POST request when the credential is claimed.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Suppress Delivery */}
+                    <div className="space-y-3 pt-3 border-t border-gray-200">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={advancedOptions.suppressDelivery}
+                                onChange={(e) => setAdvancedOptions(prev => ({ ...prev, suppressDelivery: e.target.checked }))}
+                                className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                            />
+
+                            <div className="flex items-center gap-2">
+                                <BellOff className="w-4 h-4 text-amber-500" />
+                                <span className="text-sm font-medium text-gray-700">Suppress Email Delivery</span>
+                            </div>
+                        </label>
+
+                        <p className="text-xs text-gray-500 ml-7">
+                            Don't send an email — get the claim URL to use in your own system.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Code output */}
             <CodeOutputPanel
@@ -652,6 +1145,87 @@ curl -X POST https://network.learncard.com/api/inbox/issue \\
                     curl: curlSnippet,
                 }}
             />
+
+            {/* Verification Polling Section */}
+            <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
+                <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Send className="w-5 h-5 text-indigo-600" />
+                    </div>
+
+                    <div className="flex-1">
+                        <h4 className="font-medium text-gray-800 mb-1">Verify Your Code Worked</h4>
+
+                        <p className="text-sm text-gray-600 mb-3">
+                            Run your code, then click below to verify the credential was sent successfully.
+                        </p>
+
+                        {!isPolling && !pollResult?.success && (
+                            <button
+                                onClick={startPolling}
+                                disabled={!apiToken}
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <RefreshCw className="w-4 h-4" />
+                                Check for Sent Credentials
+                            </button>
+                        )}
+
+                        {isPolling && (
+                            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-200">
+                                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700">Waiting for new credentials...</p>
+                                    <p className="text-xs text-gray-500">Run your code now. We'll detect when it's sent.</p>
+                                </div>
+
+                                <button
+                                    onClick={stopPolling}
+                                    className="ml-auto px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        )}
+
+                        {pollResult && (
+                            <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                                pollResult.success 
+                                    ? 'bg-emerald-50 border border-emerald-200' 
+                                    : 'bg-amber-50 border border-amber-200'
+                            }`}>
+                                {pollResult.success ? (
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                ) : (
+                                    <Clock className="w-5 h-5 text-amber-600" />
+                                )}
+
+                                <div className="flex-1">
+                                    <p className={`text-sm font-medium ${pollResult.success ? 'text-emerald-800' : 'text-amber-800'}`}>
+                                        {pollResult.message}
+                                    </p>
+                                </div>
+
+                                {!pollResult.success && (
+                                    <button
+                                        onClick={startPolling}
+                                        className="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
+                                    >
+                                        Try Again
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {!apiToken && (
+                            <p className="text-xs text-amber-600 mt-2">
+                                ⚠️ Create an API token in step 1 to enable verification.
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
 
             {/* Navigation */}
             <div className="flex gap-3">
@@ -856,6 +1430,7 @@ const IssueCredentialsGuide: React.FC = () => {
                         onComplete={() => handleStepComplete('build-credential')}
                         onBack={guideState.prevStep}
                         apiToken={apiToken}
+                        onTokenChange={setApiToken}
                     />
                 );
 
