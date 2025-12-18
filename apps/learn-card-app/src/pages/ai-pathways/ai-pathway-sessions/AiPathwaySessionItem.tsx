@@ -14,8 +14,7 @@ export const AiPathwaySessionsItem: React.FC<{
     skills: Array<{ title: string; description?: string }> | undefined;
     topicUri: string | undefined;
     pathwayUri: string | undefined;
-    index: number;
-}> = ({ title, description, skills, topicUri, pathwayUri, index }) => {
+}> = ({ title, description, skills, topicUri, pathwayUri }) => {
     const history = useHistory();
 
     const handleStart = (item: PathwayItem) => {
