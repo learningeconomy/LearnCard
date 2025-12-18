@@ -3,7 +3,7 @@ import { IonCol, IonRow } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 import { BoostCMSState, SkillFrameworkNode } from '../../../boost';
 import { useModal, ModalTypes, useGetBoostsThatUseFramework } from 'learn-card-base';
-import BrowseFrameworkPage from 'apps/scouts/src/pages/SkillFrameworks/BrowseFrameworkPage';
+import BrowseFrameworkPage from '../../../../../pages/SkillFrameworks/BrowseFrameworkPage';
 import BoostCMSSkillDisplay from './BoostCMSSkillDisplay';
 import { SetState } from 'packages/shared-types/dist';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
