@@ -17,7 +17,11 @@ import {
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
 import { userShareOptions, ShareOptionsEnum } from './user-share-options.helpers';
 
-const QrCodeUserCardShareOptions: React.FC = () => {
+const QrCodeUserCardShareOptions: React.FC<{
+    contractUri?: string;
+    profileId?: string;
+    overrideShareLink?: string;
+}> = ({ contractUri, profileId, overrideShareLink }) => {
     const { initWallet } = useWallet();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
 
@@ -39,7 +43,11 @@ const QrCodeUserCardShareOptions: React.FC = () => {
     // Share modal
     const presentShareModal = () => {
         newModal(
-            <ShareModal />,
+            <ShareModal
+                contractUri={contractUri}
+                profileId={profileId}
+                overrideShareLink={overrideShareLink}
+            />,
             { sectionClassName: '!max-w-[400px]' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
@@ -47,7 +55,11 @@ const QrCodeUserCardShareOptions: React.FC = () => {
 
     const showDownloadOptions = () => {
         newModal(
-            <QrCodeDownloadOptions />,
+            <QrCodeDownloadOptions
+                contractUri={contractUri}
+                profileId={profileId}
+                overrideShareLink={overrideShareLink}
+            />,
             { sectionClassName: '!max-w-[400px]' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );

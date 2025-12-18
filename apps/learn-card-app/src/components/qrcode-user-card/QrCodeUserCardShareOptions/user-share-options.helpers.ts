@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 import ShareIcon from 'learn-card-base/svgs/Share';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import FolderIcon from 'learn-card-base/svgs/FolderIcon';
@@ -53,13 +55,13 @@ export type QrCodeDownloadOptions = {
 export const userQrCodeDownloadOptions: QrCodeDownloadOptions[] = [
     {
         id: 1,
-        label: 'Save to Photos',
+        label: Capacitor.isNativePlatform() ? 'Save to Photos' : 'Save as Photo',
         type: QrCodeDownloadOptionsEnum.saveToPhotos,
         icon: GalleryIcon,
     },
     {
         id: 2,
-        label: 'Save to Files',
+        label: Capacitor.isNativePlatform() ? 'Save to Files' : 'Save as File',
         type: QrCodeDownloadOptionsEnum.saveToFiles,
         icon: FolderIcon,
     },

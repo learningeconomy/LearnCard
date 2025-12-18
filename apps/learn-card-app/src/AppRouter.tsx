@@ -11,8 +11,9 @@ import ViewSharedBoost from './components/creds-bundle/ViewSharedBoost';
 import MobileNavBar from './components/mobile-nav-bar/MobileNavBar';
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
+import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
 import AiSessionAssessmentPreviewContainer from './components/ai-assessment/AiSessionAssessmentPreviewContainer';
-import EndorsementRequestModal from './components/boost-endorsements/EndorsementRequestModal/EndorsementRequestModal';
+import { RequestInsightsFromUserModalWrapper } from './pages/ai-insights/request-insights/RequestInsightsFromUserModal';
 
 import {
     useIsLoggedIn,
@@ -25,9 +26,10 @@ import {
     useWeb3Auth,
     LOGIN_REDIRECTS,
     useSyncConsentFlow,
-    useWallet,
     useCurrentUser,
     useIsCurrentUserLCNUser,
+    useContract,
+    switchedProfileStore,
 } from 'learn-card-base';
 import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
 import { useQueryClient } from '@tanstack/react-query';
@@ -47,6 +49,7 @@ import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
+import useConsentFlow from './pages/consentFlow/useConsentFlow';
 
 export const aiRoutes = ['/ai/topics', '/ai/sessions', '/chats'];
 
@@ -73,6 +76,22 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
     const endorsementRequest = params.endorsementRequest;
     const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
 
+    // Insights Consent
+    const insightsConsent = params.insightsConsent;
+    const shareInsightsRequest = params.shareInsights;
+    const contractUri = params.contractUri;
+    const teacherProfileId = params.teacherProfileId;
+    const learnerProfileId = params.learnerProfileId;
+
+    const profileType = switchedProfileStore.use.profileType();
+    const isChild = profileType === 'child';
+
+    const isInsightsConsent = insightsConsent && contractUri && teacherProfileId;
+    const isShareInsightsRequest = shareInsightsRequest && learnerProfileId;
+
+    const { data: contract } = useContract(contractUri, !!contractUri);
+    const { openConsentFlowModal } = useConsentFlow(contract, undefined, contractUri);
+
     const hideSideMenu =
         ['/consent-flow', '/consent-flow-login', '/claim/from-dashboard/', '/chats'].includes(
             location.pathname
@@ -80,6 +99,30 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
         (collapsed && aiRoutes.includes(location.pathname) && !isMobile) || location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
+
+    useEffect(() => {
+        if (isInsightsConsent && contract) {
+            if (isChild) {
+                newModal(
+                    <ShareInsightsWithUserWrapper targetProfileId={teacherProfileId as string} />,
+                    { className: '!bg-transparent' },
+                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                );
+            } else {
+                openConsentFlowModal(true, undefined, teacherProfileId as string);
+            }
+        }
+    }, [contract, isInsightsConsent]);
+
+    useEffect(() => {
+        if (isShareInsightsRequest) {
+            newModal(
+                <RequestInsightsFromUserModalWrapper profileId={learnerProfileId as string} />,
+                { className: '!bg-transparent' },
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        }
+    }, [isShareInsightsRequest]);
 
     useEffect(() => {
         if (params.myNewDataOpen) {

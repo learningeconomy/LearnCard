@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.7.7",
+    "version": "3.8.0",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -30,13 +30,14 @@
         "esbuild": "^0.27.1",
         "nodemon": "^2.0.16",
         "openapi-types": "^12.1.0",
-        "serverless": "3.39.0",
+        "serverless": "3.40.0",
         "serverless-certificate-creator": "1.6.0",
         "serverless-domain-manager": "6.3.1",
         "serverless-esbuild": "1.55.0",
         "serverless-http": "3.2.0",
         "serverless-lift": "1.31.0",
         "serverless-offline": "^14.4.0",
+        "serverless-prune-plugin": "^2.1.0",
         "shx": "^0.3.4",
         "testcontainers": "^9.1.1"
     },

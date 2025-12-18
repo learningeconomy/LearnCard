@@ -55,6 +55,7 @@ import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { LCNBoostStatusEnum } from '../boost/boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { VC } from '@learncard/types';
+import { LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
 
 const StateValidator = z.object({
     name: z.string().min(1, 'Name is required!'),
@@ -258,6 +259,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                                 repeatIdBackgroundImage:
                                     learnCardDisplayStyles?.repeatIdBackgroundImage ?? false,
                             },
+                            role: LearnCardRolesEnum.learner,
                         });
 
                         const childLc = await getBespokeLearnCard(

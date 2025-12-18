@@ -279,7 +279,7 @@ export const CATEGORY_TO_SKILLS = {
     [BoostCMSSKillsCategoryEnum.Athletic]: [
         {
             id: 1,
-            title: 'Sport specific skills',
+            title: 'Sport Specific Skills',
             IconComponent: Athletics,
             iconClassName: 'text-white',
             iconCircleClass: 'bg-violet-200',

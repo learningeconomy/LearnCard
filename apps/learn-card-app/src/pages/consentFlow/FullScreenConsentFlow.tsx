@@ -13,6 +13,8 @@ import {
     LaunchPadAppListItem,
     ToastTypeEnum,
     ModalTypes,
+    useGetProfile,
+    useSwitchProfile,
 } from 'learn-card-base';
 
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
@@ -21,7 +23,7 @@ import ConsentFlowConfirmation from './ConsentFlowConfirmation';
 import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
 import AiPassportAppProfileConnectedView from '../../components/ai-passport-apps/AiPassportAppProfileConnectedView/AiPassportAppProfileConnectedView';
 
-import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 
 enum ConsentFlowStep {
     getAnAdult = 'landing',
@@ -35,7 +37,19 @@ type FullScreenConsentFlowProps = {
     app?: LaunchPadAppListItem;
     isPostConsent?: boolean;
     hideProfileButton?: boolean;
+    insightsProfile?: LCNProfile | string;
+    childInsightsProfile?: LCNProfile | string;
     successCallback?: () => void;
+    isInlineInsightsRequest?: boolean;
+    aiInsightsRequestOptions?: {
+        className?: string;
+        isInline?: boolean;
+        useDarkText?: boolean;
+        hideCloseButton?: boolean;
+    };
+    disableRedirect?: boolean;
+    onCloseCallback?: () => void;
+    onBackCallback?: () => void;
 };
 
 const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
@@ -44,22 +58,42 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     isPostConsent,
     isPreview,
     hideProfileButton,
+    insightsProfile,
     successCallback,
+    isInlineInsightsRequest,
+    aiInsightsRequestOptions,
+    childInsightsProfile,
+    disableRedirect = false,
+    onCloseCallback,
+    onBackCallback,
 }) => {
     const history = useHistory();
     const location = useLocation();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const { newModal, closeModal, closeAllModals } = useModal();
+    const { handleSwitchAccount, handleSwitchBackToParentAccount } = useSwitchProfile();
+
     const { gate } = useLCNGatedAction();
+
+    const { data: _insightsProfile } = useGetProfile(
+        typeof insightsProfile === 'string' ? insightsProfile : undefined,
+        !!insightsProfile
+    );
+
+    const { data: _childInsightsProfile } = useGetProfile(
+        typeof childInsightsProfile === 'string' ? childInsightsProfile : undefined,
+        !!childInsightsProfile
+    );
 
     const { returnTo: urlReturnTo, recipientToken } = queryString.parse(location.search);
     const returnTo = urlReturnTo || contractDetails?.redirectUrl?.trim(); // prefer url param
 
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
+    const shouldGetAnAdult = isSwitchedProfile && !isPreview && !insightsProfile;
 
     const [step, setStep] = useState<ConsentFlowStep>(
-        isSwitchedProfile && !isPreview ? ConsentFlowStep.getAnAdult : ConsentFlowStep.confirmation
+        shouldGetAnAdult ? ConsentFlowStep.getAnAdult : ConsentFlowStep.confirmation
     );
 
     const { handleVerifyParentPin } = usePin(closeModal);
@@ -82,6 +116,11 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         const { prompted } = await gate();
         if (prompted) return;
 
+        if (childInsightsProfile) {
+            // Switch to child profile to consent on their behalf
+            await handleSwitchAccount(_childInsightsProfile as LCNProfile);
+        }
+
         setStep(ConsentFlowStep.connecting);
 
         try {
@@ -100,49 +139,56 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 closeAllModals();
             }
 
+            if (!disableRedirect) {
+                if (redirectUrl) {
+                    // If the consentToContract call returned a specific redirect url, use it over everything else
+                    window.location.href = redirectUrl;
+                    return;
+                }
+
+                if (returnTo && !Array.isArray(returnTo)) {
+                    if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
+                        const wallet = await initWallet();
+
+                        // add user's did to returnTo url
+                        const urlObj = new URL(returnTo);
+                        urlObj.searchParams.set('did', wallet.id.did());
+
+                        if (contractDetails?.owner?.did) {
+                            const unsignedDelegateCredential = wallet.invoke.newCredential({
+                                type: 'delegate',
+                                subject: contractDetails?.owner.did,
+                                access: ['read', 'write'],
+                            });
+
+                            const delegateCredential = await wallet.invoke.issueCredential(
+                                unsignedDelegateCredential
+                            );
+
+                            const unsignedDidAuthVp = await wallet.invoke.newPresentation(
+                                delegateCredential
+                            );
+                            const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                                proofPurpose: 'authentication',
+                                proofFormat: 'jwt',
+                            })) as any as string;
+
+                            urlObj.searchParams.set('vp', vp);
+                        }
+
+                        window.location.href = urlObj.toString();
+                    } else history.push(returnTo);
+                }
+            }
+
+            if (childInsightsProfile && isSwitchedProfile) {
+                // Switch back to parent profile after consenting on childs behalf
+                await handleSwitchBackToParentAccount();
+            }
+
             presentToast(`Successfully connected to ${app?.name ?? contractDetails?.name}`, {
                 type: ToastTypeEnum.Success,
             });
-
-            if (redirectUrl) {
-                // If the consentToContract call returned a specific redirect url, use it over everything else
-                window.location.href = redirectUrl;
-                return;
-            }
-
-            if (returnTo && !Array.isArray(returnTo)) {
-                if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                    const wallet = await initWallet();
-
-                    // add user's did to returnTo url
-                    const urlObj = new URL(returnTo);
-                    urlObj.searchParams.set('did', wallet.id.did());
-
-                    if (contractDetails?.owner?.did) {
-                        const unsignedDelegateCredential = wallet.invoke.newCredential({
-                            type: 'delegate',
-                            subject: contractDetails?.owner.did,
-                            access: ['read', 'write'],
-                        });
-
-                        const delegateCredential = await wallet.invoke.issueCredential(
-                            unsignedDelegateCredential
-                        );
-
-                        const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                            delegateCredential
-                        );
-                        const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
-                            proofPurpose: 'authentication',
-                            proofFormat: 'jwt',
-                        })) as any as string;
-
-                        urlObj.searchParams.set('vp', vp);
-                    }
-
-                    window.location.href = urlObj.toString();
-                } else history.push(returnTo);
-            }
 
             if (app) {
                 setTimeout(() => {
@@ -195,6 +241,18 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 isPreview={isPreview}
                 isPostConsent={isPostConsent}
                 hideProfileButton={hideProfileButton}
+                insightsProfile={
+                    typeof insightsProfile === 'string' ? _insightsProfile : insightsProfile
+                }
+                childInsightsProfile={
+                    typeof childInsightsProfile === 'string'
+                        ? _childInsightsProfile
+                        : childInsightsProfile
+                }
+                isInlineInsightsRequest={isInlineInsightsRequest}
+                aiInsightsRequestOptions={aiInsightsRequestOptions}
+                onCloseCallback={onCloseCallback}
+                onBackCallback={onBackCallback}
             />
         ),
         [ConsentFlowStep.connecting]: (
@@ -207,6 +265,12 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             />
         ),
     };
+
+    // If this is an inline insights request, render the confirmation page
+    // in a minimal view
+    if (isInlineInsightsRequest) {
+        return stepToComponent[step];
+    }
 
     return (
         <div className="h-full w-full flex items-center justify-center overflow-y-auto">

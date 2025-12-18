@@ -43,8 +43,14 @@ const CredentialBadge = lazyWithRetry(
     () => import('learn-card-base/components/CredentialBadge/CredentialBadge')
 );
 
+// Legacy skill selector (hardcoded skills)
+// oxlint-disable-next-line no-unused-vars
 const BoostCMSSkillsAttachmentForm = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm')
+);
+// New framework-based skill selector (Neo4j backend)
+const BoostFrameworkSkillSelector = lazyWithRetry(
+    () => import('./boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector')
 );
 
 const BoostPreviewBody = lazyWithRetry(() => import('./BoostPreview/BoostPreviewBody'));
@@ -107,6 +113,7 @@ import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import BoostCMSMediaOptions from './boostCMSForms/boostCMSMedia/BoostCMSMediaOptions';
+import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
 
 const FamilyCMS = lazyWithRetry(() => import('../../familyCMS/FamilyCMS'));
 
@@ -519,9 +526,12 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             setIsSaveLoading(true);
             closeModal();
 
+            const skillIds = extractSkillIdsFromAlignments(state?.alignments ?? []);
+
             const { boostUri } = await createBoost({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.draft,
+                skillIds,
             });
 
             queryClient.invalidateQueries({ queryKey: ['boosts', state.basicInfo.type] });
@@ -570,10 +580,15 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         try {
             setIsPublishLoading(true);
             closeModal();
+
+            const skillIds = extractSkillIdsFromAlignments(state?.alignments ?? []);
+
             const { boostUri } = await createBoost({
                 state: addFallbackNameToCMSState(state),
                 status: LCNBoostStatusEnum.live,
+                skillIds,
             });
+
             setIsPublishLoading(false);
             if (boostUri) {
                 logAnalyticsEvent('boostCMS_publish_live', {
@@ -777,7 +792,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     setCustomTypes={setCustomTypes}
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                 />
-                <BoostCMSSkillsAttachmentForm state={state} setState={setState} />
+                {/* <BoostCMSSkillsAttachmentForm state={state} setState={setState} /> */}
+                {/* Framework-based skill selector (new) */}
+                <BoostFrameworkSkillSelector state={state} setState={setState} />
                 <BoostCMSMediaForm state={state} setState={setState} />
                 <BoostCMSBasicInfoForm state={state} setState={setState} />
                 <BoostAddressBook
