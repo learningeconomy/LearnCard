@@ -1,10 +1,12 @@
 import React from 'react';
 
+import { IonSkeletonText } from '@ionic/react';
 import Trophy from 'learn-card-base/svgs/Trophy';
 import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
 import SproutIcon from 'learn-card-base/svgs/SproutIcon';
+import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
+
 import { useAiInsightCredential } from 'learn-card-base';
-import { IonSkeletonText } from '@ionic/react';
 
 enum AiInsightsLearningSnapshotType {
     StrongestArea = 'strongest-area',
@@ -50,7 +52,7 @@ const AiInsightsLearningSnapshots: React.FC<{ isLoading: boolean }> = ({ isLoadi
 
     if (isLoading || aiInsightCredentialLoading) {
         return (
-            <div className="flex flex-col items-start justify-start px-2 w-full bg-white shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
+            <div className="flex flex-col items-start justify-start px-2 w-full bg-white shadow-bottom-2-4 p-[15px] rounded-[15px] mb-4">
                 <div className="flex items-center justify-start mt-2">
                     <IonSkeletonText
                         animated
@@ -84,8 +86,9 @@ const AiInsightsLearningSnapshots: React.FC<{ isLoading: boolean }> = ({ isLoadi
     }
 
     return (
-        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
+        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px] mb-4">
             <div className="w-full flex items-center justify-start">
+                <AiPathwaysIconWithShape className="w-auto h-[40px]" />
                 <h2 className="text-xl text-grayscale-800 font-notoSans">Learning Snapshots</h2>
             </div>
 

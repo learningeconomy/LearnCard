@@ -120,8 +120,8 @@ export const SubheaderContentType: Record<
         iconColor: 'text-lime-700',
         textColor: 'text-white',
         bgColor: 'bg-white',
-        helperText: 'Your',
-        helperTextClickable: 'AI insights',
+        helperText: 'Explore',
+        helperTextClickable: 'your progress',
     },
     [SubheaderTypeEnum.Job]: {
         title: 'Experiences',

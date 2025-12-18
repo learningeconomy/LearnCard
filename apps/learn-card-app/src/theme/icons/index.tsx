@@ -189,6 +189,7 @@ export const icons = {
             IconWithShape: AiPathwaysIconWithShape,
         },
         [CredentialCategoryEnum.aiInsight]: {
+            Icon: AiInsightsIconWithShape,
             IconWithShape: AiInsightsIconWithShape,
             IconWithLightShape: AiInsightsIconWithLightShape,
         },

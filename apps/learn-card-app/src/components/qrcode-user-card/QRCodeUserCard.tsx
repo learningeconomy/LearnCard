@@ -7,7 +7,21 @@ import QRCodeUserCardShareOptions from './QrCodeUserCardShareOptions/QrCodeUserC
 import { useWallet, useGetCurrentLCNUser } from 'learn-card-base';
 import { getProfileIdFromLCNDidWeb } from 'learn-card-base/helpers/credentialHelpers';
 
-const QrCodeUserCard: React.FC = () => {
+const QrCodeUserCard: React.FC<{
+    showBackButton?: boolean;
+    handleBackButton?: () => void;
+    handleClose?: () => void;
+    cardTitle?: React.ReactNode | string | null;
+    contractUri?: string;
+    overrideShareLink?: string;
+}> = ({
+    showBackButton,
+    handleBackButton,
+    handleClose,
+    cardTitle = null,
+    contractUri,
+    overrideShareLink,
+}) => {
     const { initWallet } = useWallet();
     const { currentLCNUser } = useGetCurrentLCNUser();
 

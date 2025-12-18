@@ -52,6 +52,7 @@ import {
     LearnCardRolesEnum,
     LearnCardRoleType,
 } from '../onboarding/onboarding.helpers';
+import { useGetAiInsightsServicesContract } from '../../pages/ai-insights/learner-insights/learner-insights.helpers';
 
 const StateValidator = z.object({
     name: z
@@ -146,6 +147,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             setCountry(lcNetworkProfile?.country);
         }
     }, [walletDid, lcNetworkProfile]);
+    const { getAiInsightsContractUri } = useGetAiInsightsServicesContract(walletDid, true);
 
     const onUpload = (data: UploadRes) => {
         setPhoto(data?.url);
@@ -227,6 +229,12 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 country: country ?? '',
             });
             console.log('updatedProfile::res', updatedProfile);
+
+            if (role === LearnCardRolesEnum.teacher) {
+                getAiInsightsContractUri().catch(err => {
+                    console.log('getAiInsightsContractUri::error', err);
+                });
+            }
         }
     };
 

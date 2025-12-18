@@ -13,7 +13,11 @@ import { QrCodeDownloadOptionsEnum, userQrCodeDownloadOptions } from './user-sha
 
 const APP_ALBUM_NAME = 'LearnCard';
 
-const QrCodeUserCardShareOptions: React.FC = () => {
+const QrCodeUserCardShareOptions: React.FC<{
+    contractUri?: string;
+    profileId?: string;
+    overrideShareLink?: string;
+}> = ({ contractUri, profileId, overrideShareLink }) => {
     const { initWallet } = useWallet();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
 
@@ -195,6 +199,18 @@ const QrCodeUserCardShareOptions: React.FC = () => {
 
         option === QrCodeDownloadOptionsEnum.saveToPhotos ? savePng() : savePdf();
     };
+
+    let link = `learncard.app/connect?connect=true&did=${walletDid}`;
+
+    if (contractUri) {
+        link = `${
+            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
+        }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+    }
+
+    if (overrideShareLink) {
+        link = overrideShareLink;
+    }
 
     return (
         <div className="w-full flex items-center justify-center my-6 px-6">
