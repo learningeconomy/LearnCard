@@ -34,6 +34,10 @@ import AddChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/A
 import SwitchChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchChildQuickNav';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
+import { AiInsightsTabsEnum } from '../../ai-insights/ai-insight-tabs/ai-insights-tabs.helpers';
+import { RequestInsightsModal } from '../../ai-insights/request-insights/RequestInsightsModal';
+import { createTeacherStudentContract } from '../../ai-insights/request-insights/request-insights.helpers';
+import { createAiInsightsService } from '../../ai-insights/learner-insights/learner-insights.helpers';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
 import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
 import TeacherIcon from '../../../assets/images/quicknavroles/teacherappleicon.png';
@@ -61,10 +65,12 @@ import {
 import {
     useWallet,
     useGetProfile,
+    useGetCurrentLCNUser,
     useToast,
     ToastTypeEnum,
     BoostCategoryOptionsEnum,
     BoostUserTypeEnum,
+    useGetContracts,
     useGetCredentialList,
     CredentialCategoryEnum,
     switchedProfileStore,
@@ -381,10 +387,18 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const history = useHistory();
     const { initWallet } = useWallet();
     const { data: lcNetworkProfile } = useGetProfile();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+    const { data: contractsData, refetch: refetchContracts } = useGetContracts();
     const { presentToast } = useToast();
     const { familyCredential } = useGetFamilyCredential();
     const { data: familyList } = useGetCredentialList(CredentialCategoryEnum.family);
     const familyUri = (familyList?.pages?.[0]?.records?.[0]?.uri as string) || undefined;
+
+    type ConsentFlowContractLike = { name?: string; uri?: string };
+
+    const contracts: ConsentFlowContractLike[] | undefined = Array.isArray(contractsData)
+        ? (contractsData as ConsentFlowContractLike[])
+        : (contractsData as { records?: ConsentFlowContractLike[] } | undefined)?.records;
 
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
     const [optimisticRole, setOptimisticRole] = useState<LearnCardRolesEnum | null>(null);
@@ -527,6 +541,60 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Read Docs': 'bg-[var(--ion-color-teal-200)]',
     };
 
+    const handleViewLearnerInsights = () => {
+        history.push(`/ai/insights?tab=${AiInsightsTabsEnum.LearnerInsights}`);
+        closeModal();
+    };
+
+    const handleRequestLearnerInsights = async () => {
+        try {
+            const wallet = await initWallet();
+
+            if (!wallet || !currentLCNUser) {
+                presentToast('Unable to open Request Insights', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
+            const existingTeacherContract = contracts?.find(
+                contract => contract.name === 'AI Insights'
+            );
+
+            let contractUri = existingTeacherContract?.uri;
+
+            if (!contractUri) {
+                contractUri = await createTeacherStudentContract({
+                    teacherProfile: currentLCNUser,
+                });
+                refetchContracts?.();
+            }
+
+            await createAiInsightsService(
+                wallet,
+                contractUri,
+                currentLCNUser.profileId!,
+                currentLCNUser.did!
+            );
+
+            closeModal();
+            newModal(
+                <RequestInsightsModal contractUri={contractUri} />,
+                {},
+                {
+                    desktop: ModalTypes.FullScreen,
+                    mobile: ModalTypes.FullScreen,
+                }
+            );
+        } catch (e) {
+            presentToast('Unable to open Request Insights', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    };
+
     return (
         <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[380px]">
             <button
@@ -638,6 +706,10 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                       );
                                       history.push('/families');
                                   }
+                                : label === 'View Learner Insights'
+                                ? handleViewLearnerInsights
+                                : label === 'Request Learner Insights'
+                                ? () => void handleRequestLearnerInsights()
                                 : undefined
                         }
                     />
