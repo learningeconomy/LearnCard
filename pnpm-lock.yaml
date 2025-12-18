@@ -3267,6 +3267,9 @@ importers:
       serverless-offline:
         specifier: ^14.4.0
         version: 14.4.0(bufferutil@4.0.9)(serverless@3.40.0(@types/node@18.19.130)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+      serverless-prune-plugin:
+        specifier: ^2.1.0
+        version: 2.1.0(serverless@3.40.0(@types/node@18.19.130)(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -3418,6 +3421,9 @@ importers:
       serverless-offline:
         specifier: ^12.0.4
         version: 12.0.4(@types/node@18.19.130)(bufferutil@4.0.9)(serverless@3.40.0(@types/node@18.19.130)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
+      serverless-prune-plugin:
+        specifier: ^2.1.0
+        version: 2.1.0(serverless@3.40.0(@types/node@18.19.130)(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -3617,6 +3623,9 @@ importers:
       serverless-http:
         specifier: 3.2.0
         version: 3.2.0
+      serverless-prune-plugin:
+        specifier: ^2.1.0
+        version: 2.1.0(serverless@3.40.0(@types/node@18.19.130)(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -23573,6 +23582,11 @@ packages:
 
   serverless-plugin-warmup@8.3.0:
     resolution: {integrity: sha512-FBPPfY6CFdg/BAbvR+UrgHUFNgkUsQxXApSUVwoBqoaLH7amc2aCUYxYncJaD+kRLHTD4WKB0VC7QuyfUPJ+XQ==}
+
+  serverless-prune-plugin@2.1.0:
+    resolution: {integrity: sha512-++22inpEFECgfw+DR2cRn8huxzcsQVgSii4Rjp5q6cPxKo2eKmFc0dfMaJ81DwQoHEnVhfVipIlGdodkauOm1g==}
+    peerDependencies:
+      serverless: 3.40.0
 
   serverless@3.40.0:
     resolution: {integrity: sha512-6vUSIUqBkhZeIpFz0howqKlT1BNjYxOrucvvSICKCEsxVS9MbTJokGkykDrpr/k4Io3WI8tcvrf25+U5Ynf3lw==}
@@ -55470,6 +55484,11 @@ snapshots:
       typescript: 5.6.2
 
   serverless-plugin-warmup@8.3.0: {}
+
+  serverless-prune-plugin@2.1.0(serverless@3.40.0(@types/node@18.19.130)(bufferutil@4.0.9)(utf-8-validate@5.0.10)):
+    dependencies:
+      bluebird: 3.7.2
+      serverless: 3.40.0(@types/node@18.19.130)(bufferutil@4.0.9)(utf-8-validate@5.0.10)
 
   serverless@3.40.0(@types/node@18.19.130)(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
