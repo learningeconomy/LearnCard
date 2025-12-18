@@ -57,39 +57,21 @@ const QrCodeUserCard: React.FC<{
     const profileId = currentLCNUser?.profileId || getProfileIdFromLCNDidWeb(walletDid);
 
     return (
-        <div className="h-full w-full overflow-y-auto bg-white relative">
-            <QrCodeUserCardHeader
-                showCompact={showCompactHeader}
-                showBackButton={showBackButton}
-                handleBackButton={handleBackButton}
-                handleClose={handleClose}
-            />
+        <>
+            <div className="h-full w-full overflow-y-auto bg-white relative">
+                <QrCodeUserCardHeader showCompact={showCompactHeader} />
 
-            {cardTitle && (
-                <div className="text-grayscale-900 text-lg font-semibold w-full">{cardTitle}</div>
-            )}
+                <div id="qr-code-user-card-screenshot" className="flex flex-col gap-2">
+                    <div ref={basicInfoRef}>
+                        <QrCodeUserCardBasicInfo profileId={profileId} walletDid={walletDid} />
+                    </div>
 
-            <div ref={basicInfoRef}>
-                <QrCodeUserCardBasicInfo
-                    profileId={profileId}
-                    walletDid={walletDid}
-                    contractUri={contractUri}
-                    overrideShareLink={overrideShareLink}
-                />
+                    <UserQRCode profileId={profileId} walletDid={walletDid} />
+                </div>
+
+                <QRCodeUserCardShareOptions />
             </div>
-
-            <UserQRCode
-                profileId={profileId}
-                walletDid={walletDid}
-                contractUri={contractUri}
-                overrideShareLink={overrideShareLink}
-            />
-            <QRCodeUserCardShareOptions
-                contractUri={contractUri}
-                profileId={profileId}
-                overrideShareLink={overrideShareLink}
-            />
-        </div>
+        </>
     );
 };
 

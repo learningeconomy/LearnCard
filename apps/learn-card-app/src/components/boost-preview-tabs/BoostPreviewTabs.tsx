@@ -6,16 +6,22 @@ export const BoostPreviewTabs: React.FC<{
     className?: string;
     selectedTab?: BoostPreviewTabsEnum;
     setSelectedTab?: (tab: BoostPreviewTabsEnum) => void;
-}> = ({ className, selectedTab, setSelectedTab }) => {
+    isEarnedBoost?: boolean;
+}> = ({ className, selectedTab, setSelectedTab, isEarnedBoost = false }) => {
     const isSelectedTab = (tab: BoostPreviewTabsEnum) => selectedTab === tab;
 
     const handleSetSelectedTab = (tab: BoostPreviewTabsEnum) => {
         setSelectedTab?.(tab);
     };
 
+    // Filter tabs based on isEarnedBoost
+    const filteredTabs = boostPreviewTabs.filter(
+        tab => isEarnedBoost || tab.value !== BoostPreviewTabsEnum.Endorsements
+    );
+
     return (
         <div className={`${className} flex items-center gap-[10px]`}>
-            {boostPreviewTabs.map(tab => (
+            {filteredTabs.map(tab => (
                 <button
                     key={tab.value}
                     onClick={() => handleSetSelectedTab(tab.value)}

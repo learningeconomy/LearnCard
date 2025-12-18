@@ -51,27 +51,14 @@ const QrCodeUserCardBasicInfo: React.FC<{
         }
     };
 
-    const name = overrideName ?? currentUser?.name ?? currentUser?.email ?? '';
-
-    let profilePicture = (
-        <ProfilePicture
-            customContainerClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-4xl min-w-[80px] min-h-[80px] "
-            customImageClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[80px] min-h-[80px]"
-            customSize={164}
-        />
-    );
-
-    if (overrideImage || overrideName) {
-        profilePicture = (
-            <UserProfilePicture
-                user={{
-                    name,
-                    image: overrideImage,
-                }}
+    return (
+        <div className="flex w-full flex-col gap-2 items-center justify-center">
+            <ProfilePicture
                 customContainerClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-4xl min-w-[80px] min-h-[80px] "
                 customImageClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[80px] min-h-[80px]"
                 customSize={164}
             />
+            </div>
         );
     }
 
@@ -83,16 +70,14 @@ const QrCodeUserCardBasicInfo: React.FC<{
             >
                 {name}
             </p>
-            <div className="w-full flex items-center justify-center px-4">
-                {profileId && (
-                    <button
-                        onClick={copyToClipBoard}
-                        className={`text-base flex items-start text-center font-medium text-grayscale-900`}
-                    >
-                        <ChainLink className="h-[20px]" /> {`learncard.app/...${profileId}`}
-                    </button>
-                )}
-            </div>
+            {profileId && (
+                <button
+                    onClick={copyToClipBoard}
+                    className={`text-base flex items-center justify-center text-center font-medium text-grayscale-900`}
+                >
+                    <ChainLink className="h-[20px]" /> {`learncard.app/...${profileId}`}
+                </button>
+            )}
         </div>
     );
 };

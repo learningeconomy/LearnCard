@@ -39,7 +39,7 @@ export const UserQRCode: React.FC<{
 
                 {profileId && (
                     <div className="flex items-center justify-center w-full mt-4">
-                        <p className="text-grayscale-900 line-clamp-1 font-semibold text-xl">
+                        <p className="text-grayscale-900 line-clamp-1 font-semibold text-xl pb-4">
                             @{profileId}
                         </p>
                     </div>
