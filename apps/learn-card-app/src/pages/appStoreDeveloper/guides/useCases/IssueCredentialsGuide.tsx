@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { 
     Key, 
     Shield, 
@@ -13,6 +13,9 @@ import {
     Trash2,
     CheckCircle2,
     AlertCircle,
+    Award,
+    Sparkles,
+    Eye,
 } from 'lucide-react';
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
@@ -20,6 +23,7 @@ import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
+import { OBv3CredentialBuilder } from '../../../../components/credentials/OBv3CredentialBuilder';
 
 type AuthGrant = {
     id: string;
@@ -437,9 +441,39 @@ const BuildCredentialStep: React.FC<{
     onBack: () => void;
     apiToken: string;
 }> = ({ onComplete, onBack, apiToken }) => {
-    const [credentialName, setCredentialName] = useState('Achievement Badge');
-    const [credentialDescription, setCredentialDescription] = useState('Awarded for completing the course');
+    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
     const [recipientEmail, setRecipientEmail] = useState('');
+    const [credential, setCredential] = useState<Record<string, unknown>>({
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        name: 'Achievement Badge',
+        credentialSubject: {
+            achievement: {
+                type: ['Achievement'],
+                name: 'Achievement Badge',
+                description: 'Awarded for completing the course',
+                achievementType: 'Achievement',
+            },
+        },
+    });
+
+    const handleCredentialSave = (newCredential: Record<string, unknown>) => {
+        setCredential(newCredential);
+    };
+
+    // Extract name, description, and image from credential for display
+    const credentialName = (credential.name as string) || 'Untitled Credential';
+    const credentialSubject = credential.credentialSubject as Record<string, unknown> | undefined;
+    const achievement = credentialSubject?.achievement as Record<string, unknown> | undefined;
+    const credentialDescription = (achievement?.description as string) || '';
+    const achievementImage = (achievement?.image as { id?: string })?.id || (achievement?.image as string) || '';
+
+    // Format credential JSON for code snippets
+    const credentialJson = useMemo(() => JSON.stringify(credential, null, 4), [credential]);
+    const credentialJsonIndented = credentialJson.split('\n').map((line, i) => i === 0 ? line : '    ' + line).join('\n');
 
     const codeSnippet = `// Install: npm install @learncard/network-plugin
 
@@ -452,22 +486,8 @@ const networkLC = await learnCard.addPlugin(
     await getLearnCardNetworkPlugin(learnCard, '${apiToken || 'YOUR_API_TOKEN'}')
 );
 
-// Build the credential
-const credential = {
-    '@context': [
-        'https://www.w3.org/2018/credentials/v1',
-        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
-    ],
-    type: ['VerifiableCredential', 'OpenBadgeCredential'],
-    name: '${credentialName}',
-    credentialSubject: {
-        achievement: {
-            name: '${credentialName}',
-            description: '${credentialDescription}',
-            achievementType: 'Achievement',
-        }
-    }
-};
+// Your credential (built with Credential Builder)
+const credential = ${credentialJsonIndented};
 
 // Send credential via Universal Inbox (for email recipients)${recipientEmail ? `
 await networkLC.invoke.sendCredentialViaInbox({
@@ -496,22 +516,8 @@ import learncard
 # Initialize with your API token
 lc = learncard.init(api_token="${apiToken || 'YOUR_API_TOKEN'}")
 
-# Build the credential
-credential = {
-    "@context": [
-        "https://www.w3.org/2018/credentials/v1",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
-    ],
-    "type": ["VerifiableCredential", "OpenBadgeCredential"],
-    "name": "${credentialName}",
-    "credentialSubject": {
-        "achievement": {
-            "name": "${credentialName}",
-            "description": "${credentialDescription}",
-            "achievementType": "Achievement"
-        }
-    }
-}
+# Your credential (built with Credential Builder)
+credential = ${credentialJsonIndented}
 
 # Send credential via Universal Inbox (for email recipients)${recipientEmail ? `
 lc.send_credential_via_inbox(
@@ -539,21 +545,7 @@ curl -X POST https://network.learncard.com/api/inbox/issue \\
       "type": "email",
       "value": "${recipientEmail || 'recipient@example.com'}"
     },
-    "credential": {
-      "@context": [
-        "https://www.w3.org/2018/credentials/v1",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
-      ],
-      "type": ["VerifiableCredential", "OpenBadgeCredential"],
-      "name": "${credentialName}",
-      "credentialSubject": {
-        "achievement": {
-          "name": "${credentialName}",
-          "description": "${credentialDescription}",
-          "achievementType": "Achievement"
-        }
-      }
-    }
+    "credential": ${JSON.stringify(credential, null, 6).split('\n').map((line, i) => i === 0 ? line : '      ' + line).join('\n')}
   }'`;
 
     return (
@@ -562,47 +554,93 @@ curl -X POST https://network.learncard.com/api/inbox/issue \\
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Build Your Credential</h3>
 
                 <p className="text-gray-600">
-                    Customize the credential details below. The code will update automatically.
+                    Design your Open Badges 3.0 credential using our visual builder. The code will update automatically.
                 </p>
             </div>
 
-            {/* Credential form */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Credential Name</label>
+            {/* Credential preview card */}
+            <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-2xl">
+                <div className="flex items-start gap-4">
+                    {/* Credential icon/image */}
+                    {achievementImage ? (
+                        <img
+                            src={achievementImage}
+                            alt={credentialName}
+                            className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border border-gray-200"
+                            onError={(e) => {
+                                // Fallback to icon if image fails to load
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                            }}
+                        />
+                    ) : null}
 
-                    <input
-                        type="text"
-                        value={credentialName}
-                        onChange={(e) => setCredentialName(e.target.value)}
-                        placeholder="e.g., Course Completion"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
+                    <div className={`w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 ${achievementImage ? 'hidden' : ''}`}>
+                        <Award className="w-8 h-8 text-white" />
+                    </div>
+
+                    {/* Credential info */}
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-800 truncate">{credentialName}</h4>
+
+                        <p className="text-sm text-gray-600 line-clamp-2 mt-0.5">
+                            {credentialDescription || 'No description set'}
+                        </p>
+
+                        <div className="flex items-center gap-2 mt-2">
+                            <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs font-medium">
+                                {(achievement?.achievementType as string) || 'Achievement'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Edit button */}
+                    <button
+                        onClick={() => setIsBuilderOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-cyan-600 border border-cyan-300 rounded-xl font-medium hover:bg-cyan-50 transition-colors"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        Edit
+                    </button>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Recipient Email (optional)</label>
+                {/* Open builder button if using default */}
+                {credentialName === 'Achievement Badge' && (
+                    <button
+                        onClick={() => setIsBuilderOpen(true)}
+                        className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        Customize Your Credential
+                    </button>
+                )}
+            </div>
 
-                    <input
-                        type="email"
-                        value={recipientEmail}
-                        onChange={(e) => setRecipientEmail(e.target.value)}
-                        placeholder="recipient@example.com"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-                </div>
+            {/* Credential Builder Modal */}
+            <OBv3CredentialBuilder
+                isOpen={isBuilderOpen}
+                onClose={() => setIsBuilderOpen(false)}
+                onSave={handleCredentialSave}
+            />
 
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            {/* Recipient email */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Recipient Email 
+                    <span className="text-gray-400 font-normal"> (optional)</span>
+                </label>
 
-                    <textarea
-                        value={credentialDescription}
-                        onChange={(e) => setCredentialDescription(e.target.value)}
-                        placeholder="What is this credential for?"
-                        rows={2}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
-                    />
-                </div>
+                <input
+                    type="email"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    placeholder="recipient@example.com"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+
+                <p className="text-xs text-gray-500 mt-1">
+                    Enter an email to see the send code. The recipient will get a claim link.
+                </p>
             </div>
 
             {/* Code output */}
