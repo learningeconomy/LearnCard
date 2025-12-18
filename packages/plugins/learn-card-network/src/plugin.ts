@@ -955,6 +955,64 @@ export async function getLearnCardNetworkPlugin(
                 return client.boost.claimBoostWithLink.mutate({ boostUri, challenge });
             },
 
+            send: async (_learnCard, input) => {
+                await ensureUser();
+
+                if (input.type === 'boost') {
+                    const canIssueLocally = 'issueCredential' in _learnCard.invoke;
+
+                    if (canIssueLocally && input.templateUri) {
+                        const result = await _learnCard.invoke.resolveFromLCN(input.templateUri);
+                        const data = await UnsignedVCValidator.spa(result);
+
+                        if (data.success) {
+                            let targetDid: string;
+
+                            if (input.recipient.startsWith('did:')) {
+                                targetDid = input.recipient;
+                            } else {
+                                const targetProfile = await _learnCard.invoke.getProfile(
+                                    input.recipient
+                                );
+                                if (!targetProfile) return client.boost.send.mutate(input);
+                                targetDid = targetProfile.did;
+                            }
+
+                            let boost = data.data;
+
+                            if (isVC2Format(boost)) {
+                                boost.validFrom = new Date().toISOString();
+                            } else {
+                                boost.issuanceDate = new Date().toISOString();
+                            }
+
+                            boost.issuer = _learnCard.id.did();
+
+                            if (Array.isArray(boost.credentialSubject)) {
+                                boost.credentialSubject = boost.credentialSubject.map(subject => ({
+                                    ...subject,
+                                    id: targetDid,
+                                }));
+                            } else {
+                                boost.credentialSubject.id = targetDid;
+                            }
+
+                            if (boost?.type?.includes('BoostCredential'))
+                                boost.boostId = input.templateUri;
+
+                            const signedCredential = await _learnCard.invoke.issueCredential(boost);
+
+                            return client.boost.send.mutate({
+                                ...input,
+                                signedCredential,
+                            } as any);
+                        }
+                    }
+                }
+
+                return client.boost.send.mutate(input);
+            },
+
             createContract: async (_learnCard, contract) => {
                 await ensureUser();
 
@@ -1591,7 +1649,10 @@ export async function getLearnCardNetworkPlugin(
             getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {
                 await ensureUser();
 
-                return client.appStore.getListingsForIntegration.query({ integrationId, ...options });
+                return client.appStore.getListingsForIntegration.query({
+                    integrationId,
+                    ...options,
+                });
             },
 
             countListingsForIntegration: async (_learnCard, integrationId) => {
@@ -1657,7 +1718,10 @@ export async function getLearnCardNetworkPlugin(
             adminUpdatePromotionLevel: async (_learnCard, listingId, promotionLevel) => {
                 await ensureUser();
 
-                return client.appStore.adminUpdatePromotionLevel.mutate({ listingId, promotionLevel });
+                return client.appStore.adminUpdatePromotionLevel.mutate({
+                    listingId,
+                    promotionLevel,
+                });
             },
 
             adminGetAllListings: async (_learnCard, options) => {
