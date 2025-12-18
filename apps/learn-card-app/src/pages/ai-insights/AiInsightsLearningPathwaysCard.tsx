@@ -6,7 +6,10 @@ import PathwaysInsightsIcon from 'learn-card-base/svgs/PathwaysInsightsIcon';
 const AiInsightsLearningPathwaysCard: React.FC = () => {
     const history = useHistory();
 
-    const handleExploreClick = () => history.push('/learning-pathways');
+    const handleExploreClick = () => {
+        return; // disable pathway redirect
+        history.push('/ai/pathways');
+    };
 
     return (
         <div
