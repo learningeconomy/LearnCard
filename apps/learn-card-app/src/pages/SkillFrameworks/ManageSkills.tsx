@@ -20,7 +20,7 @@ import ManageSkillsCancelUpdateModal from './ManageSkillsCancelUpdateModal';
 import ManageSkillsConfirmationModal from './ManageSkillsConfirmationModal';
 import ManageSkillsExistingSkillsBody from './ManageSkillsExistingSkillsBody';
 
-import { getFileInfo } from 'apps/scouts/src/hooks/useUploadFile';
+import { getFileInfo } from 'apps/learn-card-app/src/hooks/useUploadFile';
 import {
     SkillFramework,
     SkillFrameworkNode,

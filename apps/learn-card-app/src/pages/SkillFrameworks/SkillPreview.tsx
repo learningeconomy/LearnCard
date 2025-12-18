@@ -5,14 +5,14 @@ import {
     FrameworkNodeRole,
     SkillFramework,
     SkillFrameworkNode,
-} from 'apps/scouts/src/components/boost/boost';
-import SkillsFrameworkIcon from 'apps/scouts/src/components/svgs/SkillsFrameworkIcon';
+} from 'apps/learn-card-app/src/components/boost/boost';
+import SkillsFrameworkIcon from 'apps/learn-card-app/src/components/svgs/SkillsFrameworkIcon';
 import TiersAndCompetencies from './TiersAndCompetencies';
 import FrameworkImage from './FrameworkImage';
-import SlimCaretLeft from 'apps/scouts/src/components/svgs/SlimCaretLeft';
+import SlimCaretLeft from 'apps/learn-card-app/src/components/svgs/SlimCaretLeft';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-import Pencil from 'apps/scouts/src/components/svgs/Pencil';
+import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 
 type SkillPreviewProps = {
     framework: SkillFramework;
