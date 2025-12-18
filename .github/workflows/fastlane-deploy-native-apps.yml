@@ -7,6 +7,15 @@ on:
       - add-fastlane
   workflow_dispatch:
     inputs:
+      versionBumpType:
+        description: "Version bump type (patch, minor, major)"
+        required: false
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
       environment:
         description: "Choose Environment"
         required: true
@@ -34,6 +43,11 @@ on:
         type: string
   workflow_call:
     inputs:
+      versionBumpType:
+        description: "Version bump type (patch, minor, major)"
+        required: false
+        default: "patch"
+        type: string
       environment:
         description: "Choose Environment"
         required: true
@@ -160,6 +174,7 @@ jobs:
 
           IOS_SUBMIT_TO_APP_REVIEW: ${{ inputs.submitToAppStore || vars.IOS_SUBMIT_TO_APP_REVIEW }}
           IOS_RELEASE_NOTES: ${{ inputs.releaseNotes }}
+          VERSION_BUMP_TYPE: ${{ inputs.versionBumpType || 'patch' }}
 
       #- name: Save nx cache
       #uses: actions/cache/save@v3
@@ -264,6 +279,7 @@ jobs:
           ANDROID_KEYSTORE_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_KEY_PASSWORD }}
 
           ANDROID_RELEASE_NOTES: ${{ inputs.releaseNotes }}
+          VERSION_BUMP_TYPE: ${{ inputs.versionBumpType || 'patch' }}
 
       #- name: Save nx cache
       #uses: actions/cache/save@v3
