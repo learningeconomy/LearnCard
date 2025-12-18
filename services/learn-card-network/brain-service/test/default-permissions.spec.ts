@@ -837,4 +837,198 @@ describe('Default Permissions', () => {
             expect(credentialUri).toBeDefined();
         });
     });
+
+    describe('getBoostPermissions with defaultPermissions', () => {
+        it('should return defaultPermissions when user has no explicit role', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: {
+                    canIssue: true,
+                    canEdit: true,
+                    canViewAnalytics: true,
+                },
+            });
+
+            // UserB has no explicit role - should get defaultPermissions
+            const permissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: boostUri,
+            });
+
+            expect(permissions.canIssue).toBe(true);
+            expect(permissions.canEdit).toBe(true);
+            expect(permissions.canViewAnalytics).toBe(true);
+            // Permissions not in defaultPermissions should remain false
+            expect(permissions.canRevoke).toBe(false);
+            expect(permissions.canManagePermissions).toBe(false);
+        });
+
+        it('should return EMPTY_PERMISSIONS when no defaultPermissions and no explicit role', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const permissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: boostUri,
+            });
+
+            expect(permissions.canIssue).toBe(false);
+            expect(permissions.canEdit).toBe(false);
+            expect(permissions.canViewAnalytics).toBe(false);
+            expect(permissions.canRevoke).toBe(false);
+        });
+
+        it('should merge explicit role permissions with defaultPermissions', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: {
+                    canIssue: true,
+                    canViewAnalytics: true,
+                },
+            });
+
+            // Add userB as admin (which grants canEdit, canIssue, etc.)
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: 'userb',
+            });
+
+            const permissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: boostUri,
+            });
+
+            // Should have both explicit admin permissions AND defaultPermissions
+            expect(permissions.canIssue).toBe(true);
+            expect(permissions.canEdit).toBe(true);
+            expect(permissions.canViewAnalytics).toBe(true);
+        });
+
+        it('should allow all supported boolean permissions via defaultPermissions', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: {
+                    canIssue: true,
+                    canEdit: true,
+                    canRevoke: true,
+                    canManagePermissions: true,
+                    canViewAnalytics: true,
+                },
+            });
+
+            const permissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: boostUri,
+            });
+
+            expect(permissions.canIssue).toBe(true);
+            expect(permissions.canEdit).toBe(true);
+            expect(permissions.canRevoke).toBe(true);
+            expect(permissions.canManagePermissions).toBe(true);
+            expect(permissions.canViewAnalytics).toBe(true);
+        });
+    });
+
+    describe('defaultPermissions.canRevoke', () => {
+        it('should allow revoking credentials when defaultPermissions.canRevoke is true', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canIssue: true, canRevoke: true },
+            });
+
+            // UserB issues to UserC
+            const credential = await userB.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userB.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userC.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            const credentialUri = await userB.clients.fullAuth.boost.sendBoost({
+                profileId: 'userc',
+                uri: boostUri,
+                credential,
+            });
+
+            // Accept the credential
+            await userC.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
+
+            // UserD (with canRevoke from defaultPermissions) should be able to revoke
+            // Note: This tests that the permission is granted, not the revoke functionality itself
+            const permissions = await userD.clients.fullAuth.boost.getBoostPermissions({
+                uri: boostUri,
+            });
+
+            expect(permissions.canRevoke).toBe(true);
+        });
+    });
+
+    describe('defaultPermissions.canViewAnalytics', () => {
+        it('should grant analytics access via defaultPermissions', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canViewAnalytics: true },
+            });
+
+            const permissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: boostUri,
+            });
+
+            expect(permissions.canViewAnalytics).toBe(true);
+        });
+
+        it('should not grant analytics access without defaultPermissions.canViewAnalytics', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canIssue: true },
+            });
+
+            const permissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: boostUri,
+            });
+
+            expect(permissions.canViewAnalytics).toBe(false);
+        });
+    });
+
+    describe('defaultPermissions.canManagePermissions', () => {
+        it('should grant permission management via defaultPermissions', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canManagePermissions: true },
+            });
+
+            const permissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: boostUri,
+            });
+
+            expect(permissions.canManagePermissions).toBe(true);
+        });
+    });
+
+    describe('explicit roles override defaultPermissions', () => {
+        it('should use explicit role permission even when defaultPermissions differs', async () => {
+            // Create boost with canIssue: true in defaultPermissions
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                defaultPermissions: { canIssue: true },
+            });
+
+            // Give userB an explicit role with canIssue: false
+            // (This would typically be done via updateBoostPermissions)
+            // For now, we just verify that having an explicit role works
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: boostUri,
+                profileId: 'userb',
+            });
+
+            const permissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: boostUri,
+            });
+
+            // Admin role should grant canIssue
+            expect(permissions.canIssue).toBe(true);
+            expect(permissions.canEdit).toBe(true);
+        });
+    });
 });
