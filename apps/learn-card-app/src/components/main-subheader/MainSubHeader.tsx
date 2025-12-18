@@ -91,7 +91,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
 
     return (
         <IonRow className="max-w-[700px] mx-auto">
-            {subheaderType === SubheaderTypeEnum.AiInsights ? (
+            {subheaderType === SubheaderTypeEnum.Skill ? (
                 <CenteredSubHeader subheaderType={subheaderType} />
             ) : (
                 <IonCol size={'9'} className="flex items-center justify-start gap-[10px]">

@@ -10,6 +10,7 @@ import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { sendBoostCredential } from '../components/boost/boostHelpers';
 import { v4 as uuidv4 } from 'uuid';
 import { LCNProfile } from '@learncard/types';
+import { LearnCardRolesEnum } from '../components/onboarding/onboarding.helpers';
 
 export const useCreateChildAccount = () => {
     const DEFAULT_LEARNCARD_WALLPAPER = 'https://cdn.filestackcontent.com/ImEqbxSFRESCRdkhQKY8';
@@ -22,7 +23,7 @@ export const useCreateChildAccount = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ childAccount, boostUri }) => {
+        mutationFn: async ({ childAccount, boostUri }: { childAccount: any; boostUri: string }) => {
             const wallet = await initWallet();
 
             try {
@@ -41,6 +42,7 @@ export const useCreateChildAccount = () => {
                     displayName: '',
                     bio: '',
                     shortBio: '',
+                    role: LearnCardRolesEnum.learner,
                     notificationsWebhook: getNotificationsEndpoint(),
                     display: {
                         // container styles
@@ -136,7 +138,7 @@ export const useCreateChildAccount = () => {
             // Return context for rollback
             return { previousData, tempDid, boostUri };
         },
-        onSuccess: async (data, variables) => {
+        onSuccess: async (data, variables, context) => {
             const switchedDid = switchedProfileStore.get.switchedDid();
             const childrenProfileManagersQueryKey = [
                 'getBoostChildrenProfileManagers',

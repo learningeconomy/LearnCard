@@ -13,14 +13,18 @@ interface AiInsightsTopSkillsProps {
         count: number;
         type: string;
     }[];
+    showSkillsIcon?: boolean;
 }
 
-const AiInsightsTopSkills: React.FC<AiInsightsTopSkillsProps> = ({ topSkills }) => {
+const AiInsightsTopSkills: React.FC<AiInsightsTopSkillsProps> = ({
+    topSkills,
+    showSkillsIcon = true,
+}) => {
     return (
-        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
+        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] mt-2 rounded-[15px]">
             <div className="w-full flex items-center justify-start">
-                <SkillsIconWithShape className="w-[40px] h-[40px]" />
-                <h2 className="text-xl text-grayscale-800 font-notoSans ml-[10px]">Top Skills</h2>
+                {showSkillsIcon && <SkillsIconWithShape className="w-[40px] h-[40px]" />}
+                <h2 className="text-xl text-grayscale-800 font-notoSans">Top Skills</h2>
             </div>
 
             <div className="w-full flex flex-col items-start justify-start mt-4">
@@ -38,7 +42,14 @@ const AiInsightsTopSkills: React.FC<AiInsightsTopSkillsProps> = ({ topSkills }) 
 
                     return (
                         <div key={index} className="flex flex-col items-start justify-start">
-                            <SkillsChipItem title={skillName} count={skill.count} />
+                            <SkillsChipItem
+                                title={skillName}
+                                count={skill.count}
+                                containerClassName="!bg-grayscale-100 !text-grayscale-900 !rounded-[10px]"
+                                countClassName="!text-grayscale-900 !rounded-[10px] !px-2"
+                                iconClassName="!mr-[2px]"
+                                iconFill="#353E64"
+                            />
                             <p className="w-full text-left text-grayscale-700 font-notoSans text-sm mt-2 mx-2 mb-4">
                                 {description}
                             </p>

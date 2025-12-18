@@ -313,7 +313,16 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     }
     /* Someone made a transaction on your ConsentFlow contract (e.g. Accepted / updated) */
     if (type === NOTIFICATION_TYPES.CONSENT_FLOW_TRANSACTION) {
-        return <NotificationConsentFlowCard notification={notification} />;
+        const claimStatus = notification?.actionStatus === 'COMPLETED' ? true : false;
+        return (
+            <NotificationConsentFlowCard
+                notification={notification}
+                handleRead={handleMarkAsRead}
+                claimStatus={claimStatus}
+                handleArchive={handleArchiveNotification}
+                cardLoading={isLoading}
+            />
+        );
     }
 
     /* App Store: A new listing was submitted for review (admin notification) */

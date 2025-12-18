@@ -35,3 +35,114 @@ export const useConsentToContract = (
         },
     });
 };
+
+export const useSendAiInsightsContractRequest = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation({
+        mutationFn: async ({
+            contractUri,
+            targetProfileId,
+            shareLink,
+        }: {
+            contractUri: string;
+            targetProfileId: string;
+            shareLink: string;
+        }) => {
+            const wallet = await initWallet();
+            return wallet.invoke.sendAiInsightsContractRequest(
+                contractUri,
+                targetProfileId,
+                shareLink
+            );
+        },
+        onSuccess: data => {
+            if (data) {
+            }
+        },
+    });
+};
+
+export const useSendAiInsightsShareRequest = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation({
+        mutationFn: async ({
+            targetProfileId,
+            shareLink,
+            childProfileId,
+        }: {
+            targetProfileId: string;
+            shareLink: string;
+            childProfileId?: string;
+        }) => {
+            const wallet = await initWallet();
+            return wallet.invoke.sendAiInsightShareRequest(
+                targetProfileId,
+                shareLink,
+                childProfileId
+            );
+        },
+        onSuccess: data => {
+            if (data) {
+            }
+        },
+    });
+};
+
+export const useMarkContractRequestAsSeen = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation({
+        mutationFn: async ({
+            contractUri,
+            targetProfileId,
+        }: {
+            contractUri: string;
+            targetProfileId: string;
+        }) => {
+            const wallet = await initWallet();
+            return wallet.invoke.markContractRequestAsSeen(contractUri, targetProfileId);
+        },
+    });
+};
+
+export const useCancelContractRequest = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation({
+        mutationFn: async ({
+            contractUri,
+            targetProfileId,
+        }: {
+            contractUri: string;
+            targetProfileId: string;
+        }) => {
+            const wallet = await initWallet();
+            return wallet.invoke.cancelContractRequest(contractUri, targetProfileId);
+        },
+    });
+};
+
+export const useForwardContractRequestToProfile = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation({
+        mutationFn: async ({
+            parentProfileId,
+            targetProfileId,
+            contractUri,
+        }: {
+            parentProfileId: string;
+            targetProfileId: string;
+            contractUri?: string;
+        }) => {
+            const wallet = await initWallet();
+            return wallet.invoke.forwardContractRequestToProfile(
+                parentProfileId,
+                targetProfileId,
+                contractUri
+            );
+        },
+    });
+};
