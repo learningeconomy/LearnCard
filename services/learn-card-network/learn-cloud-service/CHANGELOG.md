@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.4.1
+
+### Patch Changes
+
+-   [#893](https://github.com/learningeconomy/LearnCard/pull/893) [`4b1d40356ffd974915396fbee05d656f6c16f9c0`](https://github.com/learningeconomy/LearnCard/commit/4b1d40356ffd974915396fbee05d656f6c16f9c0) Thanks [@Custard7](https://github.com/Custard7)! - fix: serverless-prune for lambdas
+
 ## 2.4.0
 
 ### Minor Changes
