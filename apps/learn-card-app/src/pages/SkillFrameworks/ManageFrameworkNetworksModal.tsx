@@ -1,10 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { useModal, useGetCurrentUserTroopIdsResolved, useGetMultipleBoosts, useWallet } from 'learn-card-base';
+import {
+    useModal,
+    useGetCurrentUserTroopIdsResolved,
+    useGetMultipleBoosts,
+    useWallet,
+} from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SkillFrameworkType } from '@learncard/types';
-import CaretDown from 'apps/scouts/src/components/svgs/CaretDown';
-import ScoutsTroopIcon from 'apps/scouts/src/assets/icons/ScoutsTroopIcon';
+import CaretDown from 'apps/learn-card-app/src/components/svgs/CaretDown';
+// import ScoutsTroopIcon from 'apps/learn-card-app/src/assets/icons/ScoutsTroopIcon';
 import { insertParamsToFilestackUrl } from 'learn-card-base';
 
 type ManageFrameworkNetworksModalProps = {
@@ -61,7 +66,10 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
     }, [troopIds?.globalAdmin, troopIds?.nationalAdmin]);
 
     // Extract just the URIs for the query hook
-    const boostUris = useMemo(() => networkBoostIds.map(({ boostId }) => boostId), [networkBoostIds]);
+    const boostUris = useMemo(
+        () => networkBoostIds.map(({ boostId }) => boostId),
+        [networkBoostIds]
+    );
 
     // Fetch all boosts in parallel using useQueries
     const boostQueries = useGetMultipleBoosts(boostUris);
@@ -121,12 +129,13 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
         updateNetworksMutation.mutate(selected);
     };
 
-    const isLoading = isLoadingCredentials || isLoadingFramework || boostQueries.some(q => q.isLoading);
+    const isLoading =
+        isLoadingCredentials || isLoadingFramework || boostQueries.some(q => q.isLoading);
 
     return (
         <section className="bg-grayscale-100 rounded-[20px] flex flex-col max-w-[600px]">
             <div className="py-[10px] pl-[10px] pr-[20px] flex gap-[10px] items-center shadow-bottom-1-5">
-                <ScoutsTroopIcon className="w-[65px] h-[65px]" />
+                {/* <ScoutsTroopIcon className="w-[65px] h-[65px]" /> */}
                 <p className="text-grayscale-800 font-poppins text-[20px] leading-[130%] tracking-[-0.25px]">
                     Manage Networks
                 </p>
