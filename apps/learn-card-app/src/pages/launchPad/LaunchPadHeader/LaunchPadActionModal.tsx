@@ -36,6 +36,7 @@ import LaunchPadRoleSelector from './LaunchPadRoleSelector';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import { AiInsightsTabsEnum } from '../../ai-insights/ai-insight-tabs/ai-insights-tabs.helpers';
 import { RequestInsightsModal } from '../../ai-insights/request-insights/RequestInsightsModal';
+import ShareInsightsModal from '../../ai-insights/share-insights/ShareInsightsModal';
 import { createTeacherStudentContract } from '../../ai-insights/request-insights/request-insights.helpers';
 import { createAiInsightsService } from '../../ai-insights/learner-insights/learner-insights.helpers';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
@@ -360,6 +361,14 @@ const ActionButton: React.FC<{
             case 'Claim Credential':
                 closeModal();
                 QRCodeScannerStore.set.showScanner(true);
+                return;
+            case 'Share Insights with Teacher':
+                closeModal();
+                newModal(
+                    <ShareInsightsModal />,
+                    {},
+                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                );
                 return;
             default:
                 return;
