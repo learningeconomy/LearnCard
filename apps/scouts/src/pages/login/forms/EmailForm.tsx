@@ -43,8 +43,8 @@ const EmailForm: React.FC = () => {
 
     const enableMagicLinkLogin = flags?.enableMagicLinkLogin ?? false;
 
-    const shouldVerifyCode = query.get('verifyCode');
     const verificationEmail = redirectStore.get.email();
+    const shouldVerifyCode = Boolean(query.get('verifyCode') || verificationEmail);
 
     const [email, setEmail] = useState<string | null | undefined>('');
     const [code, setCode] = useState<string>('');
