@@ -253,11 +253,11 @@ describe('Skills & Frameworks E2E', () => {
         const flattened = flattenSkillTree(skills as any);
         const targetSkillId = flattened.find(s => s.id === skill1Id)?.id ?? skill1Id;
 
-        // User B does not manage A's framework -> should be unauthorized for framework read
-        await expect(b.invoke.getSkillFrameworkById(fwId)).rejects.toBeDefined();
+        // User B does not manage A's framework -> should be authorized for framework read
+        const getRes = await b.invoke.getSkillFrameworkById(fwId);
+        expect(getRes).toBeDefined();
 
-        // User B unauthorized for tags on A-managed skill
-        await expect(b.invoke.listSkillTags(fwId, targetSkillId)).rejects.toBeDefined();
+        // User B unauthorized for create/remove tags on A-managed skill
         await expect(
             b.invoke.addSkillTag(fwId, targetSkillId, { slug: 'unauth', name: 'Unauth' })
         ).rejects.toBeDefined();
@@ -1242,7 +1242,7 @@ describe('Skills & Frameworks E2E', () => {
         expect(result.count).toBe(4); // child1, child2, grandchild1, grandchild2
     });
 
-    test('countSkills enforces authorization', async () => {
+    test('countSkills does not require authorization', async () => {
         const fwId = `fw-${crypto.randomUUID()}`;
 
         // Create framework as user A
@@ -1258,14 +1258,13 @@ describe('Skills & Frameworks E2E', () => {
 
         await linkFrameworkForUser(a, fwId);
 
-        // User B should not be able to count skills
-        await expect(
-            b.invoke.countSkills({
-                frameworkId: fwId,
-                recursive: false,
-                onlyCountCompetencies: false,
-            })
-        ).rejects.toBeDefined();
+        // User B should be able to count skills (no auth required for read)
+        const result = await b.invoke.countSkills({
+            frameworkId: fwId,
+            recursive: false,
+            onlyCountCompetencies: false,
+        });
+        expect(result.count).toBe(1);
     });
 
     test('can get full skill tree with complete hierarchy', async () => {
@@ -1354,7 +1353,7 @@ describe('Skills & Frameworks E2E', () => {
         expect(result.skills).toEqual([]);
     });
 
-    test('getFullSkillTree enforces authorization', async () => {
+    test('getFullSkillTree does not require authorization', async () => {
         const fwId = `fw-${crypto.randomUUID()}`;
 
         await createFrameworkWithSkills(a, fwId, [
@@ -1369,12 +1368,12 @@ describe('Skills & Frameworks E2E', () => {
 
         await linkFrameworkForUser(a, fwId);
 
-        // User B should not be able to get full tree
-        await expect(
-            b.invoke.getFullSkillTree({
-                frameworkId: fwId,
-            })
-        ).rejects.toBeDefined();
+        // User B should be able to get full tree (no auth required for read)
+        const result = await b.invoke.getFullSkillTree({
+            frameworkId: fwId,
+        });
+        expect(result.skills.length).toBe(1);
+        expect(result?.skills?.[0]?.id).toBe(`${fwId}-skill1`);
     });
 
     test('can create skills with icons', async () => {

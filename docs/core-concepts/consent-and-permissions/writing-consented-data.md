@@ -2,9 +2,36 @@
 
 Understand how, after consent is given, new credentials or data can be provided to a user or recorded about them by authorized parties (like contract owners or automated systems). This covers the rules and methods for data delivery based on established consent.
 
-## Writing Credentials to Contracts <a href="#writing-credentials-to-contracts" id="writing-credentials-to-contracts"></a>
+## The `send` Method with Contract Integration (Recommended)
 
-Contract owners can write credentials to profiles that have consented to their contracts using:
+The simplest way to write credentials while respecting consent flows is using the `send` method with a `contractUri`. This method automatically routes through consent terms when the recipient has consented.
+
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id',
+    templateUri: 'urn:lc:boost:abc123',
+    contractUri: 'urn:lc:contract:xyz789', // Optional: routes via consent if applicable
+});
+```
+
+When you provide a `contractUri`:
+
+1. **Automatic routing**: If the recipient has consented to the contract, the credential routes through the consent flow
+2. **Boost-contract relationship**: When creating a new boost on-the-fly, a `RELATED_TO` relationship is established between the boost and the contract
+3. **Permission verification**: The system verifies you have permission to write in the credential's category
+
+{% hint style="success" %}
+**Fallback behavior**: If the recipient hasn't consented to the contract, the credential is still sent normally—the contract integration is additive, not blocking.
+{% endhint %}
+
+For more details on the `send` method, see the [Send Credentials How-To Guide](../../how-to-guides/send-credentials.md).
+
+---
+
+## Writing Credentials to Contracts (Direct) <a href="#writing-credentials-to-contracts" id="writing-credentials-to-contracts"></a>
+
+For more granular control, contract owners can write credentials directly to profiles that have consented using:
 
 * `writeCredentialToContract`: Direct credential writing
 * `writeCredentialToContractViaSigningAuthority`: Using a signing authority

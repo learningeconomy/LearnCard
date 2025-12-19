@@ -6,7 +6,7 @@ import {
     FrameworkNodeRole,
     SkillFramework,
     SkillFrameworkNode,
-} from 'apps/scouts/src/components/boost/boost';
+} from 'apps/learn-card-app/src/components/boost/boost';
 
 type TiersAndCompetenciesProps = {
     nodes: SkillFrameworkNode[];

@@ -1,12 +1,130 @@
 ---
-description: 'How-To Guide: Sending Credentials with Universal Inbox'
+description: 'How-To Guide: Sending Credentials with LearnCard'
 ---
 
 # Send Credentials
 
-This guide provides practical, step-by-step recipes for using the Universal Inbox API. Its goal is to help you, the developer, get your job done quickly and elegantly. We'll start with the simplest possible use case and progressively add more powerful configurations.
+This guide provides practical, step-by-step recipes for sending credentials. We'll start with the simplest possible use case and progressively add more powerful configurations.
 
-This guide assumes you are familiar with the core concepts of the [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) and have [a valid API token](../sdks/learncard-network/authentication.md#id-2.-using-a-scoped-api-token) & [signing authority ](create-signing-authority.md)set up.
+---
+
+## Quick Start: The `send` Method (Recommended)
+
+The `send` method is the simplest and most ergonomic way to send credentials to recipients. It handles credential issuance, signing, and delivery in a single call.
+
+### Prerequisites
+
+* LearnCard SDK initialized with `network: true`
+* A [signing authority](create-signing-authority.md) configured (for server-side signing) **OR** local key material available (for client-side signing)
+
+### Basic Usage
+
+{% tabs %}
+{% tab title="Using an Existing Boost Template" %}
+```typescript
+// Send a credential using an existing boost template
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id', // or DID
+    templateUri: 'urn:lc:boost:abc123',
+});
+
+console.log(result.credentialUri); // URI of the sent credential
+console.log(result.uri);           // URI of the boost template used
+```
+{% endtab %}
+
+{% tab title="Creating a New Boost On-the-Fly" %}
+```typescript
+// Send by creating a new boost from an unsigned credential
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id',
+    template: {
+        credential: {
+            "@context": [
+                "https://www.w3.org/2018/credentials/v1",
+                "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
+            ],
+            "type": ["VerifiableCredential", "OpenBadgeCredential"],
+            "name": "Course Completion",
+            "credentialSubject": {
+                "type": ["AchievementSubject"],
+                "achievement": {
+                    "type": ["Achievement"],
+                    "name": "Web Development 101",
+                    "description": "Completed the Web Development fundamentals course.",
+                    "criteria": {
+                        "narrative": "Successfully completed all modules and passed the final assessment."
+                    }
+                }
+            }
+        },
+        name: 'Web Development 101 Certificate',
+        category: 'Achievement',
+    },
+});
+```
+{% endtab %}
+
+{% tab title="With ConsentFlow Contract" %}
+```typescript
+// Send through a consent flow contract
+// Automatically routes via consent terms if the recipient has consented
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id',
+    templateUri: 'urn:lc:boost:abc123',
+    contractUri: 'urn:lc:contract:xyz789', // Optional: link to consent contract
+});
+```
+{% endtab %}
+{% endtabs %}
+
+### How It Works
+
+1. **Resolves the recipient** - Looks up the profile by ID or uses a DID directly
+2. **Prepares the credential** - Uses your template or creates a new boost on-the-fly
+3. **Signs the credential** - Uses client-side signing if available, otherwise falls back to your registered signing authority
+4. **Delivers the credential** - Sends via the LearnCard Network with optional consent flow routing
+
+### Response
+
+```typescript
+interface SendResponse {
+    type: 'boost';
+    credentialUri: string; // URI of the issued credential
+    uri: string;           // URI of the boost template
+}
+```
+
+{% hint style="info" %}
+**Contract Integration**: When you provide a `contractUri`, the method automatically:
+- Checks if the recipient has consented to the contract
+- Routes the credential through the consent flow if terms exist
+- Creates a `RELATED_TO` relationship between new boosts and the contract
+{% endhint %}
+
+---
+
+## Alternative: Universal Inbox API
+
+Use the Universal Inbox API when you need to send credentials to **users who don't have a LearnCard profile yet**. This allows you to reach recipients via email or phone number, and they'll be guided through creating an account when they claim their credential.
+
+This is ideal for:
+
+- **Onboarding new users** - Send to an email or phone number, not a profile ID
+- **Custom email templates and branding** - White-label the claim experience
+- **Webhook notifications** - Get notified when credentials are claimed
+- **Suppressing automatic delivery** - Handle notification yourself and just get a claim URL
+
+{% hint style="info" %}
+**When to use which:**
+- **`send` method** → Recipient already has a LearnCard profile (you have their profile ID or DID)
+- **Universal Inbox API** → Recipient may not have LearnCard yet (you have their email or phone)
+{% endhint %}
+
+This approach assumes you are familiar with the core concepts of the [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) and have [a valid API token](../sdks/learncard-network/authentication.md#id-2.-using-a-scoped-api-token) & [signing authority](create-signing-authority.md) set up.
 
 ## 1. The Simplest Case: Fire and Forget
 

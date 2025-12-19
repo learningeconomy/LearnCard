@@ -76,7 +76,7 @@ const QrCodeUserCardBasicInfo: React.FC<{
     }
 
     return (
-        <div className="flex w-full flex-col items-center justify-center my-6">
+        <div className="flex w-full flex-col items-center justify-center my-1">
             {profilePicture}
             <p
                 className={`text-2xl capitalize text-center font-medium w-full text-grayscale-900 mt-2`}
@@ -87,7 +87,7 @@ const QrCodeUserCardBasicInfo: React.FC<{
                 {profileId && (
                     <button
                         onClick={copyToClipBoard}
-                        className={`text-base flex items-start text-center font-medium text-grayscale-900`}
+                        className={`text-base flex items-center text-center font-medium text-grayscale-900`}
                     >
                         <ChainLink className="h-[20px]" /> {`learncard.app/...${profileId}`}
                     </button>
