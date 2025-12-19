@@ -1,5 +1,12 @@
 # @learncard/create-http-bridge
 
+## 1.1.214
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.2.3
+
 ## 1.1.213
 
 ### Patch Changes

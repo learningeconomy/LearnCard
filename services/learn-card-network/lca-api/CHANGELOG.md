@@ -1,5 +1,12 @@
 # @welibraryos/lca-api-service
 
+## 1.1.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.2.3
+
 ## 1.1.2
 
 ### Patch Changes
