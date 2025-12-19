@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
     Key, 
     Code, 
@@ -16,15 +16,22 @@ import {
     Building2,
     Trash2,
     RefreshCw,
+    Sparkles,
+    Award,
+    ChevronDown,
+    ChevronUp,
+    Upload,
+    Palette,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
-import { useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
+import { useToast, ToastTypeEnum, useConfirmation, useFilestack, useWallet } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
+import { OBv3CredentialBuilder } from '../../../../components/credentials/OBv3CredentialBuilder';
 
 const STEPS = [
     { id: 'publishable-key', title: 'Get API Key' },
@@ -446,13 +453,101 @@ const ConfigureStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
     publishableKey: string;
-    credentialName: string;
-    setCredentialName: (name: string) => void;
+    setPublishableKey: (key: string) => void;
+    selectedIntegration: LCNIntegration | null;
+    setSelectedIntegration: (integration: LCNIntegration | null) => void;
+    credential: Record<string, unknown>;
+    setCredential: (cred: Record<string, unknown>) => void;
     partnerName: string;
     setPartnerName: (name: string) => void;
-}> = ({ onComplete, onBack, publishableKey, credentialName, setCredentialName, partnerName, setPartnerName }) => {
+    branding: {
+        primaryColor: string;
+        accentColor: string;
+        partnerLogoUrl: string;
+    };
+    setBranding: (branding: { primaryColor: string; accentColor: string; partnerLogoUrl: string }) => void;
+    requestBackgroundIssuance: boolean;
+    setRequestBackgroundIssuance: (value: boolean) => void;
+}> = ({ 
+    onComplete, 
+    onBack, 
+    publishableKey, 
+    setPublishableKey,
+    selectedIntegration,
+    setSelectedIntegration,
+    credential, 
+    setCredential, 
+    partnerName, 
+    setPartnerName,
+    branding,
+    setBranding,
+    requestBackgroundIssuance,
+    setRequestBackgroundIssuance,
+}) => {
+    const { presentToast } = useToast();
+    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [showKeySelector, setShowKeySelector] = useState(false);
+    const [keyCopied, setKeyCopied] = useState(false);
+    const { initWallet } = useWallet();
+    const [userDid, setUserDid] = useState<string>('');
+
+    // Fetch integrations for the key selector
+    const { useIntegrations } = useDeveloperPortal();
+    const { data: integrations } = useIntegrations();
+
+    // Fetch user's DID on mount
+    useEffect(() => {
+        const fetchDid = async () => {
+            try {
+                const wallet = await initWallet();
+                const did = wallet.id.did();
+                setUserDid(did);
+            } catch (err) {
+                console.error('Failed to get DID:', err);
+            }
+        };
+        fetchDid();
+    }, []);
+
+    // Logo upload via Filestack
+    const { handleFileSelect: handleLogoUpload, isLoading: isUploadingLogo } = useFilestack({
+        onUpload: (url: string) => {
+            setBranding({ ...branding, partnerLogoUrl: url });
+        },
+        fileType: 'image/*',
+    });
+
+    const handleCredentialSave = (newCredential: Record<string, unknown>) => {
+        // Add issuer if we have the DID
+        if (userDid) {
+            newCredential.issuer = userDid;
+        }
+        setCredential(newCredential);
+    };
+
+    // Extract display info from credential
+    const credentialName = (credential.name as string) || 'Untitled Credential';
+    const credentialSubject = credential.credentialSubject as Record<string, unknown> | undefined;
+    const achievement = credentialSubject?.achievement as Record<string, unknown> | undefined;
+    const credentialDescription = (achievement?.description as string) || '';
+    const achievementImage = (achievement?.image as { id?: string })?.id || (achievement?.image as string) || '';
+
+    // Check if branding is set
+    const hasBranding = branding.primaryColor !== '#1F51FF' || branding.partnerLogoUrl;
+
+    // Format credential JSON for code snippets
+    const credentialJson = useMemo(() => JSON.stringify(credential, null, 4), [credential]);
+    const credentialJsonIndented = credentialJson.split('\n').map((line, i) => i === 0 ? line : '        ' + line).join('\n');
+
+    // Format branding object for code
+    const brandingCode = `{
+        primaryColor: '${branding.primaryColor}',
+        accentColor: '${branding.accentColor}',${branding.partnerLogoUrl ? `
+        partnerLogoUrl: '${branding.partnerLogoUrl}'` : ''}
+    }`;
+
     const getCode = () => {
-        const name = credentialName || 'Course Completion';
         const partner = partnerName || 'Your Company';
 
         return `LearnCard.init({
@@ -465,38 +560,21 @@ const ConfigureStep: React.FC<{
     // Where to render the claim button
     target: '#claim-target',
     
-    // The credential to issue
-    credential: {
-        "@context": [
-            "https://www.w3.org/ns/credentials/v2",
-            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
-        ],
-        "type": ["VerifiableCredential", "OpenBadgeCredential"],
-        "name": "${name}",
-        "credentialSubject": {
-            "type": ["AchievementSubject"],
-            "achievement": {
-                "type": ["Achievement"],
-                "achievementType": "Certificate",
-                "name": "${name}",
-                "description": "Awarded for completing the course.",
-                "criteria": {
-                    "narrative": "Successfully completed all course requirements."
-                }
-            }
-        }
-    },
+    // The credential to issue (built with Credential Builder)
+    credential: ${credentialJsonIndented},
     
-    // Optional: Custom branding
-    branding: {
-        primaryColor: '#1F51FF',
-        accentColor: '#0F3BD9',
-        partnerLogoUrl: 'https://your-site.com/logo.png'
-    },
-    
+    // Custom branding for the claim modal
+    branding: ${brandingCode},
+    ${requestBackgroundIssuance ? `
+    // Request consent for future credential issuance
+    requestBackgroundIssuance: true,
+    ` : ''}
     // Called when credential is successfully claimed
     onSuccess: ({ credentialId, consentGiven }) => {
-        console.log('Claimed!', credentialId);
+        console.log('Claimed!', credentialId);${requestBackgroundIssuance ? `
+        if (consentGiven) {
+            console.log('User consented to future issuance!');
+        }` : ''}
         // Show success message, redirect, etc.
     }
 });`;
@@ -508,35 +586,363 @@ const ConfigureStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Configure the SDK</h3>
 
                 <p className="text-gray-600">
-                    Customize the credential details and branding.
+                    Build your credential and customize branding for the claim experience.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Credential Name</label>
+            {/* Publishable Key Selector */}
+            {publishableKey ? (
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <Key className="w-4 h-4 text-indigo-600" />
+                            <label className="text-sm font-medium text-indigo-800">Publishable Key</label>
+                        </div>
 
-                    <input
-                        type="text"
-                        value={credentialName}
-                        onChange={(e) => setCredentialName(e.target.value)}
-                        placeholder="e.g., Course Completion"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={async () => {
+                                    await Clipboard.write({ string: publishableKey });
+                                    setKeyCopied(true);
+                                    setTimeout(() => setKeyCopied(false), 2000);
+                                    presentToast('Key copied!', { hasDismissButton: true });
+                                }}
+                                className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                            >
+                                {keyCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                {keyCopied ? 'Copied!' : 'Copy'}
+                            </button>
+
+                            <button
+                                onClick={() => setShowKeySelector(!showKeySelector)}
+                                className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                            >
+                                {showKeySelector ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                Change
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {selectedIntegration && (
+                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
+                                {selectedIntegration.name}
+                            </span>
+                        )}
+
+                        <code className="flex-1 px-3 py-2 bg-white border border-indigo-200 rounded-lg font-mono text-xs text-gray-700 truncate">
+                            {publishableKey}
+                        </code>
+                    </div>
+
+                    {/* Integration selector dropdown */}
+                    {showKeySelector && integrations && integrations.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-indigo-200">
+                            <p className="text-xs text-indigo-700 mb-2">Select a different integration:</p>
+
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                                {integrations.map((integration) => (
+                                    <button
+                                        key={integration.id}
+                                        onClick={() => {
+                                            setSelectedIntegration(integration);
+                                            setPublishableKey(integration.publishableKey);
+                                            setShowKeySelector(false);
+                                        }}
+                                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-sm transition-colors ${
+                                            selectedIntegration?.id === integration.id
+                                                ? 'bg-indigo-100 text-indigo-800'
+                                                : 'hover:bg-indigo-100/50 text-gray-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Building2 className="w-4 h-4 text-indigo-500" />
+                                            <span className="font-medium">{integration.name}</span>
+                                        </div>
+
+                                        {selectedIntegration?.id === integration.id && (
+                                            <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Key className="w-5 h-5 text-amber-600" />
+                        </div>
+
+                        <div className="flex-1">
+                            <h4 className="font-medium text-amber-800 mb-1">No Publishable Key Selected</h4>
+
+                            <p className="text-sm text-amber-700 mb-3">
+                                You need a publishable key to enable credential claims. Go back to Step 1 to create or select an integration.
+                            </p>
+
+                            {integrations && integrations.length > 0 ? (
+                                <div className="space-y-2">
+                                    <p className="text-xs text-amber-600 font-medium">Or select one now:</p>
+
+                                    <div className="space-y-1">
+                                        {integrations.slice(0, 3).map((integration) => (
+                                            <button
+                                                key={integration.id}
+                                                onClick={() => {
+                                                    setSelectedIntegration(integration);
+                                                    setPublishableKey(integration.publishableKey);
+                                                }}
+                                                className="w-full flex items-center gap-2 p-2 bg-white border border-amber-200 rounded-lg text-left text-sm hover:bg-amber-50 transition-colors"
+                                            >
+                                                <Building2 className="w-4 h-4 text-amber-500" />
+                                                <span className="font-medium text-gray-700">{integration.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={onBack}
+                                    className="inline-flex items-center gap-2 px-3 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium hover:bg-amber-200 transition-colors"
+                                >
+                                    <ArrowLeft className="w-4 h-4" />
+                                    Go to Step 1
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Credential preview card */}
+            <div className="p-4 bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-2xl">
+                <div className="flex items-start gap-4">
+                    {/* Credential icon/image */}
+                    {achievementImage ? (
+                        <img
+                            src={achievementImage}
+                            alt={credentialName}
+                            className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border border-gray-200"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                            }}
+                        />
+                    ) : null}
+
+                    <div className={`w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 ${achievementImage ? 'hidden' : ''}`}>
+                        <Award className="w-8 h-8 text-white" />
+                    </div>
+
+                    {/* Credential info */}
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-800 truncate">{credentialName}</h4>
+
+                        <p className="text-sm text-gray-600 line-clamp-2 mt-0.5">
+                            {credentialDescription || 'No description set'}
+                        </p>
+
+                        <div className="flex items-center gap-2 mt-2">
+                            <span className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs font-medium">
+                                {(achievement?.achievementType as string) || 'Achievement'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Edit button */}
+                    <button
+                        onClick={() => setIsBuilderOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-cyan-600 border border-cyan-300 rounded-xl font-medium hover:bg-cyan-50 transition-colors"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        Edit
+                    </button>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Partner Name</label>
-
-                    <input
-                        type="text"
-                        value={partnerName}
-                        onChange={(e) => setPartnerName(e.target.value)}
-                        placeholder="e.g., Your Company"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-                </div>
+                {/* Open builder button if using default */}
+                {credentialName === 'Achievement Badge' && (
+                    <button
+                        onClick={() => setIsBuilderOpen(true)}
+                        className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        Customize Your Credential
+                    </button>
+                )}
             </div>
+
+            {/* Credential Builder Modal */}
+            <OBv3CredentialBuilder
+                isOpen={isBuilderOpen}
+                onClose={() => setIsBuilderOpen(false)}
+                onSave={handleCredentialSave}
+            />
+
+            {/* Partner Name */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Partner Name</label>
+
+                <input
+                    type="text"
+                    value={partnerName}
+                    onChange={(e) => setPartnerName(e.target.value)}
+                    placeholder="e.g., Your Company"
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    style={{ colorScheme: 'light' }}
+                />
+
+                <p className="text-xs text-gray-500 mt-1">
+                    Shown in the claim modal as the issuing organization
+                </p>
+            </div>
+
+            {/* Advanced Options Toggle */}
+            <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            >
+                {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {showAdvanced ? 'Hide' : 'Show'} Branding & Advanced Options
+                {hasBranding && <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">Active</span>}
+            </button>
+
+            {/* Advanced Options Panel */}
+            {showAdvanced && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
+                    {/* Branding Section */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <Palette className="w-4 h-4 text-indigo-500" />
+                            Modal Branding
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Primary Color</label>
+
+                                <div className="flex gap-2">
+                                    <input
+                                        type="color"
+                                        value={branding.primaryColor}
+                                        onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                                        className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer"
+                                    />
+
+                                    <input
+                                        type="text"
+                                        value={branding.primaryColor}
+                                        onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                                        placeholder="#1F51FF"
+                                        className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Accent Color</label>
+
+                                <div className="flex gap-2">
+                                    <input
+                                        type="color"
+                                        value={branding.accentColor}
+                                        onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })}
+                                        className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer"
+                                    />
+
+                                    <input
+                                        type="text"
+                                        value={branding.accentColor}
+                                        onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })}
+                                        placeholder="#0F3BD9"
+                                        className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Partner Logo URL</label>
+
+                                <div className="flex gap-2">
+                                    <input
+                                        type="url"
+                                        value={branding.partnerLogoUrl}
+                                        onChange={(e) => setBranding({ ...branding, partnerLogoUrl: e.target.value })}
+                                        placeholder="https://example.com/logo.png"
+                                        className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        disabled={isUploadingLogo}
+                                        style={{ colorScheme: 'light' }}
+                                    />
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleLogoUpload()}
+                                        disabled={isUploadingLogo}
+                                        className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                        title="Upload image"
+                                    >
+                                        {isUploadingLogo ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Upload className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
+
+                                {branding.partnerLogoUrl && (
+                                    <img
+                                        src={branding.partnerLogoUrl}
+                                        alt="Logo preview"
+                                        className="mt-2 h-12 object-contain rounded border border-gray-200"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Background Issuance Section */}
+                    <div className="space-y-3 pt-3 border-t border-gray-200">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <Settings className="w-4 h-4 text-emerald-500" />
+                            Advanced Settings
+                        </div>
+
+                        <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={requestBackgroundIssuance}
+                                onChange={(e) => setRequestBackgroundIssuance(e.target.checked)}
+                                className="mt-1 w-4 h-4 text-cyan-500 border-gray-300 rounded focus:ring-cyan-500"
+                            />
+
+                            <div>
+                                <span className="text-sm font-medium text-gray-700">Request Background Issuance Consent</span>
+
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Ask the user for permission to issue future credentials without requiring email verification each time.
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+
+                    {/* Color Preview */}
+                    <div className="pt-3 border-t border-gray-200">
+                        <p className="text-xs font-medium text-gray-600 mb-2">Button Preview</p>
+
+                        <div 
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium"
+                            style={{ 
+                                background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.accentColor} 100%)` 
+                            }}
+                        >
+                            Claim "{credentialName}"
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <CodeOutputPanel
                 title="Full Configuration"
@@ -548,9 +954,10 @@ const ConfigureStep: React.FC<{
 
                 <ul className="text-sm text-amber-700 space-y-1">
                     <li>• <code className="bg-amber-100 px-1 rounded">publishableKey</code> — Required for real claims</li>
-                    <li>• <code className="bg-amber-100 px-1 rounded">credential.name</code> — Shown on the button and modal</li>
-                    <li>• <code className="bg-amber-100 px-1 rounded">onSuccess</code> — Handle post-claim actions</li>
+                    <li>• <code className="bg-amber-100 px-1 rounded">credential</code> — Built using the Credential Builder above</li>
+                    <li>• <code className="bg-amber-100 px-1 rounded">branding</code> — Customize the claim modal appearance</li>
                     <li>• <code className="bg-amber-100 px-1 rounded">requestBackgroundIssuance</code> — Ask consent for future issuance</li>
+                    <li>• <code className="bg-amber-100 px-1 rounded">onSuccess</code> — Handle post-claim actions</li>
                 </ul>
             </div>
 
@@ -579,9 +986,10 @@ const ConfigureStep: React.FC<{
 const TestStep: React.FC<{
     onBack: () => void;
     publishableKey: string;
-    credentialName: string;
+    credential: Record<string, unknown>;
     partnerName: string;
-}> = ({ onBack, publishableKey, credentialName, partnerName }) => {
+}> = ({ onBack, publishableKey, credential, partnerName }) => {
+    const credentialName = (credential.name as string) || 'Untitled Credential';
     return (
         <div className="space-y-6">
             <div>
@@ -724,8 +1132,30 @@ const EmbedClaimGuide: React.FC = () => {
 
     const [publishableKey, setPublishableKey] = useState('');
     const [selectedIntegration, setSelectedIntegration] = useState<LCNIntegration | null>(null);
-    const [credentialName, setCredentialName] = useState('');
+    const [credential, setCredential] = useState<Record<string, unknown>>({
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        name: 'Achievement Badge',
+        credentialSubject: {
+            type: ['AchievementSubject'],
+            achievement: {
+                type: ['Achievement'],
+                name: 'Achievement Badge',
+                description: 'Awarded for completing the course',
+                achievementType: 'Achievement',
+            },
+        },
+    });
     const [partnerName, setPartnerName] = useState('');
+    const [branding, setBranding] = useState({
+        primaryColor: '#1F51FF',
+        accentColor: '#0F3BD9',
+        partnerLogoUrl: '',
+    });
+    const [requestBackgroundIssuance, setRequestBackgroundIssuance] = useState(false);
 
     const handleStepComplete = (stepId: string) => {
         guideState.markStepComplete(stepId);
@@ -767,10 +1197,17 @@ const EmbedClaimGuide: React.FC = () => {
                         onComplete={() => handleStepComplete('configure')}
                         onBack={guideState.prevStep}
                         publishableKey={publishableKey}
-                        credentialName={credentialName}
-                        setCredentialName={setCredentialName}
+                        setPublishableKey={setPublishableKey}
+                        selectedIntegration={selectedIntegration}
+                        setSelectedIntegration={setSelectedIntegration}
+                        credential={credential}
+                        setCredential={setCredential}
                         partnerName={partnerName}
                         setPartnerName={setPartnerName}
+                        branding={branding}
+                        setBranding={setBranding}
+                        requestBackgroundIssuance={requestBackgroundIssuance}
+                        setRequestBackgroundIssuance={setRequestBackgroundIssuance}
                     />
                 );
 
@@ -779,7 +1216,7 @@ const EmbedClaimGuide: React.FC = () => {
                     <TestStep
                         onBack={guideState.prevStep}
                         publishableKey={publishableKey}
-                        credentialName={credentialName}
+                        credential={credential}
                         partnerName={partnerName}
                     />
                 );
