@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useLocation } from 'react-router-dom';
 
 import TotalSkillsCount from './TotalSkillsCount';
 import { IonContent, IonPage } from '@ionic/react';
@@ -41,6 +42,7 @@ enum TabEnum {
 
 const SkillsPage: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
+    const location = useLocation();
     const { data: lcNetworkProfile } = useGetProfile();
     const { data: frameworks = [] } = useListMySkillFrameworks();
 
@@ -49,6 +51,14 @@ const SkillsPage: React.FC = () => {
     const managedFrameworksExist = frameworks?.length > 0;
 
     const [selectedTab, setSelectedTab] = useState<TabEnum>(TabEnum.MY_HUB);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tab = params.get('tab');
+
+        if (tab === 'admin-panel') setSelectedTab(TabEnum.ADMIN_PANEL);
+        if (tab === 'my-hub') setSelectedTab(TabEnum.MY_HUB);
+    }, [location.search]);
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.skill);
     const { backgroundSecondaryColor } = colors;

@@ -103,7 +103,7 @@ export const useAllContractRequestsForProfile = (targetProfileId: string, enable
 
     return useQuery<
         | {
-              contract: ConsentFlowContract;
+              contract: ConsentFlowContract & { uri: string };
               profile: LCNProfile;
               status: 'pending' | 'accepted' | 'denied' | null;
               readStatus?: 'unseen' | 'seen' | null;

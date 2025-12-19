@@ -43,6 +43,8 @@ type AccountSwitcherModalProps = {
 
     showStepsFooter?: boolean;
     containerClassName?: string;
+    initialStep?: string;
+    childOnly?: boolean;
 };
 
 const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
@@ -60,6 +62,8 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
 
     showStepsFooter = false,
     containerClassName = '',
+    initialStep,
+    childOnly = false,
 }) => {
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -68,7 +72,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
         mobile: ModalTypes.FullScreen,
     });
 
-    const [activeStep, setActiveStep] = useState(SwitcherStepEnum.selectProfile);
+    const [activeStep, setActiveStep] = useState(initialStep ?? SwitcherStepEnum.selectProfile);
 
     const { mutate: createChildAccount } = useCreateChildAccount();
 
@@ -153,11 +157,13 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                 )}
                 <div className="grid grid-cols-2 gap-[20px] justify-items-center ">
                     <ActiveChildAccountButton />
-                    <ParentSwitcherButton
-                        handlePlayerSwitchOverride={handlePlayerSwitchOverride}
-                        onPlayerSwitch={onPlayerSwitch}
-                        isSwitching={isSwitching}
-                    />
+                    {!childOnly && (
+                        <ParentSwitcherButton
+                            handlePlayerSwitchOverride={handlePlayerSwitchOverride}
+                            onPlayerSwitch={onPlayerSwitch}
+                            isSwitching={isSwitching}
+                        />
+                    )}
 
                     {profileRecords?.map((p, index) => {
                         const { profile, manager } = p;
@@ -174,6 +180,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                                     const switchedUser = {
                                         ...manager,
                                         did: profile?.did,
+                                        profileId: profile?.profileId,
                                         isServiceProfile: profile?.isServiceProfile,
                                     };
 
