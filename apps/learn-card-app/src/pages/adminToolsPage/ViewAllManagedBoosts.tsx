@@ -7,7 +7,7 @@ import { Boost } from '@learncard/types';
 
 type ViewAllManagedBoostsProps = {
     actionButtonOverride?: { text: string; onClick: (boost: Boost) => void };
-
+    categories?: BoostCategoryOptionsEnum[];
     selectModeOptions?: {
         selectedUris: string[];
         handleAdd: (uri: string) => void;
@@ -20,6 +20,7 @@ type ViewAllManagedBoostsProps = {
 const ViewAllManagedBoosts: React.FC<ViewAllManagedBoostsProps> = ({
     actionButtonOverride,
     selectModeOptions,
+    categories,
 }) => {
     const selectModeButtons = selectModeOptions ? (
         <div className=" gap-[10px] mx-auto w-full flex justify-center items-center">
@@ -41,7 +42,7 @@ const ViewAllManagedBoosts: React.FC<ViewAllManagedBoostsProps> = ({
     return (
         <section className="flex flex-col gap-[20px] w-full">
             {selectModeButtons}
-            {Object.values(BoostCategoryOptionsEnum).map(category => (
+            {(categories ?? Object.values(BoostCategoryOptionsEnum)).map(category => (
                 <AdminManagedBoostsSection
                     key={category}
                     category={category}

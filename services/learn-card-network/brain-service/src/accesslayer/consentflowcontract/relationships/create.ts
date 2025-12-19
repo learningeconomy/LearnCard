@@ -57,6 +57,16 @@ export const setAutoBoostForContract = async (
     });
 };
 
+export const setRelatedBoostForContract = async (
+    contract: DbContractType,
+    boost: BoostType
+): Promise<void> => {
+    await ConsentFlowContract.relateTo({
+        alias: 'relatedTo',
+        where: { source: { id: contract.id }, target: { id: boost.id } },
+    });
+};
+
 export const consentToContract = async (
     consenter: LCNProfile,
     { contract, contractOwner }: { contract: DbContractType; contractOwner: LCNProfile },

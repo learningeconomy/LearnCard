@@ -378,15 +378,61 @@ main().catch(err => console.error("Boost tutorial encountered an error:", err));
 
 After the script runs, check the LearnCard apps associated with the recipient Profile IDs you used. Each should have received the "Tech Innovators Meetup - May 2025 Attendee" credential in your notifications.
 
+---
+
+## Bonus: Simplified Sending with the `send` Method
+
+If you want to create and send a boost in a single call, you can use the new `send` method. This is ideal for quick issuance scenarios where you don't need to manage the boost template separately.
+
+```typescript
+// Create and send a boost in one call
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id',
+    template: {
+        credential: meetupAttendeeCredentialTemplate,
+        name: 'Tech Innovators Meetup - May 2025 Attendee',
+        category: 'Social Badge',
+    },
+});
+
+console.log('Credential sent! URI:', result.credentialUri);
+console.log('Boost template URI:', result.uri);
+```
+
+Or, if you already have a boost template created:
+
+```typescript
+// Send using an existing boost template
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id',
+    templateUri: meetupBoostUri, // The URI from createBoost
+});
+```
+
+{% hint style="success" %}
+The `send` method automatically handles:
+- **Signing**: Uses client-side signing if available, falls back to your signing authority
+- **Issuance date**: Sets the current timestamp automatically
+- **Recipient DID**: Populates the `credentialSubject.id` with the recipient's DID
+{% endhint %}
+
+For more details, see the [Send Credentials How-To Guide](../how-to-guides/send-credentials.md).
+
+---
+
 ## Summary & What's Next
 
-Fantastic! You've now learned how to: ✅ Understand the value of Boosts for reusable credential templates. ✅ Define the content for a Boost. ✅ Create a Boost using the LearnCard SDK. ✅ Send instances of that Boost to multiple recipients.
+Fantastic! You've now learned how to: ✅ Understand the value of Boosts for reusable credential templates. ✅ Define the content for a Boost. ✅ Create a Boost using the LearnCard SDK. ✅ Send instances of that Boost to multiple recipients. ✅ Use the simplified `send` method for quick issuance.
 
 Boosts are a powerful way to manage credentialing at scale. From here, you can explore:
 
 * **Retrieving Boost Recipients:** Use `learnCard.invoke.getPaginatedBoostRecipients(boostUri)` to see who has been issued a credential from this Boost.
 * **Boost Permissions:** Control who can edit, issue, or manage your Boosts. (See Boost Permission Model).
+* **Default Permissions:** Use `defaultPermissions` to create open Boosts that anyone can issue. (See [Default Permissions](../core-concepts/credentials-and-data/boost-credentials.md#default-permissions)).
 * **Boost Hierarchies:** Organize Boosts into parent-child relationships. (See Boost Hierarchies).
 * Customizing **Display Options** for your Boosts to make them visually appealing in wallets.
+* **ConsentFlow Integration:** Link boosts to consent contracts for automatic routing. (See [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)).
 
 Explore the [Boost Credentials Core Concept page](../core-concepts/credentials-and-data/boost-credentials.md) for more in-depth information on all the capabilities of Boosts!

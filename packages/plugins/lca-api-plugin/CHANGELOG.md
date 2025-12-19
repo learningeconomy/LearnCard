@@ -1,5 +1,12 @@
 # lca-api-plugin
 
+## 1.1.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-client@1.1.2
+
 ## 1.1.1
 
 ### Patch Changes

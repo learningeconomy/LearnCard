@@ -1,5 +1,44 @@
 # learn-card-core
 
+## 2.9.0
+
+### Minor Changes
+
+-   [#895](https://github.com/learningeconomy/LearnCard/pull/895) [`bb6749d4cd123ca1fcee8d6f657861ae77a614a2`](https://github.com/learningeconomy/LearnCard/commit/bb6749d4cd123ca1fcee8d6f657861ae77a614a2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add generic `send` method for ergonomic credential sending
+
+    **Features:**
+
+    -   New `send` method that auto-issues credentials from boost templates
+    -   Supports client-side credential issuance when available, falls back to signing authority
+    -   Contract-aware: automatically routes through consent flow when recipient has consented
+    -   Creates `RELATED_TO` relationship between newly created boosts and contracts
+
+    **Usage:**
+
+    ```typescript
+    // Send using existing boost template
+    await lc.invoke.send({
+        type: 'boost',
+        recipient: 'userProfileId',
+        templateUri: 'urn:lc:boost:...',
+    });
+
+    // Send by creating a new boost
+    await lc.invoke.send({
+        type: 'boost',
+        recipient: 'userProfileId',
+        template: { credential: unsignedVC },
+        contractUri: 'urn:lc:contract:...', // optional
+    });
+    ```
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.1
+    -   @learncard/helpers@1.2.1
+    -   @learncard/network-brain-client@2.5.2
+
 ## 2.8.1
 
 ### Patch Changes

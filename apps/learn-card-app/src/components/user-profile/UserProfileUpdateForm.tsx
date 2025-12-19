@@ -47,11 +47,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { JoinNetworkModalWrapper } from '../network-prompts/hooks/useJoinLCNetworkModal';
-import {
-    LearnCardRoles,
-    LearnCardRolesEnum,
-    LearnCardRoleType,
-} from '../onboarding/onboarding.helpers';
+import { LearnCardRoles, LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
 import { useGetAiInsightsServicesContract } from '../../pages/ai-insights/learner-insights/learner-insights.helpers';
 
 const StateValidator = z.object({
@@ -627,11 +623,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             <div className="w-full flex items-center justify-center my-2">
                                 <OnboardingRoleItem
                                     role={role}
-                                    roleItem={
-                                        LearnCardRoles?.find(
-                                            r => r.type === role
-                                        ) as LearnCardRoleType
-                                    }
+                                    roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
                                     setRole={() => {}}
                                     handleEdit={() => {
                                         newModal(

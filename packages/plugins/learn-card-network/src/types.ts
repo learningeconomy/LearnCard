@@ -42,6 +42,8 @@ import {
     PaginatedConsentFlowDataForDid,
     PaginatedContractCredentials,
     AutoBoostConfig,
+    SendInput,
+    SendResponse,
     AuthGrantType,
     AuthGrantQuery,
     IssueInboxCredentialType,
@@ -394,6 +396,8 @@ export type LearnCardNetworkPluginMethods = {
         challenge?: string
     ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
+
+    send: (input: SendInput) => Promise<SendResponse>;
 
     createContract: (contract: {
         contract: ConsentFlowContract;
