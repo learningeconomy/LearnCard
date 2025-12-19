@@ -48,6 +48,8 @@ type EmailFormProps = {
     resetRedirectPath?: string | null;
     smallVerificationInput?: boolean;
     emailInputClassName?: string;
+    emailInputVariant?: 'default' | 'appStore';
+    emailErrorPlacement?: 'inline' | 'below';
     startOverClassNameOverride?: string;
     resendCodeButtonClassNameOverride?: string;
     verificationCodeInputClassName?: string;
@@ -65,6 +67,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
     resetRedirectPath = '/login',
     smallVerificationInput = false,
     emailInputClassName,
+    emailInputVariant = 'default',
+    emailErrorPlacement = 'inline',
     startOverClassNameOverride,
     resendCodeButtonClassNameOverride,
     verificationCodeInputClassName,
@@ -301,19 +305,40 @@ const EmailForm: React.FC<EmailFormProps> = ({
             'bg-emerald-600 text-white placeholder:text-white white-placeholder';
         const resolvedEmailInputClassName = emailInputClassName ?? defaultEmailInputClassName;
 
+        const emailInputBaseClassName =
+            emailInputVariant === 'appStore'
+                ? 'w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                : 'rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus:outline-none focus:ring-0 focus:border-transparent';
+
+        const emailInputErrorClassName =
+            emailInputVariant === 'appStore'
+                ? errors.email
+                    ? 'border-red-300'
+                    : 'border-grayscale-200'
+                : errors.email
+                ? 'login-input-email-error'
+                : '';
+
         activeStep = (
-            <div className="w-full flex items-center justify-center mb-[20px]">
+            <div
+                className={`w-full mb-[20px] ${
+                    emailErrorPlacement === 'below' ? 'flex flex-col' : 'flex items-center'
+                } justify-center`}
+            >
                 <input
                     aria-label="Email"
-                    className={`rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus:outline-none focus:ring-0 focus:border-transparent ${resolvedEmailInputClassName} ${
-                        errors.email ? 'login-input-email-error' : ''
-                    }`}
+                    className={`${emailInputBaseClassName} ${resolvedEmailInputClassName} ${emailInputErrorClassName}`}
                     placeholder="Email address"
                     onChange={e => setEmail(e.target.value)}
                     value={email}
                     type="text"
                 />
-                {errors.email && <p className="login-input-error-msg">{errors.email}</p>}
+                {errors.email &&
+                    (emailErrorPlacement === 'below' ? (
+                        <p className="w-full mt-2 text-red-500 font-medium">{errors.email}</p>
+                    ) : (
+                        <p className="login-input-error-msg">{errors.email}</p>
+                    ))}
             </div>
         );
         // buttonTitle = 'Continue';
