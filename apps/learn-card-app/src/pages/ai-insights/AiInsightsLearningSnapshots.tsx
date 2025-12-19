@@ -1,10 +1,11 @@
 import React from 'react';
 
-import { IonSkeletonText } from '@ionic/react';
 import Trophy from 'learn-card-base/svgs/Trophy';
-import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
 import SproutIcon from 'learn-card-base/svgs/SproutIcon';
+import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
+import AiInsightsEmptyPlaceholder from './AiInsightsEmptyPlaceholder';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
+import AiInsightsLearningSnapshotsSkeletonLoader from './AiInsightsLearningSnapshotSkeletonLoader';
 
 import { useAiInsightCredential } from 'learn-card-base';
 
@@ -51,39 +52,10 @@ const AiInsightsLearningSnapshots: React.FC<{ isLoading: boolean }> = ({ isLoadi
     ];
 
     if (isLoading || aiInsightCredentialLoading) {
-        return (
-            <div className="flex flex-col items-start justify-start px-2 w-full bg-white shadow-bottom-2-4 p-[15px] rounded-[15px] mb-4">
-                <div className="flex items-center justify-start mt-2">
-                    <IonSkeletonText
-                        animated
-                        style={{ width: '20px', height: '20px', borderRadius: '50%' }}
-                    />
-
-                    <IonSkeletonText
-                        animated
-                        style={{ width: '80px', height: '14px', marginLeft: '8px' }}
-                    />
-                </div>
-
-                <IonSkeletonText
-                    animated
-                    style={{ width: '60%', height: '18px', marginTop: '12px', marginLeft: '4px' }}
-                />
-
-                <div className="w-full mt-2 ml-2 mr-2 mb-4">
-                    <IonSkeletonText
-                        animated
-                        style={{ width: '90%', height: '14px', marginBottom: '6px' }}
-                    />
-                    <IonSkeletonText
-                        animated
-                        style={{ width: '80%', height: '14px', marginBottom: '6px' }}
-                    />
-                    <IonSkeletonText animated style={{ width: '70%', height: '14px' }} />
-                </div>
-            </div>
-        );
+        return <AiInsightsLearningSnapshotsSkeletonLoader />;
     }
+
+    if (!aiInsightCredential) return <AiInsightsEmptyPlaceholder />;
 
     return (
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px] mb-4">
