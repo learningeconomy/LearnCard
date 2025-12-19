@@ -236,166 +236,607 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
 
 type AppType = 'existing' | 'new' | null;
 
-const STEPS = [
-    { id: 'choose-path', title: 'Choose Path' },
-    { id: 'setup-website', title: 'Set Up Website' },
-    { id: 'install-sdk', title: 'Install SDK' },
-    { id: 'initialize', title: 'Initialize' },
-    { id: 'use-api', title: 'Use the API' },
+// Feature definitions
+interface Feature {
+    id: string;
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    requiresSetup: boolean;
+    setupDescription?: string;
+    color: string;
+}
+
+const FEATURES: Feature[] = [
+    {
+        id: 'issue-credentials',
+        title: 'Issue Credentials',
+        description: 'Award badges, certificates, or achievements to your users when they complete actions in your app.',
+        icon: <Award className="w-6 h-6" />,
+        requiresSetup: true,
+        setupDescription: 'Create Boost Templates',
+        color: 'cyan',
+    },
+    {
+        id: 'open-wallet',
+        title: 'Open Wallet',
+        description: 'Let users view their credential wallet directly from your app.',
+        icon: <FolderOpen className="w-6 h-6" />,
+        requiresSetup: false,
+        color: 'purple',
+    },
+    {
+        id: 'claim-credentials',
+        title: 'Claim Credentials',
+        description: 'Create shareable claim links that let users claim pre-defined credentials.',
+        icon: <Sparkles className="w-6 h-6" />,
+        requiresSetup: true,
+        setupDescription: 'Create Claim Links',
+        color: 'emerald',
+    },
+    {
+        id: 'request-credentials',
+        title: 'Request Credentials',
+        description: 'Ask users to share specific credentials with your app for verification.',
+        icon: <FileSearch className="w-6 h-6" />,
+        requiresSetup: true,
+        setupDescription: 'Define Presentation Request',
+        color: 'amber',
+    },
 ];
 
-// Step 0: Choose Path
-const ChoosePathStep: React.FC<{
-    onComplete: (appType: AppType) => void;
-    appType: AppType;
-    setAppType: (type: AppType) => void;
-}> = ({ onComplete, appType, setAppType }) => {
+const STEPS = [
+    { id: 'getting-started', title: 'Getting Started' },
+    { id: 'choose-features', title: 'Choose Features' },
+    { id: 'feature-setup', title: 'Feature Setup' },
+    { id: 'your-app', title: 'Your App' },
+];
+
+// Step 0: Getting Started (combined setup step)
+const GettingStartedStep: React.FC<{
+    onComplete: () => void;
+    selectedIntegration: LCNIntegration | null;
+    setSelectedIntegration: (integration: LCNIntegration | null) => void;
+    selectedListing: AppStoreListing | null;
+    setSelectedListing: (listing: AppStoreListing | null) => void;
+}> = ({ onComplete, selectedIntegration, setSelectedIntegration, selectedListing, setSelectedListing }) => {
+    const [expandedSection, setExpandedSection] = useState<string | null>('install');
+    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+    // Integration management
+    const { useIntegrations, useCreateIntegration, useListingsForIntegration, useCreateListing } = useDeveloperPortal();
+    const { data: integrations, isLoading: isLoadingIntegrations, refetch: refetchIntegrations } = useIntegrations();
+    const createIntegrationMutation = useCreateIntegration();
+    const [isCreatingIntegration, setIsCreatingIntegration] = useState(false);
+    const [newIntegrationName, setNewIntegrationName] = useState('');
+
+    // Listing management
+    const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(selectedIntegration?.id || null);
+    const createListingMutation = useCreateListing();
+    const [isCreatingListing, setIsCreatingListing] = useState(false);
+    const [newListingName, setNewListingName] = useState('');
+
+    // Auto-select first integration
+    useEffect(() => {
+        if (integrations && integrations.length > 0 && !selectedIntegration) {
+            setSelectedIntegration(integrations[0]);
+        }
+    }, [integrations, selectedIntegration, setSelectedIntegration]);
+
+    // Auto-select first listing when integration changes
+    useEffect(() => {
+        if (listings && listings.length > 0 && !selectedListing) {
+            setSelectedListing(listings[0]);
+        }
+    }, [listings, selectedListing, setSelectedListing]);
+
+    // Clear listing when integration changes
+    useEffect(() => {
+        setSelectedListing(null);
+    }, [selectedIntegration?.id]);
+
+    const handleCreateIntegration = async () => {
+        if (!newIntegrationName.trim()) return;
+
+        try {
+            await createIntegrationMutation.mutateAsync(newIntegrationName.trim());
+            const result = await refetchIntegrations();
+            const newIntegration = result.data?.find(i => i.name === newIntegrationName.trim());
+
+            if (newIntegration) {
+                setSelectedIntegration(newIntegration);
+            }
+
+            setNewIntegrationName('');
+            setIsCreatingIntegration(false);
+        } catch (err) {
+            console.error('Failed to create integration:', err);
+        }
+    };
+
+    const handleCreateListing = async () => {
+        if (!newListingName.trim() || !selectedIntegration) return;
+
+        try {
+            await createListingMutation.mutateAsync({
+                integrationId: selectedIntegration.id,
+                listing: {
+                    display_name: newListingName.trim(),
+                    tagline: `${newListingName.trim()} - An embedded LearnCard app`,
+                    full_description: `${newListingName.trim()} is an embedded application that integrates with the LearnCard wallet.`,
+                    icon_url: 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb',
+                    launch_type: 'EMBEDDED_IFRAME',
+                    launch_config_json: JSON.stringify({ url: '' }),
+                },
+            });
+
+            await refetchListings();
+            setNewListingName('');
+            setIsCreatingListing(false);
+        } catch (err) {
+            console.error('Failed to create listing:', err);
+        }
+    };
+
+    const handleCopy = async (code: string, id: string) => {
+        await navigator.clipboard.writeText(code);
+        setCopiedCode(id);
+        setTimeout(() => setCopiedCode(null), 2000);
+    };
+
+    const installCode = `npm install @learncard/partner-connect`;
+
+    const initCode = `import { createPartnerConnect } from '@learncard/partner-connect';
+
+const learnCard = createPartnerConnect({
+    hostOrigin: 'https://learncard.app'
+});
+
+// Get user identity (SSO - no login needed!)
+const identity = await learnCard.requestIdentity();
+console.log('User:', identity.profile.displayName);`;
+
+    const sections = [
+        { id: 'install', title: '1. Install the SDK', icon: <Package className="w-5 h-5" /> },
+        { id: 'integration', title: '2. Select Integration', icon: <Key className="w-5 h-5" /> },
+        { id: 'listing', title: '3. Select App', icon: <Layers className="w-5 h-5" /> },
+        { id: 'init', title: '4. Initialize', icon: <Code className="w-5 h-5" /> },
+    ];
+
+    const isReady = !!selectedIntegration && !!selectedListing;
+
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">What are you building?</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Getting Started</h3>
 
                 <p className="text-gray-600">
-                    Your app will run inside an iframe in the LearnCard wallet. Let's figure out the best approach for you.
+                    Set up the Partner Connect SDK in your web app. This takes about 2 minutes.
                 </p>
             </div>
 
-            {/* Path options */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Existing App */}
-                <button
-                    onClick={() => setAppType('existing')}
-                    className={`flex flex-col items-start p-5 border-2 rounded-2xl text-left transition-all ${
-                        appType === 'existing'
-                            ? 'border-cyan-500 bg-cyan-50'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }`}
-                >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
-                        appType === 'existing' ? 'bg-cyan-100' : 'bg-gray-100'
-                    }`}>
-                        <FolderOpen className={`w-6 h-6 ${appType === 'existing' ? 'text-cyan-600' : 'text-gray-500'}`} />
-                    </div>
+            {/* Progress indicator */}
+            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
+                {sections.map((section, index) => (
+                    <React.Fragment key={section.id}>
+                        <button
+                            onClick={() => setExpandedSection(section.id)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                expandedSection === section.id
+                                    ? 'bg-cyan-100 text-cyan-700'
+                                    : 'text-gray-500 hover:bg-gray-100'
+                            }`}
+                        >
+                            {section.icon}
+                            <span className="hidden sm:inline">{section.title}</span>
+                            <span className="sm:hidden">{index + 1}</span>
+                        </button>
 
-                    <h4 className="font-semibold text-gray-800 mb-1">I have an existing app</h4>
-
-                    <p className="text-sm text-gray-600 mb-3">
-                        Embed a web app you've already built into LearnCard
-                    </p>
-
-                    <div className="flex flex-wrap gap-1.5 mt-auto">
-                        <span className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">React</span>
-                        <span className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">Vue</span>
-                        <span className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">Next.js</span>
-                        <span className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">Any</span>
-                    </div>
-                </button>
-
-                {/* New App */}
-                <button
-                    onClick={() => setAppType('new')}
-                    className={`flex flex-col items-start p-5 border-2 rounded-2xl text-left transition-all ${
-                        appType === 'new'
-                            ? 'border-violet-500 bg-violet-50'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }`}
-                >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
-                        appType === 'new' ? 'bg-violet-100' : 'bg-gray-100'
-                    }`}>
-                        <Plus className={`w-6 h-6 ${appType === 'new' ? 'text-violet-600' : 'text-gray-500'}`} />
-                    </div>
-
-                    <h4 className="font-semibold text-gray-800 mb-1">Start from scratch</h4>
-
-                    <p className="text-sm text-gray-600 mb-3">
-                        Create a new app using our templates and starters
-                    </p>
-
-                    <div className="flex items-center gap-1.5 mt-auto">
-                        <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-                        <span className="text-xs text-violet-600 font-medium">Quickest path</span>
-                    </div>
-                </button>
+                        {index < sections.length - 1 && (
+                            <ChevronRight className="w-4 h-4 text-gray-300" />
+                        )}
+                    </React.Fragment>
+                ))}
             </div>
 
-            {/* Conditional guidance based on selection */}
-            {appType === 'existing' && (
-                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
-                    <h4 className="font-medium text-cyan-800 mb-2 flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Great choice!
-                    </h4>
+            {/* Install Section */}
+            {expandedSection === 'install' && (
+                <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-800">Install @learncard/partner-connect</h4>
 
-                    <p className="text-sm text-cyan-700 mb-3">
-                        You'll need to configure your server headers to allow iframe embedding, then add our SDK.
+                        <button
+                            onClick={() => handleCopy(installCode, 'install')}
+                            className="flex items-center gap-1 px-2 py-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                        >
+                            {copiedCode === 'install' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                    </div>
+
+                    <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg text-sm overflow-x-auto">
+                        {installCode}
+                    </pre>
+
+                    <p className="text-sm text-gray-500">
+                        Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code> or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
                     </p>
 
-                    <div className="text-sm text-cyan-800">
-                        <strong>Checklist for your existing app:</strong>
-                        <ul className="mt-2 space-y-1.5">
-                            <li className="flex items-start gap-2">
-                                <span className="text-cyan-500 mt-0.5">•</span>
-                                <span>Hosted on HTTPS (required for iframes)</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-cyan-500 mt-0.5">•</span>
-                                <span>Can modify server response headers</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-cyan-500 mt-0.5">•</span>
-                                <span>Uses a JavaScript bundler (npm/yarn/pnpm)</span>
-                            </li>
-                        </ul>
+                    <button
+                        onClick={() => setExpandedSection('integration')}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 transition-colors"
+                    >
+                        Next: Select Integration
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* Integration Section */}
+            {expandedSection === 'integration' && (
+                <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-xl">
+                    <h4 className="font-medium text-gray-800">Select or Create an Integration</h4>
+
+                    <p className="text-sm text-gray-500">
+                        An integration groups your apps together and provides a publishable key for authentication.
+                    </p>
+
+                    {isLoadingIntegrations ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {/* Existing integrations */}
+                            {integrations && integrations.length > 0 && (
+                                <div className="space-y-2">
+                                    {integrations.map((integration) => (
+                                        <button
+                                            key={integration.id}
+                                            onClick={() => setSelectedIntegration(integration)}
+                                            className={`w-full flex items-center justify-between p-3 border-2 rounded-lg transition-all ${
+                                                selectedIntegration?.id === integration.id
+                                                    ? 'border-cyan-500 bg-cyan-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <span className="font-medium text-gray-800">{integration.name}</span>
+
+                                            {selectedIntegration?.id === integration.id && (
+                                                <CheckCircle2 className="w-5 h-5 text-cyan-500" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Create new */}
+                            {isCreatingIntegration ? (
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newIntegrationName}
+                                        onChange={(e) => setNewIntegrationName(e.target.value)}
+                                        placeholder="Integration name..."
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                        autoFocus
+                                    />
+
+                                    <button
+                                        onClick={handleCreateIntegration}
+                                        disabled={!newIntegrationName.trim()}
+                                        className="px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                                    >
+                                        Create
+                                    </button>
+
+                                    <button
+                                        onClick={() => setIsCreatingIntegration(false)}
+                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setIsCreatingIntegration(true)}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Create New Integration
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => setExpandedSection('listing')}
+                        disabled={!selectedIntegration}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                    >
+                        Next: Select App
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* App Listing Section */}
+            {expandedSection === 'listing' && (
+                <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-xl">
+                    <h4 className="font-medium text-gray-800">Select or Create Your App</h4>
+
+                    <p className="text-sm text-gray-500">
+                        Your app listing is what users see in the LearnCard app store.
+                    </p>
+
+                    {isLoadingListings ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {/* Existing listings */}
+                            {listings && listings.length > 0 && (
+                                <div className="space-y-2">
+                                    {listings.map((listing) => (
+                                        <button
+                                            key={listing.listing_id}
+                                            onClick={() => setSelectedListing(listing)}
+                                            className={`w-full flex items-center justify-between p-3 border-2 rounded-lg transition-all ${
+                                                selectedListing?.listing_id === listing.listing_id
+                                                    ? 'border-cyan-500 bg-cyan-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <span className="font-medium text-gray-800">{listing.display_name}</span>
+
+                                            {selectedListing?.listing_id === listing.listing_id && (
+                                                <CheckCircle2 className="w-5 h-5 text-cyan-500" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Create new */}
+                            {isCreatingListing ? (
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newListingName}
+                                        onChange={(e) => setNewListingName(e.target.value)}
+                                        placeholder="App name..."
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                        autoFocus
+                                    />
+
+                                    <button
+                                        onClick={handleCreateListing}
+                                        disabled={!newListingName.trim()}
+                                        className="px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                                    >
+                                        Create
+                                    </button>
+
+                                    <button
+                                        onClick={() => setIsCreatingListing(false)}
+                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setIsCreatingListing(true)}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Create New App
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => setExpandedSection('init')}
+                        disabled={!selectedListing}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                    >
+                        Next: Initialize
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* Initialize Section */}
+            {expandedSection === 'init' && (
+                <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-800">Initialize the SDK</h4>
+
+                        <button
+                            onClick={() => handleCopy(initCode, 'init')}
+                            className="flex items-center gap-1 px-2 py-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                        >
+                            {copiedCode === 'init' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                    </div>
+
+                    <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg text-sm overflow-x-auto">
+                        {initCode}
+                    </pre>
+
+                    <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+                        <p className="text-sm text-cyan-800">
+                            <strong>That's it!</strong> Users are already logged in when inside the wallet, so <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code> returns instantly with their profile.
+                        </p>
                     </div>
                 </div>
             )}
 
-            {appType === 'new' && (
-                <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl">
-                    <h4 className="font-medium text-violet-800 mb-2 flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
-                        Let's get you started!
-                    </h4>
-
-                    <p className="text-sm text-violet-700 mb-3">
-                        We'll help you create a new app from a template with everything pre-configured.
-                    </p>
-
-                    <div className="text-sm text-violet-800">
-                        <strong>You'll get:</strong>
-                        <ul className="mt-2 space-y-1.5">
-                            <li className="flex items-start gap-2">
-                                <span className="text-violet-500 mt-0.5">•</span>
-                                <span>Pre-configured iframe headers</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-violet-500 mt-0.5">•</span>
-                                <span>Partner Connect SDK already installed</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-violet-500 mt-0.5">•</span>
-                                <span>Example code for SSO and credentials</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
+            {/* Continue button - only show on Initialize section */}
+            {expandedSection === 'init' && (
+                <button
+                    onClick={onComplete}
+                    disabled={!isReady}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    {isReady ? (
+                        <>
+                            Choose What to Build
+                            <ArrowRight className="w-4 h-4" />
+                        </>
+                    ) : (
+                        'Select an integration and app above to continue'
+                    )}
+                </button>
             )}
-
-            {/* Continue */}
-            <button
-                onClick={() => appType && onComplete(appType)}
-                disabled={!appType}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-                Continue
-                <ArrowRight className="w-4 h-4" />
-            </button>
         </div>
     );
 };
 
-// Step 1: Setup Website
+// Step 1: Choose Features (the hub)
+const ChooseFeaturesStep: React.FC<{
+    onComplete: () => void;
+    onBack: () => void;
+    selectedFeatures: string[];
+    setSelectedFeatures: (features: string[]) => void;
+}> = ({ onComplete, onBack, selectedFeatures, setSelectedFeatures }) => {
+    const toggleFeature = (featureId: string) => {
+        if (selectedFeatures.includes(featureId)) {
+            setSelectedFeatures(selectedFeatures.filter(f => f !== featureId));
+        } else {
+            setSelectedFeatures([...selectedFeatures, featureId]);
+        }
+    };
+
+    const getColorClasses = (color: string, isSelected: boolean) => {
+        const colors: Record<string, { border: string; bg: string; icon: string }> = {
+            cyan: { border: 'border-cyan-500', bg: 'bg-cyan-50', icon: 'text-cyan-600 bg-cyan-100' },
+            purple: { border: 'border-purple-500', bg: 'bg-purple-50', icon: 'text-purple-600 bg-purple-100' },
+            emerald: { border: 'border-emerald-500', bg: 'bg-emerald-50', icon: 'text-emerald-600 bg-emerald-100' },
+            amber: { border: 'border-amber-500', bg: 'bg-amber-50', icon: 'text-amber-600 bg-amber-100' },
+        };
+
+        const c = colors[color] || colors.cyan;
+
+        return isSelected
+            ? { border: c.border, bg: c.bg, icon: c.icon }
+            : { border: 'border-gray-200', bg: 'bg-white', icon: 'text-gray-500 bg-gray-100' };
+    };
+
+    const hasFeatureWithSetup = selectedFeatures.some(id => 
+        FEATURES.find(f => f.id === id)?.requiresSetup
+    );
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">What do you want to build?</h3>
+
+                <p className="text-gray-600">
+                    Select the features you want to add to your app. You can always add more later.
+                </p>
+            </div>
+
+            {/* Feature cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {FEATURES.map(feature => {
+                    const isSelected = selectedFeatures.includes(feature.id);
+                    const colors = getColorClasses(feature.color, isSelected);
+
+                    return (
+                        <button
+                            key={feature.id}
+                            onClick={() => toggleFeature(feature.id)}
+                            className={`flex flex-col items-start p-5 border-2 rounded-2xl text-left transition-all ${colors.border} ${colors.bg}`}
+                        >
+                            <div className="w-full flex items-start justify-between mb-3">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors.icon}`}>
+                                    {feature.icon}
+                                </div>
+
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                    isSelected ? 'border-current bg-current' : 'border-gray-300'
+                                }`}>
+                                    {isSelected && <Check className="w-4 h-4 text-white" />}
+                                </div>
+                            </div>
+
+                            <h4 className="font-semibold text-gray-800 mb-1">{feature.title}</h4>
+
+                            <p className="text-sm text-gray-600 mb-3">{feature.description}</p>
+
+                            {feature.requiresSetup && (
+                                <div className="flex items-center gap-1.5 mt-auto">
+                                    <Layers className="w-3.5 h-3.5 text-gray-400" />
+                                    <span className="text-xs text-gray-500">Requires: {feature.setupDescription}</span>
+                                </div>
+                            )}
+
+                            {!feature.requiresSetup && (
+                                <div className="flex items-center gap-1.5 mt-auto">
+                                    <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                                    <span className="text-xs text-emerald-600 font-medium">Ready to use</span>
+                                </div>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Selection summary */}
+            {selectedFeatures.length > 0 && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                    <h4 className="font-medium text-gray-800 mb-2">
+                        Selected: {selectedFeatures.length} feature{selectedFeatures.length !== 1 ? 's' : ''}
+                    </h4>
+
+                    <div className="flex flex-wrap gap-2">
+                        {selectedFeatures.map(id => {
+                            const feature = FEATURES.find(f => f.id === id);
+
+                            return feature ? (
+                                <span key={id} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-sm text-gray-700">
+                                    {feature.title}
+                                </span>
+                            ) : null;
+                        })}
+                    </div>
+
+                    {hasFeatureWithSetup && (
+                        <p className="mt-3 text-sm text-gray-500">
+                            Some features require additional setup. We'll guide you through it.
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    disabled={selectedFeatures.length === 0}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    {hasFeatureWithSetup ? 'Continue to Setup' : 'See Your Code'}
+                    <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Legacy step components below (keeping for reference, not used in new flow)
+// TODO: Remove these in a future cleanup
+
 const SetupWebsiteStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
@@ -2222,67 +2663,508 @@ if (result.granted) {
     );
 };
 
+// Step 2: Feature Setup (dynamic per-feature setup)
+const FeatureSetupStep: React.FC<{
+    onComplete: () => void;
+    onBack: () => void;
+    selectedFeatures: string[];
+    currentFeatureIndex: number;
+    setCurrentFeatureIndex: (index: number) => void;
+    featureSetupState: Record<string, Record<string, unknown>>;
+    setFeatureSetupState: (state: Record<string, Record<string, unknown>>) => void;
+    selectedListing: AppStoreListing | null;
+}> = ({ onComplete, onBack, selectedFeatures, currentFeatureIndex, setCurrentFeatureIndex, featureSetupState, setFeatureSetupState, selectedListing }) => {
+    // Get features that require setup
+    const featuresNeedingSetup = selectedFeatures
+        .map(id => FEATURES.find(f => f.id === id))
+        .filter((f): f is Feature => f !== undefined && f.requiresSetup);
+
+    // If no features need setup, skip to complete
+    useEffect(() => {
+        if (featuresNeedingSetup.length === 0) {
+            onComplete();
+        }
+    }, [featuresNeedingSetup.length, onComplete]);
+
+    if (featuresNeedingSetup.length === 0) {
+        return null;
+    }
+
+    const currentFeature = featuresNeedingSetup[currentFeatureIndex];
+    const isLastFeature = currentFeatureIndex === featuresNeedingSetup.length - 1;
+
+    const handleFeatureComplete = () => {
+        if (isLastFeature) {
+            onComplete();
+        } else {
+            setCurrentFeatureIndex(currentFeatureIndex + 1);
+        }
+    };
+
+    const handleFeatureBack = () => {
+        if (currentFeatureIndex === 0) {
+            onBack();
+        } else {
+            setCurrentFeatureIndex(currentFeatureIndex - 1);
+        }
+    };
+
+    // Render feature-specific setup
+    const renderFeatureSetup = () => {
+        if (!currentFeature) return null;
+
+        switch (currentFeature.id) {
+            case 'issue-credentials':
+                return (
+                    <IssueCredentialsSetup
+                        onComplete={handleFeatureComplete}
+                        onBack={handleFeatureBack}
+                        isLastFeature={isLastFeature}
+                        selectedListing={selectedListing}
+                    />
+                );
+
+            case 'claim-credentials':
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Claim Credentials</h3>
+
+                            <p className="text-gray-600">
+                                Create shareable claim links for your credentials. Coming soon!
+                            </p>
+                        </div>
+
+                        <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                            <Sparkles className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+
+                            <p className="text-amber-800">
+                                This feature setup is coming soon. For now, you can skip this step.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={handleFeatureBack} className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                                <ArrowLeft className="w-4 h-4" />
+                                Back
+                            </button>
+
+                            <button onClick={handleFeatureComplete} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors">
+                                {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                );
+
+            case 'request-credentials':
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Request Credentials</h3>
+
+                            <p className="text-gray-600">
+                                Define what credentials you want to request from users. Coming soon!
+                            </p>
+                        </div>
+
+                        <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                            <FileSearch className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+
+                            <p className="text-amber-800">
+                                This feature setup is coming soon. For now, you can skip this step.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={handleFeatureBack} className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                                <ArrowLeft className="w-4 h-4" />
+                                Back
+                            </button>
+
+                            <button onClick={handleFeatureComplete} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors">
+                                {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Feature progress */}
+            {featuresNeedingSetup.length > 1 && (
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
+                    {featuresNeedingSetup.map((feature, index) => (
+                        <React.Fragment key={feature.id}>
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
+                                index === currentFeatureIndex
+                                    ? 'bg-cyan-100 text-cyan-700'
+                                    : index < currentFeatureIndex
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'text-gray-400'
+                            }`}>
+                                {index < currentFeatureIndex ? (
+                                    <CheckCircle2 className="w-4 h-4" />
+                                ) : (
+                                    feature.icon
+                                )}
+                                <span className="hidden sm:inline">{feature.title}</span>
+                            </div>
+
+                            {index < featuresNeedingSetup.length - 1 && (
+                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
+            )}
+
+            {renderFeatureSetup()}
+        </div>
+    );
+};
+
+// Issue Credentials Setup (for initiateTemplateIssue)
+const IssueCredentialsSetup: React.FC<{
+    onComplete: () => void;
+    onBack: () => void;
+    isLastFeature: boolean;
+    selectedListing: AppStoreListing | null;
+}> = ({ onComplete, onBack, isLastFeature, selectedListing }) => {
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create Credential Templates</h3>
+
+                <p className="text-gray-600">
+                    Create credential templates (Boosts) that your app can issue to users.
+                </p>
+            </div>
+
+            {/* Show selected app */}
+            {selectedListing && (
+                <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-cyan-600" />
+                        <div>
+                            <p className="text-sm font-medium text-cyan-800">Creating templates for: {selectedListing.display_name}</p>
+                            <p className="text-xs text-cyan-600">You selected this app in Step 1</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Template Manager */}
+            {selectedListing ? (
+                <TemplateManager
+                    appListingId={selectedListing.listing_id}
+                    appName={selectedListing.display_name}
+                />
+            ) : (
+                <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                    <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+                    <p className="text-amber-800">
+                        Please go back to Step 1 and select an app listing first.
+                    </p>
+                </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    disabled={!selectedListing}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Step 3: Your App (summary with code)
+const YourAppStep: React.FC<{
+    onBack: () => void;
+    selectedFeatures: string[];
+    selectedListing: AppStoreListing | null;
+}> = ({ onBack, selectedFeatures, selectedListing }) => {
+    const [copiedCode, setCopiedCode] = useState(false);
+
+    // Generate code based on selected features
+    const generateCode = () => {
+        const codeLines: string[] = [
+            `import { createPartnerConnect } from '@learncard/partner-connect';`,
+            ``,
+            `// Initialize the SDK`,
+            `const learnCard = createPartnerConnect({`,
+            `    hostOrigin: 'https://learncard.app'`,
+            `});`,
+            ``,
+            `// Get user identity`,
+            `const identity = await learnCard.requestIdentity();`,
+            `console.log('Welcome,', identity.profile.displayName);`,
+        ];
+
+        // Add feature-specific code
+        if (selectedFeatures.includes('issue-credentials')) {
+            codeLines.push(``);
+            codeLines.push(`// Issue a credential to the user`);
+            codeLines.push(`// Replace BOOST_URI with your template URI from the setup`);
+            codeLines.push(`await learnCard.initiateTemplateIssue({`);
+            codeLines.push(`    boostUri: 'BOOST_URI', // Your template URI`);
+            if (selectedListing) {
+                codeLines.push(`    // App: ${selectedListing.display_name}`);
+            }
+            codeLines.push(`});`);
+        }
+
+        if (selectedFeatures.includes('open-wallet')) {
+            codeLines.push(``);
+            codeLines.push(`// Open user's wallet`);
+            codeLines.push(`await learnCard.openWallet();`);
+        }
+
+        if (selectedFeatures.includes('claim-credentials')) {
+            codeLines.push(``);
+            codeLines.push(`// Navigate to claim a credential`);
+            codeLines.push(`await learnCard.navigateTo('/claim/CLAIM_ID');`);
+        }
+
+        if (selectedFeatures.includes('request-credentials')) {
+            codeLines.push(``);
+            codeLines.push(`// Request credentials from user`);
+            codeLines.push(`const presentation = await learnCard.requestPresentation({`);
+            codeLines.push(`    // Define what credentials you're requesting`);
+            codeLines.push(`});`);
+        }
+
+        return codeLines.join('\n');
+    };
+
+    const code = generateCode();
+
+    const handleCopy = async () => {
+        await navigator.clipboard.writeText(code);
+        setCopiedCode(true);
+        setTimeout(() => setCopiedCode(false), 2000);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Your App is Ready! 🎉</h3>
+
+                <p className="text-gray-600">
+                    Here's the code for your embedded app with {selectedFeatures.length} feature{selectedFeatures.length !== 1 ? 's' : ''}.
+                </p>
+            </div>
+
+            {/* Selected features summary */}
+            <div className="flex flex-wrap gap-2">
+                {selectedFeatures.map(id => {
+                    const feature = FEATURES.find(f => f.id === id);
+
+                    return feature ? (
+                        <span key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-sm text-emerald-700">
+                            <CheckCircle2 className="w-4 h-4" />
+                            {feature.title}
+                        </span>
+                    ) : null;
+                })}
+            </div>
+
+            {/* Code output */}
+            <div className="rounded-xl overflow-hidden border border-gray-200">
+                <div className="flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Your Integration Code</span>
+
+                    <button
+                        onClick={handleCopy}
+                        className="flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                        {copiedCode ? (
+                            <>
+                                <Check className="w-4 h-4 text-emerald-500" />
+                                Copied!
+                            </>
+                        ) : (
+                            <>
+                                <Copy className="w-4 h-4" />
+                                Copy
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                <pre className="p-4 bg-gray-900 text-gray-100 text-sm overflow-x-auto">
+                    {code}
+                </pre>
+            </div>
+
+            {/* Next steps */}
+            <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
+                <h4 className="font-medium text-cyan-800 mb-3">Next Steps</h4>
+
+                <ul className="space-y-2 text-sm text-cyan-700">
+                    <li className="flex items-start gap-2">
+                        <span className="text-cyan-500 mt-0.5">1.</span>
+                        <span>Copy this code into your app</span>
+                    </li>
+
+                    <li className="flex items-start gap-2">
+                        <span className="text-cyan-500 mt-0.5">2.</span>
+                        <span>Configure your server headers for iframe embedding</span>
+                    </li>
+
+                    <li className="flex items-start gap-2">
+                        <span className="text-cyan-500 mt-0.5">3.</span>
+                        <span>Submit your app listing for review</span>
+                    </li>
+
+                    <li className="flex items-start gap-2">
+                        <span className="text-cyan-500 mt-0.5">4.</span>
+                        <span>Test in the LearnCard wallet!</span>
+                    </li>
+                </ul>
+            </div>
+
+            {/* Resources */}
+            <div className="flex flex-wrap gap-3">
+                <a
+                    href="https://docs.learncard.com/sdks/partner-connect"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <FileText className="w-4 h-4" />
+                    Full Documentation
+                    <ExternalLink className="w-3 h-3" />
+                </a>
+
+                <a
+                    href="https://github.com/learningeconomy/LearnCard"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <Code className="w-4 h-4" />
+                    GitHub Examples
+                    <ExternalLink className="w-3 h-3" />
+                </a>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+            </div>
+        </div>
+    );
+};
+
 // Main component
 const EmbedAppGuide: React.FC = () => {
     const guideState = useGuideState('embed-app', STEPS.length);
-    const [appUrl, setAppUrl] = useState('');
-    const [appType, setAppType] = useState<AppType>(null);
-    const [selectedFramework, setSelectedFramework] = useState('');
+
+    // Guide-wide state (persists across all steps)
+    const [selectedIntegration, setSelectedIntegration] = useState<LCNIntegration | null>(null);
+    const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(null);
+    const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+    const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
+    const [featureSetupState, setFeatureSetupState] = useState<Record<string, Record<string, unknown>>>({});
+
+    // Reset guide if step is out of bounds (e.g., after changing step count)
+    useEffect(() => {
+        if (guideState.currentStep >= STEPS.length) {
+            guideState.goToStep(0);
+        }
+    }, [guideState.currentStep]);
 
     const handleStepComplete = (stepId: string) => {
         guideState.markStepComplete(stepId);
         guideState.nextStep();
     };
 
-    const handlePathComplete = (selectedAppType: AppType) => {
-        setAppType(selectedAppType);
-        handleStepComplete('choose-path');
+    // Check if we should skip feature setup step
+    const featuresNeedingSetup = selectedFeatures.filter(id => 
+        FEATURES.find(f => f.id === id)?.requiresSetup
+    );
+
+    const handleChooseFeaturesComplete = () => {
+        if (featuresNeedingSetup.length === 0) {
+            // Skip feature setup, go directly to your app
+            guideState.markStepComplete('choose-features');
+            guideState.markStepComplete('feature-setup');
+            guideState.goToStep(3);
+        } else {
+            handleStepComplete('choose-features');
+        }
     };
 
     const renderStep = () => {
         switch (guideState.currentStep) {
             case 0:
                 return (
-                    <ChoosePathStep
-                        onComplete={handlePathComplete}
-                        appType={appType}
-                        setAppType={setAppType}
+                    <GettingStartedStep
+                        onComplete={() => handleStepComplete('getting-started')}
+                        selectedIntegration={selectedIntegration}
+                        setSelectedIntegration={setSelectedIntegration}
+                        selectedListing={selectedListing}
+                        setSelectedListing={setSelectedListing}
                     />
                 );
 
             case 1:
                 return (
-                    <SetupWebsiteStep
-                        onComplete={() => handleStepComplete('setup-website')}
+                    <ChooseFeaturesStep
+                        onComplete={handleChooseFeaturesComplete}
                         onBack={guideState.prevStep}
-                        appUrl={appUrl}
-                        setAppUrl={setAppUrl}
-                        appType={appType}
-                        selectedFramework={selectedFramework}
-                        setSelectedFramework={setSelectedFramework}
+                        selectedFeatures={selectedFeatures}
+                        setSelectedFeatures={setSelectedFeatures}
                     />
                 );
 
             case 2:
                 return (
-                    <InstallSdkStep
-                        onComplete={() => handleStepComplete('install-sdk')}
+                    <FeatureSetupStep
+                        onComplete={() => handleStepComplete('feature-setup')}
                         onBack={guideState.prevStep}
+                        selectedFeatures={selectedFeatures}
+                        currentFeatureIndex={currentFeatureIndex}
+                        setCurrentFeatureIndex={setCurrentFeatureIndex}
+                        featureSetupState={featureSetupState}
+                        setFeatureSetupState={setFeatureSetupState}
+                        selectedListing={selectedListing}
                     />
                 );
 
             case 3:
                 return (
-                    <InitializeStep
-                        onComplete={() => handleStepComplete('initialize')}
+                    <YourAppStep
                         onBack={guideState.prevStep}
-                    />
-                );
-
-            case 4:
-                return (
-                    <UseApiStep
-                        onBack={guideState.prevStep}
+                        selectedFeatures={selectedFeatures}
+                        selectedListing={selectedListing}
                     />
                 );
 
@@ -2291,11 +3173,8 @@ const EmbedAppGuide: React.FC = () => {
         }
     };
 
-    // Widen container for API reference step (needs more space for split layout)
-    const isApiStep = guideState.currentStep === 4;
-
     return (
-        <div className={`mx-auto py-4 ${isApiStep ? 'max-w-6xl' : 'max-w-3xl'}`}>
+        <div className="mx-auto py-4 max-w-3xl">
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
