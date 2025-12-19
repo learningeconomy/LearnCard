@@ -1029,19 +1029,27 @@ export const contractsRouter = t.router({
                     const response = await fetch(`${srUrl}api/v1/credentials`, {
                         method: 'POST',
                         headers: {
-                            Authorization: `Bearer ${accessToken}`,
+                            'Authorization': `Bearer ${accessToken}`,
                             'Content-Type': 'application/json',
                         },
                         body,
                     });
-                    console.log('response', response);
+
                     const responseBody = await response.text();
                     console.log('SmartResume API Response:', responseBody);
+
                     if (!response.ok) {
-                        throw new Error(`Error (${response.status}): ${await response.text()}`);
+                        throw new Error(`Error (${response.status}): ${responseBody}`);
                     }
 
-                    const result = (await response.json()) as { redirect_url?: string };
+                    let result;
+                    try {
+                        result = JSON.parse(responseBody);
+                    } catch (e) {
+                        throw new Error(`Failed to parse response: ${responseBody}`);
+                    }
+
+                    console.log('Parsed response:', result);
                     redirectUrl = result.redirect_url;
                 } catch (error) {
                     console.error('Error uploading credentials to SmartResume:', error);
