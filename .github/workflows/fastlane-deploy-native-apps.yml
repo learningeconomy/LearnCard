@@ -1,0 +1,291 @@
+name: fastlane-deploy-native-apps
+on:
+  push:
+    tags:
+      - native-v*
+    branches:
+      - add-fastlane
+  workflow_dispatch:
+    inputs:
+      versionBumpType:
+        description: "Version bump type (patch, minor, major)"
+        required: false
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      environment:
+        description: "Choose Environment"
+        required: true
+        default: "learn-card-app-production"
+        type: environment
+      googlePlayReleaseTrack:
+        description: "Choose Android App Google Play Release Track"
+        required: true
+        default: "internal"
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+      submitToAppStore:
+        description: "Submit iOS App to App Stores"
+        required: false
+        default: false
+        type: boolean
+      releaseNotes:
+        description: "Release Notes"
+        required: true
+        default: "- Critical Bug Fixes and Security Patches"
+        type: string
+  workflow_call:
+    inputs:
+      versionBumpType:
+        description: "Version bump type (patch, minor, major)"
+        required: false
+        default: "patch"
+        type: string
+      environment:
+        description: "Choose Environment"
+        required: true
+        default: "learn-card-app-production"
+        type: string
+      googlePlayReleaseTrack:
+        description: "Choose Android App Google Play Release Track"
+        required: true
+        default: "internal"
+        type: string
+      submitToAppStore:
+        description: "Submit iOS App to App Stores"
+        required: false
+        default: false
+        type: boolean
+      releaseNotes:
+        description: "Release Notes"
+        required: true
+        default: "- Critical Bug Fixes and Security Patches"
+        type: string
+
+jobs:
+  deploy-production-learn-card-app-ios:
+    name: ${{ inputs.environment }} iOS Deploy
+    runs-on: macos-15
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        id: pnpm-install
+        with:
+          version: 9
+          run_install: false
+
+      # - name: Set up Homebrew
+      #   run: |
+      #     echo "Checking if Homebrew is installed..."
+      #     which brew || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+      # - name: Install xcodes
+      #   run: brew install --cask xcodes
+
+      # - name: Get pnpm store directory
+      #  id: pnpm-cache
+      # run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      #- name: Setup pnpm cache
+      # uses: actions/cache@v3
+      #with:
+      #   path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+      #  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+      # restore-keys: |
+      #    ${{ runner.os }}-pnpm-store-
+
+      #- name: Restore nx cache
+      # id: restore-nx-cache
+      #uses: actions/cache/restore@v3
+      #with:
+      #   path: .nx-cache
+      #  key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
+
+      - name: Install Workspace dependencies
+        run: pnpm i && pnpm exec nx build learn-card-app
+
+      - name: Install dependencies
+        working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build App Files
+        working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+        run: pnpm build
+        env:
+          NODE_ENV: ${{ vars.NODE_ENV }}
+          VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+          SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+          SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
+          WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+
+      - name: Sync Capacitor Files to iOS
+        working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+        run: npx cap sync ios
+
+      - name: Select Xcode 16.x
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16"
+
+      - name: Release iOS App with Fastlane
+        run: fastlane ios release --verbose
+        working-directory: "./tools/fastlane/fastlane"
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_DEPLOY_KEY: ${{ secrets.MATCH_GIT_DEPLOY_KEY }}
+          APP_ID: ${{ vars.APP_ID }}
+          TEAM_NAME: ${{ vars.TEAM_NAME }}
+          TEAM_ID: ${{ vars.TEAM_ID }}
+          APPLE_ID: ${{ vars.APPLE_ID }}
+          ITC_TEAM_ID: ${{ vars.ITC_TEAM_ID }}
+
+          MATCH_GIT_BRANCH: ${{ vars.MATCH_GIT_BRANCH }}
+
+          XCODE_PROJECT: ${{ vars.XCODE_PROJECT }}
+          XCODE_WORKSPACE: ${{ vars.XCODE_WORKSPACE }}
+
+          CODE_SIGNING_TYPE: ${{ vars.CODE_SIGNING_TYPE }}
+          CODE_SIGNING_APP_IDENTIFIER: ${{ vars.CODE_SIGNING_APP_IDENTIFIER }}
+
+          FASTLANE_USER: ${{ vars.FASTLANE_USER }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+
+          APP_STORE_CONNECT_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
+
+          IOS_SUBMIT_TO_APP_REVIEW: ${{ inputs.submitToAppStore || vars.IOS_SUBMIT_TO_APP_REVIEW }}
+          IOS_RELEASE_NOTES: ${{ inputs.releaseNotes }}
+          VERSION_BUMP_TYPE: ${{ inputs.versionBumpType || 'patch' }}
+
+      #- name: Save nx cache
+      #uses: actions/cache/save@v3
+      #with:
+      #   path: .nx-cache
+      #    key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}
+
+      #- name: Prune NX Cache
+      # run: find .nx-cache -maxdepth 1 -mtime +7 -exec rm -rf '{}' \;
+
+  deploy-production-learn-card-app-android:
+    name: ${{ inputs.environment }} Android Deploy
+    runs-on: macos-15
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        id: pnpm-install
+        with:
+          version: 9
+          run_install: false
+
+      #- name: Get pnpm store directory
+      # id: pnpm-cache
+      # run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      #- name: Setup pnpm cache
+      # uses: actions/cache@v3
+      # with:
+      #  path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+      #  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+      #  restore-keys: |
+      #    ${{ runner.os }}-pnpm-store-
+
+      #- name: Restore nx cache
+      #  id: restore-nx-cache
+      # uses: actions/cache/restore@v3
+      # with:
+      #   path: .nx-cache
+      #   key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
+
+      - name: Install Workspace dependencies
+        run: pnpm i && pnpm exec nx build learn-card-app
+
+      - name: Install dependencies
+        working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build App Files
+        working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+        run: pnpm build
+        env:
+          NODE_ENV: ${{ vars.NODE_ENV }}
+          VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+          SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+          SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
+          WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+
+      - name: Sync Capacitor Files to Android
+        working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
+        run: npx cap sync android
+
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: "corretto" # See 'Supported distributions' for available options
+          java-version: "21"
+
+      - name: Decode Keystore File
+        uses: timheuer/base64-to-file@v1
+        id: android_keystore
+        with:
+          fileName: "android_keystore.keystore"
+          encodedString: ${{ secrets.KEYSTORE_FILE }}
+
+      - name: Release Android App with Fastlane
+        run: fastlane android release --verbose
+        working-directory: "./tools/fastlane/fastlane"
+        env:
+          APP_ID: ${{ vars.APP_ID }}
+
+          GOOGLE_PLAY_RELEASE_TRACK: ${{ inputs.googlePlayReleaseTrack || vars.GOOGLE_PLAY_RELEASE_TRACK }}
+
+          GRADLE_PROJECT_DIRECTORY: ${{ vars.GRADLE_PROJECT_DIRECTORY }}
+          GRADLE_FILE_PATH: ${{ vars.GRADLE_FILE_PATH }}
+
+          JSON_KEY_DATA: ${{ secrets.JSON_KEY_DATA }}
+
+          ANDROID_KEYSTORE_FILE: ${{ steps.android_keystore.outputs.filePath }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEYSTORE_KEY_ALIAS: ${{ secrets.ANDROID_KEYSTORE_KEY_ALIAS }}
+          ANDROID_KEYSTORE_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_KEY_PASSWORD }}
+
+          ANDROID_RELEASE_NOTES: ${{ inputs.releaseNotes }}
+          VERSION_BUMP_TYPE: ${{ inputs.versionBumpType || 'patch' }}
+
+      #- name: Save nx cache
+      #uses: actions/cache/save@v3
+      #with:
+      #    path: .nx-cache
+      #   key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}
+
+      #- name: Prune NX Cache
+      #run: find .nx-cache -maxdepth 1 -mtime +7 -exec rm -rf '{}' \;

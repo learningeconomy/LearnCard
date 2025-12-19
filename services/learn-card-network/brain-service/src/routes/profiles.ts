@@ -274,7 +274,7 @@ export const profilesRouter = t.router({
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 query: LCNProfileQueryValidator.optional(),
-            }).default({})
+            }).default({ limit: 25 })
         )
         .output(PaginatedLCNProfilesAndManagersValidator)
         .query(async ({ ctx, input }) => {
@@ -320,7 +320,7 @@ export const profilesRouter = t.router({
             PaginationOptionsValidator.extend({
                 id: z.string().optional(),
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-            }).default({})
+            }).default({ limit: 25 })
         )
         .output(PaginatedLCNProfilesValidator)
         .query(async ({ ctx, input }) => {
@@ -731,7 +731,7 @@ export const profilesRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-            }).default({})
+            }).default({ limit: 25 })
         )
         .output(PaginatedLCNProfilesValidator)
         .query(async ({ ctx, input }) => {
@@ -786,7 +786,7 @@ export const profilesRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-            }).default({})
+            }).default({ limit: 25 })
         )
         .output(PaginatedLCNProfilesValidator)
         .query(async ({ ctx, input }) => {
@@ -844,7 +844,7 @@ export const profilesRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-            }).default({})
+            }).default({ limit: 25 })
         )
         .output(PaginatedLCNProfilesValidator)
         .query(async ({ ctx, input }) => {
@@ -889,7 +889,7 @@ export const profilesRouter = t.router({
                     maxUses: z.number().int().min(0).optional().default(1), // Default single-use invites
                 })
                 .optional()
-                .default({})
+                .default({ expiration: 30 * 24 * 3600, maxUses: 1 })
         )
         .output(
             z.object({

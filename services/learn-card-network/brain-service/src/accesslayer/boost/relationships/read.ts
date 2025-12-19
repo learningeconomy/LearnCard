@@ -1,10 +1,13 @@
 import sift from 'sift';
 import { BindParam, QueryBuilder } from 'neogma';
+import { int } from 'neo4j-driver';
 import {
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
-    getMatchQueryWhere,
+    buildWhereClause,
+    buildWhereForQueryBuilder,
 } from '@helpers/neo4j.helpers';
+import type { SkillQuery } from '@learncard/types';
 import { BoostRecipientInfo, BoostPermissions, LCNProfileQuery } from '@learncard/types';
 import {
     Boost,
@@ -15,7 +18,12 @@ import {
     CredentialRelationships,
     ProfileRelationships,
     Role,
+    SkillFrameworkInstance,
+    SkillInstance,
 } from '@models';
+import { FlatSkillFrameworkType } from 'types/skill-framework';
+import { FlatSkillType } from 'types/skill';
+import { neogma } from '@instance';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { FlatProfileType, ProfileType } from 'types/profile';
 import { BoostType, BoostWithClaimPermissionsType } from 'types/boost';
@@ -38,6 +46,191 @@ export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileType |
     if (!profile) return undefined;
 
     return inflateObject<ProfileType>(profile.dataValues as any);
+};
+
+/**
+ * Returns the `SkillFramework` used by a given boost via the `USES_FRAMEWORK` relationship.
+ */
+export const getFrameworkUsedByBoost = async (
+    boost: BoostInstance
+): Promise<SkillFrameworkInstance | undefined> => {
+    const rel = (await boost.findRelationships({ alias: 'usesFramework' }))[0];
+    return rel?.target;
+};
+
+export const getFrameworksForBoost = async (
+    boost: BoostInstance
+): Promise<SkillFrameworkInstance[]> => {
+    const rels = await boost.findRelationships({ alias: 'usesFramework' });
+    return rels.map(rel => rel.target).filter(Boolean) as SkillFrameworkInstance[];
+};
+
+export const getFrameworksForBoostPaged = async (
+    boost: BoostInstance,
+    searchQuery: Record<string, any> | null,
+    limit: number,
+    cursor?: string | null
+): Promise<{
+    records: FlatSkillFrameworkType[];
+    hasMore: boolean;
+    cursor: string | null;
+}> => {
+    const convertedQuery = convertObjectRegExpToNeo4j(searchQuery ?? {});
+    const { whereClause, params: queryParams } = buildWhereClause('f', convertedQuery as any);
+
+    let cursorName: string | null = null;
+    let cursorCreated: string | null = null;
+    let cursorId: string | null = null;
+
+    if (cursor) {
+        try {
+            const decoded = JSON.parse(cursor);
+            if (decoded && typeof decoded === 'object') {
+                cursorName = (decoded.n as string) ?? null;
+                cursorCreated = (decoded.c as string) ?? null;
+                cursorId = (decoded.i as string) ?? null;
+            }
+        } catch {
+            cursorId = cursor;
+        }
+    }
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (b:Boost { id: $boostId })-[:USES_FRAMEWORK]->(f:SkillFramework)
+         WHERE ${whereClause}
+         AND (
+            $cursorName IS NULL OR
+            toLower(f.name) > $cursorName OR
+            (toLower(f.name) = $cursorName AND (
+                COALESCE(f.createdAt, "") > COALESCE($cursorCreated, "") OR
+                (COALESCE(f.createdAt, "") = COALESCE($cursorCreated, "") AND f.id > COALESCE($cursorId, ""))
+            ))
+         )
+         RETURN f AS f
+         ORDER BY toLower(f.name) ASC, COALESCE(f.createdAt, "") ASC, f.id ASC
+         LIMIT $limitPlusOne`,
+        {
+            boostId: boost.id,
+            ...queryParams,
+            cursorName,
+            cursorCreated,
+            cursorId,
+            limitPlusOne: int(limit + 1),
+        }
+    );
+
+    const all = result.records.map(r => {
+        const props = ((r.get('f') as any)?.properties ?? {}) as Record<string, any>;
+        return {
+            ...props,
+            status: props.status ?? 'active',
+        } as FlatSkillFrameworkType;
+    });
+
+    const hasMore = all.length > limit;
+    const page = all.slice(0, limit);
+    const last = page[page.length - 1];
+    const nextCursor = hasMore && last
+        ? JSON.stringify({ n: (last.name || '').toLowerCase(), c: (last as any).createdAt || '', i: last.id })
+        : null;
+
+    return { records: page, hasMore, cursor: nextCursor };
+};
+
+/**
+ * Returns the list of `Skill` nodes aligned to a given boost via the `ALIGNED_TO` relationship.
+ */
+export const getAlignedSkillsForBoost = async (boost: BoostInstance): Promise<SkillInstance[]> => {
+    const rels = await boost.findRelationships({ alias: 'alignedTo' });
+    return rels.map(r => r.target);
+};
+
+export const getFrameworkSkillsAvailableForBoost = async (
+    boost: BoostInstance
+): Promise<{ framework: FlatSkillFrameworkType; skills: FlatSkillType[] }[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (target:Boost { id: $boostId })
+         OPTIONAL MATCH (ancestor:Boost)-[:PARENT_OF*0..]->(target)
+         OPTIONAL MATCH (ancestor)-[:USES_FRAMEWORK]->(framework:SkillFramework)
+         OPTIONAL MATCH (framework)-[:CONTAINS]->(skill:Skill)
+         RETURN framework, collect(DISTINCT skill) AS skills`,
+        { boostId: boost.id }
+    );
+
+    return result.records
+        .map(record => {
+            const frameworkNode = record.get('framework') as { properties?: Record<string, any> } | null;
+            if (!frameworkNode?.properties) return null;
+
+            const frameworkProps = frameworkNode.properties as FlatSkillFrameworkType;
+            const skillNodes = (record.get('skills') as any[]) || [];
+            const skills = skillNodes
+                .map(node => (node?.properties ?? null) as Record<string, any> | null)
+                .filter(Boolean)
+                .map(props => ({
+                    ...props,
+                    type: props!.type ?? 'skill',
+                })) as FlatSkillType[];
+
+            return {
+                framework: frameworkProps,
+                skills,
+            };
+        })
+        .filter(Boolean) as { framework: FlatSkillFrameworkType; skills: FlatSkillType[] }[];
+};
+
+/**
+ * Search skills available for a boost using mongo-style query with $regex and $in operators.
+ * Returns a flattened, paginated list of skills from frameworks attached to the boost or any of its ancestors.
+ */
+export const searchSkillsAvailableForBoost = async (
+    boost: BoostInstance,
+    searchQuery: SkillQuery,
+    limit: number,
+    cursorId?: string | null
+): Promise<{
+    records: FlatSkillType[];
+    hasMore: boolean;
+    cursor: string | null;
+}> => {
+    const convertedQuery = convertObjectRegExpToNeo4j(searchQuery);
+    const { whereClause, params: queryParams } = buildWhereClause('skill', convertedQuery as any);
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (target:Boost { id: $boostId })
+         MATCH (ancestor:Boost)-[:PARENT_OF*0..]->(target)
+         MATCH (ancestor)-[:USES_FRAMEWORK]->(framework:SkillFramework)
+         MATCH (framework)-[:CONTAINS]->(skill:Skill)
+         WHERE ${whereClause}
+         AND ($cursorId IS NULL OR skill.id > $cursorId)
+         WITH DISTINCT skill, collect(DISTINCT framework.id)[0] AS frameworkId
+         ORDER BY skill.id
+         LIMIT $limitPlusOne
+         RETURN skill, frameworkId`,
+        {
+            boostId: boost.id,
+            ...queryParams,
+            cursorId: cursorId ?? null,
+            limitPlusOne: int(limit + 1),
+        }
+    );
+
+    const all = result.records.map(r => {
+        const props = ((r.get('skill') as any)?.properties ?? {}) as Record<string, any>;
+        const frameworkId = r.get('frameworkId');
+        return {
+            ...props,
+            type: props.type ?? 'skill',
+            frameworkId,
+        } as FlatSkillType;
+    });
+
+    const hasMore = all.length > limit;
+    const page = all.slice(0, limit);
+    const nextCursor = hasMore ? page[page.length - 1]!.id : null;
+
+    return { records: page, hasMore, cursor: nextCursor };
 };
 
 export const getCredentialInstancesOfBoost = async (
@@ -104,9 +297,10 @@ export const getBoostRecipients = async (
         domain: string;
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
-    const _query = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('recipient', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             related: [
                 { identifier: 'source', model: Boost, where: { id: boost.id } },
@@ -138,7 +332,7 @@ export const getBoostRecipients = async (
             ],
         })
         .with('sender, sent, received, recipient, credential')
-        .where(getMatchQueryWhere('recipient'));
+        .where(whereClause);
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
@@ -451,137 +645,15 @@ export const canProfileCreateChildBoost = async (
 };
 
 export const canProfileEditBoost = async (profile: ProfileType, boost: BoostInstance) => {
-    const query = new QueryBuilder()
-        .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
-        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'targetBoost' },
-                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
-                { identifier: 'profile' },
-            ],
-        })
-        .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'profile' },
-                {
-                    ...Boost.getRelationshipByAlias('hasRole'),
-                    identifier: 'parentHasRole',
-                    direction: 'none',
-                },
-                { identifier: 'parentBoost', model: Boost },
-                {
-                    ...Boost.getRelationshipByAlias('parentOf'),
-                    direction: 'out',
-                    maxHops: Infinity,
-                },
-                { identifier: 'targetBoost' },
-            ],
-        })
-        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+    const permissions = await getBoostPermissions(boost, profile);
 
-    const result = await query
-        .return(
-            `
-            COALESCE(hasRole.canEdit, role.canEdit) AS directCanEdit,
-            COALESCE(parentHasRole.canEditChildren, parentRole.canEditChildren) AS parentCanEditChildren
-`
-        )
-        .run();
-
-    return result.records.some(record => {
-        if (!record) return false;
-
-        const directCanEdit = record.get('directCanEdit');
-        const parentEditChildren = record.get('parentCanEditChildren');
-
-        if (!parentEditChildren || parentEditChildren === '{}') return Boolean(directCanEdit);
-
-        if (parentEditChildren === '*') return true;
-
-        try {
-            if (parentEditChildren && typeof parentEditChildren === 'string') {
-                return (
-                    sift(JSON.parse(parentEditChildren))(boost.dataValues) || Boolean(directCanEdit)
-                );
-            }
-        } catch (error) {
-            console.error('Error trying to parse canEditChildren query!', error);
-        }
-
-        return Boolean(directCanEdit);
-    });
+    return Boolean(permissions.canEdit);
 };
 
 export const canProfileIssueBoost = async (profile: ProfileType, boost: BoostInstance) => {
-    const query = new QueryBuilder()
-        .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
-        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'targetBoost' },
-                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
-                { identifier: 'profile' },
-            ],
-        })
-        .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'profile' },
-                {
-                    ...Boost.getRelationshipByAlias('hasRole'),
-                    identifier: 'parentHasRole',
-                    direction: 'none',
-                },
-                { identifier: 'parentBoost', model: Boost },
-                {
-                    ...Boost.getRelationshipByAlias('parentOf'),
-                    direction: 'out',
-                    maxHops: Infinity,
-                },
-                { identifier: 'targetBoost' },
-            ],
-        })
-        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+    const permissions = await getBoostPermissions(boost, profile);
 
-    const result = await query
-        .return(
-            `
-            COALESCE(hasRole.canIssue, role.canIssue) AS directCanIssue,
-            COALESCE(parentHasRole.canIssueChildren, parentRole.canIssueChildren) AS parentCanIssueChildren
-`
-        )
-        .run();
-
-    return result.records.some(record => {
-        if (!record) return false;
-
-        const directCanIssue = record.get('directCanIssue');
-        const parentCanIssueChildren = record.get('parentCanIssueChildren');
-
-        if (!parentCanIssueChildren || parentCanIssueChildren === '{}')
-            return Boolean(directCanIssue);
-
-        if (parentCanIssueChildren === '*') return true;
-
-        try {
-            if (parentCanIssueChildren && typeof parentCanIssueChildren === 'string') {
-                return (
-                    sift(JSON.parse(parentCanIssueChildren))(boost.dataValues) ||
-                    Boolean(directCanIssue)
-                );
-            }
-        } catch (error) {
-            console.error('Error trying to parse canIssueChildren query!', error);
-        }
-
-        return Boolean(directCanIssue);
-    });
+    return Boolean(permissions.canIssue);
 };
 
 export const getBoostPermissions = async (
@@ -619,14 +691,24 @@ export const getBoostPermissions = async (
                 { identifier: 'targetBoost' },
             ],
         })
-        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' })
+        // Match defaultRole for boost-level default permissions
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'targetBoost' },
+                Boost.getRelationshipByAlias('defaultRole'),
+                { model: Role, identifier: 'defaultRole' },
+            ],
+        });
 
     const result = convertQueryResultToPropertiesObjectArray<{
         role: BoostPermissions;
         hasRole: BoostPermissions & { roleId: string };
         parentRole: BoostPermissions;
         parentHasRole: BoostPermissions & { roleId: string };
-    }>(await query.return('role, hasRole, parentRole, parentHasRole').run());
+        defaultRole: BoostPermissions;
+    }>(await query.return('role, hasRole, parentRole, parentHasRole, defaultRole').run());
 
     if (
         ensure &&
@@ -638,6 +720,10 @@ export const getBoostPermissions = async (
                 !result[0]?.parentHasRole))
     )
         await giveProfileEmptyPermissions(profile, boost);
+
+    // Get defaultRole permissions as the base (if any)
+    const defaultRolePermissions = result[0]?.defaultRole ?? EMPTY_PERMISSIONS;
+    const basePermissions = { ...EMPTY_PERMISSIONS, ...defaultRolePermissions };
 
     const directPermissions = result.reduce(
         (permissions, { role, hasRole }) => {
@@ -681,7 +767,7 @@ export const getBoostPermissions = async (
 
             return permissions;
         },
-        { ...EMPTY_PERMISSIONS }
+        { ...basePermissions }
     );
 
     return result.reduce((permissions, { parentRole, parentHasRole }) => {
@@ -804,12 +890,10 @@ export const getConnectedBoostRecipients = async (
         domain: string;
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
-    const _query = new QueryBuilder(
-        new BindParam({
-            matchQuery: convertObjectRegExpToNeo4j(matchQuery),
-            cursor,
-        })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause: recipientWhereClause, params: queryParams } = buildWhereForQueryBuilder('recipient', convertedQuery as any);
+    
+    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         // Build connection list
         .match({
             model: Profile,
@@ -991,7 +1075,7 @@ export const getConnectedBoostRecipients = async (
             ],
         })
         .with('sender, sent, received, recipient, credential, connectionIds')
-        .where(`sent.to IN connectionIds AND ${getMatchQueryWhere('recipient')}`);
+        .where(`sent.to IN connectionIds AND ${recipientWhereClause}`);
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
@@ -1038,9 +1122,10 @@ export const countConnectedBoostRecipients = async (
         query: matchQuery = {},
     }: { includeUnacceptedBoosts?: boolean; query?: LCNProfileQuery }
 ): Promise<number> => {
-    const countQuery = new QueryBuilder(
-        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
-    )
+    const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
+    const { whereClause: countRecipientWhereClause, params: countQueryParams } = buildWhereForQueryBuilder('recipient', convertedQuery as any);
+    
+    const countQuery = new QueryBuilder(new BindParam({ ...countQueryParams }))
         // Build connection list
         .match({
             model: Profile,
@@ -1222,7 +1307,7 @@ export const countConnectedBoostRecipients = async (
             ],
         })
         .with('sender, sent, received, recipient, credential, connectionIds')
-        .where(`sent.to IN connectionIds AND ${getMatchQueryWhere('recipient')}`);
+        .where(`sent.to IN connectionIds AND ${countRecipientWhereClause}`);
 
     const result = await countQuery.return('COUNT(DISTINCT sent.to) AS count').run();
 
@@ -1257,13 +1342,15 @@ export const getBoostRecipientsWithChildren = async (
     // Convert queries for Neo4j compatibility
     const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
     const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
+    const { whereClause: boostWhereClause, params: boostQueryParams } = buildWhereForQueryBuilder('relevantBoost', boostQuery_neo4j as any);
+    const { whereClause: profileWhereClause, params: profileQueryParams } = buildWhereForQueryBuilder('recipient', profileQuery_neo4j as any);
 
     // Build the complete query that does everything in Neo4j
     const _query = new QueryBuilder(
         new BindParam({
-            boostQuery: boostQuery_neo4j,
-            profileQuery: profileQuery_neo4j,
             cursor,
+            ...boostQueryParams,
+            ...profileQueryParams,
         })
     )
         // Get parent boost and its children
@@ -1282,7 +1369,7 @@ export const getBoostRecipientsWithChildren = async (
         .with('COLLECT(DISTINCT parentBoost) + COLLECT(DISTINCT childBoost) AS allBoosts')
         .unwind('allBoosts AS relevantBoost')
         .match({ identifier: 'relevantBoost', model: Boost })
-        .where(`relevantBoost IS NOT NULL AND ${getMatchQueryWhere('relevantBoost', 'boostQuery')}`)
+        .where(`relevantBoost IS NOT NULL AND ${boostWhereClause}`)
         // Get recipients for each boost
         .match({
             related: [
@@ -1321,7 +1408,7 @@ export const getBoostRecipientsWithChildren = async (
                COLLECT(DISTINCT {relevantBoost: relevantBoost, sender: sender, sent: sent, received: received, credential: credential}) AS boostData`
         )
         // Apply profile query filtering after grouping
-        .where(getMatchQueryWhere('recipient', 'profileQuery'))
+        .where(profileWhereClause)
         // Add cursor filtering if provided
         .raw(cursor ? 'AND recipient.profileId > $cursor' : '')
         // Order by profileId and limit profiles (not individual boost relationships)
@@ -1422,9 +1509,11 @@ export const countBoostRecipientsWithChildren = async (
 ): Promise<number> => {
     const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
     const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
+    const { whereClause: countBoostWhereClause, params: countBoostQueryParams } = buildWhereForQueryBuilder('relevantBoost', boostQuery_neo4j as any);
+    const { whereClause: countProfileWhereClause, params: countProfileQueryParams } = buildWhereForQueryBuilder('recipient', profileQuery_neo4j as any);
 
     const _query = new QueryBuilder(
-        new BindParam({ boostQuery: boostQuery_neo4j, profileQuery: profileQuery_neo4j })
+        new BindParam({ ...countBoostQueryParams, ...countProfileQueryParams })
     )
         // Get parent boost and its children
         .match({ model: Boost, where: { id: boost.id }, identifier: 'parentBoost' })
@@ -1439,7 +1528,7 @@ export const countBoostRecipientsWithChildren = async (
         .with('COLLECT(DISTINCT parentBoost) + COLLECT(DISTINCT childBoost) AS allBoosts')
         .unwind('allBoosts AS relevantBoost')
         .match({ identifier: 'relevantBoost', model: Boost })
-        .where(`relevantBoost IS NOT NULL AND ${getMatchQueryWhere('relevantBoost', 'boostQuery')}`)
+        .where(`relevantBoost IS NOT NULL AND ${countBoostWhereClause}`)
         // Get recipients for each boost
         .match({
             related: [
@@ -1475,7 +1564,7 @@ export const countBoostRecipientsWithChildren = async (
         // Reduce to recipient before applying filter to ensure it doesn't attach to OPTIONAL MATCH
         .with('recipient')
         // Apply profile query filtering after WITH so it filters rows, not optional pattern
-        .where(getMatchQueryWhere('recipient', 'profileQuery'));
+        .where(countProfileWhereClause);
 
     const result = await _query.return('COUNT(DISTINCT recipient.profileId) AS count').run();
 

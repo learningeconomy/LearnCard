@@ -1,0 +1,35 @@
+import React from 'react';
+
+export const InfoIcon: React.FC<{ className?: string; fill?: string }> = ({ className, fill = 'none' }) => {
+    return (
+        <svg
+            width="30"
+            height="31"
+            viewBox="0 0 30 31"
+            fill={fill}
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+        >
+            <path
+                d="M15 26.6836C21.2132 26.6836 26.25 21.6468 26.25 15.4336C26.25 9.22039 21.2132 4.18359 15 4.18359C8.7868 4.18359 3.75 9.22039 3.75 15.4336C3.75 21.6468 8.7868 26.6836 15 26.6836Z"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M14.0625 14.4961H15V21.0586H15.9375"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M15 11.6836C15.7767 11.6836 16.4062 11.054 16.4062 10.2773C16.4062 9.50069 15.7767 8.87109 15 8.87109C14.2233 8.87109 13.5938 9.50069 13.5938 10.2773C13.5938 11.054 14.2233 11.6836 15 11.6836Z"
+                fill="currentColor"
+            />
+        </svg>
+    );
+};
+
+export default InfoIcon;

@@ -1,0 +1,90 @@
+import React from 'react';
+import moment from 'moment';
+
+import Checkmark from 'learn-card-base/svgs/Checkmark';
+import BlueCheckMark from 'apps/learn-card-app/src/components/svgs/BlueCheckMark';
+
+import { Boost } from '@learncard/types';
+
+import {
+    boostCategoryMetadata,
+    CredentialCategory,
+    useGetCurrentLCNUser,
+    useModal,
+    BoostCategoryOptionsEnum,
+} from 'learn-card-base';
+import useManagedBoost from '../../../../hooks/useManagedBoost';
+
+import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+
+type BulkParentSelectorCredentialItemProps = {
+    boost?: Boost;
+    category: BoostCategoryOptionsEnum;
+    setParentUri: React.Dispatch<React.SetStateAction<string>>;
+    parentUri?: string;
+};
+
+const BulkParentSelectorCredentialItem: React.FC<BulkParentSelectorCredentialItemProps> = ({
+    category,
+    boost,
+    setParentUri,
+    parentUri,
+}) => {
+    const { closeModal } = useModal();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+
+    const { cred, thumbImage, presentManagedBoostModal } = useManagedBoost(boost, {
+        categoryType: boostCategoryMetadata[category].credentialType as CredentialCategory,
+        disableLoadingLine: true,
+    });
+
+    const { subColor } = boostCategoryMetadata[category];
+
+    if (!cred?.name) return <></>;
+    const { createdAt } = getInfoFromCredential(cred, 'MMMM DD, YYYY', {
+        uppercaseDate: false,
+    });
+    const issueDate = moment(createdAt).format('MM/DD/YYYY');
+    const isSelected = parentUri === boost?.uri;
+
+    return (
+        <div
+            role="button"
+            onClick={() => presentManagedBoostModal()}
+            className="flex items-center gap-[10px] w-full px-2 py-3 rounded-[15px] bg-white shadow-bottom-2"
+        >
+            <div
+                className={`flex items-center  justify-center rounded-full h-[40px] w-[40px] min-h-[40px] min-w-[40px] overflow-hidden bg-${subColor}`}
+            >
+                <img
+                    src={thumbImage}
+                    alt={cred?.name}
+                    className="rounded-full object-cover h-[40px] w-[40px] min-h-[40px] min-w-[40px]"
+                />
+            </div>
+
+            <div className="flex flex-col font-poppins flex-1">
+                <h3 className="text-[16.5px] font-[600] text-grayscale-900 line-clamp-1">
+                    {cred?.name}
+                </h3>
+                <p className="text-sm text-grayscale-700 line-clamp-1 flex items-center gap-[5px]">
+                    <BlueCheckMark /> {currentLCNUser?.displayName} • {issueDate}
+                </p>
+            </div>
+            <button
+                onClick={e => {
+                    e.stopPropagation();
+                    setParentUri(boost?.uri);
+                    closeModal();
+                }}
+                className={`flex items-center justify-center rounded-full transition-colors h-[40px] w-[40px] min-h-[40px] min-w-[40px] overflow-hidden ${
+                    isSelected ? 'bg-emerald-700' : 'bg-grayscale-200'
+                }`}
+            >
+                {isSelected && <Checkmark className="w-[30px] h-[30px] text-white" />}
+            </button>
+        </div>
+    );
+};
+
+export default BulkParentSelectorCredentialItem;

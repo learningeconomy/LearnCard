@@ -424,11 +424,28 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.blocked.query();
             },
 
-            sendCredential: async (_learnCard, profileId, vc, encrypt = true) => {
+            sendCredential: async (_learnCard, profileId, vc, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
-                if (!encrypt) {
-                    return client.credential.sendCredential.mutate({ profileId, credential: vc });
+                // Handle backward compatibility: if metadataOrEncrypt is a boolean, it's the encrypt flag
+                let metadata: Record<string, unknown> | undefined;
+                let shouldEncrypt = true;
+
+                if (typeof metadataOrEncrypt === 'boolean') {
+                    shouldEncrypt = metadataOrEncrypt;
+                } else if (metadataOrEncrypt !== undefined) {
+                    metadata = metadataOrEncrypt;
+                    shouldEncrypt = encrypt ?? true;
+                } else {
+                    shouldEncrypt = encrypt ?? true;
+                }
+
+                if (!shouldEncrypt) {
+                    return client.credential.sendCredential.mutate({
+                        profileId,
+                        credential: vc,
+                        metadata,
+                    });
                 }
 
                 const target = await _learnCard.invoke.getProfile(profileId);
@@ -440,7 +457,11 @@ export async function getLearnCardNetworkPlugin(
                     target.did,
                 ]);
 
-                return client.credential.sendCredential.mutate({ profileId, credential });
+                return client.credential.sendCredential.mutate({
+                    profileId,
+                    credential,
+                    metadata,
+                });
             },
             acceptCredential: async (_learnCard, uri, options) => {
                 await ensureUser();
@@ -517,21 +538,43 @@ export async function getLearnCardNetworkPlugin(
 
             createBoost: async (_learnCard, credential, metadata) => {
                 await ensureUser();
+                const { skills, ...rest } = metadata ?? {};
 
-                return client.boost.createBoost.mutate({ credential, ...metadata });
+                const payload: any = { credential, ...rest };
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+
+                return client.boost.createBoost.mutate(payload);
             },
             createChildBoost: async (_learnCard, parentUri, credential, metadata) => {
                 await ensureUser();
+                const { skills, ...restMetadata } = metadata || {};
 
-                return client.boost.createChildBoost.mutate({
-                    parentUri,
-                    boost: { credential, ...metadata },
-                });
+                const payload: any = { parentUri, boost: { credential, ...restMetadata } };
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+
+                return client.boost.createChildBoost.mutate(payload);
             },
             getBoost: async (_learnCard, uri) => {
                 await ensureUser();
 
                 return client.boost.getBoost.query({ uri });
+            },
+            getBoostFrameworks: async (_learnCard, uri, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const { limit, cursor, query } = options ?? {};
+
+                return client.boost.getBoostFrameworks.query({ uri, limit, cursor, query });
+            },
+            getSkillsAvailableForBoost: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getSkillsAvailableForBoost.query({ uri });
+            },
+            searchSkillsAvailableForBoost: async (_learnCard, uri, query, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.searchSkillsAvailableForBoost.query({ uri, query, ...options });
             },
             getBoosts: async (_learnCard, query) => {
                 console.warn(
@@ -725,6 +768,21 @@ export async function getLearnCardNetworkPlugin(
                     updates: { ...(credential && { credential }), ...updates },
                 });
             },
+            attachFrameworkToBoost: async (_learnCard, boostUri, frameworkId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.attachFrameworkToBoost.mutate({ boostUri, frameworkId });
+            },
+            detachFrameworkFromBoost: async (_learnCard, boostUri, frameworkId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.detachFrameworkFromBoost.mutate({ boostUri, frameworkId });
+            },
+            alignBoostSkills: async (_learnCard, boostUri, skills) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.alignBoostSkills.mutate({ boostUri, skills } as any);
+            },
             getBoostAdmins: async (_learnCard, uri, options = {}) => {
                 await ensureUser();
 
@@ -897,6 +955,67 @@ export async function getLearnCardNetworkPlugin(
                 return client.boost.claimBoostWithLink.mutate({ boostUri, challenge });
             },
 
+            send: async (_learnCard, input) => {
+                await ensureUser();
+
+                if (input.type === 'boost') {
+                    const canIssueLocally = 'issueCredential' in _learnCard.invoke;
+
+                    if (canIssueLocally && input.templateUri) {
+                        const result = await _learnCard.invoke.resolveFromLCN(input.templateUri);
+                        const data = await UnsignedVCValidator.spa(result);
+
+                        if (data.success) {
+                            let targetDid: string;
+
+                            if (input.recipient.startsWith('did:')) {
+                                targetDid = input.recipient;
+                            } else {
+                                const targetProfile = await _learnCard.invoke.getProfile(
+                                    input.recipient
+                                );
+                                if (!targetProfile) return client.boost.send.mutate(input);
+                                targetDid = targetProfile.did;
+                            }
+
+                            let boost = data.data;
+
+                            if (isVC2Format(boost)) {
+                                boost.validFrom = new Date().toISOString();
+                            } else {
+                                boost.issuanceDate = new Date().toISOString();
+                            }
+
+                            boost.issuer = _learnCard.id.did();
+
+                            if (Array.isArray(boost.credentialSubject)) {
+                                boost.credentialSubject = boost.credentialSubject.map(subject => ({
+                                    ...subject,
+                                    id: targetDid,
+                                }));
+                            } else {
+                                boost.credentialSubject = {
+                                    ...boost.credentialSubject,
+                                    id: targetDid,
+                                };
+                            }
+
+                            if (boost?.type?.includes('BoostCredential'))
+                                boost.boostId = input.templateUri;
+
+                            const signedCredential = await _learnCard.invoke.issueCredential(boost);
+
+                            return client.boost.send.mutate({
+                                ...input,
+                                signedCredential,
+                            });
+                        }
+                    }
+                }
+
+                return client.boost.send.mutate(input);
+            },
+
             createContract: async (_learnCard, contract) => {
                 await ensureUser();
 
@@ -1042,6 +1161,100 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            sendAiInsightsContractRequest: async (
+                _learnCard,
+                contractUri,
+                targetProfileId,
+                shareLink
+            ) => {
+                await ensureUser();
+
+                return client.contracts.sendAiInsightsContractRequest.mutate({
+                    contractUri,
+                    targetProfileId,
+                    shareLink,
+                });
+            },
+
+            sendAiInsightShareRequest: async (
+                _learnCard,
+                targetProfileId,
+                shareLink,
+                childProfileId
+            ) => {
+                await ensureUser();
+
+                return client.contracts.sendAiInsightShareRequest.mutate({
+                    targetProfileId,
+                    shareLink,
+                    childProfileId,
+                });
+            },
+
+            getContractSentRequests: async (_learnCard, contractUri) => {
+                await ensureUser();
+
+                return client.contracts.getContractSentRequests.query({
+                    contractUri,
+                });
+            },
+
+            getRequestStatusForProfile: async (
+                _learnCard,
+                targetProfileId,
+                contractId,
+                contractUri
+            ) => {
+                await ensureUser();
+
+                return client.contracts.getRequestStatusForProfile.query({
+                    targetProfileId,
+                    contractId: contractId ?? null,
+                    contractUri: contractUri ?? null,
+                });
+            },
+
+            getAllContractRequestsForProfile: async (_learnCard, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.getAllContractRequestsForProfile.query({
+                    targetProfileId,
+                });
+            },
+
+            forwardContractRequestToProfile: async (
+                _learnCard,
+                parentProfileId,
+                targetProfileId,
+                contractUri
+            ) => {
+                await ensureUser();
+
+                return client.contracts.forwardContractRequestToProfile.mutate({
+                    parentProfileId,
+                    targetProfileId,
+                    contractUri,
+                });
+            },
+
+            markContractRequestAsSeen: async (_learnCard, contractUri, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.markContractRequestAsSeen.mutate({
+                    contractUri,
+                    targetProfileId,
+                });
+            },
+
+            cancelContractRequest: async (_learnCard, contractUri, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.cancelContractRequest.mutate({
+                    contractUri,
+                    targetProfileId,
+                });
+            },
+
             addDidMetadata: async (_learnCard, metadata) => {
                 await ensureUser();
 
@@ -1170,9 +1383,9 @@ export async function getLearnCardNetworkPlugin(
             },
             finalizeInboxCredentials: async _learnCard => {
                 await ensureUser();
-                
+
                 return client.inbox.finalize.mutate();
-            }, 
+            },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();
 
@@ -1216,44 +1429,310 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.contactMethods.removeContactMethod.mutate({ id });
             },
-            
+
+            // Skills & Skill Frameworks
+            syncFrameworkSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.syncFrameworkSkills.mutate(input);
+            },
+            listSkillTags: async (_learnCard, frameworkId, skillId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.listSkillTags.query({ frameworkId, id: skillId } as any);
+            },
+            addSkillTag: async (_learnCard, frameworkId, skillId, tag) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.addSkillTag.mutate({ frameworkId, id: skillId, tag } as any);
+            },
+            removeSkillTag: async (_learnCard, frameworkId, skillId, slug) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.removeSkillTag.mutate({
+                    frameworkId,
+                    id: skillId,
+                    slug,
+                } as any);
+            },
+            createManagedSkillFramework: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.createManaged.mutate(input);
+            },
+            createManagedSkillFrameworks: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.createManagedBatch.mutate(input);
+            },
+            createSkillFramework: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.create.mutate(input);
+            },
+            listMySkillFrameworks: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.listMine.query();
+            },
+            getSkillFrameworkById: async (_learnCard, id, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.getById.query({ id, ...options });
+            },
+            getBoostsThatUseFramework: async (_learnCard, frameworkId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.getBoostsThatUseFramework.query({
+                    id: frameworkId,
+                    ...options,
+                });
+            },
+            countBoostsThatUseFramework: async (_learnCard, frameworkId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.countBoostsThatUseFramework.query({
+                    id: frameworkId,
+                    ...options,
+                });
+            },
+            getFrameworkSkillTree: async (_learnCard, frameworkId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.getFrameworkSkillTree.query({ id: frameworkId, ...options });
+            },
+            getSkillChildren: async (_learnCard, frameworkId, skillId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.getSkillChildrenTree.query({
+                    frameworkId,
+                    id: skillId,
+                    ...options,
+                });
+            },
+            searchFrameworkSkills: async (_learnCard, frameworkId, query, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.searchFrameworkSkills.query({
+                    id: frameworkId,
+                    query,
+                    ...options,
+                });
+            },
+            updateSkillFramework: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.update.mutate(input);
+            },
+            deleteSkillFramework: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.delete.mutate({ id });
+            },
+            replaceSkillFrameworkSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.replaceSkills.mutate(input);
+            },
+            countSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.countSkills.query(input);
+            },
+            getFullSkillTree: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.getFullSkillTree.query(input);
+            },
+            getSkillPath: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.getSkillPath.query(input);
+            },
+            getSkillFrameworkAdmins: async (_learnCard, frameworkId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.listFrameworkAdmins.query({ frameworkId });
+            },
+            addSkillFrameworkAdmin: async (_learnCard, frameworkId, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.addFrameworkAdmin.mutate({ frameworkId, profileId });
+            },
+            removeSkillFrameworkAdmin: async (_learnCard, frameworkId, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.removeFrameworkAdmin.mutate({
+                    frameworkId,
+                    profileId,
+                });
+            },
+            getSkill: async (_learnCard, frameworkId, skillId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.getSkill.query({ frameworkId, id: skillId });
+            },
+            createSkill: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.create.mutate(input);
+            },
+            createSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.createMany.mutate(input);
+            },
+            updateSkill: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.update.mutate(input);
+            },
+            deleteSkill: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.delete.mutate(input);
+            },
+
             // Integrations
             addIntegration: async (_learnCard, integration) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.addIntegration.mutate(integration);
             },
             getIntegration: async (_learnCard, id) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.getIntegration.query({ id });
             },
             getIntegrations: async (_learnCard, options = {}) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.getIntegrations.query(options);
             },
             countIntegrations: async (_learnCard, options = {}) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.countIntegrations.query(options);
             },
             updateIntegration: async (_learnCard, id, updates) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.updateIntegration.mutate({ id, updates });
             },
             deleteIntegration: async (_learnCard, id) => {
-                await ensureUser()
+                await ensureUser();
 
                 return client.integrations.deleteIntegration.mutate({ id });
             },
-            associateIntegrationWithSigningAuthority: async (_learnCard, integrationId, endpoint, name, did, isPrimary) => {
-                await ensureUser()
+            associateIntegrationWithSigningAuthority: async (
+                _learnCard,
+                integrationId,
+                endpoint,
+                name,
+                did,
+                isPrimary
+            ) => {
+                await ensureUser();
 
-                return client.integrations.associateIntegrationWithSigningAuthority.mutate({ integrationId, endpoint, name, did, isPrimary });
+                return client.integrations.associateIntegrationWithSigningAuthority.mutate({
+                    integrationId,
+                    endpoint,
+                    name,
+                    did,
+                    isPrimary,
+                });
             },
- 
+
+            // App Store
+            createAppStoreListing: async (_learnCard, integrationId, listing) => {
+                await ensureUser();
+
+                return client.appStore.createListing.mutate({ integrationId, listing });
+            },
+
+            getAppStoreListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.getListing.query({ listingId });
+            },
+
+            updateAppStoreListing: async (_learnCard, listingId, updates) => {
+                await ensureUser();
+
+                return client.appStore.updateListing.mutate({ listingId, updates });
+            },
+
+            deleteAppStoreListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.deleteListing.mutate({ listingId });
+            },
+
+            submitAppStoreListingForReview: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.submitForReview.mutate({ listingId });
+            },
+
+            getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {
+                await ensureUser();
+
+                return client.appStore.getListingsForIntegration.query({
+                    integrationId,
+                    ...options,
+                });
+            },
+
+            countListingsForIntegration: async (_learnCard, integrationId) => {
+                await ensureUser();
+
+                return client.appStore.countListingsForIntegration.query({ integrationId });
+            },
+
+            browseAppStore: async (_learnCard, options) => {
+                return client.appStore.browseListedApps.query(options);
+            },
+
+            getPublicAppStoreListing: async (_learnCard, listingId) => {
+                return client.appStore.getPublicListing.query({ listingId });
+            },
+
+            getAppStoreListingInstallCount: async (_learnCard, listingId) => {
+                return client.appStore.getListingInstallCount.query({ listingId });
+            },
+
+            installApp: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.installApp.mutate({ listingId });
+            },
+
+            uninstallApp: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.uninstallApp.mutate({ listingId });
+            },
+
+            getInstalledApps: async (_learnCard, options = {}) => {
+                await ensureUser();
+
+                return client.appStore.getInstalledApps.query(options);
+            },
+
+            countInstalledApps: async _learnCard => {
+                await ensureUser();
+
+                return client.appStore.countInstalledApps.query();
+            },
+
+            isAppInstalled: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.isAppInstalled.query({ listingId });
+            },
+
+            isAppStoreAdmin: async _learnCard => {
+                await ensureUser();
+
+                return client.appStore.isAdmin.query();
+            },
+
+            adminUpdateListingStatus: async (_learnCard, listingId, status) => {
+                await ensureUser();
+
+                return client.appStore.adminUpdateListingStatus.mutate({ listingId, status });
+            },
+
+            adminUpdatePromotionLevel: async (_learnCard, listingId, promotionLevel) => {
+                await ensureUser();
+
+                return client.appStore.adminUpdatePromotionLevel.mutate({
+                    listingId,
+                    promotionLevel,
+                });
+            },
+
+            adminGetAllListings: async (_learnCard, options) => {
+                await ensureUser();
+
+                return client.appStore.adminGetAllListings.query(options);
+            },
+
             resolveFromLCN: async (_learnCard, uri) => {
                 const result = await client.storage.resolve.query({ uri });
 

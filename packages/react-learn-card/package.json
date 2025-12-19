@@ -1,6 +1,6 @@
 {
     "name": "@learncard/react",
-    "version": "2.8.55",
+    "version": "2.9.2",
     "description": "",
     "main": "dist/cjs",
     "module": "dist/esm",
@@ -48,7 +48,7 @@
         "chromatic": "^6.5.4",
         "css-loader": "^6.7.1",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.14.38",
+        "esbuild": "^0.27.1",
         "esbuild-jest": "^0.5.0",
         "glob": "^8.0.3",
         "happy-dom": "^14.5.1",
@@ -74,11 +74,18 @@
         "pretty-bytes": "^6.0.0",
         "qrcode.react": "^3.0.2",
         "react-barcode": "^1.4.5",
-        "react-flip-toolkit": "^7.1.0",
-        "tailwind-scrollbar-hide": "^1.1.7"
+        "react-flip-toolkit": "^7.1.0"
     },
     "peerDependencies": {
         "react": "^18.0.0",
         "react-dom": "^18.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/react-learn-card/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

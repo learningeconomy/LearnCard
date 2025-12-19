@@ -1,5 +1,234 @@
 # learn-card-core
 
+## 2.9.0
+
+### Minor Changes
+
+-   [#895](https://github.com/learningeconomy/LearnCard/pull/895) [`bb6749d4cd123ca1fcee8d6f657861ae77a614a2`](https://github.com/learningeconomy/LearnCard/commit/bb6749d4cd123ca1fcee8d6f657861ae77a614a2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add generic `send` method for ergonomic credential sending
+
+    **Features:**
+
+    -   New `send` method that auto-issues credentials from boost templates
+    -   Supports client-side credential issuance when available, falls back to signing authority
+    -   Contract-aware: automatically routes through consent flow when recipient has consented
+    -   Creates `RELATED_TO` relationship between newly created boosts and contracts
+
+    **Usage:**
+
+    ```typescript
+    // Send using existing boost template
+    await lc.invoke.send({
+        type: 'boost',
+        recipient: 'userProfileId',
+        templateUri: 'urn:lc:boost:...',
+    });
+
+    // Send by creating a new boost
+    await lc.invoke.send({
+        type: 'boost',
+        recipient: 'userProfileId',
+        template: { credential: unsignedVC },
+        contractUri: 'urn:lc:contract:...', // optional
+    });
+    ```
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.1
+    -   @learncard/helpers@1.2.1
+    -   @learncard/network-brain-client@2.5.2
+
+## 2.8.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.1
+
+## 2.8.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+### Patch Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - feat: App Store CRUD & Partner Portal
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/network-brain-client@2.5.0
+    -   @learncard/helpers@1.2.0
+    -   @learncard/core@9.4.0
+
+## 2.7.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.19
+
+## 2.7.6
+
+### Patch Changes
+
+-   [#867](https://github.com/learningeconomy/LearnCard/pull/867) [`d04dc8022457ed50c65c2eb878929d0e5653c91a`](https://github.com/learningeconomy/LearnCard/commit/d04dc8022457ed50c65c2eb878929d0e5653c91a) Thanks [@gerardopar](https://github.com/gerardopar)! - Lc 1406 insights
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.18
+
+## 2.7.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.17
+
+## 2.7.4
+
+### Patch Changes
+
+-   [#855](https://github.com/learningeconomy/LearnCard/pull/855) [`6d2769d0a864cac2d664657a5d78f743641e67ec`](https://github.com/learningeconomy/LearnCard/commit/6d2769d0a864cac2d664657a5d78f743641e67ec) Thanks [@gerardopar](https://github.com/gerardopar)! - Add metadata support on acceptCredential
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.16
+
+## 2.7.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.44
+    -   @learncard/helpers@1.1.32
+    -   @learncard/network-brain-client@2.4.15
+
+## 2.7.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.14
+
+## 2.7.1
+
+### Patch Changes
+
+-   [#851](https://github.com/learningeconomy/LearnCard/pull/851) [`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2) Thanks [@gerardopar](https://github.com/gerardopar)! - Add arbitrary metadata support when sending credentials that gets plumbed through to the notification payload
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.13
+    -   @learncard/core@9.3.43
+    -   @learncard/helpers@1.1.31
+
+## 2.7.0
+
+### Minor Changes
+
+-   [#848](https://github.com/learningeconomy/LearnCard/pull/848) [`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add comprehensive Skills & Skill Frameworks system to LearnCard Network
+
+    This introduces a complete skill taxonomy system spanning the LearnCard Network plugin, brain service, and shared types. Organizations can now create custom skill frameworks, organize skills hierarchically, attach frameworks to Boosts, and align specific skills to credentials.
+
+    ## Core Features
+
+    ### Skill Framework Management
+
+    -   **Create Managed Frameworks**: Users can create skill frameworks with metadata (name, description, status)
+    -   **Framework Ownership**: Frameworks are linked to profiles via `MANAGES` relationship for access control
+    -   **Framework Queries**: List, search, and filter frameworks by various criteria
+    -   **External Provider Sync**: Optional integration with external skills services
+
+    ### Hierarchical Skill Organization
+
+    -   **Create Skills**: Add individual skills with statement, description, and code to frameworks
+    -   **Parent-Child Relationships**: Build skill hierarchies using `IS_CHILD_OF` relationships
+    -   **Framework Containment**: Skills linked to frameworks via `CONTAINS` relationships
+    -   **Bulk Operations**: Support for creating multiple skills and frameworks efficiently
+
+    ### Boost Integration
+
+    -   **Attach Frameworks**: Link skill frameworks to Boosts using `USES_FRAMEWORK` relationships
+    -   **Skill Alignment**: Align specific skills to Boosts via `ALIGNED_TO` relationships
+    -   **Ancestor Traversal**: Query skills from frameworks attached to a boost or its ancestors
+    -   **Permission Checks**: Validates boost admin rights before allowing framework/skill operations
+
+    ## API Methods Added
+
+    ### Plugin Methods
+
+    -   `createManagedSkillFramework()` - Create a new skill framework
+    -   `createManagedSkillFrameworks()` - Bulk create frameworks
+    -   `createSkill()` - Add a skill to a framework
+    -   `createSkills()` - Bulk create skills
+    -   `attachFrameworkToBoost()` - Link framework to boost
+    -   `detachFrameworkFromBoost()` - Remove framework from boost
+    -   `alignBoostSkills()` - Align specific skills to boost
+    -   `getSkillsAvailableForBoost()` - Query alignable skills
+    -   `searchSkillsAvailableForBoost()` - Search skills for boost
+    -   `getBoostFrameworks()` - List frameworks attached to boost
+
+    ### Brain Service Routes
+
+    -   `skillFrameworks.createManaged` - Create framework with MANAGES relationship
+    -   `skillFrameworks.listMine` - Query user's managed frameworks
+    -   `skillFrameworks.update` - Update framework metadata
+    -   `skills.create` - Create skills with hierarchy support
+    -   `skills.update` - Update skill metadata
+    -   `skills.searchFrameworkSkills` - Search within framework
+    -   `boost.attachFrameworkToBoost` - Establish USES_FRAMEWORK relationship
+    -   `boost.alignBoostSkills` - Create ALIGNED_TO relationships
+    -   `boost.getSkillsAvailableForBoost` - Graph traversal for available skills
+
+    ## Type System
+
+    ### New Types & Validators
+
+    -   `SkillFrameworkValidator` / `SkillFrameworkType` - Framework structure
+    -   `SkillValidator` / `SkillType` - Individual skill structure
+    -   `SkillFrameworkStatus` - Framework lifecycle states
+    -   `CreateManagedSkillFrameworkInput` - Framework creation params
+    -   `SkillFrameworkQuery` - Framework search parameters
+
+    ## Graph Database Schema
+
+    ### New Relationships
+
+    -   `(Profile)-[:MANAGES]->(SkillFramework)` - Framework ownership
+    -   `(SkillFramework)-[:CONTAINS]->(Skill)` - Framework-skill membership
+    -   `(Skill)-[:IS_CHILD_OF]->(Skill)` - Hierarchical skill organization
+    -   `(Boost)-[:USES_FRAMEWORK]->(SkillFramework)` - Framework attachment
+    -   `(Boost)-[:ALIGNED_TO]->(Skill)` - Skill alignment for credentials
+
+    ### Access Layer Methods
+
+    -   `createSkillFrameworkNode()` - Persist framework with MANAGES relationship
+    -   `createSkill()` - Create skill with CONTAINS and optional IS_CHILD_OF relationships
+    -   `setBoostUsesFramework()` - Establish framework attachment
+    -   `addAlignedSkillsToBoost()` - Batch create ALIGNED_TO relationships
+    -   `getFrameworkSkillsAvailableForBoost()` - Traverse graph for available skills
+
+    This system enables rich skill-based credential metadata, allowing organizations to categorize and align credentials with industry-standard or custom skill taxonomies.
+
+### Patch Changes
+
+-   Updated dependencies [[`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357)]:
+    -   @learncard/helpers@1.1.30
+    -   @learncard/network-brain-client@2.4.12
+    -   @learncard/core@9.3.42
+
+## 2.6.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.4.11
+
 ## 2.6.11
 
 ### Patch Changes

@@ -9,11 +9,17 @@ import {
 import { SentCredentialInfo } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
+import { inflateObject } from '@helpers/objects.helpers';
 
 import { CredentialType } from 'types/credential';
 import { ProfileType } from 'types/profile';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { getIdFromUri } from '@helpers/uri.helpers';
+
+const inflateRelationshipProperties = (
+    properties: Record<string, unknown>
+): Record<string, unknown> & { metadata?: Record<string, unknown> } =>
+    inflateObject(properties) as Record<string, unknown> & { metadata?: Record<string, unknown> };
 
 export const getCredentialById = async (id: string): Promise<CredentialInstance | null> => {
     return Credential.findOne({ where: { id } });
@@ -60,13 +66,21 @@ export const getReceivedCredentialsForProfile = async (
         received: CredentialRelationships['credentialReceived']['RelationshipProperties'];
     }>(await query.return('sent, credential, received').limit(limit).run());
 
-    return results.map(({ sent, credential, received }) => ({
-        uri: getCredentialUri(credential.id, domain),
-        to: sent.to,
-        from: received.from,
-        sent: sent.date,
-        received: received.date,
-    }));
+    return results.map(({ sent, credential, received }) => {
+        const sentProps = inflateRelationshipProperties(sent as unknown as Record<string, unknown>);
+        const receivedProps = inflateRelationshipProperties(
+            received as unknown as Record<string, unknown>
+        );
+
+        return {
+            uri: getCredentialUri(credential.id, domain),
+            to: sentProps.to as string,
+            from: receivedProps.from as string,
+            sent: sentProps.date as string,
+            received: receivedProps.date as string,
+            metadata: (receivedProps.metadata ?? sentProps.metadata) as Record<string, unknown> | undefined,
+        };
+    });
 };
 
 export const getSentCredentialsForProfile = async (
@@ -112,13 +126,23 @@ export const getSentCredentialsForProfile = async (
         received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
     }>(await query.return('source, sent, credential, received').limit(limit).run());
 
-    return results.map(({ source, sent, credential, received }) => ({
-        uri: getCredentialUri(credential.id, domain),
-        to: sent.to,
-        from: source.profileId,
-        sent: sent.date,
-        received: received?.date,
-    }));
+    return results.map(({ source, sent, credential, received }) => {
+        const sentProps = inflateRelationshipProperties(sent as unknown as Record<string, unknown>);
+        const receivedProps = received
+            ? inflateRelationshipProperties(received as unknown as Record<string, unknown>)
+            : undefined;
+
+        return {
+            uri: getCredentialUri(credential.id, domain),
+            to: sentProps.to as string,
+            from: source.profileId,
+            sent: sentProps.date as string,
+            received: receivedProps?.date as string | undefined,
+            metadata: (sentProps.metadata ?? receivedProps?.metadata) as
+                | Record<string, unknown>
+                | undefined,
+        };
+    });
 };
 
 export const getIncomingCredentialsForProfile = async (
@@ -158,10 +182,17 @@ export const getIncomingCredentialsForProfile = async (
             .run()
     );
 
-    return results.map(({ source, relationship, credential }) => ({
-        uri: getCredentialUri(credential.id, domain),
-        to: relationship.to,
-        from: source.profileId,
-        sent: relationship.date,
-    }));
+    return results.map(({ source, relationship, credential }) => {
+        const relationshipProps = inflateRelationshipProperties(
+            relationship as unknown as Record<string, unknown>
+        );
+
+        return {
+            uri: getCredentialUri(credential.id, domain),
+            to: relationshipProps.to as string,
+            from: source.profileId,
+            sent: relationshipProps.date as string,
+            metadata: relationshipProps.metadata as Record<string, unknown> | undefined,
+        };
+    });
 };

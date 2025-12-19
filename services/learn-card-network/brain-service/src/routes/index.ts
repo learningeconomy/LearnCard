@@ -121,14 +121,14 @@ export const createContext = async (
                             domain,
                         };
                     }
-                // If the user is using a real auth grant i.e. an API Token.
+                    // If the user is using a real auth grant i.e. an API Token.
                 } else if (challenge?.includes(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)) {
                     const { isChallengeValid: _isChallengeValid, scope: _scope } =
                         await isAuthGrantChallengeValidForDID(challenge, did);
 
                     isChallengeValid = _isChallengeValid;
                     scope = _scope;
-                // If the user is using a real challenge signed by their private key.
+                    // If the user is using a real challenge signed by their private key.
                 } else {
                     const cacheResponse = await isChallengeValidForDid(did, challenge);
                     await invalidateChallengeForDid(did, challenge);
@@ -186,7 +186,17 @@ export const didRoute = openRoute.use(async ({ ctx, next }) => {
             });
         }
 
-        did = Array.isArray(didDoc.controller) ? didDoc.controller[0] : didDoc.controller;
+        const controller = Array.isArray(didDoc.controller)
+            ? didDoc.controller.at(0)
+            : didDoc.controller;
+
+        if (!controller) {
+            return next({
+                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileType | null } },
+            });
+        }
+
+        did = controller;
     }
 
     const profile = await getProfileByDid(did);

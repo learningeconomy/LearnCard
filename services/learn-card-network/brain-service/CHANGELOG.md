@@ -1,5 +1,286 @@
 # @learncard/network-brain-service
 
+## 3.9.0
+
+### Minor Changes
+
+-   [#895](https://github.com/learningeconomy/LearnCard/pull/895) [`bb6749d4cd123ca1fcee8d6f657861ae77a614a2`](https://github.com/learningeconomy/LearnCard/commit/bb6749d4cd123ca1fcee8d6f657861ae77a614a2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add generic `send` method for ergonomic credential sending
+
+    **Features:**
+
+    -   New `send` method that auto-issues credentials from boost templates
+    -   Supports client-side credential issuance when available, falls back to signing authority
+    -   Contract-aware: automatically routes through consent flow when recipient has consented
+    -   Creates `RELATED_TO` relationship between newly created boosts and contracts
+
+    **Usage:**
+
+    ```typescript
+    // Send using existing boost template
+    await lc.invoke.send({
+        type: 'boost',
+        recipient: 'userProfileId',
+        templateUri: 'urn:lc:boost:...',
+    });
+
+    // Send by creating a new boost
+    await lc.invoke.send({
+        type: 'boost',
+        recipient: 'userProfileId',
+        template: { credential: unsignedVC },
+        contractUri: 'urn:lc:contract:...', // optional
+    });
+    ```
+
+### Patch Changes
+
+-   [#898](https://github.com/learningeconomy/LearnCard/pull/898) [`3727c732ad54b4a8ccb89c6354291799e953c8ab`](https://github.com/learningeconomy/LearnCard/commit/3727c732ad54b4a8ccb89c6354291799e953c8ab) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add Default Permissions to Boosts
+
+-   Updated dependencies [[`3727c732ad54b4a8ccb89c6354291799e953c8ab`](https://github.com/learningeconomy/LearnCard/commit/3727c732ad54b4a8ccb89c6354291799e953c8ab), [`bb6749d4cd123ca1fcee8d6f657861ae77a614a2`](https://github.com/learningeconomy/LearnCard/commit/bb6749d4cd123ca1fcee8d6f657861ae77a614a2)]:
+    -   @learncard/types@5.11.0
+    -   @learncard/core@9.4.1
+    -   @learncard/helpers@1.2.1
+    -   @learncard/did-web-plugin@1.1.1
+    -   @learncard/didkey-plugin@1.1.1
+    -   @learncard/didkit-plugin@1.6.1
+    -   @learncard/encryption-plugin@1.1.1
+    -   @learncard/learn-card-plugin@1.2.1
+    -   @learncard/vc-plugin@1.3.1
+    -   @learncard/vc-templates-plugin@1.1.1
+    -   @learncard/crypto-plugin@1.1.1
+    -   @learncard/expiration-plugin@1.2.1
+
+## 3.8.1
+
+### Patch Changes
+
+-   [#893](https://github.com/learningeconomy/LearnCard/pull/893) [`4b1d40356ffd974915396fbee05d656f6c16f9c0`](https://github.com/learningeconomy/LearnCard/commit/4b1d40356ffd974915396fbee05d656f6c16f9c0) Thanks [@Custard7](https://github.com/Custard7)! - fix: serverless-prune for lambdas
+
+## 3.8.0
+
+### Minor Changes
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+
+    This includes follow-up fixes for Zod v4 behavior and typing changes:
+
+    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    -   Allow `Infinity` for generational query inputs in brain-service routes.
+    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+
+-   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - feat: App Store CRUD & Partner Portal
+
+### Patch Changes
+
+-   [`bc81280ae6423a19c39f3596f3d88142b8fe0732`](https://github.com/learningeconomy/LearnCard/commit/bc81280ae6423a19c39f3596f3d88142b8fe0732) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix CI
+
+-   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9), [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    -   @learncard/did-web-plugin@1.1.0
+    -   @learncard/vc-templates-plugin@1.1.0
+    -   @learncard/helpers@1.2.0
+    -   @learncard/encryption-plugin@1.1.0
+    -   @learncard/expiration-plugin@1.2.0
+    -   @learncard/learn-card-plugin@1.2.0
+    -   @learncard/types@5.10.0
+    -   @learncard/core@9.4.0
+    -   @learncard/crypto-plugin@1.1.0
+    -   @learncard/didkey-plugin@1.1.0
+    -   @learncard/didkit-plugin@1.6.0
+    -   @learncard/vc-plugin@1.3.0
+
+## 3.7.7
+
+### Patch Changes
+
+-   [#871](https://github.com/learningeconomy/LearnCard/pull/871) [`057d9dd390e5900a0da19c097101c7b504c96183`](https://github.com/learningeconomy/LearnCard/commit/057d9dd390e5900a0da19c097101c7b504c96183) Thanks [@smurflo2](https://github.com/smurflo2)! - Remove permission check for reading framework and skill data
+
+## 3.7.6
+
+### Patch Changes
+
+-   [#867](https://github.com/learningeconomy/LearnCard/pull/867) [`d04dc8022457ed50c65c2eb878929d0e5653c91a`](https://github.com/learningeconomy/LearnCard/commit/d04dc8022457ed50c65c2eb878929d0e5653c91a) Thanks [@gerardopar](https://github.com/gerardopar)! - Lc 1406 insights
+
+## 3.7.5
+
+### Patch Changes
+
+-   [`b3314bbc1c948e762eb67048439cfbe4391eac45`](https://github.com/learningeconomy/LearnCard/commit/b3314bbc1c948e762eb67048439cfbe4391eac45) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix weird t.once error
+
+## 3.7.4
+
+### Patch Changes
+
+-   [#855](https://github.com/learningeconomy/LearnCard/pull/855) [`6d2769d0a864cac2d664657a5d78f743641e67ec`](https://github.com/learningeconomy/LearnCard/commit/6d2769d0a864cac2d664657a5d78f743641e67ec) Thanks [@gerardopar](https://github.com/gerardopar)! - Add metadata support on acceptCredential
+
+## 3.7.3
+
+### Patch Changes
+
+-   Updated dependencies [[`cb518c2f15b8257eb07fa2c606f52dd3304bc9ea`](https://github.com/learningeconomy/LearnCard/commit/cb518c2f15b8257eb07fa2c606f52dd3304bc9ea)]:
+    -   @learncard/types@5.9.2
+    -   @learncard/vc-templates-plugin@1.0.71
+    -   @learncard/core@9.3.44
+    -   @learncard/helpers@1.1.32
+    -   @learncard/did-web-plugin@1.0.81
+    -   @learncard/didkey-plugin@1.0.55
+    -   @learncard/didkit-plugin@1.5.37
+    -   @learncard/encryption-plugin@1.0.29
+    -   @learncard/learn-card-plugin@1.1.66
+    -   @learncard/vc-plugin@1.2.7
+    -   @learncard/expiration-plugin@1.1.68
+    -   @learncard/crypto-plugin@1.0.55
+
+## 3.7.2
+
+### Patch Changes
+
+-   [#850](https://github.com/learningeconomy/LearnCard/pull/850) [`3c10bbf4677e783fb8080f5aea1370eb7459f088`](https://github.com/learningeconomy/LearnCard/commit/3c10bbf4677e783fb8080f5aea1370eb7459f088) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Improve auto-connect behavior and fix Cypher aggregation
+
+    -   Connect recipients across descendant boosts when a parent boost has `autoConnectRecipients` enabled.
+    -   Fix Cypher aggregation in write-time connection computation by splitting collection steps.
+    -   Store `CONNECTED_WITH` sources as `boost:<parentId>` so toggling `autoConnectRecipients` off removes only those edges.
+    -   Slightly more work at write-time to simplify and speed up read-time connections.
+
+## 3.7.1
+
+### Patch Changes
+
+-   [#851](https://github.com/learningeconomy/LearnCard/pull/851) [`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2) Thanks [@gerardopar](https://github.com/gerardopar)! - Add arbitrary metadata support when sending credentials that gets plumbed through to the notification payload
+
+-   Updated dependencies [[`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2)]:
+    -   @learncard/types@5.9.1
+    -   @learncard/core@9.3.43
+    -   @learncard/helpers@1.1.31
+    -   @learncard/did-web-plugin@1.0.80
+    -   @learncard/didkey-plugin@1.0.54
+    -   @learncard/didkit-plugin@1.5.36
+    -   @learncard/encryption-plugin@1.0.28
+    -   @learncard/learn-card-plugin@1.1.65
+    -   @learncard/vc-plugin@1.2.6
+    -   @learncard/vc-templates-plugin@1.0.70
+    -   @learncard/expiration-plugin@1.1.67
+    -   @learncard/crypto-plugin@1.0.54
+
+## 3.7.0
+
+### Minor Changes
+
+-   [#848](https://github.com/learningeconomy/LearnCard/pull/848) [`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add comprehensive Skills & Skill Frameworks system to LearnCard Network
+
+    This introduces a complete skill taxonomy system spanning the LearnCard Network plugin, brain service, and shared types. Organizations can now create custom skill frameworks, organize skills hierarchically, attach frameworks to Boosts, and align specific skills to credentials.
+
+    ## Core Features
+
+    ### Skill Framework Management
+
+    -   **Create Managed Frameworks**: Users can create skill frameworks with metadata (name, description, status)
+    -   **Framework Ownership**: Frameworks are linked to profiles via `MANAGES` relationship for access control
+    -   **Framework Queries**: List, search, and filter frameworks by various criteria
+    -   **External Provider Sync**: Optional integration with external skills services
+
+    ### Hierarchical Skill Organization
+
+    -   **Create Skills**: Add individual skills with statement, description, and code to frameworks
+    -   **Parent-Child Relationships**: Build skill hierarchies using `IS_CHILD_OF` relationships
+    -   **Framework Containment**: Skills linked to frameworks via `CONTAINS` relationships
+    -   **Bulk Operations**: Support for creating multiple skills and frameworks efficiently
+
+    ### Boost Integration
+
+    -   **Attach Frameworks**: Link skill frameworks to Boosts using `USES_FRAMEWORK` relationships
+    -   **Skill Alignment**: Align specific skills to Boosts via `ALIGNED_TO` relationships
+    -   **Ancestor Traversal**: Query skills from frameworks attached to a boost or its ancestors
+    -   **Permission Checks**: Validates boost admin rights before allowing framework/skill operations
+
+    ## API Methods Added
+
+    ### Plugin Methods
+
+    -   `createManagedSkillFramework()` - Create a new skill framework
+    -   `createManagedSkillFrameworks()` - Bulk create frameworks
+    -   `createSkill()` - Add a skill to a framework
+    -   `createSkills()` - Bulk create skills
+    -   `attachFrameworkToBoost()` - Link framework to boost
+    -   `detachFrameworkFromBoost()` - Remove framework from boost
+    -   `alignBoostSkills()` - Align specific skills to boost
+    -   `getSkillsAvailableForBoost()` - Query alignable skills
+    -   `searchSkillsAvailableForBoost()` - Search skills for boost
+    -   `getBoostFrameworks()` - List frameworks attached to boost
+
+    ### Brain Service Routes
+
+    -   `skillFrameworks.createManaged` - Create framework with MANAGES relationship
+    -   `skillFrameworks.listMine` - Query user's managed frameworks
+    -   `skillFrameworks.update` - Update framework metadata
+    -   `skills.create` - Create skills with hierarchy support
+    -   `skills.update` - Update skill metadata
+    -   `skills.searchFrameworkSkills` - Search within framework
+    -   `boost.attachFrameworkToBoost` - Establish USES_FRAMEWORK relationship
+    -   `boost.alignBoostSkills` - Create ALIGNED_TO relationships
+    -   `boost.getSkillsAvailableForBoost` - Graph traversal for available skills
+
+    ## Type System
+
+    ### New Types & Validators
+
+    -   `SkillFrameworkValidator` / `SkillFrameworkType` - Framework structure
+    -   `SkillValidator` / `SkillType` - Individual skill structure
+    -   `SkillFrameworkStatus` - Framework lifecycle states
+    -   `CreateManagedSkillFrameworkInput` - Framework creation params
+    -   `SkillFrameworkQuery` - Framework search parameters
+
+    ## Graph Database Schema
+
+    ### New Relationships
+
+    -   `(Profile)-[:MANAGES]->(SkillFramework)` - Framework ownership
+    -   `(SkillFramework)-[:CONTAINS]->(Skill)` - Framework-skill membership
+    -   `(Skill)-[:IS_CHILD_OF]->(Skill)` - Hierarchical skill organization
+    -   `(Boost)-[:USES_FRAMEWORK]->(SkillFramework)` - Framework attachment
+    -   `(Boost)-[:ALIGNED_TO]->(Skill)` - Skill alignment for credentials
+
+    ### Access Layer Methods
+
+    -   `createSkillFrameworkNode()` - Persist framework with MANAGES relationship
+    -   `createSkill()` - Create skill with CONTAINS and optional IS_CHILD_OF relationships
+    -   `setBoostUsesFramework()` - Establish framework attachment
+    -   `addAlignedSkillsToBoost()` - Batch create ALIGNED_TO relationships
+    -   `getFrameworkSkillsAvailableForBoost()` - Traverse graph for available skills
+
+    This system enables rich skill-based credential metadata, allowing organizations to categorize and align credentials with industry-standard or custom skill taxonomies.
+
+### Patch Changes
+
+-   Updated dependencies [[`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357)]:
+    -   @learncard/types@5.9.0
+    -   @learncard/helpers@1.1.30
+    -   @learncard/core@9.3.42
+    -   @learncard/did-web-plugin@1.0.79
+    -   @learncard/didkey-plugin@1.0.53
+    -   @learncard/didkit-plugin@1.5.35
+    -   @learncard/encryption-plugin@1.0.27
+    -   @learncard/learn-card-plugin@1.1.64
+    -   @learncard/vc-plugin@1.2.5
+    -   @learncard/vc-templates-plugin@1.0.69
+    -   @learncard/expiration-plugin@1.1.66
+    -   @learncard/crypto-plugin@1.0.53
+
+## 3.6.13
+
+### Patch Changes
+
+-   [#844](https://github.com/learningeconomy/LearnCard/pull/844) [`c00f3e3cceed125aa77bbca7d70c99cacfaae830`](https://github.com/learningeconomy/LearnCard/commit/c00f3e3cceed125aa77bbca7d70c99cacfaae830) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Iterations: Add more granular approval token tracking and error behavior
+
+-   [#846](https://github.com/learningeconomy/LearnCard/pull/846) [`56bcdc004441a84c8045a007944a394f48cb4bbc`](https://github.com/learningeconomy/LearnCard/commit/56bcdc004441a84c8045a007944a394f48cb4bbc) Thanks [@goblincore](https://github.com/goblincore)! - Send user notification email upon account approval
+
+-   [#839](https://github.com/learningeconomy/LearnCard/pull/839) [`065b250ea165339a6f964ad1b97a352015b28262`](https://github.com/learningeconomy/LearnCard/commit/065b250ea165339a6f964ad1b97a352015b28262) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Automatically lower case Signing Authority names
+
+-   [#844](https://github.com/learningeconomy/LearnCard/pull/844) [`c00f3e3cceed125aa77bbca7d70c99cacfaae830`](https://github.com/learningeconomy/LearnCard/commit/c00f3e3cceed125aa77bbca7d70c99cacfaae830) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Iterations: Add more granular approval token tracking and error behavior
+
+-   Updated dependencies [[`ff96c92a9066be7d292b7206d3b4285e8612486a`](https://github.com/learningeconomy/LearnCard/commit/ff96c92a9066be7d292b7206d3b4285e8612486a)]:
+    -   @learncard/learn-card-plugin@1.1.63
+
 ## 3.6.12
 
 ### Patch Changes

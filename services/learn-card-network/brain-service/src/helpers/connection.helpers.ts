@@ -1,7 +1,8 @@
 import { Op, QueryBuilder, Where } from 'neogma';
+import { neogma } from '@instance';
 import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
-import { Boost, Profile, Credential } from '@models';
+import { Profile } from '@models';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { FlatProfileType, ProfileType } from 'types/profile';
@@ -11,152 +12,13 @@ export const getConnections = async (
     profile: ProfileType,
     { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<ProfileType[]> => {
-    const _query = new QueryBuilder()
-        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'source' })
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'source' },
-                { ...Profile.getRelationshipByAlias('connectedWith'), direction: 'none' },
-                { identifier: 'directTarget', model: Profile },
-            ],
-        })
-        .with('source, COLLECT(DISTINCT directTarget) AS directlyConnected')
-        .match({
-            // Other recipients of the same auto-connect boost as the source, derived via credentials
-            optional: true,
-            related: [
-                { identifier: 'source' },
-                { ...Credential.getRelationshipByAlias('credentialReceived') },
-                { model: Credential },
-                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'none' },
-                { model: Boost, where: { autoConnectRecipients: true } },
-                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'none' },
-                { model: Credential },
-                { ...Credential.getRelationshipByAlias('credentialReceived'), direction: 'none' },
-                { model: Profile, identifier: 'receivedBoostTarget' },
-            ],
-        })
-        .where(`receivedBoostTarget.profileId <> "${profile.profileId}"`)
-        .with(
-            'source, directlyConnected, COLLECT(DISTINCT receivedBoostTarget) AS receivedBoostTargets'
-        )
-        .match({
-            // Recipients of an auto-connect boost owned by the source, derived via credentials
-            optional: true,
-            related: [
-                { identifier: 'source' },
-                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
-                { model: Boost, where: { autoConnectRecipients: true } },
-                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
-                { model: Credential },
-                { ...Credential.getRelationshipByAlias('credentialReceived') },
-                { model: Profile, identifier: 'ownedBoostTarget' },
-            ],
-        })
-        .with(
-            'source, directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
-        )
-        .match({
-            // Creator of an auto-connect boost for a credential received by the source, via credentials
-            optional: true,
-            related: [
-                { model: Profile, identifier: 'otherOwnedBoostTarget' },
-                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
-                { model: Boost, where: { autoConnectRecipients: true } },
-                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
-                { model: Credential },
-                { ...Credential.getRelationshipByAlias('credentialReceived') },
-                { identifier: 'source' },
-            ],
-        })
-        .where(`otherOwnedBoostTarget.profileId <> "${profile.profileId}"`)
-        .with(
-            'source, directlyConnected, receivedBoostTargets, ownedBoostTargets, COLLECT(DISTINCT otherOwnedBoostTarget) AS otherOwnedBoostTargets'
-        )
-        // Explicit auto-connect relationships: recipients of boosts owned by source
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'source' },
-                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
-                { model: Boost, identifier: 'explicitOwnedBoost' },
-                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
-                { model: Profile, identifier: 'explicitOwnedTarget' },
-            ],
-        })
-        .with(
-            'source, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, COLLECT(DISTINCT explicitOwnedTarget) AS explicitOwnedTargets'
-        )
-        // Explicit auto-connect relationships: creator of a received explicit auto-connect boost
-        .match({
-            optional: true,
-            related: [
-                { model: Profile, identifier: 'explicitOtherOwnedTarget' },
-                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
-                { model: Boost, identifier: 'explicitOtherOwnedBoost' },
-                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
-                { identifier: 'source' },
-            ],
-        })
-        .where(`explicitOtherOwnedTarget.profileId <> "${profile.profileId}"`)
-        .with(
-            'source, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, COLLECT(DISTINCT explicitOtherOwnedTarget) AS explicitOtherOwnedBoostTargets'
-        )
-        // Explicit co-recipients for the same boost when source is a credential recipient
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'source' },
-                { ...Credential.getRelationshipByAlias('credentialReceived'), direction: 'none' },
-                { model: Credential },
-                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'none' },
-                { model: Boost, where: { autoConnectRecipients: true } },
-                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
-                { model: Profile, identifier: 'explicitCoRecipientFromCred' },
-            ],
-        })
-        .where(`explicitCoRecipientFromCred.profileId <> "${profile.profileId}"`)
-        .with(
-            'source, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, explicitOtherOwnedBoostTargets, COLLECT(DISTINCT explicitCoRecipientFromCred) AS explicitCoRecipientsFromCred'
-        )
-        // Credential co-recipients for the same boost when source is an explicit recipient
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'source' },
-                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'in' },
-                { model: Boost, where: { autoConnectRecipients: true } },
-                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
-                { model: Credential },
-                { ...Credential.getRelationshipByAlias('credentialReceived') },
-                { model: Profile, identifier: 'credentialCoRecipientFromExplicit' },
-            ],
-        })
-        .where(`credentialCoRecipientFromExplicit.profileId <> "${profile.profileId}"`)
-        .with(
-            'source, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, explicitOtherOwnedBoostTargets, explicitCoRecipientsFromCred, COLLECT(DISTINCT credentialCoRecipientFromExplicit) AS credentialCoRecipientsFromExplicit'
-        )
-        // Explicit co-recipients for the same boost when source is an explicit recipient
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'source' },
-                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'in' },
-                { model: Boost, where: { autoConnectRecipients: true } },
-                { ...Boost.getRelationshipByAlias('autoConnectRecipient'), direction: 'out' },
-                { model: Profile, identifier: 'explicitCoRecipientFromExplicit' },
-            ],
-        })
-        .where(`explicitCoRecipientFromExplicit.profileId <> "${profile.profileId}"`)
-        .with(
-            'source, directlyConnected, receivedBoostTargets, ownedBoostTargets, otherOwnedBoostTargets, explicitOwnedTargets, explicitOtherOwnedBoostTargets, explicitCoRecipientsFromCred, credentialCoRecipientsFromExplicit, COLLECT(DISTINCT explicitCoRecipientFromExplicit) AS explicitCoRecipientsFromExplicit'
-        )
-        .with(
-            'directlyConnected + receivedBoostTargets + ownedBoostTargets + otherOwnedBoostTargets + explicitOwnedTargets + explicitOtherOwnedBoostTargets + explicitCoRecipientsFromCred + credentialCoRecipientsFromExplicit + explicitCoRecipientsFromExplicit AS allConnectedProfiles'
-        )
-        .unwind('allConnectedProfiles AS target')
-        .with('target');
+    const _query = new QueryBuilder().match({
+        related: [
+            { model: Profile, where: { profileId: profile.profileId } },
+            { ...Profile.getRelationshipByAlias('connectedWith'), direction: 'none' },
+            { identifier: 'target', model: Profile },
+        ],
+    });
 
     const query = cursor
         ? _query.where(
@@ -169,6 +31,182 @@ export const getConnections = async (
     );
 
     return results.map(result => inflateObject(result.target as any));
+};
+
+/**
+ * Returns a standardized key used in CONNECTED_WITH.sources for boost-based auto-connections
+ */
+export const getBoostConnectionSourceKey = (boostId: string): string => `boost:${boostId}`;
+
+/**
+ * Ensures mutual CONNECTED_WITH relationships exist between two profiles, adding the provided source key
+ */
+export const ensureMutualConnectionWithSource = async (
+    aProfileId: string,
+    bProfileId: string,
+    sourceKey: string
+): Promise<void> => {
+    if (aProfileId === bProfileId) return;
+
+    const cypher = `
+        MATCH (a:Profile { profileId: $aId }), (b:Profile { profileId: $bId })
+        MERGE (a)-[r:CONNECTED_WITH]->(b)
+        ON CREATE SET r.sources = [$key]
+        ON MATCH SET r.sources = CASE
+            WHEN r.sources IS NULL THEN [$key]
+            WHEN NOT $key IN r.sources THEN r.sources + $key
+            ELSE r.sources
+        END
+        MERGE (b)-[r2:CONNECTED_WITH]->(a)
+        ON CREATE SET r2.sources = [$key]
+        ON MATCH SET r2.sources = CASE
+            WHEN r2.sources IS NULL THEN [$key]
+            WHEN NOT $key IN r2.sources THEN r2.sources + $key
+            ELSE r2.sources
+        END
+    `;
+
+    await neogma.queryRunner.run(cypher, { aId: aProfileId, bId: bProfileId, key: sourceKey });
+};
+
+/**
+ * Bulk version of ensureMutualConnectionWithSource. Rows are boostId/targetId pairs for a single selfId
+ */
+export const ensureMutualConnectionsForRows = async (
+    selfId: string,
+    rows: Array<{ boostId: string; targetId: string }>
+): Promise<void> => {
+    if (rows.length === 0) return;
+
+    const cypher = `
+        UNWIND $rows AS row
+        WITH row, $selfId AS selfId
+        WITH row.boostId AS boostId, row.targetId AS targetId, selfId
+        WHERE targetId <> selfId
+        WITH boostId, targetId, 'boost:' + boostId AS key, selfId
+        MATCH (a:Profile { profileId: selfId }), (b:Profile { profileId: targetId })
+        MERGE (a)-[r:CONNECTED_WITH]->(b)
+        ON CREATE SET r.sources = [key]
+        ON MATCH SET r.sources = CASE
+            WHEN r.sources IS NULL THEN [key]
+            WHEN NOT key IN r.sources THEN r.sources + key
+            ELSE r.sources
+        END
+        MERGE (b)-[r2:CONNECTED_WITH]->(a)
+        ON CREATE SET r2.sources = [key]
+        ON MATCH SET r2.sources = CASE
+            WHEN r2.sources IS NULL THEN [key]
+            WHEN NOT key IN r2.sources THEN r2.sources + key
+            ELSE r2.sources
+        END
+    `;
+
+    await neogma.queryRunner.run(cypher, { selfId, rows });
+};
+
+/**
+ * Compute and persist CONNECTED_WITH edges for a credential acceptance, including:
+ * - direct and ancestor boosts with autoConnectRecipients true
+ * - target boosts from AUTO_CONNECT claim hooks (regardless of autoConnect flag)
+ * Connects to: recipients, explicit AUTO_CONNECT_RECIPIENT members, and the boost creator
+ */
+export const ensureConnectionsForCredentialAcceptance = async (
+    self: ProfileType,
+    credentialId: string
+): Promise<void> => {
+    const selfId = self.profileId;
+
+    // Rows from autoConnectRecipients=true on claim boost and its ancestors
+    const flaggedRowsQuery = `
+        MATCH (c:Credential { id: $credentialId })-[:INSTANCE_OF]->(cb:Boost)
+        OPTIONAL MATCH (pb:Boost)-[:PARENT_OF*1..]->(cb)
+        WHERE pb.autoConnectRecipients = true
+        WITH cb, COLLECT(DISTINCT pb) AS parents
+        WITH CASE WHEN cb.autoConnectRecipients THEN [cb] ELSE [] END + parents AS boosts
+        UNWIND boosts AS b
+        OPTIONAL MATCH (b)-[:PARENT_OF*1..]->(desc:Boost)
+        WITH b, COLLECT(DISTINCT desc) + [b] AS boostGroup
+        UNWIND boostGroup AS gb
+        OPTIONAL MATCH (cr:Credential)-[:INSTANCE_OF]->(gb)
+        OPTIONAL MATCH (cr)-[:CREDENTIAL_RECEIVED]->(rcpt:Profile)
+        WITH b, COLLECT(DISTINCT rcpt.profileId) AS recipientIds
+        OPTIONAL MATCH (b)-[:AUTO_CONNECT_RECIPIENT]->(exp:Profile)
+        WITH b, recipientIds, COLLECT(DISTINCT exp.profileId) AS explicitIds
+        OPTIONAL MATCH (b)-[:CREATED_BY]->(creator:Profile)
+        WITH b, recipientIds, explicitIds, COLLECT(creator.profileId) AS creatorIds
+        WITH b.id AS boostId, recipientIds + explicitIds + creatorIds AS ids
+        WITH boostId, [x IN ids WHERE x IS NOT NULL AND x <> $selfId] AS targetIds
+        UNWIND targetIds AS targetId
+        RETURN DISTINCT boostId, targetId
+    `;
+
+    // Rows from AUTO_CONNECT claim hooks regardless of autoConnectRecipients flag
+    const explicitRowsQuery = `
+        MATCH (c:Credential { id: $credentialId })-[:INSTANCE_OF]->(claimBoost:Boost)
+        MATCH (claimBoost)<-[:HOOK_FOR]-(ch:ClaimHook { type: 'AUTO_CONNECT' })-[:TARGET]->(tb:Boost)
+        WITH DISTINCT tb.id AS bid
+        MATCH (b:Boost { id: bid })
+        OPTIONAL MATCH (cr:Credential)-[:INSTANCE_OF]->(b)
+        OPTIONAL MATCH (cr)-[:CREDENTIAL_RECEIVED]->(rcpt:Profile)
+        WITH b, COLLECT(DISTINCT rcpt.profileId) AS recipientIds
+        OPTIONAL MATCH (b)-[:AUTO_CONNECT_RECIPIENT]->(exp:Profile)
+        WITH b, recipientIds, COLLECT(DISTINCT exp.profileId) AS explicitIds
+        OPTIONAL MATCH (b)-[:CREATED_BY]->(creator:Profile)
+        WITH b, recipientIds, explicitIds, COLLECT(creator.profileId) AS creatorIds
+        WITH b.id AS boostId, recipientIds + explicitIds + creatorIds AS ids
+        WITH boostId, [x IN ids WHERE x IS NOT NULL AND x <> $selfId] AS targetIds
+        UNWIND targetIds AS targetId
+        RETURN DISTINCT boostId, targetId
+    `;
+
+    const [flaggedRes, explicitRes] = await Promise.all([
+        neogma.queryRunner.run(flaggedRowsQuery, { credentialId, selfId }),
+        neogma.queryRunner.run(explicitRowsQuery, { credentialId, selfId }),
+    ]);
+
+    type Row = { boostId: string; targetId: string };
+
+    const rows: Row[] = [
+        ...((flaggedRes.records || []).map(r => ({
+            boostId: r.get('boostId') as string,
+            targetId: r.get('targetId') as string,
+        })) as Row[]),
+        ...((explicitRes.records || []).map(r => ({
+            boostId: r.get('boostId') as string,
+            targetId: r.get('targetId') as string,
+        })) as Row[]),
+    ];
+
+    // De-duplicate rows
+    const seen = new Set<string>();
+    const deduped: Row[] = [];
+    for (const row of rows) {
+        const key = `${row.boostId}::${row.targetId}`;
+        if (row.targetId === selfId) continue;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        deduped.push(row);
+    }
+
+    await ensureMutualConnectionsForRows(selfId, deduped);
+};
+
+/**
+ * Removes the given boost source from all CONNECTED_WITH edges. If an edge has no remaining sources, delete it.
+ */
+export const removeConnectionsForBoost = async (boostId: string): Promise<void> => {
+    const key = getBoostConnectionSourceKey(boostId);
+
+    const cypher = `
+        MATCH ()-[r:CONNECTED_WITH]-()
+        WHERE r.sources IS NOT NULL AND $key IN r.sources
+        SET r.sources = [x IN r.sources WHERE x <> $key]
+        WITH r
+        WHERE r.sources IS NULL OR size(r.sources) = 0
+        DELETE r
+    `;
+
+    await neogma.queryRunner.run(cypher, { key });
 };
 
 export const getPendingConnections = async (
@@ -295,21 +333,10 @@ export const connectProfiles = async (
                 target: { profileId: source.profileId },
             },
         }),
-        Profile.relateTo({
-            alias: 'connectedWith',
-            where: {
-                source: { profileId: source.profileId },
-                target: { profileId: target.profileId },
-            },
-        }),
-        Profile.relateTo({
-            alias: 'connectedWith',
-            where: {
-                source: { profileId: target.profileId },
-                target: { profileId: source.profileId },
-            },
-        }),
     ]);
+
+    // Ensure mutual connectedWith edges with a stable 'manual' source tag
+    await ensureMutualConnectionWithSource(source.profileId, target.profileId, 'manual');
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,

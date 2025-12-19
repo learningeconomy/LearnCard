@@ -18,7 +18,7 @@ import { DbContractType, FlatDbTermsType } from 'types/consentflowcontract';
 import { BoostType } from 'types/boost';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { reconsentTerms } from './update';
+import { reconsentTerms, upsertRequestedForRelationship } from './update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { sendBoost } from '@helpers/boost.helpers';
 import { getBoostUri } from '@helpers/boost.helpers';
@@ -27,6 +27,8 @@ import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getProfileByProfileId, getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { cloneDeep } from 'lodash';
+import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
+import { constructUri } from '@helpers/uri.helpers';
 
 export const setCreatorForContract = async (contract: DbContractType, profile: LCNProfile) => {
     return ConsentFlowContract.relateTo({
@@ -52,6 +54,16 @@ export const setAutoBoostForContract = async (
             signingAuthorityName: signingAuthority.name,
             issuer,
         },
+    });
+};
+
+export const setRelatedBoostForContract = async (
+    contract: DbContractType,
+    boost: BoostType
+): Promise<void> => {
+    await ConsentFlowContract.relateTo({
+        alias: 'relatedTo',
+        where: { source: { id: contract.id }, target: { id: boost.id } },
     });
 };
 
@@ -233,6 +245,13 @@ export const consentToContract = async (
                         );
                     }
 
+                    // Inject OBv3 skill alignments based on boost's framework/skills
+                    await injectObv3AlignmentsIntoCredentialForBoost(
+                        boostCredential,
+                        boost.target,
+                        domain
+                    );
+
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,
                         boostCredential,
@@ -287,16 +306,46 @@ export const consentToContract = async (
         );
     }
 
+    // TODO: Improve notification handling for consent flow contracts
+    let notificationData = {
+        title: 'New Consent Transaction',
+        body: `${consenter.displayName} has just consented to ${contract.name}!`,
+        metadata: {},
+    };
+
+    // TODO: Replace hardcoded string matching with contract type identification
+    // This should check a contract.type field instead of contract.name
+    if (contract.name === 'AI Insights') {
+        notificationData.title = `AI Insights`;
+        notificationData.body = `${consenter?.displayName} has shared their insights with you.`;
+        notificationData.metadata = {
+            type: 'AI Insight',
+            contractId: contract?.id,
+            contractUri: constructUri('contract', contract.id, domain),
+        };
+    }
+
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: consenter,
         to: contractOwner,
         message: {
-            title: 'New Consent Transaction',
-            body: `${consenter.displayName} has just consented to ${contract.name}!`,
+            title: notificationData.title,
+            body: notificationData.body,
         },
-        data: { transaction },
+        data: { transaction, metadata: notificationData.metadata },
     });
+
+    try {
+        await upsertRequestedForRelationship(
+            contract.id,
+            consenter.profileId,
+            'accepted',
+            'unseen'
+        );
+    } catch {
+        console.log('Unable to update contract request status');
+    }
 
     return result.summary.counters.containsUpdates();
 };

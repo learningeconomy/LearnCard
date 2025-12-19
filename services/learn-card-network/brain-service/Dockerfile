@@ -45,4 +45,4 @@ RUN pnpm exec nx build:docker network-brain-service
 # Expose common ports used by server
 EXPOSE 3000
 
-CMD ["sh", "-c", "cd services/learn-card-network/brain-service && node --enable-source-maps dist/docker-entry.js"]
+CMD ["sh", "-c", "cd services/learn-card-network/brain-service && node build/docker-entry.js"]

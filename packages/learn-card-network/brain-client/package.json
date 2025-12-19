@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-client",
-    "version": "2.4.10",
+    "version": "2.5.2",
     "description": "",
     "main": "dist/index.js",
     "module": "./dist/brain-client.esm.js",
@@ -15,10 +15,18 @@
         "@learncard/helpers": "workspace:*",
         "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.16.16"
+        "esbuild": "^0.27.1"
     },
     "dependencies": {
         "@learncard/network-brain-service": "workspace:*",
-        "@trpc/client": "^11.3.0"
+        "@trpc/client": "11.3.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-network/brain-client/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
     }
 }

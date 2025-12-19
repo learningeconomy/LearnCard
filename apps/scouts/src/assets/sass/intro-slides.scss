@@ -1,0 +1,57 @@
+.swiper-pagination-bullet {
+    width: 10px;
+    height: 10px;
+    text-align: center;
+    line-height: 20px;
+    font-size: 12px;
+    color: #000;
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.6) !important;
+  }
+  
+  .swiper-pagination-bullet-active {
+    color: #fff;
+    border-radius:10px;
+    width:40px;
+    background: #fff !important;
+  }
+
+  .base-gradient {
+    width:100%;
+    height: 100%;
+    position: relative;
+    background: linear-gradient(-45deg, #622599, #5a07a2, #9969C2, #622599);
+	background-size: 400% 400%;
+	animation: gradient 5s ease infinite;
+  }
+
+  .blue-gradient {
+    width:100%;
+    height: 100%;
+    position: relative;
+    background: linear-gradient(-45deg, #0449AC, #026BFF, #0094F6, #0449AC);
+    background-size: 400% 400%;
+	animation: gradient 5s ease infinite;
+  }
+
+  .green-gradient {
+    width:100%;
+    height: 100%;
+    position: relative;
+    background: linear-gradient(-45deg, #05B65D, #2CC478, #70DAA5, #05B65D);
+    background-size: 400% 400%;
+	animation: gradient 5s ease infinite;
+  }
+  
+
+  @keyframes gradient {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}

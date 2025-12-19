@@ -15,10 +15,41 @@ import {
 import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
+import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { sendNotification } from '@helpers/notifications.helpers';
 import { LCNNotificationValidator } from '@learncard/types';
 
 const server = Fastify({ maxParamLength: 5000 });
+
+server.addHook('onRequest', (request, _reply, done) => {
+    const raw = request.raw as any;
+    const decorated = request as any;
+
+    const ensureMethod = (method: 'on' | 'once' | 'off' | 'emit' | 'removeListener') => {
+        if (typeof decorated[method] === 'function') return;
+
+        if (typeof raw[method] === 'function') {
+            decorated[method] = raw[method].bind(raw);
+            return;
+        }
+
+        if (method === 'off' && typeof raw.removeListener === 'function') {
+            decorated.off = raw.removeListener.bind(raw);
+        }
+    };
+
+    ensureMethod('on');
+    ensureMethod('once');
+    ensureMethod('emit');
+    ensureMethod('removeListener');
+    ensureMethod('off');
+
+    if (decorated.socket === undefined) decorated.socket = raw.socket;
+    if (decorated.connection === undefined) decorated.connection = raw.connection;
+    if (decorated.headers === undefined) decorated.headers = raw.headers;
+
+    done();
+});
 
 server.register(fastifyCors);
 
@@ -52,6 +83,7 @@ server.register(fastifyStatic, {
 });
 
 server.register(didFastifyPlugin);
+server.register(skillsViewerFastifyPlugin);
 
 (async () => {
     try {

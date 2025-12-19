@@ -1,47 +1,51 @@
 {
-  "name": "@learncard/helpers",
-  "version": "1.1.29",
-  "description": "Shared helpers for LearnCard packages",
-  "main": "./dist/index.js",
-  "module": "./dist/helpers.esm.js",
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/helpers.d.ts --no-check",
-    "start": "aqu watch",
-    "lint": "aqu lint",
-    "lint:fix": "aqu lint --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
-  },
-  "author": "Learning Economy Foundation (www.learningeconomy.io)",
-  "license": "MIT",
-  "homepage": "https://github.com/learningeconomy/LearnCard#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/learningeconomy/LearnCard.git"
-  },
-  "bugs": {
-    "url": "https://github.com/learningeconomy/LearnCard/issues"
-  },
-  "devDependencies": {
-    "@esbuild-plugins/node-resolve": "^0.1.4",
-    "@types/jest": "^27.5.0",
-    "@types/node": "^18.7.19",
-    "aqu": "0.4.3",
-    "dts-bundle-generator": "^6.10.0",
-    "esbuild": "^0.14.38",
-    "esbuild-jest": "^0.5.0",
-    "jest": "^28.1.3",
-    "jest-environment-jsdom": "^28.1.3",
-    "shx": "^0.3.4",
-    "ts-jest": "^28.0.5"
-  },
-  "types": "./dist/helpers.d.ts",
-  "dependencies": {
-    "@learncard/types": "workspace:*",
-    "@trpc/server": "^10.45.2"
-  }
+    "name": "@learncard/helpers",
+    "version": "1.2.1",
+    "description": "Shared helpers for LearnCard packages",
+    "main": "./dist/index.js",
+    "module": "./dist/helpers.esm.js",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/helpers.d.ts --no-check",
+        "start": "aqu watch",
+        "lint": "aqu lint",
+        "lint:fix": "aqu lint --fix",
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
+    },
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "license": "MIT",
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-helpers/README.md",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
+    },
+    "devDependencies": {
+        "@esbuild-plugins/node-resolve": "^0.1.4",
+        "@types/jest": "^27.5.0",
+        "@types/node": "^18.7.19",
+        "@types/react": "^18.0.0",
+        "aqu": "0.4.3",
+        "dts-bundle-generator": "^6.10.0",
+        "esbuild": "^0.27.1",
+        "esbuild-jest": "^0.5.0",
+        "jest": "^28.1.3",
+        "jest-environment-jsdom": "^28.1.3",
+        "shx": "^0.3.4",
+        "ts-jest": "^28.0.5"
+    },
+    "types": "./dist/helpers.d.ts",
+    "dependencies": {
+        "@learncard/types": "workspace:*",
+        "@trpc/server": "11.7.1",
+        "immer": "^10.0.3",
+        "query-string": "9.3.1",
+        "use-immer": "^0.9.0"
+    }
 }
