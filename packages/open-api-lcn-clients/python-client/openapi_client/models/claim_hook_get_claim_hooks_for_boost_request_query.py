@@ -18,8 +18,8 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict
-from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_boosts_request_query_uri import BoostGetBoostsRequestQueryUri
+from typing import Any, ClassVar, Dict, List
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query_data import ClaimHookGetClaimHooksForBoostRequestQueryData
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,8 +28,8 @@ class ClaimHookGetClaimHooksForBoostRequestQuery(BaseModel):
     """
     ClaimHookGetClaimHooksForBoostRequestQuery
     """ # noqa: E501
-    type: Optional[BoostGetBoostsRequestQueryUri] = None
-    data: Optional[ClaimHookGetClaimHooksForBoostRequestQueryData] = None
+    type: BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
+    data: ClaimHookGetClaimHooksForBoostRequestQueryData
     __properties: ClassVar[List[str]] = ["type", "data"]
 
     model_config = ConfigDict(
@@ -89,7 +89,7 @@ class ClaimHookGetClaimHooksForBoostRequestQuery(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "type": BoostGetBoostsRequestQueryUri.from_dict(obj["type"]) if obj.get("type") is not None else None,
+            "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "data": ClaimHookGetClaimHooksForBoostRequestQueryData.from_dict(obj["data"]) if obj.get("data") is not None else None
         })
         return _obj

@@ -9,12 +9,12 @@ Name | Type | Description | Notes
 **credential** | **str** |  | 
 **is_signed** | **bool** |  | 
 **current_status** | **str** |  | 
+**is_accepted** | **bool** |  | [optional] 
 **expires_at** | **str** |  | 
 **created_at** | **str** |  | 
 **issuer_did** | **str** |  | 
 **webhook_url** | **str** |  | [optional] 
-**signing_authority_endpoint** | **str** |  | [optional] 
-**signing_authority_name** | **str** |  | [optional] 
+**signing_authority** | [**InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority**](InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.md) |  | [optional] 
 
 ## Example
 

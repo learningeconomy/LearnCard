@@ -20,12 +20,13 @@ from pydantic import StrictBool, StrictStr
 from typing import Optional
 from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
 from openapi_client.models.boost_get_children_profile_managers200_response import BoostGetChildrenProfileManagers200Response
-from openapi_client.models.boost_get_children_profile_managers200_response_records_inner import BoostGetChildrenProfileManagers200ResponseRecordsInner
 from openapi_client.models.boost_get_children_profile_managers_request import BoostGetChildrenProfileManagersRequest
-from openapi_client.models.profile_get_available_profiles_request import ProfileGetAvailableProfilesRequest
+from openapi_client.models.profile_get_available_profiles200_response_records_inner_manager import ProfileGetAvailableProfiles200ResponseRecordsInnerManager
 from openapi_client.models.profile_manager_create_child_profile_manager_request import ProfileManagerCreateChildProfileManagerRequest
+from openapi_client.models.profile_manager_create_child_profile_manager_request_profile import ProfileManagerCreateChildProfileManagerRequestProfile
 from openapi_client.models.profile_manager_create_managed_profile_request import ProfileManagerCreateManagedProfileRequest
 from openapi_client.models.profile_manager_create_profile_manager_request import ProfileManagerCreateProfileManagerRequest
+from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
 
 from openapi_client.api_client import ApiClient, RequestSerialized
 from openapi_client.api_response import ApiResponse
@@ -1192,7 +1193,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_get_managed_profiles(
         self,
-        profile_get_available_profiles_request: Optional[ProfileGetAvailableProfilesRequest] = None,
+        profile_manager_get_managed_profiles_request: Optional[ProfileManagerGetManagedProfilesRequest] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1210,8 +1211,8 @@ class ProfileManagersApi:
 
         This route gets all of your managed profiles
 
-        :param profile_get_available_profiles_request:
-        :type profile_get_available_profiles_request: ProfileGetAvailableProfilesRequest
+        :param profile_manager_get_managed_profiles_request:
+        :type profile_manager_get_managed_profiles_request: ProfileManagerGetManagedProfilesRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1235,7 +1236,7 @@ class ProfileManagersApi:
         """ # noqa: E501
 
         _param = self._profile_manager_get_managed_profiles_serialize(
-            profile_get_available_profiles_request=profile_get_available_profiles_request,
+            profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1263,7 +1264,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_get_managed_profiles_with_http_info(
         self,
-        profile_get_available_profiles_request: Optional[ProfileGetAvailableProfilesRequest] = None,
+        profile_manager_get_managed_profiles_request: Optional[ProfileManagerGetManagedProfilesRequest] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1281,8 +1282,8 @@ class ProfileManagersApi:
 
         This route gets all of your managed profiles
 
-        :param profile_get_available_profiles_request:
-        :type profile_get_available_profiles_request: ProfileGetAvailableProfilesRequest
+        :param profile_manager_get_managed_profiles_request:
+        :type profile_manager_get_managed_profiles_request: ProfileManagerGetManagedProfilesRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1306,7 +1307,7 @@ class ProfileManagersApi:
         """ # noqa: E501
 
         _param = self._profile_manager_get_managed_profiles_serialize(
-            profile_get_available_profiles_request=profile_get_available_profiles_request,
+            profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1334,7 +1335,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_get_managed_profiles_without_preload_content(
         self,
-        profile_get_available_profiles_request: Optional[ProfileGetAvailableProfilesRequest] = None,
+        profile_manager_get_managed_profiles_request: Optional[ProfileManagerGetManagedProfilesRequest] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1352,8 +1353,8 @@ class ProfileManagersApi:
 
         This route gets all of your managed profiles
 
-        :param profile_get_available_profiles_request:
-        :type profile_get_available_profiles_request: ProfileGetAvailableProfilesRequest
+        :param profile_manager_get_managed_profiles_request:
+        :type profile_manager_get_managed_profiles_request: ProfileManagerGetManagedProfilesRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1377,7 +1378,7 @@ class ProfileManagersApi:
         """ # noqa: E501
 
         _param = self._profile_manager_get_managed_profiles_serialize(
-            profile_get_available_profiles_request=profile_get_available_profiles_request,
+            profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1400,7 +1401,7 @@ class ProfileManagersApi:
 
     def _profile_manager_get_managed_profiles_serialize(
         self,
-        profile_get_available_profiles_request,
+        profile_manager_get_managed_profiles_request,
         _request_auth,
         _content_type,
         _headers,
@@ -1426,8 +1427,8 @@ class ProfileManagersApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if profile_get_available_profiles_request is not None:
-            _body_params = profile_get_available_profiles_request
+        if profile_manager_get_managed_profiles_request is not None:
+            _body_params = profile_manager_get_managed_profiles_request
 
 
         # set the HTTP header `Accept`
@@ -1478,7 +1479,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_get_other_profile_manager(
         self,
-        id: StrictStr,
+        id: Optional[StrictStr],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1491,7 +1492,7 @@ class ProfileManagersApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> BoostGetChildrenProfileManagers200ResponseRecordsInner:
+    ) -> ProfileGetAvailableProfiles200ResponseRecordsInnerManager:
         """Get profile manager information
 
         This route grabs the profile information of any profile manager, using their id
@@ -1529,7 +1530,7 @@ class ProfileManagersApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "BoostGetChildrenProfileManagers200ResponseRecordsInner",
+            '200': "ProfileGetAvailableProfiles200ResponseRecordsInnerManager",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1550,7 +1551,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_get_other_profile_manager_with_http_info(
         self,
-        id: StrictStr,
+        id: Optional[StrictStr],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1563,7 +1564,7 @@ class ProfileManagersApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[BoostGetChildrenProfileManagers200ResponseRecordsInner]:
+    ) -> ApiResponse[ProfileGetAvailableProfiles200ResponseRecordsInnerManager]:
         """Get profile manager information
 
         This route grabs the profile information of any profile manager, using their id
@@ -1601,7 +1602,7 @@ class ProfileManagersApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "BoostGetChildrenProfileManagers200ResponseRecordsInner",
+            '200': "ProfileGetAvailableProfiles200ResponseRecordsInnerManager",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1622,7 +1623,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_get_other_profile_manager_without_preload_content(
         self,
-        id: StrictStr,
+        id: Optional[StrictStr],
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1673,7 +1674,7 @@ class ProfileManagersApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "BoostGetChildrenProfileManagers200ResponseRecordsInner",
+            '200': "ProfileGetAvailableProfiles200ResponseRecordsInnerManager",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1766,7 +1767,7 @@ class ProfileManagersApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> BoostGetChildrenProfileManagers200ResponseRecordsInner:
+    ) -> ProfileGetAvailableProfiles200ResponseRecordsInnerManager:
         """Get your profile manager profile information
 
         This route uses the request header to grab the profile manager profile of the current profile manager
@@ -1801,7 +1802,7 @@ class ProfileManagersApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "BoostGetChildrenProfileManagers200ResponseRecordsInner",
+            '200': "ProfileGetAvailableProfiles200ResponseRecordsInnerManager",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
             '500': "ErrorINTERNALSERVERERROR",
@@ -1832,7 +1833,7 @@ class ProfileManagersApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[BoostGetChildrenProfileManagers200ResponseRecordsInner]:
+    ) -> ApiResponse[ProfileGetAvailableProfiles200ResponseRecordsInnerManager]:
         """Get your profile manager profile information
 
         This route uses the request header to grab the profile manager profile of the current profile manager
@@ -1867,7 +1868,7 @@ class ProfileManagersApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "BoostGetChildrenProfileManagers200ResponseRecordsInner",
+            '200': "ProfileGetAvailableProfiles200ResponseRecordsInnerManager",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
             '500': "ErrorINTERNALSERVERERROR",
@@ -1933,7 +1934,7 @@ class ProfileManagersApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "BoostGetChildrenProfileManagers200ResponseRecordsInner",
+            '200': "ProfileGetAvailableProfiles200ResponseRecordsInnerManager",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
             '500': "ErrorINTERNALSERVERERROR",
@@ -2009,7 +2010,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_update_profile_manager(
         self,
-        profile_manager_create_profile_manager_request: ProfileManagerCreateProfileManagerRequest,
+        profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2027,8 +2028,8 @@ class ProfileManagersApi:
 
         This route updates the profile of the current profile manager
 
-        :param profile_manager_create_profile_manager_request: (required)
-        :type profile_manager_create_profile_manager_request: ProfileManagerCreateProfileManagerRequest
+        :param profile_manager_create_child_profile_manager_request_profile: (required)
+        :type profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2052,7 +2053,7 @@ class ProfileManagersApi:
         """ # noqa: E501
 
         _param = self._profile_manager_update_profile_manager_serialize(
-            profile_manager_create_profile_manager_request=profile_manager_create_profile_manager_request,
+            profile_manager_create_child_profile_manager_request_profile=profile_manager_create_child_profile_manager_request_profile,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2080,7 +2081,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_update_profile_manager_with_http_info(
         self,
-        profile_manager_create_profile_manager_request: ProfileManagerCreateProfileManagerRequest,
+        profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2098,8 +2099,8 @@ class ProfileManagersApi:
 
         This route updates the profile of the current profile manager
 
-        :param profile_manager_create_profile_manager_request: (required)
-        :type profile_manager_create_profile_manager_request: ProfileManagerCreateProfileManagerRequest
+        :param profile_manager_create_child_profile_manager_request_profile: (required)
+        :type profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2123,7 +2124,7 @@ class ProfileManagersApi:
         """ # noqa: E501
 
         _param = self._profile_manager_update_profile_manager_serialize(
-            profile_manager_create_profile_manager_request=profile_manager_create_profile_manager_request,
+            profile_manager_create_child_profile_manager_request_profile=profile_manager_create_child_profile_manager_request_profile,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2151,7 +2152,7 @@ class ProfileManagersApi:
     @validate_call
     def profile_manager_update_profile_manager_without_preload_content(
         self,
-        profile_manager_create_profile_manager_request: ProfileManagerCreateProfileManagerRequest,
+        profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2169,8 +2170,8 @@ class ProfileManagersApi:
 
         This route updates the profile of the current profile manager
 
-        :param profile_manager_create_profile_manager_request: (required)
-        :type profile_manager_create_profile_manager_request: ProfileManagerCreateProfileManagerRequest
+        :param profile_manager_create_child_profile_manager_request_profile: (required)
+        :type profile_manager_create_child_profile_manager_request_profile: ProfileManagerCreateChildProfileManagerRequestProfile
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -2194,7 +2195,7 @@ class ProfileManagersApi:
         """ # noqa: E501
 
         _param = self._profile_manager_update_profile_manager_serialize(
-            profile_manager_create_profile_manager_request=profile_manager_create_profile_manager_request,
+            profile_manager_create_child_profile_manager_request_profile=profile_manager_create_child_profile_manager_request_profile,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -2217,7 +2218,7 @@ class ProfileManagersApi:
 
     def _profile_manager_update_profile_manager_serialize(
         self,
-        profile_manager_create_profile_manager_request,
+        profile_manager_create_child_profile_manager_request_profile,
         _request_auth,
         _content_type,
         _headers,
@@ -2243,8 +2244,8 @@ class ProfileManagersApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if profile_manager_create_profile_manager_request is not None:
-            _body_params = profile_manager_create_profile_manager_request
+        if profile_manager_create_child_profile_manager_request_profile is not None:
+            _body_params = profile_manager_create_child_profile_manager_request_profile
 
 
         # set the HTTP header `Accept`

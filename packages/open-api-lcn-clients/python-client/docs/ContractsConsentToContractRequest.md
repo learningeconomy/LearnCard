@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **contract_uri** | **str** |  | 
 **expires_at** | **str** |  | [optional] 
 **one_time** | **bool** |  | [optional] 
+**recipient_token** | **str** |  | [optional] 
 
 ## Example
 

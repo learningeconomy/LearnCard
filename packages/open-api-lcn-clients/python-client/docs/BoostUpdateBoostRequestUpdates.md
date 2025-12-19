@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **meta** | **Dict[str, object]** |  | [optional] 
 **allow_anyone_to_create_children** | **bool** |  | [optional] 
 **credential** | [**BoostCreateBoostRequestCredential**](BoostCreateBoostRequestCredential.md) |  | [optional] 
+**default_permissions** | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |  | [optional] 
 
 ## Example
 

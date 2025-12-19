@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -26,8 +26,8 @@ class BoostAddBoostAdminRequest(BaseModel):
     """
     BoostAddBoostAdminRequest
     """ # noqa: E501
-    uri: StrictStr
-    profile_id: StrictStr = Field(alias="profileId")
+    uri: Optional[StrictStr]
+    profile_id: Optional[StrictStr] = Field(alias="profileId")
     __properties: ClassVar[List[str]] = ["uri", "profileId"]
 
     model_config = ConfigDict(
@@ -69,6 +69,16 @@ class BoostAddBoostAdminRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
+        # set to None if profile_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.profile_id is None and "profile_id" in self.model_fields_set:
+            _dict['profileId'] = None
+
         return _dict
 
     @classmethod

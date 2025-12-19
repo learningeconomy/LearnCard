@@ -38,7 +38,7 @@ class TestContractsWriteCredentialToContractViaSigningAuthorityRequest(unittest.
                 did = '',
                 contract_uri = '',
                 boost_uri = '',
-                signing_authority = openapi_client.models.boost_send_boost_via_signing_authority_request_signing_authority.boost_sendBoostViaSigningAuthority_request_signingAuthority(
+                signing_authority = openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority.contracts_createConsentFlowContract_request_autoboosts_inner_signingAuthority(
                     name = '', 
                     endpoint = '', )
             )
@@ -47,7 +47,7 @@ class TestContractsWriteCredentialToContractViaSigningAuthorityRequest(unittest.
                 did = '',
                 contract_uri = '',
                 boost_uri = '',
-                signing_authority = openapi_client.models.boost_send_boost_via_signing_authority_request_signing_authority.boost_sendBoostViaSigningAuthority_request_signingAuthority(
+                signing_authority = openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority.contracts_createConsentFlowContract_request_autoboosts_inner_signingAuthority(
                     name = '', 
                     endpoint = '', ),
         )

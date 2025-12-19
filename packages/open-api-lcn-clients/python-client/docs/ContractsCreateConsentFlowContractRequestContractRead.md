@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **anonymize** | **bool** |  | [optional] 
 **credentials** | [**ContractsCreateConsentFlowContractRequestContractReadCredentials**](ContractsCreateConsentFlowContractRequestContractReadCredentials.md) |  | [optional] 
-**personal** | [**Dict[str, StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue]**](StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue.md) |  | [optional] 
+**personal** | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]**](ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.md) |  | [optional] 
 
 ## Example
 

@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**profile** | [**BoostGetBoostRecipients200ResponseInnerTo**](BoostGetBoostRecipients200ResponseInnerTo.md) |  | 
-**manager** | [**BoostGetChildrenProfileManagers200ResponseRecordsInner**](BoostGetChildrenProfileManagers200ResponseRecordsInner.md) |  | [optional] 
+**profile** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
+**manager** | [**ProfileGetAvailableProfiles200ResponseRecordsInnerManager**](ProfileGetAvailableProfiles200ResponseRecordsInnerManager.md) |  | [optional] 
 
 ## Example
 

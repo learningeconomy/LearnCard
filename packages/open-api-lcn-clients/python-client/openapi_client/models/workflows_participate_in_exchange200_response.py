@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.presentation_send_presentation_request_presentation_any_of import PresentationSendPresentationRequestPresentationAnyOf
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1
 from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,9 +28,10 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
     """
     WorkflowsParticipateInExchange200Response
     """ # noqa: E501
-    verifiable_presentation: Optional[PresentationSendPresentationRequestPresentationAnyOf] = Field(default=None, alias="verifiablePresentation")
+    verifiable_presentation: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1] = Field(default=None, alias="verifiablePresentation")
     verifiable_presentation_request: Optional[WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest] = Field(default=None, alias="verifiablePresentationRequest")
     redirect_url: Optional[StrictStr] = Field(default=None, alias="redirectUrl")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["verifiablePresentation", "verifiablePresentationRequest", "redirectUrl"]
 
     model_config = ConfigDict(
@@ -63,8 +64,10 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -78,6 +81,16 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of verifiable_presentation_request
         if self.verifiable_presentation_request:
             _dict['verifiablePresentationRequest'] = self.verifiable_presentation_request.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if redirect_url (nullable) is None
+        # and model_fields_set contains the field
+        if self.redirect_url is None and "redirect_url" in self.model_fields_set:
+            _dict['redirectUrl'] = None
+
         return _dict
 
     @classmethod
@@ -90,10 +103,15 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "verifiablePresentation": PresentationSendPresentationRequestPresentationAnyOf.from_dict(obj["verifiablePresentation"]) if obj.get("verifiablePresentation") is not None else None,
+            "verifiablePresentation": StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1.from_dict(obj["verifiablePresentation"]) if obj.get("verifiablePresentation") is not None else None,
             "verifiablePresentationRequest": WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest.from_dict(obj["verifiablePresentationRequest"]) if obj.get("verifiablePresentationRequest") is not None else None,
             "redirectUrl": obj.get("redirectUrl")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

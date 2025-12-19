@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -26,7 +26,7 @@ class ContactMethodsVerifyContactMethodRequest(BaseModel):
     """
     ContactMethodsVerifyContactMethodRequest
     """ # noqa: E501
-    token: StrictStr
+    token: Optional[StrictStr]
     __properties: ClassVar[List[str]] = ["token"]
 
     model_config = ConfigDict(
@@ -68,6 +68,11 @@ class ContactMethodsVerifyContactMethodRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if token (nullable) is None
+        # and model_fields_set contains the field
+        if self.token is None and "token" in self.model_fields_set:
+            _dict['token'] = None
+
         return _dict
 
     @classmethod

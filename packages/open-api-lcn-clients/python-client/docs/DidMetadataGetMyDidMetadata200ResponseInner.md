@@ -5,19 +5,19 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**context** | [**List[BoostSendBoostRequestCredentialAnyOfContextInner]**](BoostSendBoostRequestCredentialAnyOfContextInner.md) |  | [optional] 
+**context** | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md) |  | [optional] 
 **id** | **str** |  | 
 **also_known_as** | **str** |  | [optional] 
-**controller** | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.md) |  | [optional] 
-**verification_method** | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |  | [optional] 
-**authentication** | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |  | [optional] 
-**assertion_method** | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |  | [optional] 
-**key_agreement** | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |  | [optional] 
-**capability_invocation** | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |  | [optional] 
-**capability_delegation** | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |  | [optional] 
-**public_key** | [**List[DidMetadataAddDidMetadataRequestVerificationMethodInner]**](DidMetadataAddDidMetadataRequestVerificationMethodInner.md) |  | [optional] 
-**service** | [**List[DidMetadataAddDidMetadataRequestServiceInner]**](DidMetadataAddDidMetadataRequestServiceInner.md) |  | [optional] 
-**proof** | [**BoostSendBoostRequestCredentialAnyOfProof**](BoostSendBoostRequestCredentialAnyOfProof.md) |  | [optional] 
+**controller** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |  | [optional] 
+**verification_method** | [**List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]**](DidMetadataGetDidMetadata200ResponseAuthenticationInner.md) |  | [optional] 
+**authentication** | [**List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]**](DidMetadataGetDidMetadata200ResponseAuthenticationInner.md) |  | [optional] 
+**assertion_method** | [**List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]**](DidMetadataGetDidMetadata200ResponseAuthenticationInner.md) |  | [optional] 
+**key_agreement** | [**List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]**](DidMetadataGetDidMetadata200ResponseAuthenticationInner.md) |  | [optional] 
+**capability_invocation** | [**List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]**](DidMetadataGetDidMetadata200ResponseAuthenticationInner.md) |  | [optional] 
+**capability_delegation** | [**List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]**](DidMetadataGetDidMetadata200ResponseAuthenticationInner.md) |  | [optional] 
+**public_key** | [**List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]**](DidMetadataGetDidMetadata200ResponseAuthenticationInner.md) |  | [optional] 
+**service** | [**List[DidMetadataGetDidMetadata200ResponseServiceInner]**](DidMetadataGetDidMetadata200ResponseServiceInner.md) |  | [optional] 
+**proof** | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md) |  | [optional] 
 
 ## Example
 

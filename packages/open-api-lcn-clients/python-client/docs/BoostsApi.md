@@ -5,6 +5,8 @@ All URIs are relative to *https://network.learncard.com/api*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**boost_add_boost_admin**](BoostsApi.md#boost_add_boost_admin) | **POST** /boost/add-admin | Add a Boost admin
+[**boost_align_boost_skills**](BoostsApi.md#boost_align_boost_skills) | **POST** /boost/align-skills | Align skills to boost
+[**boost_attach_framework_to_boost**](BoostsApi.md#boost_attach_framework_to_boost) | **POST** /boost/attach-framework | Attach framework to boost
 [**boost_claim_boost_with_link**](BoostsApi.md#boost_claim_boost_with_link) | **POST** /boost/claim | Claim a boost using a claim link
 [**boost_count_boost_children**](BoostsApi.md#boost_count_boost_children) | **POST** /boost/children/count | Count boost children
 [**boost_count_boost_parents**](BoostsApi.md#boost_count_boost_parents) | **POST** /boost/parents/count | Count boost parents
@@ -14,14 +16,18 @@ Method | HTTP request | Description
 [**boost_create_boost**](BoostsApi.md#boost_create_boost) | **POST** /boost/create | Creates a boost
 [**boost_create_child_boost**](BoostsApi.md#boost_create_child_boost) | **POST** /boost/create/child | Creates a boost
 [**boost_delete_boost**](BoostsApi.md#boost_delete_boost) | **DELETE** /boost | Delete a boost
+[**boost_detach_framework_from_boost**](BoostsApi.md#boost_detach_framework_from_boost) | **POST** /boost/detach-framework | Detach framework from boost
 [**boost_generate_claim_link**](BoostsApi.md#boost_generate_claim_link) | **POST** /boost/generate-claim-link | Generate a claim link for a boost
 [**boost_get_boost**](BoostsApi.md#boost_get_boost) | **GET** /boost | Get boost
 [**boost_get_boost_admins**](BoostsApi.md#boost_get_boost_admins) | **POST** /boost/admins | Get boost admins
+[**boost_get_boost_alignments**](BoostsApi.md#boost_get_boost_alignments) | **GET** /boost/alignments | Get OBv3 alignments for a boost
 [**boost_get_boost_children**](BoostsApi.md#boost_get_boost_children) | **POST** /boost/children | Get boost children
+[**boost_get_boost_frameworks**](BoostsApi.md#boost_get_boost_frameworks) | **POST** /boost/frameworks | List frameworks used by a boost (paginated)
 [**boost_get_boost_parents**](BoostsApi.md#boost_get_boost_parents) | **POST** /boost/parents | Get boost parents
 [**boost_get_boost_permissions**](BoostsApi.md#boost_get_boost_permissions) | **GET** /boost/permissions | Get boost permissions
 [**boost_get_boost_recipient_count**](BoostsApi.md#boost_get_boost_recipient_count) | **GET** /boost/recipients/count | Get boost recipients count
 [**boost_get_boost_recipients**](BoostsApi.md#boost_get_boost_recipients) | **GET** /boost/recipients | Get boost recipients
+[**boost_get_boost_recipients_with_children_count**](BoostsApi.md#boost_get_boost_recipients_with_children_count) | **POST** /boost/recipients-with-children/count | Count boost recipients with children
 [**boost_get_boost_siblings**](BoostsApi.md#boost_get_boost_siblings) | **POST** /boost/siblings | Get boost siblings
 [**boost_get_boosts**](BoostsApi.md#boost_get_boosts) | **POST** /boost/all | Get boosts
 [**boost_get_children_profile_managers**](BoostsApi.md#boost_get_children_profile_managers) | **POST** /boost/children-profile-managers | Get Profile Managers that are a child of a boost
@@ -30,10 +36,13 @@ Method | HTTP request | Description
 [**boost_get_familial_boosts**](BoostsApi.md#boost_get_familial_boosts) | **POST** /boost/family | Get familial boosts
 [**boost_get_other_boost_permissions**](BoostsApi.md#boost_get_other_boost_permissions) | **GET** /boost/permissions/{profileId} | Get boost permissions for someone else
 [**boost_get_paginated_boost_recipients**](BoostsApi.md#boost_get_paginated_boost_recipients) | **POST** /boost/recipients/paginated | Get boost recipients
+[**boost_get_paginated_boost_recipients_with_children**](BoostsApi.md#boost_get_paginated_boost_recipients_with_children) | **POST** /boost/recipients-with-children/paginated | Get boost recipients with children
 [**boost_get_paginated_boosts**](BoostsApi.md#boost_get_paginated_boosts) | **POST** /boost/paginated | Get boosts
+[**boost_get_skills_available_for_boost**](BoostsApi.md#boost_get_skills_available_for_boost) | **GET** /boost/skills/available | List available skills for a boost
 [**boost_make_boost_parent**](BoostsApi.md#boost_make_boost_parent) | **POST** /boost/make-parent | Make Boost Parent
 [**boost_remove_boost_admin**](BoostsApi.md#boost_remove_boost_admin) | **POST** /boost/remove-admin | Remove a Boost admin
 [**boost_remove_boost_parent**](BoostsApi.md#boost_remove_boost_parent) | **POST** /boost/remove-parent | Remove Boost Parent
+[**boost_search_skills_available_for_boost**](BoostsApi.md#boost_search_skills_available_for_boost) | **POST** /boost/skills/search | Search available skills for a boost
 [**boost_send_boost**](BoostsApi.md#boost_send_boost) | **POST** /boost/send/{profileId} | Send a Boost
 [**boost_send_boost_via_signing_authority**](BoostsApi.md#boost_send_boost_via_signing_authority) | **POST** /boost/send/via-signing-authority/{profileId} | Send a boost to a profile using a signing authority
 [**boost_update_boost**](BoostsApi.md#boost_update_boost) | **POST** /boost | Update a boost
@@ -123,12 +132,12 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **boost_claim_boost_with_link**
-> str boost_claim_boost_with_link(boost_generate_claim_link200_response)
+# **boost_align_boost_skills**
+> bool boost_align_boost_skills(boost_align_boost_skills_request)
 
-Claim a boost using a claim link
+Align skills to boost
 
-Claims a boost using a claim link, including a challenge
+Ensures ALIGNED_TO relationships from a boost to Skill nodes. Requires boost admin.
 
 ### Example
 
@@ -136,7 +145,7 @@ Claims a boost using a claim link, including a challenge
 
 ```python
 import openapi_client
-from openapi_client.models.boost_generate_claim_link200_response import BoostGenerateClaimLink200Response
+from openapi_client.models.boost_align_boost_skills_request import BoostAlignBoostSkillsRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -160,11 +169,175 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_generate_claim_link200_response = openapi_client.BoostGenerateClaimLink200Response() # BoostGenerateClaimLink200Response | 
+    boost_align_boost_skills_request = openapi_client.BoostAlignBoostSkillsRequest() # BoostAlignBoostSkillsRequest | 
+
+    try:
+        # Align skills to boost
+        api_response = api_instance.boost_align_boost_skills(boost_align_boost_skills_request)
+        print("The response of BoostsApi->boost_align_boost_skills:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_align_boost_skills: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **boost_align_boost_skills_request** | [**BoostAlignBoostSkillsRequest**](BoostAlignBoostSkillsRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **boost_attach_framework_to_boost**
+> bool boost_attach_framework_to_boost(boost_attach_framework_to_boost_request)
+
+Attach framework to boost
+
+Ensures a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_attach_framework_to_boost_request import BoostAttachFrameworkToBoostRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_attach_framework_to_boost_request = openapi_client.BoostAttachFrameworkToBoostRequest() # BoostAttachFrameworkToBoostRequest | 
+
+    try:
+        # Attach framework to boost
+        api_response = api_instance.boost_attach_framework_to_boost(boost_attach_framework_to_boost_request)
+        print("The response of BoostsApi->boost_attach_framework_to_boost:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_attach_framework_to_boost: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **boost_attach_framework_to_boost_request** | [**BoostAttachFrameworkToBoostRequest**](BoostAttachFrameworkToBoostRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **boost_claim_boost_with_link**
+> str boost_claim_boost_with_link(boost_claim_boost_with_link_request)
+
+Claim a boost using a claim link
+
+Claims a boost using a claim link, including a challenge
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_claim_boost_with_link_request import BoostClaimBoostWithLinkRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_claim_boost_with_link_request = openapi_client.BoostClaimBoostWithLinkRequest() # BoostClaimBoostWithLinkRequest | 
 
     try:
         # Claim a boost using a claim link
-        api_response = api_instance.boost_claim_boost_with_link(boost_generate_claim_link200_response)
+        api_response = api_instance.boost_claim_boost_with_link(boost_claim_boost_with_link_request)
         print("The response of BoostsApi->boost_claim_boost_with_link:\n")
         pprint(api_response)
     except Exception as e:
@@ -178,7 +351,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **boost_generate_claim_link200_response** | [**BoostGenerateClaimLink200Response**](BoostGenerateClaimLink200Response.md)|  | 
+ **boost_claim_boost_with_link_request** | [**BoostClaimBoostWithLinkRequest**](BoostClaimBoostWithLinkRequest.md)|  | 
 
 ### Return type
 
@@ -288,7 +461,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **boost_count_boost_parents**
-> float boost_count_boost_parents(boost_count_boost_children_request)
+> float boost_count_boost_parents(boost_count_boost_parents_request)
 
 Count boost parents
 
@@ -300,7 +473,7 @@ This endpoint counts the parents of a particular boost
 
 ```python
 import openapi_client
-from openapi_client.models.boost_count_boost_children_request import BoostCountBoostChildrenRequest
+from openapi_client.models.boost_count_boost_parents_request import BoostCountBoostParentsRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -324,11 +497,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_count_boost_children_request = openapi_client.BoostCountBoostChildrenRequest() # BoostCountBoostChildrenRequest | 
+    boost_count_boost_parents_request = openapi_client.BoostCountBoostParentsRequest() # BoostCountBoostParentsRequest | 
 
     try:
         # Count boost parents
-        api_response = api_instance.boost_count_boost_parents(boost_count_boost_children_request)
+        api_response = api_instance.boost_count_boost_parents(boost_count_boost_parents_request)
         print("The response of BoostsApi->boost_count_boost_parents:\n")
         pprint(api_response)
     except Exception as e:
@@ -342,7 +515,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **boost_count_boost_children_request** | [**BoostCountBoostChildrenRequest**](BoostCountBoostChildrenRequest.md)|  | 
+ **boost_count_boost_parents_request** | [**BoostCountBoostParentsRequest**](BoostCountBoostParentsRequest.md)|  | 
 
 ### Return type
 
@@ -861,6 +1034,88 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **boost_detach_framework_from_boost**
+> bool boost_detach_framework_from_boost(boost_detach_framework_from_boost_request)
+
+Detach framework from boost
+
+Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_detach_framework_from_boost_request import BoostDetachFrameworkFromBoostRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_detach_framework_from_boost_request = openapi_client.BoostDetachFrameworkFromBoostRequest() # BoostDetachFrameworkFromBoostRequest | 
+
+    try:
+        # Detach framework from boost
+        api_response = api_instance.boost_detach_framework_from_boost(boost_detach_framework_from_boost_request)
+        print("The response of BoostsApi->boost_detach_framework_from_boost:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_detach_framework_from_boost: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **boost_detach_framework_from_boost_request** | [**BoostDetachFrameworkFromBoostRequest**](BoostDetachFrameworkFromBoostRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **boost_generate_claim_link**
 > BoostGenerateClaimLink200Response boost_generate_claim_link(boost_generate_claim_link_request)
 
@@ -1110,6 +1365,89 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **boost_get_boost_alignments**
+> List[BoostGetBoostAlignments200ResponseInner] boost_get_boost_alignments(uri)
+
+Get OBv3 alignments for a boost
+
+Returns OBv3 alignment entries based on the boost's linked framework and aligned skills. Requires issue permission.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_get_boost_alignments200_response_inner import BoostGetBoostAlignments200ResponseInner
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    uri = 'uri_example' # str | 
+
+    try:
+        # Get OBv3 alignments for a boost
+        api_response = api_instance.boost_get_boost_alignments(uri)
+        print("The response of BoostsApi->boost_get_boost_alignments:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_get_boost_alignments: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **uri** | **str**|  | 
+
+### Return type
+
+[**List[BoostGetBoostAlignments200ResponseInner]**](BoostGetBoostAlignments200ResponseInner.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **boost_get_boost_children**
 > BoostGetPaginatedBoosts200Response boost_get_boost_children(boost_get_boost_children_request)
 
@@ -1193,8 +1531,91 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **boost_get_boost_frameworks**
+> BoostGetBoostFrameworks200Response boost_get_boost_frameworks(boost_get_boost_frameworks_request)
+
+List frameworks used by a boost (paginated)
+
+Returns frameworks aligned to a boost via USES_FRAMEWORK with pagination and optional query filtering. Requires boost admin.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_get_boost_frameworks200_response import BoostGetBoostFrameworks200Response
+from openapi_client.models.boost_get_boost_frameworks_request import BoostGetBoostFrameworksRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_get_boost_frameworks_request = openapi_client.BoostGetBoostFrameworksRequest() # BoostGetBoostFrameworksRequest | 
+
+    try:
+        # List frameworks used by a boost (paginated)
+        api_response = api_instance.boost_get_boost_frameworks(boost_get_boost_frameworks_request)
+        print("The response of BoostsApi->boost_get_boost_frameworks:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_get_boost_frameworks: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **boost_get_boost_frameworks_request** | [**BoostGetBoostFrameworksRequest**](BoostGetBoostFrameworksRequest.md)|  | 
+
+### Return type
+
+[**BoostGetBoostFrameworks200Response**](BoostGetBoostFrameworks200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **boost_get_boost_parents**
-> BoostGetPaginatedBoosts200Response boost_get_boost_parents(boost_get_boost_children_request)
+> BoostGetPaginatedBoosts200Response boost_get_boost_parents(boost_get_boost_parents_request)
 
 Get boost parents
 
@@ -1206,7 +1627,7 @@ This endpoint gets the parents of a particular boost
 
 ```python
 import openapi_client
-from openapi_client.models.boost_get_boost_children_request import BoostGetBoostChildrenRequest
+from openapi_client.models.boost_get_boost_parents_request import BoostGetBoostParentsRequest
 from openapi_client.models.boost_get_paginated_boosts200_response import BoostGetPaginatedBoosts200Response
 from openapi_client.rest import ApiException
 from pprint import pprint
@@ -1231,11 +1652,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_get_boost_children_request = openapi_client.BoostGetBoostChildrenRequest() # BoostGetBoostChildrenRequest | 
+    boost_get_boost_parents_request = openapi_client.BoostGetBoostParentsRequest() # BoostGetBoostParentsRequest | 
 
     try:
         # Get boost parents
-        api_response = api_instance.boost_get_boost_parents(boost_get_boost_children_request)
+        api_response = api_instance.boost_get_boost_parents(boost_get_boost_parents_request)
         print("The response of BoostsApi->boost_get_boost_parents:\n")
         pprint(api_response)
     except Exception as e:
@@ -1249,7 +1670,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **boost_get_boost_children_request** | [**BoostGetBoostChildrenRequest**](BoostGetBoostChildrenRequest.md)|  | 
+ **boost_get_boost_parents_request** | [**BoostGetBoostParentsRequest**](BoostGetBoostParentsRequest.md)|  | 
 
 ### Return type
 
@@ -1529,6 +1950,88 @@ Name | Type | Description  | Notes
 **401** | Authorization not provided |  -  |
 **403** | Insufficient access |  -  |
 **404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **boost_get_boost_recipients_with_children_count**
+> float boost_get_boost_recipients_with_children_count(boost_get_boost_recipients_with_children_count_request)
+
+Count boost recipients with children
+
+This endpoint counts distinct recipients of a boost and all its children boosts
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_get_boost_recipients_with_children_count_request import BoostGetBoostRecipientsWithChildrenCountRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_get_boost_recipients_with_children_count_request = openapi_client.BoostGetBoostRecipientsWithChildrenCountRequest() # BoostGetBoostRecipientsWithChildrenCountRequest | 
+
+    try:
+        # Count boost recipients with children
+        api_response = api_instance.boost_get_boost_recipients_with_children_count(boost_get_boost_recipients_with_children_count_request)
+        print("The response of BoostsApi->boost_get_boost_recipients_with_children_count:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_get_boost_recipients_with_children_count: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **boost_get_boost_recipients_with_children_count_request** | [**BoostGetBoostRecipientsWithChildrenCountRequest**](BoostGetBoostRecipientsWithChildrenCountRequest.md)|  | 
+
+### Return type
+
+**float**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
 **500** | Internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -2203,6 +2706,89 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **boost_get_paginated_boost_recipients_with_children**
+> BoostGetPaginatedBoostRecipientsWithChildren200Response boost_get_paginated_boost_recipients_with_children(boost_get_paginated_boost_recipients_with_children_request)
+
+Get boost recipients with children
+
+This endpoint gets the recipients of a boost and all its children boosts
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_get_paginated_boost_recipients_with_children200_response import BoostGetPaginatedBoostRecipientsWithChildren200Response
+from openapi_client.models.boost_get_paginated_boost_recipients_with_children_request import BoostGetPaginatedBoostRecipientsWithChildrenRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_get_paginated_boost_recipients_with_children_request = openapi_client.BoostGetPaginatedBoostRecipientsWithChildrenRequest() # BoostGetPaginatedBoostRecipientsWithChildrenRequest | 
+
+    try:
+        # Get boost recipients with children
+        api_response = api_instance.boost_get_paginated_boost_recipients_with_children(boost_get_paginated_boost_recipients_with_children_request)
+        print("The response of BoostsApi->boost_get_paginated_boost_recipients_with_children:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_get_paginated_boost_recipients_with_children: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **boost_get_paginated_boost_recipients_with_children_request** | [**BoostGetPaginatedBoostRecipientsWithChildrenRequest**](BoostGetPaginatedBoostRecipientsWithChildrenRequest.md)|  | 
+
+### Return type
+
+[**BoostGetPaginatedBoostRecipientsWithChildren200Response**](BoostGetPaginatedBoostRecipientsWithChildren200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **boost_get_paginated_boosts**
 > BoostGetPaginatedBoosts200Response boost_get_paginated_boosts(boost_get_paginated_boosts_request=boost_get_paginated_boosts_request)
 
@@ -2282,6 +2868,89 @@ Name | Type | Description  | Notes
 **400** | Invalid input data |  -  |
 **401** | Authorization not provided |  -  |
 **403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **boost_get_skills_available_for_boost**
+> List[BoostGetSkillsAvailableForBoost200ResponseInner] boost_get_skills_available_for_boost(uri)
+
+List available skills for a boost
+
+Returns skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_get_skills_available_for_boost200_response_inner import BoostGetSkillsAvailableForBoost200ResponseInner
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    uri = 'uri_example' # str | 
+
+    try:
+        # List available skills for a boost
+        api_response = api_instance.boost_get_skills_available_for_boost(uri)
+        print("The response of BoostsApi->boost_get_skills_available_for_boost:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_get_skills_available_for_boost: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **uri** | **str**|  | 
+
+### Return type
+
+[**List[BoostGetSkillsAvailableForBoost200ResponseInner]**](BoostGetSkillsAvailableForBoost200ResponseInner.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**404** | Not found |  -  |
 **500** | Internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -2369,7 +3038,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **boost_remove_boost_admin**
-> bool boost_remove_boost_admin(boost_add_boost_admin_request)
+> bool boost_remove_boost_admin(boost_remove_boost_admin_request)
 
 Remove a Boost admin
 
@@ -2381,7 +3050,7 @@ This route removes an  admin from a boost
 
 ```python
 import openapi_client
-from openapi_client.models.boost_add_boost_admin_request import BoostAddBoostAdminRequest
+from openapi_client.models.boost_remove_boost_admin_request import BoostRemoveBoostAdminRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -2405,11 +3074,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_add_boost_admin_request = openapi_client.BoostAddBoostAdminRequest() # BoostAddBoostAdminRequest | 
+    boost_remove_boost_admin_request = openapi_client.BoostRemoveBoostAdminRequest() # BoostRemoveBoostAdminRequest | 
 
     try:
         # Remove a Boost admin
-        api_response = api_instance.boost_remove_boost_admin(boost_add_boost_admin_request)
+        api_response = api_instance.boost_remove_boost_admin(boost_remove_boost_admin_request)
         print("The response of BoostsApi->boost_remove_boost_admin:\n")
         pprint(api_response)
     except Exception as e:
@@ -2423,7 +3092,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **boost_add_boost_admin_request** | [**BoostAddBoostAdminRequest**](BoostAddBoostAdminRequest.md)|  | 
+ **boost_remove_boost_admin_request** | [**BoostRemoveBoostAdminRequest**](BoostRemoveBoostAdminRequest.md)|  | 
 
 ### Return type
 
@@ -2451,7 +3120,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **boost_remove_boost_parent**
-> bool boost_remove_boost_parent(boost_make_boost_parent_request)
+> bool boost_remove_boost_parent(boost_remove_boost_parent_request)
 
 Remove Boost Parent
 
@@ -2463,7 +3132,7 @@ This endpoint removes a parent/child relationship between two boosts
 
 ```python
 import openapi_client
-from openapi_client.models.boost_make_boost_parent_request import BoostMakeBoostParentRequest
+from openapi_client.models.boost_remove_boost_parent_request import BoostRemoveBoostParentRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -2487,11 +3156,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
-    boost_make_boost_parent_request = openapi_client.BoostMakeBoostParentRequest() # BoostMakeBoostParentRequest | 
+    boost_remove_boost_parent_request = openapi_client.BoostRemoveBoostParentRequest() # BoostRemoveBoostParentRequest | 
 
     try:
         # Remove Boost Parent
-        api_response = api_instance.boost_remove_boost_parent(boost_make_boost_parent_request)
+        api_response = api_instance.boost_remove_boost_parent(boost_remove_boost_parent_request)
         print("The response of BoostsApi->boost_remove_boost_parent:\n")
         pprint(api_response)
     except Exception as e:
@@ -2505,11 +3174,94 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **boost_make_boost_parent_request** | [**BoostMakeBoostParentRequest**](BoostMakeBoostParentRequest.md)|  | 
+ **boost_remove_boost_parent_request** | [**BoostRemoveBoostParentRequest**](BoostRemoveBoostParentRequest.md)|  | 
 
 ### Return type
 
 **bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **boost_search_skills_available_for_boost**
+> BoostSearchSkillsAvailableForBoost200Response boost_search_skills_available_for_boost(boost_search_skills_available_for_boost_request)
+
+Search available skills for a boost
+
+Returns a flattened, paginated list of skills matching the search query. Supports $regex and $in operators. Searches skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_search_skills_available_for_boost200_response import BoostSearchSkillsAvailableForBoost200Response
+from openapi_client.models.boost_search_skills_available_for_boost_request import BoostSearchSkillsAvailableForBoostRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_search_skills_available_for_boost_request = openapi_client.BoostSearchSkillsAvailableForBoostRequest() # BoostSearchSkillsAvailableForBoostRequest | 
+
+    try:
+        # Search available skills for a boost
+        api_response = api_instance.boost_search_skills_available_for_boost(boost_search_skills_available_for_boost_request)
+        print("The response of BoostsApi->boost_search_skills_available_for_boost:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_search_skills_available_for_boost: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **boost_search_skills_available_for_boost_request** | [**BoostSearchSkillsAvailableForBoostRequest**](BoostSearchSkillsAvailableForBoostRequest.md)|  | 
+
+### Return type
+
+[**BoostSearchSkillsAvailableForBoost200Response**](BoostSearchSkillsAvailableForBoost200Response.md)
 
 ### Authorization
 
@@ -2865,7 +3617,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **boost_update_other_boost_permissions**
-> bool boost_update_other_boost_permissions(profile_id, boost_update_boost_permissions_request)
+> bool boost_update_other_boost_permissions(profile_id, boost_update_other_boost_permissions_request)
 
 Update other profile's boost permissions
 
@@ -2877,7 +3629,7 @@ This endpoint updates permission metadata about a boost for another user
 
 ```python
 import openapi_client
-from openapi_client.models.boost_update_boost_permissions_request import BoostUpdateBoostPermissionsRequest
+from openapi_client.models.boost_update_other_boost_permissions_request import BoostUpdateOtherBoostPermissionsRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -2902,11 +3654,11 @@ with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.BoostsApi(api_client)
     profile_id = 'profile_id_example' # str | 
-    boost_update_boost_permissions_request = openapi_client.BoostUpdateBoostPermissionsRequest() # BoostUpdateBoostPermissionsRequest | 
+    boost_update_other_boost_permissions_request = openapi_client.BoostUpdateOtherBoostPermissionsRequest() # BoostUpdateOtherBoostPermissionsRequest | 
 
     try:
         # Update other profile's boost permissions
-        api_response = api_instance.boost_update_other_boost_permissions(profile_id, boost_update_boost_permissions_request)
+        api_response = api_instance.boost_update_other_boost_permissions(profile_id, boost_update_other_boost_permissions_request)
         print("The response of BoostsApi->boost_update_other_boost_permissions:\n")
         pprint(api_response)
     except Exception as e:
@@ -2921,7 +3673,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **profile_id** | **str**|  | 
- **boost_update_boost_permissions_request** | [**BoostUpdateBoostPermissionsRequest**](BoostUpdateBoostPermissionsRequest.md)|  | 
+ **boost_update_other_boost_permissions_request** | [**BoostUpdateOtherBoostPermissionsRequest**](BoostUpdateOtherBoostPermissionsRequest.md)|  | 
 
 ### Return type
 

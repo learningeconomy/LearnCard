@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**contract** | [**StorageResolve200ResponseAnyOfAnyOf**](StorageResolve200ResponseAnyOfAnyOf.md) |  | 
-**owner** | [**BoostGetBoostRecipients200ResponseInnerTo**](BoostGetBoostRecipients200ResponseInnerTo.md) |  | 
+**contract** | [**ContractsGetConsentFlowContract200ResponseContract**](ContractsGetConsentFlowContract200ResponseContract.md) |  | 
+**owner** | [**BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | 
 **name** | **str** |  | 
 **subtitle** | **str** |  | [optional] 
 **description** | **str** |  | [optional] 
@@ -20,7 +20,7 @@ Name | Type | Description | Notes
 **updated_at** | **str** |  | 
 **expires_at** | **str** |  | [optional] 
 **auto_boosts** | **List[str]** |  | [optional] 
-**writers** | [**List[BoostGetBoostRecipients200ResponseInnerTo]**](BoostGetBoostRecipients200ResponseInnerTo.md) |  | [optional] 
+**writers** | [**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.md) |  | [optional] 
 
 ## Example
 

@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**read** | [**ContractsGetConsentedContractsRequestQueryRead**](ContractsGetConsentedContractsRequestQueryRead.md) |  | [optional] 
+**read** | [**ContractsGetTermsTransactionHistoryRequestQueryTermsRead**](ContractsGetTermsTransactionHistoryRequestQueryTermsRead.md) |  | [optional] 
 **write** | [**ContractsGetConsentedContractsRequestQueryWrite**](ContractsGetConsentedContractsRequestQueryWrite.md) |  | [optional] 
 
 ## Example
