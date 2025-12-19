@@ -3,6 +3,7 @@ import React from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import MainHeader from '../../components/main-header/MainHeader';
+import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
@@ -35,6 +36,7 @@ const AiPathways: React.FC = () => {
                     <div className="flex items-center justify-center flex-col relative w-full pb-[50px]">
                         <AiPathwayCourses />
                         <AiPathwaySessions />
+                        <AiPathwayCareers />
                         <AiPathwayExploreContent />
                         <ExploreAiInsightsButton className="mt-4" />
                     </div>

@@ -41,7 +41,7 @@ export const AiPathwaySessionsItem: React.FC<{
                 })
             }
         >
-            <div>
+            <div className="w-full">
                 <div className="flex items-center justify-between w-full">
                     <h4 className="pr-1 text-grayscale-800 font-semibold text-[17px] text-left line-clamp-1">
                         {title}
