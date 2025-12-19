@@ -110,8 +110,10 @@ export const resolveUri = async (uri: string) => {
         console.log('resolved', resolved);
         if (isEncrypted(resolved)) {
             const learnCard = await getLearnCard();
-
-            return await learnCard.invoke.decryptDagJwe(resolved);
+            console.log('learnCard', learnCard);
+            const decryptResolved = await learnCard.invoke.decryptDagJwe(resolved);
+            console.log('decryptResolved', decryptResolved);
+            return decryptResolved;
         }
         return resolved;
     }
