@@ -25,6 +25,8 @@ import {
     VC,
     PaginatedBoostRecipientsWithChildrenValidator,
     SkillQueryValidator,
+    SendBoostInputValidator,
+    SendBoostResponseValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 
@@ -94,8 +96,18 @@ import {
 } from '@services/skills-provider/inject';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
+import { BoostInstance } from '@models';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import {
+    getSigningAuthorityForUserByName,
+    getPrimarySigningAuthorityForUser,
+} from '@accesslayer/signing-authority/relationships/read';
+import {
+    getContractDetailsByUri,
+    getContractTermsForProfile,
+    getWritersForContract,
+} from '@accesslayer/consentflowcontract/relationships/read';
+import { setRelatedBoostForContract } from '@accesslayer/consentflowcontract/relationships/create';
 
 import {
     isClaimLinkAlreadySetForBoost,
@@ -104,7 +116,7 @@ import {
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
-import { getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
+import { getDidWeb, getManagedDidWeb, getProfileIdFromString } from '@helpers/did.helpers';
 import {
     setBoostAsParent,
     setProfileAsBoostAdmin,
@@ -122,7 +134,11 @@ import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
 import { updateBoost } from '@accesslayer/boost/update';
-import { addClaimPermissionsForBoost } from '@accesslayer/role/relationships/create';
+import {
+    addClaimPermissionsForBoost,
+    addDefaultPermissionsForBoost,
+} from '@accesslayer/role/relationships/create';
+import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationships/update';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 
@@ -494,6 +510,213 @@ export const boostsRouter = t.router({
             });
         }),
 
+    send: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/send',
+                tags: ['Send'],
+                summary: 'Send data to a recipient',
+                description:
+                    'Sends data to a recipient. For boosts: creates a boost if needed, auto-issues a credential from its template, and sends it. If a contractUri is provided and the recipient has consent with write permission for the boost category, the credential is sent through the contract; otherwise it is sent normally.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(SendBoostInputValidator)
+        .output(SendBoostResponseValidator)
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri } = input;
+            const { domain } = ctx;
+
+            const recipientProfileId = await getProfileIdFromString(input.recipient, domain);
+
+            const targetProfile = recipientProfileId
+                ? await getProfileByProfileId(recipientProfileId)
+                : null;
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+            if (isBlocked) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            let boost = null as BoostInstance | null;
+            let boostUri = '';
+            let boostCreated = false;
+
+            if (input.templateUri) {
+                const resolved = await getBoostByUri(input.templateUri);
+                if (!resolved) {
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+                }
+                boost = resolved;
+                boostUri = input.templateUri;
+            } else if (input.template) {
+                const { credential, claimPermissions, skills, ...metadata } = input.template;
+
+                boost = await createBoost(credential, profile, metadata, domain);
+
+                if (Array.isArray(skills) && skills.length > 0) {
+                    await addAlignedSkillsToBoost(boost, skills);
+                }
+
+                if (claimPermissions) {
+                    await addClaimPermissionsForBoost(boost, {
+                        ...EMPTY_PERMISSIONS,
+                        ...claimPermissions,
+                    });
+                }
+
+                boostUri = getBoostUri(boost.id, domain);
+                boostCreated = true;
+            }
+
+            if (!boost) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'A templateUri or template creation payload is required.',
+                });
+            }
+
+            if (!(await canProfileIssueBoost(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permissions to issue boost',
+                });
+            }
+
+            if (isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            let contractTerms = null as Awaited<
+                ReturnType<typeof getContractTermsForProfile>
+            > | null;
+            let decodedContractUri: string | null = null;
+            let contractDetails: Awaited<ReturnType<typeof getContractDetailsByUri>> | null = null;
+
+            if (contractUri) {
+                decodedContractUri = decodeURIComponent(contractUri);
+                contractDetails = await getContractDetailsByUri(decodedContractUri);
+
+                if (!contractDetails) {
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+                }
+
+                const terms = await getContractTermsForProfile(
+                    targetProfile,
+                    contractDetails.contract
+                );
+
+                const writers = await getWritersForContract(contractDetails.contract);
+                const isWriter = writers.some(writer => writer.profileId === profile.profileId);
+                const isDenied = terms?.terms.deniedWriters?.includes(profile.profileId) ?? false;
+                const categoryAllowed = boost.category
+                    ? terms?.terms.write?.credentials?.categories?.[boost.category] === true
+                    : true;
+
+                if (terms && isWriter && !isDenied && categoryAllowed) {
+                    contractTerms = terms;
+                }
+            }
+
+            if (boostCreated && contractDetails) {
+                await setRelatedBoostForContract(contractDetails.contract, boost);
+            }
+
+            let signedVc: VC | JWE;
+
+            if (input.signedCredential) {
+                signedVc = input.signedCredential;
+            } else {
+                const signingAuthority = await getPrimarySigningAuthorityForUser(profile);
+
+                if (!signingAuthority) {
+                    throw new TRPCError({
+                        code: 'PRECONDITION_FAILED',
+                        message:
+                            'You must register a signing authority before using send without a pre-signed credential. Please register one via registerSigningAuthority or sign the credential client-side.',
+                    });
+                }
+
+                let unsignedVc: UnsignedVC;
+
+                try {
+                    unsignedVc = JSON.parse(boost.dataValues.boost);
+
+                    const now = new Date().toISOString();
+                    if (isVC2Format(unsignedVc)) {
+                        unsignedVc.validFrom = now;
+                    } else {
+                        unsignedVc.issuanceDate = now;
+                    }
+
+                    unsignedVc.issuer = signingAuthority.relationship.did;
+
+                    if (Array.isArray(unsignedVc.credentialSubject)) {
+                        unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(
+                            subject => ({
+                                ...subject,
+                                id: getDidWeb(domain, targetProfile.profileId),
+                            })
+                        );
+                    } else {
+                        unsignedVc.credentialSubject = {
+                            ...(unsignedVc.credentialSubject || {}),
+                            id: getDidWeb(domain, targetProfile.profileId),
+                        };
+                    }
+
+                    if (unsignedVc?.type?.includes('BoostCredential'))
+                        unsignedVc.boostId = boostUri;
+
+                    await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, domain);
+                } catch (e) {
+                    console.error('Failed to prepare boost credential', e);
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Failed to prepare boost credential',
+                    });
+                }
+
+                signedVc = await issueCredentialWithSigningAuthority(
+                    profile,
+                    unsignedVc,
+                    signingAuthority,
+                    domain,
+                    false
+                );
+            }
+
+            let skipNotification = profile.profileId === targetProfile.profileId;
+
+            const credentialUri = await sendBoost({
+                from: profile,
+                to: targetProfile,
+                boost,
+                credential: signedVc,
+                domain,
+                skipNotification,
+                contractTerms: contractTerms ?? undefined,
+            });
+
+            return { type: 'boost' as const, credentialUri, uri: boostUri };
+        }),
+
     createBoost: profileRoute
         .meta({
             openapi: {
@@ -508,10 +731,11 @@ export const boostsRouter = t.router({
         })
         .input(
             ConsumerBoostValidator.partial()
-                .omit({ uri: true, claimPermissions: true })
+                .omit({ uri: true, claimPermissions: true, defaultPermissions: true })
                 .extend({
                     credential: VCValidator.or(UnsignedVCValidator),
                     claimPermissions: BoostPermissionsValidator.partial().optional(),
+                    defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     skills: z
                         .array(z.object({ frameworkId: z.string(), id: z.string() }))
                         .min(1)
@@ -521,7 +745,7 @@ export const boostsRouter = t.router({
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { credential, claimPermissions, skills, ...metadata } = input;
+            const { credential, claimPermissions, defaultPermissions, skills, ...metadata } = input;
 
             const boost = await createBoost(credential, profile, metadata, ctx.domain);
 
@@ -533,6 +757,13 @@ export const boostsRouter = t.router({
                 await addClaimPermissionsForBoost(boost, {
                     ...EMPTY_PERMISSIONS,
                     ...claimPermissions,
+                });
+            }
+
+            if (defaultPermissions) {
+                await addDefaultPermissionsForBoost(boost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...defaultPermissions,
                 });
             }
 
@@ -555,10 +786,11 @@ export const boostsRouter = t.router({
             z.object({
                 parentUri: z.string(),
                 boost: ConsumerBoostValidator.partial()
-                    .omit({ uri: true, claimPermissions: true })
+                    .omit({ uri: true, claimPermissions: true, defaultPermissions: true })
                     .extend({
                         credential: VCValidator.or(UnsignedVCValidator),
                         claimPermissions: BoostPermissionsValidator.partial().optional(),
+                        defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
                 skills: z
                     .array(z.object({ frameworkId: z.string(), id: z.string() }))
@@ -571,7 +803,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const {
                 parentUri,
-                boost: { credential, claimPermissions, ...metadata },
+                boost: { credential, claimPermissions, defaultPermissions, ...metadata },
                 skills,
             } = input;
 
@@ -605,6 +837,13 @@ export const boostsRouter = t.router({
                 await addClaimPermissionsForBoost(childBoost, {
                     ...EMPTY_PERMISSIONS,
                     ...claimPermissions,
+                });
+            }
+
+            if (defaultPermissions) {
+                await addDefaultPermissionsForBoost(childBoost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...defaultPermissions,
                 });
             }
 
@@ -1513,8 +1752,11 @@ export const boostsRouter = t.router({
             z.object({
                 uri: z.string(),
                 updates: BoostValidator.partial()
-                    .omit({ id: true, boost: true })
-                    .extend({ credential: VCValidator.or(UnsignedVCValidator).optional() }),
+                    .omit({ id: true, boost: true, defaultPermissions: true })
+                    .extend({
+                        credential: VCValidator.or(UnsignedVCValidator).optional(),
+                        defaultPermissions: BoostPermissionsValidator.partial().optional(),
+                    }),
             })
         )
         .output(z.boolean())
@@ -1522,7 +1764,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates } = input;
-            const { name, type, category, status, credential, meta } = updates;
+            const { name, type, category, status, credential, meta, defaultPermissions } = updates;
 
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUri(decodedUri);
@@ -1557,11 +1799,11 @@ export const boostsRouter = t.router({
                         getDidWeb(ctx.domain, profile.profileId)
                     );
                 }
-            } else if (!meta) {
+            } else if (!meta && !defaultPermissions) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'Published Boosts can only have their meta updated. Draft Boosts can update any field.',
+                        'Published Boosts can only have their meta or defaultPermissions updated. Draft Boosts can update any field.',
                 });
             }
 
@@ -1575,6 +1817,14 @@ export const boostsRouter = t.router({
             if (togglingOff) await removeConnectionsForBoost(boost.id);
 
             if (actualUpdates.boost) await setStorageForUri(uri, JSON.parse(actualUpdates.boost));
+
+            // Handle defaultPermissions update
+            if (defaultPermissions !== undefined) {
+                await updateDefaultPermissionsForBoost(boost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...defaultPermissions,
+                });
+            }
 
             return result;
         }),

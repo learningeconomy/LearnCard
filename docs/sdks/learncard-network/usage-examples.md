@@ -27,4 +27,53 @@ All requests require:
 
 ***
 
+## 📤 Sending Credentials
+
+### The `send` Method (Recommended)
+
+The simplest way to send credentials is using the `send` method, which handles credential issuance, signing, and delivery in a single call.
+
+#### Using an Existing Boost Template
+
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id', // Profile ID or DID
+    templateUri: 'urn:lc:boost:abc123',
+});
+
+// Returns: { type: 'boost', credentialUri: '...', uri: '...' }
+```
+
+#### Creating and Sending a New Boost
+
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id',
+    template: {
+        credential: unsignedVC,
+        name: 'Course Completion Certificate',
+        category: 'Achievement',
+    },
+});
+```
+
+#### With ConsentFlow Contract
+
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id',
+    templateUri: 'urn:lc:boost:abc123',
+    contractUri: 'urn:lc:contract:xyz789', // Routes via consent terms if applicable
+});
+```
+
+{% hint style="info" %}
+**Signing Behavior**: The `send` method uses client-side signing when key material is available. Otherwise, it falls back to your registered signing authority.
+{% endhint %}
+
+***
+
 ##
