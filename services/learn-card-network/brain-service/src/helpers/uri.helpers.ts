@@ -9,7 +9,15 @@ import { isEncrypted } from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import { getLearnCard } from './learnCard.helpers';
 
-export const URI_TYPES = ['credential', 'presentation', 'boost', 'contract', 'terms', 'framework', 'skill'] as const;
+export const URI_TYPES = [
+    'credential',
+    'presentation',
+    'boost',
+    'contract',
+    'terms',
+    'framework',
+    'skill',
+] as const;
 
 export type URIType = (typeof URI_TYPES)[number];
 
@@ -37,7 +45,13 @@ export const getUriParts = (_uri: string, allowOutsideUris: boolean = false): UR
         });
     }
 
-    const [lc, method, domain, type, ...rest] = parts as [string, string, string, string, ...string[]];
+    const [lc, method, domain, type, ...rest] = parts as [
+        string,
+        string,
+        string,
+        string,
+        ...string[]
+    ];
     const id = rest.join(':');
 
     if ((lc !== 'lc' || method !== 'network') && !allowOutsideUris) {
@@ -61,9 +75,7 @@ export const constructUri = (type: URIType, id: string, domain: string): string 
 
 // Helper specifically for skill URIs which must be of the form
 // lc:network:<domain>/trpc:skill:<frameworkId>:<skillId>
-export const getSkillCompoundFromUri = (
-    uri: string
-): { frameworkId: string; id: string } => {
+export const getSkillCompoundFromUri = (uri: string): { frameworkId: string; id: string } => {
     const { type, id } = getUriParts(uri);
 
     if (type !== 'skill') {
@@ -84,15 +96,18 @@ export const getSkillCompoundFromUri = (
 
 export const resolveUri = async (uri: string) => {
     const { domain, type, method } = getUriParts(uri, true);
-
+    console.log('uri', uri);
+    console.log('Parsed URI parts:', { domain, type, method });
     if (method === 'cloud') {
         const isLocal = domain.includes('localhost');
         const url = `http${isLocal ? '' : 's'}://${domain
             .replace('%3A', ':')
             .replace('/trpc', '/api')}/storage/resolve?uri=${encodeURIComponent(uri)}`;
-
+        console.log('url', url);
         const res = await fetch(url);
+        console.log('res', res);
         const resolved = await res.json();
+        console.log('resolved', resolved);
         if (isEncrypted(resolved)) {
             const learnCard = await getLearnCard();
 
