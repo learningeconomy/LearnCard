@@ -4589,7 +4589,6 @@ dependencies = [
  "lazy_static",
  "locspan",
  "rdf-types",
- "reqwest",
  "ssi-contexts",
  "ssi-crypto",
  "static-iref",
