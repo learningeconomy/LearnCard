@@ -59,12 +59,7 @@ Quick guide: What docs does your change need?
 
 **Visual Documentation**
 - [ ] **Mermaid diagram** — Complex flow, state machine, or architecture
-<!-- Add diagrams inline in docs or in a dedicated section. Example:
-```mermaid
-flowchart LR
-    A[User] --> B[LearnCard] --> C[Network]
-```
--->
+<!-- Add diagrams inline in docs or in a dedicated section.-->
 
 #### 💭 Documentation Notes
 <!-- If no docs needed, briefly explain why (e.g., "Internal refactor, no API changes") -->
