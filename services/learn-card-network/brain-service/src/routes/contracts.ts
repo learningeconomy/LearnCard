@@ -966,7 +966,7 @@ export const contractsRouter = t.router({
                     // filter out duplicates
                     ...new Set(categoryValues.flatMap(({ shared }) => shared ?? [])),
                 ];
-
+                console.log('allSharedCredentialUris', allSharedCredentialUris);
                 const resolvedCredentials = await Promise.all(
                     allSharedCredentialUris.map(async uri => {
                         try {
@@ -977,7 +977,7 @@ export const contractsRouter = t.router({
                         }
                     })
                 );
-
+                console.log('resolvedCredentials', resolvedCredentials);
                 type ResolvedCredential = {
                     issuer?: string | { id: string };
                     id?: string;
@@ -994,7 +994,7 @@ export const contractsRouter = t.router({
                             ? ({ ...cred.boostCredential, id: cred.id } as ResolvedCredential) // unwrap credential, preserve id
                             : cred
                     );
-
+                console.log('credentials', credentials);
                 const transformedCredentials = credentials.map(cred => {
                     const issuer =
                         typeof cred.issuer === 'string'
@@ -1024,7 +1024,7 @@ export const contractsRouter = t.router({
                     },
                     credentials: transformedCredentials,
                 });
-
+                console.log('body', body);
                 try {
                     const response = await fetch(`${srUrl}api/v1/credentials`, {
                         method: 'POST',
@@ -1035,6 +1035,8 @@ export const contractsRouter = t.router({
                         body,
                     });
                     console.log('response', response);
+                    const responseBody = await response.text();
+                    console.log('SmartResume API Response:', responseBody);
                     if (!response.ok) {
                         throw new Error(`Error (${response.status}): ${await response.text()}`);
                     }
