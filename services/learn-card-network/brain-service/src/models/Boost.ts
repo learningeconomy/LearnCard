@@ -25,6 +25,7 @@ export type BoostRelationships = {
         Partial<BoostPermissions> & { roleId: string }
     >;
     claimRole: ModelRelatedNodesI<typeof Role, RoleInstance>;
+    defaultRole: ModelRelatedNodesI<typeof Role, RoleInstance>;
     usesFramework: ModelRelatedNodesI<
         typeof SkillFramework,
         SkillFrameworkInstance,
@@ -112,6 +113,7 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                 },
             },
             claimRole: { model: Role, direction: 'out', name: 'CLAIM_ROLE' },
+            defaultRole: { model: Role, direction: 'out', name: 'DEFAULT_ROLE' },
             usesFramework: { model: SkillFramework, direction: 'out', name: 'USES_FRAMEWORK' },
             alignedTo: { model: Skill, direction: 'out', name: 'ALIGNED_TO' },
         },
