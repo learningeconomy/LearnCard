@@ -1,8 +1,8 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import LockSimple from 'learn-card-base/svgs/LockSimple';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
+import LockSimple from 'learn-card-base/svgs/LockSimple';
 
 import { PathwayItem } from './AiPathwaySessions';
 

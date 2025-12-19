@@ -133,7 +133,7 @@ const AiInsights: React.FC = () => {
 
             {contractRequest}
             <ShareInsightsCard />
-            {!flags?.hideAiPathways && <AiInsightsLearningPathwaysCard />}
+            <AiInsightsLearningPathwaysCard />
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
             {topSkills.length > 0 && <AiInsightsSkillsCardSimple />}
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />

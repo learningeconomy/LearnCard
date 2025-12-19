@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import AiPathwaySessionsItem from './AiPathwaySessionItem';
 import AiPathwaySessionsSkeletonLoader from './AiPathwaySessionsSkeletonLoader';
@@ -27,6 +27,8 @@ export type PathwayItem = PathwayStep & {
 export const AiPathwaySessions: React.FC = () => {
     const { data: aiInsightCredential, isLoading: aiInsightCredentialLoading } =
         useAiInsightCredential();
+    const [fetchPathwaysLoading, setFetchPathwaysLoading] = useState<boolean>(false);
+
     const { resolveCredential, initWallet } = useWallet();
 
     const [learningPathwaysData, setLearningPathwaysData] = React.useState<PathwayItem[]>([]);
@@ -42,6 +44,7 @@ export const AiPathwaySessions: React.FC = () => {
 
         const fetchPathways = async () => {
             try {
+                setFetchPathwaysLoading(true);
                 const creds = await Promise.all(
                     uris.map(async uri => {
                         try {
@@ -100,7 +103,9 @@ export const AiPathwaySessions: React.FC = () => {
                 ).filter(item => !!(item.title || item.description));
 
                 if (!isCancelled) setLearningPathwaysData(items);
+                setFetchPathwaysLoading(false);
             } catch (e) {
+                setFetchPathwaysLoading(false);
                 console.warn('Error fetching suggested pathways', e);
                 if (!isCancelled) setLearningPathwaysData([]);
             }
@@ -113,8 +118,7 @@ export const AiPathwaySessions: React.FC = () => {
         };
     }, [aiInsightCredential?.insights?.suggestedPathways]);
 
-    if (aiInsightCredentialLoading) return <AiPathwaySessionsSkeletonLoader />;
-    if ((learningPathwaysData?.length ?? 0) === 0 && !aiInsightCredentialLoading) return null;
+    if (!fetchPathwaysLoading && (learningPathwaysData?.length ?? 0) === 0) return null;
 
     return (
         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding">
@@ -125,9 +129,11 @@ export const AiPathwaySessions: React.FC = () => {
                     </h2>
                 </div>
                 <div className="w-full flex flex-col items-start justify-start mt-4 gap-4">
-                    {learningPathwaysData?.map(
-                        ({ title, description, skills, topicUri, pathwayUri }, index) => {
-                            return (
+                    {fetchPathwaysLoading ? (
+                        <AiPathwaySessionsSkeletonLoader />
+                    ) : (
+                        learningPathwaysData?.map(
+                            ({ title, description, skills, topicUri, pathwayUri }, index) => (
                                 <AiPathwaySessionsItem
                                     title={title}
                                     description={description}
@@ -136,8 +142,8 @@ export const AiPathwaySessions: React.FC = () => {
                                     pathwayUri={pathwayUri}
                                     key={`${pathwayUri || title}-${index}`}
                                 />
-                            );
-                        }
+                            )
+                        )
                     )}
                 </div>
             </div>
