@@ -57,7 +57,7 @@ const PostConsentFlowDataFeed = () => {
     );
 
     return (
-        <section className="bg-white min-h-screen w-full pt-[15px]">
+        <section className="bg-white h-full min-h-screen w-full pt-[15px]">
             <IonHeader className="ion-no-border">
                 <IonToolbar className="ion-no-border" color="white">
                     <IonGrid>
