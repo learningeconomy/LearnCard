@@ -5,6 +5,7 @@ import PhoneInput from 'react-phone-number-input';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { z } from 'zod';
+import { Phone } from 'lucide-react';
 
 import {
     authStore,
@@ -56,7 +57,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     const { presentToast } = useToast();
 
     const [currentStep, setCurrentStep] = useState<PhoneFormStepsEnum>(PhoneFormStepsEnum.phone);
-    const [phone, setPhone] = useState<any>('');
+    const [phone, setPhone] = useState<string | undefined>('');
     const [code, setCode] = useState<string>('');
     const [password, setPassword] = useState<string | null | undefined>('');
     const [autoValidateCodeTriggered, setAutoValidateCodeTriggered] = useState(false);
@@ -89,8 +90,13 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
 
         FirebaseAuthentication.addListener('phoneVerificationCompleted', e => {
             console.log('📞📞📞 phoneVerificationCompleted::res 📞📞📞', e);
+
+            const verificationCode = e?.verificationCode;
+
+            if (!verificationCode) return;
+
             loginAfterAutoVerifiedSMS(
-                e?.verificationCode,
+                verificationCode,
                 () => {
                     setIsLoading(false);
                 },
@@ -166,10 +172,18 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
 
         if (currentStep === PhoneFormStepsEnum.phone || resendCode) {
             if (validate()) {
+                const phoneNumber = phone;
+
+                if (!phoneNumber) {
+                    setIsLoading(false);
+                    setIsResendCodeLoading(false);
+                    return;
+                }
+
                 // native sms auth
                 if (Capacitor.isNativePlatform()) {
                     FirebaseAuthentication.signInWithPhoneNumber({
-                        phoneNumber: phone,
+                        phoneNumber: phoneNumber,
                         skipNativeAuth: isPlatformAndroid() ? true : false,
                     });
                     // .then(({ verificationId }) => {
@@ -187,7 +201,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 } else {
                     // web sms auth
                     sendSmsAuthCode(
-                        phone,
+                        phoneNumber,
                         () => {
                             setIsLoading(false);
                             setIsResendCodeLoading(false);
@@ -260,6 +274,10 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
 
         activeStep = (
             <IonCol size="12" className="ion-no-padding">
+                <div className="flex items-center gap-[8px] mb-[8px]">
+                    <Phone size={16} className="text-grayscale-500" aria-hidden="true" />
+                    <p className="text-grayscale-700 text-[14px] font-medium">Phone number</p>
+                </div>
                 <PhoneInput
                     placeholder="Phone Number"
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
@@ -306,6 +324,29 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                     fields={6}
                     type="text"
                     onChange={e => setCode(e)}
+                    style={{
+                        width: '100%',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+                        gap: 10,
+                    }}
+                    inputStyle={{
+                        width: '100%',
+                        minWidth: 0,
+                        margin: 0,
+                        height: smallVerificationInput ? '56px' : '64px',
+                        borderRadius: '12px',
+                        backgroundColor: '#f3f4f6',
+                        border: '1px solid #e5e7eb',
+                        color: '#111827',
+                        fontSize: '22px',
+                        fontWeight: 600,
+                        textAlign: 'center',
+                        outline: 'none',
+                    }}
+                    inputStyleInvalid={{
+                        border: '1px solid #ef4444',
+                    }}
                     className={`react-code-input ${smallVerificationInput ? 'small' : ''} ${
                         errors.code || codeError ? 'react-code-input-error' : ''
                     }`}
@@ -379,7 +420,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
             <div className="flex items-center justify-center mt-[20px] pb-[20px]">
                 <button
                     onClick={handleOnClick}
-                    className={`bg-emerald-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
+                    className={`login-primary-button ${buttonClassName ?? ''}`}
                     disabled={disabled}
                 >
                     {buttonTitle}

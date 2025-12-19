@@ -206,7 +206,7 @@ export const LoginContent: React.FC = () => {
     );
 
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center p-0 m-0 px-[30px] overflow-y-auto  pt-[150px] pb-[100px] sm:pt-[0px] sm:pb-[0px] ">
+        <div className="w-full flex flex-col items-center justify-start p-0 m-0 px-[30px] pt-[80px] pb-[60px] sm:justify-center sm:pt-[0px] sm:pb-[0px]">
             <IonRow className="p-0 m-0 w-full flex items-center justify-center relative pb-[20px]">
                 <div className="flex flex-col items-center justify-center w-full">
                     <img
@@ -284,12 +284,8 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
             {showConfirmation && (
                 <DeleteUserSuccessConfirmation branding={BrandingEnum.learncard} />
             )}
-            <IonContent
-                fullscreen
-                className="flex flex-col flex-grow bg-emerald-700"
-                color="emerald-700"
-            >
-                <IonGrid className="h-full w-full flex items-center justify-center bg-emerald-700">
+            <IonContent fullscreen className="bg-emerald-700" color="emerald-700">
+                <IonGrid className="w-full min-h-full bg-emerald-700">
                     <LoginContent />
                     {/* Desktop background image */}
                     {isDesktop &&

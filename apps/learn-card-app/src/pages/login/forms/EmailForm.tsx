@@ -4,6 +4,7 @@ import { useHistory } from 'react-router-dom';
 import ReactCodeInput from 'react-code-input';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { z } from 'zod';
+import { Mail } from 'lucide-react';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 import {
@@ -71,7 +72,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const shouldVerifyCode = query.get('verifyCode');
     const verificationEmail = redirectStore.get.email();
 
-    const [email, setEmail] = useState<string | null | undefined>('');
+    const [email, setEmail] = useState<string>('');
     const [code, setCode] = useState<string>('');
     const [password, setPassword] = useState<string | null | undefined>('');
     const [currentStep, setCurrentStep] = useState<EmailFormStepsEnum>(EmailFormStepsEnum.email);
@@ -283,17 +284,27 @@ const EmailForm: React.FC<EmailFormProps> = ({
     if (currentStep === EmailFormStepsEnum.email) {
         formTitle = null;
         activeStep = (
-            <div className="w-full flex items-center justify-center mb-[20px]">
-                <input
-                    aria-label="Email"
-                    className={`bg-emerald-600 text-white placeholder:text-white rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus:outline-none focus:ring-0 focus:border-transparent ${
-                        errors.email ? 'login-input-email-error' : ''
-                    } white-placeholder`}
-                    placeholder="Email address"
-                    onChange={e => setEmail(e.target.value)}
-                    value={email}
-                    type="text"
-                />
+            <div className="w-full mb-[20px]">
+                <p className="text-grayscale-700 text-[14px] font-medium mb-[8px]">Email address</p>
+                <div className="relative w-full">
+                    <Mail
+                        size={18}
+                        className="absolute left-[14px] top-1/2 -translate-y-1/2 text-grayscale-500"
+                        aria-hidden="true"
+                    />
+                    <input
+                        aria-label="Email"
+                        className={`bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[16px] w-full py-[14px] pr-[14px] pl-[44px] border border-grayscale-200 font-medium text-[16px] leading-[24px] focus:outline-none focus:ring-2 focus:ring-grayscale-300 focus:ring-offset-0 ${
+                            errors.email ? 'login-input-email-error' : ''
+                        }`}
+                        placeholder="name@example.com"
+                        onChange={e => setEmail(e.target.value)}
+                        value={email}
+                        type="text"
+                        autoComplete="email"
+                        inputMode="email"
+                    />
+                </div>
                 {errors.email && <p className="login-input-error-msg">{errors.email}</p>}
             </div>
         );
@@ -325,6 +336,29 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     fields={6}
                     type="text"
                     onChange={e => setCode(e)}
+                    style={{
+                        width: '100%',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+                        gap: 10,
+                    }}
+                    inputStyle={{
+                        width: '100%',
+                        minWidth: 0,
+                        margin: 0,
+                        height: '64px',
+                        borderRadius: '12px',
+                        backgroundColor: '#f3f4f6',
+                        border: '1px solid #e5e7eb',
+                        color: '#111827',
+                        fontSize: '22px',
+                        fontWeight: 600,
+                        textAlign: 'center',
+                        outline: 'none',
+                    }}
+                    inputStyleInvalid={{
+                        border: '1px solid #ef4444',
+                    }}
                     className={`react-code-input ${
                         errors.code || codeError ? 'react-code-input-error' : ''
                     }`}
@@ -405,7 +439,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             {activeStep}
             <div className="flex items-center justify-center pb-[20px]">
                 <button
-                    className={`bg-emerald-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
+                    className={`login-primary-button ${buttonClassName}`}
                     onClick={handleOnClick}
                     disabled={disabled}
                 >
