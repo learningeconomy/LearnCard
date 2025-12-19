@@ -12,7 +12,8 @@ import {
 export const EndorsementAttachmentsList: React.FC<{
     endorsement: EndorsementState;
     setEndorsement: React.Dispatch<React.SetStateAction<EndorsementState>>;
-}> = ({ endorsement, setEndorsement }) => {
+    showDeleteButton?: boolean;
+}> = ({ endorsement, setEndorsement, showDeleteButton = false }) => {
     const getAttachments = (
         attachmentType: EndorsementMediaOptionsEnum
     ): EndorsementMediaAttachment[] => {
@@ -38,7 +39,7 @@ export const EndorsementAttachmentsList: React.FC<{
                     media={attachment}
                     endorsement={endorsement}
                     setEndorsement={setEndorsement}
-                    showDeleteButton
+                    showDeleteButton={showDeleteButton}
                 />
             ))}
         </IonRow>

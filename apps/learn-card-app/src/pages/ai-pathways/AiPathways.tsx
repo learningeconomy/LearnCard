@@ -1,5 +1,4 @@
 import React from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -8,6 +7,7 @@ import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
+import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import { CredentialCategoryEnum } from 'learn-card-base';
@@ -21,7 +21,6 @@ const AiPathways: React.FC = () => {
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
-    const flags = useFlags();
 
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
@@ -36,7 +35,8 @@ const AiPathways: React.FC = () => {
                     <div className="flex items-center justify-center flex-col relative w-full pb-[50px]">
                         <AiPathwayCourses />
                         <AiPathwaySessions />
-                        <ExploreAiInsightsButton />
+                        <AiPathwayExploreContent />
+                        <ExploreAiInsightsButton className="mt-4" />
                     </div>
                 </IonContent>
             </ErrorBoundary>
