@@ -142,16 +142,7 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                     {LoginTypeForm}
                 </div>
 
-                <div className="py-[10px] w-full">
-                    <div className="h-[2px] w-full bg-grayscale-500 opacity-30" />
-                </div>
-
-                {/* <button
-                    onClick={() => setIsLogin(!isLogin)}
-                    className="w-full  text-grayscale-800 font-[500] text-[14px] leading-[24px]"
-                >
-                    {isLogin ? 'Signup' : 'Login'}
-                </button> */}
+                <div className="py-[10px] w-full"></div>
             </div>
 
             <button
