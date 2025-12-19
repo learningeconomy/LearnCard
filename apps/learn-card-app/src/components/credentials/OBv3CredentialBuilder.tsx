@@ -21,6 +21,9 @@ import {
     Clock,
     Plus,
     ChevronLeft,
+    CheckCircle2,
+    AlertCircle,
+    ShieldCheck,
 } from 'lucide-react';
 
 import { useFilestack, BoostCategoryOptionsEnum, BoostPageViewMode, useWallet } from 'learn-card-base';
@@ -219,6 +222,10 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
     const [showSaveAs, setShowSaveAs] = useState(false);
     const [saveAsName, setSaveAsName] = useState('');
 
+    // Verification state
+    const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'valid' | 'invalid'>('idle');
+    const [verificationError, setVerificationError] = useState<string | null>(null);
+
     // Load saved credentials and draft on mount
     useEffect(() => {
         if (isOpen) {
@@ -371,35 +378,43 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
         clearDraft();
     }, [data, currentCredentialId, savedCredentials]);
 
-    // Build the OBv3 credential object
+    // Build the OBv3 credential object (proper spec-compliant structure)
     const credential = useMemo(() => {
+        const credentialId = `urn:uuid:${crypto.randomUUID()}`;
+        const achievementId = `urn:uuid:${crypto.randomUUID()}`;
+        const issuerDid = userDid || 'did:example:issuer';
+
         const cred: Record<string, unknown> = {
             '@context': [
                 'https://www.w3.org/2018/credentials/v1',
-                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
             ],
+            id: credentialId,
             type: ['VerifiableCredential', 'OpenBadgeCredential'],
             name: data.credentialName || data.achievementName || 'Untitled Credential',
+            issuer: issuerDid,
+            issuanceDate: new Date().toISOString(),
             credentialSubject: {
+                id: issuerDid, // Will be replaced with recipient DID when issued
+                type: ['AchievementSubject'],
                 achievement: {
+                    id: achievementId,
                     type: ['Achievement'],
                     name: data.achievementName || 'Untitled',
                     description: data.achievementDescription || '',
                     achievementType: data.achievementType,
+                    criteria: data.criteriaText || data.criteriaUrl
+                        ? {
+                              ...(data.criteriaText && { narrative: data.criteriaText }),
+                              ...(data.criteriaUrl && { id: data.criteriaUrl }),
+                          }
+                        : { narrative: 'Criteria for earning this credential.' },
                     ...(data.achievementImage && {
                         image: {
                             id: data.achievementImage,
                             type: 'Image',
                         },
                     }),
-                    ...(data.criteriaText || data.criteriaUrl
-                        ? {
-                              criteria: {
-                                  ...(data.criteriaText && { narrative: data.criteriaText }),
-                                  ...(data.criteriaUrl && { id: data.criteriaUrl }),
-                              },
-                          }
-                        : {}),
                 },
             },
         };
@@ -425,7 +440,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
         }
 
         return cred;
-    }, [data]);
+    }, [data, userDid]);
 
     const credentialJson = useMemo(() => JSON.stringify(credential, null, 2), [credential]);
 
@@ -434,6 +449,32 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    // Verify credential by attempting to issue it
+    const handleVerify = useCallback(async () => {
+        setVerificationStatus('verifying');
+        setVerificationError(null);
+
+        try {
+            const wallet = await initWallet();
+
+            // Try to issue the credential - this will validate the JSON-LD structure
+            await wallet.invoke.issueCredential(credential as Parameters<typeof wallet.invoke.issueCredential>[0]);
+
+            setVerificationStatus('valid');
+        } catch (err) {
+            setVerificationStatus('invalid');
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            setVerificationError(errorMessage);
+            console.error('Credential verification failed:', err);
+        }
+    }, [credential, initWallet]);
+
+    // Reset verification when data changes
+    useEffect(() => {
+        setVerificationStatus('idle');
+        setVerificationError(null);
+    }, [data]);
 
     const handleSave = () => {
         onSave?.(credential);
@@ -959,12 +1000,59 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                 {credentialJson}
                             </pre>
 
-                            <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
-                                <p className="text-xs text-cyan-800">
-                                    <strong>Note:</strong> The <code className="bg-cyan-100 px-1 rounded">issuer</code> and{' '}
-                                    <code className="bg-cyan-100 px-1 rounded">credentialSubject.id</code> fields will be 
-                                    automatically added when you issue this credential.
-                                </p>
+                            {/* Verification Section */}
+                            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                            <ShieldCheck className="w-4 h-4 text-gray-500" />
+                                            Verify Credential Structure
+                                        </h4>
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                            Test that this credential can be issued as valid OBv3
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={handleVerify}
+                                        disabled={!isValid || verificationStatus === 'verifying'}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors disabled:opacity-50"
+                                    >
+                                        {verificationStatus === 'verifying' ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Verifying...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ShieldCheck className="w-4 h-4" />
+                                                Verify
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {verificationStatus === 'valid' && (
+                                    <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                        <div>
+                                            <p className="text-sm font-medium text-emerald-800">Valid OBv3 Credential</p>
+                                            <p className="text-xs text-emerald-600">This credential structure passed JSON-LD expansion and can be issued.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {verificationStatus === 'invalid' && (
+                                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <AlertCircle className="w-5 h-5 text-red-600" />
+                                            <p className="text-sm font-medium text-red-800">Invalid Credential Structure</p>
+                                        </div>
+                                        <p className="text-xs text-red-600 font-mono bg-red-100 p-2 rounded mt-2 overflow-x-auto">
+                                            {verificationError}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

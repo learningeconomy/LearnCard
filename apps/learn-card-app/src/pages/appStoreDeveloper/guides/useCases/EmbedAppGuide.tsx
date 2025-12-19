@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
     Globe, 
     Package, 
@@ -21,10 +21,34 @@ import {
     Lock,
     Shield,
     Monitor,
+    User,
+    Send,
+    Navigation,
+    FileSearch,
+    Key,
+    ClipboardCheck,
+    FileText,
+    Copy,
+    Check,
+    ChevronRight,
+    Info,
+    Zap,
+    Award,
+    Trash2,
+    RefreshCw,
+    Eye,
+    MoreVertical,
+    Edit3,
+    Link as LinkIcon,
 } from 'lucide-react';
+
+import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import { StepProgress, CodeOutputPanel } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
 
 // URL Check types and helper
 interface UrlCheckResult {
@@ -879,122 +903,1309 @@ console.log('User Profile:', identity.profile);
     );
 };
 
-// Step 4: Use API
-const UseApiStep: React.FC<{
-    onBack: () => void;
-}> = ({ onBack }) => {
-    const [selectedMethod, setSelectedMethod] = useState('sendCredential');
+// Boost Template type
+interface BoostTemplate {
+    uri: string;
+    name: string;
+    type?: string;
+    category?: string;
+    image?: string;
+    createdAt?: string;
+}
 
-    const methods = [
-        {
-            id: 'sendCredential',
-            name: 'sendCredential()',
-            description: 'Send a credential to the user\'s wallet',
-            code: `// Send a credential to the wallet
-const result = await learnCard.sendCredential({
-    credential: {
-        "@context": ["https://www.w3.org/2018/credentials/v1"],
-        "type": ["VerifiableCredential", "Achievement"],
-        "issuer": "did:web:your-app.com",
-        "credentialSubject": {
-            "name": "Course Completion",
-            "description": "Completed JavaScript 101"
+// Template Manager Component for initiateTemplateIssue
+const TemplateManager: React.FC<{
+    appListingId?: string;
+    appName?: string;
+}> = ({ appListingId, appName }) => {
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+
+    const [templates, setTemplates] = useState<BoostTemplate[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isCreating, setIsCreating] = useState(false);
+    const [showCredentialBuilder, setShowCredentialBuilder] = useState(false);
+    const [copiedUri, setCopiedUri] = useState<string | null>(null);
+    const [deletingUri, setDeletingUri] = useState<string | null>(null);
+
+    // Store initWallet in a ref to avoid dependency issues
+    const initWalletRef = React.useRef(initWallet);
+    initWalletRef.current = initWallet;
+
+    // Helper to fetch templates
+    const fetchTemplatesForListing = async (listingId: string): Promise<BoostTemplate[]> => {
+        const wallet = await initWalletRef.current();
+        const result = await wallet.invoke.getPaginatedBoosts({ limit: 100 });
+
+        return (result?.records || [])
+            .filter((boost: Record<string, unknown>) => {
+                const meta = boost.meta as Record<string, unknown> | undefined;
+                return meta?.appListingId === listingId;
+            })
+            .map((boost: Record<string, unknown>) => ({
+                uri: boost.uri as string,
+                name: boost.name as string || 'Untitled Template',
+                type: boost.type as string,
+                category: boost.category as string,
+                image: boost.image as string,
+                createdAt: boost.createdAt as string,
+            }));
+    };
+
+    // Fetch templates when appListingId changes
+    useEffect(() => {
+        let cancelled = false;
+
+        if (!appListingId) {
+            setTemplates([]);
+            setIsLoading(false);
+            return;
         }
-    }
+
+        setIsLoading(true);
+
+        fetchTemplatesForListing(appListingId)
+            .then((boostTemplates) => {
+                if (!cancelled) {
+                    setTemplates(boostTemplates);
+                }
+            })
+            .catch((err) => {
+                console.error('Failed to fetch templates:', err);
+                if (!cancelled) {
+                    setTemplates([]);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [appListingId]);
+
+    // Manual refresh function
+    const refreshTemplates = async () => {
+        if (!appListingId) return;
+
+        setIsLoading(true);
+
+        try {
+            const boostTemplates = await fetchTemplatesForListing(appListingId);
+            setTemplates(boostTemplates);
+        } catch (err) {
+            console.error('Failed to refresh templates:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Create a new boost template from credential
+    const handleCreateTemplate = async (credential: Record<string, unknown>) => {
+        if (!appListingId) {
+            presentToast('No app listing selected', { type: ToastTypeEnum.Error });
+            return;
+        }
+
+        setIsCreating(true);
+
+        try {
+            const wallet = await initWallet();
+
+            // The OBv3CredentialBuilder now outputs properly structured credentials
+            // Just issue it directly
+            const vc = await wallet.invoke.issueCredential(credential as Parameters<typeof wallet.invoke.issueCredential>[0]);
+            console.log("Issued credential:", vc);
+            // Create the boost with public issuance permission
+            const boostMetadata = {
+                name: (credential.name as string) || 'Template',
+                type: ((credential.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
+                category: 'achievement',
+                meta: { appListingId }, // Store app listing ID in metadata for filtering
+                defaultPermissions: {
+                    canIssue: true, // Public template - anyone can issue
+                },
+            };
+            const boostUri = await wallet.invoke.createBoost(vc, boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]);
+
+            presentToast('Template created successfully!', { type: ToastTypeEnum.Success });
+
+            // Refresh the list
+            await refreshTemplates();
+
+            setShowCredentialBuilder(false);
+        } catch (err) {
+            console.error('Failed to create template:', err);
+            presentToast('Failed to create template', { type: ToastTypeEnum.Error });
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    // Delete a template
+    const handleDeleteTemplate = async (uri: string) => {
+        setDeletingUri(uri);
+
+        try {
+            const wallet = await initWallet();
+            await wallet.invoke.deleteBoost(uri);
+            presentToast('Template deleted', { type: ToastTypeEnum.Success });
+            await refreshTemplates();
+        } catch (err) {
+            console.error('Failed to delete template:', err);
+            presentToast('Failed to delete template', { type: ToastTypeEnum.Error });
+        } finally {
+            setDeletingUri(null);
+        }
+    };
+
+    // Copy URI to clipboard
+    const handleCopyUri = async (uri: string) => {
+        await navigator.clipboard.writeText(uri);
+        setCopiedUri(uri);
+        setTimeout(() => setCopiedUri(null), 2000);
+    };
+
+    // Generate code example for a template
+    const getCodeExample = (uri: string) => `// Issue from your template
+const result = await learnCard.initiateTemplateIssue({
+    templateUri: '${uri}'
 });
 
 if (result.success) {
-    console.log('Credential saved to wallet!');
-}`,
-        },
-        {
-            id: 'askCredentialSearch',
-            name: 'askCredentialSearch()',
-            description: 'Search for credentials in the wallet',
-            code: `// Search user's credentials
-const results = await learnCard.askCredentialSearch({
-    type: ['VerifiableCredential', 'Achievement']
-});
+    console.log('Credential issued to user!');
+}`;
 
-// User will be prompted to select credentials to share
-console.log('Shared credentials:', results.credentials);`,
-        },
-        {
-            id: 'launchFeature',
-            name: 'launchFeature()',
-            description: 'Navigate the wallet to a specific page',
-            code: `// Open the wallet's credential view
-await learnCard.launchFeature('/wallet', 'View your credentials');
+    if (!appListingId) {
+        return (
+            <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
-// Or open contacts
-await learnCard.launchFeature('/contacts', 'Find connections');`,
-        },
-        {
-            id: 'requestConsent',
-            name: 'requestConsent()',
-            description: 'Request consent for data sharing',
-            code: `// Request user consent for a contract
-const consent = await learnCard.requestConsent('lc:contract:abc123');
+                    <div>
+                        <h4 className="font-medium text-amber-800 mb-1">App Listing Required</h4>
 
-if (consent.granted) {
-    console.log('User granted consent!');
-    // Now you can access data per the contract terms
-}`,
-        },
-    ];
-
-    const selectedMethodData = methods.find(m => m.id === selectedMethod);
+                        <p className="text-sm text-amber-700">
+                            To create and manage boost templates, select an integration and app listing above.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Use the API</h3>
+        <div className="space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h4 className="font-semibold text-gray-800">Your Boost Templates</h4>
 
-                <p className="text-gray-600">
-                    Now you can interact with the wallet. Select a method below to see how it works.
-                </p>
-            </div>
+                    <p className="text-sm text-gray-500">
+                        Create credential templates that your embedded app can issue to users
+                    </p>
+                </div>
 
-            {/* Method selector */}
-            <div className="flex flex-wrap gap-2">
-                {methods.map(method => (
+                <div className="flex items-center gap-2">
                     <button
-                        key={method.id}
-                        onClick={() => setSelectedMethod(method.id)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            selectedMethod === method.id
-                                ? 'bg-cyan-500 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                        onClick={refreshTemplates}
+                        disabled={isLoading}
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Refresh"
                     >
-                        {method.name}
+                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </button>
-                ))}
+
+                    <button
+                        onClick={() => setShowCredentialBuilder(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        New Template
+                    </button>
+                </div>
             </div>
 
-            {/* Selected method */}
-            {selectedMethodData && (
-                <div className="space-y-3">
-                    <p className="text-gray-600">{selectedMethodData.description}</p>
-
-                    <CodeOutputPanel
-                        title={selectedMethodData.name}
-                        snippets={{ typescript: selectedMethodData.code }}
-                    />
+            {/* Loading state */}
+            {isLoading && (
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
                 </div>
             )}
 
-            {/* Success state */}
-            <div className="p-6 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl text-center">
-                <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Rocket className="w-8 h-8 text-emerald-600" />
+            {/* Empty state */}
+            {!isLoading && templates.length === 0 && (
+                <div className="p-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl text-center">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <FileText className="w-6 h-6 text-gray-400" />
+                    </div>
+
+                    <h4 className="font-medium text-gray-700 mb-1">No templates yet</h4>
+
+                    <p className="text-sm text-gray-500 mb-4">
+                        Create your first boost template to start issuing credentials from your app
+                    </p>
+
+                    <button
+                        onClick={() => setShowCredentialBuilder(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create Template
+                    </button>
+                </div>
+            )}
+
+            {/* Template list */}
+            {!isLoading && templates.length > 0 && (
+                <div className="space-y-3">
+                    {templates.map(template => (
+                        <div
+                            key={template.uri}
+                            className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-colors"
+                        >
+                            <div className="flex items-start gap-4">
+                                {/* Template image */}
+                                <div className="w-12 h-12 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                    {template.image ? (
+                                        <img 
+                                            src={template.image} 
+                                            alt={template.name} 
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <Award className="w-6 h-6 text-cyan-600" />
+                                    )}
+                                </div>
+
+                                {/* Template info */}
+                                <div className="flex-1 min-w-0">
+                                    <h5 className="font-medium text-gray-800 truncate">
+                                        {template.name}
+                                    </h5>
+
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {template.type && (
+                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                                                {template.type}
+                                            </span>
+                                        )}
+
+                                        <span className="text-xs text-gray-400 truncate font-mono">
+                                            {template.uri.slice(0, 30)}...
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                    <button
+                                        onClick={() => handleCopyUri(template.uri)}
+                                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                        title="Copy URI"
+                                    >
+                                        {copiedUri === template.uri ? (
+                                            <Check className="w-4 h-4 text-emerald-500" />
+                                        ) : (
+                                            <Copy className="w-4 h-4" />
+                                        )}
+                                    </button>
+
+                                    <button
+                                        onClick={() => handleDeleteTemplate(template.uri)}
+                                        disabled={deletingUri === template.uri}
+                                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Delete"
+                                    >
+                                        {deletingUri === template.uri ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Code example (collapsed by default, could expand) */}
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-medium text-gray-500">Use in your app:</span>
+
+                                    <button
+                                        onClick={() => navigator.clipboard.writeText(getCodeExample(template.uri))}
+                                        className="text-xs text-cyan-600 hover:text-cyan-700"
+                                    >
+                                        Copy code
+                                    </button>
+                                </div>
+
+                                <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg text-xs overflow-x-auto">
+                                    <code>{getCodeExample(template.uri)}</code>
+                                </pre>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Credential Builder Modal */}
+            <OBv3CredentialBuilder
+                isOpen={showCredentialBuilder}
+                onClose={() => setShowCredentialBuilder(false)}
+                onSave={handleCreateTemplate}
+            />
+
+            {/* Creating overlay */}
+            {isCreating && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <div className="bg-white rounded-xl p-6 flex items-center gap-3">
+                        <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
+                        <span className="text-gray-700">Creating template...</span>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// API Method types
+interface ApiMethod {
+    id: string;
+    name: string;
+    category: 'auth' | 'credentials' | 'navigation' | 'consent';
+    icon: React.ReactNode;
+    shortDescription: string;
+    description: string;
+    parameters: Array<{
+        name: string;
+        type: string;
+        required: boolean;
+        description: string;
+    }>;
+    returns: {
+        type: string;
+        description: string;
+        example: string;
+    };
+    code: string;
+    tips?: string[];
+}
+
+// Step 4: Use API - Stripe-docs style
+const UseApiStep: React.FC<{
+    onBack: () => void;
+}> = ({ onBack }) => {
+    const [selectedMethodId, setSelectedMethodId] = useState('requestIdentity');
+    const [copiedCode, setCopiedCode] = useState(false);
+    const [showTemplateManager, setShowTemplateManager] = useState(false);
+
+    // Integration and App Listing state for template management
+    const [selectedIntegration, setSelectedIntegration] = useState<LCNIntegration | null>(null);
+    const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(null);
+    const [isCreatingIntegration, setIsCreatingIntegration] = useState(false);
+    const [isCreatingListing, setIsCreatingListing] = useState(false);
+    const [newIntegrationName, setNewIntegrationName] = useState('');
+    const [newListingName, setNewListingName] = useState('');
+
+    // Developer portal hooks
+    const { 
+        useIntegrations, 
+        useCreateIntegration, 
+        useListingsForIntegration,
+        useCreateListing,
+    } = useDeveloperPortal();
+    const { data: integrations, isLoading: isLoadingIntegrations, refetch: refetchIntegrations } = useIntegrations();
+    const createIntegrationMutation = useCreateIntegration();
+    const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(selectedIntegration?.id || null);
+    const createListingMutation = useCreateListing();
+
+    // Auto-select first integration
+    useEffect(() => {
+        if (integrations && integrations.length > 0 && !selectedIntegration) {
+            setSelectedIntegration(integrations[0]);
+        }
+    }, [integrations, selectedIntegration]);
+
+    // Auto-select first listing when integration changes
+    useEffect(() => {
+        if (listings && listings.length > 0 && !selectedListing) {
+            setSelectedListing(listings[0]);
+        } else if (!listings || listings.length === 0) {
+            setSelectedListing(null);
+        }
+    }, [listings, selectedListing, selectedIntegration]);
+
+    const handleCreateIntegration = async () => {
+        if (!newIntegrationName.trim()) return;
+        try {
+            await createIntegrationMutation.mutateAsync(newIntegrationName.trim());
+            setNewIntegrationName('');
+            setIsCreatingIntegration(false);
+            refetchIntegrations();
+        } catch (err) {
+            console.error('Failed to create integration:', err);
+        }
+    };
+
+    const handleCreateListing = async () => {
+        if (!newListingName.trim() || !selectedIntegration) return;
+        try {
+            await createListingMutation.mutateAsync({
+                integrationId: selectedIntegration.id,
+                listing: {
+                    display_name: newListingName.trim(),
+                    tagline: `${newListingName.trim()} - An embedded LearnCard app`,
+                    full_description: `${newListingName.trim()} is an embedded application that integrates with the LearnCard wallet.`,
+                    icon_url: 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb', // Default LearnCard icon
+                    launch_type: 'EMBEDDED_IFRAME',
+                    launch_config_json: JSON.stringify({ url: '' }),
+                },
+            });
+            setNewListingName('');
+            setIsCreatingListing(false);
+            refetchListings();
+        } catch (err) {
+            console.error('Failed to create listing:', err);
+        }
+    };
+
+    const categories = [
+        { id: 'auth', name: 'Authentication', icon: <User className="w-4 h-4" /> },
+        { id: 'credentials', name: 'Credentials', icon: <Award className="w-4 h-4" /> },
+        { id: 'navigation', name: 'Navigation', icon: <Navigation className="w-4 h-4" /> },
+        { id: 'consent', name: 'Consent', icon: <ClipboardCheck className="w-4 h-4" /> },
+    ];
+
+    const methods: ApiMethod[] = [
+        // Authentication
+        {
+            id: 'requestIdentity',
+            name: 'requestIdentity',
+            category: 'auth',
+            icon: <User className="w-4 h-4" />,
+            shortDescription: 'SSO authentication',
+            description: 'Request the user\'s identity for single sign-on. Since the user is already authenticated in the LearnCard wallet, this instantly returns their DID and profile information — no login flow required.',
+            parameters: [],
+            returns: {
+                type: 'Promise<Identity>',
+                description: 'User identity object with DID and profile',
+                example: `{
+  "did": "did:web:network.learncard.com:users:abc123",
+  "profile": {
+    "displayName": "Jane Smith",
+    "profileId": "janesmith",
+    "image": "https://cdn.learncard.com/avatars/abc123.png",
+    "email": "jane@example.com"
+  }
+}`,
+            },
+            code: `import { createPartnerConnect } from '@learncard/partner-connect';
+
+const learnCard = createPartnerConnect({
+    hostOrigin: 'https://learncard.app'
+});
+
+// Get the authenticated user's identity
+const identity = await learnCard.requestIdentity();
+
+// Use the identity in your app
+console.log('Welcome,', identity.profile.displayName);
+console.log('User DID:', identity.did);
+
+// You can use the DID as a unique user identifier
+const userId = identity.did;`,
+            tips: [
+                'Call this on app load to immediately identify the user',
+                'The DID is a unique, cryptographic identifier for the user',
+                'Profile data may be partial depending on user privacy settings',
+            ],
+        },
+        // Credentials
+        {
+            id: 'sendCredential',
+            name: 'sendCredential',
+            category: 'credentials',
+            icon: <Send className="w-4 h-4" />,
+            shortDescription: 'Issue a credential',
+            description: 'Send a Verifiable Credential directly to the user\'s wallet. The user will see a prompt to accept the credential. Use this for course completions, achievements, certificates, and more.',
+            parameters: [
+                {
+                    name: 'credential',
+                    type: 'VerifiableCredential',
+                    required: true,
+                    description: 'The W3C Verifiable Credential object to send',
+                },
+            ],
+            returns: {
+                type: 'Promise<{ success: boolean }>',
+                description: 'Whether the credential was accepted',
+                example: `{ "success": true }`,
+            },
+            code: `// Issue a credential when user completes something
+const credential = {
+    "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+    ],
+    "type": ["VerifiableCredential", "OpenBadgeCredential"],
+    "name": "JavaScript Fundamentals",
+    "issuer": {
+        "id": "did:web:your-app.com",
+        "name": "Your App Name"
+    },
+    "credentialSubject": {
+        "achievement": {
+            "type": ["Achievement"],
+            "name": "JavaScript Fundamentals",
+            "description": "Completed the JavaScript fundamentals course",
+            "achievementType": "Certificate"
+        }
+    }
+};
+
+const result = await learnCard.sendCredential({ credential });
+
+if (result.success) {
+    showSuccessMessage('Credential added to your wallet!');
+}`,
+            tips: [
+                'Use Open Badges 3.0 format for maximum compatibility',
+                'Include your issuer DID for credential verification',
+                'The user can decline — always handle the rejection case',
+            ],
+        },
+        {
+            id: 'askCredentialSearch',
+            name: 'askCredentialSearch',
+            category: 'credentials',
+            icon: <FileSearch className="w-4 h-4" />,
+            shortDescription: 'Query user credentials',
+            description: 'Request access to search the user\'s credential wallet. The user will see a consent prompt and can choose which credentials to share. Great for verification flows or importing existing credentials.',
+            parameters: [
+                {
+                    name: 'query',
+                    type: 'CredentialQuery',
+                    required: false,
+                    description: 'Optional filter criteria for credential types',
+                },
+            ],
+            returns: {
+                type: 'Promise<{ credentials: VerifiableCredential[] }>',
+                description: 'Array of credentials the user chose to share',
+                example: `{
+  "credentials": [
+    {
+      "@context": [...],
+      "type": ["VerifiableCredential", "OpenBadgeCredential"],
+      "name": "Python Developer Certificate",
+      ...
+    }
+  ]
+}`,
+            },
+            code: `// Search for specific credential types
+const result = await learnCard.askCredentialSearch({
+    type: ['OpenBadgeCredential']
+});
+
+// User selects which credentials to share
+if (result.credentials.length > 0) {
+    console.log('User shared', result.credentials.length, 'credentials');
+    
+    // Process the shared credentials
+    for (const cred of result.credentials) {
+        console.log('Credential:', cred.name);
+        // Verify, display, or store the credential
+    }
+} else {
+    console.log('User declined or has no matching credentials');
+}`,
+            tips: [
+                'Users control what they share — respect their privacy',
+                'Filter by type to only request relevant credentials',
+                'Credentials are cryptographically verifiable',
+            ],
+        },
+        {
+            id: 'askCredentialSpecific',
+            name: 'askCredentialSpecific',
+            category: 'credentials',
+            icon: <Key className="w-4 h-4" />,
+            shortDescription: 'Get credential by ID',
+            description: 'Request a specific credential by its ID. Useful when you know exactly which credential you need, such as re-verifying a previously shared credential.',
+            parameters: [
+                {
+                    name: 'credentialId',
+                    type: 'string',
+                    required: true,
+                    description: 'The unique ID of the credential to request',
+                },
+            ],
+            returns: {
+                type: 'Promise<{ credential: VerifiableCredential | null }>',
+                description: 'The requested credential if user approves',
+                example: `{
+  "credential": {
+    "@context": [...],
+    "id": "urn:uuid:abc123...",
+    "type": ["VerifiableCredential"],
+    ...
+  }
+}`,
+            },
+            code: `// Request a specific credential by ID
+const credentialId = 'urn:uuid:abc123-def456-...';
+
+const result = await learnCard.askCredentialSpecific(credentialId);
+
+if (result.credential) {
+    console.log('Got credential:', result.credential.name);
+    
+    // Verify the credential is still valid
+    const isValid = await verifyCredential(result.credential);
+    
+    if (isValid) {
+        grantAccess();
+    }
+} else {
+    console.log('User declined or credential not found');
+}`,
+            tips: [
+                'Store credential IDs to re-verify later',
+                'User must still approve sharing the credential',
+                'Returns null if credential doesn\'t exist in user\'s wallet',
+            ],
+        },
+        {
+            id: 'initiateTemplateIssue',
+            name: 'initiateTemplateIssue',
+            category: 'credentials',
+            icon: <FileText className="w-4 h-4" />,
+            shortDescription: 'Issue from template',
+            description: 'Issue a credential using a pre-defined boost template. Templates are configured in the LearnCard dashboard and ensure consistent credential formatting. Best for recurring credential types.',
+            parameters: [
+                {
+                    name: 'templateUri',
+                    type: 'string',
+                    required: true,
+                    description: 'The URI of the boost/template to issue from',
+                },
+                {
+                    name: 'recipientDid',
+                    type: 'string',
+                    required: false,
+                    description: 'DID of the recipient (defaults to current user)',
+                },
+            ],
+            returns: {
+                type: 'Promise<{ success: boolean, credentialId?: string }>',
+                description: 'Result of the issuance',
+                example: `{
+  "success": true,
+  "credentialId": "urn:uuid:new-cred-123..."
+}`,
+            },
+            code: `// Issue from a pre-configured template
+const templateUri = 'lc:boost:your-org:course-completion-template';
+
+const result = await learnCard.initiateTemplateIssue({
+    templateUri,
+    // Optionally specify recipient (defaults to current user)
+    // recipientDid: 'did:web:...'
+});
+
+if (result.success) {
+    console.log('Credential issued:', result.credentialId);
+    showSuccess('Achievement unlocked!');
+}`,
+            tips: [
+                'Create templates in the LearnCard dashboard first',
+                'Templates ensure consistent branding and fields',
+                'Great for gamification with pre-defined achievements',
+            ],
+        },
+        // Navigation
+        {
+            id: 'launchFeature',
+            name: 'launchFeature',
+            category: 'navigation',
+            icon: <Navigation className="w-4 h-4" />,
+            shortDescription: 'Navigate host app',
+            description: 'Navigate the LearnCard wallet to a specific feature or page. This allows your app to integrate with wallet features like viewing credentials, managing contacts, or accessing settings.',
+            parameters: [
+                {
+                    name: 'path',
+                    type: 'string',
+                    required: true,
+                    description: 'The wallet path to navigate to',
+                },
+                {
+                    name: 'description',
+                    type: 'string',
+                    required: false,
+                    description: 'Optional description shown during navigation',
+                },
+            ],
+            returns: {
+                type: 'Promise<void>',
+                description: 'Resolves when navigation completes',
+                example: `// No return value`,
+            },
+            code: `// Navigate to the user's credential wallet
+await learnCard.launchFeature('/wallet', 'View your credentials');
+
+// Open the contacts/connections page
+await learnCard.launchFeature('/contacts', 'Find and connect with others');
+
+// Open settings
+await learnCard.launchFeature('/settings', 'Manage your preferences');
+
+// Open a specific credential detail
+await learnCard.launchFeature('/credential/abc123', 'View credential details');
+
+// Available paths:
+// /wallet     - Credential wallet
+// /contacts   - Connections & contacts
+// /settings   - User settings
+// /profile    - User profile
+// /activity   - Activity feed`,
+            tips: [
+                'Use this to complement your app\'s features with wallet features',
+                'The description appears as a toast or transition message',
+                'Navigation happens within the wallet, not your iframe',
+            ],
+        },
+        // Consent
+        {
+            id: 'requestConsent',
+            name: 'requestConsent',
+            category: 'consent',
+            icon: <ClipboardCheck className="w-4 h-4" />,
+            shortDescription: 'Request permissions',
+            description: 'Request user consent for specific permissions or data access. Consent is tied to a contract URI that defines what access is being granted. Use this for ongoing data access agreements.',
+            parameters: [
+                {
+                    name: 'contractUri',
+                    type: 'string',
+                    required: true,
+                    description: 'The URI of the consent contract',
+                },
+                {
+                    name: 'options',
+                    type: 'ConsentOptions',
+                    required: false,
+                    description: 'Additional options like scope and duration',
+                },
+            ],
+            returns: {
+                type: 'Promise<{ granted: boolean, consentId?: string }>',
+                description: 'Whether consent was granted',
+                example: `{
+  "granted": true,
+  "consentId": "consent:abc123..."
+}`,
+            },
+            code: `// Request consent for a data sharing agreement
+const result = await learnCard.requestConsent('lc:contract:your-app:data-access', {
+    scope: ['profile', 'credentials'],
+    duration: '30d' // 30 days
+});
+
+if (result.granted) {
+    console.log('Consent granted! ID:', result.consentId);
+    
+    // Store the consent ID for future reference
+    await saveUserConsent(userId, result.consentId);
+    
+    // Now you can access data per the contract terms
+    enablePremiumFeatures();
+} else {
+    console.log('User declined consent');
+    showLimitedFeatures();
+}`,
+            tips: [
+                'Be clear about what access you\'re requesting',
+                'Users can revoke consent at any time',
+                'Store consent IDs to track active agreements',
+            ],
+        },
+    ];
+
+    const selectedMethod = methods.find(m => m.id === selectedMethodId) || methods[0];
+
+    const handleCopyCode = async () => {
+        await navigator.clipboard.writeText(selectedMethod.code);
+        setCopiedCode(true);
+        setTimeout(() => setCopiedCode(false), 2000);
+    };
+
+    const getCategoryColor = (category: string) => {
+        switch (category) {
+            case 'auth': return 'text-violet-600 bg-violet-100';
+            case 'credentials': return 'text-cyan-600 bg-cyan-100';
+            case 'navigation': return 'text-amber-600 bg-amber-100';
+            case 'consent': return 'text-emerald-600 bg-emerald-100';
+            default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Partner Connect API Reference</h3>
+
+                <p className="text-gray-600">
+                    Complete API for communicating with the LearnCard wallet. Select a method to see detailed documentation and code examples.
+                </p>
+            </div>
+
+            {/* Split-screen layout */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Left: Method navigation */}
+                <div className="md:col-span-4 space-y-4">
+                    {categories.map(category => {
+                        const categoryMethods = methods.filter(m => m.category === category.id);
+
+                        return (
+                            <div key={category.id}>
+                                <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    {category.icon}
+                                    {category.name}
+                                </div>
+
+                                <div className="space-y-1">
+                                    {categoryMethods.map(method => (
+                                        <button
+                                            key={method.id}
+                                            onClick={() => setSelectedMethodId(method.id)}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                                                selectedMethodId === method.id
+                                                    ? 'bg-cyan-50 border border-cyan-200 text-cyan-700'
+                                                    : 'hover:bg-gray-50 text-gray-700'
+                                            }`}
+                                        >
+                                            <span className={`p-1.5 rounded-md ${getCategoryColor(method.category)}`}>
+                                                {method.icon}
+                                            </span>
+
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-mono text-sm font-medium truncate">
+                                                    {method.name}()
+                                                </div>
+
+                                                <div className="text-xs text-gray-500 truncate">
+                                                    {method.shortDescription}
+                                                </div>
+                                            </div>
+
+                                            {selectedMethodId === method.id && (
+                                                <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">Ready to build!</h4>
+                {/* Right: Method details */}
+                <div className="md:col-span-8 space-y-6">
+                    {/* Method header */}
+                    <div className="p-5 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl">
+                        <div className="flex items-start gap-4">
+                            <div className={`p-3 rounded-xl ${getCategoryColor(selectedMethod.category)}`}>
+                                {selectedMethod.icon}
+                            </div>
 
-                <p className="text-gray-600 mb-4">
-                    You have everything you need to build an embedded LearnCard app.
-                </p>
+                            <div className="flex-1">
+                                <h4 className="text-lg font-mono font-semibold text-gray-800">
+                                    learnCard.{selectedMethod.name}()
+                                </h4>
+
+                                <p className="mt-2 text-gray-600 text-sm leading-relaxed">
+                                    {selectedMethod.description}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Parameters */}
+                    {selectedMethod.parameters.length > 0 && (
+                        <div>
+                            <h5 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                <Code className="w-4 h-4 text-gray-500" />
+                                Parameters
+                            </h5>
+
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                {selectedMethod.parameters.map((param, idx) => (
+                                    <div 
+                                        key={param.name}
+                                        className={`p-4 ${idx > 0 ? 'border-t border-gray-200' : ''}`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <code className="px-2 py-1 bg-gray-100 rounded text-sm font-mono text-gray-800">
+                                                {param.name}
+                                            </code>
+
+                                            <code className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+                                                {param.type}
+                                            </code>
+
+                                            {param.required && (
+                                                <span className="px-2 py-1 bg-red-50 text-red-600 rounded text-xs font-medium">
+                                                    required
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <p className="mt-2 text-sm text-gray-600">
+                                            {param.description}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Returns */}
+                    <div>
+                        <h5 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                            <ArrowRight className="w-4 h-4 text-gray-500" />
+                            Returns
+                        </h5>
+
+                        <div className="p-4 border border-gray-200 rounded-xl">
+                            <code className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-sm">
+                                {selectedMethod.returns.type}
+                            </code>
+
+                            <p className="mt-2 text-sm text-gray-600">
+                                {selectedMethod.returns.description}
+                            </p>
+
+                            <pre className="mt-3 p-3 bg-gray-900 text-gray-100 rounded-lg text-xs overflow-x-auto">
+                                {selectedMethod.returns.example}
+                            </pre>
+                        </div>
+                    </div>
+
+                    {/* Code example */}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <h5 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                <Terminal className="w-4 h-4 text-gray-500" />
+                                Example
+                            </h5>
+
+                            <button
+                                onClick={handleCopyCode}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                {copiedCode ? (
+                                    <>
+                                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                        Copied!
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="w-3.5 h-3.5" />
+                                        Copy
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        <div className="relative">
+                            <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl text-sm overflow-x-auto font-mono leading-relaxed">
+                                <code>{selectedMethod.code}</code>
+                            </pre>
+                        </div>
+                    </div>
+
+                    {/* Tips */}
+                    {selectedMethod.tips && selectedMethod.tips.length > 0 && (
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                <Zap className="w-4 h-4" />
+                                Pro Tips
+                            </h5>
+
+                            <ul className="space-y-1.5">
+                                {selectedMethod.tips.map((tip, idx) => (
+                                    <li key={idx} className="flex items-start gap-2 text-sm text-amber-700">
+                                        <ChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                        {tip}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Template Manager for initiateTemplateIssue */}
+                    {selectedMethodId === 'initiateTemplateIssue' && (
+                        <div className="p-5 bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-xl space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h5 className="font-semibold text-gray-800 flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-cyan-600" />
+                                        Template Builder
+                                    </h5>
+
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        Create and manage credential templates for your embedded app
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => setShowTemplateManager(!showTemplateManager)}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                        showTemplateManager 
+                                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                                            : 'bg-cyan-500 text-white hover:bg-cyan-600'
+                                    }`}
+                                >
+                                    {showTemplateManager ? 'Hide Builder' : 'Open Builder'}
+                                </button>
+                            </div>
+
+                            {showTemplateManager && (
+                                <>
+                                    {/* Step 1: Integration Selection */}
+                                    <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-medium text-gray-700">
+                                                1. Select Integration
+                                            </label>
+                                            <button
+                                                onClick={() => refetchIntegrations()}
+                                                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                                            >
+                                                <RefreshCw className={`w-3 h-3 ${isLoadingIntegrations ? 'animate-spin' : ''}`} />
+                                                Refresh
+                                            </button>
+                                        </div>
+
+                                        {isLoadingIntegrations ? (
+                                            <div className="flex items-center gap-2 text-gray-500">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                <span className="text-sm">Loading integrations...</span>
+                                            </div>
+                                        ) : integrations && integrations.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {integrations.map((integration) => (
+                                                    <button
+                                                        key={integration.id}
+                                                        onClick={() => {
+                                                            setSelectedIntegration(integration);
+                                                            setSelectedListing(null);
+                                                        }}
+                                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                            selectedIntegration?.id === integration.id
+                                                                ? 'bg-cyan-500 text-white'
+                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                        }`}
+                                                    >
+                                                        {integration.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">No integrations found</p>
+                                        )}
+
+                                        {/* Create new integration */}
+                                        {isCreatingIntegration ? (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={newIntegrationName}
+                                                    onChange={(e) => setNewIntegrationName(e.target.value)}
+                                                    placeholder="Integration name"
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleCreateIntegration();
+                                                        if (e.key === 'Escape') setIsCreatingIntegration(false);
+                                                    }}
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={handleCreateIntegration}
+                                                    disabled={!newIntegrationName.trim() || createIntegrationMutation.isPending}
+                                                    className="px-3 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 disabled:opacity-50"
+                                                >
+                                                    {createIntegrationMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsCreatingIntegration(false)}
+                                                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => setIsCreatingIntegration(true)}
+                                                className="text-sm text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                                New Integration
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Step 2: App Listing Selection */}
+                                    {selectedIntegration && (
+                                        <div className="p-4 bg-white rounded-lg border border-gray-200 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-sm font-medium text-gray-700">
+                                                    2. Select App Listing
+                                                </label>
+                                                <button
+                                                    onClick={() => refetchListings()}
+                                                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                                                >
+                                                    <RefreshCw className={`w-3 h-3 ${isLoadingListings ? 'animate-spin' : ''}`} />
+                                                    Refresh
+                                                </button>
+                                            </div>
+
+                                            {isLoadingListings ? (
+                                                <div className="flex items-center gap-2 text-gray-500">
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    <span className="text-sm">Loading app listings...</span>
+                                                </div>
+                                            ) : listings && listings.length > 0 ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {listings.map((listing) => (
+                                                        <button
+                                                            key={listing.listing_id}
+                                                            onClick={() => setSelectedListing(listing)}
+                                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                                                                selectedListing?.listing_id === listing.listing_id
+                                                                    ? 'bg-cyan-500 text-white'
+                                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                            }`}
+                                                        >
+                                                            {listing.icon_url && (
+                                                                <img src={listing.icon_url} alt="" className="w-5 h-5 rounded" />
+                                                            )}
+                                                            {listing.display_name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-gray-500">No app listings for this integration</p>
+                                            )}
+
+                                            {/* Create new listing */}
+                                            {isCreatingListing ? (
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={newListingName}
+                                                        onChange={(e) => setNewListingName(e.target.value)}
+                                                        placeholder="App name"
+                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') handleCreateListing();
+                                                            if (e.key === 'Escape') setIsCreatingListing(false);
+                                                        }}
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        onClick={handleCreateListing}
+                                                        disabled={!newListingName.trim() || createListingMutation.isPending}
+                                                        className="px-3 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 disabled:opacity-50"
+                                                    >
+                                                        {createListingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setIsCreatingListing(false)}
+                                                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setIsCreatingListing(true)}
+                                                    className="text-sm text-cyan-600 hover:text-cyan-700 flex items-center gap-1"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" />
+                                                    New App Listing
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Selected Status */}
+                                    {selectedIntegration && selectedListing && (
+                                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                            <p className="text-sm text-emerald-700">
+                                                <CheckCircle2 className="w-4 h-4 inline mr-1" />
+                                                Managing templates for <strong>{selectedListing.display_name}</strong>
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Template Manager */}
+                                    <TemplateManager 
+                                        appListingId={selectedListing?.listing_id} 
+                                        appName={selectedListing?.display_name} 
+                                    />
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Success state / Next steps */}
+            <div className="p-6 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl">
+                <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Rocket className="w-6 h-6 text-emerald-600" />
+                    </div>
+
+                    <div className="flex-1">
+                        <h4 className="text-lg font-semibold text-gray-800 mb-1">Ready to build!</h4>
+
+                        <p className="text-gray-600 text-sm mb-4">
+                            You now have everything you need to build a powerful embedded LearnCard app. 
+                            Check out the full documentation for advanced features and best practices.
+                        </p>
+
+                        <div className="flex flex-wrap gap-3">
+                            <a
+                                href="https://www.npmjs.com/package/@learncard/partner-connect"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                <Package className="w-4 h-4" />
+                                NPM Package
+                                <ExternalLink className="w-3 h-3" />
+                            </a>
+
+                            <a
+                                href="https://docs.learncard.com/sdks/partner-connect"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors"
+                            >
+                                <FileText className="w-4 h-4" />
+                                Full Documentation
+                                <ExternalLink className="w-3 h-3" />
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Navigation */}
@@ -1006,16 +2217,6 @@ if (consent.granted) {
                     <ArrowLeft className="w-4 h-4" />
                     Back
                 </button>
-
-                <a
-                    href="https://docs.learncard.com/sdks/partner-connect"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
-                >
-                    Full Documentation
-                    <ExternalLink className="w-4 h-4" />
-                </a>
             </div>
         </div>
     );
@@ -1090,8 +2291,11 @@ const EmbedAppGuide: React.FC = () => {
         }
     };
 
+    // Widen container for API reference step (needs more space for split layout)
+    const isApiStep = guideState.currentStep === 4;
+
     return (
-        <div className="max-w-3xl mx-auto py-4">
+        <div className={`mx-auto py-4 ${isApiStep ? 'max-w-6xl' : 'max-w-3xl'}`}>
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
