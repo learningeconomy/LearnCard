@@ -181,7 +181,7 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
                 backgroundImage: `url(${contractDetails?.image})`,
             }}
         >
-            <div className="min-h-screen w-full bg-black bg-opacity-20 backdrop-blur-[5px] flex items-start justify-center overflow-y-auto">
+            <div className="min-h-screen w-full h-full bg-black bg-opacity-20 backdrop-blur-[5px] flex items-start justify-center overflow-y-auto">
                 <div className="p-[30px] max-w-[400px] w-full">{stepToComponent[step]}</div>
             </div>
         </div>

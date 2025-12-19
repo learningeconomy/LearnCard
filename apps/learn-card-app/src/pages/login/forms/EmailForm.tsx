@@ -305,6 +305,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
             'bg-emerald-600 text-white placeholder:text-white white-placeholder';
         const resolvedEmailInputClassName = emailInputClassName ?? defaultEmailInputClassName;
 
+        const emailError = errors.email?.[0];
+
         const emailInputBaseClassName =
             emailInputVariant === 'appStore'
                 ? 'w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
@@ -312,10 +314,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
         const emailInputErrorClassName =
             emailInputVariant === 'appStore'
-                ? errors.email
+                ? emailError
                     ? 'border-red-300'
                     : 'border-grayscale-200'
-                : errors.email
+                : emailError
                 ? 'login-input-email-error'
                 : '';
 
@@ -333,11 +335,11 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     value={email}
                     type="text"
                 />
-                {errors.email &&
+                {emailError &&
                     (emailErrorPlacement === 'below' ? (
-                        <p className="w-full mt-2 text-red-500 font-medium">{errors.email}</p>
+                        <p className="w-full mt-2 text-red-500 font-medium">{emailError}</p>
                     ) : (
-                        <p className="login-input-error-msg">{errors.email}</p>
+                        <p className="login-input-error-msg">{emailError}</p>
                     ))}
             </div>
         );
@@ -376,9 +378,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
                         verificationCodeInputClassName ?? ''
                     } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
                 />
-                {errors?.code && (
+                {errors?.code?.[0] && (
                     <p className="w-full text-center mt-2 text-red-500 font-medium">
-                        {errors?.code}
+                        {errors?.code?.[0]}
                     </p>
                 )}
                 {codeError && (
