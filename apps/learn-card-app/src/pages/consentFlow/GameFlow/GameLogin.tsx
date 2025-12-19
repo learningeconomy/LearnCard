@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 
+import { ArrowLeft, Mail, Phone } from 'lucide-react';
+
 import useFirebase from '../../../hooks/useFirebase';
 import { LoginTypesEnum } from 'learn-card-base';
 
 import EmailForm from '../../../pages/login/forms/EmailForm';
 import PhoneForm from '../../../pages/login/forms/PhoneForm';
-import PhoneIcon from 'learn-card-base/assets/images/Phone.white.svg';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
-import EmailIcon from 'learn-card-base/assets/images/email-circle-icon.svg';
 import LearnCardAppIcon from '../../../assets/images/lca-icon-v2.png';
 
 type GameLoginProps = {
@@ -18,6 +18,8 @@ type GameLoginProps = {
 export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
     const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
     const { appleLogin, googleLogin } = useFirebase();
+
+    const [showSocialLogins, setShowSocialLogins] = useState(true);
 
     // toggle between whether this is "login" or "sign up"
     //   no functional difference, we just change some text
@@ -42,10 +44,20 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
             <EmailForm
                 formTitleOverride="Email"
                 buttonTitleOverride="Continue"
-                formTitleClassNameOverride="font-montserrat text-[14px] font-[500] leading-[24px] text-grayscale-600 uppercase"
-                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px] !mt-0"
+                formTitleClassNameOverride="text-grayscale-800 text-base text-center font-medium"
+                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px] !mt-0 !bg-emerald-700 hover:opacity-90 active:opacity-85 transition-opacity"
+                emailInputClassName="bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 tracking-normal"
+                emailInputVariant="appStore"
+                emailErrorPlacement="below"
+                verificationCodeInputClassName="gameflow"
+                startOverClassNameOverride="text-grayscale-800 underline font-bold"
+                resendCodeButtonClassNameOverride="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px]"
                 suppressRedirect
                 customRedirectUrl={window.location.href}
+                resetRedirectPath={null}
+                smallVerificationInput
+                setShowSocialLogins={setShowSocialLogins}
+                showSocialLogins={showSocialLogins}
             />
         );
     } else if (activeLoginType === LoginTypesEnum.phone) {
@@ -53,8 +65,14 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
             <PhoneForm
                 formTitleOverride="Phone"
                 formTitleClassNameOverride="font-montserrat text-[14px] font-[500] leading-[24px] text-grayscale-600 uppercase"
-                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px]"
+                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px] !bg-emerald-700 hover:opacity-90 active:opacity-85 transition-opacity"
                 smallVerificationInput
+                phoneInputClassNameOverride="gameflow"
+                verificationCodeInputClassName="gameflow"
+                startOverClassNameOverride="text-grayscale-800 underline font-bold"
+                resendCodeButtonClassNameOverride="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px]"
+                setShowSocialLogins={setShowSocialLogins}
+                showSocialLogins={showSocialLogins}
             />
         );
     }
@@ -75,7 +93,6 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
     ];
 
     const isPhone = activeLoginType === LoginTypesEnum.phone;
-    const notActiveLoginTypeIcon = isPhone ? EmailIcon : PhoneIcon;
 
     return (
         <div className="flex flex-col gap-[10px]">
@@ -90,57 +107,52 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                     LEARNCARD
                 </h6>
 
-                <p className="text-grayscale-800 uppercase font-montserrat text-[14px] font-[500] leading-[24px] mr-auto">
-                    {isLogin ? 'Login' : 'Sign Up'}
+                <p className="text-grayscale-500 font-montserrat text-[14px] font-[500] mr-auto">
+                    Login to Learncard
                 </p>
 
                 <div className="w-full max-w-[500px]">
-                    <div className="w-full flex gap-[20px] border-grayscale-500 border-solid border-b-[1px] border-opacity-30 pb-[30px]">
-                        <button
-                            className={`flex items-center justify-center bg-primary-default border-solid border-grayscale-100 rounded-full w-[45px] h-[45px] ${isPhone ? 'border-0' : 'border-[1px] '
-                                }`}
-                            onClick={handleActiveLoginType}
-                        >
-                            <img
-                                src={notActiveLoginTypeIcon}
-                                alt={`${isPhone ? 'email' : 'phone'} icon`}
-                                className={isPhone ? 'w-full h-full' : 'w-[25px] h-[25px]'}
-                            />
-                        </button>
-                        {socialLogins.map(socialLogin => {
-                            const { id, src, onClick, alt } = socialLogin;
-                            return (
-                                <button
-                                    key={id}
-                                    className="flex items-center justify-center border-solid border-[1px] border-grayscale-100 rounded-full w-[45px] h-[45px]"
-                                    onClick={onClick}
-                                >
-                                    <img src={src} alt={alt} className="w-[28px] h-[28px]" />
-                                </button>
-                            );
-                        })}
-                    </div>
+                    {showSocialLogins && (
+                        <div className="w-full flex gap-[20px] border-grayscale-500  border-opacity-30 pb-[30px]">
+                            <button
+                                className="flex items-center justify-center bg-grayscale-900 border-solid border-grayscale-100 rounded-full w-[45px] h-[45px]"
+                                onClick={handleActiveLoginType}
+                                type="button"
+                            >
+                                {isPhone ? (
+                                    <Mail className="w-[22px] h-[22px] text-white" />
+                                ) : (
+                                    <Phone className="w-[22px] h-[22px] text-white" />
+                                )}
+                            </button>
+                            {socialLogins.map(socialLogin => {
+                                const { id, src, onClick, alt } = socialLogin;
+                                return (
+                                    <button
+                                        key={id}
+                                        className="flex items-center justify-center border-solid border-[1px] border-grayscale-100 rounded-full w-[45px] h-[45px]"
+                                        onClick={onClick}
+                                        type="button"
+                                    >
+                                        <img src={src} alt={alt} className="w-[28px] h-[28px]" />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
 
                     {LoginTypeForm}
                 </div>
 
-                <div className="py-[10px] w-full">
-                    <div className="h-[2px] w-full bg-grayscale-500 opacity-30" />
-                </div>
-
-                <button
-                    onClick={() => setIsLogin(!isLogin)}
-                    className="uppercase w-full font-montserrat text-grayscale-800 font-[500] text-[14px] leading-[24px]"
-                >
-                    {isLogin ? 'Signup' : 'Login'}
-                </button>
+                <div className="py-[10px] w-full"></div>
             </div>
 
             <button
                 type="button"
                 onClick={handleBackToGame}
-                className="w-full py-[10px] px-[20px] text-[20px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom"
+                className="w-full py-[12px] px-[20px] text-[16px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom flex items-center justify-center gap-[10px]"
             >
+                <ArrowLeft className="w-[18px] h-[18px]" />
                 Back to Game
             </button>
         </div>
