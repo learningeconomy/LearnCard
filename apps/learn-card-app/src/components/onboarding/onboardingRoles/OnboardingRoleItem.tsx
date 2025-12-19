@@ -12,7 +12,7 @@ import DeveloperIcon from '../../../assets/images/quicknavroles/developeralienic
 type OnboardingRoleItemProps = {
     role: LearnCardRolesEnum | null;
     setRole: (role: LearnCardRolesEnum) => void;
-    roleItem: LearnCardRoleType;
+    roleItem?: LearnCardRoleType | null;
     handleEdit?: () => void;
     showDescription?: boolean;
 };
@@ -36,7 +36,8 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
         [LearnCardRolesEnum.developer]: DeveloperIcon,
     };
 
-    const iconSrc = roleIcons[roleItem?.type as LearnCardRolesEnum];
+    const iconSrc = roleItem ? roleIcons[roleItem.type] : undefined;
+    const hasIcon = Boolean(iconSrc);
 
     const iconBgColors: Record<LearnCardRolesEnum, string> = {
         [LearnCardRolesEnum.learner]: 'var(--teal-200, #99F6E4)',
@@ -47,9 +48,11 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
         [LearnCardRolesEnum.developer]: 'var(--lime-300, #BEF264)',
     };
 
-    const iconBgStyle: React.CSSProperties = {
-        backgroundColor: iconBgColors[roleItem?.type as LearnCardRolesEnum],
-    };
+    const iconBgStyle: React.CSSProperties | undefined = roleItem
+        ? {
+              backgroundColor: iconBgColors[roleItem.type],
+          }
+        : undefined;
 
     return (
         <li
@@ -57,22 +60,32 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
             className={`w-full text-grayscale-900 border-solid flex items-start justify-between border-[1px] rounded-[10px] p-4 text-left list-none ${activeStyles}`}
             onClick={e => {
                 e.stopPropagation();
-                setRole(roleItem?.type as LearnCardRolesEnum);
+
+                if (handleEdit) {
+                    handleEdit();
+                    return;
+                }
+
+                if (!roleItem) return;
+
+                setRole(roleItem.type);
             }}
         >
             <div className="flex flex-1 min-w-0 flex-col items-start gap-[5px]">
                 <div className="flex items-center justify-between w-full gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <span
-                            className="flex shrink-0 items-center justify-center h-[36px] w-[36px] rounded-full"
-                            style={iconBgStyle}
-                        >
-                            <img
-                                src={iconSrc}
-                                alt={`${roleItem?.title} icon`}
-                                className="h-[28px] w-[28px] object-contain"
-                            />
-                        </span>
+                    <div className={`flex items-center min-w-0 ${hasIcon ? 'gap-3' : ''}`}>
+                        {hasIcon && (
+                            <span
+                                className="flex shrink-0 items-center justify-center h-[36px] w-[36px] rounded-full"
+                                style={iconBgStyle}
+                            >
+                                <img
+                                    src={iconSrc}
+                                    alt={`${roleItem?.title ?? 'Role'} icon`}
+                                    className="h-[28px] w-[28px] object-contain"
+                                />
+                            </span>
+                        )}
 
                         <p className="font-semibold text-[17px] font-poppins min-w-0">
                             {!showDescription && isSelected && (
