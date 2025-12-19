@@ -223,7 +223,7 @@ export const server = {
                 try {
                     const addAdminSuccess = await learnCard.invoke.addBoostAdmin(boostTemplate.uri, input.profileId);
                     console.log(`Added ${input.profileId} as admin to ${boostTemplate.uri}:`, addAdminSuccess);
-                    success = addAdminSuccess;
+                    success = success && addAdminSuccess;
                 } catch (error) {
                     console.error(`Error adding ${input.profileId} as admin to ${boostTemplate.uri}:`, error);
                 }

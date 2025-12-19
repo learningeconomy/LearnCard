@@ -3,7 +3,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import esbuild from 'rollup-plugin-esbuild';
 import dts from 'rollup-plugin-dts';
 
-const pkg = require('./package.json');
+import pkg from './package.json' assert { type: 'json' };
 
 export default [
   {

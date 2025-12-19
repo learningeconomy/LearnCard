@@ -20,7 +20,10 @@ export const server = {
       const achievementCredential = learnCard.invoke.newCredential({ type: 'achievement' });
 
       if (achievementCredential.credentialSubject) {
-        achievementCredential.credentialSubject = { id: input.recipientDid };
+        achievementCredential.credentialSubject = { 
+          ...achievementCredential.credentialSubject, 
+          id: input.recipientDid 
+        };
       }
 
       const achievementId = 'urn:uuid:' + crypto.randomUUID();
