@@ -12,6 +12,7 @@ export const NavBarPassportIcon: React.FC<{ className?: string; version?: string
                 height="31"
                 viewBox="0 0 24 31"
                 fill="none"
+                className={className}
             >
                 <path
                     d="M20.3125 4.29817V6.9065C19.8791 6.75186 19.4128 6.66772 18.927 6.66772H2.30204C1.5369 6.66772 0.916626 6.04144 0.916626 5.2689V5.16951C0.916626 4.42391 1.45961 3.79178 2.19064 3.68634L17.1498 1.52865C18.819 1.28787 20.3125 2.59567 20.3125 4.29817Z"

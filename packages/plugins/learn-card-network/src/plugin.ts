@@ -994,7 +994,10 @@ export async function getLearnCardNetworkPlugin(
                                     id: targetDid,
                                 }));
                             } else {
-                                boost.credentialSubject.id = targetDid;
+                                boost.credentialSubject = {
+                                    ...boost.credentialSubject,
+                                    id: targetDid,
+                                };
                             }
 
                             if (boost?.type?.includes('BoostCredential'))
@@ -1005,7 +1008,7 @@ export async function getLearnCardNetworkPlugin(
                             return client.boost.send.mutate({
                                 ...input,
                                 signedCredential,
-                            } as any);
+                            });
                         }
                     }
                 }

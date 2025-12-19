@@ -15,6 +15,7 @@ import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import BoostsTwoTonedIcon from 'learn-card-base/svgs/SideNav/BoostsTwoTonedIcon';
 import BoostSelectMenu from '../boost/boost-select-menu/BoostSelectMenu';
 import useBoostModal from '../boost/hooks/useBoostModal';
+import IssueManagedBoostSelector from '../../pages/launchPad/LaunchPadHeader/IssueManagedBoostSelector';
 import { NewAiSessionIconShaded } from 'learn-card-base/svgs/NewAiSessionIcon';
 
 import {
@@ -30,6 +31,7 @@ export enum AddToLearnCardMenuEnum {
     boostSomeone = 'boostSomeone',
     newAiSession = 'newAiSession',
     issueCredential = 'issueCredential',
+    createCredential = 'createCredential',
     uploadCredential = 'uploadCredential',
     claimCredential = 'claimCredential',
 }
@@ -77,6 +79,22 @@ export const AddToLearnCardMenu: React.FC = () => {
     const handleNewBoostModal = () => {
         closeModal();
         handlePresentBoostModal();
+    };
+
+    const handleIssueManagedBoost = () => {
+        closeModal();
+
+        newModal(
+            <IssueManagedBoostSelector />,
+            {
+                hideButton: true,
+                sectionClassName: '!max-w-[500px]',
+            },
+            {
+                desktop: ModalTypes.Cancel,
+                mobile: ModalTypes.Cancel,
+            }
+        );
     };
 
     const handleCheckListButton = () => {
@@ -131,6 +149,12 @@ export const AddToLearnCardMenu: React.FC = () => {
             type: AddToLearnCardMenuEnum.issueCredential,
             Icon: AddCredentialIcon,
             label: 'Issue Credential',
+            onClick: () => handleIssueManagedBoost(),
+        },
+        {
+            type: AddToLearnCardMenuEnum.createCredential,
+            Icon: AddCredentialIcon,
+            label: 'Create Credential',
             onClick: () => handleNewBoostModal(),
         },
         {
