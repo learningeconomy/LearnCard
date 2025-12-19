@@ -258,6 +258,15 @@ const FEATURES: Feature[] = [
         color: 'cyan',
     },
     {
+        id: 'peer-badges',
+        title: 'Peer-to-Peer Badges',
+        description: 'Let users send badges to each other within your app using your credential templates.',
+        icon: <Send className="w-6 h-6" />,
+        requiresSetup: true,
+        setupDescription: 'Create Boost Templates',
+        color: 'violet',
+    },
+    {
         id: 'open-wallet',
         title: 'Open Wallet',
         description: 'Let users view their credential wallet directly from your app.',
@@ -712,6 +721,7 @@ const ChooseFeaturesStep: React.FC<{
     const getColorClasses = (color: string, isSelected: boolean) => {
         const colors: Record<string, { border: string; bg: string; icon: string }> = {
             cyan: { border: 'border-cyan-500', bg: 'bg-cyan-50', icon: 'text-cyan-600 bg-cyan-100' },
+            violet: { border: 'border-violet-500', bg: 'bg-violet-50', icon: 'text-violet-600 bg-violet-100' },
             purple: { border: 'border-purple-500', bg: 'bg-purple-50', icon: 'text-purple-600 bg-purple-100' },
             emerald: { border: 'border-emerald-500', bg: 'bg-emerald-50', icon: 'text-emerald-600 bg-emerald-100' },
             amber: { border: 'border-amber-500', bg: 'bg-amber-50', icon: 'text-amber-600 bg-amber-100' },
@@ -2724,6 +2734,16 @@ const FeatureSetupStep: React.FC<{
                     />
                 );
 
+            case 'peer-badges':
+                return (
+                    <PeerBadgesSetup
+                        onComplete={handleFeatureComplete}
+                        onBack={handleFeatureBack}
+                        isLastFeature={isLastFeature}
+                        selectedListing={selectedListing}
+                    />
+                );
+
             case 'claim-credentials':
                 return (
                     <div className="space-y-6">
@@ -2898,6 +2918,94 @@ const IssueCredentialsSetup: React.FC<{
     );
 };
 
+// Peer-to-Peer Badges Setup (for initiateTemplateIssuance)
+const PeerBadgesSetup: React.FC<{
+    onComplete: () => void;
+    onBack: () => void;
+    isLastFeature: boolean;
+    selectedListing: AppStoreListing | null;
+}> = ({ onComplete, onBack, isLastFeature, selectedListing }) => {
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Peer-to-Peer Badges</h3>
+
+                <p className="text-gray-600">
+                    Create badge templates that users can send to each other using <code className="bg-gray-100 px-1 rounded">initiateTemplateIssuance</code>.
+                </p>
+            </div>
+
+            {/* Show selected app */}
+            {selectedListing && (
+                <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-violet-600" />
+                        <div>
+                            <p className="text-sm font-medium text-violet-800">Creating templates for: {selectedListing.display_name}</p>
+                            <p className="text-xs text-violet-600">You selected this app in Step 1</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* How it works */}
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                <h4 className="font-medium text-gray-800 mb-2">How Peer-to-Peer Badges Work</h4>
+
+                <ol className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start gap-2">
+                        <span className="font-medium text-violet-600">1.</span>
+                        <span>You create badge templates below (e.g., "Thank You", "Great Job", "Team Player")</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <span className="font-medium text-violet-600">2.</span>
+                        <span>In your app, call <code className="bg-gray-100 px-1 rounded">initiateTemplateIssuance</code> with a template URI</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <span className="font-medium text-violet-600">3.</span>
+                        <span>Users pick a recipient and send the badge — you control the UX!</span>
+                    </li>
+                </ol>
+            </div>
+
+            {/* Template Manager */}
+            {selectedListing ? (
+                <TemplateManager
+                    appListingId={selectedListing.listing_id}
+                    appName={selectedListing.display_name}
+                />
+            ) : (
+                <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                    <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+                    <p className="text-amber-800">
+                        Please go back to Step 1 and select an app listing first.
+                    </p>
+                </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    disabled={!selectedListing}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
 // Step 3: Your App (summary with code)
 const YourAppStep: React.FC<{
     onBack: () => void;
@@ -2928,6 +3036,18 @@ const YourAppStep: React.FC<{
             codeLines.push(`// Replace BOOST_URI with your template URI from the setup`);
             codeLines.push(`await learnCard.initiateTemplateIssue({`);
             codeLines.push(`    boostUri: 'BOOST_URI', // Your template URI`);
+            if (selectedListing) {
+                codeLines.push(`    // App: ${selectedListing.display_name}`);
+            }
+            codeLines.push(`});`);
+        }
+
+        if (selectedFeatures.includes('peer-badges')) {
+            codeLines.push(``);
+            codeLines.push(`// Let user send a peer-to-peer badge`);
+            codeLines.push(`// The user will pick a recipient in the LearnCard UI`);
+            codeLines.push(`await learnCard.initiateTemplateIssuance({`);
+            codeLines.push(`    boostUri: 'BOOST_URI', // Your badge template URI`);
             if (selectedListing) {
                 codeLines.push(`    // App: ${selectedListing.display_name}`);
             }
