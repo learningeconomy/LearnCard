@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **created_at** | **str** |  | 
 **updated_at** | **str** |  | 
 **type** | **str** |  | 
-**data** | [**ClaimHookCreateClaimHookRequestHookOneOf1Data**](ClaimHookCreateClaimHookRequestHookOneOf1Data.md) |  | 
+**data** | [**ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data**](ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data.md) |  | 
 
 ## Example
 

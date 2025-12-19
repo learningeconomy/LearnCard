@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **expiration** | **float** |  | [optional] [default to 2592000]
 **challenge** | **str** |  | [optional] 
+**max_uses** | **int** |  | [optional] [default to 1]
 
 ## Example
 

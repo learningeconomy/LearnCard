@@ -28,7 +28,7 @@ class BoostSendBoostViaSigningAuthorityRequest(BaseModel):
     """
     BoostSendBoostViaSigningAuthorityRequest
     """ # noqa: E501
-    boost_uri: StrictStr = Field(alias="boostUri")
+    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
     signing_authority: BoostSendBoostViaSigningAuthorityRequestSigningAuthority = Field(alias="signingAuthority")
     options: Optional[BoostSendBoostRequestOptions] = None
     __properties: ClassVar[List[str]] = ["boostUri", "signingAuthority", "options"]
@@ -78,6 +78,11 @@ class BoostSendBoostViaSigningAuthorityRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
+        # set to None if boost_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+            _dict['boostUri'] = None
+
         return _dict
 
     @classmethod

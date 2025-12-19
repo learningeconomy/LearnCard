@@ -35,13 +35,13 @@ class TestContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthori
         model = ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority()
         if include_optional:
             return ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority(
-                endpoint = '',
-                name = ''
+                name = '',
+                endpoint = ''
             )
         else:
             return ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority(
-                endpoint = '',
                 name = '',
+                endpoint = '',
         )
         """
 

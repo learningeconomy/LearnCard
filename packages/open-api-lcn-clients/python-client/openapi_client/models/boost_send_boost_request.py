@@ -28,7 +28,7 @@ class BoostSendBoostRequest(BaseModel):
     """
     BoostSendBoostRequest
     """ # noqa: E501
-    uri: StrictStr
+    uri: Optional[StrictStr]
     credential: BoostSendBoostRequestCredential
     options: Optional[BoostSendBoostRequestOptions] = None
     __properties: ClassVar[List[str]] = ["uri", "credential", "options"]
@@ -78,6 +78,11 @@ class BoostSendBoostRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
         return _dict
 
     @classmethod

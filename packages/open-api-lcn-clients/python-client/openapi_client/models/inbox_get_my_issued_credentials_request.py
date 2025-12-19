@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from openapi_client.models.inbox_get_my_issued_credentials_request_query import InboxGetMyIssuedCredentialsRequestQuery
-from openapi_client.models.inbox_issue200_response_recipient import InboxIssue200ResponseRecipient
+from openapi_client.models.inbox_get_my_issued_credentials_request_recipient import InboxGetMyIssuedCredentialsRequestRecipient
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -32,7 +32,7 @@ class InboxGetMyIssuedCredentialsRequest(BaseModel):
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
     query: Optional[InboxGetMyIssuedCredentialsRequestQuery] = None
-    recipient: Optional[InboxIssue200ResponseRecipient] = None
+    recipient: Optional[InboxGetMyIssuedCredentialsRequestRecipient] = None
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "query", "recipient"]
 
     model_config = ConfigDict(
@@ -80,6 +80,16 @@ class InboxGetMyIssuedCredentialsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of recipient
         if self.recipient:
             _dict['recipient'] = self.recipient.to_dict()
+        # set to None if cursor (nullable) is None
+        # and model_fields_set contains the field
+        if self.cursor is None and "cursor" in self.model_fields_set:
+            _dict['cursor'] = None
+
+        # set to None if sort (nullable) is None
+        # and model_fields_set contains the field
+        if self.sort is None and "sort" in self.model_fields_set:
+            _dict['sort'] = None
+
         return _dict
 
     @classmethod
@@ -96,7 +106,7 @@ class InboxGetMyIssuedCredentialsRequest(BaseModel):
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
             "query": InboxGetMyIssuedCredentialsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
-            "recipient": InboxIssue200ResponseRecipient.from_dict(obj["recipient"]) if obj.get("recipient") is not None else None
+            "recipient": InboxGetMyIssuedCredentialsRequestRecipient.from_dict(obj["recipient"]) if obj.get("recipient") is not None else None
         })
         return _obj
 

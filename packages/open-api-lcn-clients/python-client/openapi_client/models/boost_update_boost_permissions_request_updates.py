@@ -35,7 +35,7 @@ class BoostUpdateBoostPermissionsRequestUpdates(BaseModel):
     can_edit_children: Optional[StrictStr] = Field(default=None, alias="canEditChildren")
     can_revoke_children: Optional[StrictStr] = Field(default=None, alias="canRevokeChildren")
     can_manage_children_permissions: Optional[StrictStr] = Field(default=None, alias="canManageChildrenPermissions")
-    can_manage_children_profiles: Optional[StrictBool] = Field(default=False, alias="canManageChildrenProfiles")
+    can_manage_children_profiles: Optional[StrictBool] = Field(default=None, alias="canManageChildrenProfiles")
     can_view_analytics: Optional[StrictBool] = Field(default=None, alias="canViewAnalytics")
     __properties: ClassVar[List[str]] = ["canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
 
@@ -78,6 +78,31 @@ class BoostUpdateBoostPermissionsRequestUpdates(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if can_issue_children (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_issue_children is None and "can_issue_children" in self.model_fields_set:
+            _dict['canIssueChildren'] = None
+
+        # set to None if can_create_children (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_create_children is None and "can_create_children" in self.model_fields_set:
+            _dict['canCreateChildren'] = None
+
+        # set to None if can_edit_children (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_edit_children is None and "can_edit_children" in self.model_fields_set:
+            _dict['canEditChildren'] = None
+
+        # set to None if can_revoke_children (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_revoke_children is None and "can_revoke_children" in self.model_fields_set:
+            _dict['canRevokeChildren'] = None
+
+        # set to None if can_manage_children_permissions (nullable) is None
+        # and model_fields_set contains the field
+        if self.can_manage_children_permissions is None and "can_manage_children_permissions" in self.model_fields_set:
+            _dict['canManageChildrenPermissions'] = None
+
         return _dict
 
     @classmethod
@@ -99,7 +124,7 @@ class BoostUpdateBoostPermissionsRequestUpdates(BaseModel):
             "canEditChildren": obj.get("canEditChildren"),
             "canRevokeChildren": obj.get("canRevokeChildren"),
             "canManageChildrenPermissions": obj.get("canManageChildrenPermissions"),
-            "canManageChildrenProfiles": obj.get("canManageChildrenProfiles") if obj.get("canManageChildrenProfiles") is not None else False,
+            "canManageChildrenProfiles": obj.get("canManageChildrenProfiles"),
             "canViewAnalytics": obj.get("canViewAnalytics")
         })
         return _obj

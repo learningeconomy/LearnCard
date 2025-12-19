@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_address_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo(BaseModel):
     """ # noqa: E501
     type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
     latitude: Union[StrictFloat, StrictInt]
-    longitude: Union[StrictFloat, StrictInt]
+    longitude: Optional[Union[StrictFloat, StrictInt]]
     __properties: ClassVar[List[str]] = ["type", "latitude", "longitude"]
 
     model_config = ConfigDict(
@@ -74,6 +74,11 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressGeo(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of type
         if self.type:
             _dict['type'] = self.type.to_dict()
+        # set to None if longitude (nullable) is None
+        # and model_fields_set contains the field
+        if self.longitude is None and "longitude" in self.model_fields_set:
+            _dict['longitude'] = None
+
         return _dict
 
     @classmethod

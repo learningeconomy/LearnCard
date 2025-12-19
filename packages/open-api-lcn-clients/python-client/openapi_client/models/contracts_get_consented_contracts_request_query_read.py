@@ -29,7 +29,7 @@ class ContractsGetConsentedContractsRequestQueryRead(BaseModel):
     """ # noqa: E501
     anonymize: Optional[StrictBool] = None
     credentials: Optional[ContractsGetConsentedContractsRequestQueryReadCredentials] = None
-    personal: Optional[Dict[str, StrictStr]] = None
+    personal: Optional[Dict[str, Optional[StrictStr]]] = None
     __properties: ClassVar[List[str]] = ["anonymize", "credentials", "personal"]
 
     model_config = ConfigDict(

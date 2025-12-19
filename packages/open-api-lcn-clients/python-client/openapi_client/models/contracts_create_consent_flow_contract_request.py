@@ -29,7 +29,7 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
     ContractsCreateConsentFlowContractRequest
     """ # noqa: E501
     contract: ContractsCreateConsentFlowContractRequestContract
-    name: StrictStr
+    name: Optional[StrictStr]
     subtitle: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
     reason_for_accessing: Optional[StrictStr] = Field(default=None, alias="reasonForAccessing")
@@ -91,6 +91,46 @@ class ContractsCreateConsentFlowContractRequest(BaseModel):
                 if _item_autoboosts:
                     _items.append(_item_autoboosts.to_dict())
             _dict['autoboosts'] = _items
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if subtitle (nullable) is None
+        # and model_fields_set contains the field
+        if self.subtitle is None and "subtitle" in self.model_fields_set:
+            _dict['subtitle'] = None
+
+        # set to None if description (nullable) is None
+        # and model_fields_set contains the field
+        if self.description is None and "description" in self.model_fields_set:
+            _dict['description'] = None
+
+        # set to None if reason_for_accessing (nullable) is None
+        # and model_fields_set contains the field
+        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set:
+            _dict['reasonForAccessing'] = None
+
+        # set to None if redirect_url (nullable) is None
+        # and model_fields_set contains the field
+        if self.redirect_url is None and "redirect_url" in self.model_fields_set:
+            _dict['redirectUrl'] = None
+
+        # set to None if front_door_boost_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.front_door_boost_uri is None and "front_door_boost_uri" in self.model_fields_set:
+            _dict['frontDoorBoostUri'] = None
+
+        # set to None if image (nullable) is None
+        # and model_fields_set contains the field
+        if self.image is None and "image" in self.model_fields_set:
+            _dict['image'] = None
+
+        # set to None if expires_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.expires_at is None and "expires_at" in self.model_fields_set:
+            _dict['expiresAt'] = None
+
         return _dict
 
     @classmethod

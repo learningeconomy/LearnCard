@@ -35,13 +35,13 @@ class TestBoostSendBoostRequestCredentialAnyOfCredentialStatus(unittest.TestCase
         model = BoostSendBoostRequestCredentialAnyOfCredentialStatus()
         if include_optional:
             return BoostSendBoostRequestCredentialAnyOfCredentialStatus(
-                type = '',
-                id = ''
+                id = '',
+                type = ''
             )
         else:
             return BoostSendBoostRequestCredentialAnyOfCredentialStatus(
-                type = '',
                 id = '',
+                type = '',
         )
         """
 
