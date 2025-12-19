@@ -645,137 +645,15 @@ export const canProfileCreateChildBoost = async (
 };
 
 export const canProfileEditBoost = async (profile: ProfileType, boost: BoostInstance) => {
-    const query = new QueryBuilder()
-        .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
-        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'targetBoost' },
-                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
-                { identifier: 'profile' },
-            ],
-        })
-        .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'profile' },
-                {
-                    ...Boost.getRelationshipByAlias('hasRole'),
-                    identifier: 'parentHasRole',
-                    direction: 'none',
-                },
-                { identifier: 'parentBoost', model: Boost },
-                {
-                    ...Boost.getRelationshipByAlias('parentOf'),
-                    direction: 'out',
-                    maxHops: Infinity,
-                },
-                { identifier: 'targetBoost' },
-            ],
-        })
-        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+    const permissions = await getBoostPermissions(boost, profile);
 
-    const result = await query
-        .return(
-            `
-            COALESCE(hasRole.canEdit, role.canEdit) AS directCanEdit,
-            COALESCE(parentHasRole.canEditChildren, parentRole.canEditChildren) AS parentCanEditChildren
-`
-        )
-        .run();
-
-    return result.records.some(record => {
-        if (!record) return false;
-
-        const directCanEdit = record.get('directCanEdit');
-        const parentEditChildren = record.get('parentCanEditChildren');
-
-        if (!parentEditChildren || parentEditChildren === '{}') return Boolean(directCanEdit);
-
-        if (parentEditChildren === '*') return true;
-
-        try {
-            if (parentEditChildren && typeof parentEditChildren === 'string') {
-                return (
-                    sift(JSON.parse(parentEditChildren))(boost.dataValues) || Boolean(directCanEdit)
-                );
-            }
-        } catch (error) {
-            console.error('Error trying to parse canEditChildren query!', error);
-        }
-
-        return Boolean(directCanEdit);
-    });
+    return Boolean(permissions.canEdit);
 };
 
 export const canProfileIssueBoost = async (profile: ProfileType, boost: BoostInstance) => {
-    const query = new QueryBuilder()
-        .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
-        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'targetBoost' },
-                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
-                { identifier: 'profile' },
-            ],
-        })
-        .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
-        .match({
-            optional: true,
-            related: [
-                { identifier: 'profile' },
-                {
-                    ...Boost.getRelationshipByAlias('hasRole'),
-                    identifier: 'parentHasRole',
-                    direction: 'none',
-                },
-                { identifier: 'parentBoost', model: Boost },
-                {
-                    ...Boost.getRelationshipByAlias('parentOf'),
-                    direction: 'out',
-                    maxHops: Infinity,
-                },
-                { identifier: 'targetBoost' },
-            ],
-        })
-        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+    const permissions = await getBoostPermissions(boost, profile);
 
-    const result = await query
-        .return(
-            `
-            COALESCE(hasRole.canIssue, role.canIssue) AS directCanIssue,
-            COALESCE(parentHasRole.canIssueChildren, parentRole.canIssueChildren) AS parentCanIssueChildren
-`
-        )
-        .run();
-
-    return result.records.some(record => {
-        if (!record) return false;
-
-        const directCanIssue = record.get('directCanIssue');
-        const parentCanIssueChildren = record.get('parentCanIssueChildren');
-
-        if (!parentCanIssueChildren || parentCanIssueChildren === '{}')
-            return Boolean(directCanIssue);
-
-        if (parentCanIssueChildren === '*') return true;
-
-        try {
-            if (parentCanIssueChildren && typeof parentCanIssueChildren === 'string') {
-                return (
-                    sift(JSON.parse(parentCanIssueChildren))(boost.dataValues) ||
-                    Boolean(directCanIssue)
-                );
-            }
-        } catch (error) {
-            console.error('Error trying to parse canIssueChildren query!', error);
-        }
-
-        return Boolean(directCanIssue);
-    });
+    return Boolean(permissions.canIssue);
 };
 
 export const getBoostPermissions = async (
@@ -813,14 +691,24 @@ export const getBoostPermissions = async (
                 { identifier: 'targetBoost' },
             ],
         })
-        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' })
+        // Match defaultRole for boost-level default permissions
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'targetBoost' },
+                Boost.getRelationshipByAlias('defaultRole'),
+                { model: Role, identifier: 'defaultRole' },
+            ],
+        });
 
     const result = convertQueryResultToPropertiesObjectArray<{
         role: BoostPermissions;
         hasRole: BoostPermissions & { roleId: string };
         parentRole: BoostPermissions;
         parentHasRole: BoostPermissions & { roleId: string };
-    }>(await query.return('role, hasRole, parentRole, parentHasRole').run());
+        defaultRole: BoostPermissions;
+    }>(await query.return('role, hasRole, parentRole, parentHasRole, defaultRole').run());
 
     if (
         ensure &&
@@ -832,6 +720,10 @@ export const getBoostPermissions = async (
                 !result[0]?.parentHasRole))
     )
         await giveProfileEmptyPermissions(profile, boost);
+
+    // Get defaultRole permissions as the base (if any)
+    const defaultRolePermissions = result[0]?.defaultRole ?? EMPTY_PERMISSIONS;
+    const basePermissions = { ...EMPTY_PERMISSIONS, ...defaultRolePermissions };
 
     const directPermissions = result.reduce(
         (permissions, { role, hasRole }) => {
@@ -875,7 +767,7 @@ export const getBoostPermissions = async (
 
             return permissions;
         },
-        { ...EMPTY_PERMISSIONS }
+        { ...basePermissions }
     );
 
     return result.reduce((permissions, { parentRole, parentHasRole }) => {

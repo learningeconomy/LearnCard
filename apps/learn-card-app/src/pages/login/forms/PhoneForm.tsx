@@ -35,6 +35,10 @@ type PhoneFormProps = {
     formTitleClassNameOverride?: string;
     buttonClassName?: string;
     smallVerificationInput?: boolean;
+    phoneInputClassNameOverride?: string;
+    verificationCodeInputClassName?: string;
+    startOverClassNameOverride?: string;
+    resendCodeButtonClassNameOverride?: string;
     setShowSocialLogins: React.Dispatch<React.SetStateAction<boolean>>;
     showSocialLogins: boolean;
 };
@@ -44,6 +48,10 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     formTitleClassNameOverride,
     buttonClassName,
     smallVerificationInput,
+    phoneInputClassNameOverride,
+    verificationCodeInputClassName,
+    startOverClassNameOverride,
+    resendCodeButtonClassNameOverride,
     setShowSocialLogins,
     showSocialLogins,
 }) => {
@@ -266,13 +274,13 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                     defaultCountry="US"
                     value={phone}
                     onChange={setPhone}
-                    className={`login-phone-input ${
+                    className={`login-phone-input ${phoneInputClassNameOverride ?? ''} ${
                         errors?.phone || error ? 'login-phone-input-error' : ''
                     }`}
                 />
-                {errors?.phone && (
+                {errors?.phone?.[0] && (
                     <p className="w-full text-center mt-2 text-red-500 font-medium">
-                        {errors?.phone}
+                        {errors?.phone?.[0]}
                     </p>
                 )}
                 {error && (
@@ -290,7 +298,10 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 } text-center`}
             >
                 Enter verification code or{' '}
-                <span className="text-white underline font-bold" onClick={resetForm}>
+                <span
+                    className={startOverClassNameOverride ?? 'text-white underline font-bold'}
+                    onClick={resetForm}
+                >
                     start over
                 </span>
             </p>
@@ -307,12 +318,12 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                     type="text"
                     onChange={e => setCode(e)}
                     className={`react-code-input ${smallVerificationInput ? 'small' : ''} ${
-                        errors.code || codeError ? 'react-code-input-error' : ''
-                    }`}
+                        verificationCodeInputClassName ?? ''
+                    } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
                 />
-                {errors?.code && (
+                {errors?.code?.[0] && (
                     <p className="w-full text-center mt-2 text-red-500 font-medium">
-                        {errors?.code}
+                        {errors?.code?.[0]}
                     </p>
                 )}
                 {codeError && (
@@ -320,7 +331,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = buttonTitle = isLoading ? 'Verifying...' : 'Verify';
+        buttonTitle = isLoading ? 'Verifying...' : 'Verify';
     } else if (currentStep === PhoneFormStepsEnum.passwordExistingUser) {
         formTitle = <p className="font-medium text-grayscale-600 normal">Password</p>;
         activeStep = (
@@ -398,14 +409,20 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                         e.stopPropagation();
                                         handleOnClick(e, true);
                                     }}
-                                    className="text-white font-bold mt-4 border-b-white border-solid border-b-[1px]"
+                                    className={
+                                        resendCodeButtonClassNameOverride ??
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                    }
                                 >
                                     {resendCodeButtonText}
                                 </button>
                             ) : (
                                 <button
                                     disabled
-                                    className="text-white font-bold mt-4 border-b-white border-solid border-b-[1px]"
+                                    className={
+                                        resendCodeButtonClassNameOverride ??
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                    }
                                 >
                                     Resend in {seconds}s
                                 </button>

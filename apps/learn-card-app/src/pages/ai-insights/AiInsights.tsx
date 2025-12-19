@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { IonContent, IonPage } from '@ionic/react';
+import { useLocation } from 'react-router-dom';
 import AiInsightsTopSkills from './AiInsightsTopSkills';
 import ChildInsights from './child-insights/ChildInsights';
 import AiInsightsTabs from './ai-insight-tabs/AiInsightsTabs';
@@ -15,7 +16,7 @@ import RequestInsightsCard from './request-insights/RequestInsightsCard';
 import AiInsightsLearningPathwaysCard from './AiInsightsLearningPathwaysCard';
 import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
 import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
-import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
+import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import {
@@ -36,15 +37,33 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
 
+type Flags = {
+    hideAiPathways?: boolean;
+    showGenerateAiInsightsButton?: boolean;
+};
+
 const AiInsights: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const location = useLocation();
 
     const [selectedTab, setSelectedTab] = useState(AiInsightsTabsEnum.MyInsights);
 
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tab = params.get('tab');
+        if (
+            tab === AiInsightsTabsEnum.MyInsights ||
+            tab === AiInsightsTabsEnum.LearnerInsights ||
+            tab === AiInsightsTabsEnum.ChildInsights
+        ) {
+            setSelectedTab(tab);
+        }
+    }, [location.search]);
+
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiInsight);
     const { backgroundSecondaryColor } = colors;
-    const flags = useFlags();
+    const flags = useFlags<Flags>();
 
     const {
         data: allResolvedCreds,
@@ -114,9 +133,9 @@ const AiInsights: React.FC = () => {
 
             {contractRequest}
             <ShareInsightsCard />
-            <AiInsightsLearningPathwaysCard />
+            {!flags?.hideAiPathways && <AiInsightsLearningPathwaysCard />}
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
-            <AiInsightsSkillsCardSimple />
+            {topSkills.length > 0 && <AiInsightsSkillsCardSimple />}
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
         </>
     );

@@ -1,13 +1,13 @@
 import React from 'react';
 
-import Pencil from 'apps/scouts/src/components/svgs/Pencil';
+import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
 import TierIcon from './TierIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import EditAlignmentModal from './EditAlignmentModal';
 import FrameworkSkillsCount from './FrameworkSkillsCount';
 
 import { ModalTypes, useModal } from 'learn-card-base';
-import { SkillFramework, SkillFrameworkNode } from 'apps/scouts/src/components/boost/boost';
+import { SkillFramework, SkillFrameworkNode } from 'apps/learn-card-app/src/components/boost/boost';
 import { countCompetenciesInNode } from '../../helpers/skillFramework.helpers';
 
 type TierRowProps = {

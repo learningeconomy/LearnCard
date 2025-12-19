@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.94.3
+
+### Patch Changes
+
+-   [#862](https://github.com/learningeconomy/LearnCard/pull/862) [`7e14d1f29453fc56d545e9b077797ba1f961d973`](https://github.com/learningeconomy/LearnCard/commit/7e14d1f29453fc56d545e9b077797ba1f961d973) Thanks [@goblincore](https://github.com/goblincore)! - Feat: [LC-1411] Quick Nav
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.1
+    -   @learncard/open-badge-v2-plugin@1.1.1
+    -   @learncard/react@2.9.2
+    -   @learncard/lca-api-plugin@1.1.2
+
 ## 1.94.1
 
 ### Patch Changes

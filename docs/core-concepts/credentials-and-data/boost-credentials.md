@@ -209,6 +209,7 @@ The Boost permission system is comprehensive, allowing fine-grained control over
 * Directly assigned to profiles
 * Inherited through the Boost hierarchy
 * Granted when claiming a Boost
+* Applied by default to all authenticated users via `defaultPermissions`
 
 ### Permission Properties <a href="#permission-properties" id="permission-properties"></a>
 
@@ -236,21 +237,26 @@ graph TD
         admin["Admin"]
         issuer["Issuer"]
         viewer["Viewer"]
-        none["No Access"]
+        anyUser["Any Authenticated User"]
     end
 
     subgraph "Permission Types"
         direct["Direct Permissions"]
         inherited["Inherited Permissions"]
         claim["Claim Permissions"]
+        default["Default Permissions"]
     end
 
     creator -->|"has"| direct
     admin -->|"has"| direct
+    anyUser -->|"receives"| default
 
     direct -->|"defines"| canEdit
     direct -->|"defines"| canIssue
     direct -->|"defines"| canManagePermissions
+    default -->|"grants"| canIssue
+    default -->|"grants"| canEdit
+    default -->|"grants"| canViewAnalytics
 
     subgraph "Permission Propagation"
         parent["Parent Boost Permissions"]
@@ -273,6 +279,98 @@ The system provides several endpoints for managing permissions:
 3. **Get Boost Admins**: Lists all admin profiles for a Boost
 4. **Get Boost Permissions**: Gets permissions for a specific profile
 5. **Update Boost Permissions**: Updates permissions for a profile
+
+### Default Permissions <a href="#default-permissions" id="default-permissions"></a>
+
+`defaultPermissions` allow you to grant permissions to **all authenticated users** on a Boost without explicitly assigning roles. This is useful for creating "open" Boosts where anyone can perform certain actions.
+
+#### Use Cases
+
+* **Open Issuance**: Allow anyone to issue credentials from a Boost (e.g., community badges)
+* **Collaborative Editing**: Enable any authenticated user to edit the Boost
+* **Transparent Analytics**: Grant everyone access to view analytics
+
+#### Setting Default Permissions
+
+When creating or updating a Boost, you can specify `defaultPermissions`:
+
+```typescript
+// Create a Boost that anyone can issue
+const boostUri = await learnCard.invoke.createBoost(credential, {
+  name: 'Community Badge',
+  defaultPermissions: {
+    canIssue: true,           // Anyone can issue this Boost
+    canViewAnalytics: true,   // Anyone can view analytics
+  },
+});
+```
+
+#### Updating Default Permissions
+
+Default permissions can be updated on published Boosts:
+
+```typescript
+// Add canEdit permission to existing Boost
+await learnCard.invoke.updateBoost(boostUri, {
+  defaultPermissions: {
+    canIssue: true,
+    canEdit: true,
+  },
+});
+```
+
+#### Supported Permissions
+
+The following permissions can be set via `defaultPermissions`:
+
+| Permission           | Description                                      |
+| -------------------- | ------------------------------------------------ |
+| canIssue             | Allows any user to issue the Boost to recipients |
+| canEdit              | Allows any user to edit the Boost metadata       |
+| canRevoke            | Allows any user to revoke issued credentials     |
+| canManagePermissions | Allows any user to manage Boost permissions      |
+| canViewAnalytics     | Allows any user to view Boost analytics          |
+
+{% hint style="info" %}
+**Permission Precedence**: Explicit role permissions are merged with default permissions. If a user has both an explicit role and default permissions apply, they receive the combined set of permissions.
+{% endhint %}
+
+#### Example: Community-Issued Badge
+
+```typescript
+// Create a Boost that anyone in the community can issue
+const communityBadgeUri = await learnCard.invoke.createBoost(
+  {
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
+      'https://ctx.learncard.com/boosts/1.0.3.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+    name: 'Community Helper Badge',
+    issuer: 'did:web:community.example.com',
+    credentialSubject: {
+      type: ['AchievementSubject'],
+      achievement: {
+        type: ['Achievement'],
+        name: 'Community Helper',
+        description: 'Recognized for helping others in the community',
+        criteria: { narrative: 'Awarded by any community member' },
+      },
+    },
+  },
+  {
+    name: 'Community Helper Badge',
+    category: 'Social Badge',
+    defaultPermissions: {
+      canIssue: true,  // Any authenticated user can issue this badge
+    },
+  }
+);
+
+// Now any authenticated user can issue this badge to others
+await anyUser.invoke.sendBoost('recipient-profile-id', communityBadgeUri, signedCredential);
+```
 
 ## Boost Queries <a href="#boost-queries" id="boost-queries"></a>
 
