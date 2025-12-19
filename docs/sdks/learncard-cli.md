@@ -15,29 +15,29 @@ npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7
 
 <figure><img src="../.gitbook/assets/Screen Shot 2022-09-29 at 6.08.26 PM.png" alt=""><figcaption><p>Run npx @learncard/cli to boot up the CLI - you should see this screen in your terminal! </p></figcaption></figure>
 
-From within the CLI, you should be able to start playing around with a basic learn card wallet. When the CLI boots up, it creates a default LearnCard called `wallet` that you can interact with.
+From within the CLI, you should be able to start playing around with a basic LearnCard. When the CLI boots up, it creates a default LearnCard called `learnCard` that you can interact with.
 
 ### Basic Usage
 
 #### View your wallet's DID
 
-One of the easiest ways to interact with your wallet, is to get your wallet's DID:
+One of the easiest ways to interact with your LearnCard is to get its DID:
 
 ```javascript
-wallet.did()
+learnCard.id.did()
 // 'did:key:z6MkuWb1dvhvime3BZdiuRGi1Q41o4h4hS5ZUizwBiGw3SU6'
 
-wallet.did('pkh:sol');
+learnCard.id.did('pkh:sol');
 // 'did:pkh:sol:G4Ky3gTVPE9a54o2DrJsAJW1yVRDHYqCni61MSJv8Dgi'
 
-wallet.did('tz');
+learnCard.id.did('tz');
 // 'did:tz:tz1Y2Rg8ofGpdGpRqHfix3yy4J6qqK19NE5h'
 
-wallet.did('pkh:tz');
+learnCard.id.did('pkh:tz');
 // 'did:pkh:tz:tz1Y2Rg8ofGpdGpRqHfix3yy4J6qqK19NE5h'
 ```
 
-If your wallet is initialized to support more did methods, such as `did:web`, you could retrieve the corresponding DID through this function.&#x20;
+If your LearnCard is initialized to support more DID methods, such as `did:web`, you could retrieve the corresponding DID through this function.&#x20;
 
 #### Basic Verifiable Credential Issuance & Verification Flow
 
@@ -45,7 +45,7 @@ Once the CLI has booted up, you can start issuing credentials. Try a basic Verif
 
 ```javascript
 // Create a new, unsigned test Verifiable Credential
-const unsignedVerifiableCredential = wallet.getTestVc();
+const unsignedVerifiableCredential = learnCard.invoke.getTestVc();
 /**
 {
   '@context': [ 'https://www.w3.org/2018/credentials/v1' ],
@@ -58,7 +58,7 @@ const unsignedVerifiableCredential = wallet.getTestVc();
 */
 
 // Then, issue the credential to yourself (i.e. sign the credential to turn it into a verifiable credential)
-const signedVerifiableCredential = await wallet.issueCredential(unsignedVerifiableCredential);
+const signedVerifiableCredential = await learnCard.invoke.issueCredential(unsignedVerifiableCredential);
 /** 
 {
   '@context': [ 'https://www.w3.org/2018/credentials/v1' ],
@@ -78,8 +78,8 @@ const signedVerifiableCredential = await wallet.issueCredential(unsignedVerifiab
 **/
 
 // Then, verify the credential! 
-// The verifies that the credential is valid, has not been tampered with, and was issued by and to the correct DIDs
-await wallet.verifyCredential(signedVerifiableCredential);
+// This verifies that the credential is valid, has not been tampered with, and was issued by the correct DID
+await learnCard.invoke.verifyCredential(signedVerifiableCredential);
 /**
 [
   { status: 'Success', check: 'proof', message: 'Valid' },
@@ -96,8 +96,8 @@ await wallet.verifyCredential(signedVerifiableCredential);
 
 Now, take the `signedVerifiableCredential` you created in the [VC issuance flow above](learncard-cli.md#basic-verifiable-credential-issuance-and-verification-flow), and try wrapping it into a Verifiable Presentation, and verifying it.&#x20;
 
-<pre class="language-javascript"><code class="lang-javascript">// Get an unsigned, test Verifiable Presentation template containing your signe dVC
-const unsignedVerifiablePresentation = await wallet.getTestVp(signedVerifiableCredential);
+<pre class="language-javascript"><code class="lang-javascript">// Get an unsigned, test Verifiable Presentation template containing your signed VC
+const unsignedVerifiablePresentation = await learnCard.invoke.newPresentation(signedVerifiableCredential);
 /**
 {
   '@context': [ 'https://www.w3.org/2018/credentials/v1' ],
@@ -122,7 +122,7 @@ const unsignedVerifiablePresentation = await wallet.getTestVp(signedVerifiableCr
 **/
 
 // Issue (sign) the Verifiable Presentation 
-<strong>const verifiablePresentation = await wallet.issuePresentation(unsignedVerifiablePresentation);
+<strong>const verifiablePresentation = await learnCard.invoke.issuePresentation(unsignedVerifiablePresentation);
 </strong>/**
 {
   '@context': [ 'https://www.w3.org/2018/credentials/v1' ],
@@ -154,25 +154,25 @@ const unsignedVerifiablePresentation = await wallet.getTestVp(signedVerifiableCr
 **/
 
 // Verify the Verifiable Presentation has not been tampered with.
-await wallet.verifyPresentation(verifiablePresentation);
+await learnCard.invoke.verifyPresentation(verifiablePresentation);
 /**
 { checks: [ 'proof' ], warnings: [], errors: [] }
 **/
 </code></pre>
 
-#### Initialize more LearnCard wallets
+#### Initialize more LearnCards
 
-At any point, you can initialize additional wallets in the CLI, which can be helpful for testing cross-wallet flows:
+At any point, you can initialize additional LearnCards in the CLI, which can be helpful for testing cross-wallet flows:
 
 ```javascript
-// Initialize an empty wallet (can not sign credentials)
-const emptyWallet = await initLearnCard();
+// Initialize an empty LearnCard (cannot sign credentials)
+const emptyLC = await initLearnCard();
 
-// Initializes a new wallet with deterministically seeded key material.
-const seededWallet = await initLearnCard({ seed: 'abc123' });
+// Initialize a new LearnCard with deterministically seeded key material
+const seededLC = await initLearnCard({ seed: 'abc123' });
 ```
 
-Check out docs on[ initializing LearnCards](learncard-core/construction.md#the-initlearncard-function) for more ways to create a wallet.
+Check out the docs on [initializing LearnCards](learncard-core/construction.md#the-initlearncard-function) for more ways to create a LearnCard.
 
 #### And beyond!&#x20;
 

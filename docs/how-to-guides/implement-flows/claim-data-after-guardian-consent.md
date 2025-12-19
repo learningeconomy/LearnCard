@@ -50,7 +50,7 @@ const credential {
   "@context": [
     "https://www.w3.org/2018/credentials/v1",
     "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json",
-    "https://ctx.learncard.com/boosts/1.0.0.json",
+    "https://ctx.learncard.com/boosts/1.0.3.json",
     {
       "tabby": "https://docs.mylittletabbycat.com/definitions#",
       "xsd": "https://www.w3.org/2001/XMLSchema#",

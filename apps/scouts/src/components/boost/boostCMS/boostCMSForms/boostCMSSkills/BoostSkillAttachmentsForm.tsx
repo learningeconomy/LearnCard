@@ -7,12 +7,7 @@ import PuzzlePiece from '../../../../svgs/PuzzlePiece';
 import BoostCMSSkillOptions from './BoostCMSSkillOptions';
 import BoostCMSSelectedSkills from './BoostCMSSelectedSkills';
 
-import {
-    BoostCMSSkill,
-    BoostCMSSkillsEnum,
-    BoostCMSState,
-    BoostCMSAlignment,
-} from '../../../boost';
+import { BoostCMSSkill, BoostCMSSkillsEnum, BoostCMSState } from '../../../boost';
 import { toSkillAlignment, toSubskillAlignment } from '../../../alignmentHelpers';
 import {
     BoostCMSSKillsCategoryEnum,

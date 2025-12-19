@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.8.0",
+    "version": "3.8.1",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -37,6 +37,7 @@
         "serverless-http": "3.2.0",
         "serverless-lift": "1.31.0",
         "serverless-offline": "^14.4.0",
+        "serverless-prune-plugin": "^2.1.0",
         "shx": "^0.3.4",
         "testcontainers": "^9.1.1"
     },

@@ -1,5 +1,14 @@
 # @welibraryos/lca-api-service
 
+## 1.1.1
+
+### Patch Changes
+
+-   [#893](https://github.com/learningeconomy/LearnCard/pull/893) [`4b1d40356ffd974915396fbee05d656f6c16f9c0`](https://github.com/learningeconomy/LearnCard/commit/4b1d40356ffd974915396fbee05d656f6c16f9c0) Thanks [@Custard7](https://github.com/Custard7)! - fix: serverless-prune for lambdas
+
+-   Updated dependencies []:
+    -   @learncard/init@2.2.1
+
 ## 1.1.0
 
 ### Minor Changes

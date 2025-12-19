@@ -702,7 +702,7 @@ This change allows us to call `learnCard.id.did` on line 5, and requires consume
 {% tabs %}
 {% tab title="Passing in an empty wallet" %}
 ```typescript
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard({ custom: true });
 
@@ -713,7 +713,7 @@ const errors = await learnCard.addPlugin(getDependencePlugin(learnCard));
 
 {% tab title="Passing in an incorrect wallet" %}
 ```typescript
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard();
 
@@ -761,7 +761,7 @@ With this change in place, just like when we depended on a Control Plane, we are
 {% tabs %}
 {% tab title="Passing in an empty wallet" %}
 ```typescript
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard({ custom: true });
 
@@ -772,7 +772,7 @@ const errors = await learnCard.addPlugin(getDependencePlugin(learnCard));
 
 {% tab title="Passing in an incorrect wallet" %}
 ```typescript
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard();
 

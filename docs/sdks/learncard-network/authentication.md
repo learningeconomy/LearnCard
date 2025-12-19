@@ -36,9 +36,9 @@ const networkLearnCard = await initLearnCard({
 
 {% tab title="Add Plugin" %}
 ```typescript
-import { initLearnCard } from '@learncard/core'
+import { initLearnCard } from '@learncard/init';
 import { getLearnCardNetworkPlugin } from '@learncard/network-plugin';
-import didkit from '@learncard/core/dist/didkit/didkit_wasm_bg.wasm?url';
+import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
 const lcnAPI = 'https://network.learncard.app/trpc';
 
@@ -47,7 +47,7 @@ const learnCard = await initLearnCard({
     didkit,
 });
 
-const networkLearnCard learnCard.addPlugin(
+const networkLearnCard = await learnCard.addPlugin(
     await getLearnCardNetworkPlugin(learnCard, lcnAPI)
 );
 ```

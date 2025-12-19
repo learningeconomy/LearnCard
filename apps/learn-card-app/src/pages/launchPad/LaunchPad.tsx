@@ -7,6 +7,7 @@ import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
     LaunchPadAppType,
 } from 'learn-card-base';
+import { UseQueryResult } from '@tanstack/react-query';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import useAppConnectModal from '../../hooks/useConnectAppModal';
 import { useLaunchPadContracts } from './useLaunchPadContracts';
@@ -14,6 +15,7 @@ import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 
 import { IonPage, IonContent, IonList } from '@ionic/react';
 import LaunchPadHeader from './LaunchPadHeader/LaunchPadHeader';
+import LaunchPadActionModal from './LaunchPadHeader/LaunchPadActionModal';
 import LaunchPadBecomeAnApp from './LaunchPadBecomeAnApp';
 import LaunchPadAppListItem from './LaunchPadAppListItem';
 import LaunchPadContractListItem from './LaunchPadContractListItem';
@@ -23,6 +25,8 @@ import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadA
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 
 import { aiPassportApps } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
+import { useModal, ModalTypes, useIsCurrentUserLCNUser } from 'learn-card-base';
+import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import {
     LaunchPadFilterOptionsEnum,
     LaunchPadSortOptionsEnum,
@@ -31,6 +35,14 @@ import {
 import useAppStore, { mapTabToCategory } from './useAppStore';
 import AppStoreListItem from './AppStoreListItem';
 import FeaturedCarousel from './FeaturedCarousel';
+
+type LaunchPadItem = Partial<LaunchPadAppListItemType> &
+    Partial<UseQueryResult> & {
+        launchPadTab?: LaunchPadTabEnum[];
+        url?: string;
+        pending?: boolean;
+        data?: any;
+    };
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
@@ -42,6 +54,10 @@ const LaunchPad: React.FC = () => {
         uri,
         returnTo,
         suppressContractModal,
+        skipLPAction,
+        boostUri,
+        vc_request_url,
+        claim,
         embedUrl,
         appName,
         appImage,
@@ -101,6 +117,10 @@ const LaunchPad: React.FC = () => {
         [curatedListApps, installedListingIds]
     );
 
+    const { newModal } = useModal({ desktop: ModalTypes.Freeform, mobile: ModalTypes.Freeform });
+    const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
+    const { gate } = useLCNGatedAction();
+
     const connectToProfileId = (!Array.isArray(connectTo) ? connectTo : undefined) || '';
     const connectChallenge = (!Array.isArray(challenge) ? challenge : undefined) || '';
 
@@ -139,9 +159,79 @@ const LaunchPad: React.FC = () => {
         }
     }, [contractDetails, suppressContractModal, consentedContractLoading]);
 
-    let aiApps = flags?.enableLaunchPadUpdates ? aiPassportApps : [];
-    let apps = useLaunchPadApps();
-    let contracts = useLaunchPadContracts();
+    useEffect(() => {
+        if (isNetworkUserLoading) return;
+        if (!isNetworkUser) return;
+        if (consentedContractLoading) return;
+
+        const skipParam = Array.isArray(skipLPAction) ? skipLPAction[0] : skipLPAction;
+        const shouldSkip =
+            skipParam === '1' ||
+            (typeof skipParam === 'string' && skipParam.toLowerCase() === 'true');
+        if (shouldSkip) return;
+
+        if (connectToProfileId && connectChallenge) return;
+
+        if (contractDetails && !hasConsented && !suppressContractModal) return;
+
+        const claimParam = Array.isArray(claim) ? claim[0] : claim;
+        const isClaiming =
+            claimParam === '1' ||
+            (typeof claimParam === 'string' && claimParam.toLowerCase() === 'true');
+        if (isClaiming) return;
+
+        const boostParam = Array.isArray(boostUri) ? boostUri[0] : boostUri;
+        if (boostParam) return;
+
+        const vcReqParam = Array.isArray(vc_request_url) ? vc_request_url[0] : vc_request_url;
+        if (vcReqParam) return;
+
+        const SHOWN_KEY = 'lp_action_shown_after_login';
+        if (sessionStorage.getItem(SHOWN_KEY)) return;
+
+        let cancelled = false;
+        let rafId: number | null = null;
+
+        const open = async () => {
+            const { prompted } = await gate();
+            if (cancelled || prompted) return;
+
+            rafId = window.requestAnimationFrame(() => {
+                newModal(<LaunchPadActionModal showFooterNav={true} />, {
+                    className:
+                        'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
+                    sectionClassName: '!max-w-[380px] disable-scrollbars',
+                });
+                sessionStorage.setItem(SHOWN_KEY, '1');
+            });
+        };
+
+        void open();
+
+        return () => {
+            cancelled = true;
+            if (rafId !== null) cancelAnimationFrame(rafId);
+        };
+    }, [
+        isNetworkUser,
+        isNetworkUserLoading,
+        consentedContractLoading,
+        gate,
+        connectToProfileId,
+        connectChallenge,
+        contractDetails,
+        hasConsented,
+        suppressContractModal,
+        skipLPAction,
+        boostUri,
+        vc_request_url,
+    ]);
+
+    let aiApps: LaunchPadItem[] = flags?.enableLaunchPadUpdates
+        ? (aiPassportApps as unknown as LaunchPadItem[])
+        : [];
+    let apps: LaunchPadItem[] = useLaunchPadApps() as unknown as LaunchPadItem[];
+    let contracts: LaunchPadItem[] = useLaunchPadContracts() as any;
 
     aiApps = aiApps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.ai] }));
     apps = apps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.tools] }));
@@ -155,21 +245,21 @@ const LaunchPad: React.FC = () => {
     const aiAppContracts = aiApps.map(app => app.contractUri);
 
     // Separate legacy apps from coming soon apps
-    const legacyAppsAndContracts = useMemo(() => {
+    const legacyAppsAndContracts = useMemo<LaunchPadItem[]>(() => {
         return [
             ...aiApps,
             ...apps,
             ...contracts?.filter(contract => !aiAppContracts.includes(contract?.data?.uri)),
         ];
-    }, [apps, contracts]);
+    }, [aiApps, apps, contracts, aiAppContracts]);
 
     // Coming soon apps from LaunchDarkly flag
-    const comingSoonApps = useMemo<LaunchPadAppListItemType[]>(() => {
-        return flags.comingSoonApps || [];
+    const comingSoonApps = useMemo<LaunchPadItem[]>(() => {
+        return (flags.comingSoonApps || []) as unknown as LaunchPadItem[];
     }, [flags.comingSoonApps]);
 
     // Combined for backwards compatibility with existing filtering
-    const appsAndContracts = useMemo(() => {
+    const appsAndContracts = useMemo<LaunchPadItem[]>(() => {
         return [...legacyAppsAndContracts, ...comingSoonApps];
     }, [legacyAppsAndContracts, comingSoonApps]);
 
@@ -409,6 +499,10 @@ const LaunchPad: React.FC = () => {
                 name: appNameParam || 'Partner App',
                 description: 'Custom embedded application',
                 img: appImageParam || 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb',
+                isConnected: true,
+                displayInLaunchPad: true,
+                handleConnect: () => {},
+                handleView: () => {},
                 embedUrl: embedUrlParam,
                 launchPadTab: [LaunchPadTabEnum.all],
                 appType: [LaunchPadAppType.INTEGRATION],

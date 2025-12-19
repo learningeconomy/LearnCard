@@ -9,6 +9,7 @@ import CaretDown from 'learn-card-base/svgs/CaretDown';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import FrameworkImage from './FrameworkImage';
 import AlignmentToggle from './AlignmentToggle';
+import SkillBreadcrumbText from './SkillBreadcrumbText';
 import SkillsFrameworkIcon from 'apps/scouts/src/components/svgs/SkillsFrameworkIcon';
 import ConfirmAlignmentDeletionModal from './ConfirmAlignmentDeletionModal';
 import { IonFooter, IonInput, IonTextarea } from '@ionic/react';
@@ -70,8 +71,6 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
     const [node, setNode] = useState<SkillFrameworkNode>(_node || emptyNode);
 
     const isTier = node.role === FrameworkNodeRole.tier;
-
-    const breadcrumbText = selectedPath.map(node => node.targetName).join(' > ');
 
     // used to track if the click originated in the content area
     //   fixes case where a click that started inside {content} but ended outside of it would
@@ -199,11 +198,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                         </h5>
                     </div>
 
-                    {breadcrumbText && (
-                        <p className="text-grayscale-700 font-poppins text-[12px] font-[600]">
-                            {breadcrumbText}
-                        </p>
-                    )}
+                    <SkillBreadcrumbText path={selectedPath} />
                 </div>
 
                 <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-t-[1px] border-b-[1px] border-grayscale-200 border-solid">

@@ -1,4 +1,3 @@
-import { VC } from '@learncard/types';
 import {
     BoostCMSCategorySkillEnum,
     BoostCMSSKillsCategoryEnum,
@@ -19,25 +18,35 @@ export interface SkillSummary {
     skills: SkillItem[];
 }
 
-export const mergeSkills = (...skills) => {
-    // Initialize an empty array to store the combined elements
-    let combinedSkills = [];
-
-    // Iterate over each array passed as argument
-    skills.forEach(skill => {
-        // Concatenate the current array with the combinedArray
-        combinedSkills = combinedSkills.concat(skill);
-    });
-
-    // Return the combined array
-    return combinedSkills;
+type SkillShape = {
+    category: string;
+    skill: string;
+    subskills: string[];
 };
 
-export const categorizeSkills = (skills: any) => {
-    let categorizedSkills = skills.reduce((acc, obj) => {
+type CategorizedSkill = Omit<SkillShape, 'subskills'> & { subskills: SubskillMap };
+
+type CategorizedSkills = Record<
+    string,
+    Array<CategorizedSkill> & { totalSkills: number; totalSubskills: number }
+>;
+
+type VC = VC_WITH_URI['vc'];
+
+type CredentialLike = VC | VC_WITH_URI;
+
+const getCredentialVc = (credential: CredentialLike): VC => {
+    return 'vc' in credential ? credential.vc : credential;
+};
+
+export const mergeSkills = (...skills: Array<SkillShape[] | undefined>): SkillShape[] =>
+    skills.flatMap(skillList => skillList ?? []);
+
+export const categorizeSkills = (skills: SkillShape[]): CategorizedSkills => {
+    const categorizedSkills = skills.reduce((acc: CategorizedSkills, obj: SkillShape) => {
         // If the category doesn't exist in the accumulator, create a new array for it
         if (!acc[obj.category]) {
-            acc[obj.category] = [];
+            acc[obj.category] = [] as unknown as CategorizedSkills[string];
             acc[obj.category].totalSkills = 0; // Initialize totalSkills count
             acc[obj.category].totalSubskills = 0; // Initialize totalSubskills count
         }
@@ -45,10 +54,10 @@ export const categorizeSkills = (skills: any) => {
         // Add the skill object directly without checking for duplicates
         const skillWithSubskillCounts = {
             ...obj,
-            subskills: obj.subskills.reduce((subskillAcc, subskill) => {
+            subskills: obj.subskills.reduce((subskillAcc: SubskillMap, subskill: string) => {
                 subskillAcc[subskill] = 1; // Initialize each subskill with count 1
                 return subskillAcc;
-            }, {}),
+            }, {} as SubskillMap),
         };
 
         acc[obj.category].push(skillWithSubskillCounts);
@@ -56,28 +65,26 @@ export const categorizeSkills = (skills: any) => {
         acc[obj.category].totalSubskills += obj.subskills.length; // Add subskills count
 
         return acc;
-    }, {});
+    }, {} as CategorizedSkills);
 
     return categorizedSkills;
 };
 
-export const mapBoostsToSkills = (credentials = []) => {
+export const mapBoostsToSkills = (credentials: CredentialLike[] = []): CategorizedSkills | [] => {
     if (!credentials || credentials.length === 0) return [];
 
     // filter boosts with skills
-    const credentialsWithSkills = credentials?.filter(vc => {
-        if (vc?.boostCredential) return vc?.boostCredential?.skills?.length > 0;
-
-        return vc?.skills?.length > 0;
+    const credentialsWithSkills = credentials.filter(credential => {
+        const vc = getCredentialVc(credential);
+        const skills = vc?.boostCredential?.skills ?? vc?.skills;
+        return Boolean(skills && skills.length > 0);
     });
 
     // map out the skills object for each
-    const mappedSkills =
-        credentialsWithSkills?.map(cred => {
-            if (cred?.boostCredential) return cred?.boostCredential?.skills;
-
-            return cred?.skills;
-        }) ?? [];
+    const mappedSkills = credentialsWithSkills.map(credential => {
+        const vc = getCredentialVc(credential);
+        return vc?.boostCredential?.skills ?? vc?.skills;
+    });
 
     // combine all mapped skills into a single array
     const combinedSkills = mergeSkills(...(mappedSkills ?? []));
@@ -87,21 +94,22 @@ export const mapBoostsToSkills = (credentials = []) => {
 };
 
 export const filterBoostsBySkillCategory = (
-    credentials = [],
+    credentials: CredentialLike[] = [],
     category: BoostCMSCategorySkillEnum
 ) => {
     // filter boosts with skills
-    const credentialsWithSkills = credentials?.filter(vc => {
-        if (vc?.boostCredential) return vc?.boostCredential?.skills?.length > 0;
-
-        return vc?.skills?.length > 0;
+    const credentialsWithSkills = credentials.filter(credential => {
+        const vc = getCredentialVc(credential);
+        const skills = vc?.boostCredential?.skills ?? vc?.skills;
+        return Boolean(skills && skills.length > 0);
     });
 
     // filter out boosts by category
-    const credentialsBySkillCategory = credentialsWithSkills.filter(vc => {
-        const skills = vc?.boostCredential?.skills || vc?.skills || [];
+    const credentialsBySkillCategory = credentialsWithSkills.filter(credential => {
+        const vc = getCredentialVc(credential);
+        const skills = (vc?.boostCredential?.skills || vc?.skills || []) as SkillShape[];
 
-        const categories = [...new Set(skills?.map(skill => skill?.category))];
+        const categories = [...new Set(skills.map((skill: SkillShape) => skill.category))];
         if (categories.includes(category)) return true;
         return false;
     });
@@ -112,14 +120,14 @@ export const filterBoostsBySkillCategory = (
 export type CredentialsGroupedByCategory = {
     // all credentials grouped by category
     category: BoostCMSSKillsCategoryEnum;
-    credentials: VC[] | VC_WITH_URI[];
+    credentials: CredentialLike[];
 };
 
 export type CredentialsGroupedByCategorySkills = {
     // credentials grouped by category and skill
     category: BoostCMSSKillsCategoryEnum;
     skill: BoostCMSCategorySkillEnum;
-    credentials: VC[] | VC_WITH_URI[];
+    credentials: CredentialLike[];
 };
 
 export type CredentialsGroupedByCategorySubskill = {
@@ -127,7 +135,7 @@ export type CredentialsGroupedByCategorySubskill = {
     category: BoostCMSSKillsCategoryEnum;
     skill: BoostCMSCategorySkillEnum;
     subSkill: BoostCMSSubSkillEnum;
-    credentials: VC[] | VC_WITH_URI[];
+    credentials: CredentialLike[];
 };
 
 export type CredentialsGroupedByCategorySkillsAndSubskills = {
@@ -143,17 +151,18 @@ export type CredentialsGroupedByCategorySkillsAndSubskills = {
  * @returns An object containing credentials grouped by category, skills, and subskills.
  */
 export function groupCredentialsByCategorySkillsAndSubskills(
-    credentials: (VC | VC_WITH_URI)[],
+    credentials: CredentialLike[],
     targetCategory: BoostCMSSKillsCategoryEnum
 ): CredentialsGroupedByCategorySkillsAndSubskills {
     // Maps to store credentials grouped by different criteria.
-    const categoryMap = new Map<BoostCMSSKillsCategoryEnum, (VC | VC_WITH_URI)[]>();
-    const categorySkillMap = new Map<string, (VC | VC_WITH_URI)[]>(); // Key: "category|skill"
-    const categorySubskillMap = new Map<string, (VC | VC_WITH_URI)[]>(); // Key: "category|skill|subskill"
+    const categoryMap = new Map<BoostCMSSKillsCategoryEnum, CredentialLike[]>();
+    const categorySkillMap = new Map<string, CredentialLike[]>(); // Key: "category|skill"
+    const categorySubskillMap = new Map<string, CredentialLike[]>(); // Key: "category|skill|subskill"
 
     // Iterate over each credential to process its skills.
     for (const credential of credentials) {
-        const skills = credential?.boostCredential?.skills ?? [];
+        const vc = getCredentialVc(credential);
+        const skills = (vc?.boostCredential?.skills ?? []) as SkillShape[];
 
         // Iterate over each skill in the credential.
         for (const { category, skill, subskills = [] } of skills) {

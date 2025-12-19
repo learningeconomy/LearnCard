@@ -552,7 +552,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                 )}
             </section>
 
-            <div className="w-full flex items-center justify-center mt-4 gap-4">
+            <div className="w-full flex items-center justify-center mt-4 gap-4 max-w-[400px] px-[20px]">
                 <button
                     type="button"
                     onClick={closeModal}

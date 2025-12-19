@@ -67,9 +67,9 @@
   * [Architecture](sdks/learncard-network/architecture.md)
   * [Notifications & Webhooks](sdks/learncard-network/notifications.md)
   * ```yaml
-    type: builtin:openapi
     props:
       models: true
+    type: builtin:openapi
     dependencies:
       spec:
         ref:
@@ -82,9 +82,9 @@
   * [Usage Examples](sdks/learncloud-storage-api/usage-examples.md)
   * [Architecture](sdks/learncloud-storage-api/architecture.md)
   * ```yaml
-    type: builtin:openapi
     props:
       models: true
+    type: builtin:openapi
     dependencies:
       spec:
         ref:
@@ -92,26 +92,7 @@
           spec: learn-cloud-storage-openapi
     ```
   * [xAPI Reference](sdks/learncloud-storage-api/xapi-reference.md)
-* [LearnCard App API](sdks/learncard-app-api.md)
 * [Plugins](sdks/official-plugins/README.md)
-  * [Crypto](sdks/official-plugins/crypto.md)
-  * [DIDKit](sdks/official-plugins/didkit.md)
-  * [DID Key](sdks/official-plugins/did-key.md)
-  * [Dynamic Loader](sdks/official-plugins/dynamic-loader.md)
-  * [VC](sdks/official-plugins/vc/README.md)
-    * [Expiration Sub-Plugin](sdks/official-plugins/vc/expiration-sub-plugin.md)
-  * [VC-Templates](sdks/official-plugins/vc-templates.md)
-  * [VC-API](sdks/official-plugins/vc-api.md)
-  * [Ceramic](sdks/official-plugins/ceramic.md)
-  * [IDX](sdks/official-plugins/idx.md)
-  * [VPQR](sdks/official-plugins/vpqr.md)
-  * [Ethereum](sdks/official-plugins/ethereum.md)
-  * [CHAPI](sdks/official-plugins/chapi.md)
-  * [LearnCard Network](sdks/official-plugins/learncard-network.md)
-  * [LearnCloud](sdks/official-plugins/learncloud.md)
-  * [LearnCard](sdks/official-plugins/learncard.md)
-  * [Simple Signing](sdks/official-plugins/simple-signing.md)
-  * [Claimable Boosts](sdks/official-plugins/claimable-boosts.md)
 * [LearnCard CLI](sdks/learncard-cli.md)
 
 ## 🧠 Core Concepts
@@ -151,6 +132,12 @@
   * [Plugin System](core-concepts/architecture-and-principles/plugins.md)
   * [Auth Grants and API Tokens](core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md)
   * [U.S. State API](core-concepts/architecture-and-principles/u.s.-state-api.md)
+
+## 📱 Apps
+
+* [Apps Overview](apps/README.md)
+* [LearnCard App](apps/learn-card-app/README.md)
+* [ScoutPass](apps/scouts/README.md)
 
 ## 🔗 Development
 

@@ -720,7 +720,9 @@ export const useGetProfile = (
             // Fallback to public API if not logged in or wallet init fails
             if (profileId) {
                 try {
-                    const response = await fetch(`${LEARNCARD_NETWORK_API_URL}/profile/${profileId}`);
+                    const response = await fetch(
+                        `${LEARNCARD_NETWORK_API_URL}/profile/${profileId}`
+                    );
                     if (!response.ok) throw new Error('Failed to fetch profile');
                     const data = await response.json();
                     return data ?? null;
@@ -873,7 +875,8 @@ export const useListMySkillFrameworks = () => {
  */
 export const useGetSkillFrameworkById = (
     frameworkId: string,
-    options?: { limit?: number; childrenLimit?: number }
+    options?: { limit?: number; childrenLimit?: number },
+    enabled = true
 ) => {
     const { initWallet } = useWallet();
 
@@ -883,7 +886,7 @@ export const useGetSkillFrameworkById = (
             const wallet = await initWallet();
             return wallet.invoke.getSkillFrameworkById(frameworkId, options);
         },
-        enabled: !!frameworkId,
+        enabled: !!frameworkId && enabled,
     });
 };
 

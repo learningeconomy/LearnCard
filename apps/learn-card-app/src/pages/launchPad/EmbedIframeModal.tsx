@@ -29,7 +29,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     appName = 'Partner App',
     launchConfig,
     isInstalled = false,
-    hideFullScreenButton = false
+    hideFullScreenButton = false,
 }) => {
     const { closeModal } = useModal();
     const history = useHistory();
@@ -40,7 +40,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const handleFullScreen = () => {
         // Close the modal first
         closeModal();
-        
+
         // Navigate to the full-screen route with state
         history.push(`/apps/${appId || 'preview'}`, {
             embedUrl,
@@ -84,7 +84,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         <IonPage className="h-full w-full">
             <IonContent fullscreen>
                 <div className="w-full h-full flex flex-col">
-                    <div className="flex items-center justify-between p-4 bg-white border-b">
+                    <div className="flex items-center justify-between p-4 bg-white border-b safe-area-top-margin">
                         <h2 className="text-xl font-semibold">{appName}</h2>
                         <div className="flex items-center gap-2">
                             {!hideFullScreenButton && !Capacitor.isNativePlatform() && (
@@ -128,8 +128,12 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                                         <div className="w-16 h-16 border-4 border-indigo-600 rounded-full border-t-transparent absolute top-0 left-0 animate-spin"></div>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-lg font-semibold text-grayscale-800">Loading {appName}...</p>
-                                        <p className="text-sm text-grayscale-600 mt-1">Please wait</p>
+                                        <p className="text-lg font-semibold text-grayscale-800">
+                                            Loading {appName}...
+                                        </p>
+                                        <p className="text-sm text-grayscale-600 mt-1">
+                                            Please wait
+                                        </p>
                                     </div>
                                 </div>
                             </div>

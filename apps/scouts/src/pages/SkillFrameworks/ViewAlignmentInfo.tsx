@@ -10,6 +10,7 @@ import {
 import X from '../../components/svgs/X';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import FrameworkImage from './FrameworkImage';
+import SkillBreadcrumbText from './SkillBreadcrumbText';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import { IonFooter } from '@ionic/react';
 
@@ -18,7 +19,10 @@ import {
     SkillFramework,
     SkillFrameworkNode,
 } from '../../components/boost/boost';
-import { convertApiSkillNodeToSkillTreeNode } from '../../helpers/skillFramework.helpers';
+import {
+    ApiSkillNode,
+    convertApiSkillNodeToSkillTreeNode,
+} from '../../helpers/skillFramework.helpers';
 
 type ViewAlignmentInfoProps = {
     alignment?: SkillFrameworkNode;
@@ -32,24 +36,25 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
     alignment: _alignment,
     framework,
     selectedPath,
-    frameworkId,
-    skillId,
+    frameworkId: _frameworkId,
+    skillId: _skillId,
 }) => {
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
     const { closeModal } = useModal();
 
-    const { data: alignmentData } = useGetSkill(frameworkId ?? '', skillId ?? '');
+    const { data: alignmentData } = useGetSkill(_frameworkId ?? '', _skillId ?? '');
 
     const alignment =
-        _alignment ?? alignmentData ? convertApiSkillNodeToSkillTreeNode(alignmentData) : undefined;
+        _alignment ??
+        (alignmentData
+            ? convertApiSkillNodeToSkillTreeNode(alignmentData as ApiSkillNode)
+            : undefined);
 
-    const { data: frameworkData } = useGetSkillFrameworkById(
-        frameworkId ?? alignment?.targetFramework ?? ''
-    );
-    const { data: pathData, isLoading: pathLoading } = useGetSkillPath(
-        frameworkId ?? alignment?.targetFramework ?? '',
-        skillId ?? alignment?.id ?? ''
-    );
+    const frameworkId = _frameworkId ?? alignment?.targetFramework ?? '';
+    const skillId = _skillId ?? alignment?.id ?? '';
+
+    const { data: frameworkData } = useGetSkillFrameworkById(frameworkId);
+    const { data: pathData, isLoading: pathLoading } = useGetSkillPath(frameworkId, skillId);
 
     let path;
     if (selectedPath) {
@@ -57,11 +62,6 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
     } else if (pathData?.path) {
         path = [...pathData.path].reverse();
     }
-
-    const breadcrumbText = path
-        ?.filter(node => node.id !== alignment?.id) // don't include self in breadcrumb
-        .map(node => node.targetName || node.statement)
-        .join(' > ');
 
     const frameworkName = framework?.name ?? frameworkData?.framework?.name;
     const frameworkImage = framework?.image ?? frameworkData?.framework?.image;
@@ -100,11 +100,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                 </h5>
                             </div>
 
-                            {breadcrumbText && (
-                                <p className="text-grayscale-700 font-poppins text-[12px] font-[600]">
-                                    {breadcrumbText}
-                                </p>
-                            )}
+                            <SkillBreadcrumbText frameworkId={frameworkId} skillId={skillId} />
                         </div>
 
                         <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">

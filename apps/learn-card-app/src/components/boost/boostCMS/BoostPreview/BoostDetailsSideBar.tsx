@@ -38,6 +38,7 @@ type BoostDetailsSideBarProps = {
     displayType?: DisplayTypeEnum;
     existingEndorsements?: VC[];
     hideEndorsementRequestCard?: boolean;
+    isEarnedBoost?: boolean;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -48,6 +49,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     displayType,
     existingEndorsements = [],
     hideEndorsementRequestCard = false,
+    isEarnedBoost,
 }) => {
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
@@ -188,6 +190,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                     <BoostPreviewTabs
                         selectedTab={selectedTab}
                         setSelectedTab={boostPreviewStore.set.updateSelectedTab}
+                        isEarnedBoost={isEarnedBoost}
                     />
                     {activeTabDetails}
                 </section>

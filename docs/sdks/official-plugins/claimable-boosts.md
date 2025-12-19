@@ -58,7 +58,7 @@ async function quickstartBoost() {
       allowRemoteContexts: true
     });
 
-    const signingLearnCard = learnCard.addPlugin(
+    const signingLearnCard = await learnCard.addPlugin(
       await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
     );
 
@@ -93,7 +93,7 @@ async function quickstartBoost() {
       achievementType: 'Influencer',
       achievementName:'Quickstart Achievement',
       achievementDescription: 'Completed the quickstart guide!',
-      achievementNarrative: 'User successfully ran the quickstart script.'
+      achievementNarrative: 'User successfully ran the quickstart script.',
       achievementImage: 'https://placehold.co/400x400?text=Quickstart', // Optional placeholder image
     });
     console.log('Boost template created.');
@@ -179,7 +179,7 @@ const learnCard = await initLearnCard({
 });
 
 // Add signing capability
-const signingLearnCard = learnCard.addPlugin(
+const signingLearnCard = await learnCard.addPlugin(
   await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc') // Use the LearnCard API endpoint
 );
 
@@ -349,7 +349,7 @@ async function createClaimableBadgeFull() {
       network: true,
       allowRemoteContexts: true
     });
-    const signingLearnCard = learnCard.addPlugin(
+    const signingLearnCard = await learnCard.addPlugin(
       await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
     );
     const claimableLearnCard = await signingLearnCard.addPlugin(

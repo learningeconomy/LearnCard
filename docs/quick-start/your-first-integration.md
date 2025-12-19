@@ -47,7 +47,7 @@ This script:
 
 ## ✅ Prerequisites
 
-* Node.js (v14+)
+* Node.js (v18+)
 * A secure seed phrase (stored in `SECURE_SEED`)
 * A unique ID for your issuer (e.g. `my-awesome-org-profile`)
 
