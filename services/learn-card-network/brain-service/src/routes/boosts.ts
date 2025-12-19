@@ -672,7 +672,7 @@ export const boostsRouter = t.router({
                         );
                     } else {
                         unsignedVc.credentialSubject = {
-                            ...unsignedVc.credentialSubject,
+                            ...(unsignedVc.credentialSubject || {}),
                             id: getDidWeb(domain, targetProfile.profileId),
                         };
                     }
