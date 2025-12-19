@@ -1487,12 +1487,14 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
+ "once_cell",
  "rand_chacha 0.3.1",
  "reqwest",
  "serde",
  "serde_json",
  "sha2 0.10.9",
  "ssi",
+ "ssi-contexts",
  "tokio",
  "x25519-dalek",
 ]
@@ -3064,7 +3066,6 @@ dependencies = [
  "napi-derive",
  "napi-sys",
  "once_cell",
- "tokio",
 ]
 
 [[package]]
@@ -5027,19 +5028,7 @@ dependencies = [
  "mio",
  "pin-project-lite",
  "socket2 0.6.1",
- "tokio-macros",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "tokio-macros"
-version = "2.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af407857209536a95c8e56f8231ef2c2e2aff839b22e07a1ffcbc617e9db9fa5"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.106",
 ]
 
 [[package]]
