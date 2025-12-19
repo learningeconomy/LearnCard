@@ -109,11 +109,27 @@ export const resolveUri = async (uri: string) => {
         const resolved = await res.json();
         console.log('resolved', resolved);
         if (isEncrypted(resolved)) {
-            const learnCard = await getLearnCard();
-            console.log('learnCard', learnCard);
-            const decryptResolved = await learnCard.invoke.decryptDagJwe(resolved);
-            console.log('decryptResolved', decryptResolved);
-            return decryptResolved;
+            try {
+                const learnCard = await getLearnCard();
+                console.log('learnCard.invoke:', Object.keys(learnCard.invoke));
+
+                // Get the keypair from the learncard
+                const keypair = learnCard.id.keypair();
+                console.log('Using keypair for decryption:', keypair);
+
+                // Try to decrypt with the learncard's keypair
+                const decryptResolved = await learnCard.invoke.decryptDagJwe(resolved, [keypair]);
+                console.log('Successfully decrypted:', decryptResolved);
+                return decryptResolved;
+            } catch (error) {
+                console.error('Error in decryptDagJwe:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name,
+                    error: error,
+                });
+                throw error;
+            }
         }
         return resolved;
     }
