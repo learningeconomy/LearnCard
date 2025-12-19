@@ -339,6 +339,47 @@ export const AutoBoostConfigValidator = z.object({
 });
 export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
 
+const SendBoostTemplateValidator = BoostValidator.partial()
+    .omit({ uri: true, claimPermissions: true })
+    .extend({
+        credential: VCValidator.or(UnsignedVCValidator),
+        claimPermissions: BoostPermissionsValidator.partial().optional(),
+        skills: z
+            .array(z.object({ frameworkId: z.string(), id: z.string() }))
+            .min(1)
+            .optional(),
+    });
+
+// Route-level validator (TRPC requires ZodObject, not discriminatedUnion)
+export const SendBoostInputValidator = z
+    .object({
+        type: z.literal('boost'),
+        recipient: z.string(),
+        contractUri: z.string().optional(),
+        templateUri: z.string().optional(),
+        template: SendBoostTemplateValidator.optional(),
+        signedCredential: VCValidator.optional(),
+    })
+    .refine(data => data.templateUri || data.template, {
+        message: 'Either templateUri or template creation data must be provided.',
+        path: ['templateUri'],
+    });
+export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;
+
+export const SendBoostResponseValidator = z.object({
+    type: z.literal('boost'),
+    credentialUri: z.string(),
+    uri: z.string(),
+});
+export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
+
+// Plugin-level discriminated union (for extensibility)
+export const SendInputValidator = z.discriminatedUnion('type', [SendBoostInputValidator]);
+export type SendInput = z.infer<typeof SendInputValidator>;
+
+export const SendResponseValidator = z.discriminatedUnion('type', [SendBoostResponseValidator]);
+export type SendResponse = z.infer<typeof SendResponseValidator>;
+
 export const ConsentFlowTermsStatusValidator = z.enum(['live', 'stale', 'withdrawn']);
 export type ConsentFlowTermsStatus = z.infer<typeof ConsentFlowTermsStatusValidator>;
 
