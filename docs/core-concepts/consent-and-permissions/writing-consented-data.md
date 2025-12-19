@@ -33,8 +33,8 @@ For more details on the `send` method, see the [Send Credentials How-To Guide](.
 
 For more granular control, contract owners can write credentials directly to profiles that have consented using:
 
-* `writeCredentialToContract`: Direct credential writing
-* `writeCredentialToContractViaSigningAuthority`: Using a signing authority
+-   `writeCredentialToContract`: Direct credential writing
+-   `writeCredentialToContractViaSigningAuthority`: Using a signing authority
 
 ```mermaid
 sequenceDiagram
