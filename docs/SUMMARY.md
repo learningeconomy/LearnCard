@@ -92,6 +92,7 @@
           spec: learn-cloud-storage-openapi
     ```
   * [xAPI Reference](sdks/learncloud-storage-api/xapi-reference.md)
+* [Partner Connect SDK](sdks/partner-connect.md)
 * [Plugins](sdks/official-plugins/README.md)
 * [LearnCard CLI](sdks/learncard-cli.md)
 
