@@ -6,7 +6,8 @@
     "scripts": {
         "dev": "astro dev",
         "start": "astro dev",
-        "build": "astro build",
+        "build": "echo \"Skipping Build in CI. Please run 'pnpm run build:prod' locally\"",
+        "build:prod": "astro build",
         "preview": "astro preview",
         "astro": "astro"
     },
