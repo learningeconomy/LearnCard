@@ -8,10 +8,10 @@ import {
 } from 'learn-card-base';
 
 import TrashBin from 'learn-card-base/svgs/TrashBin';
-import CompetencyIcon from 'apps/scouts/src/pages/SkillFrameworks/CompetencyIcon';
-import ViewAlignmentInfo from 'apps/scouts/src/pages/SkillFrameworks/ViewAlignmentInfo';
+import CompetencyIcon from 'apps/learn-card-app/src/pages/SkillFrameworks/CompetencyIcon';
+import ViewAlignmentInfo from 'apps/learn-card-app/src/pages/SkillFrameworks/ViewAlignmentInfo';
 
-import { SkillFrameworkNode } from 'apps/scouts/src/components/boost/boost';
+import { SkillFrameworkNode } from 'apps/learn-card-app/src/components/boost/boost';
 
 type BoostCMSSkillDisplayProps = {
     skill: SkillFrameworkNode;

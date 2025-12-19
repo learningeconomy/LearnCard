@@ -2,4 +2,4 @@
 "learn-card-app": patch
 ---
 
-fix: AI Insight polishes
+Feat: [LC-1411] Quick Nav
