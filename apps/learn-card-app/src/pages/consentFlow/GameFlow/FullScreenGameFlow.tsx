@@ -176,7 +176,7 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
 
     return (
         <div
-            className="min-h-screen w-full bg-cover bg-emerald-700"
+            className="min-h-screen h-full w-full bg-cover bg-emerald-700"
             style={{
                 backgroundImage: `url(${contractDetails?.image})`,
             }}

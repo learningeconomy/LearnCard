@@ -45,7 +45,7 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                 formTitleOverride="Email"
                 buttonTitleOverride="Continue"
                 formTitleClassNameOverride="text-grayscale-800 text-base text-center font-medium"
-                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px] !mt-0 !bg-emerald-700 hover:!bg-emerald-800"
+                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px] !mt-0 !bg-emerald-700 hover:opacity-90 active:opacity-85 transition-opacity"
                 emailInputClassName="bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 tracking-normal"
                 verificationCodeInputClassName="gameflow"
                 startOverClassNameOverride="text-grayscale-800 underline font-bold"
@@ -63,8 +63,12 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
             <PhoneForm
                 formTitleOverride="Phone"
                 formTitleClassNameOverride="font-montserrat text-[14px] font-[500] leading-[24px] text-grayscale-600 uppercase"
-                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px] !bg-emerald-700"
+                buttonClassName="font-poppins !text-[16px] leading-[28px] tracking-[0.75px] !bg-emerald-700 hover:opacity-90 active:opacity-85 transition-opacity"
                 smallVerificationInput
+                phoneInputClassNameOverride="gameflow"
+                verificationCodeInputClassName="gameflow"
+                startOverClassNameOverride="text-grayscale-800 underline font-bold"
+                resendCodeButtonClassNameOverride="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px]"
                 setShowSocialLogins={setShowSocialLogins}
                 showSocialLogins={showSocialLogins}
             />
@@ -101,13 +105,13 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                     LEARNCARD
                 </h6>
 
-                <p className="text-grayscale-800 uppercase font-montserrat text-[14px] font-[500] leading-[24px] mr-auto">
-                    {isLogin ? 'Login' : 'Sign Up'}
+                <p className="text-grayscale-500 font-montserrat text-[14px] font-[500] mr-auto">
+                    Login to Learncard
                 </p>
 
                 <div className="w-full max-w-[500px]">
                     {showSocialLogins && (
-                        <div className="w-full flex gap-[20px] border-grayscale-500 border-solid border-b-[1px] border-opacity-30 pb-[30px]">
+                        <div className="w-full flex gap-[20px] border-grayscale-500  border-opacity-30 pb-[30px]">
                             <button
                                 className="flex items-center justify-center bg-grayscale-900 border-solid border-grayscale-100 rounded-full w-[45px] h-[45px]"
                                 onClick={handleActiveLoginType}
@@ -142,12 +146,12 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                     <div className="h-[2px] w-full bg-grayscale-500 opacity-30" />
                 </div>
 
-                <button
+                {/* <button
                     onClick={() => setIsLogin(!isLogin)}
-                    className="uppercase w-full font-montserrat text-grayscale-800 font-[500] text-[14px] leading-[24px]"
+                    className="w-full  text-grayscale-800 font-[500] text-[14px] leading-[24px]"
                 >
                     {isLogin ? 'Signup' : 'Login'}
-                </button>
+                </button> */}
             </div>
 
             <button
