@@ -40,6 +40,9 @@ import {
     MoreVertical,
     Edit3,
     Link as LinkIcon,
+    FileJson,
+    ChevronDown,
+    Server,
 } from 'lucide-react';
 
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
@@ -1358,6 +1361,7 @@ console.log('User Profile:', identity.profile);
 interface BoostTemplate {
     uri: string;
     name: string;
+    description?: string;
     type?: string;
     category?: string;
     image?: string;
@@ -1378,12 +1382,16 @@ const TemplateManager: React.FC<{
     const [showCredentialBuilder, setShowCredentialBuilder] = useState(false);
     const [copiedUri, setCopiedUri] = useState<string | null>(null);
     const [deletingUri, setDeletingUri] = useState<string | null>(null);
+    const [copiedJson, setCopiedJson] = useState(false);
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [copiedServerCode, setCopiedServerCode] = useState(false);
 
     // Store initWallet in a ref to avoid dependency issues
     const initWalletRef = React.useRef(initWallet);
     initWalletRef.current = initWallet;
 
     // Helper to fetch templates
+    // Note: meta query isn't fully implemented in backend, so we filter client-side
     const fetchTemplatesForListing = async (listingId: string): Promise<BoostTemplate[]> => {
         const wallet = await initWalletRef.current();
         const result = await wallet.invoke.getPaginatedBoosts({ limit: 100 });
@@ -1396,6 +1404,7 @@ const TemplateManager: React.FC<{
             .map((boost: Record<string, unknown>) => ({
                 uri: boost.uri as string,
                 name: boost.name as string || 'Untitled Template',
+                description: boost.description as string,
                 type: boost.type as string,
                 category: boost.category as string,
                 image: boost.image as string,
@@ -1530,6 +1539,63 @@ if (result.success) {
     console.log('Credential issued to user!');
 }`;
 
+    // Generate JSON summary of all templates
+    const getJsonSummary = () => JSON.stringify(
+        templates.map(t => ({
+            boostUri: t.uri,
+            name: t.name,
+            description: t.description || '',
+            image: t.image || '',
+        })),
+        null,
+        2
+    );
+
+    // Copy JSON summary
+    const handleCopyJson = async () => {
+        await navigator.clipboard.writeText(getJsonSummary());
+        setCopiedJson(true);
+        setTimeout(() => setCopiedJson(false), 2000);
+    };
+
+    // Server-side code example
+    const getServerSideCode = () => `// Server-side: Retrieve all boost templates for your app
+import { initLearnCard } from '@learncard/init';
+
+async function getAppBoostTemplates(appListingId: string) {
+    // Initialize LearnCard with your credentials
+    const learnCard = await initLearnCard({
+        // Your authentication config
+    });
+
+    // Fetch all boosts
+    const result = await learnCard.invoke.getPaginatedBoosts({ limit: 100 });
+
+    // Filter to only templates for your app listing
+    const templates = (result?.records || [])
+        .filter(boost => boost.meta?.appListingId === appListingId)
+        .map(boost => ({
+            boostUri: boost.uri,
+            name: boost.name,
+            description: boost.description || '',
+            image: boost.image || '',
+            type: boost.type,
+        }));
+
+    return templates;
+}
+
+// Usage
+const templates = await getAppBoostTemplates('${appListingId}');
+console.log('Available templates:', templates);`;
+
+    // Copy server code
+    const handleCopyServerCode = async () => {
+        await navigator.clipboard.writeText(getServerSideCode());
+        setCopiedServerCode(true);
+        setTimeout(() => setCopiedServerCode(false), 2000);
+    };
+
     if (!appListingId) {
         return (
             <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl">
@@ -1561,6 +1627,26 @@ if (result.success) {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {templates.length > 0 && (
+                        <button
+                            onClick={handleCopyJson}
+                            className="flex items-center gap-1.5 px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg text-sm transition-colors"
+                            title="Copy JSON summary of all templates"
+                        >
+                            {copiedJson ? (
+                                <>
+                                    <Check className="w-4 h-4 text-emerald-500" />
+                                    <span className="text-emerald-600">Copied!</span>
+                                </>
+                            ) : (
+                                <>
+                                    <FileJson className="w-4 h-4" />
+                                    <span>Copy JSON</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+
                     <button
                         onClick={refreshTemplates}
                         disabled={isLoading}
@@ -1699,6 +1785,62 @@ if (result.success) {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Advanced Section - Server-side code */}
+            {templates.length > 0 && (
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                    <button
+                        onClick={() => setShowAdvanced(!showAdvanced)}
+                        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <Server className="w-5 h-5 text-gray-500" />
+                            <div className="text-left">
+                                <h5 className="font-medium text-gray-700">Advanced: Server-Side Integration</h5>
+                                <p className="text-xs text-gray-500">Retrieve templates programmatically from your backend</p>
+                            </div>
+                        </div>
+
+                        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {showAdvanced && (
+                        <div className="p-4 border-t border-gray-200 bg-white space-y-4">
+                            <p className="text-sm text-gray-600">
+                                Use this server-side function to dynamically retrieve all boost templates for your app listing.
+                                This is useful for building template pickers or syncing templates to your database.
+                            </p>
+
+                            <div className="relative">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-medium text-gray-500">Server-side code (Node.js/TypeScript):</span>
+
+                                    <button
+                                        onClick={handleCopyServerCode}
+                                        className="flex items-center gap-1 text-xs text-cyan-600 hover:text-cyan-700"
+                                    >
+                                        {copiedServerCode ? (
+                                            <>
+                                                <Check className="w-3 h-3" />
+                                                Copied!
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="w-3 h-3" />
+                                                Copy code
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg text-xs overflow-x-auto max-h-80">
+                                    <code>{getServerSideCode()}</code>
+                                </pre>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
