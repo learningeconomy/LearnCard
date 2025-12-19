@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonContent, IonPage } from '@ionic/react';
@@ -6,7 +6,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import MainHeader from '../../components/main-header/MainHeader';
 import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
-
+import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
@@ -36,6 +36,7 @@ const AiPathways: React.FC = () => {
                     <div className="flex items-center justify-center flex-col relative w-full pb-[50px]">
                         <AiPathwayCourses />
                         <AiPathwaySessions />
+                        <ExploreAiInsightsButton />
                     </div>
                 </IonContent>
             </ErrorBoundary>
