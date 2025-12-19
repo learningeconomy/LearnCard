@@ -69,8 +69,17 @@ const QrCodeUserCard: React.FC<{
                 <div className="text-grayscale-900 text-lg font-semibold w-full">{cardTitle}</div>
             )}
 
-            <div ref={basicInfoRef}>
-                <QrCodeUserCardBasicInfo
+            <div id="qr-code-user-card-screenshot" className="flex flex-col gap-2">
+                <div ref={basicInfoRef}>
+                    <QrCodeUserCardBasicInfo
+                        profileId={profileId}
+                        walletDid={walletDid}
+                        contractUri={contractUri}
+                        overrideShareLink={overrideShareLink}
+                    />
+                </div>
+
+                <UserQRCode
                     profileId={profileId}
                     walletDid={walletDid}
                     contractUri={contractUri}
@@ -78,12 +87,6 @@ const QrCodeUserCard: React.FC<{
                 />
             </div>
 
-            <UserQRCode
-                profileId={profileId}
-                walletDid={walletDid}
-                contractUri={contractUri}
-                overrideShareLink={overrideShareLink}
-            />
             <QRCodeUserCardShareOptions
                 contractUri={contractUri}
                 profileId={profileId}
