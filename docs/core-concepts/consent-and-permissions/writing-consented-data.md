@@ -6,8 +6,8 @@ Understand how, after consent is given, new credentials or data can be provided 
 
 Contract owners can write credentials to profiles that have consented to their contracts using:
 
-* `writeCredentialToContract`: Direct credential writing
-* `writeCredentialToContractViaSigningAuthority`: Using a signing authority
+-   `writeCredentialToContract`: Direct credential writing
+-   `writeCredentialToContractViaSigningAuthority`: Using a signing authority
 
 ```mermaid
 sequenceDiagram
