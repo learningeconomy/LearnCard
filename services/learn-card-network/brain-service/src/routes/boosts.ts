@@ -102,7 +102,6 @@ import {
     getSigningAuthorityForUserByName,
     getPrimarySigningAuthorityForUser,
 } from '@accesslayer/signing-authority/relationships/read';
-import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import {
     getContractDetailsByUri,
     getContractTermsForProfile,
