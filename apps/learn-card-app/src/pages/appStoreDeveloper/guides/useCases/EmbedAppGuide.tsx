@@ -3751,8 +3751,149 @@ console.log('Credential sent:', result);`;
     );
 };
 
-// Launch Feature Setup
-type LaunchFeatureType = 'qr-scanner' | 'ai-session' | 'profile-card';
+// Launch Feature Setup - Comprehensive Feature Builder
+interface LaunchableFeature {
+    id: string;
+    path: string;
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    params?: { name: string; description: string; placeholder: string }[];
+}
+
+interface FeatureCategory {
+    id: string;
+    title: string;
+    icon: React.ReactNode;
+    color: string;
+    features: LaunchableFeature[];
+}
+
+const LAUNCHABLE_FEATURES: FeatureCategory[] = [
+    {
+        id: 'core',
+        title: 'Core Navigation',
+        icon: <Navigation className="w-4 h-4" />,
+        color: 'blue',
+        features: [
+            { id: 'passport', path: '/passport', title: 'Wallet / Passport', description: 'Main credential wallet view', icon: <FolderOpen className="w-4 h-4" /> },
+            { id: 'boost', path: '/boost', title: 'Boost Manager', description: 'Badge/boost management', icon: <Award className="w-4 h-4" /> },
+            { id: 'launchpad', path: '/launchpad', title: 'App Launchpad', description: 'App discovery hub', icon: <Rocket className="w-4 h-4" /> },
+        ],
+    },
+    {
+        id: 'profile',
+        title: 'Profile & Identity',
+        icon: <User className="w-4 h-4" />,
+        color: 'violet',
+        features: [
+            { id: 'ids', path: '/ids', title: 'IDs & DIDs', description: 'User identity management', icon: <Key className="w-4 h-4" /> },
+            { id: 'connect', path: '/connect', title: 'Connect', description: 'Connect with others', icon: <LinkIcon className="w-4 h-4" /> },
+            { 
+                id: 'connect-profile', 
+                path: '/connect/:profileId', 
+                title: 'Connect with User', 
+                description: 'Connect with a specific user',
+                icon: <User className="w-4 h-4" />,
+                params: [{ name: 'profileId', description: 'Profile ID to connect with', placeholder: 'user-profile-id' }]
+            },
+            { id: 'contacts', path: '/contacts', title: 'Address Book', description: 'All contacts', icon: <FileText className="w-4 h-4" /> },
+            { id: 'contacts-search', path: '/contacts/search', title: 'Search Contacts', description: 'Search for contacts', icon: <Search className="w-4 h-4" /> },
+        ],
+    },
+    {
+        id: 'credentials',
+        title: 'Credentials & Achievements',
+        icon: <Award className="w-4 h-4" />,
+        color: 'amber',
+        features: [
+            { id: 'achievements', path: '/achievements', title: 'Achievements', description: 'View achievements', icon: <Award className="w-4 h-4" /> },
+            { id: 'accomplishments', path: '/accomplishments', title: 'Accomplishments', description: 'View accomplishments', icon: <CheckCircle2 className="w-4 h-4" /> },
+            { id: 'skills', path: '/skills', title: 'Skills', description: 'Skills inventory', icon: <Zap className="w-4 h-4" /> },
+            { id: 'learninghistory', path: '/learninghistory', title: 'Learning History', description: 'Educational timeline', icon: <FileText className="w-4 h-4" /> },
+            { id: 'workhistory', path: '/workhistory', title: 'Work History', description: 'Employment records', icon: <FileText className="w-4 h-4" /> },
+            { id: 'memberships', path: '/memberships', title: 'Memberships', description: 'Organization memberships', icon: <User className="w-4 h-4" /> },
+            { 
+                id: 'claim-boost', 
+                path: '/claim/boost', 
+                title: 'Claim Boost', 
+                description: 'Claim a boost by URI',
+                icon: <Sparkles className="w-4 h-4" />,
+                params: [{ name: 'uri', description: 'Boost URI to claim', placeholder: 'urn:lc:boost:abc123' }]
+            },
+        ],
+    },
+    {
+        id: 'ai',
+        title: 'AI Features',
+        icon: <Bot className="w-4 h-4" />,
+        color: 'emerald',
+        features: [
+            { id: 'chats', path: '/chats', title: 'AI Chat', description: 'Open AI chat interface', icon: <Bot className="w-4 h-4" /> },
+            { id: 'ai-insights', path: '/ai/insights', title: 'AI Insights', description: 'AI-powered insights', icon: <Zap className="w-4 h-4" /> },
+            { id: 'ai-topics', path: '/ai/topics', title: 'AI Topics', description: 'Browse AI session topics', icon: <Layers className="w-4 h-4" /> },
+            { id: 'ai-sessions', path: '/ai/sessions', title: 'AI Sessions', description: 'View AI session history', icon: <FileText className="w-4 h-4" /> },
+        ],
+    },
+    {
+        id: 'apps',
+        title: 'Apps & Launchpad',
+        icon: <Rocket className="w-4 h-4" />,
+        color: 'cyan',
+        features: [
+            { id: 'launchpad-main', path: '/launchpad', title: 'App Launchpad', description: 'Browse all apps', icon: <Rocket className="w-4 h-4" /> },
+            { 
+                id: 'app-embed', 
+                path: '/apps/:appId', 
+                title: 'Open App', 
+                description: 'Launch an embedded app fullscreen',
+                icon: <Monitor className="w-4 h-4" />,
+                params: [{ name: 'appId', description: 'App ID to launch', placeholder: 'my-app-id' }]
+            },
+            { 
+                id: 'app-listing', 
+                path: '/app/:listingId', 
+                title: 'App Details', 
+                description: 'View app listing page',
+                icon: <FileText className="w-4 h-4" />,
+                params: [{ name: 'listingId', description: 'Listing ID', placeholder: 'listing-123' }]
+            },
+        ],
+    },
+    {
+        id: 'notifications',
+        title: 'Notifications',
+        icon: <AlertCircle className="w-4 h-4" />,
+        color: 'rose',
+        features: [
+            { id: 'notifications', path: '/notifications', title: 'Notifications', description: 'View all notifications', icon: <AlertCircle className="w-4 h-4" /> },
+        ],
+    },
+    {
+        id: 'admin',
+        title: 'Admin Tools',
+        icon: <Shield className="w-4 h-4" />,
+        color: 'gray',
+        features: [
+            { id: 'admin-tools', path: '/admin-tools', title: 'Admin Dashboard', description: 'Admin tools home', icon: <Shield className="w-4 h-4" /> },
+            { id: 'managed-boosts', path: '/admin-tools/view-managed-boosts', title: 'Managed Boosts', description: 'View all managed boosts', icon: <Award className="w-4 h-4" /> },
+            { id: 'bulk-import', path: '/admin-tools/bulk-import', title: 'Bulk Import', description: 'Bulk boost import', icon: <Layers className="w-4 h-4" /> },
+            { id: 'service-profiles', path: '/admin-tools/service-profiles', title: 'Service Profiles', description: 'Manage service profiles', icon: <User className="w-4 h-4" /> },
+            { id: 'manage-contracts', path: '/admin-tools/manage-contracts', title: 'Consent Contracts', description: 'Manage consent contracts', icon: <FileText className="w-4 h-4" /> },
+            { id: 'signing-authorities', path: '/admin-tools/signing-authorities', title: 'Signing Authorities', description: 'Manage signing authorities', icon: <Key className="w-4 h-4" /> },
+            { id: 'api-tokens', path: '/admin-tools/api-tokens', title: 'API Tokens', description: 'Manage API tokens', icon: <Lock className="w-4 h-4" /> },
+        ],
+    },
+    {
+        id: 'family',
+        title: 'Family',
+        icon: <User className="w-4 h-4" />,
+        color: 'pink',
+        features: [
+            { id: 'families', path: '/families', title: 'Family Management', description: 'Manage family members', icon: <User className="w-4 h-4" /> },
+        ],
+    },
+];
 
 const LaunchFeatureSetup: React.FC<{
     onComplete: () => void;
@@ -3763,61 +3904,82 @@ const LaunchFeatureSetup: React.FC<{
 }> = ({ onComplete, onBack, isLastFeature, featureSetupState, setFeatureSetupState }) => {
     // Get saved state
     const savedState = featureSetupState['launch-feature'] || {};
-    const [selectedFeature, setSelectedFeature] = useState<LaunchFeatureType>(
-        (savedState.selectedFeature as LaunchFeatureType) || 'qr-scanner'
+    const [selectedFeatureId, setSelectedFeatureId] = useState<string>(
+        (savedState.selectedFeatureId as string) || 'passport'
+    );
+    const [expandedCategory, setExpandedCategory] = useState<string | null>(
+        (savedState.expandedCategory as string) || 'core'
+    );
+    const [paramValues, setParamValues] = useState<Record<string, string>>(
+        (savedState.paramValues as Record<string, string>) || {}
     );
 
-    // Save state when selectedFeature changes
+    // Find selected feature
+    const selectedFeature = LAUNCHABLE_FEATURES
+        .flatMap(cat => cat.features)
+        .find(f => f.id === selectedFeatureId);
+
+    // Save state when values change
     useEffect(() => {
         setFeatureSetupState(prev => ({
             ...prev,
-            'launch-feature': { ...prev['launch-feature'], selectedFeature }
+            'launch-feature': { 
+                ...prev['launch-feature'], 
+                selectedFeatureId,
+                expandedCategory,
+                paramValues
+            }
         }));
-    }, [selectedFeature, setFeatureSetupState]);
+    }, [selectedFeatureId, expandedCategory, paramValues, setFeatureSetupState]);
 
-    const features = [
-        {
-            id: 'qr-scanner' as const,
-            title: 'QR Scanner',
-            description: 'Open the native QR code scanner to scan credentials or connect with others',
-            icon: <Search className="w-5 h-5" />,
-            code: `// Open the QR scanner
-const result = await learnCard.openQRScanner();
+    // Generate code for selected feature
+    const generateCode = () => {
+        if (!selectedFeature) return '';
+
+        let path = selectedFeature.path;
+        const params: string[] = [];
+
+        // Replace path params and build params object
+        if (selectedFeature.params) {
+            selectedFeature.params.forEach(param => {
+                const value = paramValues[param.name] || param.placeholder;
+
+                if (path.includes(`:${param.name}`)) {
+                    path = path.replace(`:${param.name}`, value);
+                } else {
+                    params.push(`    ${param.name}: '${value}'`);
+                }
+            });
+        }
+
+        const paramsStr = params.length > 0 
+            ? `,\n{\n${params.join(',\n')}\n}` 
+            : '';
+
+        return `// Launch ${selectedFeature.title}
+const result = await learnCard.launchFeature('${path}'${paramsStr});
 
 if (result.success) {
-    console.log('Scanned:', result.data);
-    // Handle the scanned data (credential, profile, etc.)
-}`,
-        },
-        {
-            id: 'ai-session' as const,
-            title: 'AI Session',
-            description: 'Start a targeted AI conversation or tutoring session',
-            icon: <Bot className="w-5 h-5" />,
-            code: `// Start an AI session with context
-await learnCard.startAISession({
-    context: 'career-coaching',
-    initialPrompt: 'Help me explore career paths based on my credentials',
-    // Optional: pass relevant credential IDs for context
-    credentialIds: ['cred-123', 'cred-456']
-});`,
-        },
-        {
-            id: 'profile-card' as const,
-            title: 'Profile Card',
-            description: 'Display the user\'s profile card with their identity and credentials',
-            icon: <User className="w-5 h-5" />,
-            code: `// Show the user's profile card
-await learnCard.showProfileCard({
-    // Optional: highlight specific credentials
-    highlightCredentials: ['achievement-badge-uri'],
-    // Optional: allow sharing
-    allowShare: true
-});`,
-        },
-    ];
+    console.log('Feature launched:', result.data);
+} else {
+    console.error('Failed to launch:', result.error);
+}`;
+    };
 
-    const currentFeature = features.find(f => f.id === selectedFeature) || features[0];
+    const getCategoryColorClasses = (color: string, isExpanded: boolean) => {
+        const colors: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+            blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'text-blue-600' },
+            violet: { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-800', icon: 'text-violet-600' },
+            amber: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', icon: 'text-amber-600' },
+            emerald: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', icon: 'text-emerald-600' },
+            cyan: { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-800', icon: 'text-cyan-600' },
+            rose: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-800', icon: 'text-rose-600' },
+            gray: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-800', icon: 'text-gray-600' },
+            pink: { bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-800', icon: 'text-pink-600' },
+        };
+
+        return colors[color] || colors.gray;
+    };
 
     return (
         <div className="space-y-6">
@@ -3825,11 +3987,11 @@ await learnCard.showProfileCard({
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Launch Native Features</h3>
 
                 <p className="text-gray-600">
-                    Trigger LearnCard&apos;s native tools directly from your app. Select the feature you want to integrate.
+                    Navigate users to any LearnCard screen directly from your app. Select a category and feature to configure.
                 </p>
             </div>
 
-            {/* Feature selector */}
+            {/* Step 1: Category & Feature Selection */}
             <div className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
@@ -3839,45 +4001,147 @@ await learnCard.showProfileCard({
                     <h4 className="font-semibold text-gray-800">Select a Feature</h4>
                 </div>
 
-                <div className="ml-10 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {features.map(feature => (
-                        <button
-                            key={feature.id}
-                            onClick={() => setSelectedFeature(feature.id)}
-                            className={`flex flex-col items-start p-4 border-2 rounded-xl text-left transition-all ${
-                                selectedFeature === feature.id
-                                    ? 'border-purple-500 bg-purple-50'
-                                    : 'border-gray-200 bg-white hover:border-gray-300'
-                            }`}
-                        >
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${
-                                selectedFeature === feature.id
-                                    ? 'bg-purple-100 text-purple-600'
-                                    : 'bg-gray-100 text-gray-500'
-                            }`}>
-                                {feature.icon}
+                <div className="ml-10 space-y-2 max-h-80 overflow-y-auto pr-2">
+                    {LAUNCHABLE_FEATURES.map(category => {
+                        const isExpanded = expandedCategory === category.id;
+                        const colors = getCategoryColorClasses(category.color, isExpanded);
+                        const hasSelectedFeature = category.features.some(f => f.id === selectedFeatureId);
+
+                        return (
+                            <div key={category.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                                <button
+                                    onClick={() => setExpandedCategory(isExpanded ? null : category.id)}
+                                    className={`w-full flex items-center justify-between p-3 text-left transition-colors ${
+                                        isExpanded || hasSelectedFeature ? colors.bg : 'bg-white hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                            isExpanded || hasSelectedFeature ? colors.bg : 'bg-gray-100'
+                                        } ${colors.icon}`}>
+                                            {category.icon}
+                                        </div>
+
+                                        <div>
+                                            <span className={`font-medium ${isExpanded || hasSelectedFeature ? colors.text : 'text-gray-700'}`}>
+                                                {category.title}
+                                            </span>
+
+                                            <span className="text-xs text-gray-400 ml-2">
+                                                {category.features.length} feature{category.features.length !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isExpanded && (
+                                    <div className="border-t border-gray-100 p-2 bg-white">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {category.features.map(feature => (
+                                                <button
+                                                    key={feature.id}
+                                                    onClick={() => setSelectedFeatureId(feature.id)}
+                                                    className={`flex items-start gap-2 p-2.5 rounded-lg text-left transition-all ${
+                                                        selectedFeatureId === feature.id
+                                                            ? `${colors.bg} ${colors.border} border-2`
+                                                            : 'border border-transparent hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${
+                                                        selectedFeatureId === feature.id
+                                                            ? colors.icon + ' ' + colors.bg
+                                                            : 'text-gray-400 bg-gray-100'
+                                                    }`}>
+                                                        {feature.icon}
+                                                    </div>
+
+                                                    <div className="min-w-0">
+                                                        <p className={`text-sm font-medium truncate ${
+                                                            selectedFeatureId === feature.id ? colors.text : 'text-gray-700'
+                                                        }`}>
+                                                            {feature.title}
+                                                        </p>
+
+                                                        <p className="text-xs text-gray-400 truncate">{feature.description}</p>
+
+                                                        {feature.params && (
+                                                            <span className="inline-flex items-center gap-1 mt-1 text-xs text-gray-400">
+                                                                <Code className="w-3 h-3" />
+                                                                {feature.params.length} param{feature.params.length !== 1 ? 's' : ''}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-
-                            <h5 className="font-medium text-gray-800">{feature.title}</h5>
-
-                            <p className="text-xs text-gray-500 mt-1">{feature.description}</p>
-                        </button>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
-            {/* Integration Code */}
+            {/* Step 2: Configure Parameters (if any) */}
+            {selectedFeature?.params && selectedFeature.params.length > 0 && (
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                            2
+                        </div>
+
+                        <h4 className="font-semibold text-gray-800">Configure Parameters</h4>
+                    </div>
+
+                    <div className="ml-10 space-y-3">
+                        {selectedFeature.params.map(param => (
+                            <div key={param.name}>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    {param.name}
+                                    <span className="font-normal text-gray-400 ml-2">— {param.description}</span>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={paramValues[param.name] || ''}
+                                    onChange={(e) => setParamValues(prev => ({ ...prev, [param.name]: e.target.value }))}
+                                    placeholder={param.placeholder}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Step 3: Integration Code */}
             <div className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
-                        2
+                        {selectedFeature?.params?.length ? '3' : '2'}
                     </div>
 
                     <h4 className="font-semibold text-gray-800">Integration Code</h4>
                 </div>
 
                 <div className="ml-10">
-                    <CodeBlock code={currentFeature.code} maxHeight="max-h-80" />
+                    {selectedFeature && (
+                        <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                            <div className="flex items-center gap-2">
+                                {selectedFeature.icon}
+
+                                <span className="font-medium text-purple-800">{selectedFeature.title}</span>
+
+                                <code className="ml-auto text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                                    {selectedFeature.path}
+                                </code>
+                            </div>
+                        </div>
+                    )}
+
+                    <CodeBlock code={generateCode()} maxHeight="max-h-64" />
                 </div>
             </div>
 
@@ -3886,9 +4150,10 @@ await learnCard.showProfileCard({
                 <h4 className="font-medium text-purple-800 mb-2">Tips</h4>
 
                 <ul className="text-sm text-purple-700 space-y-1">
-                    <li>• These features open native LearnCard UI overlays</li>
-                    <li>• Results are returned to your app when the user completes the action</li>
-                    <li>• You can combine multiple features for rich user experiences</li>
+                    <li>• <code className="bg-purple-100 px-1 rounded">launchFeature</code> navigates users to any LearnCard screen</li>
+                    <li>• Parameters are passed as URL params or path segments</li>
+                    <li>• Admin tools are only accessible to users with admin permissions</li>
+                    <li>• Results indicate success/failure of the navigation</li>
                 </ul>
             </div>
 
