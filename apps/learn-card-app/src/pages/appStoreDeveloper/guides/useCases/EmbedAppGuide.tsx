@@ -43,6 +43,10 @@ import {
     FileJson,
     ChevronDown,
     Server,
+    ShieldCheck,
+    Play,
+    Map,
+    Bot,
 } from 'lucide-react';
 
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
@@ -251,6 +255,7 @@ interface Feature {
     requiresSetup: boolean;
     setupDescription?: string;
     color: string;
+    comingSoon?: boolean;
 }
 
 const FEATURES: Feature[] = [
@@ -273,23 +278,6 @@ const FEATURES: Feature[] = [
         color: 'violet',
     },
     {
-        id: 'open-wallet',
-        title: 'Open Wallet',
-        description: 'Let users view their credential wallet directly from your app.',
-        icon: <FolderOpen className="w-6 h-6" />,
-        requiresSetup: false,
-        color: 'purple',
-    },
-    {
-        id: 'claim-credentials',
-        title: 'Claim Credentials',
-        description: 'Create shareable claim links that let users claim pre-defined credentials.',
-        icon: <Sparkles className="w-6 h-6" />,
-        requiresSetup: true,
-        setupDescription: 'Create Claim Links',
-        color: 'emerald',
-    },
-    {
         id: 'request-credentials',
         title: 'Request Credentials',
         description: 'Ask users to share credentials with your app for verification or gated access.',
@@ -297,6 +285,44 @@ const FEATURES: Feature[] = [
         requiresSetup: true,
         setupDescription: 'Configure Search Query',
         color: 'amber',
+    },
+    {
+        id: 'request-data-consent',
+        title: 'Request Data Consent',
+        description: 'Ask users for permission to access specific data fields or write data back to their profile via a ConsentFlow contract.',
+        icon: <ShieldCheck className="w-6 h-6" />,
+        requiresSetup: true,
+        setupDescription: 'Define Consent Contract',
+        color: 'emerald',
+    },
+    {
+        id: 'launch-feature',
+        title: 'Launch Feature',
+        description: 'Trigger native LearnCard tools directly from your app. Open the QR scanner, start an AI session, or display the profile card.',
+        icon: <Play className="w-6 h-6" />,
+        requiresSetup: true,
+        setupDescription: 'Configure Feature Settings',
+        color: 'purple',
+    },
+    {
+        id: 'display-pathways',
+        title: 'Display Pathways',
+        description: 'Visualize a user\'s journey. Show completed steps and what credentials they need to reach a goal.',
+        icon: <Map className="w-6 h-6" />,
+        requiresSetup: true,
+        setupDescription: 'Define Pathway/Map Structure',
+        color: 'rose',
+        comingSoon: true,
+    },
+    {
+        id: 'launch-ai-assistant',
+        title: 'Launch AI Assistant',
+        description: 'Embed a custom AI chat or tutor experience. Configure preset prompts and context for "Math Tutor" or "Career Coach" style interactions.',
+        icon: <Bot className="w-6 h-6" />,
+        requiresSetup: true,
+        setupDescription: 'Define AI Prompt & Context',
+        color: 'indigo',
+        comingSoon: true,
     },
 ];
 
@@ -553,6 +579,10 @@ const ChooseFeaturesStep: React.FC<{
     setSelectedFeatures: (features: string[]) => void;
 }> = ({ onComplete, onBack, selectedFeatures, setSelectedFeatures }) => {
     const toggleFeature = (featureId: string) => {
+        const feature = FEATURES.find(f => f.id === featureId);
+
+        if (feature?.comingSoon) return; // Don't allow selection of coming soon features
+
         if (selectedFeatures.includes(featureId)) {
             setSelectedFeatures(selectedFeatures.filter(f => f !== featureId));
         } else {
@@ -560,16 +590,22 @@ const ChooseFeaturesStep: React.FC<{
         }
     };
 
-    const getColorClasses = (color: string, isSelected: boolean) => {
+    const getColorClasses = (color: string, isSelected: boolean, isComingSoon: boolean = false) => {
         const colors: Record<string, { border: string; bg: string; icon: string }> = {
             cyan: { border: 'border-cyan-500', bg: 'bg-cyan-50', icon: 'text-cyan-600 bg-cyan-100' },
             violet: { border: 'border-violet-500', bg: 'bg-violet-50', icon: 'text-violet-600 bg-violet-100' },
             purple: { border: 'border-purple-500', bg: 'bg-purple-50', icon: 'text-purple-600 bg-purple-100' },
             emerald: { border: 'border-emerald-500', bg: 'bg-emerald-50', icon: 'text-emerald-600 bg-emerald-100' },
             amber: { border: 'border-amber-500', bg: 'bg-amber-50', icon: 'text-amber-600 bg-amber-100' },
+            rose: { border: 'border-rose-500', bg: 'bg-rose-50', icon: 'text-rose-600 bg-rose-100' },
+            indigo: { border: 'border-indigo-500', bg: 'bg-indigo-50', icon: 'text-indigo-600 bg-indigo-100' },
         };
 
         const c = colors[color] || colors.cyan;
+
+        if (isComingSoon) {
+            return { border: 'border-gray-200 border-dashed', bg: 'bg-gray-50', icon: 'text-gray-400 bg-gray-100' };
+        }
 
         return isSelected
             ? { border: c.border, bg: c.bg, icon: c.icon }
@@ -594,41 +630,56 @@ const ChooseFeaturesStep: React.FC<{
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {FEATURES.map(feature => {
                     const isSelected = selectedFeatures.includes(feature.id);
-                    const colors = getColorClasses(feature.color, isSelected);
+                    const isComingSoon = feature.comingSoon === true;
+                    const colors = getColorClasses(feature.color, isSelected, isComingSoon);
 
                     return (
                         <button
                             key={feature.id}
                             onClick={() => toggleFeature(feature.id)}
-                            className={`flex flex-col items-start p-5 border-2 rounded-2xl text-left transition-all ${colors.border} ${colors.bg}`}
+                            disabled={isComingSoon}
+                            className={`flex flex-col items-start p-5 border-2 rounded-2xl text-left transition-all ${colors.border} ${colors.bg} ${isComingSoon ? 'cursor-not-allowed opacity-75' : 'hover:shadow-md'}`}
                         >
                             <div className="w-full flex items-start justify-between mb-3">
                                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors.icon}`}>
                                     {feature.icon}
                                 </div>
 
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                    isSelected ? 'border-current bg-current' : 'border-gray-300'
-                                }`}>
-                                    {isSelected && <Check className="w-4 h-4 text-white" />}
-                                </div>
+                                {isComingSoon ? (
+                                    <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
+                                        Coming Soon
+                                    </span>
+                                ) : (
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                        isSelected ? 'border-current bg-current' : 'border-gray-300'
+                                    }`}>
+                                        {isSelected && <Check className="w-4 h-4 text-white" />}
+                                    </div>
+                                )}
                             </div>
 
-                            <h4 className="font-semibold text-gray-800 mb-1">{feature.title}</h4>
+                            <h4 className={`font-semibold mb-1 ${isComingSoon ? 'text-gray-500' : 'text-gray-800'}`}>{feature.title}</h4>
 
-                            <p className="text-sm text-gray-600 mb-3">{feature.description}</p>
+                            <p className={`text-sm mb-3 ${isComingSoon ? 'text-gray-400' : 'text-gray-600'}`}>{feature.description}</p>
 
-                            {feature.requiresSetup && (
+                            {feature.requiresSetup && !isComingSoon && (
                                 <div className="flex items-center gap-1.5 mt-auto">
                                     <Layers className="w-3.5 h-3.5 text-gray-400" />
                                     <span className="text-xs text-gray-500">Requires: {feature.setupDescription}</span>
                                 </div>
                             )}
 
-                            {!feature.requiresSetup && (
+                            {!feature.requiresSetup && !isComingSoon && (
                                 <div className="flex items-center gap-1.5 mt-auto">
                                     <Zap className="w-3.5 h-3.5 text-emerald-500" />
                                     <span className="text-xs text-emerald-600 font-medium">Ready to use</span>
+                                </div>
+                            )}
+
+                            {isComingSoon && (
+                                <div className="flex items-center gap-1.5 mt-auto">
+                                    <Sparkles className="w-3.5 h-3.5 text-gray-400" />
+                                    <span className="text-xs text-gray-400">Requires: {feature.setupDescription}</span>
                                 </div>
                             )}
                         </button>
@@ -2677,42 +2728,31 @@ const FeatureSetupStep: React.FC<{
                     />
                 );
 
-            case 'claim-credentials':
-                return (
-                    <div className="space-y-6">
-                        <div>
-                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Claim Credentials</h3>
-
-                            <p className="text-gray-600">
-                                Create shareable claim links for your credentials. Coming soon!
-                            </p>
-                        </div>
-
-                        <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
-                            <Sparkles className="w-8 h-8 text-amber-500 mx-auto mb-3" />
-
-                            <p className="text-amber-800">
-                                This feature setup is coming soon. For now, you can skip this step.
-                            </p>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button onClick={handleFeatureBack} className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
-                                <ArrowLeft className="w-4 h-4" />
-                                Back
-                            </button>
-
-                            <button onClick={handleFeatureComplete} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors">
-                                {isLastFeature ? 'See Your Code' : 'Next Feature'}
-                                <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                );
-
             case 'request-credentials':
                 return (
                     <RequestCredentialsSetup
+                        onComplete={handleFeatureComplete}
+                        onBack={handleFeatureBack}
+                        isLastFeature={isLastFeature}
+                        featureSetupState={featureSetupState}
+                        setFeatureSetupState={setFeatureSetupState}
+                    />
+                );
+
+            case 'request-data-consent':
+                return (
+                    <RequestDataConsentSetup
+                        onComplete={handleFeatureComplete}
+                        onBack={handleFeatureBack}
+                        isLastFeature={isLastFeature}
+                        featureSetupState={featureSetupState}
+                        setFeatureSetupState={setFeatureSetupState}
+                    />
+                );
+
+            case 'launch-feature':
+                return (
+                    <LaunchFeatureSetup
                         onComplete={handleFeatureComplete}
                         onBack={handleFeatureBack}
                         isLastFeature={isLastFeature}
@@ -3516,6 +3556,291 @@ try {
                     </div>
                 </div>
             )}
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                >
+                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Request Data Consent Setup
+const RequestDataConsentSetup: React.FC<{
+    onComplete: () => void;
+    onBack: () => void;
+    isLastFeature: boolean;
+    featureSetupState: Record<string, Record<string, unknown>>;
+    setFeatureSetupState: React.Dispatch<React.SetStateAction<Record<string, Record<string, unknown>>>>;
+}> = ({ onComplete, onBack, isLastFeature, featureSetupState, setFeatureSetupState }) => {
+    // Get saved state
+    const savedState = featureSetupState['request-data-consent'] || {};
+    const [contractUri, setContractUri] = useState<string>((savedState.contractUri as string) || '');
+
+    // Save state when contractUri changes
+    useEffect(() => {
+        setFeatureSetupState(prev => ({
+            ...prev,
+            'request-data-consent': { ...prev['request-data-consent'], contractUri }
+        }));
+    }, [contractUri, setFeatureSetupState]);
+
+    const consentCode = `// Request data consent from the user
+const result = await learnCard.requestConsent({
+    contractUri: '${contractUri || 'urn:lc:contract:your-contract-uri'}',
+    // The contract defines what data you can read/write
+});
+
+if (result.granted) {
+    console.log('User granted consent!', result.consentId);
+    
+    // Now you can access data per the contract terms
+    // Read consented data
+    const userData = await learnCard.readConsentedData({
+        consentId: result.consentId,
+        fields: ['name', 'email', 'achievements']
+    });
+    
+    // Write data back (if contract permits)
+    await learnCard.writeConsentedData({
+        consentId: result.consentId,
+        data: { lastVisit: new Date().toISOString() }
+    });
+} else {
+    console.log('User declined consent');
+}`;
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Request Data Consent</h3>
+
+                <p className="text-gray-600">
+                    Ask users for permission to access specific data fields or write data back to their profile via a ConsentFlow contract.
+                </p>
+            </div>
+
+            {/* Step 1: Select Consent Contract */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                        1
+                    </div>
+
+                    <h4 className="font-semibold text-gray-800">Select or Create a Consent Contract</h4>
+                </div>
+
+                <div className="ml-10">
+                    <ConsentFlowContractSelector
+                        value={contractUri}
+                        onChange={setContractUri}
+                    />
+                </div>
+            </div>
+
+            {/* Step 2: Integration Code */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                        2
+                    </div>
+
+                    <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                </div>
+
+                <div className="ml-10">
+                    <CodeBlock code={consentCode} maxHeight="max-h-80" />
+                </div>
+            </div>
+
+            {/* How it works */}
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <h4 className="font-medium text-emerald-800 mb-2">How ConsentFlow Works</h4>
+
+                <ol className="text-sm text-emerald-700 space-y-1">
+                    <li><strong>1.</strong> You define a contract specifying what data you need access to</li>
+                    <li><strong>2.</strong> User reviews and approves (or declines) the request</li>
+                    <li><strong>3.</strong> You receive a consent ID for future data operations</li>
+                    <li><strong>4.</strong> Use the consent ID to read/write data per contract terms</li>
+                </ol>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                >
+                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Launch Feature Setup
+type LaunchFeatureType = 'qr-scanner' | 'ai-session' | 'profile-card';
+
+const LaunchFeatureSetup: React.FC<{
+    onComplete: () => void;
+    onBack: () => void;
+    isLastFeature: boolean;
+    featureSetupState: Record<string, Record<string, unknown>>;
+    setFeatureSetupState: React.Dispatch<React.SetStateAction<Record<string, Record<string, unknown>>>>;
+}> = ({ onComplete, onBack, isLastFeature, featureSetupState, setFeatureSetupState }) => {
+    // Get saved state
+    const savedState = featureSetupState['launch-feature'] || {};
+    const [selectedFeature, setSelectedFeature] = useState<LaunchFeatureType>(
+        (savedState.selectedFeature as LaunchFeatureType) || 'qr-scanner'
+    );
+
+    // Save state when selectedFeature changes
+    useEffect(() => {
+        setFeatureSetupState(prev => ({
+            ...prev,
+            'launch-feature': { ...prev['launch-feature'], selectedFeature }
+        }));
+    }, [selectedFeature, setFeatureSetupState]);
+
+    const features = [
+        {
+            id: 'qr-scanner' as const,
+            title: 'QR Scanner',
+            description: 'Open the native QR code scanner to scan credentials or connect with others',
+            icon: <Search className="w-5 h-5" />,
+            code: `// Open the QR scanner
+const result = await learnCard.openQRScanner();
+
+if (result.success) {
+    console.log('Scanned:', result.data);
+    // Handle the scanned data (credential, profile, etc.)
+}`,
+        },
+        {
+            id: 'ai-session' as const,
+            title: 'AI Session',
+            description: 'Start a targeted AI conversation or tutoring session',
+            icon: <Bot className="w-5 h-5" />,
+            code: `// Start an AI session with context
+await learnCard.startAISession({
+    context: 'career-coaching',
+    initialPrompt: 'Help me explore career paths based on my credentials',
+    // Optional: pass relevant credential IDs for context
+    credentialIds: ['cred-123', 'cred-456']
+});`,
+        },
+        {
+            id: 'profile-card' as const,
+            title: 'Profile Card',
+            description: 'Display the user\'s profile card with their identity and credentials',
+            icon: <User className="w-5 h-5" />,
+            code: `// Show the user's profile card
+await learnCard.showProfileCard({
+    // Optional: highlight specific credentials
+    highlightCredentials: ['achievement-badge-uri'],
+    // Optional: allow sharing
+    allowShare: true
+});`,
+        },
+    ];
+
+    const currentFeature = features.find(f => f.id === selectedFeature) || features[0];
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Launch Native Features</h3>
+
+                <p className="text-gray-600">
+                    Trigger LearnCard&apos;s native tools directly from your app. Select the feature you want to integrate.
+                </p>
+            </div>
+
+            {/* Feature selector */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                        1
+                    </div>
+
+                    <h4 className="font-semibold text-gray-800">Select a Feature</h4>
+                </div>
+
+                <div className="ml-10 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {features.map(feature => (
+                        <button
+                            key={feature.id}
+                            onClick={() => setSelectedFeature(feature.id)}
+                            className={`flex flex-col items-start p-4 border-2 rounded-xl text-left transition-all ${
+                                selectedFeature === feature.id
+                                    ? 'border-purple-500 bg-purple-50'
+                                    : 'border-gray-200 bg-white hover:border-gray-300'
+                            }`}
+                        >
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${
+                                selectedFeature === feature.id
+                                    ? 'bg-purple-100 text-purple-600'
+                                    : 'bg-gray-100 text-gray-500'
+                            }`}>
+                                {feature.icon}
+                            </div>
+
+                            <h5 className="font-medium text-gray-800">{feature.title}</h5>
+
+                            <p className="text-xs text-gray-500 mt-1">{feature.description}</p>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Integration Code */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                        2
+                    </div>
+
+                    <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                </div>
+
+                <div className="ml-10">
+                    <CodeBlock code={currentFeature.code} maxHeight="max-h-80" />
+                </div>
+            </div>
+
+            {/* Tips */}
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                <h4 className="font-medium text-purple-800 mb-2">Tips</h4>
+
+                <ul className="text-sm text-purple-700 space-y-1">
+                    <li>• These features open native LearnCard UI overlays</li>
+                    <li>• Results are returned to your app when the user completes the action</li>
+                    <li>• You can combine multiple features for rich user experiences</li>
+                </ul>
+            </div>
 
             {/* Navigation */}
             <div className="flex gap-3">
