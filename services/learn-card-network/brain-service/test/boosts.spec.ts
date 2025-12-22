@@ -498,6 +498,108 @@ describe('Boosts', () => {
             expect(boosts.records[1]?.category).not.toEqual('C');
         });
 
+        it('should allow querying by meta fields', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-123' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-456' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { integrationId: 'int-789' },
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.getPaginatedBoosts({
+                    query: { meta: { appListingId: 'listing-123' } },
+                })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { meta: { appListingId: 'listing-123' } },
+            });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.meta?.appListingId).toEqual('listing-123');
+        });
+
+        it('should allow querying by multiple meta fields', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-123', integrationId: 'int-A' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-123', integrationId: 'int-B' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-456', integrationId: 'int-A' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { meta: { appListingId: 'listing-123', integrationId: 'int-A' } },
+            });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.meta?.appListingId).toEqual('listing-123');
+            expect(boosts.records[0]?.meta?.integrationId).toEqual('int-A');
+        });
+
+        it('should allow querying meta with $in operator', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-A' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-B' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                meta: { appListingId: 'listing-C' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { meta: { appListingId: { $in: ['listing-A', 'listing-B'] } } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records.every(b => ['listing-A', 'listing-B'].includes(b.meta?.appListingId))).toBe(true);
+        });
+
+        it('should allow combining meta query with other filters', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'achievement',
+                meta: { appListingId: 'listing-123' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'membership',
+                meta: { appListingId: 'listing-123' },
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'achievement',
+                meta: { appListingId: 'listing-456' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { 
+                    category: 'achievement',
+                    meta: { appListingId: 'listing-123' } 
+                },
+            }); 
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.category).toEqual('achievement');
+            expect(boosts.records[0]?.meta?.appListingId).toEqual('listing-123');
+        });
+
         it('should paginate correctly', async () => {
             for (let index = 0; index < 10; index += 1) {
                 await userA.clients.fullAuth.boost.createBoost({

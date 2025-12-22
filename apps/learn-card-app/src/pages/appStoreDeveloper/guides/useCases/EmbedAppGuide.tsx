@@ -1391,16 +1391,14 @@ const TemplateManager: React.FC<{
     initWalletRef.current = initWallet;
 
     // Helper to fetch templates
-    // Note: meta query isn't fully implemented in backend, so we filter client-side
     const fetchTemplatesForListing = async (listingId: string): Promise<BoostTemplate[]> => {
         const wallet = await initWalletRef.current();
-        const result = await wallet.invoke.getPaginatedBoosts({ limit: 100 });
+        const result = await wallet.invoke.getPaginatedBoosts({ 
+            limit: 100,
+            query: { meta: { appListingId: listingId } }
+        });
 
         return (result?.records || [])
-            .filter((boost: Record<string, unknown>) => {
-                const meta = boost.meta as Record<string, unknown> | undefined;
-                return meta?.appListingId === listingId;
-            })
             .map((boost: Record<string, unknown>) => ({
                 uri: boost.uri as string,
                 name: boost.name as string || 'Untitled Template',
@@ -1568,19 +1566,20 @@ async function getAppBoostTemplates(appListingId: string) {
         // Your authentication config
     });
 
-    // Fetch all boosts
-    const result = await learnCard.invoke.getPaginatedBoosts({ limit: 100 });
+    // Fetch boosts filtered by appListingId in meta
+    const result = await learnCard.invoke.getPaginatedBoosts({ 
+        limit: 100,
+        query: { meta: { appListingId } }
+    });
 
-    // Filter to only templates for your app listing
-    const templates = (result?.records || [])
-        .filter(boost => boost.meta?.appListingId === appListingId)
-        .map(boost => ({
-            boostUri: boost.uri,
-            name: boost.name,
-            description: boost.description || '',
-            image: boost.image || '',
-            type: boost.type,
-        }));
+    // Map to your desired format
+    const templates = (result?.records || []).map(boost => ({
+        boostUri: boost.uri,
+        name: boost.name,
+        description: boost.description || '',
+        image: boost.image || '',
+        type: boost.type,
+    }));
 
     return templates;
 }
