@@ -3599,30 +3599,57 @@ const RequestDataConsentSetup: React.FC<{
         }));
     }, [contractUri, setFeatureSetupState]);
 
-    const consentCode = `// Request data consent from the user
+    // Client-side: Request consent from user
+    const clientCode = `// In your embedded app (client-side)
+// Request consent from the user
 const result = await learnCard.requestConsent({
     contractUri: '${contractUri || 'urn:lc:contract:your-contract-uri'}',
-    // The contract defines what data you can read/write
 });
 
 if (result.granted) {
-    console.log('User granted consent!', result.consentId);
+    console.log('User granted consent!');
     
-    // Now you can access data per the contract terms
-    // Read consented data
-    const userData = await learnCard.readConsentedData({
-        consentId: result.consentId,
-        fields: ['name', 'email', 'achievements']
-    });
-    
-    // Write data back (if contract permits)
-    await learnCard.writeConsentedData({
-        consentId: result.consentId,
-        data: { lastVisit: new Date().toISOString() }
+    // Send the consent confirmation to your server
+    await fetch('/api/consent-granted', {
+        method: 'POST',
+        body: JSON.stringify({ 
+            userId: result.userId,
+            contractUri: '${contractUri || 'urn:lc:contract:your-contract-uri'}'
+        })
     });
 } else {
     console.log('User declined consent');
 }`;
+
+    // Server-side: Read and write data using consent
+    const serverCode = `// On your server (Node.js)
+import { initLearnCard } from '@learncard/init';
+
+// Initialize with your API key (recommended) or seed phrase
+const learnCard = await initLearnCard({
+    network: true,
+    apiKey: process.env.LEARNCARD_API_KEY, // Your API key
+    // Or use a seed: seed: process.env.LEARNCARD_SEED
+});
+
+const contractUri = '${contractUri || 'urn:lc:contract:your-contract-uri'}';
+const recipientProfileId = 'user-profile-id';
+
+// READING: Get credentials the user has shared via consent
+const credentials = await learnCard.invoke.getCredentialsForContract(
+    contractUri,
+    { limit: 50 }
+);
+console.log('User shared credentials:', credentials.records);
+
+// WRITING: Send a credential to the user via consent
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: recipientProfileId,
+    templateUri: 'urn:lc:boost:your-template-uri',
+    contractUri: contractUri, // Routes via consent terms
+});
+console.log('Credential sent:', result);`;
 
     return (
         <div className="space-y-6">
@@ -3652,18 +3679,41 @@ if (result.granted) {
                 </div>
             </div>
 
-            {/* Step 2: Integration Code */}
+            {/* Step 2: Client-side Code */}
             <div className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-7 h-7 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                         2
                     </div>
 
-                    <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                    <h4 className="font-semibold text-gray-800">Request Consent (Client-Side)</h4>
                 </div>
 
                 <div className="ml-10">
-                    <CodeBlock code={consentCode} maxHeight="max-h-80" />
+                    <p className="text-sm text-gray-600 mb-3">
+                        Use the Partner SDK to prompt the user for consent in your embedded app.
+                    </p>
+
+                    <CodeBlock code={clientCode} maxHeight="max-h-64" />
+                </div>
+            </div>
+
+            {/* Step 3: Server-side Code */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                        3
+                    </div>
+
+                    <h4 className="font-semibold text-gray-800">Read & Write Data (Server-Side)</h4>
+                </div>
+
+                <div className="ml-10">
+                    <p className="text-sm text-gray-600 mb-3">
+                        On your server, initialize with your API key to read shared credentials and send new ones.
+                    </p>
+
+                    <CodeBlock code={serverCode} maxHeight="max-h-96" />
                 </div>
             </div>
 
