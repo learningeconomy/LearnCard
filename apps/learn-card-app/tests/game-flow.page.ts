@@ -143,7 +143,7 @@ export class GameFlowPage {
 
         await expect(this.page.getByText("Who's Playing?")).toBeVisible();
         await expect(
-            this.page.locator('footer').getByRole('button', { name: 'Add Player' })
+            this.page.locator('footer').getByRole('button', { name: 'Add New Player' })
         ).toBeVisible();
         await expect(
             this.page
@@ -168,7 +168,7 @@ export class GameFlowPage {
     }
 
     async clickAddPlayer() {
-        await this.page.getByRole('button', { name: 'Add Player' }).click();
+        await this.page.getByRole('button', { name: 'Add New Player' }).click();
     }
 
     async validateConfirmationPage() {

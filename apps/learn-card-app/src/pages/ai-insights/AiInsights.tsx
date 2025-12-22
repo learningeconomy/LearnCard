@@ -37,6 +37,11 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
 
+type Flags = {
+    hideAiPathways?: boolean;
+    showGenerateAiInsightsButton?: boolean;
+};
+
 const AiInsights: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -58,7 +63,7 @@ const AiInsights: React.FC = () => {
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiInsight);
     const { backgroundSecondaryColor } = colors;
-    const flags = useFlags();
+    const flags = useFlags<Flags>();
 
     const {
         data: allResolvedCreds,
@@ -128,9 +133,9 @@ const AiInsights: React.FC = () => {
 
             {contractRequest}
             <ShareInsightsCard />
-            <AiInsightsLearningPathwaysCard />
+            {!flags?.hideAiPathways && <AiInsightsLearningPathwaysCard />}
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
-            <AiInsightsSkillsCardSimple />
+            {topSkills.length > 0 && <AiInsightsSkillsCardSimple />}
             <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
         </>
     );

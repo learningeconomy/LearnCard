@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.94.4
+
+### Patch Changes
+
+-   [#903](https://github.com/learningeconomy/LearnCard/pull/903) [`eb3fe113e8e64616a1bd133ed73d38fe0a3cc2d9`](https://github.com/learningeconomy/LearnCard/commit/eb3fe113e8e64616a1bd133ed73d38fe0a3cc2d9) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1497] - Add AI Insights Empty Placeholder
+
+-   [#900](https://github.com/learningeconomy/LearnCard/pull/900) [`605f098e7c3ded38e236981dd3b3927860cb5869`](https://github.com/learningeconomy/LearnCard/commit/605f098e7c3ded38e236981dd3b3927860cb5869) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Contract URI to JWTs so that X-API statements are tagged by contract
+
+-   Updated dependencies []:
+    -   @learncard/react@2.9.3
+    -   @learncard/lca-api-plugin@1.1.3
+
+## 1.94.3
+
+### Patch Changes
+
+-   [#862](https://github.com/learningeconomy/LearnCard/pull/862) [`7e14d1f29453fc56d545e9b077797ba1f961d973`](https://github.com/learningeconomy/LearnCard/commit/7e14d1f29453fc56d545e9b077797ba1f961d973) Thanks [@goblincore](https://github.com/goblincore)! - Feat: [LC-1411] Quick Nav
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.1
+    -   @learncard/open-badge-v2-plugin@1.1.1
+    -   @learncard/react@2.9.2
+    -   @learncard/lca-api-plugin@1.1.2
+
 ## 1.94.1
 
 ### Patch Changes

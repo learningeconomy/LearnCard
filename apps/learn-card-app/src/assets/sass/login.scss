@@ -38,6 +38,27 @@
     }
 }
 
+.PhoneInput.login-phone-input.gameflow {
+    .PhoneInputInput {
+        background-color: var(--ion-color-grayscale-100);
+        border: 1px solid var(--ion-color-grayscale-200);
+        color: var(--ion-color-grayscale-900);
+
+        &::placeholder {
+            color: var(--ion-color-grayscale-500);
+        }
+    }
+
+    .PhoneInputCountry {
+        background-color: var(--ion-color-grayscale-100);
+        border: 1px solid var(--ion-color-grayscale-200);
+
+        .PhoneInputCountryIcon {
+            border: solid 1px var(--ion-color-grayscale-400);
+        }
+    }
+}
+
 .react-code-input:not(.small) > input:not([value='']) {
     background-color: white;
     transition: background-color 0.3s ease-in;
@@ -45,12 +66,15 @@
 
 .react-code-input.small {
     display: flex !important;
-    justify-content: space-between;
-    padding-left: 2px;
-    padding-right: 2px;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 8px;
 
     & > input {
-        width: 14%;
+        flex: 0 0 auto;
+        width: clamp(34px, 9vw, 46px);
+        min-width: 0;
         border-radius: 12px;
         font-size: 24px;
         height: 60px;
@@ -68,11 +92,56 @@
         }
 
         @media (max-width: 479px) {
-            width: 14%;
+            width: clamp(30px, 10vw, 44px);
         }
 
         @media (max-width: 380px) {
-            width: 12.25%;
+            width: clamp(28px, 10vw, 40px);
+        }
+    }
+}
+
+.react-code-input.gameflow:not(.small) {
+    & > input {
+        background-color: var(--ion-color-grayscale-100);
+        border: 1px solid var(--ion-color-grayscale-200);
+        color: var(--ion-color-grayscale-900);
+
+        &:focus {
+            border: 1px solid var(--ion-color-grayscale-300);
+            background-color: white;
+        }
+    }
+}
+
+.react-code-input.small.gameflow {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    width: 100%;
+    max-width: 100%;
+    gap: 8px;
+
+    @media (max-width: 420px) {
+        gap: 6px;
+    }
+
+    @media (max-width: 360px) {
+        gap: 5px;
+    }
+
+    & > input {
+        flex: initial;
+        width: 100% !important;
+        min-width: 0;
+        background-color: var(--ion-color-grayscale-100);
+        border: 1px solid var(--ion-color-grayscale-200);
+        color: var(--ion-color-grayscale-900);
+        font-size: 20px;
+        height: 56px;
+
+        &:focus {
+            border: 1px solid var(--ion-color-grayscale-300);
+            background-color: white;
         }
     }
 }

@@ -13,6 +13,7 @@ import {
 import { flattenObject } from '@helpers/objects.helpers';
 import { ProfileType } from 'types/profile';
 import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
+import { getBoostIdForCredentialInstance } from '@accesslayer/credential/relationships/read';
 import { DbTermsType } from 'types/consentflowcontract';
 
 export const createSentCredentialRelationship = async (
@@ -38,7 +39,9 @@ export const createSentCredentialRelationship = async (
                 { model: Credential, where: { id: credential.id }, identifier: 'credential' },
             ],
         })
-        .create(`(profile)-[r:${Profile.getRelationshipByAlias('credentialSent').name}]->(credential)`)
+        .create(
+            `(profile)-[r:${Profile.getRelationshipByAlias('credentialSent').name}]->(credential)`
+        )
         .set('r = $params')
         .run();
 };
@@ -66,7 +69,11 @@ export const createReceivedCredentialRelationship = async (
                 { model: Profile, where: { profileId: to.profileId }, identifier: 'profile' },
             ],
         })
-        .create(`(credential)-[r:${Credential.getRelationshipByAlias('credentialReceived').name}]->(profile)`)
+        .create(
+            `(credential)-[r:${
+                Credential.getRelationshipByAlias('credentialReceived').name
+            }]->(profile)`
+        )
         .set('r = $params')
         .run();
 };
@@ -92,7 +99,8 @@ export const setDefaultClaimedRole = async (
         .with('boost, role')
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
         .where(
-            `NOT EXISTS { MATCH (profile)-[:${Boost.getRelationshipByAlias('hasRole').name
+            `NOT EXISTS { MATCH (profile)-[:${
+                Boost.getRelationshipByAlias('hasRole').name
             }]-(boost)}`
         )
         .create({
@@ -105,11 +113,11 @@ export const setDefaultClaimedRole = async (
         .run();
 
     try {
-        const vc = JSON.parse(credential.credential);
+        const boostId = await getBoostIdForCredentialInstance(credential);
 
-        if (vc.boostId) await clearDidWebCacheForChildProfileManagers(vc.boostId);
+        if (boostId) await clearDidWebCacheForChildProfileManagers(boostId);
     } catch (error) {
-        console.error('Invalid credential JSON?', error);
+        console.error('Could not clear did:web cache for accepted boost credential', error);
     }
 };
 
