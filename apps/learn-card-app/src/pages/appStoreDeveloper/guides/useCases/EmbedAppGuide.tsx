@@ -47,6 +47,7 @@ import {
     Play,
     Map,
     Bot,
+    Layout,
 } from 'lucide-react';
 
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
@@ -437,71 +438,144 @@ console.log('User:', identity.profile.displayName);`;
                             </p>
                         </div>
                     ) : isLoadingListings ? (
-                        <div className="flex items-center justify-center py-6">
+                        <div className="flex items-center justify-center py-8">
                             <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
                         </div>
                     ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
+                            {/* App Listings */}
                             {listings && listings.length > 0 && (
-                                <div className="space-y-2">
-                                    {listings.map((listing) => (
-                                        <button
-                                            key={listing.listing_id}
-                                            onClick={() => setSelectedListing(listing)}
-                                            className={`w-full flex items-center justify-between p-3 border-2 rounded-xl transition-all ${
-                                                selectedListing?.listing_id === listing.listing_id
-                                                    ? 'border-cyan-500 bg-cyan-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                            }`}
-                                        >
-                                            <span className="font-medium text-gray-800">{listing.display_name}</span>
+                                <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
+                                    {listings.map((listing) => {
+                                        const isSelected = selectedListing?.listing_id === listing.listing_id;
 
-                                            {selectedListing?.listing_id === listing.listing_id && (
-                                                <CheckCircle2 className="w-5 h-5 text-cyan-500" />
-                                            )}
-                                        </button>
-                                    ))}
+                                        return (
+                                            <button
+                                                key={listing.listing_id}
+                                                onClick={() => setSelectedListing(listing)}
+                                                className={`w-full flex items-center gap-4 p-4 text-left transition-all ${
+                                                    isSelected
+                                                        ? 'bg-cyan-50'
+                                                        : 'hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                {/* App Icon */}
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                    isSelected ? 'bg-cyan-100' : 'bg-gray-100'
+                                                }`}>
+                                                    {listing.icon_url ? (
+                                                        <img
+                                                            src={listing.icon_url}
+                                                            alt={listing.display_name}
+                                                            className="w-10 h-10 rounded-lg object-cover"
+                                                        />
+                                                    ) : (
+                                                        <Layout className={`w-6 h-6 ${isSelected ? 'text-cyan-600' : 'text-gray-400'}`} />
+                                                    )}
+                                                </div>
+
+                                                {/* App Details */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={`font-semibold truncate ${isSelected ? 'text-cyan-700' : 'text-gray-800'}`}>
+                                                        {listing.display_name}
+                                                    </p>
+
+                                                    <p className="text-xs text-gray-500 truncate">
+                                                        {listing.tagline || 'No tagline set'}
+                                                    </p>
+
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                            listing.app_listing_status === 'LISTED' 
+                                                                ? 'bg-emerald-100 text-emerald-700'
+                                                                : listing.app_listing_status === 'PENDING_REVIEW'
+                                                                ? 'bg-amber-100 text-amber-700'
+                                                                : 'bg-gray-100 text-gray-600'
+                                                        }`}>
+                                                            {listing.app_listing_status === 'LISTED' ? 'Live' : listing.app_listing_status === 'PENDING_REVIEW' ? 'In Review' : 'Draft'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Selection Indicator */}
+                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                                    isSelected
+                                                        ? 'border-cyan-500 bg-cyan-500'
+                                                        : 'border-gray-300'
+                                                }`}>
+                                                    {isSelected && (
+                                                        <Check className="w-4 h-4 text-white" />
+                                                    )}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             )}
 
+                            {/* Empty State */}
+                            {(!listings || listings.length === 0) && !isCreatingListing && (
+                                <div className="p-6 bg-gray-50 border border-gray-200 rounded-xl text-center">
+                                    <Layout className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+
+                                    <p className="text-gray-600 font-medium mb-1">No apps yet</p>
+
+                                    <p className="text-sm text-gray-500">
+                                        Create your first app to get started
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Create New App Form */}
                             {isCreatingListing ? (
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={newListingName}
-                                        onChange={(e) => setNewListingName(e.target.value)}
-                                        placeholder="App name..."
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                                        autoFocus
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') handleCreateListing();
-                                            if (e.key === 'Escape') setIsCreatingListing(false);
-                                        }}
-                                    />
+                                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            App Name
+                                        </label>
 
-                                    <button
-                                        onClick={handleCreateListing}
-                                        disabled={!newListingName.trim() || createListingMutation.isPending}
-                                        className="px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-                                    >
-                                        {createListingMutation.isPending ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            'Create'
-                                        )}
-                                    </button>
+                                        <input
+                                            type="text"
+                                            value={newListingName}
+                                            onChange={(e) => setNewListingName(e.target.value)}
+                                            placeholder="My Awesome App"
+                                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            autoFocus
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleCreateListing();
+                                                if (e.key === 'Escape') setIsCreatingListing(false);
+                                            }}
+                                        />
+                                    </div>
 
-                                    <button
-                                        onClick={() => setIsCreatingListing(false)}
-                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleCreateListing}
+                                            disabled={!newListingName.trim() || createListingMutation.isPending}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                                        >
+                                            {createListingMutation.isPending ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <>
+                                                    <Plus className="w-4 h-4" />
+                                                    Create App
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <button
+                                            onClick={() => { setIsCreatingListing(false); setNewListingName(''); }}
+                                            className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
                                 <button
                                     onClick={() => setIsCreatingListing(true)}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:border-cyan-400 hover:text-cyan-600 hover:bg-cyan-50/50 transition-colors"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:border-cyan-400 hover:text-cyan-600 hover:bg-cyan-50/50 transition-colors font-medium"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Create New App
@@ -4272,70 +4346,507 @@ const YourAppStep: React.FC<{
     onBack: () => void;
     selectedFeatures: string[];
     selectedListing: AppStoreListing | null;
-}> = ({ onBack, selectedFeatures, selectedListing }) => {
+    featureSetupState: Record<string, Record<string, unknown>>;
+}> = ({ onBack, selectedFeatures, selectedListing, featureSetupState }) => {
     const [copiedCode, setCopiedCode] = useState(false);
 
-    // Generate code based on selected features
+    // Extract configured values from feature setup state
+    const issueCredentialsState = featureSetupState['issue-credentials'] || {};
+    const requestCredentialsState = featureSetupState['request-credentials'] || {};
+    const requestDataConsentState = featureSetupState['request-data-consent'] || {};
+    const launchFeatureState = featureSetupState['launch-feature'] || {};
+
+    // Generate comprehensive code based on selected features and their configuration
     const generateCode = () => {
-        const codeLines: string[] = [
-            `import { createPartnerConnect } from '@learncard/partner-connect';`,
-            ``,
-            `// Initialize the SDK`,
-            `const learnCard = createPartnerConnect({`,
-            `    hostOrigin: 'https://learncard.app'`,
-            `});`,
-            ``,
-            `// Get user identity`,
-            `const identity = await learnCard.requestIdentity();`,
-            `console.log('Welcome,', identity.profile.displayName);`,
-        ];
+        const sections: string[] = [];
 
-        // Add feature-specific code
+        // ===================
+        // HEADER / METADATA
+        // ===================
+        sections.push(`/**
+ * LearnCard Embedded App Integration
+ * ==================================
+ * 
+ * App: ${selectedListing?.display_name || 'Your App Name'}
+ * Generated: ${new Date().toISOString().split('T')[0]}
+ * 
+ * Features configured:
+ * ${selectedFeatures.map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`).join('\n * ')}
+ * 
+ * Prerequisites:
+ *   1. Install the SDK: npm install @learncard/partner-connect
+ *   2. Your app must be served in an iframe within LearnCard
+ *   3. Configure CORS headers to allow iframe embedding
+ * 
+ * Documentation: https://docs.learncard.com/sdks/partner-connect
+ */`);
+
+        // ===================
+        // IMPORTS
+        // ===================
+        sections.push(`
+// ============================================================
+// IMPORTS
+// ============================================================
+import { createPartnerConnect } from '@learncard/partner-connect';`);
+
+        // ===================
+        // SDK INITIALIZATION
+        // ===================
+        sections.push(`
+// ============================================================
+// SDK INITIALIZATION
+// ============================================================
+// Create the partner connection to communicate with LearnCard
+const learnCard = createPartnerConnect({
+    hostOrigin: 'https://learncard.app', // LearnCard app origin
+});`);
+
+        // ===================
+        // USER IDENTITY
+        // ===================
+        sections.push(`
+// ============================================================
+// USER IDENTITY
+// ============================================================
+// Request the user's identity - this is typically called on app load
+// Returns the user's DID, profile info, and display name
+async function getUserIdentity() {
+    try {
+        const identity = await learnCard.requestIdentity();
+        
+        console.log('User DID:', identity.did);
+        console.log('Display Name:', identity.profile.displayName);
+        console.log('Profile ID:', identity.profile.profileId);
+        
+        return identity;
+    } catch (error) {
+        console.error('Failed to get user identity:', error);
+        throw error;
+    }
+}`);
+
+        // ===================
+        // ISSUE CREDENTIALS
+        // ===================
         if (selectedFeatures.includes('issue-credentials')) {
-            codeLines.push(``);
-            codeLines.push(`// Issue a credential to the user`);
-            codeLines.push(`// Replace BOOST_URI with your template URI from the setup`);
-            codeLines.push(`await learnCard.initiateTemplateIssue({`);
-            codeLines.push(`    boostUri: 'BOOST_URI', // Your template URI`);
-            if (selectedListing) {
-                codeLines.push(`    // App: ${selectedListing.display_name}`);
+            const mode = issueCredentialsState.mode as string || 'prompt-claim';
+            const credential = issueCredentialsState.credential as Record<string, unknown> | null;
+            const credentialName = credential?.name as string || 'Your Credential';
+            const contractUri = issueCredentialsState.contractUri as string || '';
+
+            if (mode === 'prompt-claim') {
+                sections.push(`
+// ============================================================
+// ISSUE CREDENTIALS - Prompt to Claim
+// ============================================================
+// Mode: Build a credential and prompt user to claim it
+// 
+// How it works:
+//   1. Get the user's DID to include in the credential
+//   2. Build the credential with their DID as the subject
+//   3. Issue the credential server-side (with your signing authority)
+//   4. Send the issued VC to the user to claim
+
+async function issueCredentialToUser() {
+    // 1. Get the user's identity
+    const identity = await learnCard.requestIdentity();
+    const recipientDid = identity.did;
+
+    // 2. Build the credential with recipient's DID
+    const credential = {
+        "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+        ],
+        "type": ["VerifiableCredential", "OpenBadgeCredential"],
+        "name": "${credentialName}",
+        "issuer": {
+            "id": "YOUR_ISSUER_DID", // TODO: Replace with your organization's DID
+            "name": "Your Organization"
+        },
+        "credentialSubject": {
+            "id": recipientDid, // Inject the user's DID here
+            "type": ["AchievementSubject"],
+            "achievement": {
+                "type": ["Achievement"],
+                "name": "${credentialName}",
+                "description": "Description of the achievement"
             }
-            codeLines.push(`});`);
+        }
+    };
+
+    // 3. Issue the credential server-side (with your API key)
+    // POST to your backend, which calls:
+    //   const wallet = await initLearnCard({ seed: YOUR_SEED });
+    //   const issuedVC = await wallet.invoke.issueCredential(credential);
+    const response = await fetch('/api/issue-credential', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential })
+    });
+    const { issuedVC } = await response.json();
+
+    // 4. Prompt user to claim the issued credential
+    const result = await learnCard.sendCredential({ credential: issuedVC });
+
+    if (result.success) {
+        console.log('Credential claimed!');
+    }
+}`);
+            } else {
+                // sync-wallet mode
+                sections.push(`
+// ============================================================
+// ISSUE CREDENTIALS - Sync to Wallet (Server-Side)
+// ============================================================
+// Mode: Silently sync credentials to user's wallet via consent
+// 
+// How it works:
+//   1. User grants consent via ConsentFlow contract
+//   2. Your SERVER issues credentials using your signing authority
+//   3. Credentials appear in user's wallet automatically
+//
+// IMPORTANT: This requires server-side code with your signing authority
+
+// --- CLIENT-SIDE: Request consent from user ---
+async function requestUserConsent() {
+    const result = await learnCard.requestConsent({
+        contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}',
+    });
+    
+    if (result.granted) {
+        // Notify your server that consent was granted
+        await fetch('/api/consent-granted', {
+            method: 'POST',
+            body: JSON.stringify({
+                userId: result.userId,
+                contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}'
+            })
+        });
+        return true;
+    }
+    return false;
+}
+
+// --- SERVER-SIDE CODE (Node.js) ---
+// This code runs on YOUR server, not in the embedded app
+/*
+import { initLearnCard } from '@learncard/init';
+
+// Initialize LearnCard with your signing authority
+const learnCard = await initLearnCard({
+    network: true,
+    seed: process.env.LEARNCARD_SEED, // Your secure seed phrase
+});
+
+// Issue credential to user via consent contract
+async function issueCredentialViaConsent(recipientProfileId: string) {
+    const result = await learnCard.invoke.send({
+        type: 'boost',
+        recipient: recipientProfileId,
+        templateUri: 'urn:lc:boost:YOUR_TEMPLATE_URI',
+        contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}',
+    });
+    
+    console.log('Credential issued:', result);
+    return result;
+}
+*/`);
+            }
         }
 
+        // ===================
+        // PEER BADGES
+        // ===================
         if (selectedFeatures.includes('peer-badges')) {
-            codeLines.push(``);
-            codeLines.push(`// Let user send a peer-to-peer badge`);
-            codeLines.push(`// The user will pick a recipient in the LearnCard UI`);
-            codeLines.push(`await learnCard.initiateTemplateIssuance({`);
-            codeLines.push(`    boostUri: 'BOOST_URI', // Your badge template URI`);
-            if (selectedListing) {
-                codeLines.push(`    // App: ${selectedListing.display_name}`);
-            }
-            codeLines.push(`});`);
+            sections.push(`
+// ============================================================
+// PEER-TO-PEER BADGES
+// ============================================================
+// Let users send badges to each other within your app
+// 
+// How it works:
+//   1. Your app calls initiateTemplateIssuance with a template URI
+//   2. User selects a recipient from their contacts
+//   3. Badge is sent from your app on behalf of the user
+
+async function sendPeerBadge() {
+    try {
+        await learnCard.initiateTemplateIssuance({
+            // TODO: Replace with your peer badge template URI
+            // Create templates at: /admin-tools/view-managed-boosts
+            boostUri: 'urn:lc:boost:YOUR_PEER_BADGE_TEMPLATE',
+        });
+        
+        console.log('Peer badge flow initiated');
+    } catch (error) {
+        console.error('Failed to initiate peer badge:', error);
+        throw error;
+    }
+}`);
         }
 
-        if (selectedFeatures.includes('open-wallet')) {
-            codeLines.push(``);
-            codeLines.push(`// Open user's wallet`);
-            codeLines.push(`await learnCard.openWallet();`);
-        }
-
-        if (selectedFeatures.includes('claim-credentials')) {
-            codeLines.push(``);
-            codeLines.push(`// Navigate to claim a credential`);
-            codeLines.push(`await learnCard.navigateTo('/claim/CLAIM_ID');`);
-        }
-
+        // ===================
+        // REQUEST CREDENTIALS
+        // ===================
         if (selectedFeatures.includes('request-credentials')) {
-            codeLines.push(``);
-            codeLines.push(`// Request credentials from user`);
-            codeLines.push(`const presentation = await learnCard.requestPresentation({`);
-            codeLines.push(`    // Define what credentials you're requesting`);
-            codeLines.push(`});`);
+            const mode = requestCredentialsState.mode as string || 'query';
+            const queryTitle = requestCredentialsState.queryTitle as string || 'Certificate';
+            const queryReason = requestCredentialsState.queryReason as string || 'To verify your qualifications';
+
+            if (mode === 'query') {
+                sections.push(`
+// ============================================================
+// REQUEST CREDENTIALS - Search by Title
+// ============================================================
+// Search user's wallet for credentials matching a title
+// User selects which credential(s) to share
+//
+// Configure your search:
+//   - Title: "${queryTitle}"
+//   - Reason: "${queryReason}"
+
+async function requestCredentialsBySearch() {
+    try {
+        const response = await learnCard.askCredentialSearch({
+            query: [
+                {
+                    type: 'QueryByTitle',
+                    credentialQuery: {
+                        reason: "${queryReason}",
+                        title: "${queryTitle}"
+                    }
+                }
+            ],
+            challenge: crypto.randomUUID(), // Unique challenge for verification
+        });
+
+        if (response.presentation) {
+            // User shared credentials - verify the presentation
+            console.log('Received presentation:', response.presentation);
+            
+            // Extract credentials from the presentation
+            const credentials = response.presentation.verifiableCredential || [];
+            console.log('Shared credentials:', credentials.length);
+            
+            // TODO: Send to your server for verification
+            // await verifyPresentation(response.presentation);
+            
+            return credentials;
+        } else {
+            console.log('User did not share any credentials');
+            return [];
+        }
+    } catch (error) {
+        if (error.code === 'USER_REJECTED') {
+            console.log('User declined to share credentials');
+        } else {
+            console.error('Error requesting credentials:', error);
+        }
+        throw error;
+    }
+}`);
+            } else {
+                sections.push(`
+// ============================================================
+// REQUEST CREDENTIALS - Request by ID
+// ============================================================
+// Request a specific credential by its ID
+// User accepts or declines sharing that exact credential
+
+async function requestCredentialById(credentialId: string) {
+    try {
+        const response = await learnCard.askCredentialById({
+            id: credentialId,
+            reason: "${queryReason || 'Please share this credential for verification'}",
+            challenge: crypto.randomUUID(),
+        });
+
+        if (response.credential) {
+            console.log('Received credential:', response.credential);
+            
+            // TODO: Send to your server for verification
+            // await verifyCredential(response.credential);
+            
+            return response.credential;
+        } else {
+            console.log('Credential not returned');
+            return null;
+        }
+    } catch (error) {
+        if (error.code === 'CREDENTIAL_NOT_FOUND') {
+            console.log('Credential not found in user wallet');
+        } else if (error.code === 'USER_REJECTED') {
+            console.log('User declined to share');
+        } else {
+            console.error('Error:', error);
+        }
+        throw error;
+    }
+}`);
+            }
         }
 
-        return codeLines.join('\n');
+        // ===================
+        // REQUEST DATA CONSENT
+        // ===================
+        if (selectedFeatures.includes('request-data-consent')) {
+            const contractUri = requestDataConsentState.contractUri as string || '';
+            
+            sections.push(`
+// ============================================================
+// REQUEST DATA CONSENT
+// ============================================================
+// Ask users for permission to access specific data or write back
+// Uses ConsentFlow contracts for OAuth-style consent
+//
+// Contract URI: ${contractUri || 'NOT_CONFIGURED - Create one in Admin Tools'}
+//
+// How it works:
+//   1. Client requests consent from user
+//   2. User reviews and grants/denies permissions
+//   3. Your server can then read/write data per contract terms
+
+// --- CLIENT-SIDE: Request consent ---
+async function requestDataConsent() {
+    try {
+        const result = await learnCard.requestConsent({
+            contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}',
+        });
+
+        if (result.granted) {
+            console.log('User granted consent!');
+            console.log('User ID:', result.userId);
+            
+            // Notify your server that consent was granted
+            await fetch('/api/consent-granted', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    userId: result.userId,
+                    contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}'
+                })
+            });
+            
+            return true;
+        } else {
+            console.log('User declined consent');
+            return false;
+        }
+    } catch (error) {
+        console.error('Failed to request consent:', error);
+        throw error;
+    }
+}
+
+// --- SERVER-SIDE CODE (Node.js) ---
+// Use these on YOUR server to read/write consented data
+/*
+import { initLearnCard } from '@learncard/init';
+
+const learnCard = await initLearnCard({
+    network: true,
+    apiKey: process.env.LEARNCARD_API_KEY, // Or use seed
+});
+
+const CONTRACT_URI = '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}';
+
+// Read credentials user shared via consent
+async function readConsentedCredentials() {
+    const credentials = await learnCard.invoke.getCredentialsForContract(
+        CONTRACT_URI,
+        { limit: 50 }
+    );
+    return credentials.records;
+}
+
+// Write credential to user via consent
+async function writeCredentialViaConsent(recipientProfileId: string) {
+    return await learnCard.invoke.send({
+        type: 'boost',
+        recipient: recipientProfileId,
+        templateUri: 'urn:lc:boost:YOUR_TEMPLATE_URI',
+        contractUri: CONTRACT_URI,
+    });
+}
+*/`);
+        }
+
+        // ===================
+        // LAUNCH FEATURE
+        // ===================
+        if (selectedFeatures.includes('launch-feature')) {
+            const selectedFeatureId = launchFeatureState.selectedFeatureId as string || 'passport';
+            const paramValues = launchFeatureState.paramValues as Record<string, string> || {};
+            
+            // Find the selected feature from LAUNCHABLE_FEATURES
+            const launchableFeature = LAUNCHABLE_FEATURES
+                .flatMap(cat => cat.features)
+                .find(f => f.id === selectedFeatureId);
+
+            let featurePath = launchableFeature?.path || '/passport';
+            let featureTitle = launchableFeature?.title || 'Wallet';
+
+            // Replace path params with configured values
+            if (launchableFeature?.params) {
+                launchableFeature.params.forEach(param => {
+                    const value = paramValues[param.name] || param.placeholder;
+                    featurePath = featurePath.replace(`:${param.name}`, value);
+                });
+            }
+
+            sections.push(`
+// ============================================================
+// LAUNCH FEATURE
+// ============================================================
+// Trigger native LearnCard features from your app
+// 
+// Configured feature: ${featureTitle}
+// Path: ${featurePath}
+
+async function launchLearnCardFeature() {
+    try {
+        await learnCard.launchFeature('${featurePath}');
+        console.log('Launched: ${featureTitle}');
+    } catch (error) {
+        console.error('Failed to launch feature:', error);
+        throw error;
+    }
+}
+
+// Additional launch examples:
+// await learnCard.launchFeature('/passport');        // Open wallet
+// await learnCard.launchFeature('/chats');           // Open AI chat
+// await learnCard.launchFeature('/notifications');   // Open notifications
+// await learnCard.launchFeature('/connect');         // Open connections`);
+        }
+
+        // ===================
+        // EXAMPLE USAGE
+        // ===================
+        sections.push(`
+// ============================================================
+// EXAMPLE: Main App Initialization
+// ============================================================
+async function initializeApp() {
+    try {
+        // 1. Get user identity on app load
+        const identity = await getUserIdentity();
+        console.log('App initialized for user:', identity.profile.displayName);
+        
+        // 2. Your app logic here...
+        // Call the feature functions above based on user actions
+        
+    } catch (error) {
+        console.error('App initialization failed:', error);
+    }
+}
+
+// Initialize when the app loads
+initializeApp();`);
+
+        return sections.join('\n');
     };
 
     const code = generateCode();
@@ -4349,60 +4860,94 @@ const YourAppStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Your App is Ready! 🎉</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Integration Code</h3>
 
                 <p className="text-gray-600">
-                    Here's the code for your embedded app with {selectedFeatures.length} feature{selectedFeatures.length !== 1 ? 's' : ''}.
+                    Here&apos;s your complete integration code with {selectedFeatures.length} feature{selectedFeatures.length !== 1 ? 's' : ''} configured.
+                    Copy this code to get started or share with your development team.
                 </p>
             </div>
 
-            {/* Selected features summary */}
-            <div className="flex flex-wrap gap-2">
-                {selectedFeatures.map(id => {
-                    const feature = FEATURES.find(f => f.id === id);
+            {/* App Summary */}
+            {selectedListing && (
+                <div className="p-4 bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-xl">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                            {selectedListing.icon_url ? (
+                                <img
+                                    src={selectedListing.icon_url}
+                                    alt={selectedListing.display_name}
+                                    className="w-10 h-10 rounded-lg object-cover"
+                                />
+                            ) : (
+                                <Layout className="w-6 h-6 text-cyan-600" />
+                            )}
+                        </div>
 
-                    return feature ? (
-                        <span key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-sm text-emerald-700">
-                            <CheckCircle2 className="w-4 h-4" />
-                            {feature.title}
-                        </span>
-                    ) : null;
-                })}
+                        <div>
+                            <p className="font-semibold text-gray-800">{selectedListing.display_name}</p>
+                            <p className="text-sm text-gray-500">App ID: {selectedListing.listing_id}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Selected features summary */}
+            <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Configured Features</p>
+
+                <div className="flex flex-wrap gap-2">
+                    {selectedFeatures.map(id => {
+                        const feature = FEATURES.find(f => f.id === id);
+
+                        return feature ? (
+                            <span key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-sm text-emerald-700">
+                                <CheckCircle2 className="w-4 h-4" />
+                                {feature.title}
+                            </span>
+                        ) : null;
+                    })}
+                </div>
             </div>
 
             {/* Code output */}
             <div>
-                <div className="mb-2">
-                    <span className="text-sm font-medium text-gray-700">Your Integration Code</span>
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Complete Integration Code</span>
+
+                    <button
+                        onClick={handleCopy}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        {copiedCode ? (
+                            <>
+                                <Check className="w-4 h-4 text-emerald-500" />
+                                <span className="text-emerald-600">Copied!</span>
+                            </>
+                        ) : (
+                            <>
+                                <Copy className="w-4 h-4" />
+                                Copy All
+                            </>
+                        )}
+                    </button>
                 </div>
 
-                <CodeBlock code={code} />
+                <CodeBlock code={code} maxHeight="max-h-[500px]" />
             </div>
 
-            {/* Next steps */}
-            <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
-                <h4 className="font-medium text-cyan-800 mb-3">Next Steps</h4>
+            {/* Tips */}
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <h4 className="font-medium text-amber-800 mb-2 flex items-center gap-2">
+                    <Info className="w-4 h-4" />
+                    Integration Tips
+                </h4>
 
-                <ul className="space-y-2 text-sm text-cyan-700">
-                    <li className="flex items-start gap-2">
-                        <span className="text-cyan-500 mt-0.5">1.</span>
-                        <span>Copy this code into your app</span>
-                    </li>
-
-                    <li className="flex items-start gap-2">
-                        <span className="text-cyan-500 mt-0.5">2.</span>
-                        <span>Configure your server headers for iframe embedding</span>
-                    </li>
-
-                    <li className="flex items-start gap-2">
-                        <span className="text-cyan-500 mt-0.5">3.</span>
-                        <span>Submit your app listing for review</span>
-                    </li>
-
-                    <li className="flex items-start gap-2">
-                        <span className="text-cyan-500 mt-0.5">4.</span>
-                        <span>Test in the LearnCard wallet!</span>
-                    </li>
+                <ul className="space-y-1 text-sm text-amber-700">
+                    <li>• Replace all <code className="bg-amber-100 px-1 rounded">TODO</code> placeholders with your actual values</li>
+                    <li>• Server-side code (in comments) should run on YOUR server, not in the embedded app</li>
+                    <li>• Store sensitive values (seeds, API keys) in environment variables</li>
+                    <li>• Test in the LearnCard sandbox before going live</li>
                 </ul>
             </div>
 
@@ -4415,7 +4960,7 @@ const YourAppStep: React.FC<{
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                 >
                     <FileText className="w-4 h-4" />
-                    Full Documentation
+                    SDK Documentation
                     <ExternalLink className="w-3 h-3" />
                 </a>
 
@@ -4525,6 +5070,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                         onBack={guideState.prevStep}
                         selectedFeatures={selectedFeatures}
                         selectedListing={selectedListing}
+                        featureSetupState={featureSetupState}
                     />
                 );
 
