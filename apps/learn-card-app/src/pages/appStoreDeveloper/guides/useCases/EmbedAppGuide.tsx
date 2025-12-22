@@ -54,11 +54,14 @@ import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import { StepProgress, CodeOutputPanel } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
 import { ConsentFlowContractSelector } from '../../components/ConsentFlowContractSelector';
 import { CodeBlock } from '../../components/CodeBlock';
+import { PERMISSION_OPTIONS } from '../../types';
+import type { AppPermission, LaunchConfig, ExtendedAppStoreListing } from '../../types';
+import { AppPreviewModal } from '../../components/AppPreviewModal';
 import type { GuideProps } from '../GuidePage';
 
 // URL Check types and helper
@@ -3978,20 +3981,38 @@ const LaunchFeatureSetup: React.FC<{
 }> = ({ onComplete, onBack, isLastFeature, featureSetupState, setFeatureSetupState }) => {
     // Get saved state
     const savedState = featureSetupState['launch-feature'] || {};
-    const [selectedFeatureId, setSelectedFeatureId] = useState<string>(
-        (savedState.selectedFeatureId as string) || 'passport'
+    const [selectedFeatureIds, setSelectedFeatureIds] = useState<string[]>(
+        (savedState.selectedFeatureIds as string[]) || []
     );
-    const [expandedCategory, setExpandedCategory] = useState<string | null>(
-        (savedState.expandedCategory as string) || 'core'
+    const [expandedCategories, setExpandedCategories] = useState<string[]>(
+        (savedState.expandedCategories as string[]) || ['core']
     );
-    const [paramValues, setParamValues] = useState<Record<string, string>>(
-        (savedState.paramValues as Record<string, string>) || {}
+    const [paramValues, setParamValues] = useState<Record<string, Record<string, string>>>(
+        (savedState.paramValues as Record<string, Record<string, string>>) || {}
     );
 
-    // Find selected feature
-    const selectedFeature = LAUNCHABLE_FEATURES
+    // Get all selected features
+    const selectedFeatures = LAUNCHABLE_FEATURES
         .flatMap(cat => cat.features)
-        .find(f => f.id === selectedFeatureId);
+        .filter(f => selectedFeatureIds.includes(f.id));
+
+    // Toggle feature selection
+    const toggleFeature = (featureId: string) => {
+        setSelectedFeatureIds(prev => 
+            prev.includes(featureId) 
+                ? prev.filter(id => id !== featureId)
+                : [...prev, featureId]
+        );
+    };
+
+    // Toggle category expansion
+    const toggleCategory = (categoryId: string) => {
+        setExpandedCategories(prev =>
+            prev.includes(categoryId)
+                ? prev.filter(id => id !== categoryId)
+                : [...prev, categoryId]
+        );
+    };
 
     // Save state when values change
     useEffect(() => {
@@ -3999,45 +4020,36 @@ const LaunchFeatureSetup: React.FC<{
             ...prev,
             'launch-feature': { 
                 ...prev['launch-feature'], 
-                selectedFeatureId,
-                expandedCategory,
+                selectedFeatureIds,
+                expandedCategories,
                 paramValues
             }
         }));
-    }, [selectedFeatureId, expandedCategory, paramValues, setFeatureSetupState]);
+    }, [selectedFeatureIds, expandedCategories, paramValues, setFeatureSetupState]);
 
-    // Generate code for selected feature
+    // Generate code for all selected features
     const generateCode = () => {
-        if (!selectedFeature) return '';
-
-        let path = selectedFeature.path;
-        const params: string[] = [];
-
-        // Replace path params and build params object
-        if (selectedFeature.params) {
-            selectedFeature.params.forEach(param => {
-                const value = paramValues[param.name] || param.placeholder;
-
-                if (path.includes(`:${param.name}`)) {
-                    path = path.replace(`:${param.name}`, value);
-                } else {
-                    params.push(`    ${param.name}: '${value}'`);
-                }
-            });
+        if (selectedFeatures.length === 0) {
+            return `// Select features above to see example code`;
         }
 
-        const paramsStr = params.length > 0 
-            ? `,\n{\n${params.join(',\n')}\n}` 
-            : '';
+        const codeBlocks = selectedFeatures.map(feature => {
+            let path = feature.path;
+            const featureParams = paramValues[feature.id] || {};
 
-        return `// Launch ${selectedFeature.title}
-const result = await learnCard.launchFeature('${path}'${paramsStr});
+            // Replace path params
+            if (feature.params) {
+                feature.params.forEach(param => {
+                    const value = featureParams[param.name] || param.placeholder;
+                    path = path.replace(`:${param.name}`, value);
+                });
+            }
 
-if (result.success) {
-    console.log('Feature launched:', result.data);
-} else {
-    console.error('Failed to launch:', result.error);
-}`;
+            return `// Launch ${feature.title}
+await learnCard.launchFeature('${path}');`;
+        });
+
+        return codeBlocks.join('\n\n');
     };
 
     const getCategoryColorClasses = (color: string, isExpanded: boolean) => {
@@ -4067,42 +4079,54 @@ if (result.success) {
 
             {/* Step 1: Category & Feature Selection */}
             <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
-                        1
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                            1
+                        </div>
+
+                        <h4 className="font-semibold text-gray-800">Select Features</h4>
                     </div>
 
-                    <h4 className="font-semibold text-gray-800">Select a Feature</h4>
+                    {selectedFeatureIds.length > 0 && (
+                        <span className="text-sm text-purple-600 font-medium">
+                            {selectedFeatureIds.length} selected
+                        </span>
+                    )}
                 </div>
 
-                <div className="ml-10 space-y-2 max-h-80 overflow-y-auto pr-2">
+                <div className="ml-10 space-y-2 max-h-96 overflow-y-auto pr-2">
                     {LAUNCHABLE_FEATURES.map(category => {
-                        const isExpanded = expandedCategory === category.id;
+                        const isExpanded = expandedCategories.includes(category.id);
                         const colors = getCategoryColorClasses(category.color, isExpanded);
-                        const hasSelectedFeature = category.features.some(f => f.id === selectedFeatureId);
+                        const selectedCount = category.features.filter(f => selectedFeatureIds.includes(f.id)).length;
 
                         return (
                             <div key={category.id} className="border border-gray-200 rounded-xl overflow-hidden">
                                 <button
-                                    onClick={() => setExpandedCategory(isExpanded ? null : category.id)}
+                                    onClick={() => toggleCategory(category.id)}
                                     className={`w-full flex items-center justify-between p-3 text-left transition-colors ${
-                                        isExpanded || hasSelectedFeature ? colors.bg : 'bg-white hover:bg-gray-50'
+                                        isExpanded || selectedCount > 0 ? colors.bg : 'bg-white hover:bg-gray-50'
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                            isExpanded || hasSelectedFeature ? colors.bg : 'bg-gray-100'
+                                            isExpanded || selectedCount > 0 ? colors.bg : 'bg-gray-100'
                                         } ${colors.icon}`}>
                                             {category.icon}
                                         </div>
 
                                         <div>
-                                            <span className={`font-medium ${isExpanded || hasSelectedFeature ? colors.text : 'text-gray-700'}`}>
+                                            <span className={`font-medium ${isExpanded || selectedCount > 0 ? colors.text : 'text-gray-700'}`}>
                                                 {category.title}
                                             </span>
 
                                             <span className="text-xs text-gray-400 ml-2">
-                                                {category.features.length} feature{category.features.length !== 1 ? 's' : ''}
+                                                {selectedCount > 0 ? (
+                                                    <span className={colors.text}>{selectedCount} selected</span>
+                                                ) : (
+                                                    `${category.features.length} available`
+                                                )}
                                             </span>
                                         </div>
                                     </div>
@@ -4112,43 +4136,49 @@ if (result.success) {
 
                                 {isExpanded && (
                                     <div className="border-t border-gray-100 p-2 bg-white">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {category.features.map(feature => (
-                                                <button
-                                                    key={feature.id}
-                                                    onClick={() => setSelectedFeatureId(feature.id)}
-                                                    className={`flex items-start gap-2 p-2.5 rounded-lg text-left transition-all ${
-                                                        selectedFeatureId === feature.id
-                                                            ? `${colors.bg} ${colors.border} border-2`
-                                                            : 'border border-transparent hover:bg-gray-50'
-                                                    }`}
-                                                >
-                                                    <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${
-                                                        selectedFeatureId === feature.id
-                                                            ? colors.icon + ' ' + colors.bg
-                                                            : 'text-gray-400 bg-gray-100'
-                                                    }`}>
-                                                        {feature.icon}
-                                                    </div>
+                                        <div className="space-y-1">
+                                            {category.features.map(feature => {
+                                                const isSelected = selectedFeatureIds.includes(feature.id);
 
-                                                    <div className="min-w-0">
-                                                        <p className={`text-sm font-medium truncate ${
-                                                            selectedFeatureId === feature.id ? colors.text : 'text-gray-700'
+                                                return (
+                                                    <label
+                                                        key={feature.id}
+                                                        className={`flex items-start gap-3 p-2.5 rounded-lg cursor-pointer transition-all ${
+                                                            isSelected
+                                                                ? `${colors.bg} ${colors.border} border`
+                                                                : 'border border-transparent hover:bg-gray-50'
+                                                        }`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => toggleFeature(feature.id)}
+                                                            className={`w-4 h-4 mt-0.5 rounded ${colors.text}`}
+                                                        />
+
+                                                        <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${
+                                                            isSelected ? colors.icon + ' ' + colors.bg : 'text-gray-400 bg-gray-100'
                                                         }`}>
-                                                            {feature.title}
-                                                        </p>
+                                                            {feature.icon}
+                                                        </div>
 
-                                                        <p className="text-xs text-gray-400 truncate">{feature.description}</p>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className={`text-sm font-medium ${isSelected ? colors.text : 'text-gray-700'}`}>
+                                                                {feature.title}
+                                                            </p>
 
-                                                        {feature.params && (
-                                                            <span className="inline-flex items-center gap-1 mt-1 text-xs text-gray-400">
-                                                                <Code className="w-3 h-3" />
-                                                                {feature.params.length} param{feature.params.length !== 1 ? 's' : ''}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </button>
-                                            ))}
+                                                            <p className="text-xs text-gray-400">{feature.description}</p>
+
+                                                            {feature.params && (
+                                                                <span className="inline-flex items-center gap-1 mt-1 text-xs text-gray-400">
+                                                                    <Code className="w-3 h-3" />
+                                                                    {feature.params.length} param{feature.params.length !== 1 ? 's' : ''}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </label>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -4158,8 +4188,8 @@ if (result.success) {
                 </div>
             </div>
 
-            {/* Step 2: Configure Parameters (if any) */}
-            {selectedFeature?.params && selectedFeature.params.length > 0 && (
+            {/* Step 2: Configure Parameters for selected features with params */}
+            {selectedFeatures.some(f => f.params && f.params.length > 0) && (
                 <div className="space-y-3">
                     <div className="flex items-center gap-3">
                         <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
@@ -4169,21 +4199,36 @@ if (result.success) {
                         <h4 className="font-semibold text-gray-800">Configure Parameters</h4>
                     </div>
 
-                    <div className="ml-10 space-y-3">
-                        {selectedFeature.params.map(param => (
-                            <div key={param.name}>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    {param.name}
-                                    <span className="font-normal text-gray-400 ml-2">— {param.description}</span>
-                                </label>
+                    <div className="ml-10 space-y-4">
+                        {selectedFeatures.filter(f => f.params && f.params.length > 0).map(feature => (
+                            <div key={feature.id} className="p-3 bg-gray-50 rounded-lg space-y-3">
+                                <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                    {feature.icon}
+                                    {feature.title}
+                                </div>
 
-                                <input
-                                    type="text"
-                                    value={paramValues[param.name] || ''}
-                                    onChange={(e) => setParamValues(prev => ({ ...prev, [param.name]: e.target.value }))}
-                                    placeholder={param.placeholder}
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                />
+                                {feature.params?.map(param => (
+                                    <div key={param.name}>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                                            {param.name}
+                                            <span className="font-normal text-gray-400 ml-1">— {param.description}</span>
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={paramValues[feature.id]?.[param.name] || ''}
+                                            onChange={(e) => setParamValues(prev => ({ 
+                                                ...prev, 
+                                                [feature.id]: { 
+                                                    ...prev[feature.id], 
+                                                    [param.name]: e.target.value 
+                                                } 
+                                            }))}
+                                            placeholder={param.placeholder}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                ))}
                             </div>
                         ))}
                     </div>
@@ -4194,24 +4239,24 @@ if (result.success) {
             <div className="space-y-3">
                 <div className="flex items-center gap-3">
                     <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center font-semibold text-sm">
-                        {selectedFeature?.params?.length ? '3' : '2'}
+                        {selectedFeatures.some(f => f.params?.length) ? '3' : '2'}
                     </div>
 
                     <h4 className="font-semibold text-gray-800">Integration Code</h4>
                 </div>
 
                 <div className="ml-10">
-                    {selectedFeature && (
-                        <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                            <div className="flex items-center gap-2">
-                                {selectedFeature.icon}
-
-                                <span className="font-medium text-purple-800">{selectedFeature.title}</span>
-
-                                <code className="ml-auto text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
-                                    {selectedFeature.path}
-                                </code>
-                            </div>
+                    {selectedFeatures.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                            {selectedFeatures.map(feature => (
+                                <span 
+                                    key={feature.id}
+                                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-700"
+                                >
+                                    {feature.icon}
+                                    {feature.title}
+                                </span>
+                            ))}
                         </div>
                     )}
 
@@ -4348,13 +4393,248 @@ const YourAppStep: React.FC<{
     selectedListing: AppStoreListing | null;
     featureSetupState: Record<string, Record<string, unknown>>;
 }> = ({ onBack, selectedFeatures, selectedListing, featureSetupState }) => {
+    const { useUpdateListing } = useDeveloperPortal();
+    const updateMutation = useUpdateListing();
+    const { presentToast } = useToast();
+    const { newModal } = useModal();
+
     const [copiedCode, setCopiedCode] = useState(false);
+    const [showConfigEditor, setShowConfigEditor] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showConfigMismatchPrompt, setShowConfigMismatchPrompt] = useState(false);
+    const [hasCheckedConfig, setHasCheckedConfig] = useState(false);
 
     // Extract configured values from feature setup state
     const issueCredentialsState = featureSetupState['issue-credentials'] || {};
     const requestCredentialsState = featureSetupState['request-credentials'] || {};
     const requestDataConsentState = featureSetupState['request-data-consent'] || {};
     const launchFeatureState = featureSetupState['launch-feature'] || {};
+
+    // Parse existing launch config from listing
+    const existingConfig: LaunchConfig = (() => {
+        try {
+            return selectedListing?.launch_config_json 
+                ? JSON.parse(selectedListing.launch_config_json) 
+                : {};
+        } catch {
+            return {};
+        }
+    })();
+
+    // App config state
+    const [embedUrl, setEmbedUrl] = useState(existingConfig.url || '');
+    const [selectedPermissions, setSelectedPermissions] = useState<AppPermission[]>(
+        existingConfig.permissions || []
+    );
+    const [contractUri, setContractUri] = useState(existingConfig.contractUri || '');
+
+    // Compute required permissions based on selected features
+    const computeRequiredPermissions = useCallback((): AppPermission[] => {
+        const permissions = new Set<AppPermission>();
+
+        // Always need identity
+        permissions.add('request_identity');
+
+        if (selectedFeatures.includes('issue-credentials')) {
+            permissions.add('send_credential');
+        }
+
+        if (selectedFeatures.includes('peer-badges')) {
+            permissions.add('template_issuance');
+        }
+
+        if (selectedFeatures.includes('request-credentials')) {
+            const mode = requestCredentialsState.mode as string || 'query';
+            if (mode === 'query') {
+                permissions.add('credential_search');
+            } else {
+                permissions.add('credential_by_id');
+            }
+        }
+
+        if (selectedFeatures.includes('request-data-consent')) {
+            permissions.add('request_consent');
+        }
+
+        if (selectedFeatures.includes('launch-feature')) {
+            permissions.add('launch_feature');
+        }
+
+        return Array.from(permissions);
+    }, [selectedFeatures, requestCredentialsState.mode]);
+
+    // Auto-compute permissions when features change
+    useEffect(() => {
+        const required = computeRequiredPermissions();
+        setSelectedPermissions(prev => {
+            // Merge required with existing, keeping any extras
+            const merged = new Set([...prev, ...required]);
+            return Array.from(merged);
+        });
+    }, [computeRequiredPermissions]);
+
+    // Auto-set contract URI if using request-data-consent
+    useEffect(() => {
+        if (selectedFeatures.includes('request-data-consent')) {
+            const consentContractUri = requestDataConsentState.contractUri as string;
+            if (consentContractUri && !contractUri) {
+                setContractUri(consentContractUri);
+            }
+        }
+    }, [selectedFeatures, requestDataConsentState.contractUri, contractUri]);
+
+    // Compute the new config based on user selections
+    const computeNewConfig = useCallback((): LaunchConfig => {
+        const requiredPermissions = computeRequiredPermissions();
+        const consentContractUri = selectedFeatures.includes('request-data-consent')
+            ? (requestDataConsentState.contractUri as string) || ''
+            : '';
+
+        return {
+            url: existingConfig.url || '', // Keep existing URL
+            permissions: requiredPermissions,
+            contractUri: consentContractUri || undefined,
+        };
+    }, [computeRequiredPermissions, selectedFeatures, requestDataConsentState.contractUri, existingConfig.url]);
+
+    // Check for config mismatch on mount
+    useEffect(() => {
+        if (hasCheckedConfig || !selectedListing) return;
+
+        const newConfig = computeNewConfig();
+        const existingPermissions = existingConfig.permissions || [];
+        const existingContractUri = existingConfig.contractUri || '';
+
+        // Check if permissions are different
+        const permissionsDifferent = 
+            newConfig.permissions?.length !== existingPermissions.length ||
+            newConfig.permissions?.some(p => !existingPermissions.includes(p)) ||
+            existingPermissions.some(p => !newConfig.permissions?.includes(p));
+
+        // Check if contract URI is different
+        const contractDifferent = (newConfig.contractUri || '') !== existingContractUri;
+
+        if (permissionsDifferent || contractDifferent) {
+            setShowConfigMismatchPrompt(true);
+        }
+
+        setHasCheckedConfig(true);
+    }, [hasCheckedConfig, selectedListing, computeNewConfig, existingConfig]);
+
+    // Handle accepting the config update
+    const handleAcceptConfigUpdate = async () => {
+        if (!selectedListing) return;
+
+        setIsSaving(true);
+        try {
+            const newConfig = computeNewConfig();
+            // Preserve the existing URL if set, otherwise use the computed one
+            newConfig.url = embedUrl || existingConfig.url || '';
+
+            await updateMutation.mutateAsync({
+                listingId: selectedListing.listing_id,
+                updates: {
+                    launch_config_json: JSON.stringify(newConfig, null, 2),
+                },
+            });
+
+            // Update local state to match
+            setSelectedPermissions(newConfig.permissions || []);
+            if (newConfig.contractUri) {
+                setContractUri(newConfig.contractUri);
+            }
+
+            presentToast('App configuration updated!', { hasDismissButton: true });
+            setShowConfigMismatchPrompt(false);
+        } catch (error) {
+            console.error('Failed to update config:', error);
+            presentToast('Failed to update configuration', { 
+                type: ToastTypeEnum.Error, 
+                hasDismissButton: true 
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Save config to listing
+    const handleSaveConfig = async () => {
+        if (!selectedListing) return;
+
+        setIsSaving(true);
+        try {
+            const newConfig: LaunchConfig = {
+                url: embedUrl,
+                permissions: selectedPermissions,
+                contractUri: contractUri || undefined,
+            };
+
+            await updateMutation.mutateAsync({
+                listingId: selectedListing.listing_id,
+                updates: {
+                    launch_config_json: JSON.stringify(newConfig, null, 2),
+                },
+            });
+
+            presentToast('App configuration saved!', { hasDismissButton: true });
+            setShowConfigEditor(false);
+        } catch (error) {
+            console.error('Failed to save config:', error);
+            presentToast('Failed to save configuration', { 
+                type: ToastTypeEnum.Error, 
+                hasDismissButton: true 
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Toggle permission
+    const togglePermission = (permission: AppPermission) => {
+        setSelectedPermissions(prev =>
+            prev.includes(permission)
+                ? prev.filter(p => p !== permission)
+                : [...prev, permission]
+        );
+    };
+
+    // Create mock listing and open preview modal
+    const openPreviewModal = () => {
+        if (!selectedListing) return;
+
+        // Build launch config with current values
+        const launchConfig: LaunchConfig = {
+            url: embedUrl,
+            permissions: selectedPermissions,
+            contractUri: contractUri || undefined,
+        };
+
+        const mockListing: ExtendedAppStoreListing = {
+            listing_id: selectedListing.listing_id,
+            display_name: selectedListing.display_name,
+            tagline: selectedListing.tagline || '',
+            full_description: selectedListing.full_description || '',
+            icon_url: selectedListing.icon_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=Preview',
+            launch_type: 'EMBEDDED_IFRAME',
+            launch_config_json: JSON.stringify(launchConfig),
+            app_listing_status: 'DRAFT',
+            category: (selectedListing as ExtendedAppStoreListing).category,
+            promo_video_url: (selectedListing as ExtendedAppStoreListing).promo_video_url,
+            privacy_policy_url: (selectedListing as ExtendedAppStoreListing).privacy_policy_url,
+            terms_url: (selectedListing as ExtendedAppStoreListing).terms_url,
+            ios_app_store_id: (selectedListing as ExtendedAppStoreListing).ios_app_store_id,
+            android_app_store_id: (selectedListing as ExtendedAppStoreListing).android_app_store_id,
+            highlights: (selectedListing as ExtendedAppStoreListing).highlights,
+            screenshots: (selectedListing as ExtendedAppStoreListing).screenshots,
+            hero_background_color: (selectedListing as ExtendedAppStoreListing).hero_background_color,
+        };
+
+        newModal(
+            <AppPreviewModal listing={mockListing} />,
+            { hideButton: true },
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
 
     // Generate comprehensive code based on selected features and their configuration
     const generateCode = () => {
@@ -4777,24 +5057,38 @@ async function writeCredentialViaConsent(recipientProfileId: string) {
         // LAUNCH FEATURE
         // ===================
         if (selectedFeatures.includes('launch-feature')) {
-            const selectedFeatureId = launchFeatureState.selectedFeatureId as string || 'passport';
-            const paramValues = launchFeatureState.paramValues as Record<string, string> || {};
+            const selectedFeatureIds = launchFeatureState.selectedFeatureIds as string[] || [];
+            const paramValues = launchFeatureState.paramValues as Record<string, Record<string, string>> || {};
             
-            // Find the selected feature from LAUNCHABLE_FEATURES
-            const launchableFeature = LAUNCHABLE_FEATURES
+            // Get all selected launchable features
+            const selectedLaunchFeatures = LAUNCHABLE_FEATURES
                 .flatMap(cat => cat.features)
-                .find(f => f.id === selectedFeatureId);
+                .filter(f => selectedFeatureIds.includes(f.id));
 
-            let featurePath = launchableFeature?.path || '/passport';
-            let featureTitle = launchableFeature?.title || 'Wallet';
+            // Generate code for each selected feature
+            const featureFunctions = selectedLaunchFeatures.map(feature => {
+                let featurePath = feature.path;
+                const featureParams = paramValues[feature.id] || {};
 
-            // Replace path params with configured values
-            if (launchableFeature?.params) {
-                launchableFeature.params.forEach(param => {
-                    const value = paramValues[param.name] || param.placeholder;
-                    featurePath = featurePath.replace(`:${param.name}`, value);
-                });
-            }
+                // Replace path params with configured values
+                if (feature.params) {
+                    feature.params.forEach(param => {
+                        const value = featureParams[param.name] || param.placeholder;
+                        featurePath = featurePath.replace(`:${param.name}`, value);
+                    });
+                }
+
+                const funcName = `launch${feature.title.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+                return `// Launch ${feature.title}
+async function ${funcName}() {
+    await learnCard.launchFeature('${featurePath}');
+}`;
+            });
+
+            const featureList = selectedLaunchFeatures.length > 0
+                ? selectedLaunchFeatures.map(f => `//   - ${f.title} (${f.path})`).join('\n')
+                : '//   No features selected';
 
             sections.push(`
 // ============================================================
@@ -4802,18 +5096,10 @@ async function writeCredentialViaConsent(recipientProfileId: string) {
 // ============================================================
 // Trigger native LearnCard features from your app
 // 
-// Configured feature: ${featureTitle}
-// Path: ${featurePath}
+// Selected features:
+${featureList}
 
-async function launchLearnCardFeature() {
-    try {
-        await learnCard.launchFeature('${featurePath}');
-        console.log('Launched: ${featureTitle}');
-    } catch (error) {
-        console.error('Failed to launch feature:', error);
-        throw error;
-    }
-}
+${featureFunctions.join('\n\n')}
 
 // Additional launch examples:
 // await learnCard.launchFeature('/passport');        // Open wallet
@@ -4857,8 +5143,99 @@ initializeApp();`);
         setTimeout(() => setCopiedCode(false), 2000);
     };
 
+    // Compute config differences for display
+    const configDifferences = (() => {
+        const newConfig = computeNewConfig();
+        const existingPermissions = existingConfig.permissions || [];
+        const differences: { type: string; label: string; from: string; to: string }[] = [];
+
+        // Find new permissions
+        const newPerms = newConfig.permissions?.filter(p => !existingPermissions.includes(p)) || [];
+        if (newPerms.length > 0) {
+            differences.push({
+                type: 'permissions_added',
+                label: 'New permissions required',
+                from: existingPermissions.length > 0 ? existingPermissions.map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p).join(', ') : 'None',
+                to: newPerms.map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p).join(', '),
+            });
+        }
+
+        // Check consent contract
+        const newContractUri = newConfig.contractUri || '';
+        const existingContractUri = existingConfig.contractUri || '';
+        if (newContractUri !== existingContractUri && newContractUri) {
+            differences.push({
+                type: 'contract',
+                label: 'Consent contract',
+                from: existingContractUri || 'Not set',
+                to: newContractUri,
+            });
+        }
+
+        return differences;
+    })();
+
     return (
         <div className="space-y-6">
+            {/* Config Mismatch Modal */}
+            {showConfigMismatchPrompt && configDifferences.length > 0 && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <AlertCircle className="w-5 h-5 text-amber-600" />
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-800">Update App Configuration?</h3>
+
+                                <p className="text-sm text-gray-600 mt-1">
+                                    Your selected features require different permissions than your app currently has configured.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Changes needed:</p>
+
+                            {configDifferences.map((diff, idx) => (
+                                <div key={idx} className="text-sm">
+                                    <p className="font-medium text-gray-700">{diff.label}</p>
+
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-gray-400 line-through text-xs">{diff.from}</span>
+                                        <ArrowRight className="w-3 h-3 text-gray-400" />
+                                        <span className="text-emerald-600 font-medium text-xs">{diff.to}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowConfigMismatchPrompt(false)}
+                                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                Keep Current
+                            </button>
+
+                            <button
+                                onClick={handleAcceptConfigUpdate}
+                                disabled={isSaving}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                            >
+                                {isSaving ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Check className="w-4 h-4" />
+                                )}
+                                Update Config
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Integration Code</h3>
 
@@ -4909,6 +5286,164 @@ initializeApp();`);
                     })}
                 </div>
             </div>
+
+            {/* App Configuration Section */}
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                    onClick={() => setShowConfigEditor(!showConfigEditor)}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                            <Terminal className="w-5 h-5 text-cyan-600" />
+                        </div>
+
+                        <div className="text-left">
+                            <p className="font-medium text-gray-800">App Configuration</p>
+                            <p className="text-xs text-gray-500">
+                                {embedUrl ? 'Configured' : 'Set embed URL, permissions & consent'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showConfigEditor ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showConfigEditor && (
+                    <div className="p-4 border-t border-gray-200 space-y-5">
+                        {/* Embed URL */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">Embed URL</label>
+
+                            <input
+                                type="url"
+                                value={embedUrl}
+                                onChange={e => setEmbedUrl(e.target.value)}
+                                placeholder="https://yourapp.com/embed"
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            />
+
+                            <p className="text-xs text-gray-400 mt-1">
+                                The URL that will be loaded in the iframe when users open your app
+                            </p>
+                        </div>
+
+                        {/* Permissions */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Permissions Needed
+                            </label>
+
+                            <p className="text-xs text-gray-400 mb-2">
+                                Based on your selected features, these permissions are required. You can add more if needed.
+                            </p>
+
+                            <div className="space-y-2">
+                                {PERMISSION_OPTIONS.map(permission => {
+                                    const isRequired = computeRequiredPermissions().includes(permission.value);
+                                    const isSelected = selectedPermissions.includes(permission.value);
+
+                                    return (
+                                        <label
+                                            key={permission.value}
+                                            className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
+                                                isSelected ? 'bg-cyan-50 border border-cyan-200' : 'bg-gray-50 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => togglePermission(permission.value)}
+                                                className="w-4 h-4 text-cyan-600 rounded mt-0.5"
+                                            />
+
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-medium text-gray-700">
+                                                        {permission.label}
+                                                    </span>
+
+                                                    {isRequired && (
+                                                        <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs font-medium">
+                                                            Required
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                    {permission.description}
+                                                </p>
+                                            </div>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Consent Flow Contract */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Consent Flow Contract <span className="text-gray-400 font-normal">(Optional)</span>
+                            </label>
+
+                            <p className="text-xs text-gray-400 mb-2">
+                                Request data sharing permissions when users install your app.
+                                {selectedFeatures.includes('request-data-consent') && (requestDataConsentState.contractUri as string) && (
+                                    <span className="text-cyan-600"> Auto-filled from your Request Data Consent setup.</span>
+                                )}
+                            </p>
+
+                            <ConsentFlowContractSelector
+                                value={contractUri}
+                                onChange={setContractUri}
+                            />
+                        </div>
+
+                        {/* Save Button */}
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <p className="text-xs text-gray-500">
+                                Changes will be saved to your app listing
+                            </p>
+
+                            <button
+                                onClick={handleSaveConfig}
+                                disabled={isSaving || !selectedListing}
+                                className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                            >
+                                {isSaving ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Check className="w-4 h-4" />
+                                )}
+                                Save Configuration
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Preview App Button */}
+            {selectedListing && embedUrl && (
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="text-sm font-medium text-indigo-800">Test Your Integration</h4>
+
+                            <p className="text-xs text-indigo-600 mt-0.5">
+                                Preview your app and validate partner-connect API calls
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={openPreviewModal}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"
+                        >
+                            <Play className="w-4 h-4" />
+                            Preview App
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Code output */}
             <div>
