@@ -52,6 +52,7 @@ import { useGuideState } from '../shared/useGuideState';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
+import type { GuideProps } from '../GuidePage';
 
 // URL Check types and helper
 interface UrlCheckResult {
@@ -304,36 +305,21 @@ const STEPS = [
     { id: 'your-app', title: 'Your App' },
 ];
 
-// Step 0: Getting Started (combined setup step)
+// Step 0: Getting Started (combined setup step - single scrollable page)
 const GettingStartedStep: React.FC<{
     onComplete: () => void;
     selectedIntegration: LCNIntegration | null;
-    setSelectedIntegration: (integration: LCNIntegration | null) => void;
     selectedListing: AppStoreListing | null;
     setSelectedListing: (listing: AppStoreListing | null) => void;
-}> = ({ onComplete, selectedIntegration, setSelectedIntegration, selectedListing, setSelectedListing }) => {
-    const [expandedSection, setExpandedSection] = useState<string | null>('install');
+}> = ({ onComplete, selectedIntegration, selectedListing, setSelectedListing }) => {
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-    // Integration management
-    const { useIntegrations, useCreateIntegration, useListingsForIntegration, useCreateListing } = useDeveloperPortal();
-    const { data: integrations, isLoading: isLoadingIntegrations, refetch: refetchIntegrations } = useIntegrations();
-    const createIntegrationMutation = useCreateIntegration();
-    const [isCreatingIntegration, setIsCreatingIntegration] = useState(false);
-    const [newIntegrationName, setNewIntegrationName] = useState('');
-
     // Listing management
+    const { useListingsForIntegration, useCreateListing } = useDeveloperPortal();
     const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(selectedIntegration?.id || null);
     const createListingMutation = useCreateListing();
     const [isCreatingListing, setIsCreatingListing] = useState(false);
     const [newListingName, setNewListingName] = useState('');
-
-    // Auto-select first integration
-    useEffect(() => {
-        if (integrations && integrations.length > 0 && !selectedIntegration) {
-            setSelectedIntegration(integrations[0]);
-        }
-    }, [integrations, selectedIntegration, setSelectedIntegration]);
 
     // Auto-select first listing when integration changes
     useEffect(() => {
@@ -346,25 +332,6 @@ const GettingStartedStep: React.FC<{
     useEffect(() => {
         setSelectedListing(null);
     }, [selectedIntegration?.id]);
-
-    const handleCreateIntegration = async () => {
-        if (!newIntegrationName.trim()) return;
-
-        try {
-            await createIntegrationMutation.mutateAsync(newIntegrationName.trim());
-            const result = await refetchIntegrations();
-            const newIntegration = result.data?.find(i => i.name === newIntegrationName.trim());
-
-            if (newIntegration) {
-                setSelectedIntegration(newIntegration);
-            }
-
-            setNewIntegrationName('');
-            setIsCreatingIntegration(false);
-        } catch (err) {
-            console.error('Failed to create integration:', err);
-        }
-    };
 
     const handleCreateListing = async () => {
         if (!newListingName.trim() || !selectedIntegration) return;
@@ -408,17 +375,10 @@ const learnCard = createPartnerConnect({
 const identity = await learnCard.requestIdentity();
 console.log('User:', identity.profile.displayName);`;
 
-    const sections = [
-        { id: 'install', title: '1. Install the SDK', icon: <Package className="w-5 h-5" /> },
-        { id: 'integration', title: '2. Select Integration', icon: <Key className="w-5 h-5" /> },
-        { id: 'listing', title: '3. Select App', icon: <Layers className="w-5 h-5" /> },
-        { id: 'init', title: '4. Initialize', icon: <Code className="w-5 h-5" /> },
-    ];
-
     const isReady = !!selectedIntegration && !!selectedListing;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Getting Started</h3>
 
@@ -427,173 +387,40 @@ console.log('User:', identity.profile.displayName);`;
                 </p>
             </div>
 
-            {/* Progress indicator */}
-            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
-                {sections.map((section, index) => (
-                    <React.Fragment key={section.id}>
-                        <button
-                            onClick={() => setExpandedSection(section.id)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                expandedSection === section.id
-                                    ? 'bg-cyan-100 text-cyan-700'
-                                    : 'text-gray-500 hover:bg-gray-100'
-                            }`}
-                        >
-                            {section.icon}
-                            <span className="hidden sm:inline">{section.title}</span>
-                            <span className="sm:hidden">{index + 1}</span>
-                        </button>
-
-                        {index < sections.length - 1 && (
-                            <ChevronRight className="w-4 h-4 text-gray-300" />
-                        )}
-                    </React.Fragment>
-                ))}
-            </div>
-
-            {/* Install Section */}
-            {expandedSection === 'install' && (
-                <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-xl">
-                    <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-gray-800">Install @learncard/partner-connect</h4>
-
-                        <button
-                            onClick={() => handleCopy(installCode, 'install')}
-                            className="flex items-center gap-1 px-2 py-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                        >
-                            {copiedCode === 'install' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                        </button>
+            {/* Section 1: Select/Create App */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                        1
                     </div>
 
-                    <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg text-sm overflow-x-auto">
-                        {installCode}
-                    </pre>
-
-                    <p className="text-sm text-gray-500">
-                        Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code> or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
-                    </p>
-
-                    <button
-                        onClick={() => setExpandedSection('integration')}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 transition-colors"
-                    >
-                        Next: Select Integration
-                        <ArrowRight className="w-4 h-4" />
-                    </button>
+                    <h4 className="font-semibold text-gray-800">Select or Create Your App</h4>
                 </div>
-            )}
 
-            {/* Integration Section */}
-            {expandedSection === 'integration' && (
-                <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-xl">
-                    <h4 className="font-medium text-gray-800">Select or Create an Integration</h4>
-
-                    <p className="text-sm text-gray-500">
-                        An integration groups your apps together and provides a publishable key for authentication.
-                    </p>
-
-                    {isLoadingIntegrations ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {/* Existing integrations */}
-                            {integrations && integrations.length > 0 && (
-                                <div className="space-y-2">
-                                    {integrations.map((integration) => (
-                                        <button
-                                            key={integration.id}
-                                            onClick={() => setSelectedIntegration(integration)}
-                                            className={`w-full flex items-center justify-between p-3 border-2 rounded-lg transition-all ${
-                                                selectedIntegration?.id === integration.id
-                                                    ? 'border-cyan-500 bg-cyan-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                            }`}
-                                        >
-                                            <span className="font-medium text-gray-800">{integration.name}</span>
-
-                                            {selectedIntegration?.id === integration.id && (
-                                                <CheckCircle2 className="w-5 h-5 text-cyan-500" />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Create new */}
-                            {isCreatingIntegration ? (
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={newIntegrationName}
-                                        onChange={(e) => setNewIntegrationName(e.target.value)}
-                                        placeholder="Integration name..."
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                                        autoFocus
-                                    />
-
-                                    <button
-                                        onClick={handleCreateIntegration}
-                                        disabled={!newIntegrationName.trim()}
-                                        className="px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-                                    >
-                                        Create
-                                    </button>
-
-                                    <button
-                                        onClick={() => setIsCreatingIntegration(false)}
-                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => setIsCreatingIntegration(true)}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Create New Integration
-                                </button>
-                            )}
-                        </div>
-                    )}
-
-                    <button
-                        onClick={() => setExpandedSection('listing')}
-                        disabled={!selectedIntegration}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-                    >
-                        Next: Select App
-                        <ArrowRight className="w-4 h-4" />
-                    </button>
-                </div>
-            )}
-
-            {/* App Listing Section */}
-            {expandedSection === 'listing' && (
-                <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-xl">
-                    <h4 className="font-medium text-gray-800">Select or Create Your App</h4>
-
+                <div className="ml-11 space-y-3">
                     <p className="text-sm text-gray-500">
                         Your app listing is what users see in the LearnCard app store.
                     </p>
 
-                    {isLoadingListings ? (
-                        <div className="flex items-center justify-center py-8">
+                    {!selectedIntegration ? (
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <p className="text-sm text-amber-700">
+                                Select a project from the header dropdown first.
+                            </p>
+                        </div>
+                    ) : isLoadingListings ? (
+                        <div className="flex items-center justify-center py-6">
                             <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
                         </div>
                     ) : (
-                        <div className="space-y-3">
-                            {/* Existing listings */}
+                        <div className="space-y-2">
                             {listings && listings.length > 0 && (
                                 <div className="space-y-2">
                                     {listings.map((listing) => (
                                         <button
                                             key={listing.listing_id}
                                             onClick={() => setSelectedListing(listing)}
-                                            className={`w-full flex items-center justify-between p-3 border-2 rounded-lg transition-all ${
+                                            className={`w-full flex items-center justify-between p-3 border-2 rounded-xl transition-all ${
                                                 selectedListing?.listing_id === listing.listing_id
                                                     ? 'border-cyan-500 bg-cyan-50'
                                                     : 'border-gray-200 hover:border-gray-300'
@@ -609,7 +436,6 @@ console.log('User:', identity.profile.displayName);`;
                                 </div>
                             )}
 
-                            {/* Create new */}
                             {isCreatingListing ? (
                                 <div className="flex gap-2">
                                     <input
@@ -619,14 +445,22 @@ console.log('User:', identity.profile.displayName);`;
                                         placeholder="App name..."
                                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                         autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleCreateListing();
+                                            if (e.key === 'Escape') setIsCreatingListing(false);
+                                        }}
                                     />
 
                                     <button
                                         onClick={handleCreateListing}
-                                        disabled={!newListingName.trim()}
+                                        disabled={!newListingName.trim() || createListingMutation.isPending}
                                         className="px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
                                     >
-                                        Create
+                                        {createListingMutation.isPending ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            'Create'
+                                        )}
                                     </button>
 
                                     <button
@@ -639,7 +473,7 @@ console.log('User:', identity.profile.displayName);`;
                             ) : (
                                 <button
                                     onClick={() => setIsCreatingListing(true)}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:border-cyan-400 hover:text-cyan-600 hover:bg-cyan-50/50 transition-colors"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Create New App
@@ -647,61 +481,86 @@ console.log('User:', identity.profile.displayName);`;
                             )}
                         </div>
                     )}
-
-                    <button
-                        onClick={() => setExpandedSection('init')}
-                        disabled={!selectedListing}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-                    >
-                        Next: Initialize
-                        <ArrowRight className="w-4 h-4" />
-                    </button>
                 </div>
-            )}
+            </div>
 
-            {/* Initialize Section */}
-            {expandedSection === 'init' && (
-                <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-xl">
-                    <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-gray-800">Initialize the SDK</h4>
+            {/* Section 2: Install SDK */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                        2
+                    </div>
+
+                    <h4 className="font-semibold text-gray-800">Install the SDK</h4>
+                </div>
+
+                <div className="ml-11 space-y-3">
+                    <div className="relative">
+                        <pre className="p-3 pr-12 bg-gray-900 text-gray-100 rounded-xl text-sm overflow-x-auto">
+                            {installCode}
+                        </pre>
 
                         <button
-                            onClick={() => handleCopy(initCode, 'init')}
-                            className="flex items-center gap-1 px-2 py-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                            onClick={() => handleCopy(installCode, 'install')}
+                            className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
                         >
-                            {copiedCode === 'init' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                            {copiedCode === 'install' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                         </button>
                     </div>
 
-                    <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg text-sm overflow-x-auto">
-                        {initCode}
-                    </pre>
+                    <p className="text-xs text-gray-500">
+                        Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code> or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
+                    </p>
+                </div>
+            </div>
 
-                    <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+            {/* Section 3: Initialize */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                        3
+                    </div>
+
+                    <h4 className="font-semibold text-gray-800">Initialize</h4>
+                </div>
+
+                <div className="ml-11 space-y-3">
+                    <div className="relative">
+                        <pre className="p-3 pr-12 bg-gray-900 text-gray-100 rounded-xl text-sm overflow-x-auto">
+                            {initCode}
+                        </pre>
+
+                        <button
+                            onClick={() => handleCopy(initCode, 'init')}
+                            className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                        >
+                            {copiedCode === 'init' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                    </div>
+
+                    <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                         <p className="text-sm text-cyan-800">
                             <strong>That's it!</strong> Users are already logged in when inside the wallet, so <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code> returns instantly with their profile.
                         </p>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Continue button - only show on Initialize section */}
-            {expandedSection === 'init' && (
-                <button
-                    onClick={onComplete}
-                    disabled={!isReady}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    {isReady ? (
-                        <>
-                            Choose What to Build
-                            <ArrowRight className="w-4 h-4" />
-                        </>
-                    ) : (
-                        'Select an integration and app above to continue'
-                    )}
-                </button>
-            )}
+            {/* Continue button */}
+            <button
+                onClick={onComplete}
+                disabled={!isReady}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+                {isReady ? (
+                    <>
+                        Choose What to Build
+                        <ArrowRight className="w-4 h-4" />
+                    </>
+                ) : (
+                    'Select an app above to continue'
+                )}
+            </button>
         </div>
     );
 };
@@ -3345,11 +3204,10 @@ const YourAppStep: React.FC<{
 };
 
 // Main component
-const EmbedAppGuide: React.FC = () => {
+const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedIntegration }) => {
     const guideState = useGuideState('embed-app', STEPS.length);
 
     // Guide-wide state (persists across all steps)
-    const [selectedIntegration, setSelectedIntegration] = useState<LCNIntegration | null>(null);
     const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(null);
     const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
     const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
@@ -3390,7 +3248,6 @@ const EmbedAppGuide: React.FC = () => {
                     <GettingStartedStep
                         onComplete={() => handleStepComplete('getting-started')}
                         selectedIntegration={selectedIntegration}
-                        setSelectedIntegration={setSelectedIntegration}
                         selectedListing={selectedListing}
                         setSelectedListing={setSelectedListing}
                     />

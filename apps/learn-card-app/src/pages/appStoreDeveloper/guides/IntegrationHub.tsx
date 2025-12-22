@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { 
@@ -12,9 +12,13 @@ import {
     Sparkles,
     BookOpen,
     ExternalLink,
+    Rocket,
+    Loader2,
 } from 'lucide-react';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
+import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
+import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
@@ -73,48 +77,144 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 
 const IntegrationHub: React.FC = () => {
     const history = useHistory();
+    const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
+    const [newProjectName, setNewProjectName] = useState('');
+
+    const { useIntegrations, useCreateIntegration } = useDeveloperPortal();
+    const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
+    const createIntegrationMutation = useCreateIntegration();
+
+    // Default to first integration when loaded
+    useEffect(() => {
+        if (!selectedIntegrationId && integrations && integrations.length > 0) {
+            setSelectedIntegrationId(integrations[0].id);
+        }
+    }, [integrations, selectedIntegrationId]);
 
     const handleUseCaseClick = (useCaseId: UseCaseId) => {
-        history.push(`/app-store/developer/guides/${useCaseId}`);
+        if (selectedIntegrationId) {
+            history.push(`/app-store/developer/guides/${useCaseId}?integrationId=${selectedIntegrationId}`);
+        }
+    };
+
+    const handleCreateFirstProject = async () => {
+        if (!newProjectName.trim()) return;
+
+        try {
+            const integrationId = await createIntegrationMutation.mutateAsync(newProjectName.trim());
+            setSelectedIntegrationId(integrationId);
+            setNewProjectName('');
+        } catch (error) {
+            console.error('Failed to create project:', error);
+        }
     };
 
     const useCaseList = Object.values(USE_CASES);
+    const hasIntegration = selectedIntegrationId !== null;
+    const showSetupPrompt = !isLoadingIntegrations && integrations?.length === 0;
+
+    const integrationSelector = (
+        <HeaderIntegrationSelector
+            integrations={integrations || []}
+            selectedId={selectedIntegrationId}
+            onSelect={setSelectedIntegrationId}
+            isLoading={isLoadingIntegrations}
+        />
+    );
 
     return (
         <IonPage>
-            <AppStoreHeader title="Developer Portal" />
+            <AppStoreHeader title="Developer Portal" rightContent={integrationSelector} />
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
-                    {/* Hero section */}
-                    <div className="text-center mb-10">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 rounded-full text-sm font-medium mb-4">
-                            <Sparkles className="w-4 h-4" />
-                            <span>Integration Guides</span>
+                    {/* Setup prompt when no integrations exist */}
+                    {showSetupPrompt && (
+                        <div className="max-w-lg mx-auto py-12">
+                            <div className="text-center mb-8">
+                                <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
+                                    <Rocket className="w-8 h-8 text-white" />
+                                </div>
+
+                                <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+                                    Create Your First Project
+                                </h2>
+
+                                <p className="text-gray-500">
+                                    Set up a project to start building your integration.
+                                </p>
+                            </div>
+
+                            <div className="max-w-md mx-auto">
+                                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                                    Name your project
+                                </label>
+
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newProjectName}
+                                        onChange={e => setNewProjectName(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleCreateFirstProject()}
+                                        placeholder="e.g. My Awesome App"
+                                        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
+                                        disabled={createIntegrationMutation.isPending}
+                                    />
+
+                                    <button
+                                        onClick={handleCreateFirstProject}
+                                        disabled={!newProjectName.trim() || createIntegrationMutation.isPending}
+                                        className="px-5 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-200 flex items-center gap-2"
+                                    >
+                                        {createIntegrationMutation.isPending ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <>
+                                                Create
+                                                <ArrowRight className="w-4 h-4" />
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+                    )}
 
-                        <h1 className="text-3xl font-bold text-gray-800 mb-3">
-                            Build Your Integration
-                        </h1>
+                    {/* Main content when integration is selected */}
+                    {hasIntegration && (
+                        <>
+                            {/* Hero section */}
+                            <div className="text-center mb-10">
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 rounded-full text-sm font-medium mb-4">
+                                    <Sparkles className="w-4 h-4" />
+                                    <span>Integration Guides</span>
+                                </div>
 
-                        <p className="text-gray-500 max-w-lg mx-auto text-lg">
-                            Choose what you want to build. We'll guide you through each step with 
-                            ready-to-use code and live setup tools.
-                        </p>
-                    </div>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-3">
+                                    Build Your Integration
+                                </h1>
 
-                    {/* Use case grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
-                        {useCaseList.map(useCase => (
-                            <UseCaseCard
-                                key={useCase.id}
-                                {...useCase}
-                                onClick={() => handleUseCaseClick(useCase.id)}
-                            />
-                        ))}
-                    </div>
+                                <p className="text-gray-500 max-w-lg mx-auto text-lg">
+                                    Choose what you want to build. We'll guide you through each step with 
+                                    ready-to-use code and live setup tools.
+                                </p>
+                            </div>
 
-                    {/* Resources section */}
+                            {/* Use case grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+                                {useCaseList.map(useCase => (
+                                    <UseCaseCard
+                                        key={useCase.id}
+                                        {...useCase}
+                                        onClick={() => handleUseCaseClick(useCase.id)}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {/* Resources section - always show when not in setup */}
+                    {!showSetupPrompt && (
                     <div className="border-t border-gray-100 pt-10">
                         <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                             <BookOpen className="w-5 h-5 text-gray-400" />
@@ -177,6 +277,7 @@ const IntegrationHub: React.FC = () => {
                             </button>
                         </div>
                     </div>
+                    )}
                 </div>
             </IonContent>
         </IonPage>

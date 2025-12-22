@@ -1396,7 +1396,7 @@ const IssueVerifyStep: React.FC<{
 };
 
 // Main component
-const IssueCredentialsGuide: React.FC = () => {
+const IssueCredentialsGuide: React.FC<{ selectedIntegration?: unknown; setSelectedIntegration?: unknown }> = () => {
     const guideState = useGuideState('issue-credentials', STEPS.length);
 
     const [apiToken, setApiToken] = useState('');

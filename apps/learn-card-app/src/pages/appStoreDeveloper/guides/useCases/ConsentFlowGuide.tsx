@@ -485,7 +485,7 @@ async def get_user_data(transaction_id: str):
 };
 
 // Main component
-const ConsentFlowGuide: React.FC = () => {
+const ConsentFlowGuide: React.FC<{ selectedIntegration?: unknown; setSelectedIntegration?: unknown }> = () => {
     const guideState = useGuideState('consent-flow', STEPS.length);
 
     const [contractUri, setContractUri] = useState('');

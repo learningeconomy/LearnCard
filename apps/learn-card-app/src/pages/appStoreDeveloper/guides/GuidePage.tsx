@@ -1,9 +1,12 @@
-import React from 'react';
-import { useParams, useHistory } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
+import type { LCNIntegration } from '@learncard/types';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
+import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
+import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
 
 import IssueCredentialsGuide from './useCases/IssueCredentialsGuide';
@@ -13,7 +16,13 @@ import ConsentFlowGuide from './useCases/ConsentFlowGuide';
 import VerifyCredentialsGuide from './useCases/VerifyCredentialsGuide';
 import ServerWebhooksGuide from './useCases/ServerWebhooksGuide';
 
-const GUIDE_COMPONENTS: Record<UseCaseId, React.FC> = {
+// Guide components that accept integration prop
+export interface GuideProps {
+    selectedIntegration: LCNIntegration | null;
+    setSelectedIntegration: (integration: LCNIntegration | null) => void;
+}
+
+const GUIDE_COMPONENTS: Record<UseCaseId, React.FC<GuideProps>> = {
     'issue-credentials': IssueCredentialsGuide,
     'embed-claim': EmbedClaimGuide,
     'embed-app': EmbedAppGuide,
@@ -25,6 +34,55 @@ const GUIDE_COMPONENTS: Record<UseCaseId, React.FC> = {
 const GuidePage: React.FC = () => {
     const { useCase } = useParams<{ useCase: string }>();
     const history = useHistory();
+    const location = useLocation();
+    
+    // Get integrationId from URL query params
+    const searchParams = new URLSearchParams(location.search);
+    const urlIntegrationId = searchParams.get('integrationId');
+    
+    const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(urlIntegrationId);
+    const [selectedIntegration, setSelectedIntegration] = useState<LCNIntegration | null>(null);
+    
+    const { useIntegrations } = useDeveloperPortal();
+    const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
+    
+    // Set integration from URL param or default to first
+    useEffect(() => {
+        if (integrations && integrations.length > 0) {
+            if (urlIntegrationId) {
+                const found = integrations.find(i => i.id === urlIntegrationId);
+                if (found) {
+                    setSelectedIntegration(found);
+                    setSelectedIntegrationId(found.id);
+                    return;
+                }
+            }
+            // Default to first if URL param not found
+            if (!selectedIntegrationId) {
+                setSelectedIntegration(integrations[0]);
+                setSelectedIntegrationId(integrations[0].id);
+            }
+        }
+    }, [integrations, urlIntegrationId, selectedIntegrationId]);
+    
+    // Update selected integration when ID changes
+    useEffect(() => {
+        if (integrations && selectedIntegrationId) {
+            const found = integrations.find(i => i.id === selectedIntegrationId);
+            if (found) {
+                setSelectedIntegration(found);
+                // Update URL without navigation
+                const newSearchParams = new URLSearchParams(location.search);
+                newSearchParams.set('integrationId', found.id);
+                history.replace({ search: newSearchParams.toString() });
+            }
+        }
+    }, [selectedIntegrationId, integrations]);
+    
+    const handleSetSelectedIntegration = (integration: LCNIntegration | null) => {
+        setSelectedIntegration(integration);
+        setSelectedIntegrationId(integration?.id || null);
+    };
 
     const useCaseId = useCase as UseCaseId;
     const useCaseConfig = USE_CASES[useCaseId];
@@ -56,7 +114,7 @@ const GuidePage: React.FC = () => {
     }
 
     const headerContent = (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
             <button
                 onClick={() => history.push('/app-store/developer/guides')}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
@@ -64,6 +122,13 @@ const GuidePage: React.FC = () => {
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">All Guides</span>
             </button>
+            
+            <HeaderIntegrationSelector
+                integrations={integrations || []}
+                selectedId={selectedIntegrationId}
+                onSelect={setSelectedIntegrationId}
+                isLoading={isLoadingIntegrations}
+            />
         </div>
     );
 
@@ -72,7 +137,10 @@ const GuidePage: React.FC = () => {
             <AppStoreHeader title={useCaseConfig.title} rightContent={headerContent} />
 
             <IonContent className="ion-padding">
-                <GuideComponent />
+                <GuideComponent 
+                    selectedIntegration={selectedIntegration}
+                    setSelectedIntegration={handleSetSelectedIntegration}
+                />
             </IonContent>
         </IonPage>
     );

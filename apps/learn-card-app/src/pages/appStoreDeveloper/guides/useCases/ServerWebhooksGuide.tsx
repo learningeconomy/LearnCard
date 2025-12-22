@@ -592,7 +592,7 @@ const TestStep: React.FC<{
 };
 
 // Main component
-const ServerWebhooksGuide: React.FC = () => {
+const ServerWebhooksGuide: React.FC<{ selectedIntegration?: unknown; setSelectedIntegration?: unknown }> = () => {
     const guideState = useGuideState('server-webhooks', STEPS.length);
 
     const [apiToken, setApiToken] = useState('');

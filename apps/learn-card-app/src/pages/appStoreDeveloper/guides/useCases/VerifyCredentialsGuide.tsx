@@ -475,7 +475,7 @@ const TestStep: React.FC<{
 };
 
 // Main component
-const VerifyCredentialsGuide: React.FC = () => {
+const VerifyCredentialsGuide: React.FC<{ selectedIntegration?: unknown; setSelectedIntegration?: unknown }> = () => {
     const guideState = useGuideState('verify-credentials', STEPS.length);
 
     const handleStepComplete = (stepId: string) => {
