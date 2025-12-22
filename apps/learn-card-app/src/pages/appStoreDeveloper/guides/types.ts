@@ -61,9 +61,9 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
     },
     'consent-flow': {
         id: 'consent-flow',
-        title: 'Request User Data',
-        subtitle: 'OAuth-style consent',
-        description: 'Set up a consent flow to request access to user data and credentials with their permission.',
+        title: 'Connect Website',
+        subtitle: 'Connect your website to LearnCard',
+        description: 'Set up a consent flow to send and access user data and credentials with their permission.',
         icon: 'shield-check',
         color: 'text-emerald-600',
         bgColor: 'bg-emerald-100',

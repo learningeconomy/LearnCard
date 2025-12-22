@@ -5542,15 +5542,37 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
         }
     }, [guideState.currentStep]);
 
-    const handleStepComplete = (stepId: string) => {
-        guideState.markStepComplete(stepId);
-        guideState.nextStep();
-    };
-
     // Check if we should skip feature setup step
     const featuresNeedingSetup = selectedFeatures.filter(id => 
         FEATURES.find(f => f.id === id)?.requiresSetup
     );
+
+    // Reset feature index when features change to prevent out-of-bounds issues
+    useEffect(() => {
+        // If current index is out of bounds, reset to 0
+        if (currentFeatureIndex >= featuresNeedingSetup.length) {
+            setCurrentFeatureIndex(0);
+        }
+    }, [featuresNeedingSetup.length, currentFeatureIndex]);
+
+    // Clean up feature setup state when features are deselected
+    useEffect(() => {
+        setFeatureSetupState(prev => {
+            const newState = { ...prev };
+            // Remove state for features that are no longer selected
+            Object.keys(newState).forEach(featureId => {
+                if (!selectedFeatures.includes(featureId)) {
+                    delete newState[featureId];
+                }
+            });
+            return newState;
+        });
+    }, [selectedFeatures]);
+
+    const handleStepComplete = (stepId: string) => {
+        guideState.markStepComplete(stepId);
+        guideState.nextStep();
+    };
 
     const handleChooseFeaturesComplete = () => {
         if (featuresNeedingSetup.length === 0) {
@@ -5586,6 +5608,16 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                 );
 
             case 2:
+                // If no features need setup, skip to step 3
+                if (featuresNeedingSetup.length === 0) {
+                    // Auto-advance to next step
+                    setTimeout(() => {
+                        guideState.markStepComplete('feature-setup');
+                        guideState.goToStep(3);
+                    }, 0);
+                    return null;
+                }
+
                 return (
                     <FeatureSetupStep
                         onComplete={() => handleStepComplete('feature-setup')}
