@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
     FileText, 
     Link2, 
@@ -8,17 +8,11 @@ import {
     ArrowLeft, 
     ExternalLink,
     CheckCircle2,
-    Plus,
-    Loader2,
-    Copy,
-    Check,
 } from 'lucide-react';
 
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import { Clipboard } from '@capacitor/clipboard';
-
-import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
+import { StepProgress, CodeOutputPanel } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
+import { ConsentFlowContractSelector } from '../../components/ConsentFlowContractSelector';
 
 const STEPS = [
     { id: 'create-contract', title: 'Create Contract' },
@@ -33,175 +27,34 @@ const CreateContractStep: React.FC<{
     contractUri: string;
     setContractUri: (uri: string) => void;
 }> = ({ onComplete, contractUri, setContractUri }) => {
-    const { initWallet } = useWallet();
-    const { presentToast } = useToast();
-
-    const [contracts, setContracts] = useState<Array<{ uri: string; name: string }>>([]);
-    const [loading, setLoading] = useState(true);
-    const [creating, setCreating] = useState(false);
-    const [newContractName, setNewContractName] = useState('');
-    const [showCreate, setShowCreate] = useState(false);
-    const [copiedUri, setCopiedUri] = useState<string | null>(null);
-
-    const fetchContracts = useCallback(async () => {
-        try {
-            setLoading(true);
-            const wallet = await initWallet();
-            const result = await wallet.invoke.getConsentFlowContracts();
-
-            const contractList = (result?.records || []).map((c: { uri: string; contract: { name: string } }) => ({
-                uri: c.uri,
-                name: c.contract?.name || 'Unnamed Contract',
-            }));
-
-            setContracts(contractList);
-        } catch (err) {
-            console.error('Failed to fetch contracts:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, [initWallet]);
-
-    useEffect(() => {
-        fetchContracts();
-    }, []);
-
-    const createContract = async () => {
-        if (!newContractName.trim()) return;
-
-        try {
-            setCreating(true);
-            const wallet = await initWallet();
-
-            const uri = await wallet.invoke.createConsentFlowContract({
-                name: newContractName.trim(),
-                subtitle: 'Created from Integration Guide',
-                description: 'Consent flow for data sharing',
-                needsGuardianConsent: false,
-                redirectUrl: '',
-                frontDoorBoostUri: '',
-                reasonForAccessing: 'To provide personalized services',
-                image: '',
-                expiresAt: '',
-                readers: {
-                    anonymize: false,
-                    credentials: { categories: {} },
-                    personal: {},
-                },
-                writers: {
-                    credentials: { categories: {} },
-                    personal: {},
-                },
-            });
-
-            setContractUri(uri);
-            presentToast('Contract created!', { hasDismissButton: true });
-            setNewContractName('');
-            setShowCreate(false);
-            fetchContracts();
-        } catch (err) {
-            console.error('Failed to create contract:', err);
-            presentToast('Failed to create contract', { type: ToastTypeEnum.Error, hasDismissButton: true });
-        } finally {
-            setCreating(false);
-        }
-    };
-
-    const copyUri = async (uri: string) => {
-        await Clipboard.write({ string: uri });
-        setCopiedUri(uri);
-        setContractUri(uri);
-        setTimeout(() => setCopiedUri(null), 2000);
-        presentToast('Contract URI copied!', { hasDismissButton: true });
-    };
-
-    const hasContract = contracts.length > 0 || contractUri;
-
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create a Consent Contract</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Select or Create a Consent Contract</h3>
 
                 <p className="text-gray-600">
-                    A consent contract defines what data you're requesting and why. Users must accept 
+                    A consent contract defines what data you&apos;re requesting and why. Users must accept 
                     the contract before sharing their data.
                 </p>
             </div>
 
-            <StatusIndicator
-                status={loading ? 'loading' : hasContract ? 'ready' : 'warning'}
-                label={loading ? 'Checking...' : hasContract ? `${contracts.length} contract${contracts.length !== 1 ? 's' : ''} available` : 'No contracts found'}
-                description={hasContract ? 'Select one to use' : 'Create one to continue'}
+            <ConsentFlowContractSelector
+                value={contractUri}
+                onChange={setContractUri}
             />
 
-            {/* Contract list */}
-            {!loading && contracts.length > 0 && (
-                <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
-                    {contracts.slice(0, 5).map((contract) => (
-                        <div
-                            key={contract.uri}
-                            className={`flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer ${contractUri === contract.uri ? 'bg-cyan-50' : ''}`}
-                            onClick={() => setContractUri(contract.uri)}
-                        >
-                            <div className="flex-1 min-w-0">
-                                <p className="font-medium text-gray-800">{contract.name}</p>
+            {contractUri && (
+                <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-cyan-600" />
 
-                                <p className="text-xs text-gray-500 font-mono truncate">{contract.uri}</p>
-                            </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-cyan-800">Contract Selected</p>
 
-                            <button
-                                onClick={(e) => { e.stopPropagation(); copyUri(contract.uri); }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-                            >
-                                {copiedUri === contract.uri ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                            </button>
+                            <p className="text-xs text-cyan-600 font-mono truncate">{contractUri}</p>
                         </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Create form */}
-            {showCreate && (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Contract Name</label>
-
-                        <input
-                            type="text"
-                            value={newContractName}
-                            onChange={(e) => setNewContractName(e.target.value)}
-                            placeholder="e.g., My App Data Access"
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
-                    </div>
-
-                    <div className="flex gap-2">
-                        <button
-                            onClick={createContract}
-                            disabled={creating || !newContractName.trim()}
-                            className="flex-1 px-4 py-2.5 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
-                        >
-                            {creating ? 'Creating...' : 'Create Contract'}
-                        </button>
-
-                        <button
-                            onClick={() => { setShowCreate(false); setNewContractName(''); }}
-                            className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
-                        >
-                            Cancel
-                        </button>
                     </div>
                 </div>
-            )}
-
-            {!showCreate && (
-                <button
-                    onClick={() => setShowCreate(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-600 hover:border-emerald-400 hover:text-emerald-600 rounded-xl w-full justify-center font-medium transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    Create New Contract
-                </button>
             )}
 
             <button
