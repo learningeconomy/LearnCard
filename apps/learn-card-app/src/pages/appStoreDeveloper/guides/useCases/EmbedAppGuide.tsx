@@ -52,6 +52,7 @@ import { useGuideState } from '../shared/useGuideState';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
+import { ConsentFlowContractSelector } from '../../components/ConsentFlowContractSelector';
 import type { GuideProps } from '../GuidePage';
 
 // URL Check types and helper
@@ -2731,6 +2732,8 @@ const FeatureSetupStep: React.FC<{
                         onBack={handleFeatureBack}
                         isLastFeature={isLastFeature}
                         selectedListing={selectedListing}
+                        featureSetupState={featureSetupState}
+                        setFeatureSetupState={setFeatureSetupState}
                     />
                 );
 
@@ -2850,48 +2853,460 @@ const FeatureSetupStep: React.FC<{
     );
 };
 
-// Issue Credentials Setup (for initiateTemplateIssue)
+// Issue Credentials Setup - Two modes: Prompt to Claim vs Sync to Wallet
+type IssueMode = 'prompt-claim' | 'sync-wallet';
+
 const IssueCredentialsSetup: React.FC<{
     onComplete: () => void;
     onBack: () => void;
     isLastFeature: boolean;
     selectedListing: AppStoreListing | null;
-}> = ({ onComplete, onBack, isLastFeature, selectedListing }) => {
+    featureSetupState: Record<string, Record<string, unknown>>;
+    setFeatureSetupState: (state: Record<string, Record<string, unknown>>) => void;
+}> = ({ onComplete, onBack, isLastFeature, selectedListing, featureSetupState, setFeatureSetupState }) => {
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+
+    // Get saved mode from feature state or default
+    const savedState = featureSetupState['issue-credentials'] || {};
+    const [mode, setMode] = useState<IssueMode>((savedState.mode as IssueMode) || 'prompt-claim');
+
+    // Prompt to Claim state
+    const [showCredentialBuilder, setShowCredentialBuilder] = useState(false);
+    const [credential, setCredential] = useState<Record<string, unknown> | null>(
+        (savedState.credential as Record<string, unknown>) || null
+    );
+    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+    // Sync to Wallet state
+    const [signingAuthorityLoading, setSigningAuthorityLoading] = useState(false);
+    const [signingAuthorityFetched, setSigningAuthorityFetched] = useState(false);
+    const [signingAuthorityCreating, setSigningAuthorityCreating] = useState(false);
+    const [primarySA, setPrimarySA] = useState<{ name: string; endpoint: string } | null>(null);
+    const [contractUri, setContractUri] = useState<string>((savedState.contractUri as string) || '');
+
+    // Save state when it changes
+    useEffect(() => {
+        setFeatureSetupState({
+            ...featureSetupState,
+            'issue-credentials': {
+                mode,
+                credential,
+                contractUri,
+            },
+        });
+    }, [mode, credential, contractUri]);
+
+    // Fetch signing authority when switching to sync-wallet mode
+    useEffect(() => {
+        if (mode !== 'sync-wallet') return;
+        if (signingAuthorityFetched) return;
+
+        const fetchSigningAuthority = async () => {
+            try {
+                setSigningAuthorityLoading(true);
+                const wallet = await initWallet();
+                const primary = await wallet.invoke.getPrimaryRegisteredSigningAuthority();
+
+                if (primary?.relationship) {
+                    setPrimarySA({
+                        name: primary.relationship.name,
+                        endpoint: primary.signingAuthority?.endpoint ?? '',
+                    });
+                } else {
+                    setPrimarySA(null);
+                }
+            } catch (err) {
+                console.error('Failed to fetch signing authority:', err);
+                setPrimarySA(null);
+            } finally {
+                setSigningAuthorityLoading(false);
+                setSigningAuthorityFetched(true);
+            }
+        };
+
+        fetchSigningAuthority();
+    }, [mode, signingAuthorityFetched, initWallet]);
+
+    const createSigningAuthority = async () => {
+        try {
+            setSigningAuthorityCreating(true);
+            const wallet = await initWallet();
+
+            const authority = await wallet.invoke.createSigningAuthority('default-sa');
+
+            if (!authority) {
+                throw new Error('Failed to create signing authority');
+            }
+
+            await wallet.invoke.registerSigningAuthority(
+                authority.endpoint!,
+                authority.name,
+                authority.did!
+            );
+
+            await wallet.invoke.setPrimaryRegisteredSigningAuthority(
+                authority.endpoint!,
+                authority.name
+            );
+
+            setPrimarySA({
+                name: authority.name,
+                endpoint: authority.endpoint!,
+            });
+
+            presentToast('Signing authority created!', { hasDismissButton: true });
+        } catch (err) {
+            console.error('Failed to create signing authority:', err);
+            presentToast('Failed to create signing authority', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        } finally {
+            setSigningAuthorityCreating(false);
+        }
+    };
+
+    const handleCopy = async (code: string, id: string) => {
+        await navigator.clipboard.writeText(code);
+        setCopiedCode(id);
+        setTimeout(() => setCopiedCode(null), 2000);
+    };
+
+    const handleSaveCredential = (credentialData: Record<string, unknown>) => {
+        setCredential(credentialData);
+        setShowCredentialBuilder(false);
+        presentToast('Credential template saved!', { hasDismissButton: true });
+    };
+
+    // Code snippets
+    const promptClaimCode = `// 1. Get the user's identity
+const identity = await learnCard.requestIdentity();
+const recipientDid = identity.did;
+
+// 2. Build the credential with recipient's DID
+const credential = {
+    "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+    ],
+    "type": ["VerifiableCredential", "OpenBadgeCredential"],
+    "name": "${credential ? (credential as Record<string, unknown>).name || 'Your Credential' : 'Your Credential'}",
+    "issuer": {
+        "id": "YOUR_ISSUER_DID", // Your organization's DID
+        "name": "Your Organization"
+    },
+    "credentialSubject": {
+        "id": recipientDid, // Inject the user's DID here
+        "type": ["AchievementSubject"],
+        "achievement": {
+            "type": ["Achievement"],
+            "name": "${credential ? (credential as Record<string, unknown>).name || 'Achievement Name' : 'Achievement Name'}",
+            "description": "Description of the achievement"
+        }
+    }
+};
+
+// 3. Issue the credential server-side (with your API key)
+// POST to your backend, which calls:
+//   const wallet = await initLearnCard({ seed: YOUR_SEED });
+//   const vc = await wallet.invoke.issueCredential(credential);
+
+// 4. Prompt user to claim the issued credential
+const result = await learnCard.sendCredential({ credential: issuedVC });
+
+if (result.success) {
+    console.log('Credential claimed!');
+}`;
+
+    const syncWalletCode = `// 1. Request consent for writing credentials
+const consentResult = await learnCard.requestConsent({
+    contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
+});
+
+if (!consentResult.accepted) {
+    console.log('User declined consent');
+    return;
+}
+
+// 2. Get the user's identity
+const identity = await learnCard.requestIdentity();
+const recipientDid = identity.did;
+
+// 3. Send credentials using the send() method
+// This uses your consent flow contract for seamless delivery
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: recipientDid,
+    templateUri: 'YOUR_BOOST_TEMPLATE_URI', // From Template Manager below
+    contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
+});
+
+console.log('Credential synced:', result);`;
+
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create Credential Templates</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Issue Credentials</h3>
 
                 <p className="text-gray-600">
-                    Create credential templates (Boosts) that your app can issue to users.
+                    Choose how you want to deliver credentials to users in your embedded app.
                 </p>
             </div>
 
-            {/* Show selected app */}
-            {selectedListing && (
-                <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-cyan-600" />
-                        <div>
-                            <p className="text-sm font-medium text-cyan-800">Creating templates for: {selectedListing.display_name}</p>
-                            <p className="text-xs text-cyan-600">You selected this app in Step 1</p>
+            {/* Mode Toggle */}
+            <div className="grid grid-cols-2 gap-3">
+                <button
+                    onClick={() => setMode('prompt-claim')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        mode === 'prompt-claim'
+                            ? 'border-cyan-500 bg-cyan-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                    <div className="flex items-center gap-2 mb-2">
+                        <Send className="w-5 h-5 text-cyan-600" />
+                        <span className="font-semibold text-gray-800">Prompt User to Claim</span>
+                    </div>
+
+                    <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• Good for issuing a few credentials</li>
+                        <li>• User accepts each one individually</li>
+                        <li>• Limited built-in tracking</li>
+                    </ul>
+                </button>
+
+                <button
+                    onClick={() => setMode('sync-wallet')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        mode === 'sync-wallet'
+                            ? 'border-violet-500 bg-violet-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                    <div className="flex items-center gap-2 mb-2">
+                        <RefreshCw className="w-5 h-5 text-violet-600" />
+                        <span className="font-semibold text-gray-800">Sync to Wallet</span>
+                    </div>
+
+                    <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• Good for any number of credentials</li>
+                        <li>• Seamless sync after consent</li>
+                        <li>• Full tracking and analytics</li>
+                    </ul>
+                </button>
+            </div>
+
+            {/* Prompt to Claim Mode */}
+            {mode === 'prompt-claim' && (
+                <div className="space-y-6">
+                    {/* Step 1: Build Credential */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                1
+                            </div>
+                            <h4 className="font-semibold text-gray-800">Build Your Credential</h4>
+                        </div>
+
+                        <div className="ml-10">
+                            {credential ? (
+                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                            <span className="font-medium text-emerald-800">
+                                                {(credential as Record<string, unknown>).name as string || 'Credential Ready'}
+                                            </span>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setShowCredentialBuilder(true)}
+                                            className="text-sm text-emerald-700 hover:text-emerald-800"
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowCredentialBuilder(true)}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-cyan-300 text-cyan-600 rounded-xl hover:bg-cyan-50 transition-colors"
+                                >
+                                    <Award className="w-5 h-5" />
+                                    Design Your Credential
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Step 2: Integration Code */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                2
+                            </div>
+                            <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                        </div>
+
+                        <div className="ml-10 space-y-3">
+                            <div className="relative">
+                                <pre className="p-4 pr-12 bg-gray-900 text-gray-100 rounded-xl text-xs overflow-x-auto max-h-80">
+                                    {promptClaimCode}
+                                </pre>
+
+                                <button
+                                    onClick={() => handleCopy(promptClaimCode, 'prompt-code')}
+                                    className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                                >
+                                    {copiedCode === 'prompt-code' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                            </div>
+
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                <p className="text-sm text-amber-800">
+                                    <strong>Important:</strong> Step 3 (issuing) must happen on your server with your API key to sign the credential properly.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Template Manager */}
-            {selectedListing ? (
-                <TemplateManager
-                    appListingId={selectedListing.listing_id}
-                    appName={selectedListing.display_name}
-                />
-            ) : (
-                <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
-                    <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
-                    <p className="text-amber-800">
-                        Please go back to Step 1 and select an app listing first.
-                    </p>
+            {/* Sync to Wallet Mode */}
+            {mode === 'sync-wallet' && (
+                <div className="space-y-6">
+                    {/* Step 1: Signing Authority */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                1
+                            </div>
+                            <h4 className="font-semibold text-gray-800">Signing Authority</h4>
+                        </div>
+
+                        <div className="ml-10">
+                            {(signingAuthorityLoading || !signingAuthorityFetched) ? (
+                                <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-xl">
+                                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                                    <span className="text-sm text-gray-500">Checking signing authority...</span>
+                                </div>
+                            ) : primarySA ? (
+                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                        <div>
+                                            <p className="font-medium text-emerald-800">Signing authority ready</p>
+                                            <p className="text-xs text-emerald-600">Using: {primarySA.name}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                        <p className="text-sm text-amber-800 mb-3">
+                                            A signing authority is needed to cryptographically sign credentials.
+                                        </p>
+
+                                        <button
+                                            onClick={createSigningAuthority}
+                                            disabled={signingAuthorityCreating}
+                                            className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                                        >
+                                            {signingAuthorityCreating ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Creating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Shield className="w-4 h-4" />
+                                                    Create Signing Authority
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Step 2: Consent Flow Contract */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                2
+                            </div>
+                            <h4 className="font-semibold text-gray-800">Consent Flow Contract</h4>
+                        </div>
+
+                        <div className="ml-10 space-y-3">
+                            <p className="text-sm text-gray-600">
+                                Create a consent contract that requests &apos;write&apos; permission to sync credentials to the user&apos;s wallet.
+                            </p>
+
+                            <ConsentFlowContractSelector
+                                value={contractUri}
+                                onChange={setContractUri}
+                            />
+
+                            {contractUri && (
+                                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                        <span className="text-sm text-emerald-800">Contract selected</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Step 3: Credential Templates */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                3
+                            </div>
+                            <h4 className="font-semibold text-gray-800">Credential Templates (Boosts)</h4>
+                        </div>
+
+                        <div className="ml-10">
+                            {selectedListing ? (
+                                <TemplateManager
+                                    appListingId={selectedListing.listing_id}
+                                    appName={selectedListing.display_name}
+                                />
+                            ) : (
+                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                    <p className="text-sm text-amber-800">
+                                        Select an app in Step 1 to create credential templates.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Step 4: Integration Code */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                4
+                            </div>
+                            <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                        </div>
+
+                        <div className="ml-10">
+                            <div className="relative">
+                                <pre className="p-4 pr-12 bg-gray-900 text-gray-100 rounded-xl text-xs overflow-x-auto max-h-80">
+                                    {syncWalletCode}
+                                </pre>
+
+                                <button
+                                    onClick={() => handleCopy(syncWalletCode, 'sync-code')}
+                                    className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                                >
+                                    {copiedCode === 'sync-code' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -2907,13 +3322,20 @@ const IssueCredentialsSetup: React.FC<{
 
                 <button
                     onClick={onComplete}
-                    disabled={!selectedListing}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
                     {isLastFeature ? 'See Your Code' : 'Next Feature'}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
+
+            {/* Credential Builder Modal */}
+            <OBv3CredentialBuilder
+                isOpen={showCredentialBuilder}
+                onClose={() => setShowCredentialBuilder(false)}
+                onSave={handleSaveCredential}
+                initialData={credential as Record<string, unknown> | undefined}
+            />
         </div>
     );
 };
