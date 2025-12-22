@@ -31,7 +31,7 @@ import { OBv3CredentialBuilder } from '../../../../components/credentials/OBv3Cr
 import type { GuideProps } from '../GuidePage';
 
 const STEPS = [
-    { id: 'publishable-key', title: 'Get API Key' },
+    { id: 'publishable-key', title: 'Get Publishable Key' },
     { id: 'add-target', title: 'Add HTML Target' },
     { id: 'load-sdk', title: 'Load SDK' },
     { id: 'configure', title: 'Configure' },
