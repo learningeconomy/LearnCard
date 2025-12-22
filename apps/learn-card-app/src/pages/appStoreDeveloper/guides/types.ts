@@ -15,6 +15,7 @@ export interface UseCaseConfig {
     color: string;
     bgColor: string;
     steps: GuideStep[];
+    comingSoon?: boolean;
 }
 
 export interface GuideStep {
@@ -75,6 +76,7 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         icon: 'check-circle',
         color: 'text-blue-600',
         bgColor: 'bg-blue-100',
+        comingSoon: true,
     },
     'server-webhooks': {
         id: 'server-webhooks',
@@ -84,5 +86,6 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         icon: 'webhook',
         color: 'text-orange-600',
         bgColor: 'bg-orange-100',
+        comingSoon: true,
     },
 };

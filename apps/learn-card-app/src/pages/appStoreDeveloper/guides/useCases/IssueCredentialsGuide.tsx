@@ -1319,7 +1319,7 @@ const IssueVerifyStep: React.FC<{
             </div>
 
             {/* Verification tool */}
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
+            {/* <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                     <h4 className="font-medium text-gray-800">Test Verification</h4>
 
@@ -1369,7 +1369,7 @@ const IssueVerifyStep: React.FC<{
                         </div>
                     )}
                 </div>
-            </div>
+            </div> */}
 
             {/* Navigation */}
             <div className="flex gap-3">

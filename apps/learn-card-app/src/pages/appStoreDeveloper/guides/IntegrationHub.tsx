@@ -38,6 +38,7 @@ interface UseCaseCardProps {
     icon: string;
     color: string;
     bgColor: string;
+    comingSoon?: boolean;
     onClick: () => void;
 }
 
@@ -48,9 +49,32 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
     icon,
     color,
     bgColor,
+    comingSoon,
     onClick,
 }) => {
     const IconComponent = ICON_MAP[icon] || Award;
+
+    if (comingSoon) {
+        return (
+            <div className="flex flex-col p-6 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl opacity-70">
+                <div className="flex items-start justify-between mb-4">
+                    <div className={`w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center`}>
+                        <IconComponent className="w-6 h-6 text-gray-400" />
+                    </div>
+
+                    <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-medium">
+                        Coming Soon
+                    </span>
+                </div>
+
+                <h3 className="text-lg font-semibold text-gray-500 mb-1">{title}</h3>
+
+                <p className="text-sm text-gray-400 mb-3">{subtitle}</p>
+
+                <p className="text-sm text-gray-400 flex-1">{description}</p>
+            </div>
+        );
+    }
 
     return (
         <button
