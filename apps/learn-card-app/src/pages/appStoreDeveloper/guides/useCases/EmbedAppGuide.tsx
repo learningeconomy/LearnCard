@@ -259,7 +259,7 @@ const FEATURES: Feature[] = [
         description: 'Award badges, certificates, or achievements to your users when they complete actions in your app.',
         icon: <Award className="w-6 h-6" />,
         requiresSetup: true,
-        setupDescription: 'Create Boost Templates',
+        setupDescription: 'Create Templates, Consent Flow',
         color: 'cyan',
     },
     {
@@ -291,10 +291,10 @@ const FEATURES: Feature[] = [
     {
         id: 'request-credentials',
         title: 'Request Credentials',
-        description: 'Ask users to share specific credentials with your app for verification.',
+        description: 'Ask users to share credentials with your app for verification or gated access.',
         icon: <FileSearch className="w-6 h-6" />,
         requiresSetup: true,
-        setupDescription: 'Define Presentation Request',
+        setupDescription: 'Configure Search Query',
         color: 'amber',
     },
 ];
@@ -1228,11 +1228,15 @@ interface BoostTemplate {
     createdAt?: string;
 }
 
-// Template Manager Component for initiateTemplateIssue
+// Template Manager Component - supports both initiateTemplateIssue and send() styles
+type TemplateCodeStyle = 'initiateTemplateIssue' | 'send';
+
 const TemplateManager: React.FC<{
     appListingId?: string;
     appName?: string;
-}> = ({ appListingId, appName }) => {
+    codeStyle?: TemplateCodeStyle;
+    contractUri?: string;
+}> = ({ appListingId, appName, codeStyle = 'initiateTemplateIssue', contractUri }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
@@ -1387,8 +1391,22 @@ const TemplateManager: React.FC<{
         setTimeout(() => setCopiedUri(null), 2000);
     };
 
-    // Generate code example for a template
-    const getCodeExample = (uri: string) => `// Issue from your template
+    // Generate code example for a template based on code style
+    const getCodeExample = (uri: string) => {
+        if (codeStyle === 'send') {
+            return `// Send credential to user's wallet (after consent)
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: recipientDid, // From requestIdentity()
+    templateUri: '${uri}',
+    contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
+});
+
+console.log('Credential synced:', result);`;
+        }
+
+        // Default: initiateTemplateIssue style
+        return `// Issue from your template
 const result = await learnCard.initiateTemplateIssue({
     templateUri: '${uri}'
 });
@@ -1396,6 +1414,7 @@ const result = await learnCard.initiateTemplateIssue({
 if (result.success) {
     console.log('Credential issued to user!');
 }`;
+    };
 
     // Generate JSON summary of all templates
     const getJsonSummary = () => JSON.stringify(
@@ -2782,35 +2801,13 @@ const FeatureSetupStep: React.FC<{
 
             case 'request-credentials':
                 return (
-                    <div className="space-y-6">
-                        <div>
-                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Request Credentials</h3>
-
-                            <p className="text-gray-600">
-                                Define what credentials you want to request from users. Coming soon!
-                            </p>
-                        </div>
-
-                        <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
-                            <FileSearch className="w-8 h-8 text-amber-500 mx-auto mb-3" />
-
-                            <p className="text-amber-800">
-                                This feature setup is coming soon. For now, you can skip this step.
-                            </p>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button onClick={handleFeatureBack} className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
-                                <ArrowLeft className="w-4 h-4" />
-                                Back
-                            </button>
-
-                            <button onClick={handleFeatureComplete} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors">
-                                {isLastFeature ? 'See Your Code' : 'Next Feature'}
-                                <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
+                    <RequestCredentialsSetup
+                        onComplete={handleFeatureComplete}
+                        onBack={handleFeatureBack}
+                        isLastFeature={isLastFeature}
+                        featureSetupState={featureSetupState}
+                        setFeatureSetupState={setFeatureSetupState}
+                    />
                 );
 
             default:
@@ -3272,6 +3269,8 @@ console.log('Credential synced:', result);`;
                                 <TemplateManager
                                     appListingId={selectedListing.listing_id}
                                     appName={selectedListing.display_name}
+                                    codeStyle="send"
+                                    contractUri={contractUri}
                                 />
                             ) : (
                                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
@@ -3336,6 +3335,339 @@ console.log('Credential synced:', result);`;
                 onSave={handleSaveCredential}
                 initialData={credential as Record<string, unknown> | undefined}
             />
+        </div>
+    );
+};
+
+// Request Credentials Setup - Two modes: Query vs Specific
+type RequestMode = 'query' | 'specific';
+
+const RequestCredentialsSetup: React.FC<{
+    onComplete: () => void;
+    onBack: () => void;
+    isLastFeature: boolean;
+    featureSetupState: Record<string, Record<string, unknown>>;
+    setFeatureSetupState: (state: Record<string, Record<string, unknown>>) => void;
+}> = ({ onComplete, onBack, isLastFeature, featureSetupState, setFeatureSetupState }) => {
+    // Get saved state
+    const savedState = featureSetupState['request-credentials'] || {};
+    const [mode, setMode] = useState<RequestMode>((savedState.mode as RequestMode) || 'query');
+    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+    // Query mode state
+    const [queryTitle, setQueryTitle] = useState<string>((savedState.queryTitle as string) || '');
+    const [queryReason, setQueryReason] = useState<string>((savedState.queryReason as string) || '');
+
+    // Save state when it changes
+    useEffect(() => {
+        setFeatureSetupState({
+            ...featureSetupState,
+            'request-credentials': {
+                mode,
+                queryTitle,
+                queryReason,
+            },
+        });
+    }, [mode, queryTitle, queryReason]);
+
+    const handleCopy = async (code: string, id: string) => {
+        await navigator.clipboard.writeText(code);
+        setCopiedCode(id);
+        setTimeout(() => setCopiedCode(null), 2000);
+    };
+
+    // Code for Query mode
+    const queryCode = `// Search for credentials matching your criteria
+const response = await learnCard.askCredentialSearch({
+    query: [
+        {
+            type: 'QueryByTitle',
+            credentialQuery: {
+                reason: "${queryReason || 'Please share your credential for verification'}",
+                title: "${queryTitle || 'Certificate'}"
+            }
+        }
+    ],
+    challenge: \`challenge-\${Date.now()}-\${Math.random().toString(36).substring(2, 9)}\`,
+    domain: window.location.hostname
+});
+
+if (response?.verifiablePresentation) {
+    // User shared credentials in a signed Verifiable Presentation
+    const vp = response.verifiablePresentation;
+    const credentials = vp.verifiableCredential || [];
+
+    console.log(\`User shared \${credentials.length} credential(s)\`);
+
+    // Process each credential
+    for (const credential of credentials) {
+        console.log('Credential:', credential.name);
+        // Verify and use the credential
+    }
+} else {
+    console.log('User declined to share credentials');
+}`;
+
+    // Code for Specific mode
+    const specificCode = `// Request a specific credential by its ID
+// You would typically store the credential ID from a previous interaction
+const credentialId = 'urn:credential:abc123'; // The ID you stored earlier
+
+try {
+    const response = await learnCard.askCredentialSpecific(credentialId);
+
+    if (response.credential) {
+        console.log('Received credential:', response.credential);
+
+        // The credential is now available for verification
+        const credType = response.credential.type?.join(', ') || 'Unknown';
+        console.log('Credential type:', credType);
+    } else {
+        console.log('Credential not returned');
+    }
+} catch (error) {
+    if (error.code === 'CREDENTIAL_NOT_FOUND') {
+        console.log('Credential not found in user wallet');
+    } else if (error.code === 'USER_REJECTED') {
+        console.log('User declined to share');
+    } else {
+        console.error('Error:', error.message);
+    }
+}`;
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Request Credentials</h3>
+
+                <p className="text-gray-600">
+                    Choose how you want to request credentials from users in your app.
+                </p>
+            </div>
+
+            {/* Mode Toggle */}
+            <div className="grid grid-cols-2 gap-3">
+                <button
+                    onClick={() => setMode('query')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        mode === 'query'
+                            ? 'border-amber-500 bg-amber-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                    <div className="flex items-center gap-2 mb-2">
+                        <FileSearch className="w-5 h-5 text-amber-600" />
+                        <span className="font-semibold text-gray-800">Search Credentials</span>
+                    </div>
+
+                    <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• Find by title or type</li>
+                        <li>• User chooses which to share</li>
+                        <li>• Returns multiple matches</li>
+                    </ul>
+                </button>
+
+                <button
+                    onClick={() => setMode('specific')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        mode === 'specific'
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                    <div className="flex items-center gap-2 mb-2">
+                        <Key className="w-5 h-5 text-orange-600" />
+                        <span className="font-semibold text-gray-800">Request by ID</span>
+                    </div>
+
+                    <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• Request exact credential</li>
+                        <li>• User accepts or declines</li>
+                        <li>• Returns single credential</li>
+                    </ul>
+                </button>
+            </div>
+
+            {/* Query Mode */}
+            {mode === 'query' && (
+                <div className="space-y-6">
+                    {/* Step 1: Configure Search */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                1
+                            </div>
+                            <h4 className="font-semibold text-gray-800">Configure Your Search</h4>
+                        </div>
+
+                        <div className="ml-10 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    What credential are you looking for?
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={queryTitle}
+                                    onChange={(e) => setQueryTitle(e.target.value)}
+                                    placeholder="e.g., Certificate, Badge, Diploma"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                />
+
+                                <p className="text-xs text-gray-500 mt-1">
+                                    This searches credential titles for matches
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Why do you need it? (shown to user)
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={queryReason}
+                                    onChange={(e) => setQueryReason(e.target.value)}
+                                    placeholder="e.g., To verify your qualifications for this role"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                />
+
+                                <p className="text-xs text-gray-500 mt-1">
+                                    A clear reason builds trust and improves sharing rates
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Step 2: Integration Code */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                2
+                            </div>
+                            <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                        </div>
+
+                        <div className="ml-10">
+                            <div className="relative">
+                                <pre className="p-4 pr-12 bg-gray-900 text-gray-100 rounded-xl text-xs overflow-x-auto max-h-80">
+                                    {queryCode}
+                                </pre>
+
+                                <button
+                                    onClick={() => handleCopy(queryCode, 'query-code')}
+                                    className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                                >
+                                    {copiedCode === 'query-code' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* How it works */}
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <h4 className="font-medium text-amber-800 mb-2">How it works</h4>
+
+                        <ol className="text-sm text-amber-700 space-y-1">
+                            <li><strong>1.</strong> Your app requests credentials matching the title</li>
+                            <li><strong>2.</strong> User sees which credentials match and selects which to share</li>
+                            <li><strong>3.</strong> You receive a signed Verifiable Presentation with the credentials</li>
+                            <li><strong>4.</strong> Verify the presentation to confirm authenticity</li>
+                        </ol>
+                    </div>
+                </div>
+            )}
+
+            {/* Specific Mode */}
+            {mode === 'specific' && (
+                <div className="space-y-6">
+                    {/* Explanation */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-orange-100 text-orange-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                1
+                            </div>
+                            <h4 className="font-semibold text-gray-800">How to Use</h4>
+                        </div>
+
+                        <div className="ml-10 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                            <p className="text-sm text-gray-700 mb-3">
+                                Request a specific credential when you already know its ID from a previous interaction:
+                            </p>
+
+                            <ul className="text-sm text-gray-600 space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <span className="font-medium text-orange-600">•</span>
+                                    <span><strong>Re-verification:</strong> Ask for the same credential again</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="font-medium text-orange-600">•</span>
+                                    <span><strong>Saved reference:</strong> You stored the ID when they first shared it</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="font-medium text-orange-600">•</span>
+                                    <span><strong>Deep linking:</strong> They clicked a link with a specific credential</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Integration Code */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 bg-orange-100 text-orange-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                2
+                            </div>
+                            <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                        </div>
+
+                        <div className="ml-10">
+                            <div className="relative">
+                                <pre className="p-4 pr-12 bg-gray-900 text-gray-100 rounded-xl text-xs overflow-x-auto max-h-80">
+                                    {specificCode}
+                                </pre>
+
+                                <button
+                                    onClick={() => handleCopy(specificCode, 'specific-code')}
+                                    className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
+                                >
+                                    {copiedCode === 'specific-code' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tips */}
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                        <h4 className="font-medium text-orange-800 mb-2">Tips</h4>
+
+                        <ul className="text-sm text-orange-700 space-y-1">
+                            <li>• Store credential IDs securely when users first share them</li>
+                            <li>• Handle the case where the user no longer has the credential</li>
+                            <li>• Provide a fallback to search if the specific credential isn&apos;t available</li>
+                        </ul>
+                    </div>
+                </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                >
+                    {isLastFeature ? 'See Your Code' : 'Next Feature'}
+                    <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
         </div>
     );
 };
