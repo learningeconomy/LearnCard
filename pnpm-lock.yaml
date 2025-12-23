@@ -2379,9 +2379,21 @@ importers:
 
   packages/plugins/lca-api-plugin:
     dependencies:
+      '@learncard/core':
+        specifier: workspace:*
+        version: link:../../learn-card-core
+      '@learncard/didkit-plugin':
+        specifier: workspace:*
+        version: link:../didkit
+      '@learncard/init':
+        specifier: workspace:*
+        version: link:../../learn-card-init
       '@learncard/lca-api-client':
         specifier: workspace:*
         version: link:../../lca-api-client
+      '@learncard/types':
+        specifier: workspace:*
+        version: link:../../learn-card-types
       hex-lite:
         specifier: ^1.5.0
         version: 1.5.0
