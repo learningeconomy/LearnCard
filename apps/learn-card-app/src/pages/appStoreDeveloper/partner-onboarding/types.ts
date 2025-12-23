@@ -1,3 +1,11 @@
+export interface OrganizationProfile {
+    did: string;
+    profileId: string;
+    displayName: string;
+    image?: string;
+    isServiceProfile: boolean;
+}
+
 export interface PartnerProject {
     id: string;
     name: string;
@@ -46,6 +54,7 @@ export type IntegrationMethod = 'webhook' | 'api' | 'csv';
 
 export interface PartnerOnboardingState {
     currentStep: number;
+    organization: OrganizationProfile | null;
     project: PartnerProject | null;
     branding: BrandingConfig | null;
     templates: CredentialTemplate[];
@@ -56,6 +65,7 @@ export interface PartnerOnboardingState {
 }
 
 export const ONBOARDING_STEPS = [
+    { id: 'organization', title: 'Organization', description: 'Select or create your organization account' },
     { id: 'project-setup', title: 'Project Setup', description: 'Create your project and get credentials' },
     { id: 'branding', title: 'Branding', description: 'Customize your credential appearance' },
     { id: 'templates', title: 'Templates', description: 'Define your credential schemas' },
@@ -69,6 +79,7 @@ export type OnboardingStepId = typeof ONBOARDING_STEPS[number]['id'];
 
 export const DEFAULT_ONBOARDING_STATE: PartnerOnboardingState = {
     currentStep: 0,
+    organization: null,
     project: null,
     branding: null,
     templates: [],

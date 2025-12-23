@@ -7,6 +7,7 @@ import {
     Loader2,
     Shield,
     ArrowRight,
+    ArrowLeft,
     Eye,
     EyeOff,
     RefreshCw,
@@ -16,10 +17,12 @@ import { useWallet } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { PartnerProject } from '../types';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
 
 interface ProjectSetupStepProps {
     project: PartnerProject | null;
     onComplete: (project: PartnerProject) => void;
+    onBack?: () => void;
 }
 
 type AuthGrant = {
@@ -32,11 +35,12 @@ type AuthGrant = {
     description?: string;
 };
 
-export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onComplete }) => {
+export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onComplete, onBack }) => {
     const { initWallet } = useWallet();
+    const { useCreateIntegration } = useDeveloperPortal();
+    const createIntegrationMutation = useCreateIntegration();
 
     const [projectName, setProjectName] = useState(project?.name || '');
-    const [isCreating, setIsCreating] = useState(false);
     const [createdProject, setCreatedProject] = useState<PartnerProject | null>(project);
 
     const [did, setDid] = useState<string>('');
@@ -74,11 +78,12 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onC
     const handleCreateProject = async () => {
         if (!projectName.trim()) return;
 
-        setIsCreating(true);
         try {
-            // Simulate project creation (in real implementation, this would call an API)
+            // Create a real integration using the API
+            const integrationId = await createIntegrationMutation.mutateAsync(projectName.trim());
+
             const newProject: PartnerProject = {
-                id: `proj_${Date.now()}`,
+                id: integrationId,
                 name: projectName.trim(),
                 did,
                 createdAt: new Date().toISOString(),
@@ -87,10 +92,10 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onC
             setCreatedProject(newProject);
         } catch (err) {
             console.error('Failed to create project:', err);
-        } finally {
-            setIsCreating(false);
         }
     };
+
+    const isCreating = createIntegrationMutation.isPending;
 
     const handleSelectGrant = async (grantId: string) => {
         try {
@@ -334,12 +339,22 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onC
                 </div>
             )}
 
-            {/* Continue Button */}
-            <div className="pt-4 border-t border-gray-100">
+            {/* Navigation */}
+            <div className="flex gap-3 pt-4 border-t border-gray-100">
+                {onBack && (
+                    <button
+                        onClick={onBack}
+                        className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                    </button>
+                )}
+
                 <button
                     onClick={() => canProceed && onComplete({ ...createdProject!, apiKey: apiToken })}
                     disabled={!canProceed}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     Continue to Branding
                     <ArrowRight className="w-4 h-4" />

@@ -1,3 +1,4 @@
+export { OrganizationSetupStep } from './OrganizationSetupStep';
 export { ProjectSetupStep } from './ProjectSetupStep';
 export { BrandingStep } from './BrandingStep';
 export { TemplateBuilderStep } from './TemplateBuilderStep';
