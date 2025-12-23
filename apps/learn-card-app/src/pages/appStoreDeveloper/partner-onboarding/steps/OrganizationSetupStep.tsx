@@ -89,12 +89,15 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: profiles, isLoading: profilesLoading } = useGetAvailableProfiles();
-    const { handleSwitchAccount, isSwitching } = useSwitchProfile();
+    const { handleSwitchAccount, handleSwitchBackToParentAccount, isSwitching } = useSwitchProfile();
+
+    const isSwitchedProfile = switchedProfileStore?.use?.isSwitchedProfile();
+    const parentUser = currentUserStore.get.parentUser();
+    const parentUserDid = currentUserStore.get.parentUserDid();
+    const isCurrentUserServiceProfile = currentLCNUser?.isServiceProfile;
 
     const { mutateAsync: createBoost } = useCreateBoost();
     const { mutateAsync: addCredentialToWallet } = useAddCredentialToWallet();
-
-    const isSwitchedProfile = switchedProfileStore?.get?.isSwitchedProfile();
 
     const [mode, setMode] = useState<SetupMode>('select');
     const [selectedProfile, setSelectedProfile] = useState<OrganizationProfile | null>(organization);
@@ -218,6 +221,23 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
         };
 
         setSelectedProfile(orgProfile);
+    };
+
+    const handleUseParentAccount = async () => {
+        if (!parentUser || !parentUserDid) return;
+
+        const parentProfile: OrganizationProfile = {
+            did: parentUserDid,
+            profileId: (parentUser as any).profileId ?? parentUser.name ?? '',
+            displayName: parentUser.name ?? 'Personal Account',
+            image: parentUser.profileImage,
+            isServiceProfile: false,
+        };
+
+        setSelectedProfile(parentProfile);
+
+        // Switch back to the parent account
+        await handleSwitchBackToParentAccount();
     };
 
     const createManagedServiceProfile = async () => {
@@ -429,9 +449,18 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                             />
 
                             <div className="flex-1 text-left">
-                                <p className="font-medium text-gray-800">
-                                    {currentLCNUser?.displayName}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <p className="font-medium text-gray-800">
+                                        {currentLCNUser?.displayName}
+                                    </p>
+
+                                    {isCurrentUserServiceProfile && (
+                                        <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
+                                            Organization
+                                        </span>
+                                    )}
+                                </div>
+
                                 <p className="text-sm text-gray-500">@{currentLCNUser?.profileId}</p>
                             </div>
 
@@ -442,6 +471,50 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                             )}
                         </button>
                     </div>
+
+                    {/* Root Personal Account Option (when on a service profile) */}
+                    {isCurrentUserServiceProfile && isSwitchedProfile && parentUser && (
+                        <div className="space-y-4">
+                            <h3 className="font-medium text-gray-800">Or Use Personal Account</h3>
+
+                            <button
+                                onClick={handleUseParentAccount}
+                                disabled={isSwitching}
+                                className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                                    selectedProfile?.did === parentUserDid
+                                        ? 'border-cyan-500 bg-cyan-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                            >
+                                <UserProfilePicture
+                                    user={{ image: parentUser.profileImage, displayName: parentUser.name }}
+                                    customContainerClass="w-12 h-12 rounded-full overflow-hidden"
+                                />
+
+                                <div className="flex-1 text-left">
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-medium text-gray-800">
+                                            {parentUser.name ?? 'Personal Account'}
+                                        </p>
+
+                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+                                            Personal
+                                        </span>
+                                    </div>
+
+                                    <p className="text-sm text-gray-500">Your root personal account</p>
+                                </div>
+
+                                {isSwitching && selectedProfile?.did === parentUserDid ? (
+                                    <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
+                                ) : selectedProfile?.did === parentUserDid ? (
+                                    <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                                        <Check className="w-4 h-4 text-white" />
+                                    </div>
+                                ) : null}
+                            </button>
+                        </div>
+                    )}
 
                     {/* Existing Organization Accounts */}
                     {serviceProfiles.length > 0 && (

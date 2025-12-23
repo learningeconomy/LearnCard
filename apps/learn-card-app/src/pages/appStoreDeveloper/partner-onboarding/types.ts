@@ -14,12 +14,26 @@ export interface PartnerProject {
     createdAt: string;
 }
 
+export interface ProfileDisplay {
+    backgroundColor?: string;
+    backgroundImage?: string;
+    fadeBackgroundImage?: boolean;
+    repeatBackgroundImage?: boolean;
+    fontColor?: string;
+    accentColor?: string;
+    accentFontColor?: string;
+    idBackgroundImage?: string;
+    fadeIdBackgroundImage?: boolean;
+    idBackgroundColor?: string;
+    repeatIdBackgroundImage?: boolean;
+}
+
 export interface BrandingConfig {
-    logoUrl: string;
-    primaryColor: string;
-    secondaryColor: string;
-    issuerName: string;
-    issuerDescription: string;
+    displayName: string;
+    image: string;
+    shortBio: string;
+    bio: string;
+    display: ProfileDisplay;
 }
 
 export interface CredentialField {

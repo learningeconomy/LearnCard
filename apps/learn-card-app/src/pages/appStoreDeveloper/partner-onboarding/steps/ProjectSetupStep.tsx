@@ -37,11 +37,13 @@ type AuthGrant = {
 
 export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onComplete, onBack }) => {
     const { initWallet } = useWallet();
-    const { useCreateIntegration } = useDeveloperPortal();
+    const { useIntegrations, useCreateIntegration } = useDeveloperPortal();
+    const { data: existingIntegrations, isLoading: integrationsLoading } = useIntegrations();
     const createIntegrationMutation = useCreateIntegration();
 
     const [projectName, setProjectName] = useState(project?.name || '');
     const [createdProject, setCreatedProject] = useState<PartnerProject | null>(project);
+    const [showCreateNew, setShowCreateNew] = useState(false);
 
     const [did, setDid] = useState<string>('');
     const [apiToken, setApiToken] = useState<string>('');
@@ -75,6 +77,19 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onC
         fetchData();
     }, []);
 
+    const handleSelectExistingIntegration = (integration: { id: string; name: string; createdAt?: string }) => {
+        const selectedProject: PartnerProject = {
+            id: integration.id,
+            name: integration.name,
+            did,
+            createdAt: integration.createdAt || new Date().toISOString(),
+        };
+
+        setCreatedProject(selectedProject);
+        setProjectName(integration.name);
+        setShowCreateNew(false);
+    };
+
     const handleCreateProject = async () => {
         if (!projectName.trim()) return;
 
@@ -90,6 +105,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onC
             };
 
             setCreatedProject(newProject);
+            setShowCreateNew(false);
         } catch (err) {
             console.error('Failed to create project:', err);
         }
@@ -112,12 +128,14 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onC
         setIsCreatingGrant(true);
         try {
             const wallet = await initWallet();
-            const grantName = `${projectName} API Key`;
+            const grantName = createdProject?.name 
+                ? `${createdProject.name} API Key` 
+                : `${projectName || 'Partner'} API Key`;
             
-            await wallet.invoke.createAuthGrant({
+            await wallet.invoke.addAuthGrant({
                 name: grantName,
-                description: `API key for ${projectName} partner integration`,
-                scope: 'full',
+                description: `API key for ${createdProject?.name || projectName || 'partner'} integration`,
+                scope: '*:*',
             });
 
             // Refresh grants list
@@ -153,7 +171,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onC
 
     return (
         <div className="space-y-6">
-            {/* Project Name */}
+            {/* Project Selection / Creation */}
             <div className="space-y-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
@@ -161,43 +179,141 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({ project, onC
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">Project Name</h3>
-                        <p className="text-sm text-gray-500">What should we call this integration?</p>
+                        <h3 className="font-semibold text-gray-800">Select or Create Project</h3>
+                        <p className="text-sm text-gray-500">Choose an existing integration or create a new one</p>
                     </div>
                 </div>
 
-                <div className="flex gap-3">
-                    <input
-                        type="text"
-                        value={projectName}
-                        onChange={(e) => setProjectName(e.target.value)}
-                        placeholder="e.g., AARP Skills Builder"
-                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
-                        disabled={!!createdProject}
-                    />
+                {/* Loading state */}
+                {integrationsLoading && (
+                    <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-xl text-gray-500">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading existing projects...
+                    </div>
+                )}
 
-                    {!createdProject ? (
-                        <button
-                            onClick={handleCreateProject}
-                            disabled={!projectName.trim() || isCreating}
-                            className="px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                            {isCreating ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Creating...
-                                </>
-                            ) : (
-                                'Create Project'
-                            )}
-                        </button>
-                    ) : (
-                        <div className="px-4 py-3 bg-emerald-50 text-emerald-600 rounded-xl font-medium flex items-center gap-2">
-                            <Check className="w-4 h-4" />
-                            Created
+                {/* Existing Integrations */}
+                {!integrationsLoading && existingIntegrations && existingIntegrations.length > 0 && !showCreateNew && (
+                    <div className="space-y-3">
+                        <p className="text-sm font-medium text-gray-600">Existing Projects</p>
+
+                        <div className="space-y-2">
+                            {existingIntegrations.map((integration) => (
+                                <button
+                                    key={integration.id}
+                                    onClick={() => handleSelectExistingIntegration(integration)}
+                                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+                                        createdProject?.id === integration.id
+                                            ? 'border-cyan-500 bg-cyan-50'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <Building2 className="w-5 h-5 text-gray-600" />
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <p className="font-medium text-gray-800">{integration.name}</p>
+                                        <p className="text-sm text-gray-500">ID: {integration.id.slice(0, 12)}...</p>
+                                    </div>
+
+                                    {createdProject?.id === integration.id && (
+                                        <div className="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                                            <Check className="w-4 h-4 text-white" />
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
                         </div>
-                    )}
-                </div>
+
+                        <div className="relative py-2">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-200" />
+                            </div>
+
+                            <div className="relative flex justify-center">
+                                <span className="px-2 bg-white text-xs text-gray-500">or</span>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setShowCreateNew(true);
+                                setCreatedProject(null);
+                                setProjectName('');
+                            }}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors"
+                        >
+                            <Building2 className="w-4 h-4" />
+                            Create New Project
+                        </button>
+                    </div>
+                )}
+
+                {/* Create New Project Form */}
+                {(!existingIntegrations || existingIntegrations.length === 0 || showCreateNew) && !createdProject && (
+                    <div className="space-y-3">
+                        {showCreateNew && existingIntegrations && existingIntegrations.length > 0 && (
+                            <button
+                                onClick={() => setShowCreateNew(false)}
+                                className="text-sm text-gray-500 hover:text-gray-700"
+                            >
+                                ← Back to existing projects
+                            </button>
+                        )}
+
+                        <div className="flex gap-3">
+                            <input
+                                type="text"
+                                value={projectName}
+                                onChange={(e) => setProjectName(e.target.value)}
+                                placeholder="e.g., AARP Skills Builder"
+                                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                            />
+
+                            <button
+                                onClick={handleCreateProject}
+                                disabled={!projectName.trim() || isCreating}
+                                className="px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {isCreating ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    'Create Project'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Selected Project Display */}
+                {createdProject && !showCreateNew && (
+                    <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                            <Check className="w-5 h-5 text-emerald-600" />
+                        </div>
+
+                        <div className="flex-1">
+                            <p className="font-medium text-emerald-800">{createdProject.name}</p>
+                            <p className="text-sm text-emerald-600">Project selected</p>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setCreatedProject(null);
+                                setProjectName('');
+                                setApiToken('');
+                                setSelectedGrantId(null);
+                            }}
+                            className="text-sm text-emerald-600 hover:text-emerald-800"
+                        >
+                            Change
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* DID Display */}
