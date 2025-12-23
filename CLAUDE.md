@@ -268,3 +268,122 @@ Plugins are merged into the LearnCard via `addPlugin`, which rebuilds the wallet
 6. **Test** the new route in `tests/e2e` using the top-level script: `pnpm test:e2e`.
 
 These steps ensure types flow consistently from definition to testing and help avoid stale builds by relying on Nx-managed scripts.
+
+## Partner Connect SDK Architecture
+
+The `@learncard/partner-connect` SDK enables secure cross-origin communication between partner applications and the LearnCard host application via a clean Promise-based API.
+
+### Core Architecture
+
+#### Security Model
+- **Multi-layered Origin Validation**: Strict origin matching with configurable whitelists
+- **Protocol Verification**: Messages must match expected protocol version
+- **Request ID Tracking**: Only tracked requests are processed to prevent replay attacks
+- **No Wildcard Origins**: Never uses `'*'` as target origin for security
+
+#### Message Lifecycle Management
+1. **Request Generation**: Unique ID generation with collision prevention
+2. **Message Queue**: Map-based tracking of pending requests with timeouts
+3. **Central Listener**: Single event handler for all message types with origin validation
+4. **Promise Resolution**: Automatic cleanup and response handling
+
+#### Configuration Hierarchy
+1. **Default**: `https://learncard.app` (security anchor)
+2. **Query Parameter Override**: `?lc_host_override=https://staging.learncard.app`
+3. **Configured Origin**: From `hostOrigin` option in SDK initialization
+
+### Key Components
+
+#### PartnerConnect Class (`packages/learn-card-partner-connect-sdk/src/index.ts`)
+- **Factory Function**: `createPartnerConnect()` for clean initialization
+- **Request Management**: Handles timeout, cleanup, and error states
+- **Security Enforcement**: Multi-layer origin validation
+- **Browser Compatibility**: SSR-safe with proper cleanup
+
+#### Type System (`packages/learn-card-partner-connect-sdk/src/types.ts`)
+- **Comprehensive TypeScript**: Full type coverage for all APIs
+- **Structured Errors**: Specific error codes for different failure scenarios
+- **Message Protocols**: Internal postMessage format definitions
+- **Browser Types**: Uses browser-native types (not Node.js) for compatibility
+
+### Example App Architecture
+
+Partner Connect example apps follow a consistent pattern:
+
+#### Frontend Architecture
+- **Framework**: Astro for simple static hosting compatibility
+- **SDK Integration**: Partner Connect SDK for host communication
+- **UI Framework**: Tailwind CSS for rapid development
+- **State Management**: Simple vanilla JavaScript state management
+
+#### Backend Architecture
+- **Actions**: Astro actions using `@learncard/init` for credential operations
+- **Environment Variables**: Secure storage of issuer seeds and configuration
+- **Validation**: Zod schemas for input validation
+- **Error Handling**: Structured error responses
+
+#### Security Patterns
+- **Frontend**: Never expose private keys, validate user input
+- **Backend**: Environment-based secrets, proper error handling
+- **Communication**: Secure postMessage with origin validation
+
+### Integration Patterns
+
+#### Authentication Flow
+1. Partner app calls `requestIdentity()`
+2. User authenticates in LearnCard host
+3. Host returns JWT token and user DID
+4. Partner app validates token with backend
+
+#### Credential Flow
+1. Partner backend issues credential using `@learncard/init`
+2. Partner frontend calls `sendCredential()` with issued credential
+3. Host adds credential to user's wallet
+4. Success response with credential ID
+
+#### Feature Launch Flow
+1. Partner app calls `launchFeature()` with path and optional prompt
+2. Host navigates to specified feature
+3. Optional data passed for feature initialization
+
+### Development Guidelines for AI Assistants
+
+#### When Working with Partner Connect SDK
+
+**Add New SDK Methods:**
+1. Define types in `src/types.ts`
+2. Implement method in `PartnerConnect` class
+3. Add JSDoc documentation with examples
+4. Test with example applications
+
+**Security Considerations:**
+- Never bypass origin validation
+- Always use structured error types
+- Validate query parameter overrides
+- Test with different deployment scenarios
+
+**Common Patterns:**
+- Use `sendMessage()` for all host communication
+- Implement proper cleanup in error cases
+- Follow browser compatibility guidelines (avoid Node.js types)
+- Use environment variables for sensitive configuration
+
+#### When Working with Example Apps
+
+**Creating New Example Apps:**
+1. Follow existing directory structure in `examples/app-store-apps/`
+2. Use Astro + Tailwind + Partner Connect SDK stack
+3. Implement proper error handling and user feedback
+4. Include environment configuration and README
+
+**Backend Integration:**
+- Use `@learncard/init` for credential operations
+- Store issuer seeds in environment variables only
+- Validate inputs with Zod schemas
+- Handle network-related errors gracefully
+
+**Testing and Deployment:**
+- Test with staging and production LearnCard hosts
+- Verify origin validation works correctly
+- Test error scenarios (timeouts, user rejection, network issues)
+- Ensure proper cleanup on component unmount
