@@ -21,6 +21,50 @@ import {
     VerifyBoostPlugin,
     TrustedBoostRegistryEntry,
 } from './types';
+
+/**
+ * Escapes a string value for safe inclusion in a JSON string.
+ */
+const escapeJsonStringValue = (value: unknown): string => {
+    if (value === null || value === undefined) return '';
+
+    return String(value)
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/\t/g, '\\t')
+        .replace(/\f/g, '\\f')
+        .replace(/[\b]/g, '\\b');
+};
+
+/**
+ * Prepares templateData for safe JSON rendering by escaping string values.
+ */
+const prepareTemplateData = (
+    templateData: Record<string, unknown>
+): Record<string, string> => {
+    const prepared: Record<string, string> = {};
+
+    for (const [key, value] of Object.entries(templateData)) {
+        prepared[key] = escapeJsonStringValue(value);
+    }
+
+    return prepared;
+};
+
+/**
+ * Renders a Mustache template with JSON-safe escaping.
+ */
+const renderTemplateJson = (
+    jsonString: string,
+    templateData: Record<string, unknown>
+): string => {
+    const preparedData = prepareTemplateData(templateData);
+    const unescapedTemplate = jsonString.replace(/\{\{([^{}]+)\}\}/g, '{{{$1}}}');
+
+    return Mustache.render(unescapedTemplate, preparedData);
+};
 export * from './types';
 
 /**
@@ -879,7 +923,7 @@ export async function getLearnCardNetworkPlugin(
                     Object.keys(options.templateData).length > 0
                 ) {
                     const boostString = JSON.stringify(boost);
-                    const rendered = Mustache.render(boostString, options.templateData);
+                    const rendered = renderTemplateJson(boostString, options.templateData);
                     boost = JSON.parse(rendered);
                 }
 

@@ -108,12 +108,36 @@ describe('Boost Templating (Mustache)', () => {
                 expect(result).toBe('{"name": "Hello World"}');
             });
 
-            it('should handle special characters in values (HTML escaped)', () => {
-                // Mustache HTML-escapes special characters by default
+            it('should escape quotes in values for valid JSON', () => {
                 const template = '{"name": "{{name}}"}';
                 const result = renderBoostTemplate(template, { name: 'Test "quoted" value' });
-                // Mustache escapes " to &quot;
-                expect(result).toBe('{"name": "Test &quot;quoted&quot; value"}');
+                // Quotes are escaped as \" for valid JSON
+                expect(result).toBe('{"name": "Test \\"quoted\\" value"}');
+                // Verify it parses as valid JSON
+                expect(() => JSON.parse(result)).not.toThrow();
+            });
+
+            it('should escape newlines in values for valid JSON', () => {
+                const template = '{"desc": "{{desc}}"}';
+                const result = renderBoostTemplate(template, { desc: 'Line 1\nLine 2' });
+                // Newlines are escaped as \n for valid JSON
+                expect(result).toBe('{"desc": "Line 1\\nLine 2"}');
+                expect(() => JSON.parse(result)).not.toThrow();
+            });
+
+            it('should escape backslashes in values for valid JSON', () => {
+                const template = '{"path": "{{path}}"}';
+                const result = renderBoostTemplate(template, { path: 'C:\\Users\\test' });
+                // Backslashes are escaped as \\
+                expect(result).toBe('{"path": "C:\\\\Users\\\\test"}');
+                expect(() => JSON.parse(result)).not.toThrow();
+            });
+
+            it('should handle null and undefined values', () => {
+                const template = '{"a": "{{a}}", "b": "{{b}}"}';
+                const result = renderBoostTemplate(template, { a: null, b: undefined });
+                expect(result).toBe('{"a": "", "b": ""}');
+                expect(() => JSON.parse(result)).not.toThrow();
             });
 
             it('should handle numeric values', () => {
