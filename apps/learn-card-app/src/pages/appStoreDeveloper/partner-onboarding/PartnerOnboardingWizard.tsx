@@ -142,8 +142,8 @@ const PartnerOnboardingWizard: React.FC = () => {
         nextStep();
     }, [nextStep]);
 
-    const handleDataMappingComplete = useCallback((mapping: DataMappingConfig) => {
-        setState(prev => ({ ...prev, dataMapping: mapping }));
+    const handleDataMappingComplete = useCallback((mapping: DataMappingConfig, updatedTemplates: CredentialTemplate[]) => {
+        setState(prev => ({ ...prev, dataMapping: mapping, templates: updatedTemplates }));
         nextStep();
     }, [nextStep]);
 
@@ -189,6 +189,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     <TemplateBuilderStep
                         templates={state.templates}
                         branding={state.branding}
+                        project={state.project}
                         onComplete={handleTemplatesComplete}
                         onBack={prevStep}
                     />
@@ -208,6 +209,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     <DataMappingStep
                         integrationMethod={state.integrationMethod!}
                         templates={state.templates}
+                        project={state.project}
                         dataMapping={state.dataMapping}
                         onComplete={handleDataMappingComplete}
                         onBack={prevStep}

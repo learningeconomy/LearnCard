@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     FileStack,
     Plus,
@@ -14,16 +14,23 @@ import {
     Mail,
     ChevronDown,
     ChevronUp,
-    Edit3,
-    Check,
+    Loader2,
+    Save,
     X,
+    AlertCircle,
 } from 'lucide-react';
 
-import { CredentialTemplate, CredentialField, BrandingConfig } from '../types';
+import { useWallet } from 'learn-card-base';
+import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
+
+import { CredentialTemplate, CredentialField, BrandingConfig, TemplateBoostMeta, PartnerProject } from '../types';
+
+const TEMPLATE_META_VERSION = '1.0.0';
 
 interface TemplateBuilderStepProps {
     templates: CredentialTemplate[];
     branding: BrandingConfig | null;
+    project: PartnerProject | null;
     onComplete: (templates: CredentialTemplate[]) => void;
     onBack: () => void;
 }
@@ -272,13 +279,224 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     templates,
     branding,
+    project,
     onComplete,
     onBack,
 }) => {
-    const [localTemplates, setLocalTemplates] = useState<CredentialTemplate[]>(
-        templates.length > 0 ? templates : []
-    );
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+    const initWalletRef = useRef(initWallet);
+    initWalletRef.current = initWallet;
+
+    const [localTemplates, setLocalTemplates] = useState<CredentialTemplate[]>([]);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
+
+    const integrationId = project?.id;
+
+    // Fetch existing templates (boosts) for this integration
+    const fetchTemplates = useCallback(async () => {
+        if (!integrationId) {
+            setLocalTemplates(templates.length > 0 ? templates : []);
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const wallet = await initWalletRef.current();
+            const result = await wallet.invoke.getPaginatedBoosts({
+                limit: 100,
+                query: { meta: { integrationId } },
+            });
+
+            const fetchedTemplates: CredentialTemplate[] = (result?.records || []).map((boost: Record<string, unknown>) => {
+                const meta = boost.meta as TemplateBoostMeta | undefined;
+                const templateConfig = meta?.templateConfig;
+
+                return {
+                    id: boost.uri as string,
+                    boostUri: boost.uri as string,
+                    name: (boost.name as string) || 'Untitled Template',
+                    description: (boost.description as string) || '',
+                    achievementType: templateConfig?.achievementType || 'Course Completion',
+                    fields: templateConfig?.fields || [...DEFAULT_FIELDS],
+                    imageUrl: boost.image as string | undefined,
+                    isNew: false,
+                    isDirty: false,
+                };
+            });
+
+            setLocalTemplates(fetchedTemplates.length > 0 ? fetchedTemplates : templates);
+        } catch (err) {
+            console.error('Failed to fetch templates:', err);
+            setLocalTemplates(templates.length > 0 ? templates : []);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [integrationId, templates]);
+
+    useEffect(() => {
+        fetchTemplates();
+    }, [fetchTemplates]);
+
+    // Build an OBv3 credential from template
+    const buildCredentialFromTemplate = (template: CredentialTemplate, issuerName: string, issuerImage?: string) => {
+        return {
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
+            ],
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            name: template.name,
+            description: template.description,
+            issuer: {
+                type: ['Profile'],
+                name: issuerName,
+                image: issuerImage,
+            },
+            issuanceDate: new Date().toISOString(),
+            credentialSubject: {
+                type: ['AchievementSubject'],
+                achievement: {
+                    type: ['Achievement'],
+                    achievementType: template.achievementType,
+                    name: template.name,
+                    description: template.description,
+                    criteria: {
+                        narrative: `Awarded for completing ${template.name}`,
+                    },
+                },
+            },
+        };
+    };
+
+    // Save a single template as a boost (create or update)
+    const saveTemplateAsBoost = async (template: CredentialTemplate): Promise<string | null> => {
+        if (!integrationId) return null;
+
+        try {
+            const wallet = await initWalletRef.current();
+            const issuerName = branding?.displayName || 'Issuer';
+            const issuerImage = branding?.image;
+
+            const credentialInput = buildCredentialFromTemplate(template, issuerName, issuerImage);
+
+            // Use newCredential to create an unsigned credential (not issueCredential which requires DID resolution)
+            const credential = await wallet.invoke.newCredential({
+                type: 'boost',
+                boostName: template.name,
+                achievementType: template.achievementType,
+                achievementDescription: template.description,
+                achievementName: template.name,
+                achievementNarrative: `Awarded for completing ${template.name}`,
+                boostImage: template.imageUrl || branding?.image,
+                achievementImage: template.imageUrl || branding?.image,
+            });
+
+            const boostMeta: TemplateBoostMeta = {
+                integrationId,
+                templateConfig: {
+                    fields: template.fields,
+                    achievementType: template.achievementType,
+                    version: TEMPLATE_META_VERSION,
+                },
+            };
+
+            // If updating existing boost, use updateBoost
+            if (template.boostUri) {
+                await wallet.invoke.updateBoost(template.boostUri, {
+                    name: template.name,
+                    type: template.achievementType,
+                    category: 'achievement',
+                    meta: boostMeta,
+                    credential,
+                } as Parameters<typeof wallet.invoke.updateBoost>[1]);
+
+                return template.boostUri;
+            }
+
+            // Otherwise create a new boost
+            const boostMetadata = {
+                name: template.name,
+                type: template.achievementType,
+                category: 'achievement',
+                meta: boostMeta,
+                defaultPermissions: {
+                    canIssue: true,
+                },
+            };
+
+            const boostUri = await wallet.invoke.createBoost(
+                credential,
+                boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
+            );
+
+            return boostUri;
+        } catch (err) {
+            console.error('Failed to save template as boost:', err);
+            throw err;
+        }
+    };
+
+    // Delete a boost
+    const deleteBoost = async (boostUri: string) => {
+        try {
+            const wallet = await initWalletRef.current();
+            await wallet.invoke.deleteBoost(boostUri);
+        } catch (err) {
+            console.error('Failed to delete boost:', err);
+            throw err;
+        }
+    };
+
+    // Save all templates
+    const handleSaveAll = async () => {
+        if (!integrationId) {
+            presentToast('No project selected', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            // Delete pending deletes
+            for (const uri of pendingDeletes) {
+                await deleteBoost(uri);
+            }
+
+            setPendingDeletes([]);
+
+            // Save all templates that are new or dirty
+            const savedTemplates: CredentialTemplate[] = [];
+
+            for (const template of localTemplates) {
+                if (template.isNew || template.isDirty || !template.boostUri) {
+                    const boostUri = await saveTemplateAsBoost(template);
+
+                    savedTemplates.push({
+                        ...template,
+                        id: boostUri || template.id,
+                        boostUri: boostUri || undefined,
+                        isNew: false,
+                        isDirty: false,
+                    });
+                } else {
+                    savedTemplates.push(template);
+                }
+            }
+
+            setLocalTemplates(savedTemplates);
+            presentToast('Templates saved successfully!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            onComplete(savedTemplates);
+        } catch (err) {
+            console.error('Failed to save templates:', err);
+            presentToast('Failed to save templates', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const handleAddTemplate = () => {
         const newTemplate: CredentialTemplate = {
@@ -287,6 +505,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             description: '',
             achievementType: 'Course Completion',
             fields: [...DEFAULT_FIELDS],
+            isNew: true,
+            isDirty: true,
         };
 
         setLocalTemplates([...localTemplates, newTemplate]);
@@ -294,15 +514,34 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     };
 
     const handleUpdateTemplate = (id: string, updated: CredentialTemplate) => {
-        setLocalTemplates(localTemplates.map(t => t.id === id ? updated : t));
+        setLocalTemplates(localTemplates.map(t =>
+            t.id === id ? { ...updated, isDirty: true } : t
+        ));
     };
 
     const handleDeleteTemplate = (id: string) => {
+        const template = localTemplates.find(t => t.id === id);
+
+        // If it has a boostUri, queue it for deletion on save
+        if (template?.boostUri) {
+            setPendingDeletes([...pendingDeletes, template.boostUri]);
+        }
+
         setLocalTemplates(localTemplates.filter(t => t.id !== id));
+
         if (expandedId === id) setExpandedId(null);
     };
 
+    const hasUnsavedChanges = localTemplates.some(t => t.isNew || t.isDirty) || pendingDeletes.length > 0;
     const canProceed = localTemplates.length > 0 && localTemplates.every(t => t.name.trim());
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -313,11 +552,19 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">Create Credential Templates</p>
                     <p>
-                        Templates define the structure of credentials you'll issue. For example, 
-                        a "Course Completion" template might include fields for Course Name, Grade, and Credits.
+                        Templates define the structure of credentials you'll issue. Each template is saved 
+                        as a reusable boost that can be issued to recipients.
                     </p>
                 </div>
             </div>
+
+            {/* Unsaved Changes Warning */}
+            {hasUnsavedChanges && (
+                <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>You have unsaved changes. Click "Save & Continue" to save your templates.</span>
+                </div>
+            )}
 
             {/* Templates */}
             <div className="space-y-4">
@@ -336,7 +583,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 {/* Add Template Button */}
                 <button
                     onClick={handleAddTemplate}
-                    className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors"
+                    disabled={isSaving}
+                    className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors disabled:opacity-50"
                 >
                     <Plus className="w-5 h-5" />
                     Add Credential Template
@@ -347,19 +595,30 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             <div className="flex gap-3 pt-4 border-t border-gray-100">
                 <button
                     onClick={onBack}
-                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                    disabled={isSaving}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Back
                 </button>
 
                 <button
-                    onClick={() => canProceed && onComplete(localTemplates)}
-                    disabled={!canProceed}
+                    onClick={handleSaveAll}
+                    disabled={!canProceed || isSaving}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue to Integration
-                    <ArrowRight className="w-4 h-4" />
+                    {isSaving ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Saving...
+                        </>
+                    ) : (
+                        <>
+                            <Save className="w-4 h-4" />
+                            Save & Continue
+                            <ArrowRight className="w-4 h-4" />
+                        </>
+                    )}
                 </button>
             </div>
         </div>

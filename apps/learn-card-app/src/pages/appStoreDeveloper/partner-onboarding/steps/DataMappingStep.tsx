@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
     GitMerge,
     ArrowRight,
@@ -11,18 +11,26 @@ import {
     FileJson,
     ChevronRight,
     Loader2,
+    Save,
+    Link2,
 } from 'lucide-react';
 
 import { Clipboard } from '@capacitor/clipboard';
 
-import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping } from '../types';
+import { useWallet } from 'learn-card-base';
+import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
+
+import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping, TemplateBoostMeta, PartnerProject } from '../types';
 import { CodeBlock } from '../../components/CodeBlock';
+
+const TEMPLATE_META_VERSION = '1.0.0';
 
 interface DataMappingStepProps {
     integrationMethod: IntegrationMethod;
     templates: CredentialTemplate[];
+    project: PartnerProject | null;
     dataMapping: DataMappingConfig | null;
-    onComplete: (mapping: DataMappingConfig) => void;
+    onComplete: (mapping: DataMappingConfig, updatedTemplates: CredentialTemplate[]) => void;
     onBack: () => void;
 }
 
@@ -49,18 +57,29 @@ const SAMPLE_WEBHOOK_PAYLOAD = {
 export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     integrationMethod,
     templates,
+    project,
     dataMapping,
     onComplete,
     onBack,
 }) => {
-    const [webhookUrl] = useState(`https://api.learncard.com/webhooks/${Date.now().toString(36)}`);
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+    const initWalletRef = useRef(initWallet);
+    initWalletRef.current = initWallet;
+
+    const [webhookUrl] = useState(dataMapping?.webhookUrl || `https://api.learncard.com/webhooks/${Date.now().toString(36)}`);
     const [copiedUrl, setCopiedUrl] = useState(false);
     const [samplePayload, setSamplePayload] = useState<Record<string, unknown> | null>(
         dataMapping?.samplePayload || null
     );
     const [mappings, setMappings] = useState<FieldMapping[]>(dataMapping?.mappings || []);
     const [isWaiting, setIsWaiting] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<string>(templates[0]?.id || '');
+    const [selectedSource, setSelectedSource] = useState<string | null>(null);
+    const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+
+    const integrationId = project?.id;
 
     // Extract all field paths from sample payload
     const sourceFields = useMemo(() => {
@@ -107,15 +126,115 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         }, 2000);
     };
 
-    const handleAddMapping = (source: string, target: string) => {
-        setMappings([...mappings, { sourceField: source, targetField: target }]);
+    // Handle selecting a source field
+    const handleSelectSource = (source: string) => {
+        if (selectedSource === source) {
+            setSelectedSource(null);
+        } else {
+            setSelectedSource(source);
+
+            // If a target is already selected, create the mapping
+            if (selectedTarget) {
+                setMappings([...mappings, { sourceField: source, targetField: selectedTarget }]);
+                setSelectedSource(null);
+                setSelectedTarget(null);
+            }
+        }
+    };
+
+    // Handle selecting a target field
+    const handleSelectTarget = (target: string) => {
+        if (selectedTarget === target) {
+            setSelectedTarget(null);
+        } else {
+            setSelectedTarget(target);
+
+            // If a source is already selected, create the mapping
+            if (selectedSource) {
+                setMappings([...mappings, { sourceField: selectedSource, targetField: target }]);
+                setSelectedSource(null);
+                setSelectedTarget(null);
+            }
+        }
     };
 
     const handleRemoveMapping = (index: number) => {
         setMappings(mappings.filter((_, i) => i !== index));
     };
 
-    const canProceed = integrationMethod === 'csv' || (samplePayload && mappings.length > 0);
+    // Apply mappings to templates' field.sourceMapping
+    const applyMappingsToTemplates = (): CredentialTemplate[] => {
+        return templates.map(template => {
+            if (template.id !== selectedTemplate) return template;
+
+            return {
+                ...template,
+                isDirty: true,
+                fields: template.fields.map(field => {
+                    const mapping = mappings.find(m => m.targetField === field.name);
+                    return {
+                        ...field,
+                        sourceMapping: mapping?.sourceField || field.sourceMapping,
+                    };
+                }),
+            };
+        });
+    };
+
+    // Save templates with mappings back to boosts
+    const saveTemplatesToBoosts = useCallback(async (updatedTemplates: CredentialTemplate[]) => {
+        if (!integrationId) return;
+
+        const wallet = await initWalletRef.current();
+
+        for (const template of updatedTemplates) {
+            if (!template.boostUri) continue;
+
+            const boostMeta: TemplateBoostMeta = {
+                integrationId,
+                templateConfig: {
+                    fields: template.fields,
+                    achievementType: template.achievementType,
+                    version: TEMPLATE_META_VERSION,
+                },
+            };
+
+            try {
+                await wallet.invoke.updateBoost(template.boostUri, {
+                    meta: boostMeta,
+                } as Parameters<typeof wallet.invoke.updateBoost>[1]);
+            } catch (err) {
+                console.error('Failed to update boost with mappings:', err);
+                throw err;
+            }
+        }
+    }, [integrationId]);
+
+    // Handle save and continue
+    const handleSaveAndContinue = async () => {
+        setIsSaving(true);
+
+        try {
+            const updatedTemplates = applyMappingsToTemplates();
+
+            // Save mappings to boosts
+            await saveTemplatesToBoosts(updatedTemplates);
+
+            presentToast('Field mappings saved!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+
+            onComplete(
+                { webhookUrl, samplePayload: samplePayload || undefined, mappings },
+                updatedTemplates
+            );
+        } catch (err) {
+            console.error('Failed to save mappings:', err);
+            presentToast('Failed to save mappings', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const canProceed = integrationMethod === 'csv' || integrationMethod === 'api' || (samplePayload && mappings.length > 0);
 
     // Render based on integration method
     if (integrationMethod === 'api') {
@@ -172,7 +291,7 @@ async function issueCourseCredential(userId, courseData) {
                     </button>
 
                     <button
-                        onClick={() => onComplete({ mappings: [], webhookUrl: undefined })}
+                        onClick={() => onComplete({ mappings: [], webhookUrl: undefined }, templates)}
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                     >
                         Continue to Testing
@@ -226,7 +345,7 @@ async function issueCourseCredential(userId, courseData) {
                     </button>
 
                     <button
-                        onClick={() => onComplete({ mappings: [], webhookUrl: undefined })}
+                        onClick={() => onComplete({ mappings: [], webhookUrl: undefined }, templates)}
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                     >
                         Continue to Testing
@@ -370,56 +489,99 @@ async function issueCourseCredential(userId, courseData) {
                         </div>
                     )}
 
-                    {/* Add Mapping */}
+                    {/* Instructions */}
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <p className="text-xs text-blue-800">
+                            <strong>How to map:</strong> Click a source field on the left, then click a target field on the right to connect them. 
+                            You can select them in any order.
+                        </p>
+                    </div>
+
+                    {/* Two-column selection UI */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs text-gray-500 mb-1">Source Field (Your Data)</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">
+                                Source Fields (Your Data)
+                                {selectedSource && <span className="ml-2 text-cyan-600">→ Select target</span>}
+                            </label>
 
-                            <div className="space-y-1 max-h-48 overflow-y-auto">
+                            <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
                                 {sourceFields
                                     .filter(f => !mappings.some(m => m.sourceField === f))
-                                    .map(field => (
-                                        <button
-                                            key={field}
-                                            className="w-full text-left px-3 py-2 text-sm bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                                            onClick={() => {
-                                                const unmappedTarget = targetFields.find(
-                                                    t => !mappings.some(m => m.targetField === t)
-                                                );
-                                                if (unmappedTarget) {
-                                                    handleAddMapping(field, unmappedTarget);
-                                                }
-                                            }}
-                                        >
-                                            <code className="text-gray-700">{field}</code>
-                                        </button>
-                                    ))}
+                                    .map(field => {
+                                        const isSelected = selectedSource === field;
+                                        return (
+                                            <button
+                                                key={field}
+                                                onClick={() => handleSelectSource(field)}
+                                                className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-all ${
+                                                    isSelected
+                                                        ? 'bg-cyan-500 text-white shadow-md'
+                                                        : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                                                }`}
+                                            >
+                                                <code className={isSelected ? 'text-white' : 'text-gray-700'}>{field}</code>
+                                            </button>
+                                        );
+                                    })}
+
+                                {sourceFields.filter(f => !mappings.some(m => m.sourceField === f)).length === 0 && (
+                                    <p className="text-xs text-gray-400 text-center py-2">All source fields mapped</p>
+                                )}
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs text-gray-500 mb-1">Target Field (Credential)</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-2">
+                                Target Fields (Credential)
+                                {selectedTarget && <span className="ml-2 text-cyan-600">← Select source</span>}
+                            </label>
 
-                            <div className="space-y-1 max-h-48 overflow-y-auto">
+                            <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
                                 {targetFields
                                     .filter(f => !mappings.some(m => m.targetField === f))
-                                    .map(field => (
-                                        <div
-                                            key={field}
-                                            className="px-3 py-2 text-sm bg-cyan-50 rounded-lg"
-                                        >
-                                            <code className="text-cyan-700">{field}</code>
-                                        </div>
-                                    ))}
+                                    .map(field => {
+                                        const isSelected = selectedTarget === field;
+                                        return (
+                                            <button
+                                                key={field}
+                                                onClick={() => handleSelectTarget(field)}
+                                                className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-all ${
+                                                    isSelected
+                                                        ? 'bg-emerald-500 text-white shadow-md'
+                                                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
+                                                }`}
+                                            >
+                                                <code className={isSelected ? 'text-white' : 'text-emerald-700'}>{field}</code>
+                                            </button>
+                                        );
+                                    })}
+
+                                {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length === 0 && (
+                                    <p className="text-xs text-gray-400 text-center py-2">All target fields mapped</p>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length > 0 && (
+                    {/* Selection hint */}
+                    {(selectedSource || selectedTarget) && (
+                        <div className="flex items-center justify-center gap-2 p-2 bg-cyan-50 rounded-lg text-sm text-cyan-700">
+                            {selectedSource && <code className="bg-cyan-500 text-white px-2 py-0.5 rounded">{selectedSource}</code>}
+                            {selectedSource && selectedTarget && <ChevronRight className="w-4 h-4" />}
+                            {selectedTarget && <code className="bg-emerald-500 text-white px-2 py-0.5 rounded">{selectedTarget}</code>}
+                            {(selectedSource && !selectedTarget) && <span>Now select a target field →</span>}
+                            {(selectedTarget && !selectedSource) && <span>← Now select a source field</span>}
+                        </div>
+                    )}
+
+                    {/* Unmapped warning */}
+                    {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length > 0 && mappings.length > 0 && (
                         <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                             <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                             <p className="text-xs text-amber-800">
-                                Some credential fields are not yet mapped. Click a source field to map it to an available target.
+                                {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length} credential field(s) still need to be mapped.
                             </p>
                         </div>
                     )}
@@ -437,12 +599,22 @@ async function issueCourseCredential(userId, courseData) {
                 </button>
 
                 <button
-                    onClick={() => canProceed && onComplete({ webhookUrl, samplePayload: samplePayload || undefined, mappings })}
-                    disabled={!canProceed}
+                    onClick={handleSaveAndContinue}
+                    disabled={!canProceed || isSaving}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue to Testing
-                    <ArrowRight className="w-4 h-4" />
+                    {isSaving ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Saving...
+                        </>
+                    ) : (
+                        <>
+                            <Save className="w-4 h-4" />
+                            Save & Continue
+                            <ArrowRight className="w-4 h-4" />
+                        </>
+                    )}
                 </button>
             </div>
         </div>

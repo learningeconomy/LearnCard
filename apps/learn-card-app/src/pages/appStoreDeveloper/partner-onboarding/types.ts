@@ -42,6 +42,18 @@ export interface CredentialField {
     type: 'text' | 'date' | 'number' | 'url' | 'email';
     required: boolean;
     description?: string;
+    sourceMapping?: string;
+}
+
+export interface TemplateConfig {
+    fields: CredentialField[];
+    achievementType: string;
+    version: string;
+}
+
+export interface TemplateBoostMeta {
+    integrationId: string;
+    templateConfig: TemplateConfig;
 }
 
 export interface CredentialTemplate {
@@ -51,6 +63,9 @@ export interface CredentialTemplate {
     achievementType: string;
     fields: CredentialField[];
     imageUrl?: string;
+    boostUri?: string;
+    isNew?: boolean;
+    isDirty?: boolean;
 }
 
 export interface FieldMapping {
