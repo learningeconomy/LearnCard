@@ -35,6 +35,7 @@ import { IntegrationMethodStep } from './steps/IntegrationMethodStep';
 import { DataMappingStep } from './steps/DataMappingStep';
 import { SandboxTestStep } from './steps/SandboxTestStep';
 import { ProductionStep } from './steps/ProductionStep';
+import { IntegrationDashboard } from './dashboard';
 
 const STEP_ICONS = [Building, Building2, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 
@@ -156,6 +157,10 @@ const PartnerOnboardingWizard: React.FC = () => {
         setState(prev => ({ ...prev, isLive: true }));
     }, []);
 
+    const handleBackToWizard = useCallback(() => {
+        setState(prev => ({ ...prev, isLive: false }));
+    }, []);
+
     const renderCurrentStep = () => {
         switch (state.currentStep) {
             case 0:
@@ -271,30 +276,43 @@ const PartnerOnboardingWizard: React.FC = () => {
             </IonHeader>
 
             <IonContent>
-                <div className="max-w-4xl mx-auto px-4 py-6">
-                    {/* Step Indicator */}
-                    <div className="mb-6">
-                        <StepIndicator
-                            steps={ONBOARDING_STEPS}
-                            currentStep={state.currentStep}
-                            onStepClick={goToStep}
+                {state.isLive && state.project ? (
+                    <div className="max-w-5xl mx-auto px-4 py-6">
+                        <IntegrationDashboard
+                            project={state.project}
+                            initialBranding={state.branding}
+                            initialTemplates={state.templates}
+                            initialIntegrationMethod={state.integrationMethod}
+                            initialDataMapping={state.dataMapping}
+                            onBack={handleBackToWizard}
                         />
                     </div>
+                ) : (
+                    <div className="max-w-4xl mx-auto px-4 py-6">
+                        {/* Step Indicator */}
+                        <div className="mb-6">
+                            <StepIndicator
+                                steps={ONBOARDING_STEPS}
+                                currentStep={state.currentStep}
+                                onStepClick={goToStep}
+                            />
+                        </div>
 
-                    {/* Step Header */}
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                            {currentStepInfo.title}
-                        </h1>
+                        {/* Step Header */}
+                        <div className="mb-6">
+                            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                                {currentStepInfo.title}
+                            </h1>
 
-                        <p className="text-gray-600">{currentStepInfo.description}</p>
+                            <p className="text-gray-600">{currentStepInfo.description}</p>
+                        </div>
+
+                        {/* Step Content */}
+                        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                            {renderCurrentStep()}
+                        </div>
                     </div>
-
-                    {/* Step Content */}
-                    <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                        {renderCurrentStep()}
-                    </div>
-                </div>
+                )}
             </IonContent>
         </IonPage>
     );
