@@ -922,9 +922,16 @@ export async function getLearnCardNetworkPlugin(
                     options.templateData &&
                     Object.keys(options.templateData).length > 0
                 ) {
-                    const boostString = JSON.stringify(boost);
-                    const rendered = renderTemplateJson(boostString, options.templateData);
-                    boost = JSON.parse(rendered);
+                    try {
+                        const boostString = JSON.stringify(boost);
+                        const rendered = renderTemplateJson(boostString, options.templateData);
+                        boost = JSON.parse(rendered);
+                    } catch (error) {
+                        throw new Error(
+                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
+                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                        );
+                    }
                 }
 
                 if (typeof options === 'object' && options.overideFn) {
