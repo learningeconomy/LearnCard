@@ -13,6 +13,7 @@ import {
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
 import { isVC2Format } from '@learncard/helpers';
+import Mustache from 'mustache';
 
 import {
     LearnCardNetworkPluginDependentMethods,
@@ -837,7 +838,7 @@ export async function getLearnCardNetworkPlugin(
                 _learnCard,
                 profileId,
                 boostUri,
-                options = { encrypt: true, skipNotification: false }
+                options = { encrypt: true, skipNotification: false, templateData: {} }
             ) => {
                 await ensureUser();
 
@@ -870,6 +871,17 @@ export async function getLearnCardNetworkPlugin(
 
                 // Embed the boostURI into the boost credential for verification purposes.
                 if (boost?.type?.includes('BoostCredential')) boost.boostId = boostUri;
+
+                // Apply templateData if provided (Mustache templating)
+                if (
+                    typeof options === 'object' &&
+                    options.templateData &&
+                    Object.keys(options.templateData).length > 0
+                ) {
+                    const boostString = JSON.stringify(boost);
+                    const rendered = Mustache.render(boostString, options.templateData);
+                    boost = JSON.parse(rendered);
+                }
 
                 if (typeof options === 'object' && options.overideFn) {
                     boost = options.overideFn(boost);
