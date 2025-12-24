@@ -1,6 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { useHistory } from 'react-router-dom';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useHistory, useParams } from 'react-router-dom';
 import { IonPage, IonContent, IonHeader, IonToolbar } from '@ionic/react';
+import { Loader2 } from 'lucide-react';
+
+import { useWallet } from 'learn-card-base';
+import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import {
     Building,
     Building2,
@@ -36,6 +40,7 @@ import { DataMappingStep } from './steps/DataMappingStep';
 import { SandboxTestStep } from './steps/SandboxTestStep';
 import { ProductionStep } from './steps/ProductionStep';
 import { IntegrationDashboard } from './dashboard';
+import { usePersistedWizardState } from './hooks';
 
 const STEP_ICONS = [Building, Building2, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 
@@ -94,9 +99,94 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onSte
     );
 };
 
+interface RouteParams {
+    integrationId?: string;
+}
+
 const PartnerOnboardingWizard: React.FC = () => {
     const history = useHistory();
-    const [state, setState] = useState<PartnerOnboardingState>(DEFAULT_ONBOARDING_STATE);
+    const { integrationId } = useParams<RouteParams>();
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+    const initWalletRef = useRef(initWallet);
+    initWalletRef.current = initWallet;
+
+    const [state, setState, { clear: clearPersistedState }] = usePersistedWizardState<PartnerOnboardingState>({
+        key: integrationId ? `integration-${integrationId}` : 'partner-onboarding-new',
+        initialState: DEFAULT_ONBOARDING_STATE,
+    });
+    const [isLoadingIntegration, setIsLoadingIntegration] = useState(!!integrationId);
+
+    // Load integration data when navigating directly to dashboard via URL
+    useEffect(() => {
+        if (!integrationId) return;
+
+        const loadIntegration = async () => {
+            setIsLoadingIntegration(true);
+
+            try {
+                const wallet = await initWalletRef.current();
+
+                // Fetch boosts for this integration
+                const boostsResult = await wallet.invoke.getPaginatedBoosts({
+                    limit: 50,
+                    query: { meta: { integrationId } },
+                });
+
+                const templates: CredentialTemplate[] = boostsResult?.records?.map((boost: any) => {
+                    const meta = boost.boost?.meta as any;
+                    const credential = boost.boost?.credential;
+
+                    return {
+                        id: boost.uri || boost.boost?.id || crypto.randomUUID(),
+                        name: boost.boost?.name || credential?.name || 'Untitled Template',
+                        description: credential?.credentialSubject?.achievement?.description || '',
+                        achievementType: meta?.templateConfig?.achievementType || boost.boost?.type || 'Achievement',
+                        fields: meta?.templateConfig?.fields || [],
+                        imageUrl: boost.boost?.image || credential?.credentialSubject?.achievement?.image?.id,
+                        boostUri: boost.uri,
+                        isNew: false,
+                        isDirty: false,
+                    };
+                }) || [];
+
+                // Load profile for branding
+                let branding: BrandingConfig | null = null;
+                try {
+                    const profile = await wallet.invoke.getProfile();
+                    if (profile) {
+                        branding = {
+                            displayName: profile.displayName || '',
+                            image: profile.image || '',
+                            shortBio: profile.shortBio || '',
+                            bio: profile.bio || '',
+                            display: profile.display || {},
+                        };
+                    }
+                } catch (err) {
+                    console.warn('Could not load profile:', err);
+                }
+
+                // Set state to show dashboard
+                setState(prev => ({
+                    ...prev,
+                    project: { id: integrationId, name: `Integration ${integrationId.slice(0, 8)}`, createdAt: new Date().toISOString() },
+                    templates,
+                    branding,
+                    isLive: true,
+                    currentStep: ONBOARDING_STEPS.length - 1,
+                }));
+            } catch (err) {
+                console.error('Failed to load integration:', err);
+                presentToast('Failed to load integration', { type: ToastTypeEnum.Error, hasDismissButton: true });
+                history.push('/app-store/developer/guides');
+            } finally {
+                setIsLoadingIntegration(false);
+            }
+        };
+
+        loadIntegration();
+    }, [integrationId, history, presentToast]);
 
     const goToStep = useCallback((step: number) => {
         if (step >= 0 && step <= state.currentStep) {
@@ -276,7 +366,14 @@ const PartnerOnboardingWizard: React.FC = () => {
             </IonHeader>
 
             <IonContent>
-                {state.isLive && state.project ? (
+                {isLoadingIntegration ? (
+                    <div className="flex items-center justify-center min-h-[400px]">
+                        <div className="text-center">
+                            <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
+                            <p className="text-sm text-gray-500 mt-3">Loading integration...</p>
+                        </div>
+                    </div>
+                ) : state.isLive && state.project ? (
                     <div className="max-w-5xl mx-auto px-4 py-6">
                         <IntegrationDashboard
                             project={state.project}

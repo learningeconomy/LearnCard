@@ -190,6 +190,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/app-store/developer/guides" component={IntegrationHub} />
                         <PrivateRoute exact path="/app-store/developer/guides/:useCase" component={GuidePage} />
                         <PrivateRoute exact path="/app-store/developer/partner-onboarding" component={PartnerOnboardingWizard} />
+                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId" component={PartnerOnboardingWizard} />
                         <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminDashboard} />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
