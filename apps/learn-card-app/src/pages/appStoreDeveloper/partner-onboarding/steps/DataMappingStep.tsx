@@ -11,6 +11,8 @@ import {
     Zap,
     FileJson,
     ChevronRight,
+    ChevronDown,
+    ChevronUp,
     Loader2,
     Save,
     Link2,
@@ -18,6 +20,14 @@ import {
     FileSpreadsheet,
     Download,
     Table,
+    Award,
+    Building2,
+    Webhook,
+    BellOff,
+    Send,
+    Clock,
+    CheckCircle2,
+    Code,
 } from 'lucide-react';
 
 import { Clipboard } from '@capacitor/clipboard';
@@ -299,6 +309,184 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         (integrationMethod === 'csv' && csvHeaders.length > 0 && mappings.length > 0) ||
         (integrationMethod === 'webhook' && samplePayload && mappings.length > 0);
 
+    // API Integration state
+    const [apiSelectedTemplate, setApiSelectedTemplate] = useState<string>(templates[0]?.id || '');
+    const [apiRecipientEmail, setApiRecipientEmail] = useState('');
+    const [apiShowAdvanced, setApiShowAdvanced] = useState(false);
+    const [apiAdvancedOptions, setApiAdvancedOptions] = useState({
+        issuerName: '',
+        issuerLogoUrl: '',
+        recipientName: '',
+        webhookUrl: '',
+        suppressDelivery: false,
+    });
+    const [apiIsPolling, setApiIsPolling] = useState(false);
+    const [apiPollResult, setApiPollResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [apiCopied, setApiCopied] = useState(false);
+
+    const apiHasAdvancedOptions = apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || 
+        apiAdvancedOptions.recipientName || apiAdvancedOptions.webhookUrl || apiAdvancedOptions.suppressDelivery;
+
+    const selectedApiTemplate = templates.find(t => t.id === apiSelectedTemplate);
+
+    // Generate code snippets for API integration
+    const generateApiCodeSnippet = () => {
+        const template = selectedApiTemplate;
+        const boostUri = template?.boostUri || 'urn:lc:boost:your_template_id';
+        const templateName = template?.name || 'Course Completion';
+
+        // Build configuration object for advanced options
+        let configCode = '';
+        if (apiHasAdvancedOptions) {
+            const configParts: string[] = [];
+
+            if (apiAdvancedOptions.webhookUrl) {
+                configParts.push(`        webhookUrl: '${apiAdvancedOptions.webhookUrl}',`);
+            }
+
+            if (apiAdvancedOptions.suppressDelivery) {
+                configParts.push(`        delivery: { suppress: true },`);
+            }
+
+            if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || apiAdvancedOptions.recipientName) {
+                const templateModelParts: string[] = [];
+
+                if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl) {
+                    templateModelParts.push(`                issuer: { name: '${apiAdvancedOptions.issuerName || 'Your Organization'}', logoUrl: '${apiAdvancedOptions.issuerLogoUrl || ''}' },`);
+                }
+
+                if (apiAdvancedOptions.recipientName) {
+                    templateModelParts.push(`                recipient: { name: '${apiAdvancedOptions.recipientName}' },`);
+                }
+
+                templateModelParts.push(`                credential: { name: '${templateName}', type: 'achievement' },`);
+
+                configParts.push(`        delivery: {
+            ${apiAdvancedOptions.suppressDelivery ? 'suppress: true,' : ''}
+            template: {
+                model: {
+${templateModelParts.join('\n')}
+                },
+            },
+        },`);
+            }
+
+            if (configParts.length > 0) {
+                configCode = `
+    configuration: {
+${configParts.join('\n')}
+    },`;
+            }
+        }
+
+        if (apiRecipientEmail) {
+            // Universal Inbox (email recipient)
+            return `import { initLearnCard } from '@learncard/init';
+
+const learnCard = await initLearnCard({ 
+    seed: process.env.LEARNCARD_SEED,
+    network: true 
+});
+
+// Send credential via Universal Inbox (handles user onboarding)
+const result = await learnCard.invoke.sendCredentialViaInbox({ 
+    recipient: { 
+        type: 'email',
+        value: '${apiRecipientEmail}' 
+    }, 
+    credential: {
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
+        ],
+        "type": ["VerifiableCredential", "OpenBadgeCredential"],
+        "name": "${templateName}",
+        "credentialSubject": {
+            "type": ["AchievementSubject"],
+            "achievement": {
+                "type": ["Achievement"],
+                "name": "${templateName}",
+                "description": "${template?.description || 'Completed successfully.'}",
+                "criteria": {
+                    "narrative": "Successfully completed all requirements."
+                }
+            }
+        }
+    },${configCode}
+});
+
+console.log('Claim URL:', result.claimUrl);`;
+        } else {
+            // Send method (existing profile)
+            return `import { initLearnCard } from '@learncard/init';
+
+const learnCard = await initLearnCard({ 
+    seed: process.env.LEARNCARD_SEED,
+    network: true 
+});
+
+// Option 1: Send using your boost template (for existing LearnCard users)
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'recipient-profile-id', // or DID
+    templateUri: '${boostUri}',
+});
+
+console.log('Credential URI:', result.credentialUri);
+
+// Option 2: Send via email (for new users)
+// Enter an email above to see the sendCredentialViaInbox code`;
+        }
+    };
+
+    const handleCopyApiCode = async () => {
+        const code = generateApiCodeSnippet();
+        await Clipboard.write({ string: code });
+        setApiCopied(true);
+        setTimeout(() => setApiCopied(false), 2000);
+    };
+
+    const handleApiStartPolling = async () => {
+        setApiIsPolling(true);
+        setApiPollResult(null);
+
+        try {
+            const wallet = await initWalletRef.current();
+            const initialCount = await wallet.invoke.getMySentInboxCredentials?.({ limit: 1 });
+            const initialTotal = initialCount?.hasMore ? 100 : (initialCount?.records?.length || 0);
+
+            // Poll for 30 seconds
+            let attempts = 0;
+            const maxAttempts = 15;
+
+            const poll = async () => {
+                if (attempts >= maxAttempts) {
+                    setApiIsPolling(false);
+                    setApiPollResult({ success: false, message: 'No new credentials detected. Make sure you ran your code.' });
+                    return;
+                }
+
+                attempts++;
+                const current = await wallet.invoke.getMySentInboxCredentials?.({ limit: 1 });
+                const currentTotal = current?.hasMore ? 100 : (current?.records?.length || 0);
+
+                if (currentTotal > initialTotal) {
+                    setApiIsPolling(false);
+                    setApiPollResult({ success: true, message: 'Credential sent successfully!' });
+                    return;
+                }
+
+                setTimeout(poll, 2000);
+            };
+
+            setTimeout(poll, 2000);
+        } catch (err) {
+            console.error('Polling error:', err);
+            setApiIsPolling(false);
+            setApiPollResult({ success: false, message: 'Failed to check credentials. Please try again.' });
+        }
+    };
+
     // Render based on integration method
     if (integrationMethod === 'api') {
         return (
@@ -310,40 +498,266 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                         <p className="font-medium mb-1">API Integration</p>
                         <p>
                             Use the LearnCard SDK to issue credentials programmatically. 
-                            You have full control over when and how credentials are issued.
+                            Configure your templates below and copy the code to your application.
                         </p>
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <h3 className="font-medium text-gray-800">Issue a Credential</h3>
+                {/* Template Selector */}
+                {templates.length > 0 && (
+                    <div className="space-y-3">
+                        <label className="block text-sm font-medium text-gray-700">Select Template</label>
 
-                    <CodeBlock
-                        code={`import { initLearnCard } from '@learncard/init';
+                        <div className="space-y-2">
+                            {templates.map(template => (
+                                <button
+                                    key={template.id}
+                                    onClick={() => setApiSelectedTemplate(template.id)}
+                                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                                        apiSelectedTemplate === template.id
+                                            ? 'border-cyan-500 bg-cyan-50'
+                                            : 'border-gray-200 bg-white hover:border-gray-300'
+                                    }`}
+                                >
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                        apiSelectedTemplate === template.id ? 'bg-cyan-500' : 'bg-gray-100'
+                                    }`}>
+                                        <Award className={`w-5 h-5 ${apiSelectedTemplate === template.id ? 'text-white' : 'text-gray-500'}`} />
+                                    </div>
 
-const learnCard = await initLearnCard({ 
-    apiKey: process.env.LEARNCARD_API_KEY,
-    network: true 
-});
+                                    <div className="flex-1 text-left">
+                                        <p className="font-medium text-gray-800">{template.name}</p>
+                                        <p className="text-xs text-gray-500">{template.description || 'No description'}</p>
+                                    </div>
 
-// Issue credential when course is completed
-async function issueCourseCredential(userId, courseData) {
-    const credential = await learnCard.invoke.issueCredential({
-        type: 'OpenBadgeCredential',
-        recipient: userId,
-        templateId: '${templates[0]?.id || 'your_template_id'}',
-        data: {
-            courseName: courseData.title,
-            completionDate: new Date().toISOString(),
-            grade: courseData.grade,
-        }
-    });
-    
-    return credential;
-}`}
+                                    {template.boostUri && (
+                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">Saved</span>
+                                    )}
+
+                                    {apiSelectedTemplate === template.id && (
+                                        <CheckCircle2 className="w-5 h-5 text-cyan-600" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Recipient Email */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Recipient Email 
+                        <span className="text-gray-400 font-normal"> (optional)</span>
+                    </label>
+
+                    <input
+                        type="email"
+                        value={apiRecipientEmail}
+                        onChange={(e) => setApiRecipientEmail(e.target.value)}
+                        placeholder="recipient@example.com"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     />
+
+                    <p className="text-xs text-gray-500 mt-1">
+                        Enter an email to see the Universal Inbox code. Leave blank for send-to-profile code.
+                    </p>
                 </div>
 
+                {/* Advanced Options Toggle */}
+                <button
+                    onClick={() => setApiShowAdvanced(!apiShowAdvanced)}
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                    {apiShowAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {apiShowAdvanced ? 'Hide' : 'Show'} Advanced Options
+                    {apiHasAdvancedOptions && <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">Active</span>}
+                </button>
+
+                {/* Advanced Options Panel */}
+                {apiShowAdvanced && (
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
+                        <p className="text-sm text-gray-600">
+                            Customize branding, webhooks, and delivery options.
+                        </p>
+
+                        {/* Branding Section */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                <Building2 className="w-4 h-4 text-indigo-500" />
+                                Email Branding
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Issuer Name</label>
+                                    <input
+                                        type="text"
+                                        value={apiAdvancedOptions.issuerName}
+                                        onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, issuerName: e.target.value }))}
+                                        placeholder="Your Organization"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Logo URL</label>
+                                    <input
+                                        type="url"
+                                        value={apiAdvancedOptions.issuerLogoUrl}
+                                        onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, issuerLogoUrl: e.target.value }))}
+                                        placeholder="https://example.com/logo.png"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Recipient Name</label>
+                                    <input
+                                        type="text"
+                                        value={apiAdvancedOptions.recipientName}
+                                        onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, recipientName: e.target.value }))}
+                                        placeholder="John Doe"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Webhook Section */}
+                        <div className="space-y-3 pt-3 border-t border-gray-200">
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                <Webhook className="w-4 h-4 text-emerald-500" />
+                                Webhook Notification
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Webhook URL</label>
+                                <input
+                                    type="url"
+                                    value={apiAdvancedOptions.webhookUrl}
+                                    onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                                    placeholder="https://your-server.com/webhook"
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Receive a POST request when the credential is claimed.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Suppress Delivery */}
+                        <div className="space-y-3 pt-3 border-t border-gray-200">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={apiAdvancedOptions.suppressDelivery}
+                                    onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, suppressDelivery: e.target.checked }))}
+                                    className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                                />
+                                <div className="flex items-center gap-2">
+                                    <BellOff className="w-4 h-4 text-amber-500" />
+                                    <span className="text-sm font-medium text-gray-700">Suppress Email Delivery</span>
+                                </div>
+                            </label>
+                            <p className="text-xs text-gray-500 ml-7">
+                                Don't send an email — get the claim URL to use in your own system.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Code Output */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <Code className="w-4 h-4 text-cyan-600" />
+                            Your Code
+                        </div>
+
+                        <button
+                            onClick={handleCopyApiCode}
+                            className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                        >
+                            {apiCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                            {apiCopied ? 'Copied!' : 'Copy'}
+                        </button>
+                    </div>
+
+                    <CodeBlock code={generateApiCodeSnippet()} />
+                </div>
+
+                {/* Verification Section */}
+                <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
+                    <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Send className="w-5 h-5 text-indigo-600" />
+                        </div>
+
+                        <div className="flex-1">
+                            <h4 className="font-medium text-gray-800 mb-1">Verify Your Code Worked</h4>
+                            <p className="text-sm text-gray-600 mb-3">
+                                Run your code, then click below to verify the credential was sent successfully.
+                            </p>
+
+                            {!apiIsPolling && !apiPollResult?.success && (
+                                <button
+                                    onClick={handleApiStartPolling}
+                                    className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                    Check for Sent Credentials
+                                </button>
+                            )}
+
+                            {apiIsPolling && (
+                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-200">
+                                    <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-700">Waiting for new credentials...</p>
+                                        <p className="text-xs text-gray-500">Run your code now. We'll detect when it's sent.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setApiIsPolling(false)}
+                                        className="ml-auto px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            )}
+
+                            {apiPollResult && (
+                                <div className={`flex items-center gap-3 p-3 rounded-lg ${
+                                    apiPollResult.success 
+                                        ? 'bg-emerald-50 border border-emerald-200' 
+                                        : 'bg-amber-50 border border-amber-200'
+                                }`}>
+                                    {apiPollResult.success ? (
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                    ) : (
+                                        <Clock className="w-5 h-5 text-amber-600" />
+                                    )}
+
+                                    <div className="flex-1">
+                                        <p className={`text-sm font-medium ${apiPollResult.success ? 'text-emerald-800' : 'text-amber-800'}`}>
+                                            {apiPollResult.message}
+                                        </p>
+                                    </div>
+
+                                    {!apiPollResult.success && (
+                                        <button
+                                            onClick={handleApiStartPolling}
+                                            className="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
+                                        >
+                                            Try Again
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Navigation */}
                 <div className="flex gap-3 pt-4 border-t border-gray-100">
                     <button
                         onClick={onBack}
