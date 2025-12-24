@@ -377,6 +377,7 @@ export type LearnCardNetworkPluginMethods = {
                   encrypt?: boolean;
                   overideFn?: (boost: UnsignedVC) => UnsignedVC;
                   skipNotification?: boolean;
+                  templateData?: Record<string, unknown>;
               }
     ) => Promise<string>;
 

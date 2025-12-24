@@ -422,12 +422,101 @@ For more details, see the [Send Credentials How-To Guide](../how-to-guides/send-
 
 ---
 
+## Bonus: Dynamic Templates with Mustache Variables
+
+Want to personalize credentials with unique data for each recipient? Boosts support **Mustache-style templating** that lets you inject dynamic values at issuance time.
+
+### Creating a Templated Boost
+
+Use `{{variableName}}` syntax in your credential template:
+
+```typescript
+const templatedCredential = {
+  '@context': [
+    'https://www.w3.org/2018/credentials/v1',
+    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
+    'https://ctx.learncard.com/boosts/1.0.3.json',
+  ],
+  type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+  issuer: 'did:web:example.com',
+  name: 'Certificate for {{courseName}}',
+  credentialSubject: {
+    id: 'did:example:recipient',
+    type: ['AchievementSubject'],
+    achievement: {
+      type: ['Achievement'],
+      name: '{{courseName}} Completion',
+      description: 'Awarded to {{studentName}} for completing {{courseName}} with grade {{grade}}',
+      criteria: { narrative: 'Successfully complete the course' },
+    },
+  },
+};
+
+const boostUri = await learnCard.invoke.createBoost(templatedCredential, {
+  name: 'Course Completion Template',
+});
+```
+
+### Sending with Personalized Data
+
+Provide `templateData` when sending to fill in the variables:
+
+```typescript
+const result = await learnCard.invoke.send({
+  type: 'boost',
+  recipient: 'student-profile-id',
+  templateUri: boostUri,
+  templateData: {
+    courseName: 'Web Development 101',
+    studentName: 'Alice Smith',
+    grade: 'A',
+  },
+});
+```
+
+The resulting credential will have all placeholders replaced:
+- `{{courseName}}` → `Web Development 101`
+- `{{studentName}}` → `Alice Smith`
+- `{{grade}}` → `A`
+
+{% hint style="info" %}
+**Missing Variables**: If you don't provide a value for a variable, it's rendered as an empty string. This is useful for optional fields.
+{% endhint %}
+
+### Issuing the Same Template to Multiple Students
+
+```typescript
+const students = [
+  { profileId: 'alice', name: 'Alice Smith', grade: 'A' },
+  { profileId: 'bob', name: 'Bob Johnson', grade: 'B+' },
+  { profileId: 'charlie', name: 'Charlie Brown', grade: 'A-' },
+];
+
+for (const student of students) {
+  await learnCard.invoke.send({
+    type: 'boost',
+    recipient: student.profileId,
+    templateUri: boostUri,
+    templateData: {
+      courseName: 'Web Development 101',
+      studentName: student.name,
+      grade: student.grade,
+    },
+  });
+}
+```
+
+For more details on dynamic templates, see [Dynamic Templates with Mustache](../core-concepts/credentials-and-data/boost-credentials.md#dynamic-templates-with-mustache).
+
+---
+
 ## Summary & What's Next
 
-Fantastic! You've now learned how to: ✅ Understand the value of Boosts for reusable credential templates. ✅ Define the content for a Boost. ✅ Create a Boost using the LearnCard SDK. ✅ Send instances of that Boost to multiple recipients. ✅ Use the simplified `send` method for quick issuance.
+Fantastic! You've now learned how to: ✅ Understand the value of Boosts for reusable credential templates. ✅ Define the content for a Boost. ✅ Create a Boost using the LearnCard SDK. ✅ Send instances of that Boost to multiple recipients. ✅ Use the simplified `send` method for quick issuance. ✅ Use dynamic templates with Mustache variables for personalized credentials.
 
 Boosts are a powerful way to manage credentialing at scale. From here, you can explore:
 
+* **Dynamic Templates:** Use Mustache variables for personalized credentials. (See [Dynamic Templates with Mustache](../core-concepts/credentials-and-data/boost-credentials.md#dynamic-templates-with-mustache)).
 * **Retrieving Boost Recipients:** Use `learnCard.invoke.getPaginatedBoostRecipients(boostUri)` to see who has been issued a credential from this Boost.
 * **Boost Permissions:** Control who can edit, issue, or manage your Boosts. (See Boost Permission Model).
 * **Default Permissions:** Use `defaultPermissions` to create open Boosts that anyone can issue. (See [Default Permissions](../core-concepts/credentials-and-data/boost-credentials.md#default-permissions)).

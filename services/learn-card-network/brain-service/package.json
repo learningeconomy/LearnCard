@@ -39,7 +39,8 @@
         "serverless-offline": "^14.4.0",
         "serverless-prune-plugin": "^2.1.0",
         "shx": "^0.3.4",
-        "testcontainers": "^9.1.1"
+        "testcontainers": "^9.1.1",
+        "@types/mustache": "^4.2.5"
     },
     "dependencies": {
         "@aws-sdk/client-sqs": "^3.379.1",
@@ -85,7 +86,8 @@
         "tsc-alias": "^1.8.10",
         "zod-openapi": "^5.0.1",
         "twilio": "^5.7.1",
-        "uuid": "^9.0.0"
+        "uuid": "^9.0.0",
+        "mustache": "^4.2.0"
     },
     "repository": {
         "type": "git",

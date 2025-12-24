@@ -107,6 +107,94 @@ interface SendResponse {
 
 ---
 
+## Dynamic Templates with `templateData`
+
+Use Mustache-style templates to personalize credentials with unique data for each recipient. This is perfect for issuing the same type of credential (like course completions) with recipient-specific details.
+
+### Creating a Templated Boost
+
+First, create a boost with `{{variableName}}` placeholders:
+
+```typescript
+const templatedBoostUri = await learnCard.invoke.createBoost({
+    "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
+    ],
+    "type": ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"],
+    "name": "Certificate for {{courseName}}",
+    "credentialSubject": {
+        "type": ["AchievementSubject"],
+        "achievement": {
+            "type": ["Achievement"],
+            "name": "{{courseName}} - {{level}}",
+            "description": "Awarded to {{studentName}} for completing {{courseName}} with grade {{grade}}",
+            "criteria": { "narrative": "Complete all course modules" }
+        }
+    }
+}, { name: 'Course Completion Template' });
+```
+
+### Sending with Personalized Data
+
+Provide `templateData` when sending to substitute the variables:
+
+```typescript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'student-profile-id',
+    templateUri: templatedBoostUri,
+    templateData: {
+        courseName: 'Web Development 101',
+        level: 'Beginner',
+        studentName: 'Alice Smith',
+        grade: 'A',
+    },
+});
+```
+
+The issued credential will have all placeholders replaced with the provided values.
+
+### Batch Issuance to Multiple Recipients
+
+```typescript
+const students = [
+    { profileId: 'alice', name: 'Alice Smith', grade: 'A' },
+    { profileId: 'bob', name: 'Bob Johnson', grade: 'B+' },
+    { profileId: 'charlie', name: 'Charlie Brown', grade: 'A-' },
+];
+
+for (const student of students) {
+    await learnCard.invoke.send({
+        type: 'boost',
+        recipient: student.profileId,
+        templateUri: templatedBoostUri,
+        templateData: {
+            courseName: 'Web Development 101',
+            level: 'Beginner',
+            studentName: student.name,
+            grade: student.grade,
+        },
+    });
+}
+```
+
+### Special Characters
+
+Template values are automatically escaped for JSON safety. You can safely include:
+- Quotes: `"Course with \"quotes\""`
+- Newlines: `"Line 1\nLine 2"`
+- Backslashes: `"Path\\to\\file"`
+- Unicode: `"Café ☕ 日本語"`
+
+{% hint style="info" %}
+**Missing Variables**: If a variable in the template isn't provided in `templateData`, it renders as an empty string. This allows for optional fields.
+{% endhint %}
+
+For more details, see [Dynamic Templates with Mustache](../core-concepts/credentials-and-data/boost-credentials.md#dynamic-templates-with-mustache).
+
+---
+
 ## Alternative: Universal Inbox API
 
 Use the Universal Inbox API when you need to send credentials to **users who don't have a LearnCard profile yet**. This allows you to reach recipients via email or phone number, and they'll be guided through creating an account when they claim their credential.
