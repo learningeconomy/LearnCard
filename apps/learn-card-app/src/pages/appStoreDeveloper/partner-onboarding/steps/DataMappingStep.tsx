@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
+import Papa from 'papaparse';
 import {
     GitMerge,
     ArrowRight,
@@ -13,6 +14,10 @@ import {
     Loader2,
     Save,
     Link2,
+    Upload,
+    FileSpreadsheet,
+    Download,
+    Table,
 } from 'lucide-react';
 
 import { Clipboard } from '@capacitor/clipboard';
@@ -79,10 +84,22 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const [selectedSource, setSelectedSource] = useState<string | null>(null);
     const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
 
+    // CSV-specific state
+    const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+    const [csvPreviewRows, setCsvPreviewRows] = useState<Record<string, string>[]>([]);
+    const [csvFileName, setCsvFileName] = useState<string | null>(null);
+    const csvInputRef = useRef<HTMLInputElement>(null);
+
     const integrationId = project?.id;
 
-    // Extract all field paths from sample payload
+    // Extract all field paths from sample payload (webhook) or CSV headers
     const sourceFields = useMemo(() => {
+        // For CSV, use the headers
+        if (integrationMethod === 'csv' && csvHeaders.length > 0) {
+            return csvHeaders;
+        }
+
+        // For webhook, extract paths from sample payload
         if (!samplePayload) return [];
 
         const extractPaths = (obj: Record<string, unknown>, prefix = ''): string[] => {
@@ -102,7 +119,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         };
 
         return extractPaths(samplePayload);
-    }, [samplePayload]);
+    }, [samplePayload, csvHeaders, integrationMethod]);
 
     // Get target fields from selected template
     const targetFields = useMemo(() => {
@@ -124,6 +141,50 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
             setSamplePayload(SAMPLE_WEBHOOK_PAYLOAD);
             setIsWaiting(false);
         }, 2000);
+    };
+
+    // Handle CSV file upload
+    const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setCsvFileName(file.name);
+
+        Papa.parse(file, {
+            header: true,
+            preview: 5, // Only parse first 5 rows for preview
+            complete: (result) => {
+                const headers = result.meta.fields || [];
+                const rows = result.data as Record<string, string>[];
+
+                setCsvHeaders(headers.filter(h => h.trim() !== ''));
+                setCsvPreviewRows(rows.filter(row => Object.values(row).some(v => v?.trim())));
+
+                // Reset mappings when new file is uploaded
+                setMappings([]);
+            },
+            error: (error) => {
+                console.error('CSV parse error:', error);
+                presentToast('Failed to parse CSV file', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            },
+        });
+    };
+
+    // Generate CSV template for download
+    const handleDownloadTemplate = () => {
+        const template = templates.find(t => t.id === selectedTemplate);
+        if (!template) return;
+
+        const headers = template.fields.map(f => f.name);
+        const csvContent = headers.join(',') + '\n' + headers.map(() => '').join(',');
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${template.name.toLowerCase().replace(/\s+/g, '-')}-template.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     // Handle selecting a source field
@@ -234,7 +295,9 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         }
     };
 
-    const canProceed = integrationMethod === 'csv' || integrationMethod === 'api' || (samplePayload && mappings.length > 0);
+    const canProceed = integrationMethod === 'api' || 
+        (integrationMethod === 'csv' && csvHeaders.length > 0 && mappings.length > 0) ||
+        (integrationMethod === 'webhook' && samplePayload && mappings.length > 0);
 
     // Render based on integration method
     if (integrationMethod === 'api') {
@@ -306,35 +369,292 @@ async function issueCourseCredential(userId, courseData) {
         return (
             <div className="space-y-6">
                 <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <Zap className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <FileSpreadsheet className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
                     <div className="text-sm text-amber-800">
-                        <p className="font-medium mb-1">CSV Upload</p>
+                        <p className="font-medium mb-1">CSV Upload Integration</p>
                         <p>
-                            Download a template CSV file, fill it with your completion data, 
-                            and upload it to issue credentials in bulk.
+                            Upload a sample CSV file to map your columns to credential fields.
+                            You can use your own data format or download a template.
                         </p>
                     </div>
                 </div>
 
+                {/* Template selector if multiple templates */}
+                {templates.length > 1 && (
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Select Template</label>
+                        <select
+                            value={selectedTemplate}
+                            onChange={(e) => {
+                                setSelectedTemplate(e.target.value);
+                                setMappings([]);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                        >
+                            {templates.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                {/* Upload or Download section */}
                 <div className="space-y-4">
-                    <h3 className="font-medium text-gray-800">CSV Template</h3>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                            <Upload className="w-5 h-5 text-amber-600" />
+                        </div>
 
-                    <p className="text-sm text-gray-600">
-                        Your CSV should include the following columns based on your credential template:
-                    </p>
-
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                        <code className="text-sm text-gray-700">
-                            {templates[0]?.fields.map(f => f.name.toLowerCase().replace(/\s+/g, '_')).join(', ') || 'recipient_name, issue_date'}
-                        </code>
+                        <div>
+                            <h3 className="font-semibold text-gray-800">Upload Sample CSV</h3>
+                            <p className="text-sm text-gray-500">Upload a CSV with your column headers</p>
+                        </div>
                     </div>
 
-                    <button className="flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors">
-                        Download CSV Template
-                    </button>
+                    <input
+                        ref={csvInputRef}
+                        type="file"
+                        accept=".csv"
+                        onChange={handleCsvUpload}
+                        className="hidden"
+                    />
+
+                    {!csvFileName ? (
+                        <div className="space-y-3">
+                            <div
+                                onClick={() => csvInputRef.current?.click()}
+                                className="p-6 border-2 border-dashed border-amber-300 rounded-xl text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-colors"
+                            >
+                                <Upload className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+                                <p className="text-sm text-gray-600 mb-1">
+                                    Click to upload a CSV file
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                    We'll extract column headers for mapping
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="flex-1 h-px bg-gray-200" />
+                                <span className="text-xs text-gray-400">or</span>
+                                <div className="flex-1 h-px bg-gray-200" />
+                            </div>
+
+                            <button 
+                                onClick={handleDownloadTemplate}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                <Download className="w-4 h-4" />
+                                Download CSV Template
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {/* File uploaded indicator */}
+                            <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                <Check className="w-5 h-5 text-emerald-600" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-emerald-800">{csvFileName}</p>
+                                    <p className="text-xs text-emerald-600">{csvHeaders.length} columns detected</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setCsvFileName(null);
+                                        setCsvHeaders([]);
+                                        setCsvPreviewRows([]);
+                                        setMappings([]);
+                                        if (csvInputRef.current) csvInputRef.current.value = '';
+                                    }}
+                                    className="p-1 text-gray-400 hover:text-red-500 rounded"
+                                >
+                                    ×
+                                </button>
+                            </div>
+
+                            {/* CSV Preview */}
+                            {csvPreviewRows.length > 0 && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Table className="w-4 h-4 text-gray-500" />
+                                        <span className="text-sm font-medium text-gray-700">Data Preview</span>
+                                    </div>
+                                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                                        <table className="min-w-full text-xs">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    {csvHeaders.slice(0, 5).map(header => (
+                                                        <th key={header} className="px-3 py-2 text-left font-medium text-gray-600 border-b">
+                                                            {header}
+                                                        </th>
+                                                    ))}
+                                                    {csvHeaders.length > 5 && (
+                                                        <th className="px-3 py-2 text-left font-medium text-gray-400 border-b">
+                                                            +{csvHeaders.length - 5} more
+                                                        </th>
+                                                    )}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {csvPreviewRows.slice(0, 3).map((row, idx) => (
+                                                    <tr key={idx} className="border-b border-gray-100 last:border-0">
+                                                        {csvHeaders.slice(0, 5).map(header => (
+                                                            <td key={header} className="px-3 py-2 text-gray-700 truncate max-w-32">
+                                                                {row[header] || '-'}
+                                                            </td>
+                                                        ))}
+                                                        {csvHeaders.length > 5 && (
+                                                            <td className="px-3 py-2 text-gray-400">...</td>
+                                                        )}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
+                {/* Field Mapping - reuse same UI as webhook */}
+                {csvHeaders.length > 0 && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
+                                <GitMerge className="w-5 h-5 text-violet-600" />
+                            </div>
+
+                            <div>
+                                <h3 className="font-semibold text-gray-800">Map Columns</h3>
+                                <p className="text-sm text-gray-500">Connect CSV columns to credential fields</p>
+                            </div>
+                        </div>
+
+                        {/* Current Mappings */}
+                        {mappings.length > 0 && (
+                            <div className="space-y-2">
+                                {mappings.map((mapping, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="flex items-center gap-2 p-3 bg-emerald-50 rounded-lg"
+                                    >
+                                        <code className="text-sm text-gray-700">{mapping.sourceField}</code>
+
+                                        <ChevronRight className="w-4 h-4 text-gray-400" />
+
+                                        <code className="text-sm text-emerald-700 font-medium">{mapping.targetField}</code>
+
+                                        <button
+                                            onClick={() => handleRemoveMapping(idx)}
+                                            className="ml-auto p-1 text-gray-400 hover:text-red-500 rounded"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Instructions */}
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                            <p className="text-xs text-blue-800">
+                                <strong>How to map:</strong> Click a CSV column on the left, then click a credential field on the right to connect them.
+                            </p>
+                        </div>
+
+                        {/* Two-column selection UI */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    CSV Columns
+                                    {selectedSource && <span className="ml-2 text-cyan-600">→ Select target</span>}
+                                </label>
+
+                                <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                                    {sourceFields
+                                        .filter(f => !mappings.some(m => m.sourceField === f))
+                                        .map(field => {
+                                            const isSelected = selectedSource === field;
+                                            return (
+                                                <button
+                                                    key={field}
+                                                    onClick={() => handleSelectSource(field)}
+                                                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-all ${
+                                                        isSelected
+                                                            ? 'bg-cyan-500 text-white shadow-md'
+                                                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                                                    }`}
+                                                >
+                                                    <code className={isSelected ? 'text-white' : 'text-gray-700'}>{field}</code>
+                                                </button>
+                                            );
+                                        })}
+
+                                    {sourceFields.filter(f => !mappings.some(m => m.sourceField === f)).length === 0 && (
+                                        <p className="text-xs text-gray-400 text-center py-2">All columns mapped</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    Credential Fields
+                                    {selectedTarget && <span className="ml-2 text-cyan-600">← Select source</span>}
+                                </label>
+
+                                <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                                    {targetFields
+                                        .filter(f => !mappings.some(m => m.targetField === f))
+                                        .map(field => {
+                                            const isSelected = selectedTarget === field;
+                                            return (
+                                                <button
+                                                    key={field}
+                                                    onClick={() => handleSelectTarget(field)}
+                                                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-all ${
+                                                        isSelected
+                                                            ? 'bg-emerald-500 text-white shadow-md'
+                                                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
+                                                    }`}
+                                                >
+                                                    <code className={isSelected ? 'text-white' : 'text-emerald-700'}>{field}</code>
+                                                </button>
+                                            );
+                                        })}
+
+                                    {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length === 0 && (
+                                        <p className="text-xs text-gray-400 text-center py-2">All fields mapped</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Selection hint */}
+                        {(selectedSource || selectedTarget) && (
+                            <div className="flex items-center justify-center gap-2 p-2 bg-cyan-50 rounded-lg text-sm text-cyan-700">
+                                {selectedSource && <code className="bg-cyan-500 text-white px-2 py-0.5 rounded">{selectedSource}</code>}
+                                {selectedSource && selectedTarget && <ChevronRight className="w-4 h-4" />}
+                                {selectedTarget && <code className="bg-emerald-500 text-white px-2 py-0.5 rounded">{selectedTarget}</code>}
+                                {(selectedSource && !selectedTarget) && <span>Now select a credential field →</span>}
+                                {(selectedTarget && !selectedSource) && <span>← Now select a CSV column</span>}
+                            </div>
+                        )}
+
+                        {/* Unmapped warning */}
+                        {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length > 0 && mappings.length > 0 && (
+                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-amber-800">
+                                    {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length} credential field(s) still need to be mapped.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Navigation */}
                 <div className="flex gap-3 pt-4 border-t border-gray-100">
                     <button
                         onClick={onBack}
@@ -345,11 +665,22 @@ async function issueCourseCredential(userId, courseData) {
                     </button>
 
                     <button
-                        onClick={() => onComplete({ mappings: [], webhookUrl: undefined }, templates)}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                        onClick={handleSaveAndContinue}
+                        disabled={!canProceed || isSaving}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Continue to Testing
-                        <ArrowRight className="w-4 h-4" />
+                        {isSaving ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                Save & Continue
+                                <ArrowRight className="w-4 h-4" />
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
