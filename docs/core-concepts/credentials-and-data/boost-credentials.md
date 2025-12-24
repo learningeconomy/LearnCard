@@ -391,6 +391,155 @@ const query = {
 
 The query system is powered by a Neo4j database and includes helper functions for converting JavaScript query objects to Neo4j-compatible formats.
 
+## Dynamic Templates with Mustache
+
+Boosts support **dynamic templating** using Mustache-style variables (`{{variableName}}`). This allows you to create reusable credential templates where specific values are injected at the time of issuance.
+
+### Why Use Dynamic Templates?
+
+Dynamic templates solve a common challenge: you want to issue credentials that share the same structure but contain personalized data for each recipient. Instead of creating a new Boost for each variation, you create one template and provide the unique data when sending.
+
+**Use cases include:**
+- **Personalized certificates**: Include the recipient's name, completion date, or score
+- **Course completions**: Dynamic course name, grade, or instructor
+- **Event attendance**: Event date, location, or session details
+- **Achievement levels**: Tier, points earned, or ranking
+
+### Creating a Templated Boost
+
+Define your Boost credential with Mustache variables where you want dynamic values:
+
+```typescript
+const templatedCredential = {
+  '@context': [
+    'https://www.w3.org/2018/credentials/v1',
+    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
+    'https://ctx.learncard.com/boosts/1.0.3.json',
+  ],
+  type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+  issuer: 'did:web:example.com',
+  name: 'Certificate for {{courseName}}',
+  credentialSubject: {
+    id: 'did:example:recipient',
+    type: ['AchievementSubject'],
+    achievement: {
+      id: 'urn:uuid:123',
+      type: ['Achievement'],
+      achievementType: 'Course',
+      name: '{{courseName}} - {{level}}',
+      description: 'Awarded to {{studentName}} for completing {{courseName}}',
+      criteria: {
+        narrative: 'Complete the {{courseName}} course with grade {{grade}}.',
+      },
+    },
+  },
+};
+
+// Create the boost template
+const boostUri = await learnCard.invoke.createBoost(templatedCredential, {
+  name: 'Course Completion Certificate',
+  category: 'Education',
+});
+```
+
+### Sending with Template Data
+
+When sending the Boost, provide the `templateData` object to fill in the variables:
+
+```typescript
+// Send the boost with personalized data
+const result = await learnCard.invoke.send({
+  type: 'boost',
+  recipient: 'recipient-profile-id',
+  templateUri: boostUri,
+  templateData: {
+    courseName: 'Web Development 101',
+    level: 'Beginner',
+    studentName: 'Alice Smith',
+    grade: 'A',
+  },
+});
+```
+
+The resulting credential will have all `{{variableName}}` placeholders replaced with the corresponding values from `templateData`.
+
+### Using sendBoost with Template Data
+
+You can also use the `sendBoost` method directly:
+
+```typescript
+const credentialUri = await learnCard.invoke.sendBoost(
+  'recipient-profile-id',
+  boostUri,
+  {
+    encrypt: true,
+    templateData: {
+      courseName: 'Advanced TypeScript',
+      level: 'Advanced',
+      studentName: 'Bob Johnson',
+      grade: 'A+',
+    },
+  }
+);
+```
+
+### Template Behavior
+
+| Scenario | Behavior |
+| -------- | -------- |
+| Variable in template, value provided | Variable is replaced with the value |
+| Variable in template, value missing | Variable is replaced with empty string |
+| No variables in template | Template is used as-is (backwards compatible) |
+| `templateData` provided, no variables | Data is ignored, template used as-is |
+
+{% hint style="info" %}
+**Missing Variables**: If a variable in the template is not provided in `templateData`, Mustache renders it as an empty string. This is the expected default behavior and allows for optional fields.
+{% endhint %}
+
+### Example: Event Attendance with Dynamic Date
+
+```typescript
+// Create a templated event attendance boost
+const eventBoostUri = await learnCard.invoke.createBoost({
+  '@context': [
+    'https://www.w3.org/2018/credentials/v1',
+    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
+  ],
+  type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+  issuer: 'did:web:events.example.com',
+  name: '{{eventName}} Attendance',
+  credentialSubject: {
+    id: 'did:example:recipient',
+    type: ['AchievementSubject'],
+    achievement: {
+      type: ['Achievement'],
+      name: '{{eventName}} - {{eventDate}}',
+      description: 'Attended {{eventName}} on {{eventDate}} at {{location}}',
+      criteria: { narrative: 'Present at the event venue' },
+    },
+  },
+}, { name: 'Event Attendance Template' });
+
+// Issue to multiple attendees with the same event data
+const attendees = ['alice', 'bob', 'charlie'];
+for (const profileId of attendees) {
+  await learnCard.invoke.send({
+    type: 'boost',
+    recipient: profileId,
+    templateUri: eventBoostUri,
+    templateData: {
+      eventName: 'Tech Conference 2025',
+      eventDate: 'January 15, 2025',
+      location: 'San Francisco, CA',
+    },
+  });
+}
+```
+
+{% hint style="success" %}
+**Backwards Compatibility**: Existing Boosts without Mustache variables continue to work exactly as before. You can safely add `templateData` to any `send` or `sendBoost` call—if there are no variables in the template, the data is simply ignored.
+{% endhint %}
+
 ## Types of Boosts
 
 ### Basic Boost
