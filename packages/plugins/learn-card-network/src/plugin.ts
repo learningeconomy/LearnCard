@@ -1048,12 +1048,18 @@ export async function getLearnCardNetworkPlugin(
                                 input.templateData &&
                                 Object.keys(input.templateData).length > 0
                             ) {
-                                const boostString = JSON.stringify(boost);
-                                const rendered = renderTemplateJson(
-                                    boostString,
-                                    input.templateData
-                                );
-                                boost = JSON.parse(rendered);
+                                try {
+                                    const boostString = JSON.stringify(boost);
+                                    const rendered = renderTemplateJson(
+                                        boostString,
+                                        input.templateData
+                                    );
+                                    boost = JSON.parse(rendered);
+                                } catch (error) {
+                                    throw new Error(
+                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'}`
+                                    );
+                                }
                             }
 
                             if (isVC2Format(boost)) {
