@@ -1036,6 +1036,19 @@ export async function getLearnCardNetworkPlugin(
 
                             let boost = data.data;
 
+                            // Apply templateData if provided
+                            if (
+                                input.templateData &&
+                                Object.keys(input.templateData).length > 0
+                            ) {
+                                const boostString = JSON.stringify(boost);
+                                const rendered = renderTemplateJson(
+                                    boostString,
+                                    input.templateData
+                                );
+                                boost = JSON.parse(rendered);
+                            }
+
                             if (isVC2Format(boost)) {
                                 boost.validFrom = new Date().toISOString();
                             } else {

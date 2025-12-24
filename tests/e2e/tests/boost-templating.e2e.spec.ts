@@ -289,15 +289,24 @@ describe('Boost Templating E2E Tests', () => {
 
             expect(result.credentialUri).toBeDefined();
 
-            // Accept the credential and verify its contents
+            // Accept the credential
             await b.invoke.acceptCredential(result.credentialUri);
 
-            const credential = await b.invoke.resolveFromLCN(result.credentialUri);
+            // Get the received credentials and find the one we just accepted
+            const receivedCredentials = await b.invoke.getReceivedCredentials();
+            const receivedCred = receivedCredentials.find(
+                (c: { uri: string }) => c.uri === result.credentialUri
+            );
+            expect(receivedCred).toBeDefined();
+
+            // Resolve the actual credential content
+            const credential = await b.invoke.resolveFromLCN(receivedCred!.uri);
             expect(credential).toBeDefined();
 
-            // Verify the template values were substituted
-            // The credential may be wrapped, so we need to handle both cases
+            // The credential may be wrapped in a boostCredential property
             const vc = (credential as any)?.boostCredential ?? credential;
+
+            // Verify the template values were substituted
             expect(vc?.name).toBe('Certificate for JavaScript Fundamentals');
 
             const subject = Array.isArray(vc?.credentialSubject)
@@ -308,6 +317,204 @@ describe('Boost Templating E2E Tests', () => {
             expect(subject?.achievement?.description).toContain('Alice Smith');
             expect(subject?.achievement?.description).toContain('JavaScript Fundamentals');
             expect(subject?.achievement?.criteria?.narrative).toContain('A+');
+        });
+
+        it('should correctly escape special characters in credential content', async () => {
+            const boostUri = await a.invoke.createBoost(testTemplatedBoost);
+
+            const templateData = {
+                courseName: 'Course with "quotes" and \\backslashes\\',
+                level: 'Advanced',
+                studentName: 'Test "User" Name',
+                grade: 'A+',
+            };
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                templateUri: boostUri,
+                templateData,
+            });
+
+            expect(result.credentialUri).toBeDefined();
+
+            await b.invoke.acceptCredential(result.credentialUri);
+
+            const receivedCredentials = await b.invoke.getReceivedCredentials();
+            const receivedCred = receivedCredentials.find(
+                (c: { uri: string }) => c.uri === result.credentialUri
+            );
+            expect(receivedCred).toBeDefined();
+
+            const credential = await b.invoke.resolveFromLCN(receivedCred!.uri);
+            const vc = (credential as any)?.boostCredential ?? credential;
+
+            // Verify special characters are preserved in the final credential
+            expect(vc?.name).toContain('quotes');
+            expect(vc?.name).toContain('backslashes');
+        });
+
+        it('should issue unique credentials with different templateData to same recipient', async () => {
+            const boostUri = await a.invoke.createBoost(testTemplatedBoost);
+
+            // First credential
+            const result1 = await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                templateUri: boostUri,
+                templateData: {
+                    courseName: 'Course One',
+                    level: 'Beginner',
+                    studentName: 'Student',
+                    grade: 'A',
+                },
+            });
+
+            // Second credential with different data
+            const result2 = await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                templateUri: boostUri,
+                templateData: {
+                    courseName: 'Course Two',
+                    level: 'Advanced',
+                    studentName: 'Student',
+                    grade: 'B',
+                },
+            });
+
+            expect(result1.credentialUri).toBeDefined();
+            expect(result2.credentialUri).toBeDefined();
+            expect(result1.credentialUri).not.toBe(result2.credentialUri);
+
+            // Both should use the same boost URI
+            expect(result1.uri).toBe(boostUri);
+            expect(result2.uri).toBe(boostUri);
+
+            // Accept both credentials
+            await b.invoke.acceptCredential(result1.credentialUri);
+            await b.invoke.acceptCredential(result2.credentialUri);
+
+            const receivedCredentials = await b.invoke.getReceivedCredentials();
+
+            const cred1 = receivedCredentials.find(
+                (c: { uri: string }) => c.uri === result1.credentialUri
+            );
+            const cred2 = receivedCredentials.find(
+                (c: { uri: string }) => c.uri === result2.credentialUri
+            );
+
+            expect(cred1).toBeDefined();
+            expect(cred2).toBeDefined();
+
+            // Verify they have different content
+            const vc1 = await b.invoke.resolveFromLCN(cred1!.uri);
+            const vc2 = await b.invoke.resolveFromLCN(cred2!.uri);
+
+            const unwrapped1 = (vc1 as any)?.boostCredential ?? vc1;
+            const unwrapped2 = (vc2 as any)?.boostCredential ?? vc2;
+
+            expect(unwrapped1?.name).toBe('Certificate for Course One');
+            expect(unwrapped2?.name).toBe('Certificate for Course Two');
+        });
+
+        it('should produce verifiable credentials with templateData', async () => {
+            const boostUri = await a.invoke.createBoost(testTemplatedBoost);
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                templateUri: boostUri,
+                templateData: {
+                    courseName: 'Verifiable Course',
+                    level: 'Expert',
+                    studentName: 'Verified Student',
+                    grade: 'A+',
+                },
+            });
+
+            expect(result.credentialUri).toBeDefined();
+
+            await b.invoke.acceptCredential(result.credentialUri);
+
+            const receivedCredentials = await b.invoke.getReceivedCredentials();
+            const receivedCred = receivedCredentials.find(
+                (c: { uri: string }) => c.uri === result.credentialUri
+            );
+
+            const credential = await b.invoke.resolveFromLCN(receivedCred!.uri);
+            const vc = (credential as any)?.boostCredential ?? credential;
+
+            // Verify the credential has a proof (is signed)
+            expect(vc?.proof).toBeDefined();
+
+            // Verify the credential
+            const verificationResult = await b.invoke.verifyCredential(vc);
+            expect(verificationResult.errors).toHaveLength(0);
+        });
+    });
+
+    describe('Local vs Remote Issuance', () => {
+        it('should apply templateData when issuing locally (client has issueCredential)', async () => {
+            // This test verifies the local issuance path in the network plugin
+            const boostUri = await a.invoke.createBoost(testTemplatedBoost);
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                templateUri: boostUri,
+                templateData: {
+                    courseName: 'Local Issuance Test',
+                    level: 'Intermediate',
+                    studentName: 'Local Student',
+                    grade: 'B+',
+                },
+            });
+
+            expect(result.credentialUri).toBeDefined();
+
+            await b.invoke.acceptCredential(result.credentialUri);
+
+            const receivedCredentials = await b.invoke.getReceivedCredentials();
+            const receivedCred = receivedCredentials.find(
+                (c: { uri: string }) => c.uri === result.credentialUri
+            );
+
+            const credential = await b.invoke.resolveFromLCN(receivedCred!.uri);
+            const vc = (credential as any)?.boostCredential ?? credential;
+
+            expect(vc?.name).toBe('Certificate for Local Issuance Test');
+
+            const subject = Array.isArray(vc?.credentialSubject)
+                ? vc?.credentialSubject[0]
+                : vc?.credentialSubject;
+
+            expect(subject?.achievement?.name).toBe('Local Issuance Test - Intermediate');
+        });
+    });
+
+    describe('Template with New Boost Creation', () => {
+        it('should work with templateData when creating a new boost inline', async () => {
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: USERS.b.profileId,
+                template: {
+                    credential: testTemplatedBoost,
+                },
+                templateData: {
+                    courseName: 'Inline Created Course',
+                    level: 'Beginner',
+                    studentName: 'Inline Student',
+                    grade: 'A',
+                },
+            });
+
+            expect(result.credentialUri).toBeDefined();
+            expect(result.uri).toBeDefined();
+
+            // Verify a new boost was created
+            const boost = await a.invoke.getBoost(result.uri);
+            expect(boost).toBeDefined();
         });
     });
 });
