@@ -6,10 +6,11 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use tokio::runtime::Runtime;
 
-// Single-threaded runtime for blocking execution - avoids all async/thread overhead
-// since we run everything synchronously on the calling thread
+// Multi-threaded runtime with 1 worker thread - handles Node.js shutdown gracefully
+// (current_thread runtime causes segfaults on process exit)
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
-    tokio::runtime::Builder::new_current_thread()
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
         .enable_all()
         .build()
         .expect("Failed to create Tokio runtime")
@@ -65,32 +66,32 @@ pub fn key_to_did(method_pattern: String, jwk_json: String) -> Result<String> {
 }
 
 #[napi]
-pub fn key_to_verification_method(method_pattern: String, jwk_json: String) -> Result<String> {
+pub async fn key_to_verification_method(method_pattern: String, jwk_json: String) -> Result<String> {
     let jwk: JWK =
         serde_json::from_str(&jwk_json).map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let did = DID_METHODS
         .generate(&Source::KeyAndPattern(&jwk, &method_pattern))
         .ok_or_else(|| Error::from_reason("Unable to generate DID".to_string()))?;
     let did_resolver = DID_METHODS.to_resolver();
-    let vm = block_on(get_verification_method(&did, did_resolver))
+    let vm = get_verification_method(&did, did_resolver).await
         .ok_or_else(|| Error::from_reason("Unable to get verification method".to_string()))?;
     Ok(vm)
 }
 
 #[napi]
-pub fn did_to_verification_method(did: String) -> Result<String> {
+pub async fn did_to_verification_method(did: String) -> Result<String> {
     let did_resolver = DID_METHODS.to_resolver();
-    let vm = block_on(get_verification_method(&did, did_resolver))
+    let vm = get_verification_method(&did, did_resolver).await
         .ok_or_else(|| Error::from_reason("Unable to get verification method".to_string()))?;
     Ok(vm)
 }
 
 #[napi]
-pub fn resolve_did(did: String, input_metadata: String) -> Result<String> {
+pub async fn resolve_did(did: String, input_metadata: String) -> Result<String> {
     let input_meta: ssi::did_resolve::ResolutionInputMetadata =
         serde_json::from_str(&input_metadata)
             .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
-    let (res_meta, doc, _) = block_on(DID_METHODS.to_resolver().resolve(&did, &input_meta));
+    let (res_meta, doc, _) = DID_METHODS.to_resolver().resolve(&did, &input_meta).await;
 
     if let Some(error) = res_meta.error {
         return Err(Error::from_reason(error));
@@ -104,12 +105,12 @@ pub fn resolve_did(did: String, input_metadata: String) -> Result<String> {
 }
 
 #[napi]
-pub fn did_resolver(did: String, input_metadata: String) -> Result<String> {
+pub async fn did_resolver(did: String, input_metadata: String) -> Result<String> {
     let input_meta: ssi::did_resolve::ResolutionInputMetadata =
         serde_json::from_str(&input_metadata)
             .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let (did_resolution_metadata, did_document, did_document_metadata) =
-        block_on(DID_METHODS.to_resolver().resolve(&did, &input_meta));
+        DID_METHODS.to_resolver().resolve(&did, &input_meta).await;
 
     let resolution_result = ResolutionResult {
         did_document,
@@ -125,7 +126,7 @@ pub fn did_resolver(did: String, input_metadata: String) -> Result<String> {
 // Credential operations
 
 #[napi]
-pub fn issue_credential(
+pub async fn issue_credential(
     credential: String,
     proof_options: String,
     key: String,
@@ -147,16 +148,16 @@ pub fn issue_credential(
 
     let vc_string = match proof_format {
         ProofFormat::JWT => {
-            block_on(credential.generate_jwt(Some(&jwk), &options.ldp_options, resolver))
+            credential.generate_jwt(Some(&jwk), &options.ldp_options, resolver).await
                 .map_err(|e| Error::from_reason(format!("jwt: {}", e)))?
         }
         _ => {
-            let proof = block_on(credential.generate_proof(
+            let proof = credential.generate_proof(
                 &jwk,
                 &options.ldp_options,
                 resolver,
                 &mut context_loader,
-            ))
+            ).await
             .map_err(|e| Error::from_reason(format!("ldp: {}", e)))?;
             credential.add_proof(proof);
             serde_json::to_string(&credential)
@@ -168,7 +169,7 @@ pub fn issue_credential(
 }
 
 #[napi]
-pub fn verify_credential(
+pub async fn verify_credential(
     credential: String,
     proof_options: String,
     context_map: String,
@@ -184,14 +185,14 @@ pub fn verify_credential(
         .with_context_map_from(context_map)
         .map_err(|e| Error::from_reason(format!("context: {}", e)))?;
 
-    let result = block_on(vc.verify(Some(options), resolver, &mut context_loader));
+    let result = vc.verify(Some(options), resolver, &mut context_loader).await;
     serde_json::to_string(&result).map_err(|e| Error::from_reason(format!("serde: {}", e)))
 }
 
 // Presentation operations
 
 #[napi]
-pub fn issue_presentation(
+pub async fn issue_presentation(
     presentation: String,
     proof_options: String,
     key: String,
@@ -213,16 +214,16 @@ pub fn issue_presentation(
 
     let vp_string = match proof_format {
         ProofFormat::JWT => {
-            block_on(presentation.generate_jwt(Some(&jwk), &options.ldp_options, resolver))
+            presentation.generate_jwt(Some(&jwk), &options.ldp_options, resolver).await
                 .map_err(|e| Error::from_reason(format!("jwt: {}", e)))?
         }
         _ => {
-            let proof = block_on(presentation.generate_proof(
+            let proof = presentation.generate_proof(
                 &jwk,
                 &options.ldp_options,
                 resolver,
                 &mut context_loader,
-            ))
+            ).await
             .map_err(|e| Error::from_reason(format!("ldp: {}", e)))?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)
@@ -234,7 +235,7 @@ pub fn issue_presentation(
 }
 
 #[napi]
-pub fn verify_presentation(
+pub async fn verify_presentation(
     presentation: String,
     proof_options: String,
     context_map: String,
@@ -242,7 +243,7 @@ pub fn verify_presentation(
     let options: LinkedDataProofOptions = serde_json::from_str(&proof_options)
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let context_map: HashMap<String, String> = serde_json::from_str(&context_map)
-        .map_err(|e| Error::from_reason(format!("context: {}", e)))?;
+        .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let resolver = DID_METHODS.to_resolver();
     let mut context_loader = ContextLoader::default()
         .with_context_map_from(context_map)
@@ -251,17 +252,17 @@ pub fn verify_presentation(
     // Check if this is a JWT (starts with "eyJ")
     let result = if presentation.starts_with("eyJ") {
         // Verify JWT presentation
-        block_on(VerifiablePresentation::verify_jwt(
+        VerifiablePresentation::verify_jwt(
             &presentation,
             Some(options),
             resolver,
             &mut context_loader,
-        ))
+        ).await
     } else {
         // Verify JSON-LD presentation
         let vp = VerifiablePresentation::from_json(&presentation)
             .map_err(|e| Error::from_reason(format!("vp: {}", e)))?;
-        block_on(vp.verify(Some(options), resolver, &mut context_loader))
+        vp.verify(Some(options), resolver, &mut context_loader).await
     };
 
     serde_json::to_string(&result).map_err(|e| Error::from_reason(format!("serde: {}", e)))
@@ -420,7 +421,7 @@ pub fn decrypt_dag_jwe(jwe: String, jwks_json: Vec<String>) -> Result<String> {
 // Cache management
 
 #[napi]
-pub fn clear_cache() -> Result<String> {
-    block_on(DIDWeb::clear_cache());
+pub async fn clear_cache() -> Result<String> {
+    DIDWeb::clear_cache().await;
     Ok("Cleared".to_string())
 }

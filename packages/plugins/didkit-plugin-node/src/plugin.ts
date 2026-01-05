@@ -4,33 +4,40 @@ import type { JWKWithPrivateKey } from '@learncard/types';
 
 // Native addon interface
 interface NativeAddon {
+    // Sync functions (pure CPU-bound operations - no network)
     generateEd25519KeyFromBytes(bytes: Buffer): string;
     generateSecp256K1KeyFromBytes(bytes: Buffer): string;
     keyToDid(methodPattern: string, jwkJson: string): string;
-    keyToVerificationMethod(methodPattern: string, jwkJson: string): string;
-    didToVerificationMethod(did: string): string;
-    resolveDid(did: string, inputMetadata: string): string;
-    didResolver(did: string, inputMetadata: string): string;
-    issueCredential(
-        credential: string,
-        proofOptions: string,
-        key: string,
-        contextMap: string
-    ): string;
-    verifyCredential(credential: string, proofOptions: string, contextMap: string): string;
-    issuePresentation(
-        presentation: string,
-        proofOptions: string,
-        key: string,
-        contextMap: string
-    ): string;
-    verifyPresentation(presentation: string, proofOptions: string, contextMap: string): string;
     contextLoader(url: string): string;
     createJwe(cleartext: string, recipients: string[]): string;
     decryptJwe(jwe: string, jwks: string[]): string;
     createDagJwe(cleartext: string, recipients: string[]): string;
     decryptDagJwe(jwe: string, jwks: string[]): string;
-    clearCache(): string;
+
+    // Async functions (may involve DID resolution which can make HTTP requests)
+    keyToVerificationMethod(methodPattern: string, jwkJson: string): Promise<string>;
+    didToVerificationMethod(did: string): Promise<string>;
+    resolveDid(did: string, inputMetadata: string): Promise<string>;
+    didResolver(did: string, inputMetadata: string): Promise<string>;
+    issueCredential(
+        credential: string,
+        proofOptions: string,
+        key: string,
+        contextMap: string
+    ): Promise<string>;
+    verifyCredential(credential: string, proofOptions: string, contextMap: string): Promise<string>;
+    issuePresentation(
+        presentation: string,
+        proofOptions: string,
+        key: string,
+        contextMap: string
+    ): Promise<string>;
+    verifyPresentation(
+        presentation: string,
+        proofOptions: string,
+        contextMap: string
+    ): Promise<string>;
+    clearCache(): Promise<string>;
 }
 
 let nativeAddon: NativeAddon | null = null;
@@ -107,11 +114,11 @@ export const getDidKitPlugin = async (
             },
 
             keyToVerificationMethod: async (_learnCard, type, keypair) => {
-                return native.keyToVerificationMethod(type, JSON.stringify(keypair));
+                return await native.keyToVerificationMethod(type, JSON.stringify(keypair));
             },
 
             didToVerificationMethod: async (_learnCard, did) => {
-                return native.didToVerificationMethod(did);
+                return await native.didToVerificationMethod(did);
             },
 
             issueCredential: async (_learnCard, credential, options, keypair) => {
@@ -121,7 +128,7 @@ export const getDidKitPlugin = async (
                     credential,
                     _allowRemoteContexts
                 );
-                const result = native.issueCredential(
+                const result = await native.issueCredential(
                     JSON.stringify(credential),
                     JSON.stringify(options),
                     JSON.stringify(keypair),
@@ -137,7 +144,7 @@ export const getDidKitPlugin = async (
                     credential,
                     _allowRemoteContexts
                 );
-                const result = native.verifyCredential(
+                const result = await native.verifyCredential(
                     JSON.stringify(credential),
                     JSON.stringify(options),
                     JSON.stringify(contextMap)
@@ -153,7 +160,7 @@ export const getDidKitPlugin = async (
                     presentation,
                     _allowRemoteContexts
                 );
-                const result = native.issuePresentation(
+                const result = await native.issuePresentation(
                     JSON.stringify(presentation),
                     JSON.stringify(options),
                     JSON.stringify(keypair),
@@ -170,7 +177,7 @@ export const getDidKitPlugin = async (
                     : await getDocumentMap(_learnCard, presentation, _allowRemoteContexts);
                 // Filter out proofFormat as it's not part of LinkedDataProofOptions in Rust
                 const { proofFormat, ...nativeOptions } = options as any;
-                const result = native.verifyPresentation(
+                const result = await native.verifyPresentation(
                     isJwt ? presentation : JSON.stringify(presentation),
                     JSON.stringify(nativeOptions),
                     JSON.stringify(contextMap)
@@ -189,12 +196,12 @@ export const getDidKitPlugin = async (
             },
 
             resolveDid: async (_learnCard, did, inputMetadata = {}) => {
-                const result = native.resolveDid(did, JSON.stringify(inputMetadata));
+                const result = await native.resolveDid(did, JSON.stringify(inputMetadata));
                 return JSON.parse(result);
             },
 
             didResolver: async (_learnCard, did, inputMetadata = {}) => {
-                const result = native.didResolver(did, JSON.stringify(inputMetadata));
+                const result = await native.didResolver(did, JSON.stringify(inputMetadata));
                 return JSON.parse(result);
             },
 
@@ -225,7 +232,7 @@ export const getDidKitPlugin = async (
             },
 
             clearDidWebCache: async () => {
-                native.clearCache();
+                await native.clearCache();
             },
         },
     };

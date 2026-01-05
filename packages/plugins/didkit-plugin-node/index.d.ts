@@ -6,17 +6,17 @@
 export declare function generateEd25519KeyFromBytes(bytes: Buffer): string
 export declare function generateSecp256K1KeyFromBytes(bytes: Buffer): string
 export declare function keyToDid(methodPattern: string, jwkJson: string): string
-export declare function keyToVerificationMethod(methodPattern: string, jwkJson: string): string
-export declare function didToVerificationMethod(did: string): string
-export declare function resolveDid(did: string, inputMetadata: string): string
-export declare function didResolver(did: string, inputMetadata: string): string
-export declare function issueCredential(credential: string, proofOptions: string, key: string, contextMap: string): string
-export declare function verifyCredential(credential: string, proofOptions: string, contextMap: string): string
-export declare function issuePresentation(presentation: string, proofOptions: string, key: string, contextMap: string): string
-export declare function verifyPresentation(presentation: string, proofOptions: string, contextMap: string): string
+export declare function keyToVerificationMethod(methodPattern: string, jwkJson: string): Promise<string>
+export declare function didToVerificationMethod(did: string): Promise<string>
+export declare function resolveDid(did: string, inputMetadata: string): Promise<string>
+export declare function didResolver(did: string, inputMetadata: string): Promise<string>
+export declare function issueCredential(credential: string, proofOptions: string, key: string, contextMap: string): Promise<string>
+export declare function verifyCredential(credential: string, proofOptions: string, contextMap: string): Promise<string>
+export declare function issuePresentation(presentation: string, proofOptions: string, key: string, contextMap: string): Promise<string>
+export declare function verifyPresentation(presentation: string, proofOptions: string, contextMap: string): Promise<string>
 export declare function contextLoader(url: string): string
 export declare function createJwe(cleartext: string, recipients: Array<string>): string
 export declare function decryptJwe(jwe: string, jwksJson: Array<string>): string
 export declare function createDagJwe(cleartext: string, recipients: Array<string>): string
 export declare function decryptDagJwe(jwe: string, jwksJson: Array<string>): string
-export declare function clearCache(): string
+export declare function clearCache(): Promise<string>
