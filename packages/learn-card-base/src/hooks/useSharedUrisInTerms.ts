@@ -42,10 +42,13 @@ export const getOrCreateSharedUriForWallet = async (
                     'did:web:network.learncard.com:users:smart-resume-integration' ||
                 contractOwnerDid === 'did:web:localhost%3A4000:users:in-service' ||
                 contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume' ||
+                contractOwnerDid === 'did:web:staging.network.learncard.com' ||
                 contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume-test';
 
             const recipients = [contractOwnerDid];
+            console.log('contractOwnerDid', contractOwnerDid);
             if (isSmartResume) {
+                recipients.push('did:web:staging.network.learncard.com');
                 recipients.push('did:web:network.learncard.com');
                 recipients.push('did:web:localhost%3A4000');
             }

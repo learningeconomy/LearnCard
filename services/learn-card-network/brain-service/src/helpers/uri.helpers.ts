@@ -111,20 +111,11 @@ export const resolveUri = async (uri: string) => {
         if (isEncrypted(resolved)) {
             try {
                 const learnCard = await getLearnCard();
-                console.log('learnCard.invoke:', Object.keys(learnCard.invoke));
-
-                // Get the keypair from the learncard
-                const keypair = learnCard.id.keypair();
-                console.log('Using keypair for decryption:', {
-                    ...keypair,
-                    d: keypair.d ? '***REDACTED***' : undefined,
-                });
-
                 console.log('JWE Structure:', {
                     protected: resolved.protected,
                     recipients: Array.isArray(resolved.recipients)
                         ? resolved.recipients.map((r: any) => ({
-                              header: r.header,
+                              header: r.header, //should show DID
                               encrypted_key: r.encrypted_key ? '***' : undefined,
                           }))
                         : resolved.recipients,
@@ -133,8 +124,7 @@ export const resolveUri = async (uri: string) => {
                     tag: resolved.tag ? '***' : undefined,
                 });
 
-                // Try to decrypt with the learncard's keypair
-                const decryptResolved = await learnCard.invoke.decryptDagJwe(resolved, [keypair]);
+                const decryptResolved = await learnCard.invoke.decryptDagJwe(resolved);
                 console.log('decryptResolved', decryptResolved);
                 console.log('Decryption result:', {
                     type: typeof decryptResolved,
@@ -143,12 +133,7 @@ export const resolveUri = async (uri: string) => {
                         typeof decryptResolved === 'object' ? Object.keys(decryptResolved) : 'N/A',
                     value: decryptResolved,
                 });
-                if (!decryptResolved) {
-                    console.warn('Decryption returned empty result. Possible issues:');
-                    console.warn('1. The JWE is not encrypted with the provided keypair');
-                    console.warn('2. The JWE structure might be malformed');
-                    console.warn('3. The keypair might not have the correct permissions');
-                }
+
                 return decryptResolved;
             } catch (error) {
                 console.error('Error in decryptDagJwe:', {
