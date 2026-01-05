@@ -94,8 +94,6 @@ const useLogout = () => {
                     console.error(e);
                 }
 
-                closeAllModals();
-
                 await logout();
 
                 // handle redirect from within LCA over web3Auth redirect
@@ -109,6 +107,8 @@ const useLogout = () => {
                 });
             }
         }, 1000);
+
+        closeAllModals();
     };
 
     return { handleLogout, isLoggingOut: isLoggingOut || web3AuthLoggingOut };

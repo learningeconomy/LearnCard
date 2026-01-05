@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 
 import { getLearnCardForUser, LearnCard } from './helpers/learncard.helpers';
+import { minimalContract } from './helpers/contract.helpers';
 
 let a: LearnCard;
 let b: LearnCard;

@@ -42,12 +42,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
-import {
-    LearnCardRoles,
-    LearnCardRolesEnum,
-    LearnCardRoleType,
-    OnboardingStepsEnum,
-} from '../onboarding.helpers';
+import { LearnCardRoles, LearnCardRolesEnum, OnboardingStepsEnum } from '../onboarding.helpers';
 
 import countries from '../../../constants/countries.json';
 import CountrySelectorModal from './components/CountrySelectorModal';
@@ -722,10 +717,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                     <div className="flex flex-col items-center justify-center w-full px-4 mt-4">
                         <div className="w-full flex items-center justify-center mb-4">
                             <OnboardingRoleItem
-                                role={role}
-                                roleItem={
-                                    LearnCardRoles?.find(r => r.type === role) as LearnCardRoleType
-                                }
+                                role={role ?? null}
+                                roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
                                 setRole={() => {}}
                                 handleEdit={() => setStep?.(OnboardingStepsEnum.selectRole)}
                                 showDescription={false}

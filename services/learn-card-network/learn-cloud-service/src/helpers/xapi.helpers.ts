@@ -1,6 +1,23 @@
 import { some } from 'async';
-import { XAPI_ENDPOINT } from '../constants/xapi';
+import type { Statement } from '@xapi/xapi';
+
+import { XAPI_ENDPOINT, XAPI_CONTRACT_URI_EXTENSION } from '../constants/xapi';
 import { areDidsEqual } from '@helpers/did.helpers';
+
+/** Injects a contract URI into an xAPI statement's context.extensions. */
+export const injectContractUriIntoStatement = (
+    statement: Statement,
+    contractUri: string
+): Statement => ({
+    ...statement,
+    context: {
+        ...statement.context,
+        extensions: {
+            ...statement.context?.extensions,
+            [XAPI_CONTRACT_URI_EXTENSION]: contractUri,
+        },
+    },
+});
 
 export const verifyVoidStatement = async (
     targetDid: string,

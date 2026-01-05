@@ -1,5 +1,29 @@
 # @learncard/network-brain-service
 
+## 2.4.3
+
+### Patch Changes
+
+-   [#900](https://github.com/learningeconomy/LearnCard/pull/900) [`605f098e7c3ded38e236981dd3b3927860cb5869`](https://github.com/learningeconomy/LearnCard/commit/605f098e7c3ded38e236981dd3b3927860cb5869) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Tag X-API Statements with Contract URI
+
+## 2.4.2
+
+### Patch Changes
+
+-   Updated dependencies [[`3727c732ad54b4a8ccb89c6354291799e953c8ab`](https://github.com/learningeconomy/LearnCard/commit/3727c732ad54b4a8ccb89c6354291799e953c8ab), [`bb6749d4cd123ca1fcee8d6f657861ae77a614a2`](https://github.com/learningeconomy/LearnCard/commit/bb6749d4cd123ca1fcee8d6f657861ae77a614a2)]:
+    -   @learncard/types@5.11.0
+    -   @learncard/core@9.4.1
+    -   @learncard/helpers@1.2.1
+    -   @learncard/did-web-plugin@1.1.1
+    -   @learncard/didkey-plugin@1.1.1
+    -   @learncard/didkit-plugin@1.6.1
+    -   @learncard/encryption-plugin@1.1.1
+    -   @learncard/learn-card-plugin@1.2.1
+    -   @learncard/vc-plugin@1.3.1
+    -   @learncard/vc-templates-plugin@1.1.1
+    -   @learncard/crypto-plugin@1.1.1
+    -   @learncard/expiration-plugin@1.2.1
+
 ## 2.4.1
 
 ### Patch Changes

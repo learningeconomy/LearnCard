@@ -21,10 +21,10 @@ export const getCredentialSentToProfile = async (
     to: ProfileType
 ): Promise<
     | {
-        source: ProfileType;
-        relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
-        target: CredentialInstance;
-    }
+          source: ProfileType;
+          relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
+          target: CredentialInstance;
+      }
     | undefined
 > => {
     const data = (
@@ -199,7 +199,8 @@ export const getAllCredentialsForProfileTerms = async (
 
     if (!includeReceived) {
         query = query.where(
-            `NOT EXISTS { MATCH (credential)-[:${Credential.getRelationshipByAlias('credentialReceived').name
+            `NOT EXISTS { MATCH (credential)-[:${
+                Credential.getRelationshipByAlias('credentialReceived').name
             }]-(profile) }`
         );
     }
@@ -242,4 +243,24 @@ export const getAllCredentialsForProfileTerms = async (
         contract: inflateObject<any>(record.contract),
         transaction: inflateObject<any>(record.transaction),
     }));
+};
+
+export const getBoostIdForCredentialInstance = async (
+    credential: CredentialInstance
+): Promise<string | undefined> => {
+    const results = convertQueryResultToPropertiesObjectArray<{ boostId: string }>(
+        await new QueryBuilder()
+            .match({
+                related: [
+                    { identifier: 'credential', model: Credential, where: { id: credential.id } },
+                    Credential.getRelationshipByAlias('instanceOf'),
+                    { identifier: 'boost', model: Boost },
+                ],
+            })
+            .return('boost.id AS boostId')
+            .limit(1)
+            .run()
+    );
+
+    return results[0]?.boostId;
 };
