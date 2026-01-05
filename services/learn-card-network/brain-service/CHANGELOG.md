@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.9.1
+
+### Patch Changes
+
+-   [#902](https://github.com/learningeconomy/LearnCard/pull/902) [`0e7c2696df045597e3ba9b3ca992aaa85f425fb4`](https://github.com/learningeconomy/LearnCard/commit/0e7c2696df045597e3ba9b3ca992aaa85f425fb4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Correctly invalidate did web cache when claming a boost
+
 ## 3.9.0
 
 ### Minor Changes

@@ -1,9 +1,15 @@
 import { vi } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
-import { testVc, sendCredential } from './helpers/send';
+import { testVc, sendBoost, sendCredential, testUnsignedBoost } from './helpers/send';
 import { Profile, Credential } from '@models';
 import * as Notifications from '@helpers/notifications.helpers';
 import { addNotificationToQueueSpy } from './helpers/spies';
+import {
+    getDidDocForProfile,
+    getDidDocForProfileManager,
+    setDidDocForProfile,
+    setDidDocForProfileManager,
+} from '@cache/did-docs';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -172,6 +178,47 @@ describe('Credentials', () => {
                 code: 'BAD_REQUEST',
                 message: expect.stringContaining('already been received'),
             });
+        });
+
+        it('should clear did:web cache for managed profiles when accepting a boost that grants canManageChildrenProfiles', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                claimPermissions: { canManageChildrenProfiles: true },
+            });
+
+            const managerDid =
+                await userA.clients.fullAuth.profileManager.createChildProfileManager({
+                    parentUri: boostUri,
+                    profile: {},
+                });
+
+            const managerId = managerDid.split(':')[4]!;
+
+            const managerClient = getClient({ did: managerDid, isChallengeValid: true });
+
+            const managedProfileId = 'managed-profile';
+
+            await managerClient.profileManager.createManagedProfile({
+                profileId: managedProfileId,
+            });
+
+            await setDidDocForProfileManager(managerId, { id: managerDid } as any);
+            await setDidDocForProfile(managedProfileId, { id: managedProfileId } as any);
+
+            expect(await getDidDocForProfileManager(managerId)).toBeTruthy();
+            expect(await getDidDocForProfile(managedProfileId)).toBeTruthy();
+
+            const credentialUri = await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                boostUri,
+                false
+            );
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
+
+            expect(await getDidDocForProfileManager(managerId)).toBeFalsy();
+            expect(await getDidDocForProfile(managedProfileId)).toBeFalsy();
         });
     });
 
