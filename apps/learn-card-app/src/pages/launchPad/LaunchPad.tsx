@@ -147,6 +147,8 @@ const LaunchPad: React.FC = () => {
         consentedContractLoading,
         hasConsented,
     } = useConsentFlowByUri(contractUri);
+    console.log('contractDetails', contractDetails);
+    console.log('contractUri', contractUri);
 
     useEffect(() => {
         if (contractDetails && !suppressContractModal && !consentedContractLoading) {
