@@ -412,6 +412,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     // API Integration state
     const [apiSelectedTemplate, setApiSelectedTemplate] = useState<string>(templates[0]?.id || '');
     const [apiRecipientEmail, setApiRecipientEmail] = useState('');
+    const [apiTemplateData, setApiTemplateData] = useState<Record<string, string>>({});
     const [apiShowAdvanced, setApiShowAdvanced] = useState(false);
     const [apiAdvancedOptions, setApiAdvancedOptions] = useState({
         issuerName: '',
@@ -424,70 +425,118 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const [apiPollResult, setApiPollResult] = useState<{ success: boolean; message: string } | null>(null);
     const [apiCopied, setApiCopied] = useState(false);
 
-    const apiHasAdvancedOptions = apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || 
-        apiAdvancedOptions.recipientName || apiAdvancedOptions.webhookUrl || apiAdvancedOptions.suppressDelivery;
+    // Generate smart default value based on variable name
+    const getSmartDefault = (varName: string): string => {
+        const lower = varName.toLowerCase();
 
-    const selectedApiTemplate = templates.find(t => t.id === apiSelectedTemplate);
+        if (lower.includes('date') || lower.includes('issued') || lower.includes('completed')) {
+            return new Date().toISOString().split('T')[0];
+        }
 
-    // Generate templateData code from template - supports both OBv3 and legacy formats
-    const generateTemplateDataCode = (template: CredentialTemplate | undefined, indent: string = '        ') => {
-        if (!template) return '';
+        if (lower.includes('expir')) {
+            const future = new Date();
+            future.setFullYear(future.getFullYear() + 2);
+            return future.toISOString().split('T')[0];
+        }
 
-        // Try to extract dynamic variables from OBv3 template first
-        let dynamicVars: string[] = [];
+        if (lower.includes('score') || lower.includes('grade')) {
+            return '95';
+        }
+
+        if (lower.includes('credits') || lower.includes('hours')) {
+            return '3';
+        }
+
+        if (lower.includes('email')) {
+            return 'student@example.com';
+        }
+
+        if (lower.includes('name') && lower.includes('course')) {
+            return 'Introduction to Web Development';
+        }
+
+        if (lower.includes('name') && (lower.includes('student') || lower.includes('recipient') || lower.includes('learner'))) {
+            return 'Jane Smith';
+        }
+
+        if (lower.includes('name')) {
+            return 'Example Name';
+        }
+
+        if (lower.includes('description')) {
+            return 'Successfully completed all course requirements';
+        }
+
+        if (lower.includes('url') || lower.includes('image') || lower.includes('logo')) {
+            return 'https://example.com/image.png';
+        }
+
+        if (lower.includes('instructor') || lower.includes('teacher')) {
+            return 'Dr. John Smith';
+        }
+
+        // Format the variable name as a readable default
+        const readable = varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return `Example ${readable}`;
+    };
+
+    // Get dynamic variables for the selected API template
+    const apiTemplateVariables = useMemo(() => {
+        const template = templates.find(t => t.id === apiSelectedTemplate);
+        if (!template) return [];
+
+        let vars: string[] = [];
 
         if (template.obv3Template) {
             try {
                 const obv3 = template.obv3Template as OBv3CredentialTemplate;
-                dynamicVars = extractDynamicVariables(obv3);
+                vars = extractDynamicVariables(obv3);
             } catch (e) {
                 console.warn('Failed to extract OBv3 dynamic variables:', e);
             }
         }
 
-        // Fallback to legacy fields
-        if (dynamicVars.length === 0 && template.fields?.length) {
-            dynamicVars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
+        if (vars.length === 0 && template.fields?.length) {
+            vars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
         }
 
-        if (dynamicVars.length === 0) return '';
+        return vars;
+    }, [templates, apiSelectedTemplate]);
 
-        const lines = dynamicVars.map(varName => {
-            // Format display name for finding mapping
-            const displayName = varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            const mapping = mappings.find(m => m.targetField === displayName || m.targetField === varName);
+    // Initialize template data with smart defaults when template changes
+    React.useEffect(() => {
+        if (apiTemplateVariables.length > 0) {
+            const newData: Record<string, string> = {};
 
-            // Also check legacy field for type info
-            const legacyField = template.fields?.find(f => 
-                f.variableName === varName || fieldNameToVariable(f.name) === varName
-            );
+            apiTemplateVariables.forEach(varName => {
+                // Keep existing value if present, otherwise use smart default
+                newData[varName] = apiTemplateData[varName] || getSmartDefault(varName);
+            });
 
-            // Generate example value based on variable name or field type
-            let exampleValue: string;
+            setApiTemplateData(newData);
+        }
+    }, [apiTemplateVariables]);
 
-            if (mapping) {
-                // If mapped, show the source path
-                exampleValue = `yourData.${mapping.sourceField.replace(/\./g, '?.')}`;
-            } else {
-                // Generate placeholder based on field type or variable name heuristics
-                const fieldType = legacyField?.type;
+    const apiHasAdvancedOptions = apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || 
+        apiAdvancedOptions.recipientName || apiAdvancedOptions.webhookUrl || apiAdvancedOptions.suppressDelivery;
 
-                if (fieldType === 'date' || varName.includes('date') || varName.includes('issued') || varName.includes('expir')) {
-                    exampleValue = `new Date().toISOString()`;
-                } else if (fieldType === 'number' || varName.includes('score') || varName.includes('grade') || varName.includes('credits')) {
-                    exampleValue = `0`;
-                } else if (fieldType === 'email' || varName.includes('email')) {
-                    exampleValue = `'user@example.com'`;
-                } else if (fieldType === 'url' || varName.includes('url') || varName.includes('image') || varName.includes('logo')) {
-                    exampleValue = `'https://example.com'`;
-                } else if (varName.includes('name')) {
-                    exampleValue = `'John Doe'`;
-                } else {
-                    exampleValue = `'Your ${displayName}'`;
-                }
-            }
+    const selectedApiTemplate = templates.find(t => t.id === apiSelectedTemplate);
 
-            return `${indent}${varName}: ${exampleValue},`;
+    // Generate templateData code from template - uses user-entered values from apiTemplateData
+    const generateTemplateDataCode = (template: CredentialTemplate | undefined, indent: string = '        ') => {
+        if (!template) return '';
+
+        // Use the apiTemplateVariables that we already computed
+        if (apiTemplateVariables.length === 0) return '';
+
+        const lines = apiTemplateVariables.map(varName => {
+            // Use the user-entered value or smart default
+            const value = apiTemplateData[varName] || getSmartDefault(varName);
+
+            // Escape single quotes in the value
+            const escapedValue = value.replace(/'/g, "\\'");
+
+            return `${indent}${varName}: '${escapedValue}',`;
         });
 
         return lines.join('\n');
@@ -663,6 +712,52 @@ if (result.inbox) {
                                     )}
                                 </button>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Template Data Inputs */}
+                {apiTemplateVariables.length > 0 && (
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium text-gray-700">Template Data</label>
+
+                            <span className="text-xs text-gray-500">
+                                {apiTemplateVariables.length} field{apiTemplateVariables.length !== 1 ? 's' : ''}
+                            </span>
+                        </div>
+
+                        <p className="text-xs text-gray-500">
+                            Enter example values for your credential. These will appear in the generated code.
+                        </p>
+
+                        <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            {apiTemplateVariables.map(varName => {
+                                // Format display name
+                                const displayName = varName
+                                    .replace(/_/g, ' ')
+                                    .replace(/\b\w/g, l => l.toUpperCase());
+
+                                return (
+                                    <div key={varName}>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                                            {displayName}
+                                            <code className="ml-2 text-gray-400 font-normal">{varName}</code>
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={apiTemplateData[varName] || ''}
+                                            onChange={(e) => setApiTemplateData(prev => ({
+                                                ...prev,
+                                                [varName]: e.target.value
+                                            }))}
+                                            placeholder={getSmartDefault(varName)}
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        />
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
