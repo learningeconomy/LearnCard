@@ -219,6 +219,11 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<VC | JWE>;
 
+    issueCredential: (
+        credential: UnsignedVC,
+        signingOptions?: Partial<ProofOptions>
+    ) => Promise<VC>;
+
     verifyCredentialWithNetwork: (
         credential: VC,
         options?: { verifyExpiration?: boolean }

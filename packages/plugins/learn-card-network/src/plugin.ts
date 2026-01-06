@@ -544,6 +544,42 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
+            issueCredential: async (_learnCard, credential, signingOptions) => {
+                // Check if local keypair is available
+                let hasLocalKeypair = false;
+
+                try {
+                    const kp = (learnCard as any).id?.keypair?.();
+                    hasLocalKeypair = !!kp;
+                } catch {
+                    hasLocalKeypair = false;
+                }
+
+                if (hasLocalKeypair) {
+                    // Use the original VCPlugin's issueCredential
+                    _learnCard.debug?.('LCN issueCredential: using local signing');
+                    return learnCard.invoke.issueCredential(credential, signingOptions);
+                }
+
+                // No local keypair - delegate to network signing
+                _learnCard.debug?.('LCN issueCredential: delegating to network signing');
+                const result = await client.credential.issueCredential.mutate({
+                    credential,
+                    signingAuthority: undefined,
+                    options: undefined,
+                });
+
+                // issueCredentialWithNetwork can return VC | JWE, but issueCredential should return VC
+                // If encrypted (JWE), this would be a type mismatch - for now we assume unencrypted
+                if ('ciphertext' in result) {
+                    throw new Error(
+                        'Network signing returned encrypted credential. Use issueCredentialWithNetwork for encrypted results.'
+                    );
+                }
+
+                return result;
+            },
+
             verifyCredentialWithNetwork: async (_learnCard, credential, options) => {
                 return client.credential.verifyCredential.mutate({
                     credential,
