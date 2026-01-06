@@ -126,13 +126,6 @@ export const resolveUri = async (uri: string) => {
 
                 const decryptResolved = await learnCard.invoke.decryptDagJwe(resolved);
                 console.log('decryptResolved', decryptResolved);
-                console.log('Decryption result:', {
-                    type: typeof decryptResolved,
-                    isArray: Array.isArray(decryptResolved),
-                    keys:
-                        typeof decryptResolved === 'object' ? Object.keys(decryptResolved) : 'N/A',
-                    value: decryptResolved,
-                });
 
                 return decryptResolved;
             } catch (error) {
