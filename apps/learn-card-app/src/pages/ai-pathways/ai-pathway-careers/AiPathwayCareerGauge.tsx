@@ -13,10 +13,12 @@ const GAUGE_ZONES = [
 ];
 
 const getLabel = (score: number) => {
-    if (score < 40) return 'Poor';
-    if (score < 55) return 'Average';
-    if (score < 70) return 'Satisfactory';
-    if (score < 85) return 'Good';
+    if (score < 20) return 'Very Poor';
+    if (score < 35) return 'Poor';
+    if (score < 50) return 'Below Average';
+    if (score < 65) return 'Average';
+    if (score < 80) return 'Good';
+    if (score < 90) return 'Very Good';
     return 'Excellent';
 };
 
@@ -36,9 +38,11 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                             data={GAUGE_ZONES}
                             startAngle={180}
                             endAngle={0}
-                            innerRadius="65%"
+                            innerRadius="55%"
                             outerRadius="100%"
                             dataKey="value"
+                            stroke="oklch(55.4% 0.046 257.417)"
+                            strokeWidth={2}
                         >
                             {GAUGE_ZONES.map((entry, index) => (
                                 <Cell key={index} fill={entry.color} />
@@ -50,11 +54,11 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                 {/*  Zone divider lines + bounds */}
                 <svg
                     viewBox="0 0 275 130"
-                    className="absolute left-[5%] top-[-8%] pointer-events-none"
+                    className="absolute left-[5%] top-[-7%] pointer-events-none"
                 >
                     {/* Zone dividers */}
                     {[30, 60, 90, 120, 150].map(deg => {
-                        const r1 = 78;
+                        const r1 = 68;
                         const r2 = 100;
                         return (
                             <line
@@ -104,8 +108,11 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                         x2={130 + 140 * Math.cos((Math.PI * angle) / 180)}
                         y2={130 - 140 * Math.sin((Math.PI * angle) / 180)}
                         stroke="#222"
-                        strokeWidth="3"
+                        strokeWidth="6"
                     />
+
+                    {/* Pivot outer ring */}
+                    <circle cx="130" cy="130" r="18" fill="white" stroke="#222" strokeWidth="2" />
 
                     {/* Center pivot */}
                     <circle cx="130" cy="130" r="6" fill="#222" />
