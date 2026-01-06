@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { IonFooter } from '@ionic/react';
+import AiPathwayCareerPipeChart from './AiPathwayCareerPipeChart';
 import CareerLaptopIcon from '../../../assets/images/career.laptop.icon.png';
 
 import { useModal } from 'learn-card-base';
@@ -17,7 +18,7 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
         >
             <div className="h-full relative overflow-hidden bg-grayscale-200">
                 <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col items-center justify-start">
-                    <section className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 mt-[60px] w-full">
+                    <div className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 mt-[60px] w-full">
                         {/* header */}
                         <div className="flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
                             <img
@@ -37,7 +38,11 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
                                 {career.description}
                             </p>
                         </div>
-                    </section>
+                    </div>
+
+                    <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 mt-[60px] w-full">
+                        <AiPathwayCareerPipeChart />
+                    </div>
                 </div>
                 <IonFooter
                     mode="ios"
