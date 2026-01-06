@@ -549,7 +549,7 @@ export async function getLearnCardNetworkPlugin(
                 let hasLocalKeypair = false;
 
                 try {
-                    const kp = (learnCard as any).id?.keypair?.();
+                    const kp = _learnCard.id.keypair();
                     hasLocalKeypair = !!kp;
                 } catch {
                     hasLocalKeypair = false;
