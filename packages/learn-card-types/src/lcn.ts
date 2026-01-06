@@ -330,6 +330,39 @@ export const LCNSigningAuthorityForUserValidator = z.object({
 });
 export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;
 
+export const IssueCredentialInputValidator = z.object({
+    credential: UnsignedVCValidator,
+    signingAuthority: z
+        .object({
+            endpoint: z.string(),
+            name: z.string(),
+        })
+        .optional(),
+    options: z
+        .object({
+            encrypt: z.boolean().optional(),
+        })
+        .optional(),
+});
+export type IssueCredentialInput = z.infer<typeof IssueCredentialInputValidator>;
+
+export const VerifyCredentialInputValidator = z.object({
+    credential: VCValidator,
+    options: z
+        .object({
+            verifyExpiration: z.boolean().optional(),
+        })
+        .optional(),
+});
+export type VerifyCredentialInput = z.infer<typeof VerifyCredentialInputValidator>;
+
+export const VerificationResultValidator = z.object({
+    checks: z.array(z.string()),
+    warnings: z.array(z.string()),
+    errors: z.array(z.string()),
+});
+export type VerificationResult = z.infer<typeof VerificationResultValidator>;
+
 export const AutoBoostConfigValidator = z.object({
     boostUri: z.string(),
     signingAuthority: z.object({

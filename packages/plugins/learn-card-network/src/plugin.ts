@@ -534,6 +534,23 @@ export async function getLearnCardNetworkPlugin(
                 return client.credential.deleteCredential.mutate({ uri });
             },
 
+            issueCredentialWithNetwork: async (_learnCard, credential, options) => {
+                await ensureUser();
+
+                return client.credential.issueCredential.mutate({
+                    credential,
+                    signingAuthority: options?.signingAuthority,
+                    options: options?.encrypt !== undefined ? { encrypt: options.encrypt } : undefined,
+                });
+            },
+
+            verifyCredentialWithNetwork: async (_learnCard, credential, options) => {
+                return client.credential.verifyCredential.mutate({
+                    credential,
+                    options,
+                });
+            },
+
             sendPresentation: async (_learnCard, profileId, vp, encrypt = true) => {
                 await ensureUser();
 

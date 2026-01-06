@@ -54,6 +54,7 @@ import {
     ContactMethodType,
     InboxCredentialQuery,
     IssueInboxCredentialResponseType,
+    VerificationResult,
     // Shared Skills/Frameworks/Tags (non-flat)
     TagType,
     SkillFrameworkType,
@@ -209,6 +210,19 @@ export type LearnCardNetworkPluginMethods = {
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
+
+    issueCredentialWithNetwork: (
+        credential: UnsignedVC,
+        options?: {
+            signingAuthority?: { endpoint: string; name: string };
+            encrypt?: boolean;
+        }
+    ) => Promise<VC | JWE>;
+
+    verifyCredentialWithNetwork: (
+        credential: VC,
+        options?: { verifyExpiration?: boolean }
+    ) => Promise<VerificationResult>;
 
     sendPresentation: (profileId: string, vp: VP, encrypt?: boolean) => Promise<string>;
     acceptPresentation: (uri: string) => Promise<boolean>;
