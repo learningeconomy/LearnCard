@@ -959,6 +959,76 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 if (input.type === 'boost') {
+                    // Detect recipient type from string
+                    const recipient = input.recipient;
+                    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
+                    const isPhone = /^\+?[1-9]\d{6,14}$/.test(recipient);
+                    const isDid = recipient.startsWith('did:');
+
+                    // Route to Universal Inbox for email/phone recipients
+                    if (isEmail || isPhone) {
+                        const boostUri = input.templateUri;
+
+                        if (!boostUri) {
+                            throw new Error(
+                                'templateUri is required when sending to email/phone recipients. On-the-fly template creation for inbox is not yet supported.'
+                            );
+                        }
+
+                        // Build inbox configuration from send options
+                        const inboxConfig: Record<string, unknown> = {};
+
+                        if (input.options?.webhookUrl) {
+                            inboxConfig.webhookUrl = input.options.webhookUrl;
+                        }
+
+                        if (input.options?.suppressDelivery || input.options?.branding) {
+                            inboxConfig.delivery = {
+                                suppress: input.options.suppressDelivery,
+                                template: input.options.branding
+                                    ? {
+                                          model: {
+                                              issuer: {
+                                                  name: input.options.branding.issuerName,
+                                                  logoUrl: input.options.branding.issuerLogoUrl,
+                                              },
+                                              credential: {
+                                                  name: input.options.branding.credentialName,
+                                              },
+                                              recipient: {
+                                                  name: input.options.branding.recipientName,
+                                              },
+                                          },
+                                      }
+                                    : undefined,
+                            };
+                        }
+
+                        // Call inbox endpoint with boostUri
+                        const inboxResult = await client.inbox.issue.mutate({
+                            recipient: {
+                                type: isEmail ? 'email' : 'phone',
+                                value: recipient,
+                            },
+                            boostUri,
+                            configuration:
+                                Object.keys(inboxConfig).length > 0 ? inboxConfig : undefined,
+                        });
+
+                        // Map inbox response to send response format
+                        return {
+                            type: 'boost' as const,
+                            credentialUri: inboxResult.issuanceId, // Use issuanceId as credential reference
+                            uri: boostUri,
+                            inbox: {
+                                issuanceId: inboxResult.issuanceId,
+                                status: inboxResult.status === 'PENDING' ? 'pending' : 'claimed',
+                                claimUrl: inboxResult.claimUrl,
+                            },
+                        };
+                    }
+
+                    // Existing logic for DID/profileId recipients
                     const canIssueLocally = 'issueCredential' in _learnCard.invoke;
 
                     if (canIssueLocally && input.templateUri) {
@@ -968,13 +1038,13 @@ export async function getLearnCardNetworkPlugin(
                         if (data.success) {
                             let targetDid: string;
 
-                            if (input.recipient.startsWith('did:')) {
-                                targetDid = input.recipient;
+                            if (isDid) {
+                                targetDid = recipient;
                             } else {
-                                const targetProfile = await _learnCard.invoke.getProfile(
-                                    input.recipient
-                                );
+                                const targetProfile = await _learnCard.invoke.getProfile(recipient);
+
                                 if (!targetProfile) return client.boost.send.mutate(input);
+
                                 targetDid = targetProfile.did;
                             }
 

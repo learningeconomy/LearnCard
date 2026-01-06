@@ -19,6 +19,7 @@ import {
     UnsignedVC,
 } from '@learncard/types';
 import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
+import { getBoostByUri } from '@accesslayer/boost/read';
 import {
     generateGuardianApprovalToken,
     generateGuardianApprovalUrl,
@@ -336,7 +337,7 @@ export const inboxRouter = t.router({
                 tags: ['Universal Inbox'],
                 summary: 'Issue Credential to Universal Inbox',
                 description:
-                    "Issue a credential to a recipient's inbox. If the recipient exists with a verified email, the credential is auto-delivered.",
+                    "Issue a credential to a recipient's inbox. If the recipient exists with a verified email, the credential is auto-delivered. Supports either a credential object or a boostUri to resolve the credential from a boost template.",
             },
             requiredScope: 'inbox:write',
         })
@@ -344,7 +345,53 @@ export const inboxRouter = t.router({
         .output(IssueInboxCredentialResponseValidator)
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { recipient, credential, configuration } = input;
+            const { recipient, credential: inputCredential, boostUri, configuration } = input;
+
+            // Resolve credential from boostUri if provided
+            let credential = inputCredential;
+
+            if (boostUri && !credential) {
+                const boostInstance = await getBoostByUri(boostUri);
+
+                if (!boostInstance) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: `Boost not found: ${boostUri}`,
+                    });
+                }
+
+                // The boost credential is stored as a JSON string in dataValues.boost
+                const boostJsonString = boostInstance.dataValues.boost;
+
+                if (!boostJsonString) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Boost does not contain a credential template: ${boostUri}`,
+                    });
+                }
+
+                try {
+                    // Parse the JSON string to get the credential template
+                    credential = JSON.parse(boostJsonString) as UnsignedVC;
+                } catch {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Failed to parse boost credential template: ${boostUri}`,
+                    });
+                }
+
+                // Add boostId reference if it's a BoostCredential type
+                if (credential?.type?.includes('BoostCredential')) {
+                    (credential as Record<string, unknown>).boostId = boostUri;
+                }
+            }
+
+            if (!credential) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Either credential or boostUri must be provided',
+                });
+            }
 
             // Normalize signing authority name if provided
             const normalizedConfiguration = configuration?.signingAuthority

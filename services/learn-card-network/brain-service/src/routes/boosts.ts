@@ -141,6 +141,22 @@ import {
 import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationships/update';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
+import { issueToInbox } from '@helpers/inbox.helpers';
+
+// Helper to detect if recipient is email or phone (for inbox routing)
+const isInboxRecipient = (recipient: string): { type: 'email' | 'phone'; value: string } | null => {
+    // Email pattern
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+        return { type: 'email', value: recipient };
+    }
+
+    // Phone pattern (starts with + followed by digits, or just digits with optional dashes/spaces)
+    if (/^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''))) {
+        return { type: 'phone', value: recipient };
+    }
+
+    return null;
+};
 
 export const boostsRouter = t.router({
     getBoostAlignments: profileRoute
@@ -529,27 +545,10 @@ export const boostsRouter = t.router({
             const { contractUri } = input;
             const { domain } = ctx;
 
-            const recipientProfileId = await getProfileIdFromString(input.recipient, domain);
+            // Check if recipient is email/phone (routes to Universal Inbox)
+            const inboxRecipient = isInboxRecipient(input.recipient);
 
-            const targetProfile = recipientProfileId
-                ? await getProfileByProfileId(recipientProfileId)
-                : null;
-
-            if (!targetProfile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
-
-            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
-            if (isBlocked) {
-                throw new TRPCError({
-                    code: 'FORBIDDEN',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
-
+            // Resolve boost first (needed for both flows)
             let boost = null as BoostInstance | null;
             let boostUri = '';
             let boostCreated = false;
@@ -599,6 +598,91 @@ export const boostsRouter = t.router({
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            // Route to Universal Inbox for email/phone recipients
+            if (inboxRecipient) {
+                // Prepare the credential from boost template
+                let credential: UnsignedVC;
+
+                try {
+                    credential = JSON.parse(boost.dataValues.boost);
+
+                    const now = new Date().toISOString();
+                    if (isVC2Format(credential)) {
+                        credential.validFrom = now;
+                    } else {
+                        credential.issuanceDate = now;
+                    }
+
+                    if (credential?.type?.includes('BoostCredential')) {
+                        (credential as Record<string, unknown>).boostId = boostUri;
+                    }
+
+                    await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, domain);
+                } catch (e) {
+                    console.error('Failed to prepare boost credential for inbox', e);
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Failed to prepare boost credential',
+                    });
+                }
+
+                // Map SendOptions to inbox configuration
+                const inboxConfig = {
+                    webhookUrl: input.options?.webhookUrl,
+                    delivery: input.options?.suppressDelivery ? { suppress: true } : undefined,
+                };
+
+                const inboxResult = await issueToInbox(
+                    profile,
+                    inboxRecipient,
+                    credential,
+                    inboxConfig,
+                    ctx
+                );
+
+                // Map inbox status to response format
+                const statusMap: Record<string, 'pending' | 'claimed' | 'expired'> = {
+                    PENDING: 'pending',
+                    ISSUED: 'claimed',
+                    CLAIMED: 'claimed',
+                    DELIVERED: 'claimed',
+                    EXPIRED: 'expired',
+                };
+
+                return {
+                    type: 'boost' as const,
+                    credentialUri: '', // No credential URI for inbox issuances until claimed
+                    uri: boostUri,
+                    inbox: {
+                        issuanceId: inboxResult.inboxCredential.id,
+                        status: statusMap[inboxResult.status] ?? 'pending',
+                        claimUrl: inboxResult.claimUrl,
+                    },
+                };
+            }
+
+            // Existing flow for DID/profileId recipients
+            const recipientProfileId = await getProfileIdFromString(input.recipient, domain);
+
+            const targetProfile = recipientProfileId
+                ? await getProfileByProfileId(recipientProfileId)
+                : null;
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+            if (isBlocked) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile not found. Are you sure this person exists?',
                 });
             }
 
