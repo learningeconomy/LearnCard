@@ -5,6 +5,9 @@ import {
     VCValidator,
     SentCredentialInfoValidator,
     JWEValidator,
+    IssueCredentialInputValidator,
+    VerifyCredentialInputValidator,
+    VerificationResultValidator,
 } from '@learncard/types';
 
 import { acceptCredential, sendCredential } from '@helpers/credential.helpers';
@@ -18,11 +21,17 @@ import {
 
 import { deleteStorageForUri } from '@cache/storage';
 
-import { t, profileRoute } from '@routes';
+import { t, profileRoute, openRoute } from '@routes';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getCredentialOwner } from '@accesslayer/credential/relationships/read';
 import { deleteCredential } from '@accesslayer/credential/delete';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
+import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import {
+    getSigningAuthorityForUserByName,
+    getPrimarySigningAuthorityForUser,
+} from '@accesslayer/signing-authority/relationships/read';
+import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 
 export const credentialsRouter = t.router({
     sendCredential: profileRoute
@@ -210,6 +219,93 @@ export const credentialsRouter = t.router({
             await Promise.all([deleteCredential(credential), deleteStorageForUri(uri)]);
 
             return true;
+        }),
+
+    issueCredential: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/credential/issue',
+                tags: ['Credentials'],
+                summary: 'Issue a Credential',
+                description:
+                    'Issue a verifiable credential using a registered signing authority. If no signing authority is specified, the primary signing authority will be used.',
+            },
+            requiredScope: 'credentials:write',
+        })
+        .input(IssueCredentialInputValidator)
+        .output(VCValidator.or(JWEValidator))
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { credential, signingAuthority: saInput, options } = input;
+
+            let signingAuthorityForUser;
+
+            if (saInput) {
+                signingAuthorityForUser = await getSigningAuthorityForUserByName(
+                    profile,
+                    saInput.endpoint,
+                    saInput.name
+                );
+
+                if (!signingAuthorityForUser) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: `Signing authority '${saInput.name}' at endpoint '${saInput.endpoint}' not found for this profile.`,
+                    });
+                }
+            } else {
+                signingAuthorityForUser = await getPrimarySigningAuthorityForUser(profile);
+
+                if (!signingAuthorityForUser) {
+                    throw new TRPCError({
+                        code: 'PRECONDITION_FAILED',
+                        message:
+                            'No primary signing authority found. Register one via registerSigningAuthority or provide a specific signingAuthority in the request.',
+                    });
+                }
+            }
+
+            const unsignedCredential = { ...credential };
+
+            unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
+
+            return issueCredentialWithSigningAuthority(
+                profile,
+                unsignedCredential,
+                signingAuthorityForUser,
+                ctx.domain,
+                options?.encrypt ?? false
+            );
+        }),
+
+    verifyCredential: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'POST',
+                path: '/credential/verify',
+                tags: ['Credentials'],
+                summary: 'Verify a Credential',
+                description:
+                    'Verify a verifiable credential. This endpoint does not require authentication.',
+            },
+        })
+        .input(VerifyCredentialInputValidator)
+        .output(VerificationResultValidator)
+        .mutation(async ({ input }) => {
+            const { credential } = input;
+
+            const learnCard = await getEmptyLearnCard();
+
+            const result = await learnCard.invoke.verifyCredential(credential);
+
+            return {
+                checks: result.checks,
+                warnings: result.warnings,
+                errors: result.errors,
+            };
         }),
 });
 export type CredentialsRouter = typeof credentialsRouter;

@@ -7,6 +7,7 @@ This page provides comprehensive examples for using the LearnCard SDK. If you're
 | Section | Description |
 |---------|-------------|
 | [Initialize SDK Client](#initialize-sdk-client) | Basic wallet initialization |
+| [API Key Initialization](#api-key-initialization) | Initialization without local seed |
 | [Key Generation](#key-generation) | Generating secure seeds |
 | [Create Credentials](#create-credentials) | Building unsigned credentials |
 | [Issue Credentials](#issue-credentials) | Signing credentials |
@@ -61,6 +62,13 @@ const customApiWithDIDDiscovery = await initLearnCard({ vcApi: 'https://bridge.l
 
 // Constructs a LearnCard with no plugins. Useful for building your own bespoke LearnCard
 const customLearnCard = await initLearnCard({ custom: true });
+
+// Constructs a LearnCard using an API token (no local seed required)
+// See "API Key Initialization" section below for details
+const apiLearnCard = await initLearnCard({ 
+    apiKey: 'your-api-token', 
+    network: 'https://network.learncard.com/trpc' 
+});
 ```
 
 The examples above are not exhaustive of possible ways to instantiate a LearnCard:
@@ -86,6 +94,60 @@ import { emptyLearncard } from '@learncard/init';
 
 const learnCard = await emptyLearnCard();
 ```
+
+#### API Key Initialization
+
+For server-side applications or scenarios where you don't want to store seed material, you can initialize a LearnCard using an API token. This creates a LearnCard that authenticates via API key rather than DID-based authentication.
+
+{% hint style="info" %}
+**When to use API Key initialization:**
+- Server-side applications that need to interact with the LearnCard Network
+- Scenarios where storing seed material is not desirable
+- Applications that need scoped, revocable access to a profile
+{% endhint %}
+
+**Step 1: Generate an API Token**
+
+First, create an API token from a seed-based LearnCard:
+
+```typescript
+import { initLearnCard } from '@learncard/init';
+
+// Initialize with seed to create the auth grant
+const seedLearnCard = await initLearnCard({ seed: 'your-secure-seed', network: true });
+
+// Create an auth grant with specific permissions
+const grantId = await seedLearnCard.invoke.addAuthGrant({ 
+    name: 'my-api-access', 
+    scope: 'boosts:write credentials:write credentials:read',
+});
+
+// Generate an API token from the auth grant
+const apiToken = await seedLearnCard.invoke.getAPITokenForAuthGrant(grantId);
+```
+
+**Step 2: Initialize with API Key**
+
+```typescript
+// Use the API token to create an API key LearnCard
+const apiLearnCard = await initLearnCard({ 
+    apiKey: apiToken, 
+    network: 'https://network.learncard.com/trpc' 
+});
+
+// Now you can use the LearnCard for network operations
+const profile = await apiLearnCard.invoke.getProfile();
+```
+
+{% hint style="warning" %}
+**Limitations of API Key LearnCards:**
+
+- **No local signing capability**: API key LearnCards cannot sign credentials locally using `issueCredential()` unless you have a [Signing Authority](../../how-to-guides/deploy-infrastructure/signing-authority.md) registered. When a signing authority is registered, `issueCredential()` will automatically delegate to network-based signing.
+- **No encryption**: Cannot encrypt/decrypt data (no local keypair)
+- **Scoped access**: Limited to the permissions defined in the auth grant
+{% endhint %}
+
+For more details on auth grants and scopes, see [Auth Grants and API Tokens](../../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md).
 
 ## Key Generation
 
