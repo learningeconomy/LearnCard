@@ -6,9 +6,10 @@ type CareerGaugeProps = {
 };
 
 const GAUGE_ZONES = [
-    { value: 35, color: '#f2c6c6' }, // low
-    { value: 30, color: '#f5f5f5' }, // mid
-    { value: 35, color: '#cfe9d6' }, // high
+    { value: 25, color: '#f2c6c6' },
+    { value: 25, color: '#f1e6e2' },
+    { value: 25, color: '#f5f5f5' },
+    { value: 25, color: '#cfe9d6' },
 ];
 
 const getLabel = (score: number) => {
@@ -24,29 +25,11 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
     const label = getLabel(score);
 
     return (
-        <div
-            style={{
-                width: 260,
-                textAlign: 'center',
-            }}
-        >
-            <div
-                style={{
-                    fontSize: 14,
-                    fontWeight: 500,
-                    marginBottom: 8,
-                }}
-            >
-                {title}
-            </div>
+        <div className="w-[260px] text-center">
+            <p className="text-sm mb-1 text-grayscale-900">{title}</p>
 
-            <div
-                style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: 140,
-                }}
-            >
+            <div className="relative w-full h-[130px]">
+                {/* Base gauge */}
                 <ResponsiveContainer>
                     <PieChart>
                         <Pie
@@ -55,7 +38,6 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                             endAngle={0}
                             innerRadius="65%"
                             outerRadius="100%"
-                            paddingAngle={0}
                             dataKey="value"
                         >
                             {GAUGE_ZONES.map((entry, index) => (
@@ -65,14 +47,32 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                     </PieChart>
                 </ResponsiveContainer>
 
-                {/* Needle */}
+                {/* SVG 1: Zone divider lines */}
+                <svg viewBox="0 0 260 140" className="absolute top-[-10%] pointer-events-none">
+                    {[135, 90, 45].map(deg => {
+                        const r1 = 78;
+                        const r2 = 100;
+                        return (
+                            <line
+                                key={deg}
+                                x1={130 + r1 * Math.cos((Math.PI * deg) / 180)}
+                                y1={130 - r1 * Math.sin((Math.PI * deg) / 180)}
+                                x2={130 + r2 * Math.cos((Math.PI * deg) / 180)}
+                                y2={130 - r2 * Math.sin((Math.PI * deg) / 180)}
+                                stroke="#555"
+                                strokeWidth="1.5"
+                                strokeDasharray="3 4"
+                            />
+                        );
+                    })}
+                </svg>
+
+                {/* SVG 2: Needle */}
                 <svg
                     viewBox="0 0 260 140"
-                    width="100%"
-                    height="100%"
-                    className="absolute top-[15%] left-[50%] translate-x-[-50%] translate-y-[-50%]"
+                    className="absolute top-[25%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
                 >
-                    {/* Needle line */}
+                    {/* Needle */}
                     <line
                         x1="130"
                         y1="130"
@@ -82,12 +82,12 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                         strokeWidth="3"
                     />
 
-                    {/* Center dot */}
+                    {/* Center pivot */}
                     <circle cx="130" cy="130" r="6" fill="#222" />
                 </svg>
             </div>
 
-            <p className="text-grayscale-900 text-sm font-semibold">{label}</p>
+            <p className="mt-[-50px] text-grayscale-900 text-sm font-semibold">{label}</p>
         </div>
     );
 };
