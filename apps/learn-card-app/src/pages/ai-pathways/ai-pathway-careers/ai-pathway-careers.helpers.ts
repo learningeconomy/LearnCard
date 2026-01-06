@@ -6,6 +6,14 @@ export type AiPathwayCareer = {
     salaryData: { bucket: number; value: number }[];
 };
 
+export const getSalaryStats = (salaries: { bucket: number; value: number }[]) => {
+    const medianSalary = salaries[Math.floor(salaries.length / 2)].value;
+    const minSalary = Math.min(...salaries.map(d => d.value));
+    const maxSalary = Math.max(...salaries.map(d => d.value));
+
+    return { medianSalary, minSalary, maxSalary };
+};
+
 export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
     {
         id: 1,

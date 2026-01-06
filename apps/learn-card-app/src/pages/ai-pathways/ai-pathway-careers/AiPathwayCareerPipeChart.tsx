@@ -1,5 +1,8 @@
+import React from 'react';
+import numeral from 'numeral';
+
 import { BarChart, Bar, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from 'recharts';
-import { AiPathwayCareer } from './ai-pathway-careers.helpers';
+import { AiPathwayCareer, getSalaryStats } from './ai-pathway-careers.helpers';
 
 interface AiPathwayCareerPipeChartProps {
     career: AiPathwayCareer;
@@ -9,16 +12,14 @@ const MEDIAN_BUCKET = 4;
 
 export const AiPathwayCareerPipeChart: React.FC<AiPathwayCareerPipeChartProps> = ({ career }) => {
     const data = career.salaryData;
-    const medianValue = data[Math.floor(data.length / 2)].value;
-    const minValue = Math.min(...data.map(d => d.value));
-    const maxValue = Math.max(...data.map(d => d.value));
+    const { medianSalary, minSalary, maxSalary } = getSalaryStats(data);
 
     return (
         <div className="w-full relative">
             {/* Median overlay */}
             <div className="absolute top-[8px] left-[50%] transform translate-x-[-50%] flex items-center gap-[6px] text-[14px] text-grayscale-600">
                 <span className="w-[6px] h-[6px] rounded-full bg-grayscale-900" />
-                <span>Median: ${medianValue.toLocaleString()}</span>
+                <span>Median: ${numeral(medianSalary).format('0,0')}</span>
             </div>
 
             {/* Chart */}
@@ -41,8 +42,8 @@ export const AiPathwayCareerPipeChart: React.FC<AiPathwayCareerPipeChartProps> =
 
             {/* Min / Max labels */}
             <div className="flex justify-between px-[8px] py-[0] mt-[2px] text-[14px] text-grayscale-600">
-                <span>${minValue.toLocaleString()}</span>
-                <span>${maxValue.toLocaleString()}</span>
+                <span>${numeral(minSalary).format('0,0')}</span>
+                <span>${numeral(maxSalary).format('0,0')}</span>
             </div>
         </div>
     );
