@@ -51,7 +51,9 @@ function loadNativeAddon(): NativeAddon {
         const path = require('path');
         const fs = require('fs');
 
-        const packageRoot = path.join(__dirname, '..');
+        // Use require.resolve to find package location (works from any context)
+        const packageJson = require.resolve('@learncard/didkit-plugin-node/package.json');
+        const packageRoot = path.dirname(packageJson);
 
         // Try to find the platform-specific .node file
         const files = fs.readdirSync(packageRoot);
@@ -59,7 +61,9 @@ function loadNativeAddon(): NativeAddon {
 
         if (!nodeFile) {
             throw new Error(
-                'No .node binary found. Run `pnpm build` to compile the native module.'
+                `No .node binary found in ${packageRoot}. Files: ${files.join(
+                    ', '
+                )}. Run 'pnpm build' to compile.`
             );
         }
 
