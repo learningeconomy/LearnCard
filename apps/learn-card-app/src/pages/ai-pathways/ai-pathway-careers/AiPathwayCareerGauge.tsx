@@ -47,8 +47,9 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                     </PieChart>
                 </ResponsiveContainer>
 
-                {/* SVG 1: Zone divider lines */}
+                {/*  Zone divider lines + bounds */}
                 <svg viewBox="0 0 260 140" className="absolute top-[-10%] pointer-events-none">
+                    {/* Zone dividers */}
                     {[135, 90, 45].map(deg => {
                         const r1 = 78;
                         const r2 = 100;
@@ -59,25 +60,47 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                                 y1={130 - r1 * Math.sin((Math.PI * deg) / 180)}
                                 x2={130 + r2 * Math.cos((Math.PI * deg) / 180)}
                                 y2={130 - r2 * Math.sin((Math.PI * deg) / 180)}
-                                stroke="#555"
+                                stroke="#222"
                                 strokeWidth="1.5"
                                 strokeDasharray="3 4"
                             />
                         );
                     })}
-                </svg>
 
+                    {/* 0% boundary (left) */}
+                    <line
+                        x1={130 + 78 * Math.cos(Math.PI)}
+                        y1={130 - 78 * Math.sin(Math.PI)}
+                        x2={130 + 100 * Math.cos(Math.PI)}
+                        y2={130 - 100 * Math.sin(Math.PI)}
+                        stroke="#222"
+                        strokeWidth="1.5"
+                        strokeDasharray="3 4"
+                    />
+
+                    {/* 100% boundary (right) */}
+                    <line
+                        x1={130 + 78}
+                        y1={130}
+                        x2={130 + 100}
+                        y2={130}
+                        stroke="#222"
+                        strokeWidth="1.5"
+                        strokeDasharray="3 4"
+                    />
+                </svg>
                 {/* SVG 2: Needle */}
                 <svg
                     viewBox="0 0 260 140"
                     className="absolute top-[25%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
                 >
                     {/* Needle */}
+                    {/* Needle */}
                     <line
                         x1="130"
                         y1="130"
-                        x2={130 + 70 * Math.cos((Math.PI * angle) / 180)}
-                        y2={130 - 70 * Math.sin((Math.PI * angle) / 180)}
+                        x2={130 + 140 * Math.cos((Math.PI * angle) / 180)}
+                        y2={130 - 140 * Math.sin((Math.PI * angle) / 180)}
                         stroke="#222"
                         strokeWidth="3"
                     />
