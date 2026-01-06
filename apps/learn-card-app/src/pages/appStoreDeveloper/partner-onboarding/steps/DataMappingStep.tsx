@@ -37,6 +37,11 @@ import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping, TemplateBoostMeta, PartnerProject, fieldNameToVariable } from '../types';
 import { CodeBlock } from '../../components/CodeBlock';
+import { 
+    extractDynamicVariables, 
+    OBv3CredentialTemplate,
+    jsonToTemplate,
+} from '../components/CredentialBuilder';
 
 const TEMPLATE_META_VERSION = '1.0.0';
 
@@ -131,10 +136,45 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         return extractPaths(samplePayload);
     }, [samplePayload, csvHeaders, integrationMethod]);
 
-    // Get target fields from selected template
+    // Get target fields from selected template - prefer OBv3 dynamic variables
     const targetFields = useMemo(() => {
         const template = templates.find(t => t.id === selectedTemplate);
-        return template?.fields.map(f => f.name) || [];
+        if (!template) return [];
+
+        // If template has OBv3 data, extract dynamic variables from it
+        if (template.obv3Template) {
+            try {
+                const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                const dynamicVars = extractDynamicVariables(obv3);
+                
+                // Return variable names formatted nicely
+                return dynamicVars.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+            } catch (e) {
+                console.warn('Failed to extract OBv3 dynamic variables:', e);
+            }
+        }
+
+        // Fallback to legacy fields
+        return template.fields?.map(f => f.name) || [];
+    }, [templates, selectedTemplate]);
+
+    // Get the raw variable names for templateData generation
+    const targetVariableNames = useMemo(() => {
+        const template = templates.find(t => t.id === selectedTemplate);
+        if (!template) return [];
+
+        // If template has OBv3 data, extract dynamic variables from it
+        if (template.obv3Template) {
+            try {
+                const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                return extractDynamicVariables(obv3);
+            } catch (e) {
+                console.warn('Failed to extract OBv3 dynamic variables:', e);
+            }
+        }
+
+        // Fallback to legacy fields
+        return template.fields?.map(f => f.variableName || fieldNameToVariable(f.name)) || [];
     }, [templates, selectedTemplate]);
 
     const handleCopyUrl = async () => {
@@ -180,12 +220,30 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         });
     };
 
-    // Generate CSV template for download
+    // Generate CSV template for download - uses OBv3 dynamic variables if available
     const handleDownloadTemplate = () => {
         const template = templates.find(t => t.id === selectedTemplate);
         if (!template) return;
 
-        const headers = template.fields.map(f => f.name);
+        // Get headers from OBv3 template or fallback to legacy fields
+        let headers: string[] = [];
+
+        if (template.obv3Template) {
+            try {
+                const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                const dynamicVars = extractDynamicVariables(obv3);
+                // Format variable names as headers
+                headers = dynamicVars.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+            } catch (e) {
+                console.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
+            }
+        }
+
+        // Fallback to legacy fields
+        if (headers.length === 0) {
+            headers = template.fields?.map(f => f.name) || [];
+        }
+
         const csvContent = headers.join(',') + '\n' + headers.map(() => '').join(',');
 
         const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -233,21 +291,63 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         setMappings(mappings.filter((_, i) => i !== index));
     };
 
-    // Apply mappings to templates' field.sourceMapping
+    // Apply mappings to templates' field.sourceMapping - supports both OBv3 and legacy
     const applyMappingsToTemplates = (): CredentialTemplate[] => {
         return templates.map(template => {
             if (template.id !== selectedTemplate) return template;
 
-            return {
-                ...template,
-                isDirty: true,
-                fields: template.fields.map(field => {
+            // Get dynamic variables from OBv3 template if available
+            let dynamicVars: string[] = [];
+
+            if (template.obv3Template) {
+                try {
+                    const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                    dynamicVars = extractDynamicVariables(obv3);
+                } catch (e) {
+                    console.warn('Failed to extract OBv3 dynamic variables:', e);
+                }
+            }
+
+            // Build fields array from dynamic variables or use existing
+            let updatedFields = template.fields || [];
+
+            if (dynamicVars.length > 0) {
+                // Create/update fields based on dynamic variables
+                updatedFields = dynamicVars.map(varName => {
+                    const displayName = varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const existingField = template.fields?.find(f => 
+                        f.variableName === varName || fieldNameToVariable(f.name) === varName
+                    );
+                    
+                    // Find mapping by display name or variable name
+                    const mapping = mappings.find(m => 
+                        m.targetField === displayName || m.targetField === varName
+                    );
+
+                    return {
+                        id: existingField?.id || varName,
+                        name: displayName,
+                        type: existingField?.type || 'text' as const,
+                        required: existingField?.required || false,
+                        variableName: varName,
+                        sourceMapping: mapping?.sourceField || existingField?.sourceMapping,
+                    };
+                });
+            } else {
+                // Legacy mode - update existing fields
+                updatedFields = template.fields?.map(field => {
                     const mapping = mappings.find(m => m.targetField === field.name);
                     return {
                         ...field,
                         sourceMapping: mapping?.sourceField || field.sourceMapping,
                     };
-                }),
+                }) || [];
+            }
+
+            return {
+                ...template,
+                isDirty: true,
+                fields: updatedFields,
             };
         });
     };
@@ -329,37 +429,61 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 
     const selectedApiTemplate = templates.find(t => t.id === apiSelectedTemplate);
 
-    // Generate templateData code from template fields
+    // Generate templateData code from template - supports both OBv3 and legacy formats
     const generateTemplateDataCode = (template: CredentialTemplate | undefined, indent: string = '        ') => {
-        if (!template?.fields?.length) return '';
+        if (!template) return '';
 
-        const lines = template.fields.map(field => {
-            const varName = field.variableName || fieldNameToVariable(field.name);
-            const mapping = mappings.find(m => m.targetField === field.name);
+        // Try to extract dynamic variables from OBv3 template first
+        let dynamicVars: string[] = [];
 
-            // Generate example value based on field type
+        if (template.obv3Template) {
+            try {
+                const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                dynamicVars = extractDynamicVariables(obv3);
+            } catch (e) {
+                console.warn('Failed to extract OBv3 dynamic variables:', e);
+            }
+        }
+
+        // Fallback to legacy fields
+        if (dynamicVars.length === 0 && template.fields?.length) {
+            dynamicVars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
+        }
+
+        if (dynamicVars.length === 0) return '';
+
+        const lines = dynamicVars.map(varName => {
+            // Format display name for finding mapping
+            const displayName = varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const mapping = mappings.find(m => m.targetField === displayName || m.targetField === varName);
+
+            // Also check legacy field for type info
+            const legacyField = template.fields?.find(f => 
+                f.variableName === varName || fieldNameToVariable(f.name) === varName
+            );
+
+            // Generate example value based on variable name or field type
             let exampleValue: string;
 
             if (mapping) {
                 // If mapped, show the source path
                 exampleValue = `yourData.${mapping.sourceField.replace(/\./g, '?.')}`;
             } else {
-                // Generate placeholder based on field type
-                switch (field.type) {
-                    case 'date':
-                        exampleValue = `new Date().toISOString()`;
-                        break;
-                    case 'number':
-                        exampleValue = `0`;
-                        break;
-                    case 'email':
-                        exampleValue = `'user@example.com'`;
-                        break;
-                    case 'url':
-                        exampleValue = `'https://example.com'`;
-                        break;
-                    default:
-                        exampleValue = `'${field.name}'`;
+                // Generate placeholder based on field type or variable name heuristics
+                const fieldType = legacyField?.type;
+
+                if (fieldType === 'date' || varName.includes('date') || varName.includes('issued') || varName.includes('expir')) {
+                    exampleValue = `new Date().toISOString()`;
+                } else if (fieldType === 'number' || varName.includes('score') || varName.includes('grade') || varName.includes('credits')) {
+                    exampleValue = `0`;
+                } else if (fieldType === 'email' || varName.includes('email')) {
+                    exampleValue = `'user@example.com'`;
+                } else if (fieldType === 'url' || varName.includes('url') || varName.includes('image') || varName.includes('logo')) {
+                    exampleValue = `'https://example.com'`;
+                } else if (varName.includes('name')) {
+                    exampleValue = `'John Doe'`;
+                } else {
+                    exampleValue = `'Your ${displayName}'`;
                 }
             }
 
