@@ -17,7 +17,7 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
             className="flex flex-col gap-[10px] bg-transparent mx-auto cursor-auto min-w-[300px] h-full"
         >
             <div className="h-full relative overflow-hidden bg-grayscale-200">
-                <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col items-center justify-start">
+                <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col gap-[20px] items-center justify-start">
                     <div className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 mt-[60px] w-full">
                         {/* header */}
                         <div className="flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
@@ -40,8 +40,8 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 mt-[60px] w-full">
-                        <AiPathwayCareerPipeChart />
+                    <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full">
+                        <AiPathwayCareerPipeChart career={career} />
                     </div>
                 </div>
                 <IonFooter

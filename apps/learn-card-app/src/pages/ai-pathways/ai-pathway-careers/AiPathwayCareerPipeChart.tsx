@@ -1,51 +1,28 @@
 import { BarChart, Bar, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from 'recharts';
+import { AiPathwayCareer } from './ai-pathway-careers.helpers';
 
-const data = [
-    { bucket: 1, value: 6 },
-    { bucket: 2, value: 9 },
-    { bucket: 3, value: 12 },
-    { bucket: 4, value: 7 },
-    { bucket: 5, value: 14 }, // median bucket
-    { bucket: 6, value: 11 },
-    { bucket: 7, value: 11 },
-    { bucket: 8, value: 7 },
-    { bucket: 9, value: 4 },
-    { bucket: 10, value: 2 },
-];
+interface AiPathwayCareerPipeChartProps {
+    career: AiPathwayCareer;
+}
 
-const MEDIAN_BUCKET = 5;
+const MEDIAN_BUCKET = 4;
 
-export const AiPathwayCareerPipeChart = () => {
+export const AiPathwayCareerPipeChart: React.FC<AiPathwayCareerPipeChartProps> = ({ career }) => {
+    const data = career.salaryData;
+    const medianValue = data[Math.floor(data.length / 2)].value;
+    const minValue = Math.min(...data.map(d => d.value));
+    const maxValue = Math.max(...data.map(d => d.value));
+
     return (
-        <div style={{ width: '100%', position: 'relative' }}>
+        <div className="w-full relative">
             {/* Median overlay */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: 8,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: 14,
-                    color: '#333',
-                    zIndex: 2,
-                }}
-            >
-                <span
-                    style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        background: '#2d2d2d',
-                    }}
-                />
-                <span>Median: $104,000</span>
+            <div className="absolute top-[8px] left-[50%] transform translate-x-[-50%] flex items-center gap-[6px] text-[14px] text-grayscale-600">
+                <span className="w-[6px] h-[6px] rounded-full bg-grayscale-900" />
+                <span>Median: ${medianValue.toLocaleString()}</span>
             </div>
 
             {/* Chart */}
-            <div style={{ width: '100%', height: 240 }}>
+            <div className="w-full h-[240px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={data}
@@ -63,18 +40,9 @@ export const AiPathwayCareerPipeChart = () => {
             </div>
 
             {/* Min / Max labels */}
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '0 8px',
-                    marginTop: 2,
-                    fontSize: 14,
-                    color: '#444',
-                }}
-            >
-                <span>$45,000</span>
-                <span>$138,000</span>
+            <div className="flex justify-between px-[8px] py-[0] mt-[2px] text-[14px] text-grayscale-600">
+                <span>${minValue.toLocaleString()}</span>
+                <span>${maxValue.toLocaleString()}</span>
             </div>
         </div>
     );
