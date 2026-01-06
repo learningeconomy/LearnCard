@@ -43,6 +43,26 @@ export const useDeveloperPortal = () => {
         });
     };
 
+    // Mutation for updating an integration (including webhook config)
+    const useUpdateIntegration = () => {
+        return useMutation({
+            mutationFn: async ({
+                integrationId,
+                updates,
+            }: {
+                integrationId: string;
+                updates: Record<string, unknown>;
+            }): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.updateIntegration(integrationId, updates);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
+            },
+        });
+    };
+
     // ========== Listing Hooks ==========
 
     // Query for listings belonging to an integration
@@ -233,6 +253,7 @@ export const useDeveloperPortal = () => {
         // Integration hooks
         useIntegrations,
         useCreateIntegration,
+        useUpdateIntegration,
 
         // Listing hooks
         useListingsForIntegration,

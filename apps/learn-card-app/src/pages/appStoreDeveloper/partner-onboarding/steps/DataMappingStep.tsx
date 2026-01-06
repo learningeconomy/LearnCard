@@ -35,8 +35,14 @@ import { Clipboard } from '@capacitor/clipboard';
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
-import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping, TemplateBoostMeta, PartnerProject } from '../types';
+import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping, TemplateBoostMeta, PartnerProject, fieldNameToVariable } from '../types';
 import { CodeBlock } from '../../components/CodeBlock';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
+import { 
+    extractDynamicVariables, 
+    OBv3CredentialTemplate,
+    jsonToTemplate,
+} from '../components/CredentialBuilder';
 
 const TEMPLATE_META_VERSION = '1.0.0';
 
@@ -79,16 +85,41 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const { useUpdateIntegration } = useDeveloperPortal();
+    const updateIntegrationMutation = useUpdateIntegration();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
-    const [webhookUrl] = useState(dataMapping?.webhookUrl || `https://api.learncard.com/webhooks/${Date.now().toString(36)}`);
+    const integrationId = project?.id;
+
+    // Generate a unique webhook ID based on integration ID
+    const webhookId = useMemo(() => {
+        if (!integrationId) return null;
+        // Create a deterministic webhook ID from the integration ID
+        return `wh_${integrationId.slice(0, 16)}`;
+    }, [integrationId]);
+
+    const webhookUrl = useMemo(() => {
+        if (!webhookId) return 'https://api.learncard.com/webhooks/...';
+        return `https://api.learncard.com/webhooks/${webhookId}`;
+    }, [webhookId]);
+
     const [copiedUrl, setCopiedUrl] = useState(false);
     const [samplePayload, setSamplePayload] = useState<Record<string, unknown> | null>(
         dataMapping?.samplePayload || null
     );
     const [mappings, setMappings] = useState<FieldMapping[]>(dataMapping?.mappings || []);
     const [isWaiting, setIsWaiting] = useState(false);
+
+    // Manual payload paste state
+    const [manualPayloadText, setManualPayloadText] = useState('');
+    const [payloadParseError, setPayloadParseError] = useState<string | null>(null);
+    const [showManualInput, setShowManualInput] = useState(false);
+
+    // Recipient email path tracking
+    const [recipientEmailPath, setRecipientEmailPath] = useState<string | null>(
+        dataMapping?.recipientEmailPath || null
+    );
     const [isSaving, setIsSaving] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<string>(templates[0]?.id || '');
     const [selectedSource, setSelectedSource] = useState<string | null>(null);
@@ -99,8 +130,6 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const [csvPreviewRows, setCsvPreviewRows] = useState<Record<string, string>[]>([]);
     const [csvFileName, setCsvFileName] = useState<string | null>(null);
     const csvInputRef = useRef<HTMLInputElement>(null);
-
-    const integrationId = project?.id;
 
     // Extract all field paths from sample payload (webhook) or CSV headers
     const sourceFields = useMemo(() => {
@@ -131,10 +160,45 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         return extractPaths(samplePayload);
     }, [samplePayload, csvHeaders, integrationMethod]);
 
-    // Get target fields from selected template
+    // Get target fields from selected template - prefer OBv3 dynamic variables
     const targetFields = useMemo(() => {
         const template = templates.find(t => t.id === selectedTemplate);
-        return template?.fields.map(f => f.name) || [];
+        if (!template) return [];
+
+        // If template has OBv3 data, extract dynamic variables from it
+        if (template.obv3Template) {
+            try {
+                const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                const dynamicVars = extractDynamicVariables(obv3);
+                
+                // Return variable names formatted nicely
+                return dynamicVars.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+            } catch (e) {
+                console.warn('Failed to extract OBv3 dynamic variables:', e);
+            }
+        }
+
+        // Fallback to legacy fields
+        return template.fields?.map(f => f.name) || [];
+    }, [templates, selectedTemplate]);
+
+    // Get the raw variable names for templateData generation
+    const targetVariableNames = useMemo(() => {
+        const template = templates.find(t => t.id === selectedTemplate);
+        if (!template) return [];
+
+        // If template has OBv3 data, extract dynamic variables from it
+        if (template.obv3Template) {
+            try {
+                const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                return extractDynamicVariables(obv3);
+            } catch (e) {
+                console.warn('Failed to extract OBv3 dynamic variables:', e);
+            }
+        }
+
+        // Fallback to legacy fields
+        return template.fields?.map(f => f.variableName || fieldNameToVariable(f.name)) || [];
     }, [templates, selectedTemplate]);
 
     const handleCopyUrl = async () => {
@@ -150,8 +214,72 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         setTimeout(() => {
             setSamplePayload(SAMPLE_WEBHOOK_PAYLOAD);
             setIsWaiting(false);
+            // Auto-detect email path in sample
+            setRecipientEmailPath('user.email');
         }, 2000);
     };
+
+    // Parse manually pasted JSON payload
+    const handleParseManualPayload = () => {
+        try {
+            const parsed = JSON.parse(manualPayloadText);
+
+            if (typeof parsed !== 'object' || parsed === null) {
+                setPayloadParseError('Payload must be a JSON object');
+                return;
+            }
+
+            setSamplePayload(parsed);
+            setPayloadParseError(null);
+            setShowManualInput(false);
+            setManualPayloadText('');
+
+            // Try to auto-detect email path
+            const emailPath = findEmailPath(parsed);
+
+            if (emailPath) {
+                setRecipientEmailPath(emailPath);
+            }
+
+            presentToast('Payload parsed successfully!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+        } catch (e) {
+            setPayloadParseError('Invalid JSON: ' + (e instanceof Error ? e.message : 'Parse error'));
+        }
+    };
+
+    // Find email field path in payload
+    const findEmailPath = (obj: Record<string, unknown>, prefix = ''): string | null => {
+        for (const [key, value] of Object.entries(obj)) {
+            const path = prefix ? `${prefix}.${key}` : key;
+
+            if (typeof value === 'string' && value.includes('@') && value.includes('.')) {
+                return path;
+            }
+
+            if (key.toLowerCase().includes('email') && typeof value === 'string') {
+                return path;
+            }
+
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                const found = findEmailPath(value as Record<string, unknown>, path);
+
+                if (found) return found;
+            }
+        }
+
+        return null;
+    };
+
+    // Check if email mapping is configured
+    const hasEmailMapping = useMemo(() => {
+        if (recipientEmailPath) return true;
+
+        // Check if any mapping targets an email field
+        return mappings.some(m => 
+            m.sourceField.toLowerCase().includes('email') || 
+            m.targetField.toLowerCase().includes('email')
+        );
+    }, [recipientEmailPath, mappings]);
 
     // Handle CSV file upload
     const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -180,12 +308,30 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         });
     };
 
-    // Generate CSV template for download
+    // Generate CSV template for download - uses OBv3 dynamic variables if available
     const handleDownloadTemplate = () => {
         const template = templates.find(t => t.id === selectedTemplate);
         if (!template) return;
 
-        const headers = template.fields.map(f => f.name);
+        // Get headers from OBv3 template or fallback to legacy fields
+        let headers: string[] = [];
+
+        if (template.obv3Template) {
+            try {
+                const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                const dynamicVars = extractDynamicVariables(obv3);
+                // Format variable names as headers
+                headers = dynamicVars.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+            } catch (e) {
+                console.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
+            }
+        }
+
+        // Fallback to legacy fields
+        if (headers.length === 0) {
+            headers = template.fields?.map(f => f.name) || [];
+        }
+
         const csvContent = headers.join(',') + '\n' + headers.map(() => '').join(',');
 
         const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -233,21 +379,63 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         setMappings(mappings.filter((_, i) => i !== index));
     };
 
-    // Apply mappings to templates' field.sourceMapping
+    // Apply mappings to templates' field.sourceMapping - supports both OBv3 and legacy
     const applyMappingsToTemplates = (): CredentialTemplate[] => {
         return templates.map(template => {
             if (template.id !== selectedTemplate) return template;
 
-            return {
-                ...template,
-                isDirty: true,
-                fields: template.fields.map(field => {
+            // Get dynamic variables from OBv3 template if available
+            let dynamicVars: string[] = [];
+
+            if (template.obv3Template) {
+                try {
+                    const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                    dynamicVars = extractDynamicVariables(obv3);
+                } catch (e) {
+                    console.warn('Failed to extract OBv3 dynamic variables:', e);
+                }
+            }
+
+            // Build fields array from dynamic variables or use existing
+            let updatedFields = template.fields || [];
+
+            if (dynamicVars.length > 0) {
+                // Create/update fields based on dynamic variables
+                updatedFields = dynamicVars.map(varName => {
+                    const displayName = varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const existingField = template.fields?.find(f => 
+                        f.variableName === varName || fieldNameToVariable(f.name) === varName
+                    );
+                    
+                    // Find mapping by display name or variable name
+                    const mapping = mappings.find(m => 
+                        m.targetField === displayName || m.targetField === varName
+                    );
+
+                    return {
+                        id: existingField?.id || varName,
+                        name: displayName,
+                        type: existingField?.type || 'text' as const,
+                        required: existingField?.required || false,
+                        variableName: varName,
+                        sourceMapping: mapping?.sourceField || existingField?.sourceMapping,
+                    };
+                });
+            } else {
+                // Legacy mode - update existing fields
+                updatedFields = template.fields?.map(field => {
                     const mapping = mappings.find(m => m.targetField === field.name);
                     return {
                         ...field,
                         sourceMapping: mapping?.sourceField || field.sourceMapping,
                     };
-                }),
+                }) || [];
+            }
+
+            return {
+                ...template,
+                isDirty: true,
+                fields: updatedFields,
             };
         });
     };
@@ -291,10 +479,37 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
             // Save mappings to boosts
             await saveTemplatesToBoosts(updatedTemplates);
 
+            // For webhook integrations, save the webhook config to the integration
+            if (integrationMethod === 'webhook' && integrationId && templates[0]?.boostUri) {
+                await updateIntegrationMutation.mutateAsync({
+                    integrationId,
+                    updates: {
+                        webhookConfig: {
+                            enabled: true,
+                            boostUri: templates[0].boostUri,
+                            recipientEmailPath: recipientEmailPath || undefined,
+                            mappings: mappings.map(m => ({
+                                sourceField: m.sourceField,
+                                targetField: m.targetField,
+                            })),
+                            samplePayload: samplePayload || undefined,
+                        },
+                    },
+                });
+
+                console.log('Webhook config saved to integration');
+            }
+
             presentToast('Field mappings saved!', { type: ToastTypeEnum.Success, hasDismissButton: true });
 
             onComplete(
-                { webhookUrl, samplePayload: samplePayload || undefined, mappings },
+                { 
+                    webhookUrl, 
+                    webhookId: webhookId || undefined,
+                    samplePayload: samplePayload || undefined, 
+                    mappings,
+                    recipientEmailPath: recipientEmailPath || undefined,
+                },
                 updatedTemplates
             );
         } catch (err) {
@@ -305,9 +520,10 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         }
     };
 
+    // For webhook, require sample payload, at least one mapping, AND a recipient email path
     const canProceed = integrationMethod === 'api' || 
         (integrationMethod === 'csv' && csvHeaders.length > 0 && mappings.length > 0) ||
-        (integrationMethod === 'webhook' && samplePayload && mappings.length > 0);
+        (integrationMethod === 'webhook' && samplePayload && mappings.length > 0 && recipientEmailPath);
 
     // API Integration state
     const [apiSelectedTemplate, setApiSelectedTemplate] = useState<string>(templates[0]?.id || '');
@@ -329,114 +545,138 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 
     const selectedApiTemplate = templates.find(t => t.id === apiSelectedTemplate);
 
+    // Generate templateData code from template - supports both OBv3 and legacy formats
+    const generateTemplateDataCode = (template: CredentialTemplate | undefined, indent: string = '        ') => {
+        if (!template) return '';
+
+        // Try to extract dynamic variables from OBv3 template first
+        let dynamicVars: string[] = [];
+
+        if (template.obv3Template) {
+            try {
+                const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                dynamicVars = extractDynamicVariables(obv3);
+            } catch (e) {
+                console.warn('Failed to extract OBv3 dynamic variables:', e);
+            }
+        }
+
+        // Fallback to legacy fields
+        if (dynamicVars.length === 0 && template.fields?.length) {
+            dynamicVars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
+        }
+
+        if (dynamicVars.length === 0) return '';
+
+        const lines = dynamicVars.map(varName => {
+            // Format display name for finding mapping
+            const displayName = varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const mapping = mappings.find(m => m.targetField === displayName || m.targetField === varName);
+
+            // Also check legacy field for type info
+            const legacyField = template.fields?.find(f => 
+                f.variableName === varName || fieldNameToVariable(f.name) === varName
+            );
+
+            // Generate example value based on variable name or field type
+            let exampleValue: string;
+
+            if (mapping) {
+                // If mapped, show the source path
+                exampleValue = `yourData.${mapping.sourceField.replace(/\./g, '?.')}`;
+            } else {
+                // Generate placeholder based on field type or variable name heuristics
+                const fieldType = legacyField?.type;
+
+                if (fieldType === 'date' || varName.includes('date') || varName.includes('issued') || varName.includes('expir')) {
+                    exampleValue = `new Date().toISOString()`;
+                } else if (fieldType === 'number' || varName.includes('score') || varName.includes('grade') || varName.includes('credits')) {
+                    exampleValue = `0`;
+                } else if (fieldType === 'email' || varName.includes('email')) {
+                    exampleValue = `'user@example.com'`;
+                } else if (fieldType === 'url' || varName.includes('url') || varName.includes('image') || varName.includes('logo')) {
+                    exampleValue = `'https://example.com'`;
+                } else if (varName.includes('name')) {
+                    exampleValue = `'John Doe'`;
+                } else {
+                    exampleValue = `'Your ${displayName}'`;
+                }
+            }
+
+            return `${indent}${varName}: ${exampleValue},`;
+        });
+
+        return lines.join('\n');
+    };
+
     // Generate code snippets for API integration
     const generateApiCodeSnippet = () => {
         const template = selectedApiTemplate;
         const boostUri = template?.boostUri || 'urn:lc:boost:your_template_id';
-        const templateName = template?.name || 'Course Completion';
 
-        // Build configuration object for advanced options
-        let configCode = '';
+        // Generate templateData from fields
+        const templateDataCode = generateTemplateDataCode(template);
+
+        // Build options object for advanced options
+        let optionsCode = '';
+
         if (apiHasAdvancedOptions) {
-            const configParts: string[] = [];
+            const optionsParts: string[] = [];
 
             if (apiAdvancedOptions.webhookUrl) {
-                configParts.push(`        webhookUrl: '${apiAdvancedOptions.webhookUrl}',`);
+                optionsParts.push(`        webhookUrl: '${apiAdvancedOptions.webhookUrl}',`);
             }
 
             if (apiAdvancedOptions.suppressDelivery) {
-                configParts.push(`        delivery: { suppress: true },`);
+                optionsParts.push(`        suppressDelivery: true,`);
             }
 
-            if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || apiAdvancedOptions.recipientName) {
-                const templateModelParts: string[] = [];
-
-                if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl) {
-                    templateModelParts.push(`                issuer: { name: '${apiAdvancedOptions.issuerName || 'Your Organization'}', logoUrl: '${apiAdvancedOptions.issuerLogoUrl || ''}' },`);
-                }
-
-                if (apiAdvancedOptions.recipientName) {
-                    templateModelParts.push(`                recipient: { name: '${apiAdvancedOptions.recipientName}' },`);
-                }
-
-                templateModelParts.push(`                credential: { name: '${templateName}', type: 'achievement' },`);
-
-                configParts.push(`        delivery: {
-            ${apiAdvancedOptions.suppressDelivery ? 'suppress: true,' : ''}
-            template: {
-                model: {
-${templateModelParts.join('\n')}
-                },
-            },
-        },`);
-            }
-
-            if (configParts.length > 0) {
-                configCode = `
-    configuration: {
-${configParts.join('\n')}
+            if (optionsParts.length > 0) {
+                optionsCode = `
+    options: {
+${optionsParts.join('\n')}
     },`;
             }
         }
 
-        if (apiRecipientEmail) {
-            // Universal Inbox (email recipient)
-            return `import { initLearnCard } from '@learncard/init';
+        // Unified send API - works with both email and profile recipients
+        const recipientCode = apiRecipientEmail 
+            ? `'${apiRecipientEmail}'` 
+            : `'recipient-profile-id' // or email like 'user@example.com'`;
+
+        return `import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard({ 
     seed: process.env.LEARNCARD_SEED,
     network: true 
 });
 
-// Send credential via Universal Inbox (handles user onboarding)
-const result = await learnCard.invoke.sendCredentialViaInbox({ 
-    recipient: { 
-        type: 'email',
-        value: '${apiRecipientEmail}' 
-    }, 
-    credential: {
-        "@context": [
-            "https://www.w3.org/2018/credentials/v1",
-            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
-        ],
-        "type": ["VerifiableCredential", "OpenBadgeCredential"],
-        "name": "${templateName}",
-        "credentialSubject": {
-            "type": ["AchievementSubject"],
-            "achievement": {
-                "type": ["Achievement"],
-                "name": "${templateName}",
-                "description": "${template?.description || 'Completed successfully.'}",
-                "criteria": {
-                    "narrative": "Successfully completed all requirements."
-                }
-            }
-        }
-    },${configCode}
-});
+// Your data from webhook, API, or database
+const yourData = {
+    // Map your source fields here
+    user: { name: 'John Doe', email: 'john@example.com' },
+    completion: { date: '2024-01-15', score: 95 },
+};
 
-console.log('Claim URL:', result.claimUrl);`;
-        } else {
-            // Send method (existing profile)
-            return `import { initLearnCard } from '@learncard/init';
-
-const learnCard = await initLearnCard({ 
-    seed: process.env.LEARNCARD_SEED,
-    network: true 
-});
-
-// Option 1: Send using your boost template (for existing LearnCard users)
+// Send credential using the unified send API
+// Works with email (Universal Inbox) or profile ID/DID
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'recipient-profile-id', // or DID
+    recipient: ${recipientCode},
     templateUri: '${boostUri}',
+    templateData: {
+${templateDataCode}
+    },${optionsCode}
 });
 
-console.log('Credential URI:', result.credentialUri);
-
-// Option 2: Send via email (for new users)
-// Enter an email above to see the sendCredentialViaInbox code`;
-        }
+// For email recipients, you'll get a claim URL
+if (result.inbox) {
+    console.log('Claim URL:', result.inbox.claimUrl);
+    console.log('Status:', result.inbox.status);
+} else {
+    // For existing users, credential is sent directly
+    console.log('Credential URI:', result.credentialUri);
+}`;
     };
 
     const handleCopyApiCode = async () => {
@@ -1145,39 +1385,154 @@ console.log('Credential URI:', result.credentialUri);
                 </div>
 
                 {!samplePayload ? (
-                    <div className="p-6 border-2 border-dashed border-gray-200 rounded-xl text-center">
-                        {isWaiting ? (
-                            <div className="space-y-3">
-                                <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mx-auto" />
-                                <p className="text-sm text-gray-600">Waiting for webhook event...</p>
-                            </div>
-                        ) : (
+                    <div className="space-y-4">
+                        {showManualInput ? (
                             <div className="space-y-3">
                                 <p className="text-sm text-gray-600">
-                                    Send a test "course completed" event from your LMS, or click below to simulate one.
+                                    Paste a sample JSON payload from your platform (Teachable, Zapier, etc.):
                                 </p>
 
-                                <button
-                                    onClick={handleSimulateWebhook}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-100 text-cyan-700 rounded-lg hover:bg-cyan-200 transition-colors"
-                                >
-                                    <RefreshCw className="w-4 h-4" />
-                                    Simulate Test Event
-                                </button>
+                                <textarea
+                                    value={manualPayloadText}
+                                    onChange={(e) => {
+                                        setManualPayloadText(e.target.value);
+                                        setPayloadParseError(null);
+                                    }}
+                                    placeholder={`{\n  "user": {\n    "email": "student@example.com",\n    "name": "John Doe"\n  },\n  "course": {\n    "title": "Course Name"\n  }\n}`}
+                                    className="w-full h-48 px-3 py-2 font-mono text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+
+                                {payloadParseError && (
+                                    <div className="flex items-center gap-2 text-sm text-red-600">
+                                        <AlertCircle className="w-4 h-4" />
+                                        {payloadParseError}
+                                    </div>
+                                )}
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleParseManualPayload}
+                                        disabled={!manualPayloadText.trim()}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                                    >
+                                        <Check className="w-4 h-4" />
+                                        Parse Payload
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setShowManualInput(false);
+                                            setManualPayloadText('');
+                                            setPayloadParseError(null);
+                                        }}
+                                        className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-6 border-2 border-dashed border-gray-200 rounded-xl text-center">
+                                {isWaiting ? (
+                                    <div className="space-y-3">
+                                        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mx-auto" />
+                                        <p className="text-sm text-gray-600">Waiting for webhook event...</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-gray-600">
+                                            Paste a sample payload from your platform, or simulate a test event.
+                                        </p>
+
+                                        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                                            <button
+                                                onClick={() => setShowManualInput(true)}
+                                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                                            >
+                                                <FileJson className="w-4 h-4" />
+                                                Paste Sample Payload
+                                            </button>
+
+                                            <button
+                                                onClick={handleSimulateWebhook}
+                                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                            >
+                                                <RefreshCw className="w-4 h-4" />
+                                                Use Demo Payload
+                                            </button>
+                                        </div>
+
+                                        <p className="text-xs text-gray-400">
+                                            Works with Teachable, Kajabi, Thinkific, Typeform, Zapier, and more
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-emerald-600">
-                            <Check className="w-4 h-4" />
-                            Event captured successfully!
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm text-emerald-600">
+                                <Check className="w-4 h-4" />
+                                Payload captured successfully!
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setSamplePayload(null);
+                                    setRecipientEmailPath(null);
+                                    setMappings([]);
+                                }}
+                                className="text-xs text-gray-500 hover:text-gray-700"
+                            >
+                                Clear & Start Over
+                            </button>
                         </div>
 
-                        <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto">
+                        <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto max-h-48">
                             <pre className="text-xs text-gray-300">
                                 {JSON.stringify(samplePayload, null, 2)}
                             </pre>
+                        </div>
+
+                        {/* Recipient Email Path Selector */}
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-start gap-2">
+                                <Send className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+
+                                <div className="flex-1 space-y-2">
+                                    <p className="text-sm font-medium text-blue-800">
+                                        Where is the recipient's email?
+                                    </p>
+
+                                    <select
+                                        value={recipientEmailPath || ''}
+                                        onChange={(e) => setRecipientEmailPath(e.target.value || null)}
+                                        className="w-full px-3 py-2 text-sm border border-blue-200 rounded-lg bg-white"
+                                    >
+                                        <option value="">Select email field...</option>
+
+                                        {sourceFields
+                                            .filter(f => f.toLowerCase().includes('email') || f.toLowerCase().includes('mail'))
+                                            .map(field => (
+                                                <option key={field} value={field}>{field}</option>
+                                            ))}
+
+                                        <optgroup label="All Fields">
+                                            {sourceFields.map(field => (
+                                                <option key={field} value={field}>{field}</option>
+                                            ))}
+                                        </optgroup>
+                                    </select>
+
+                                    {recipientEmailPath && (
+                                        <p className="text-xs text-blue-600">
+                                            ✓ Credentials will be sent to: <code className="bg-blue-100 px-1 rounded">{recipientEmailPath}</code>
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1328,6 +1683,51 @@ console.log('Credential URI:', result.credentialUri);
                             <p className="text-xs text-amber-800">
                                 {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length} credential field(s) still need to be mapped.
                             </p>
+                        </div>
+                    )}
+
+                    {/* Generated templateData Preview */}
+                    {mappings.length > 0 && (
+                        <div className="space-y-3 pt-4 border-t border-gray-100">
+                            <div className="flex items-center gap-2">
+                                <Code className="w-4 h-4 text-violet-600" />
+                                <span className="text-sm font-medium text-gray-700">Generated templateData</span>
+                            </div>
+
+                            <p className="text-xs text-gray-500">
+                                Based on your mappings, here's the <code className="bg-gray-100 px-1 rounded">templateData</code> object 
+                                you'll pass when sending credentials:
+                            </p>
+
+                            <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto">
+                                <pre className="text-xs text-gray-300">
+{`// In your webhook handler
+const templateData = {
+${(() => {
+    const currentTemplate = templates.find(t => t.id === selectedTemplate);
+    if (!currentTemplate?.fields) return '    // No fields defined';
+    
+    return currentTemplate.fields.map(field => {
+        const varName = field.variableName || fieldNameToVariable(field.name);
+        const mapping = mappings.find(m => m.targetField === field.name);
+        
+        if (mapping) {
+            return `    ${varName}: payload.${mapping.sourceField},`;
+        }
+        return `    ${varName}: /* unmapped */,`;
+    }).join('\n');
+})()}
+};
+
+// Send with the unified API
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: payload.user.email, // or profile ID
+    templateUri: '${templates.find(t => t.id === selectedTemplate)?.boostUri || 'your-boost-uri'}',
+    templateData,
+});`}
+                                </pre>
+                            </div>
                         </div>
                     )}
                 </div>

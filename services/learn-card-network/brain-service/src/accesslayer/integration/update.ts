@@ -16,6 +16,8 @@ export const updateIntegration = async (
     if (typeof updates.whitelistedDomains !== 'undefined')
         updatesToPersist.whitelistedDomains = updates.whitelistedDomains;
     if (updates.rotatePublishableKey) updatesToPersist.publishableKey = 'pk_' + uuid();
+    if (typeof updates.webhookConfig !== 'undefined')
+        updatesToPersist.webhookConfig = updates.webhookConfig;
 
     const params: Partial<FlatIntegrationType> = updatesToPersist;
 
