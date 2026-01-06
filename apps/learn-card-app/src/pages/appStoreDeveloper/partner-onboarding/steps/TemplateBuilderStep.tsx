@@ -1,31 +1,49 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+/**
+ * TemplateBuilderStep - Interactive OBv3 credential template builder
+ * 
+ * Uses the CredentialBuilder component for a full-featured, schema-driven
+ * credential template editor with live JSON preview and bidirectional editing.
+ */
+
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     FileStack,
     Plus,
     Trash2,
     ArrowRight,
     ArrowLeft,
-    GripVertical,
     Award,
-    Calendar,
-    Hash,
-    Type,
-    Link as LinkIcon,
-    Mail,
     ChevronDown,
     ChevronUp,
     Loader2,
     Save,
-    X,
     AlertCircle,
+    Zap,
 } from 'lucide-react';
 
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
-import { CredentialTemplate, CredentialField, BrandingConfig, TemplateBoostMeta, PartnerProject } from '../types';
+import { CredentialTemplate, BrandingConfig, TemplateBoostMeta, PartnerProject } from '../types';
+import { 
+    CredentialBuilder, 
+    OBv3CredentialTemplate, 
+    templateToJson, 
+    jsonToTemplate,
+    extractDynamicVariables,
+    getBlankTemplate,
+    TEMPLATE_PRESETS,
+    staticField,
+    dynamicField,
+} from '../components/CredentialBuilder';
 
-const TEMPLATE_META_VERSION = '1.0.0';
+const TEMPLATE_META_VERSION = '2.0.0';
+
+// Default fields for new templates
+const DEFAULT_FIELDS = [
+    { id: 'recipient_name', name: 'Recipient Name', type: 'text' as const, required: true, variableName: 'recipient_name' },
+    { id: 'issue_date', name: 'Issue Date', type: 'date' as const, required: true, variableName: 'issue_date' },
+];
 
 interface TemplateBuilderStepProps {
     templates: CredentialTemplate[];
@@ -35,37 +53,96 @@ interface TemplateBuilderStepProps {
     onBack: () => void;
 }
 
-const FIELD_TYPES = [
-    { value: 'text', label: 'Text', icon: Type },
-    { value: 'date', label: 'Date', icon: Calendar },
-    { value: 'number', label: 'Number', icon: Hash },
-    { value: 'url', label: 'URL', icon: LinkIcon },
-    { value: 'email', label: 'Email', icon: Mail },
-] as const;
+// Extended template type - uses CredentialTemplate with proper OBv3 typing
+type ExtendedTemplate = CredentialTemplate & {
+    obv3Template?: OBv3CredentialTemplate;
+};
 
-const ACHIEVEMENT_TYPES = [
-    'Course Completion',
-    'Certificate',
-    'Badge',
-    'Skill',
-    'Competency',
-    'License',
-    'Certification',
-    'Other',
-];
+// Convert legacy CredentialTemplate to OBv3CredentialTemplate
+const legacyToOBv3 = (legacy: CredentialTemplate, issuerName?: string, issuerImage?: string): OBv3CredentialTemplate => {
+    const template = getBlankTemplate();
 
-const DEFAULT_FIELDS: CredentialField[] = [
-    { id: 'recipient_name', name: 'Recipient Name', type: 'text', required: true },
-    { id: 'issue_date', name: 'Issue Date', type: 'date', required: true },
-];
+    // Set basic info
+    template.name = staticField(legacy.name || '');
+    template.description = staticField(legacy.description || '');
 
+    if (legacy.imageUrl) {
+        template.image = staticField(legacy.imageUrl);
+    }
+
+    // Set issuer
+    if (issuerName) {
+        template.issuer.name = staticField(issuerName);
+    }
+
+    if (issuerImage) {
+        template.issuer.image = staticField(issuerImage);
+    }
+
+    // Set achievement
+    template.credentialSubject.achievement.name = staticField(legacy.name || '');
+    template.credentialSubject.achievement.description = staticField(legacy.description || '');
+
+    if (legacy.achievementType) {
+        template.credentialSubject.achievement.achievementType = staticField(legacy.achievementType);
+    }
+
+    // Convert legacy fields to OBv3 format
+    for (const field of legacy.fields || []) {
+        const varName = field.variableName || field.name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+
+        if (field.id === 'recipient_name' || varName === 'recipient_name') {
+            template.credentialSubject.name = dynamicField('recipient_name', '');
+        } else if (field.id === 'issue_date' || varName === 'issue_date') {
+            template.issuanceDate = dynamicField('issue_date', '');
+        } else {
+            // Add as custom field
+            template.customFields.push({
+                id: field.id,
+                key: staticField(varName),
+                value: dynamicField(varName, ''),
+            });
+        }
+    }
+
+    return template;
+};
+
+// Convert OBv3CredentialTemplate back to legacy CredentialTemplate format for storage
+const obv3ToLegacy = (obv3: OBv3CredentialTemplate, existingTemplate?: CredentialTemplate): CredentialTemplate => {
+    const dynamicVars = extractDynamicVariables(obv3);
+
+    // Build fields array from dynamic variables
+    const fields = dynamicVars.map(varName => ({
+        id: varName,
+        name: varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        type: 'text' as const,
+        required: varName === 'recipient_name' || varName === 'issue_date',
+        variableName: varName,
+    }));
+
+    return {
+        id: existingTemplate?.id || `template_${Date.now()}`,
+        boostUri: existingTemplate?.boostUri,
+        name: obv3.name.value || 'Untitled Template',
+        description: obv3.description?.value || '',
+        achievementType: obv3.credentialSubject.achievement.achievementType?.value || 'Achievement',
+        fields,
+        imageUrl: obv3.image?.value,
+        isNew: existingTemplate?.isNew ?? true,
+        isDirty: true,
+        obv3Template: obv3,
+    };
+};
+
+// Single template editor using CredentialBuilder
 interface TemplateEditorProps {
-    template: CredentialTemplate;
+    template: ExtendedTemplate;
     branding: BrandingConfig | null;
-    onChange: (template: CredentialTemplate) => void;
+    onChange: (template: ExtendedTemplate) => void;
     onDelete: () => void;
     isExpanded: boolean;
-    onToggleExpand: () => void;
+    onToggle: () => void;
 }
 
 const TemplateEditor: React.FC<TemplateEditorProps> = ({
@@ -74,66 +151,57 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     onChange,
     onDelete,
     isExpanded,
-    onToggleExpand,
+    onToggle,
 }) => {
-    const [newFieldName, setNewFieldName] = useState('');
-    const [newFieldType, setNewFieldType] = useState<CredentialField['type']>('text');
+    // Initialize OBv3 template from legacy or existing
+    const [obv3Template, setObv3Template] = useState<OBv3CredentialTemplate>(() => {
+        if (template.obv3Template) {
+            return template.obv3Template;
+        }
 
-    const handleAddField = () => {
-        if (!newFieldName.trim()) return;
+        return legacyToOBv3(template, branding?.displayName, branding?.image);
+    });
 
-        const newField: CredentialField = {
-            id: `field_${Date.now()}`,
-            name: newFieldName.trim(),
-            type: newFieldType,
-            required: false,
-        };
+    const dynamicVars = useMemo(() => extractDynamicVariables(obv3Template), [obv3Template]);
 
-        onChange({
-            ...template,
-            fields: [...template.fields, newField],
-        });
+    const handleTemplateChange = useCallback((newObv3: OBv3CredentialTemplate) => {
+        setObv3Template(newObv3);
 
-        setNewFieldName('');
-        setNewFieldType('text');
-    };
-
-    const handleRemoveField = (fieldId: string) => {
-        onChange({
-            ...template,
-            fields: template.fields.filter(f => f.id !== fieldId),
-        });
-    };
-
-    const handleToggleRequired = (fieldId: string) => {
-        onChange({
-            ...template,
-            fields: template.fields.map(f =>
-                f.id === fieldId ? { ...f, required: !f.required } : f
-            ),
-        });
-    };
+        // Convert back to legacy format and notify parent
+        const legacyTemplate = obv3ToLegacy(newObv3, template) as ExtendedTemplate;
+        legacyTemplate.obv3Template = newObv3;
+        onChange(legacyTemplate);
+    }, [template, onChange]);
 
     return (
         <div className="border border-gray-200 rounded-xl overflow-hidden">
             {/* Header */}
-            <div
-                className="flex items-center gap-3 p-4 bg-gray-50 cursor-pointer"
-                onClick={onToggleExpand}
+            <button
+                type="button"
+                onClick={onToggle}
+                className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
             >
-                <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: branding?.primaryColor || '#3B82F6' }}
-                >
+                <div className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center">
                     <Award className="w-5 h-5 text-white" />
                 </div>
 
-                <div className="flex-1">
-                    <h4 className="font-medium text-gray-800">{template.name || 'Untitled Template'}</h4>
-                    <p className="text-sm text-gray-500">{template.fields.length} fields</p>
+                <div className="flex-1 text-left">
+                    <h4 className="font-medium text-gray-800">
+                        {obv3Template.name.value || 'Untitled Template'}
+                    </h4>
+
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                        {dynamicVars.length > 0 && (
+                            <span className="flex items-center gap-1">
+                                <Zap className="w-3 h-3 text-violet-500" />
+                                {dynamicVars.length} dynamic fields
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); onDelete(); }}
                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 >
@@ -145,131 +213,17 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
                 ) : (
                     <ChevronDown className="w-5 h-5 text-gray-400" />
                 )}
-            </div>
+            </button>
 
-            {/* Content */}
+            {/* Content - Full CredentialBuilder */}
             {isExpanded && (
-                <div className="p-4 space-y-4">
-                    {/* Basic Info */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Template Name <span className="text-red-500">*</span>
-                            </label>
-
-                            <input
-                                type="text"
-                                value={template.name}
-                                onChange={(e) => onChange({ ...template, name: e.target.value })}
-                                placeholder="e.g., Course Completion Certificate"
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Achievement Type
-                            </label>
-
-                            <select
-                                value={template.achievementType}
-                                onChange={(e) => onChange({ ...template, achievementType: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
-                            >
-                                {ACHIEVEMENT_TYPES.map(type => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Description
-                        </label>
-
-                        <textarea
-                            value={template.description}
-                            onChange={(e) => onChange({ ...template, description: e.target.value })}
-                            placeholder="Describe what this credential represents..."
-                            rows={2}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none"
-                        />
-                    </div>
-
-                    {/* Fields */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Credential Fields
-                        </label>
-
-                        <div className="space-y-2">
-                            {template.fields.map((field) => {
-                                const FieldIcon = FIELD_TYPES.find(t => t.value === field.type)?.icon || Type;
-
-                                return (
-                                    <div
-                                        key={field.id}
-                                        className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg"
-                                    >
-                                        <GripVertical className="w-4 h-4 text-gray-300" />
-
-                                        <FieldIcon className="w-4 h-4 text-gray-400" />
-
-                                        <span className="flex-1 text-sm text-gray-700">{field.name}</span>
-
-                                        <button
-                                            onClick={() => handleToggleRequired(field.id)}
-                                            className={`px-2 py-0.5 text-xs rounded ${
-                                                field.required
-                                                    ? 'bg-red-100 text-red-600'
-                                                    : 'bg-gray-200 text-gray-500'
-                                            }`}
-                                        >
-                                            {field.required ? 'Required' : 'Optional'}
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleRemoveField(field.id)}
-                                            className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Add Field */}
-                        <div className="flex gap-2 mt-3">
-                            <input
-                                type="text"
-                                value={newFieldName}
-                                onChange={(e) => setNewFieldName(e.target.value)}
-                                placeholder="Field name (e.g., Course Name)"
-                                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddField()}
-                            />
-
-                            <select
-                                value={newFieldType}
-                                onChange={(e) => setNewFieldType(e.target.value as CredentialField['type'])}
-                                className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
-                            >
-                                {FIELD_TYPES.map(type => (
-                                    <option key={type.value} value={type.value}>{type.label}</option>
-                                ))}
-                            </select>
-
-                            <button
-                                onClick={handleAddField}
-                                disabled={!newFieldName.trim()}
-                                className="px-3 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Plus className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
+                <div className="h-[600px] border-t border-gray-200">
+                    <CredentialBuilder
+                        template={obv3Template}
+                        onChange={handleTemplateChange}
+                        issuerName={branding?.displayName}
+                        issuerImage={branding?.image}
+                    />
                 </div>
             )}
         </div>
@@ -288,7 +242,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
-    const [localTemplates, setLocalTemplates] = useState<CredentialTemplate[]>([]);
+    const [localTemplates, setLocalTemplates] = useState<ExtendedTemplate[]>([]);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -299,7 +253,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     // Fetch existing templates (boosts) for this integration
     const fetchTemplates = useCallback(async () => {
         if (!integrationId) {
-            setLocalTemplates(templates.length > 0 ? templates : []);
+            setLocalTemplates((templates.length > 0 ? templates : []) as ExtendedTemplate[]);
             setIsLoading(false);
             return;
         }
@@ -311,9 +265,21 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 query: { meta: { integrationId } },
             });
 
-            const fetchedTemplates: CredentialTemplate[] = (result?.records || []).map((boost: Record<string, unknown>) => {
+            const fetchedTemplates: ExtendedTemplate[] = (result?.records || []).map((boost: Record<string, unknown>) => {
                 const meta = boost.meta as TemplateBoostMeta | undefined;
                 const templateConfig = meta?.templateConfig;
+                const credential = boost.credential as Record<string, unknown> | undefined;
+
+                // Try to parse existing credential as OBv3 template
+                let obv3Template: OBv3CredentialTemplate | undefined;
+
+                if (credential) {
+                    try {
+                        obv3Template = jsonToTemplate(credential);
+                    } catch (e) {
+                        console.warn('Failed to parse credential as OBv3:', e);
+                    }
+                }
 
                 return {
                     id: boost.uri as string,
@@ -321,17 +287,18 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     name: (boost.name as string) || 'Untitled Template',
                     description: (boost.description as string) || '',
                     achievementType: templateConfig?.achievementType || 'Course Completion',
-                    fields: templateConfig?.fields || [...DEFAULT_FIELDS],
+                    fields: templateConfig?.fields || [],
                     imageUrl: boost.image as string | undefined,
                     isNew: false,
                     isDirty: false,
+                    obv3Template,
                 };
             });
 
-            setLocalTemplates(fetchedTemplates.length > 0 ? fetchedTemplates : templates);
+            setLocalTemplates(fetchedTemplates.length > 0 ? fetchedTemplates : templates as ExtendedTemplate[]);
         } catch (err) {
             console.error('Failed to fetch templates:', err);
-            setLocalTemplates(templates.length > 0 ? templates : []);
+            setLocalTemplates((templates.length > 0 ? templates : []) as ExtendedTemplate[]);
         } finally {
             setIsLoading(false);
         }
@@ -341,80 +308,44 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         fetchTemplates();
     }, [fetchTemplates]);
 
-    // Build an OBv3 credential from template
-    const buildCredentialFromTemplate = (template: CredentialTemplate, issuerName: string, issuerImage?: string) => {
-        return {
-            '@context': [
-                'https://www.w3.org/2018/credentials/v1',
-                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
-            ],
-            type: ['VerifiableCredential', 'OpenBadgeCredential'],
-            name: template.name,
-            description: template.description,
-            issuer: {
-                type: ['Profile'],
-                name: issuerName,
-                image: issuerImage,
-            },
-            issuanceDate: new Date().toISOString(),
-            credentialSubject: {
-                type: ['AchievementSubject'],
-                achievement: {
-                    type: ['Achievement'],
-                    achievementType: template.achievementType,
-                    name: template.name,
-                    description: template.description,
-                    criteria: {
-                        narrative: `Awarded for completing ${template.name}`,
-                    },
-                },
-            },
-        };
-    };
-
     // Save a single template as a boost (create or update)
-    const saveTemplateAsBoost = async (template: CredentialTemplate): Promise<string | null> => {
+    const saveTemplateAsBoost = async (template: ExtendedTemplate): Promise<string | null> => {
         if (!integrationId) return null;
 
         try {
             const wallet = await initWalletRef.current();
-            const issuerName = branding?.displayName || 'Issuer';
-            const issuerImage = branding?.image;
 
-            const credentialInput = buildCredentialFromTemplate(template, issuerName, issuerImage);
+            // Get OBv3 template or convert from legacy
+            const obv3Template = template.obv3Template || legacyToOBv3(template, branding?.displayName, branding?.image);
 
-            // Use newCredential to create an unsigned credential (not issueCredential which requires DID resolution)
-            const credential = await wallet.invoke.newCredential({
-                type: 'boost',
-                boostName: template.name,
-                achievementType: template.achievementType,
-                achievementDescription: template.description,
-                achievementName: template.name,
-                achievementNarrative: `Awarded for completing ${template.name}`,
-                boostImage: template.imageUrl || branding?.image,
-                achievementImage: template.imageUrl || branding?.image,
-            });
+            // Convert to JSON credential
+            const credential = templateToJson(obv3Template);
+
+            // Extract dynamic variables for storage
+            const dynamicVars = extractDynamicVariables(obv3Template);
 
             const boostMeta: TemplateBoostMeta = {
                 integrationId,
                 templateConfig: {
-                    fields: template.fields,
-                    achievementType: template.achievementType,
+                    fields: dynamicVars.map(varName => ({
+                        id: varName,
+                        name: varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                        type: 'text' as const,
+                        required: false,
+                        variableName: varName,
+                    })),
+                    achievementType: obv3Template.credentialSubject.achievement.achievementType?.value || 'Achievement',
                     version: TEMPLATE_META_VERSION,
                 },
             };
 
-            // If updating existing boost, use updateBoost
+            // If updating existing boost, delete and recreate (updateBoost doesn't support credential updates)
             if (template.boostUri) {
-                await wallet.invoke.updateBoost(template.boostUri, {
-                    name: template.name,
-                    type: template.achievementType,
-                    category: 'achievement',
-                    meta: boostMeta,
-                    credential,
-                } as Parameters<typeof wallet.invoke.updateBoost>[1]);
-
-                return template.boostUri;
+                try {
+                    await wallet.invoke.deleteBoost(template.boostUri);
+                } catch (e) {
+                    console.warn('Failed to delete old boost, creating new:', e);
+                }
             }
 
             // Otherwise create a new boost
@@ -429,7 +360,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             };
 
             const boostUri = await wallet.invoke.createBoost(
-                credential,
+                credential as Parameters<typeof wallet.invoke.createBoost>[0],
                 boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
             );
 
@@ -487,7 +418,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 }
             }
 
-            setLocalTemplates(savedTemplates);
+            setLocalTemplates(savedTemplates as ExtendedTemplate[]);
             presentToast('Templates saved successfully!', { type: ToastTypeEnum.Success, hasDismissButton: true });
             onComplete(savedTemplates);
         } catch (err) {
@@ -509,13 +440,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             isDirty: true,
         };
 
-        setLocalTemplates([...localTemplates, newTemplate]);
+        setLocalTemplates([...localTemplates, newTemplate as ExtendedTemplate]);
         setExpandedId(newTemplate.id);
     };
 
-    const handleUpdateTemplate = (id: string, updated: CredentialTemplate) => {
+    const handleUpdateTemplate = (id: string, updated: ExtendedTemplate) => {
         setLocalTemplates(localTemplates.map(t =>
-            t.id === id ? { ...updated, isDirty: true } : t
+            t.id === id ? { ...updated, isDirty: true } as ExtendedTemplate : t
         ));
     };
 
@@ -576,7 +507,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         onChange={(updated) => handleUpdateTemplate(template.id, updated)}
                         onDelete={() => handleDeleteTemplate(template.id)}
                         isExpanded={expandedId === template.id}
-                        onToggleExpand={() => setExpandedId(expandedId === template.id ? null : template.id)}
+                        onToggle={() => setExpandedId(expandedId === template.id ? null : template.id)}
                     />
                 ))}
 

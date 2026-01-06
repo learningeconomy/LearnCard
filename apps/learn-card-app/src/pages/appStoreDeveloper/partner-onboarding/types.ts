@@ -43,7 +43,17 @@ export interface CredentialField {
     required: boolean;
     description?: string;
     sourceMapping?: string;
+    /** The Mustache variable name used in the credential template (e.g., "recipient_name") */
+    variableName?: string;
 }
+
+/** Convert a field name to a valid Mustache variable name */
+export const fieldNameToVariable = (name: string): string => {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+};
 
 export interface TemplateConfig {
     fields: CredentialField[];
@@ -66,6 +76,8 @@ export interface CredentialTemplate {
     boostUri?: string;
     isNew?: boolean;
     isDirty?: boolean;
+    /** OBv3 template data for the new credential builder */
+    obv3Template?: unknown;
 }
 
 export interface FieldMapping {

@@ -35,7 +35,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
-import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping, TemplateBoostMeta, PartnerProject } from '../types';
+import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping, TemplateBoostMeta, PartnerProject, fieldNameToVariable } from '../types';
 import { CodeBlock } from '../../components/CodeBlock';
 
 const TEMPLATE_META_VERSION = '1.0.0';
@@ -329,114 +329,114 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 
     const selectedApiTemplate = templates.find(t => t.id === apiSelectedTemplate);
 
+    // Generate templateData code from template fields
+    const generateTemplateDataCode = (template: CredentialTemplate | undefined, indent: string = '        ') => {
+        if (!template?.fields?.length) return '';
+
+        const lines = template.fields.map(field => {
+            const varName = field.variableName || fieldNameToVariable(field.name);
+            const mapping = mappings.find(m => m.targetField === field.name);
+
+            // Generate example value based on field type
+            let exampleValue: string;
+
+            if (mapping) {
+                // If mapped, show the source path
+                exampleValue = `yourData.${mapping.sourceField.replace(/\./g, '?.')}`;
+            } else {
+                // Generate placeholder based on field type
+                switch (field.type) {
+                    case 'date':
+                        exampleValue = `new Date().toISOString()`;
+                        break;
+                    case 'number':
+                        exampleValue = `0`;
+                        break;
+                    case 'email':
+                        exampleValue = `'user@example.com'`;
+                        break;
+                    case 'url':
+                        exampleValue = `'https://example.com'`;
+                        break;
+                    default:
+                        exampleValue = `'${field.name}'`;
+                }
+            }
+
+            return `${indent}${varName}: ${exampleValue},`;
+        });
+
+        return lines.join('\n');
+    };
+
     // Generate code snippets for API integration
     const generateApiCodeSnippet = () => {
         const template = selectedApiTemplate;
         const boostUri = template?.boostUri || 'urn:lc:boost:your_template_id';
-        const templateName = template?.name || 'Course Completion';
 
-        // Build configuration object for advanced options
-        let configCode = '';
+        // Generate templateData from fields
+        const templateDataCode = generateTemplateDataCode(template);
+
+        // Build options object for advanced options
+        let optionsCode = '';
+
         if (apiHasAdvancedOptions) {
-            const configParts: string[] = [];
+            const optionsParts: string[] = [];
 
             if (apiAdvancedOptions.webhookUrl) {
-                configParts.push(`        webhookUrl: '${apiAdvancedOptions.webhookUrl}',`);
+                optionsParts.push(`        webhookUrl: '${apiAdvancedOptions.webhookUrl}',`);
             }
 
             if (apiAdvancedOptions.suppressDelivery) {
-                configParts.push(`        delivery: { suppress: true },`);
+                optionsParts.push(`        suppressDelivery: true,`);
             }
 
-            if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || apiAdvancedOptions.recipientName) {
-                const templateModelParts: string[] = [];
-
-                if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl) {
-                    templateModelParts.push(`                issuer: { name: '${apiAdvancedOptions.issuerName || 'Your Organization'}', logoUrl: '${apiAdvancedOptions.issuerLogoUrl || ''}' },`);
-                }
-
-                if (apiAdvancedOptions.recipientName) {
-                    templateModelParts.push(`                recipient: { name: '${apiAdvancedOptions.recipientName}' },`);
-                }
-
-                templateModelParts.push(`                credential: { name: '${templateName}', type: 'achievement' },`);
-
-                configParts.push(`        delivery: {
-            ${apiAdvancedOptions.suppressDelivery ? 'suppress: true,' : ''}
-            template: {
-                model: {
-${templateModelParts.join('\n')}
-                },
-            },
-        },`);
-            }
-
-            if (configParts.length > 0) {
-                configCode = `
-    configuration: {
-${configParts.join('\n')}
+            if (optionsParts.length > 0) {
+                optionsCode = `
+    options: {
+${optionsParts.join('\n')}
     },`;
             }
         }
 
-        if (apiRecipientEmail) {
-            // Universal Inbox (email recipient)
-            return `import { initLearnCard } from '@learncard/init';
+        // Unified send API - works with both email and profile recipients
+        const recipientCode = apiRecipientEmail 
+            ? `'${apiRecipientEmail}'` 
+            : `'recipient-profile-id' // or email like 'user@example.com'`;
+
+        return `import { initLearnCard } from '@learncard/init';
 
 const learnCard = await initLearnCard({ 
     seed: process.env.LEARNCARD_SEED,
     network: true 
 });
 
-// Send credential via Universal Inbox (handles user onboarding)
-const result = await learnCard.invoke.sendCredentialViaInbox({ 
-    recipient: { 
-        type: 'email',
-        value: '${apiRecipientEmail}' 
-    }, 
-    credential: {
-        "@context": [
-            "https://www.w3.org/2018/credentials/v1",
-            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
-        ],
-        "type": ["VerifiableCredential", "OpenBadgeCredential"],
-        "name": "${templateName}",
-        "credentialSubject": {
-            "type": ["AchievementSubject"],
-            "achievement": {
-                "type": ["Achievement"],
-                "name": "${templateName}",
-                "description": "${template?.description || 'Completed successfully.'}",
-                "criteria": {
-                    "narrative": "Successfully completed all requirements."
-                }
-            }
-        }
-    },${configCode}
-});
+// Your data from webhook, API, or database
+const yourData = {
+    // Map your source fields here
+    user: { name: 'John Doe', email: 'john@example.com' },
+    completion: { date: '2024-01-15', score: 95 },
+};
 
-console.log('Claim URL:', result.claimUrl);`;
-        } else {
-            // Send method (existing profile)
-            return `import { initLearnCard } from '@learncard/init';
-
-const learnCard = await initLearnCard({ 
-    seed: process.env.LEARNCARD_SEED,
-    network: true 
-});
-
-// Option 1: Send using your boost template (for existing LearnCard users)
+// Send credential using the unified send API
+// Works with email (Universal Inbox) or profile ID/DID
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'recipient-profile-id', // or DID
+    recipient: ${recipientCode},
     templateUri: '${boostUri}',
+    templateData: {
+${templateDataCode}
+    },${optionsCode}
 });
 
-console.log('Credential URI:', result.credentialUri);
-
-// Option 2: Send via email (for new users)
-// Enter an email above to see the sendCredentialViaInbox code`;
-        }
+// For email recipients, you'll get a claim URL
+if (result.inbox) {
+    console.log('Claim URL:', result.inbox.claimUrl);
+    console.log('Status:', result.inbox.status);
+} else {
+    // For existing users, credential is sent directly
+    console.log('Credential URI:', result.credentialUri);
+}`;
     };
 
     const handleCopyApiCode = async () => {
@@ -1328,6 +1328,51 @@ console.log('Credential URI:', result.credentialUri);
                             <p className="text-xs text-amber-800">
                                 {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length} credential field(s) still need to be mapped.
                             </p>
+                        </div>
+                    )}
+
+                    {/* Generated templateData Preview */}
+                    {mappings.length > 0 && (
+                        <div className="space-y-3 pt-4 border-t border-gray-100">
+                            <div className="flex items-center gap-2">
+                                <Code className="w-4 h-4 text-violet-600" />
+                                <span className="text-sm font-medium text-gray-700">Generated templateData</span>
+                            </div>
+
+                            <p className="text-xs text-gray-500">
+                                Based on your mappings, here's the <code className="bg-gray-100 px-1 rounded">templateData</code> object 
+                                you'll pass when sending credentials:
+                            </p>
+
+                            <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto">
+                                <pre className="text-xs text-gray-300">
+{`// In your webhook handler
+const templateData = {
+${(() => {
+    const currentTemplate = templates.find(t => t.id === selectedTemplate);
+    if (!currentTemplate?.fields) return '    // No fields defined';
+    
+    return currentTemplate.fields.map(field => {
+        const varName = field.variableName || fieldNameToVariable(field.name);
+        const mapping = mappings.find(m => m.targetField === field.name);
+        
+        if (mapping) {
+            return `    ${varName}: payload.${mapping.sourceField},`;
+        }
+        return `    ${varName}: /* unmapped */,`;
+    }).join('\n');
+})()}
+};
+
+// Send with the unified API
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: payload.user.email, // or profile ID
+    templateUri: '${templates.find(t => t.id === selectedTemplate)?.boostUri || 'your-boost-uri'}',
+    templateData,
+});`}
+                                </pre>
+                            </div>
                         </div>
                     )}
                 </div>
