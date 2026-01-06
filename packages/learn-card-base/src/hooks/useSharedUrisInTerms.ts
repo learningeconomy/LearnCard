@@ -38,16 +38,18 @@ export const getOrCreateSharedUriForWallet = async (
             // For SmartResume we want to add the generic brain-service wallet's did so that the brain service
             // can decrypt the credentials and send them to SmartResume via their API
             const isSmartResume = true;
-            // contractOwnerDid ===
-            //     'did:web:network.learncard.com:users:smart-resume-integration' ||
-            // contractOwnerDid === 'did:web:localhost%3A4000:users:in-service' ||
-            // contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume' ||
-            // contractOwnerDid === 'did:web:testnet.network.learncard.com:users:testorg1' ||
-            // contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume-test';
+            const isSmartResume2 =
+                contractOwnerDid ===
+                    'did:web:network.learncard.com:users:smart-resume-integration' ||
+                contractOwnerDid === 'did:web:localhost%3A4000:users:in-service' ||
+                contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume' ||
+                contractOwnerDid === 'did:web:testnet.network.learncard.com:users:testorg1' ||
+                contractOwnerDid === 'did:web:localhost%3A4000:users:smart-resume-test';
 
             const recipients = [contractOwnerDid];
             console.log('contractOwnerDid', contractOwnerDid);
             console.log('isSmartResume', isSmartResume);
+            console.log('isSmartResume2', isSmartResume2);
             if (isSmartResume) {
                 recipients.push('did:web:staging.network.learncard.com');
                 recipients.push('did:web:network.learncard.com');

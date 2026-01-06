@@ -129,6 +129,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 expiresAt: shareDuration.customDuration,
                 oneTime: shareDuration.oneTimeShare,
             });
+            console.log('redirectUrl', redirectUrl);
+            return;
 
             // Sync any auto-boost credentials (if any). No need to wait.
             fetchNewContractCredentials();
