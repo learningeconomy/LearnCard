@@ -1,8 +1,9 @@
 import { vi } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { testVc, sendBoost, sendCredential, testUnsignedBoost } from './helpers/send';
-import { Profile, Credential } from '@models';
+import { Profile, Credential, SigningAuthority } from '@models';
 import * as Notifications from '@helpers/notifications.helpers';
+import * as SigningAuthorityHelpers from '@helpers/signingAuthority.helpers';
 import { addNotificationToQueueSpy } from './helpers/spies';
 import {
     getDidDocForProfile,
@@ -10,6 +11,7 @@ import {
     setDidDocForProfile,
     setDidDocForProfileManager,
 } from '@cache/did-docs';
+import { UnsignedVC, VC } from '@learncard/types';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -579,6 +581,281 @@ describe('Credentials', () => {
             ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
+        });
+    });
+
+    describe('issueCredential', () => {
+        const testUnsignedCredential: UnsignedVC = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            issuer: '',
+            issuanceDate: new Date().toISOString(),
+            credentialSubject: {
+                id: 'did:example:recipient',
+                achievement: 'Test Achievement',
+            },
+        };
+
+        const mockSignedCredential: VC = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            issuer: 'did:key:z6Mktest',
+            issuanceDate: new Date().toISOString(),
+            credentialSubject: {
+                id: 'did:example:recipient',
+                achievement: 'Test Achievement',
+            },
+            proof: {
+                type: 'Ed25519Signature2020',
+                created: new Date().toISOString(),
+                verificationMethod: 'did:key:z6Mktest#z6Mktest',
+                proofPurpose: 'assertionMethod',
+                proofValue: 'mock-proof-value',
+            },
+        };
+
+        let issueCredentialSpy: ReturnType<typeof vi.spyOn>;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            issueCredentialSpy = vi
+                .spyOn(SigningAuthorityHelpers, 'issueCredentialWithSigningAuthority')
+                .mockResolvedValue(mockSignedCredential);
+        });
+
+        afterEach(() => {
+            issueCredentialSpy.mockRestore();
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to issue a credential', async () => {
+            await expect(
+                noAuthClient.credential.issueCredential({ credential: testUnsignedCredential })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await expect(
+                userA.clients.partialAuth.credential.issueCredential({
+                    credential: testUnsignedCredential,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should require credentials:write scope', async () => {
+            const userWithReadScope = await getUser('d'.repeat(64), 'credentials:read');
+            await userWithReadScope.clients.fullAuth.profile.createProfile({ profileId: 'userd' });
+
+            await expect(
+                userWithReadScope.clients.fullAuth.credential.issueCredential({
+                    credential: testUnsignedCredential,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should fail if no signing authority is registered', async () => {
+            await expect(
+                userA.clients.fullAuth.credential.issueCredential({
+                    credential: testUnsignedCredential,
+                })
+            ).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+        });
+
+        it('should issue a credential using the primary signing authority', async () => {
+            const saDid = userA.learnCard.id.did();
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/test-sa',
+                name: 'test-sa',
+                did: saDid,
+            });
+
+            const result = await userA.clients.fullAuth.credential.issueCredential({
+                credential: testUnsignedCredential,
+            });
+
+            expect(result).toBeDefined();
+            expect(result.proof).toBeDefined();
+        });
+
+        it('should issue a credential using a specified signing authority', async () => {
+            const saDid1 = userA.learnCard.id.did();
+            const saDid2 = userB.learnCard.id.did();
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/sa1',
+                name: 'sa1',
+                did: saDid1,
+            });
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/sa2',
+                name: 'sa2',
+                did: saDid2,
+            });
+
+            const result = await userA.clients.fullAuth.credential.issueCredential({
+                credential: testUnsignedCredential,
+                signingAuthority: {
+                    endpoint: 'http://localhost:5000/sa2',
+                    name: 'sa2',
+                },
+            });
+
+            expect(result).toBeDefined();
+            expect(result.proof).toBeDefined();
+        });
+
+        it('should fail if specified signing authority is not found', async () => {
+            const saDid = userA.learnCard.id.did();
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/test-sa',
+                name: 'test-sa',
+                did: saDid,
+            });
+
+            await expect(
+                userA.clients.fullAuth.credential.issueCredential({
+                    credential: testUnsignedCredential,
+                    signingAuthority: {
+                        endpoint: 'http://localhost:5000/nonexistent',
+                        name: 'nonexistent',
+                    },
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
+        it('should set the issuer to the signing authority DID', async () => {
+            const saDid = userA.learnCard.id.did();
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/test-sa',
+                name: 'test-sa',
+                did: saDid,
+            });
+
+            const credentialWithWrongIssuer: UnsignedVC = {
+                ...testUnsignedCredential,
+                issuer: 'did:example:wrong-issuer',
+            };
+
+            const result = await userA.clients.fullAuth.credential.issueCredential({
+                credential: credentialWithWrongIssuer,
+            });
+
+            expect(result).toBeDefined();
+            expect(result.proof).toBeDefined();
+        });
+
+        it('should use primary signing authority when multiple are registered', async () => {
+            const saDid1 = userA.learnCard.id.did();
+            const saDid2 = userB.learnCard.id.did();
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/sa1',
+                name: 'sa1',
+                did: saDid1,
+            });
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/sa2',
+                name: 'sa2',
+                did: saDid2,
+            });
+
+            await userA.clients.fullAuth.profile.setPrimarySigningAuthority({
+                endpoint: 'http://localhost:5000/sa2',
+                name: 'sa2',
+            });
+
+            const result = await userA.clients.fullAuth.credential.issueCredential({
+                credential: testUnsignedCredential,
+            });
+
+            expect(result).toBeDefined();
+            expect(result.proof).toBeDefined();
+        });
+    });
+
+    describe('verifyCredential', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should allow verification without authentication', async () => {
+            await expect(
+                noAuthClient.credential.verifyCredential({ credential: testVc })
+            ).resolves.not.toThrow();
+        });
+
+        it('should verify a credential and return result structure', async () => {
+            const result = await noAuthClient.credential.verifyCredential({
+                credential: testVc,
+            });
+
+            expect(result).toBeDefined();
+            expect(result).toHaveProperty('checks');
+            expect(result).toHaveProperty('warnings');
+            expect(result).toHaveProperty('errors');
+            expect(Array.isArray(result.checks)).toBe(true);
+            expect(Array.isArray(result.warnings)).toBe(true);
+            expect(Array.isArray(result.errors)).toBe(true);
+        });
+
+        it('should return errors for an invalid credential', async () => {
+            const invalidCredential = {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential'],
+                issuer: 'did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK',
+                issuanceDate: new Date().toISOString(),
+                credentialSubject: {
+                    id: 'did:example:invalid-test',
+                },
+                proof: {
+                    type: 'Ed25519Signature2020',
+                    created: new Date().toISOString(),
+                    verificationMethod:
+                        'did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK#z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK',
+                    proofPurpose: 'assertionMethod',
+                    proofValue: 'invalid-signature-value',
+                },
+            };
+
+            const result = await noAuthClient.credential.verifyCredential({
+                credential: invalidCredential as any,
+            });
+
+            expect(result).toBeDefined();
+            expect(result.errors.length).toBeGreaterThan(0);
+        });
+
+        it('should work with authenticated users as well', async () => {
+            const result = await userA.clients.fullAuth.credential.verifyCredential({
+                credential: testVc,
+            });
+
+            expect(result).toBeDefined();
+            expect(result).toHaveProperty('checks');
+            expect(result).toHaveProperty('warnings');
+            expect(result).toHaveProperty('errors');
         });
     });
 });
