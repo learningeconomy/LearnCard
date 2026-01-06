@@ -4,6 +4,7 @@ export type AiPathwayCareer = {
     description: string;
     salary: string;
     salaryData: { bucket: number; value: number }[];
+    skills: { id: number; name: string; description: string }[];
 };
 
 export const getSalaryStats = (salaries: { bucket: number; value: number }[]) => {
@@ -33,6 +34,32 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
             { bucket: 6, value: 110000 },
             { bucket: 7, value: 125000 },
         ],
+        skills: [
+            {
+                id: 1,
+                name: 'SQL & Database Management',
+                description:
+                    'Write complex queries, optimize database performance, and manage large datasets across multiple database systems',
+            },
+            {
+                id: 2,
+                name: 'Data Visualization',
+                description:
+                    'Create compelling charts and dashboards using tools like Tableau, Power BI, or Python libraries to communicate insights effectively',
+            },
+            {
+                id: 3,
+                name: 'Statistical Analysis',
+                description:
+                    'Apply statistical methods and hypothesis testing to validate findings and ensure data-driven conclusions are statistically sound',
+            },
+            {
+                id: 4,
+                name: 'Business Intelligence',
+                description:
+                    'Translate complex data findings into actionable business strategies and present insights to non-technical stakeholders',
+            },
+        ],
     },
     {
         id: 2,
@@ -48,6 +75,32 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
             { bucket: 6, value: 125000 },
             { bucket: 7, value: 145000 },
         ],
+        skills: [
+            {
+                id: 1,
+                name: 'Client Relationship Management',
+                description:
+                    'Build and maintain strong, long-term client relationships through regular communication, trust-building, and understanding client needs',
+            },
+            {
+                id: 2,
+                name: 'Sales Strategy & Negotiation',
+                description:
+                    'Develop effective sales strategies, negotiate contracts, and close deals while maximizing revenue and client satisfaction',
+            },
+            {
+                id: 3,
+                name: 'Project Coordination',
+                description:
+                    'Manage multiple client projects simultaneously, coordinate internal resources, and ensure timely delivery of services and solutions',
+            },
+            {
+                id: 4,
+                name: 'Market Analysis',
+                description:
+                    'Analyze market trends, competitor activities, and industry developments to identify growth opportunities and strategic positioning',
+            },
+        ],
     },
     {
         id: 3,
@@ -62,6 +115,32 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
             { bucket: 5, value: 105000 },
             { bucket: 6, value: 118000 },
             { bucket: 7, value: 135000 },
+        ],
+        skills: [
+            {
+                id: 1,
+                name: 'Customer Onboarding',
+                description:
+                    'Guide new customers through seamless onboarding processes, ensuring they understand product features and achieve early value realization',
+            },
+            {
+                id: 2,
+                name: 'Customer Retention Strategies',
+                description:
+                    'Develop and implement proactive strategies to reduce churn, identify at-risk customers, and create intervention plans to improve retention',
+            },
+            {
+                id: 3,
+                name: 'Product Knowledge & Training',
+                description:
+                    'Maintain deep product expertise and deliver effective training sessions to help customers maximize product value and achieve their goals',
+            },
+            {
+                id: 4,
+                name: 'Data-Driven Insights',
+                description:
+                    'Analyze customer usage data and feedback to identify trends, measure satisfaction, and provide strategic recommendations for improvement',
+            },
         ],
     },
 ];
