@@ -29,6 +29,7 @@ import {
     SendBoostResponseValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
+import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 
 import { t, profileRoute } from '@routes';
 
@@ -655,7 +656,16 @@ export const boostsRouter = t.router({
                 let unsignedVc: UnsignedVC;
 
                 try {
-                    unsignedVc = JSON.parse(boost.dataValues.boost);
+                    let boostJsonString = boost.dataValues.boost;
+
+                    if (input.templateData && Object.keys(input.templateData).length > 0) {
+                        boostJsonString = renderBoostTemplate(
+                            boostJsonString,
+                            input.templateData as Record<string, unknown>
+                        );
+                    }
+
+                    unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
 
                     const now = new Date().toISOString();
                     if (isVC2Format(unsignedVc)) {
@@ -2543,6 +2553,7 @@ export const boostsRouter = t.router({
                     name: z.string(),
                     endpoint: z.string(),
                 }),
+                templateData: z.record(z.string(), z.unknown()).optional(),
                 options: z
                     .object({
                         skipNotification: z.boolean().default(false).optional(),
@@ -2586,7 +2597,16 @@ export const boostsRouter = t.router({
             let unsignedVc: UnsignedVC;
 
             try {
-                unsignedVc = JSON.parse(boost.dataValues.boost);
+                let boostJsonString = boost.dataValues.boost;
+
+                if (input.templateData && Object.keys(input.templateData).length > 0) {
+                    boostJsonString = renderBoostTemplate(
+                        boostJsonString,
+                        input.templateData as Record<string, unknown>
+                    );
+                }
+
+                unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
 
                 if (isVC2Format(unsignedVc)) {
                     unsignedVc.validFrom = new Date().toISOString();

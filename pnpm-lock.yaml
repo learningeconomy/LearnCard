@@ -2399,6 +2399,9 @@ importers:
       '@learncard/network-brain-client':
         specifier: workspace:*
         version: link:../../learn-card-network/brain-client
+      mustache:
+        specifier: ^4.2.0
+        version: 4.2.0
     devDependencies:
       '@learncard/didkey-plugin':
         specifier: workspace:^
@@ -2415,6 +2418,9 @@ importers:
       '@types/jest':
         specifier: ^29.2.2
         version: 29.5.14
+      '@types/mustache':
+        specifier: ^4.2.5
+        version: 4.2.6
       '@types/node':
         specifier: ^17.0.31
         version: 17.0.45
@@ -3182,6 +3188,9 @@ importers:
       multiformats:
         specifier: ^11.0.1
         version: 11.0.2
+      mustache:
+        specifier: ^4.2.0
+        version: 4.2.0
       neo4j-driver:
         specifier: 5.18.0
         version: 5.18.0
@@ -3228,6 +3237,9 @@ importers:
       '@types/libsodium-wrappers':
         specifier: ^0.7.10
         version: 0.7.14
+      '@types/mustache':
+        specifier: ^4.2.5
+        version: 4.2.6
       '@types/node':
         specifier: ^18.0.0
         version: 18.19.130
@@ -11601,6 +11613,9 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
+
+  '@types/mustache@4.2.6':
+    resolution: {integrity: sha512-t+8/QWTAhOFlrF1IVZqKnMRJi84EgkIK5Kh0p2JV4OLywUvCwJPFxbJAl7XAow7DVIHsF+xW9f1MVzg0L6Szjw==}
 
   '@types/nlcst@1.0.4':
     resolution: {integrity: sha512-ABoYdNQ/kBSsLvZAekMhIPMQ3YUZvavStpKYs7BjLLuKVmIMA0LUgZ7b54zzuWJRbHF80v1cNf4r90Vd6eMQDg==}
@@ -20457,6 +20472,10 @@ packages:
 
   multipasta@0.2.7:
     resolution: {integrity: sha512-KPA58d68KgGil15oDqXjkUBEBYc00XvbPj5/X+dyzeo/lWm9Nc25pQRlf1D+gv4OpK7NM0J1odrbu9JNNGvynA==}
+
+  mustache@4.2.0:
+    resolution: {integrity: sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==}
+    hasBin: true
 
   mute-stream@0.0.7:
     resolution: {integrity: sha512-r65nCZhrbXXb6dXOACihYApHw2Q6pV0M3V0PSxd74N0+D8nzAdEAITq2oAjA1jVnKI+tGvEBUpqiMh0+rW6zDQ==}
@@ -38599,6 +38618,8 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
+  '@types/mustache@4.2.6': {}
+
   '@types/nlcst@1.0.4':
     dependencies:
       '@types/unist': 2.0.11
@@ -51437,6 +51458,8 @@ snapshots:
       varint: 5.0.2
 
   multipasta@0.2.7: {}
+
+  mustache@4.2.0: {}
 
   mute-stream@0.0.7: {}
 

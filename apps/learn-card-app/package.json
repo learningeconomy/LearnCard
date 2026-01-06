@@ -111,8 +111,8 @@
     },
     "scripts": {
         "dev": "docker compose -f compose-local.yaml up --build",
-        "dev-brain": "docker compose -f compose-local.yaml up --build brain",
-        "dev-up": "docker compose -f compose-local.yaml up",
+        "dev-no-build": "docker compose -f compose-local.yaml up",
+        "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "start": "vite --host",
         "start-p-4000": "vite --port=4000",
         "docker-start": "LCN_URL=http://localhost:4000/trpc LCN_API_URL=http://localhost:4000/api CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc vite --host",
