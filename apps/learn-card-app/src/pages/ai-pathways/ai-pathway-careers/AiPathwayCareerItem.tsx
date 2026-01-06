@@ -2,21 +2,33 @@ import React from 'react';
 import numeral from 'numeral';
 
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
+import AiPathwayCareerDetails from './AiPathwaysCareerDetails';
+
+import { ModalTypes, useModal } from 'learn-card-base';
+import { AiPathwayCareer } from './ai-pathway-careers.helpers';
 
 export const AiPathwayCareerItem: React.FC<{
-    title: string;
-    description: string;
-    salary: string;
-}> = ({ title, description, salary }) => {
+    career: AiPathwayCareer;
+}> = ({ career }) => {
+    const { newModal } = useModal();
+
+    const openCareerDetailsModal = () => {
+        newModal(<AiPathwayCareerDetails career={career} />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
+    };
+
     return (
         <div
             role="button"
             className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border-[1px] border-grayscale-200 rounded-xl"
+            onClick={openCareerDetailsModal}
         >
             <div className="w-full flex flex-col items-start justify-start gap-1">
                 <div className="flex items-center justify-between w-full">
                     <h4 className="pr-1 text-grayscale-800 font-semibold text-[17px] text-left line-clamp-1">
-                        {title}
+                        {career.title}
                     </h4>
 
                     <div>
@@ -28,10 +40,12 @@ export const AiPathwayCareerItem: React.FC<{
                         AVG. ANNUAL SALARY
                     </p>
                     <p className="text-indigo-400 text-sm text-left font-semibold">
-                        ${numeral(salary).format('0,0')}
+                        ${numeral(career.salary).format('0,0')}
                     </p>
                 </div>
-                <p className="text-grayscale-600 line-clamp-2 text-sm text-left">{description}</p>
+                <p className="text-grayscale-600 line-clamp-2 text-sm text-left">
+                    {career.description}
+                </p>
             </div>
         </div>
     );
