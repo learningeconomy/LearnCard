@@ -13,6 +13,7 @@ import {
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
 import { isVC2Format } from '@learncard/helpers';
+import Mustache from 'mustache';
 
 import {
     LearnCardNetworkPluginDependentMethods,
@@ -20,6 +21,50 @@ import {
     VerifyBoostPlugin,
     TrustedBoostRegistryEntry,
 } from './types';
+
+/**
+ * Escapes a string value for safe inclusion in a JSON string.
+ */
+const escapeJsonStringValue = (value: unknown): string => {
+    if (value === null || value === undefined) return '';
+
+    return String(value)
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/\t/g, '\\t')
+        .replace(/\f/g, '\\f')
+        .replace(/[\b]/g, '\\b');
+};
+
+/**
+ * Prepares templateData for safe JSON rendering by escaping string values.
+ */
+const prepareTemplateData = (
+    templateData: Record<string, unknown>
+): Record<string, string> => {
+    const prepared: Record<string, string> = {};
+
+    for (const [key, value] of Object.entries(templateData)) {
+        prepared[key] = escapeJsonStringValue(value);
+    }
+
+    return prepared;
+};
+
+/**
+ * Renders a Mustache template with JSON-safe escaping.
+ */
+const renderTemplateJson = (
+    jsonString: string,
+    templateData: Record<string, unknown>
+): string => {
+    const preparedData = prepareTemplateData(templateData);
+    const unescapedTemplate = jsonString.replace(/\{\{([^{}]+)\}\}/g, '{{{$1}}}');
+
+    return Mustache.render(unescapedTemplate, preparedData);
+};
 export * from './types';
 
 /**
@@ -837,7 +882,7 @@ export async function getLearnCardNetworkPlugin(
                 _learnCard,
                 profileId,
                 boostUri,
-                options = { encrypt: true, skipNotification: false }
+                options = { encrypt: true, skipNotification: false, templateData: {} }
             ) => {
                 await ensureUser();
 
@@ -870,6 +915,24 @@ export async function getLearnCardNetworkPlugin(
 
                 // Embed the boostURI into the boost credential for verification purposes.
                 if (boost?.type?.includes('BoostCredential')) boost.boostId = boostUri;
+
+                // Apply templateData if provided (Mustache templating)
+                if (
+                    typeof options === 'object' &&
+                    options.templateData &&
+                    Object.keys(options.templateData).length > 0
+                ) {
+                    try {
+                        const boostString = JSON.stringify(boost);
+                        const rendered = renderTemplateJson(boostString, options.templateData);
+                        boost = JSON.parse(rendered);
+                    } catch (error) {
+                        throw new Error(
+                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
+                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                        );
+                    }
+                }
 
                 if (typeof options === 'object' && options.overideFn) {
                     boost = options.overideFn(boost);
@@ -979,6 +1042,25 @@ export async function getLearnCardNetworkPlugin(
                             }
 
                             let boost = data.data;
+
+                            // Apply templateData if provided
+                            if (
+                                input.templateData &&
+                                Object.keys(input.templateData).length > 0
+                            ) {
+                                try {
+                                    const boostString = JSON.stringify(boost);
+                                    const rendered = renderTemplateJson(
+                                        boostString,
+                                        input.templateData
+                                    );
+                                    boost = JSON.parse(rendered);
+                                } catch (error) {
+                                    throw new Error(
+                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'}`
+                                    );
+                                }
+                            }
 
                             if (isVC2Format(boost)) {
                                 boost.validFrom = new Date().toISOString();
