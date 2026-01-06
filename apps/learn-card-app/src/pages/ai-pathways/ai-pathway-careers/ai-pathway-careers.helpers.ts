@@ -5,6 +5,10 @@ export type AiPathwayCareer = {
     salary: string;
     salaryData: { bucket: number; value: number }[];
     skills: { id: number; name: string; description: string }[];
+    qualitativeInsights: {
+        jobSecurityScore: number;
+        workLifeBalanceScore: number;
+    };
 };
 
 export const getSalaryStats = (salaries: { bucket: number; value: number }[]) => {
@@ -60,6 +64,10 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
                     'Translate complex data findings into actionable business strategies and present insights to non-technical stakeholders',
             },
         ],
+        qualitativeInsights: {
+            jobSecurityScore: 80,
+            workLifeBalanceScore: 70,
+        },
     },
     {
         id: 2,
@@ -101,6 +109,10 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
                     'Analyze market trends, competitor activities, and industry developments to identify growth opportunities and strategic positioning',
             },
         ],
+        qualitativeInsights: {
+            jobSecurityScore: 70,
+            workLifeBalanceScore: 50,
+        },
     },
     {
         id: 3,
@@ -142,5 +154,9 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
                     'Analyze customer usage data and feedback to identify trends, measure satisfaction, and provide strategic recommendations for improvement',
             },
         ],
+        qualitativeInsights: {
+            jobSecurityScore: 65,
+            workLifeBalanceScore: 80,
+        },
     },
 ];
