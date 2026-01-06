@@ -129,7 +129,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 expiresAt: shareDuration.customDuration,
                 oneTime: shareDuration.oneTimeShare,
             });
-
+            console.log('SHORT CIRCUITING to CONTRACT CALL!!!!!!!!!');
+            return;
             // Sync any auto-boost credentials (if any). No need to wait.
             fetchNewContractCredentials();
 
