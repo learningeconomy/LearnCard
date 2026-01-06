@@ -6,10 +6,10 @@ type CareerGaugeProps = {
 };
 
 const GAUGE_ZONES = [
-    { value: 25, color: '#f2c6c6' },
-    { value: 25, color: '#f1e6e2' },
-    { value: 25, color: '#f5f5f5' },
-    { value: 25, color: '#cfe9d6' },
+    { value: 25, color: 'oklch(88.5% 0.062 18.334)' },
+    { value: 25, color: 'oklch(93.6% 0.032 17.717)' },
+    { value: 25, color: 'oklch(98.2% 0.018 155.826)' },
+    { value: 25, color: 'oklch(96.2% 0.044 156.743)' },
 ];
 
 const getLabel = (score: number) => {
@@ -48,9 +48,12 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                 </ResponsiveContainer>
 
                 {/*  Zone divider lines + bounds */}
-                <svg viewBox="0 0 260 140" className="absolute top-[-10%] pointer-events-none">
+                <svg
+                    viewBox="0 0 275 130"
+                    className="absolute left-[5%] top-[-8%] pointer-events-none"
+                >
                     {/* Zone dividers */}
-                    {[135, 90, 45].map(deg => {
+                    {[30, 60, 90, 120, 150].map(deg => {
                         const r1 = 78;
                         const r2 = 100;
                         return (
@@ -61,31 +64,31 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                                 x2={130 + r2 * Math.cos((Math.PI * deg) / 180)}
                                 y2={130 - r2 * Math.sin((Math.PI * deg) / 180)}
                                 stroke="#222"
-                                strokeWidth="1.5"
+                                strokeWidth="2"
                                 strokeDasharray="3 4"
                             />
                         );
                     })}
 
-                    {/* 0% boundary (left) */}
+                    {/* 0% boundary */}
                     <line
-                        x1={130 + 78 * Math.cos(Math.PI)}
-                        y1={130 - 78 * Math.sin(Math.PI)}
-                        x2={130 + 100 * Math.cos(Math.PI)}
-                        y2={130 - 100 * Math.sin(Math.PI)}
+                        x1={130 - 78}
+                        y1={130}
+                        x2={130 - 100}
+                        y2={130}
                         stroke="#222"
-                        strokeWidth="1.5"
+                        strokeWidth="2"
                         strokeDasharray="3 4"
                     />
 
-                    {/* 100% boundary (right) */}
+                    {/* 100% boundary */}
                     <line
                         x1={130 + 78}
                         y1={130}
                         x2={130 + 100}
                         y2={130}
                         stroke="#222"
-                        strokeWidth="1.5"
+                        strokeWidth="2"
                         strokeDasharray="3 4"
                     />
                 </svg>
@@ -94,7 +97,6 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                     viewBox="0 0 260 140"
                     className="absolute top-[25%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
                 >
-                    {/* Needle */}
                     {/* Needle */}
                     <line
                         x1="130"
