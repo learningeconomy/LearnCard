@@ -6,10 +6,10 @@ type CareerGaugeProps = {
 };
 
 const GAUGE_ZONES = [
-    { value: 25, color: 'oklch(88.5% 0.062 18.334)' },
-    { value: 25, color: 'oklch(93.6% 0.032 17.717)' },
-    { value: 25, color: 'oklch(98.2% 0.018 155.826)' },
-    { value: 25, color: 'oklch(96.2% 0.044 156.743)' },
+    { value: 25, color: 'oklch(98% 0.062 18.334)' },
+    { value: 25, color: 'oklch(99% 0.032 17.717)' },
+    { value: 25, color: 'oklch(99% 0.018 155.826)' },
+    { value: 25, color: 'oklch(98% 0.044 156.743)' },
 ];
 
 const getLabel = (score: number) => {
@@ -41,7 +41,7 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                             innerRadius="55%"
                             outerRadius="100%"
                             dataKey="value"
-                            stroke="oklch(55.4% 0.046 257.417)"
+                            stroke="oklch(44.6% 0.043 257.281)"
                             strokeWidth={2}
                         >
                             {GAUGE_ZONES.map((entry, index) => (
