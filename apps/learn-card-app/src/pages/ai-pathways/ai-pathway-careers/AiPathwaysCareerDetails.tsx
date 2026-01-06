@@ -2,6 +2,7 @@ import React from 'react';
 
 import { IonFooter } from '@ionic/react';
 import AiPathwayCareerHeader from './AiPathwayCareerHeader';
+import AiPathwayCareerSkills from './AiPathwayCareerSkills';
 import AiPathwayCareerSalaries from './AiPathwayCareerSalaries';
 
 import { useModal } from 'learn-card-base';
@@ -21,6 +22,8 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
                     <AiPathwayCareerHeader career={career} />
 
                     <AiPathwayCareerSalaries career={career} />
+
+                    <AiPathwayCareerSkills career={career} />
                 </div>
                 <IonFooter
                     mode="ios"
