@@ -71,6 +71,7 @@ jobs:
       learn_cloud_changed: ${{ steps.check_versions.outputs.learn_cloud_changed }}
       lca_api_changed: ${{ steps.check_versions.outputs.lca_api_changed }}
       lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
+      native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
     steps:
       # Check these first - no dependencies needed
       - name: Check if this is a manual dispatch
@@ -152,6 +153,13 @@ jobs:
             echo "lca_app_changed=false" >> $GITHUB_OUTPUT
           fi
 
+          if echo "$CHANGED_FILES" | grep -qE "packages/plugins/didkit-plugin-node/(native|src)/"; then
+            echo "native_plugin_changed=true" >> $GITHUB_OUTPUT
+            echo "Native DIDKit plugin changed - will wait for prebuilds"
+          else
+            echo "native_plugin_changed=false" >> $GITHUB_OUTPUT
+          fi
+
   # ============================================================================
   # TESTING (skip on production releases and manual deploys)
   # ============================================================================
@@ -184,6 +192,26 @@ jobs:
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
   # ============================================================================
+  # WAIT FOR NATIVE PLUGIN PREBUILDS (if native plugin changed)
+  # ============================================================================
+  wait-for-prebuilds:
+    name: Wait for Native Plugin Prebuilds
+    needs: determine-affected
+    if: |
+      needs.determine-affected.outputs.native_plugin_changed == 'true' &&
+      needs.determine-affected.outputs.is_manual != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for DIDKit Plugin Node Prebuilds workflow
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: "Publish to npm"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success
+
+  # ============================================================================
   # SERVICE DEPLOYMENTS
   # Triggers:
   #   - Push: Deploy to staging if affected
@@ -192,7 +220,7 @@ jobs:
   # ============================================================================
   deploy-brain-service:
     name: Deploy Brain Service (Network API)
-    needs: [determine-affected, test-affected]
+    needs: [determine-affected, test-affected, wait-for-prebuilds]
     if: |
       always() &&
       !cancelled() &&
@@ -242,7 +270,7 @@ jobs:
 
   deploy-learn-cloud:
     name: Deploy LearnCloud (Storage API)
-    needs: [determine-affected, test-affected]
+    needs: [determine-affected, test-affected, wait-for-prebuilds]
     if: |
       always() &&
       !cancelled() &&
@@ -286,7 +314,7 @@ jobs:
 
   deploy-lca-api:
     name: Deploy LCA API Service
-    needs: [determine-affected, test-affected]
+    needs: [determine-affected, test-affected, wait-for-prebuilds]
     if: |
       always() &&
       !cancelled() &&
