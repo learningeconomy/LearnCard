@@ -16,6 +16,7 @@ import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
+import { webhooksFastifyPlugin } from './webhooks';
 import { sendNotification } from '@helpers/notifications.helpers';
 import { LCNNotificationValidator } from '@learncard/types';
 
@@ -84,6 +85,7 @@ server.register(fastifyStatic, {
 
 server.register(didFastifyPlugin);
 server.register(skillsViewerFastifyPlugin);
+server.register(webhooksFastifyPlugin);
 
 (async () => {
     try {

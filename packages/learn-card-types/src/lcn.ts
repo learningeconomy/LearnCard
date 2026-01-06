@@ -1129,12 +1129,38 @@ export const LCNDomainOrOriginValidator = z.union([
         ),
 ]);
 
+/** Webhook field mapping configuration */
+export const LCNWebhookFieldMappingValidator = z.object({
+    sourceField: z.string(),
+    targetField: z.string(),
+});
+
+export type LCNWebhookFieldMapping = z.infer<typeof LCNWebhookFieldMappingValidator>;
+
+/** Webhook configuration for an integration */
+export const LCNWebhookConfigValidator = z.object({
+    /** Whether webhook is enabled */
+    enabled: z.boolean().default(true),
+    /** URI of the boost template to use for issuing credentials */
+    boostUri: z.string().optional(),
+    /** Path to recipient email field in webhook payload (e.g., "user.email") */
+    recipientEmailPath: z.string().optional(),
+    /** Field mappings from webhook payload to credential template */
+    mappings: z.array(LCNWebhookFieldMappingValidator).default([]),
+    /** Sample payload structure for reference */
+    samplePayload: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type LCNWebhookConfig = z.infer<typeof LCNWebhookConfigValidator>;
+
 export const LCNIntegrationValidator = z.object({
     id: z.string(),
     name: z.string(),
     description: z.string().optional(),
     publishableKey: z.string(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+    /** Webhook configuration for this integration */
+    webhookConfig: LCNWebhookConfigValidator.optional(),
 });
 
 export type LCNIntegration = z.infer<typeof LCNIntegrationValidator>;
@@ -1152,6 +1178,8 @@ export const LCNIntegrationUpdateValidator = z.object({
     description: z.string().optional(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).optional(),
     rotatePublishableKey: z.boolean().optional(),
+    /** Webhook configuration update */
+    webhookConfig: LCNWebhookConfigValidator.optional(),
 });
 
 export type LCNIntegrationUpdateType = z.infer<typeof LCNIntegrationUpdateValidator>;

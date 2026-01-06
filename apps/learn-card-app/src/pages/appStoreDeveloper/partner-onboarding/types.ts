@@ -87,8 +87,11 @@ export interface FieldMapping {
 
 export interface DataMappingConfig {
     webhookUrl?: string;
+    webhookId?: string;
     samplePayload?: Record<string, unknown>;
     mappings: FieldMapping[];
+    /** Path to the recipient email field in the webhook payload (e.g., "user.email") */
+    recipientEmailPath?: string;
 }
 
 export type IntegrationMethod = 'webhook' | 'api' | 'csv';
