@@ -129,12 +129,12 @@ export const resolveUri = async (uri: string) => {
 
                 return decryptResolved;
             } catch (error) {
-                console.error('Error in decryptDagJwe:', {
-                    message: error.message,
-                    stack: error.stack,
-                    name: error.name,
-                    error: error,
-                });
+                // console.error('Error in decryptDagJwe:', {
+                //     message: error.message,
+                //     stack: error.stack,
+                //     name: error.name,
+                //     error: error,
+                // });
                 throw error;
             }
         }
