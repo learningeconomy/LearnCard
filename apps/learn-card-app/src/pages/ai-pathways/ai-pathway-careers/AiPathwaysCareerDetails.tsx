@@ -1,18 +1,15 @@
 import React from 'react';
-import numeral from 'numeral';
 
 import { IonFooter } from '@ionic/react';
-import AiPathwayCareerPipeChart from './AiPathwayCareerPipeChart';
+import AiPathwayCareerSalaries from './AiPathwayCareerSalaries';
 import CareerLaptopIcon from '../../../assets/images/career.laptop.icon.png';
 
 import { useModal } from 'learn-card-base';
 
-import { type AiPathwayCareer, getSalaryStats } from './ai-pathway-careers.helpers';
+import { type AiPathwayCareer } from './ai-pathway-careers.helpers';
 
 const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career }) => {
     const { closeModal } = useModal();
-
-    const { medianSalary, minSalary, maxSalary } = getSalaryStats(career.salaryData);
 
     return (
         <div
@@ -43,32 +40,7 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full gap-2">
-                        <div className="w-full flex items-center justify-start">
-                            <h2 className="text-xl text-grayscale-800 font-notoSans">
-                                {career.title} Salaries
-                            </h2>
-                        </div>
-
-                        {/* salary */}
-                        <div className="w-full flex flex-col items-center justify-start">
-                            <div className="w-full flex items-center justify-start">
-                                <span className="text-base font-semibold gradient-salary">
-                                    ${numeral(medianSalary).format('0,0')}
-                                </span>
-                                <span className="text-grayscale-600 text-sm">/yr </span>
-                            </div>
-
-                            <div className="w-full flex items-center justify-start">
-                                <p className="text-grayscale-600 text-sm">
-                                    Avg. Base Salary | Range: ${numeral(minSalary).format('0a')} - $
-                                    {numeral(maxSalary).format('0a')}
-                                </p>
-                            </div>
-                        </div>
-
-                        <AiPathwayCareerPipeChart career={career} />
-                    </div>
+                    <AiPathwayCareerSalaries career={career} />
                 </div>
                 <IonFooter
                     mode="ios"
