@@ -383,9 +383,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 };
             });
 
-            // Second pass: for master templates, fetch their children
+            // Second pass: for master templates, fetch their children and collect child URIs
             const fetchedTemplates: ExtendedTemplate[] = [];
+            const childUris = new Set<string>();
 
+            // First, fetch all children for master templates and collect their URIs
             for (const template of allTemplates) {
                 if (template.isMasterTemplate && template.boostUri) {
                     try {
@@ -395,6 +397,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             const childMeta = child.meta as TemplateBoostMeta | undefined;
                             const childConfig = childMeta?.templateConfig;
                             const childCredential = child.credential as Record<string, unknown> | undefined;
+                            const childUri = child.uri as string;
+
+                            // Track this URI as a child so we exclude it from top-level
+                            childUris.add(childUri);
 
                             let childObv3Template: OBv3CredentialTemplate | undefined;
 
@@ -407,8 +413,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             }
 
                             return {
-                                id: child.uri as string,
-                                boostUri: child.uri as string,
+                                id: childUri,
+                                boostUri: childUri,
                                 name: (child.name as string) || 'Untitled',
                                 description: (child.description as string) || '',
                                 achievementType: childConfig?.achievementType || 'Course Completion',
@@ -428,8 +434,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         console.warn('Failed to fetch children for master template:', e);
                         fetchedTemplates.push(template);
                     }
-                } else if (!template.isMasterTemplate) {
-                    // Only add non-master templates (children are nested within masters)
+                }
+            }
+
+            // Now add non-master templates, but exclude any that are children of a master
+            for (const template of allTemplates) {
+                if (!template.isMasterTemplate && !childUris.has(template.boostUri || '')) {
                     fetchedTemplates.push(template);
                 }
             }
