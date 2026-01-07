@@ -18,7 +18,7 @@ custom:
     esbuild:
       packager: pnpm
       plugins: esbuildPlugins.cjs
-      external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
+      external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '@learncard/didkit-plugin-node']
       sourcemap: external
       watch:
         pattern: ['src/**/*.ts', 'dids.ts']
