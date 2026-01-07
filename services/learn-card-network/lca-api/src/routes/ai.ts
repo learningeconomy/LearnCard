@@ -240,6 +240,7 @@ Rules:
                     //   currently breaks because response is wrapped in a code fence (```json ... ```)
                     //   likely would need to to bump openai package version
                     // response_format: zodResponseFormat(IconListContainerValidator, 'icons'),
+                    response_format: { type: 'json_object' },
                     user: did,
                 });
             } catch (error) {
@@ -249,33 +250,7 @@ Rules:
 
             const content = completion.choices[0]?.message.content ?? '';
 
-            // Be tolerant to code fences if the model returns formatted JSON
-            let response: unknown;
-            try {
-                response = JSON.parse(content);
-            } catch (e) {
-                // Prefer a proper fenced JSON block
-                const fenced = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-                let candidate = fenced?.[1];
-                if (!candidate) {
-                    // Fallback: slice between the first '{' and the last '}'
-                    const first = content.indexOf('{');
-                    const last = content.lastIndexOf('}');
-                    if (first !== -1 && last !== -1 && last > first) {
-                        candidate = content.slice(first, last + 1);
-                    }
-                }
-
-                try {
-                    response = JSON.parse(candidate ?? '');
-                } catch (e2) {
-                    throw new TRPCError({
-                        code: 'INTERNAL_SERVER_ERROR',
-                        message: 'Model returned non-parseable JSON for icons',
-                    });
-                }
-            }
-
+            const response = JSON.parse(content);
             // First, validate the model output with the object-wrapped list schema
             const parsed = await IconListContainerValidator.parseAsync(response);
             if (!parsed) {
