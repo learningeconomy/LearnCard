@@ -235,7 +235,7 @@ jobs:
       - name: Build native plugin
         working-directory: packages/plugins/didkit-plugin-node
         run: |
-          pnpm build
+          pnpm exec nx build didkit-plugin-node
           strip -x *.node
 
       - name: Upload native binary
