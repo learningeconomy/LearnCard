@@ -200,6 +200,7 @@ export const aiRouter = t.router({
             const {
                 user: { did },
             } = ctx;
+
             if (!openai) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
@@ -224,24 +225,65 @@ Rules:
 
             // TODO switch to gpt 5 and use responses API
             // will have to bump the openai package
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-4o-2024-08-06',
-                messages: [
-                    {
-                        role: 'system',
-                        content: systemPrompt,
-                    },
-                    { role: 'user', content: userContent },
-                ],
-                // Use the object-wrapped list schema for structured outputs
-                response_format: zodResponseFormat(IconListContainerValidator, 'icons'),
-                user: did,
-            });
+            let completion: any;
+            try {
+                completion = await openai.chat.completions.create({
+                    model: 'gpt-4o-2024-08-06',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: systemPrompt,
+                        },
+                        { role: 'user', content: userContent },
+                    ],
+                    // Use the object-wrapped list schema for structured outputs
+                    //   currently breaks because response is wrapped in a code fence (```json ... ```)
+                    //   likely would need to to bump openai package version
+                    // response_format: zodResponseFormat(IconListContainerValidator, 'icons'),
+                    user: did,
+                });
+            } catch (error) {
+                console.error('🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+                console.error('error:', error);
+            }
 
-            const response = JSON.parse(completion.choices[0]?.message.content ?? '');
+            const content = completion.choices[0]?.message.content ?? '';
+
+            // Be tolerant to code fences if the model returns formatted JSON
+            let response: unknown;
+            try {
+                response = JSON.parse(content);
+            } catch (e) {
+                // Prefer a proper fenced JSON block
+                const fenced = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+                let candidate = fenced?.[1];
+                if (!candidate) {
+                    // Fallback: slice between the first '{' and the last '}'
+                    const first = content.indexOf('{');
+                    const last = content.lastIndexOf('}');
+                    if (first !== -1 && last !== -1 && last > first) {
+                        candidate = content.slice(first, last + 1);
+                    }
+                }
+
+                try {
+                    response = JSON.parse(candidate ?? '');
+                } catch (e2) {
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Model returned non-parseable JSON for icons',
+                    });
+                }
+            }
 
             // First, validate the model output with the object-wrapped list schema
             const parsed = await IconListContainerValidator.parseAsync(response);
+            if (!parsed) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'No parsed structured output returned.',
+                });
+            }
 
             // Transform into a record mapping input names to icons
             const record: Record<string, string> = {};
