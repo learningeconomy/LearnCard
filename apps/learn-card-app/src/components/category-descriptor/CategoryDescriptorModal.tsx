@@ -38,7 +38,7 @@ const CategoryDescriptorModal: React.FC<{
                 category = BoostCategoryOptionsEnum.accomplishment;
                 break;
 
-            case 'Skills':
+            case 'Skills Hub':
                 imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills);
                 category = BoostCategoryOptionsEnum.skill;
                 break;
