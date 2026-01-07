@@ -1,0 +1,13 @@
+diff --git a/dist/packagers/pnpm.js b/dist/packagers/pnpm.js
+index 5ab9a53dc93751dea8584f852f13d757eeb3946f..469f0d6b767c4ef53b4bac473f7d02d157ca9850 100644
+--- a/dist/packagers/pnpm.js
++++ b/dist/packagers/pnpm.js
+@@ -74,7 +74,7 @@ class Pnpm {
+     }
+     async prune(cwd) {
+         const command = /^win/.test(process.platform) ? 'pnpm.cmd' : 'pnpm';
+-        const args = ['prune'];
++        const args = ['prune', '--no-frozen-lockfile'];
+         await (0, utils_1.spawnProcess)(command, args, { cwd });
+     }
+     async runScripts(cwd, scriptNames) {
