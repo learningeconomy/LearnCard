@@ -28,6 +28,8 @@ import {
     Clock,
     CheckCircle2,
     Code,
+    FileStack,
+    Layers,
 } from 'lucide-react';
 
 import { Clipboard } from '@capacitor/clipboard';
@@ -105,7 +107,44 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const [csvFileName, setCsvFileName] = useState<string | null>(null);
     const csvInputRef = useRef<HTMLInputElement>(null);
 
+    // Boost selector state for master templates (webhook/CSV)
+    const [boostSelectorField, setBoostSelectorField] = useState<string>(dataMapping?.boostSelectorField || '');
+    const [boostSelectorMatchType, setBoostSelectorMatchType] = useState<'id' | 'name'>(
+        dataMapping?.boostSelectorMatchType || 'id'
+    );
+
     const integrationId = project?.id;
+
+    // Compute issuable templates (exclude master templates, include their children flattened)
+    const issuableTemplates = useMemo(() => {
+        const result: CredentialTemplate[] = [];
+
+        for (const template of templates) {
+            if (template.isMasterTemplate) {
+                // Add children instead of master
+                if (template.childTemplates?.length) {
+                    result.push(...template.childTemplates);
+                }
+            } else {
+                result.push(template);
+            }
+        }
+
+        return result;
+    }, [templates]);
+
+    // Get master templates for special handling
+    const masterTemplates = useMemo(() => {
+        return templates.filter(t => t.isMasterTemplate && t.childTemplates?.length);
+    }, [templates]);
+
+    // Check if selected template belongs to a master template
+    const selectedTemplateMaster = useMemo(() => {
+        const selected = issuableTemplates.find(t => t.id === selectedTemplate);
+        if (!selected?.parentTemplateId) return null;
+
+        return templates.find(t => t.id === selected.parentTemplateId);
+    }, [selectedTemplate, issuableTemplates, templates]);
 
     // Extract all field paths from sample payload (webhook) or CSV headers
     const sourceFields = useMemo(() => {
@@ -394,7 +433,13 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
             presentToast('Field mappings saved!', { type: ToastTypeEnum.Success, hasDismissButton: true });
 
             onComplete(
-                { webhookUrl, samplePayload: samplePayload || undefined, mappings },
+                { 
+                    webhookUrl, 
+                    samplePayload: samplePayload || undefined, 
+                    mappings,
+                    boostSelectorField: masterTemplates.length > 0 ? boostSelectorField : undefined,
+                    boostSelectorMatchType: masterTemplates.length > 0 ? boostSelectorMatchType : undefined,
+                },
                 updatedTemplates
             );
         } catch (err) {
@@ -409,8 +454,8 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         (integrationMethod === 'csv' && csvHeaders.length > 0 && mappings.length > 0) ||
         (integrationMethod === 'webhook' && samplePayload && mappings.length > 0);
 
-    // API Integration state
-    const [apiSelectedTemplate, setApiSelectedTemplate] = useState<string>(templates[0]?.id || '');
+    // API Integration state - use issuable templates (excludes master templates)
+    const [apiSelectedTemplate, setApiSelectedTemplate] = useState<string>(issuableTemplates[0]?.id || '');
     const [apiRecipientEmail, setApiRecipientEmail] = useState('');
     const [apiTemplateData, setApiTemplateData] = useState<Record<string, string>>({});
     const [apiShowAdvanced, setApiShowAdvanced] = useState(false);
@@ -480,9 +525,9 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         return `Example ${readable}`;
     };
 
-    // Get dynamic variables for the selected API template
+    // Get dynamic variables for the selected API template (from issuable templates)
     const apiTemplateVariables = useMemo(() => {
-        const template = templates.find(t => t.id === apiSelectedTemplate);
+        const template = issuableTemplates.find(t => t.id === apiSelectedTemplate);
         if (!template) return [];
 
         let vars: string[] = [];
@@ -501,7 +546,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         }
 
         return vars;
-    }, [templates, apiSelectedTemplate]);
+    }, [issuableTemplates, apiSelectedTemplate]);
 
     // Initialize template data with smart defaults when template changes
     React.useEffect(() => {
@@ -520,7 +565,13 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const apiHasAdvancedOptions = apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || 
         apiAdvancedOptions.recipientName || apiAdvancedOptions.webhookUrl || apiAdvancedOptions.suppressDelivery;
 
-    const selectedApiTemplate = templates.find(t => t.id === apiSelectedTemplate);
+    const selectedApiTemplate = issuableTemplates.find(t => t.id === apiSelectedTemplate);
+
+    // Get the parent master template for the selected API template (if any)
+    const selectedApiTemplateMaster = useMemo(() => {
+        if (!selectedApiTemplate?.parentTemplateId) return null;
+        return templates.find(t => t.id === selectedApiTemplate.parentTemplateId);
+    }, [selectedApiTemplate, templates]);
 
     // Generate templateData code from template - uses user-entered values from apiTemplateData
     const generateTemplateDataCode = (template: CredentialTemplate | undefined, indent: string = '        ') => {
@@ -676,42 +727,118 @@ if (result.inbox) {
                     </div>
                 </div>
 
-                {/* Template Selector */}
-                {templates.length > 0 && (
+                {/* Template Selector - organized by master templates */}
+                {issuableTemplates.length > 0 && (
                     <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-700">Select Template</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Select Course Boost to Issue
+                        </label>
 
-                        <div className="space-y-2">
-                            {templates.map(template => (
-                                <button
-                                    key={template.id}
-                                    onClick={() => setApiSelectedTemplate(template.id)}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                                        apiSelectedTemplate === template.id
-                                            ? 'border-cyan-500 bg-cyan-50'
-                                            : 'border-gray-200 bg-white hover:border-gray-300'
-                                    }`}
-                                >
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                        apiSelectedTemplate === template.id ? 'bg-cyan-500' : 'bg-gray-100'
-                                    }`}>
-                                        <Award className={`w-5 h-5 ${apiSelectedTemplate === template.id ? 'text-white' : 'text-gray-500'}`} />
+                        {/* Master Templates with Children */}
+                        {masterTemplates.map(master => (
+                            <div key={master.id} className="border-2 border-violet-200 rounded-xl overflow-hidden">
+                                <div className="flex items-center gap-3 p-3 bg-violet-50">
+                                    <FileStack className="w-5 h-5 text-violet-600" />
+                                    <div className="flex-1">
+                                        <p className="font-medium text-violet-800">{master.name}</p>
+                                        <p className="text-xs text-violet-600">
+                                            {master.childTemplates?.length} course boosts • Select one to issue
+                                        </p>
                                     </div>
+                                </div>
 
-                                    <div className="flex-1 text-left">
-                                        <p className="font-medium text-gray-800">{template.name}</p>
-                                        <p className="text-xs text-gray-500">{template.description || 'No description'}</p>
-                                    </div>
+                                <div className="p-2 bg-white max-h-48 overflow-y-auto space-y-1">
+                                    {master.childTemplates?.map(child => (
+                                        <button
+                                            key={child.id}
+                                            onClick={() => setApiSelectedTemplate(child.id)}
+                                            className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all ${
+                                                apiSelectedTemplate === child.id
+                                                    ? 'bg-cyan-50 border-2 border-cyan-500'
+                                                    : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <Award className={`w-4 h-4 ${
+                                                apiSelectedTemplate === child.id ? 'text-cyan-600' : 'text-gray-400'
+                                            }`} />
 
-                                    {template.boostUri && (
-                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">Saved</span>
-                                    )}
+                                            <div className="flex-1 text-left min-w-0">
+                                                <p className={`font-medium truncate ${
+                                                    apiSelectedTemplate === child.id ? 'text-cyan-800' : 'text-gray-700'
+                                                }`}>
+                                                    {child.name}
+                                                </p>
+                                            </div>
 
-                                    {apiSelectedTemplate === template.id && (
-                                        <CheckCircle2 className="w-5 h-5 text-cyan-600" />
-                                    )}
-                                </button>
-                            ))}
+                                            {child.boostUri && (
+                                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
+                                                    Saved
+                                                </span>
+                                            )}
+
+                                            {apiSelectedTemplate === child.id && (
+                                                <CheckCircle2 className="w-4 h-4 text-cyan-600 flex-shrink-0" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Standalone Templates (not part of a master) */}
+                        {issuableTemplates.filter(t => !t.parentTemplateId).length > 0 && (
+                            <div className="space-y-2">
+                                {masterTemplates.length > 0 && (
+                                    <p className="text-xs text-gray-500 font-medium pt-2">Other Templates</p>
+                                )}
+
+                                {issuableTemplates.filter(t => !t.parentTemplateId).map(template => (
+                                    <button
+                                        key={template.id}
+                                        onClick={() => setApiSelectedTemplate(template.id)}
+                                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                                            apiSelectedTemplate === template.id
+                                                ? 'border-cyan-500 bg-cyan-50'
+                                                : 'border-gray-200 bg-white hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                            apiSelectedTemplate === template.id ? 'bg-cyan-500' : 'bg-gray-100'
+                                        }`}>
+                                            <Award className={`w-5 h-5 ${
+                                                apiSelectedTemplate === template.id ? 'text-white' : 'text-gray-500'
+                                            }`} />
+                                        </div>
+
+                                        <div className="flex-1 text-left">
+                                            <p className="font-medium text-gray-800">{template.name}</p>
+                                            <p className="text-xs text-gray-500">{template.description || 'No description'}</p>
+                                        </div>
+
+                                        {template.boostUri && (
+                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">Saved</span>
+                                        )}
+
+                                        {apiSelectedTemplate === template.id && (
+                                            <CheckCircle2 className="w-5 h-5 text-cyan-600" />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Info about child boost - course data is baked in */}
+                {selectedApiTemplateMaster && (
+                    <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-emerald-800">
+                            <p className="font-medium">Course data is pre-filled</p>
+                            <p className="text-xs text-emerald-700 mt-0.5">
+                                This boost has course-specific data (name, credits, etc.) already baked in. 
+                                You only need to provide issuance data like recipient name and date.
+                            </p>
                         </div>
                     </div>
                 )}
@@ -1150,17 +1277,113 @@ if (result.inbox) {
                     )}
                 </div>
 
+                {/* Boost Selector for Master Templates (CSV) */}
+                {csvHeaders.length > 0 && masterTemplates.length > 0 && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
+                                <FileStack className="w-5 h-5 text-violet-600" />
+                            </div>
+
+                            <div>
+                                <h3 className="font-semibold text-gray-800">Course Boost Selection</h3>
+                                <p className="text-sm text-gray-500">
+                                    You have {masterTemplates.reduce((sum, m) => sum + (m.childTemplates?.length || 0), 0)} course boosts. 
+                                    Specify which column identifies the course.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-violet-800 mb-2">
+                                    Which column identifies the course?
+                                </label>
+
+                                <select
+                                    value={boostSelectorField}
+                                    onChange={(e) => setBoostSelectorField(e.target.value)}
+                                    className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                >
+                                    <option value="">Select a column...</option>
+                                    {csvHeaders.map(header => (
+                                        <option key={header} value={header}>{header}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-violet-800 mb-2">
+                                    How should we match courses?
+                                </label>
+
+                                <div className="space-y-2">
+                                    <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-violet-200 cursor-pointer hover:border-violet-400">
+                                        <input
+                                            type="radio"
+                                            name="csvMatchType"
+                                            value="id"
+                                            checked={boostSelectorMatchType === 'id'}
+                                            onChange={() => setBoostSelectorMatchType('id')}
+                                            className="mt-0.5"
+                                        />
+                                        <div>
+                                            <p className="font-medium text-gray-800">Match by Course ID</p>
+                                            <p className="text-xs text-gray-500">
+                                                Match exactly against boost metadata (recommended)
+                                            </p>
+                                        </div>
+                                    </label>
+
+                                    <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-violet-200 cursor-pointer hover:border-violet-400">
+                                        <input
+                                            type="radio"
+                                            name="csvMatchType"
+                                            value="name"
+                                            checked={boostSelectorMatchType === 'name'}
+                                            onChange={() => setBoostSelectorMatchType('name')}
+                                            className="mt-0.5"
+                                        />
+                                        <div>
+                                            <p className="font-medium text-gray-800">Match by Course Name</p>
+                                            <p className="text-xs text-gray-500">
+                                                Find boost where name contains the course title
+                                            </p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {boostSelectorField && (
+                                <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                    <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-emerald-800">
+                                        Will use <code className="bg-emerald-100 px-1 rounded">{boostSelectorField}</code> column to 
+                                        find the right course boost by {boostSelectorMatchType === 'id' ? 'exact ID match' : 'name matching'}.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Field Mapping - reuse same UI as webhook */}
                 {csvHeaders.length > 0 && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
-                                <GitMerge className="w-5 h-5 text-violet-600" />
+                            <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
+                                <GitMerge className="w-5 h-5 text-cyan-600" />
                             </div>
 
                             <div>
-                                <h3 className="font-semibold text-gray-800">Map Columns</h3>
-                                <p className="text-sm text-gray-500">Connect CSV columns to credential fields</p>
+                                <h3 className="font-semibold text-gray-800">
+                                    {masterTemplates.length > 0 ? 'Map Issuance Columns' : 'Map Columns'}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                    {masterTemplates.length > 0 
+                                        ? 'Map recipient data columns (course data is already baked in)'
+                                        : 'Connect CSV columns to credential fields'}
+                                </p>
                             </div>
                         </div>
 
@@ -1402,27 +1625,121 @@ if (result.inbox) {
                 )}
             </div>
 
+            {/* Boost Selector for Master Templates */}
+            {samplePayload && masterTemplates.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
+                            <FileStack className="w-5 h-5 text-violet-600" />
+                        </div>
+
+                        <div>
+                            <h3 className="font-semibold text-gray-800">Course Boost Selection</h3>
+                            <p className="text-sm text-gray-500">
+                                You have {masterTemplates.reduce((sum, m) => sum + (m.childTemplates?.length || 0), 0)} course boosts. 
+                                Specify which field identifies the course.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-violet-800 mb-2">
+                                Which field identifies the course?
+                            </label>
+
+                            <select
+                                value={boostSelectorField}
+                                onChange={(e) => setBoostSelectorField(e.target.value)}
+                                className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            >
+                                <option value="">Select a field...</option>
+                                {sourceFields.map(field => (
+                                    <option key={field} value={field}>{field}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-violet-800 mb-2">
+                                How should we match courses?
+                            </label>
+
+                            <div className="space-y-2">
+                                <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-violet-200 cursor-pointer hover:border-violet-400">
+                                    <input
+                                        type="radio"
+                                        name="matchType"
+                                        value="id"
+                                        checked={boostSelectorMatchType === 'id'}
+                                        onChange={() => setBoostSelectorMatchType('id')}
+                                        className="mt-0.5"
+                                    />
+                                    <div>
+                                        <p className="font-medium text-gray-800">Match by Course ID</p>
+                                        <p className="text-xs text-gray-500">
+                                            Store a unique ID in each boost and match exactly (recommended)
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-violet-200 cursor-pointer hover:border-violet-400">
+                                    <input
+                                        type="radio"
+                                        name="matchType"
+                                        value="name"
+                                        checked={boostSelectorMatchType === 'name'}
+                                        onChange={() => setBoostSelectorMatchType('name')}
+                                        className="mt-0.5"
+                                    />
+                                    <div>
+                                        <p className="font-medium text-gray-800">Match by Course Name</p>
+                                        <p className="text-xs text-gray-500">
+                                            Find boost where name contains the course title (fallback)
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {boostSelectorField && (
+                            <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-emerald-800">
+                                    Will use <code className="bg-emerald-100 px-1 rounded">{boostSelectorField}</code> to 
+                                    find the right course boost by {boostSelectorMatchType === 'id' ? 'exact ID match' : 'name matching'}.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Field Mapping */}
             {samplePayload && (
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
-                            <GitMerge className="w-5 h-5 text-violet-600" />
+                        <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
+                            <GitMerge className="w-5 h-5 text-cyan-600" />
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">Map Fields</h3>
-                            <p className="text-sm text-gray-500">Connect your data to credential fields</p>
+                            <h3 className="font-semibold text-gray-800">Map Issuance Fields</h3>
+                            <p className="text-sm text-gray-500">
+                                {masterTemplates.length > 0 
+                                    ? 'Map recipient data to credential fields (course data is already baked in)'
+                                    : 'Connect your data to credential fields'}
+                            </p>
                         </div>
                     </div>
 
-                    {templates.length > 1 && (
+                    {issuableTemplates.length > 1 && !masterTemplates.length && (
                         <select
                             value={selectedTemplate}
                             onChange={(e) => setSelectedTemplate(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-200 rounded-lg"
                         >
-                            {templates.map(t => (
+                            {issuableTemplates.map(t => (
                                 <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
                         </select>

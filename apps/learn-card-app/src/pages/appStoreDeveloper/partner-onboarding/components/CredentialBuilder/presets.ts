@@ -254,5 +254,6 @@ export const getPresetById = (id: string): TemplatePreset | undefined => {
 };
 
 export const getBlankTemplate = (): OBv3CredentialTemplate => {
-    return TEMPLATE_PRESETS.find(p => p.id === 'blank')!.template;
+    // Deep clone to avoid mutating the preset
+    return JSON.parse(JSON.stringify(TEMPLATE_PRESETS.find(p => p.id === 'blank')!.template));
 };
