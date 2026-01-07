@@ -1,16 +1,55 @@
 import React, { useState } from 'react';
-import { useModal } from 'learn-card-base';
+import { useListMySkillFrameworks, useModal, useSearchFrameworkSkills } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
-import { IonFooter, IonInput } from '@ionic/react';
+import SelfAssignedSkillRow from './SelfAssignedSkillRow';
+import { IonFooter, IonInput, IonSpinner } from '@ionic/react';
+
+import {
+    ApiSkillNode,
+    convertApiSkillNodeToSkillTreeNode,
+} from '../../helpers/skillFramework.helpers';
 
 type SelfAssignSkillsModalProps = {};
 
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { closeModal } = useModal();
     const [searchInput, setSearchInput] = useState('');
+
+    const { data: frameworks = [] } = useListMySkillFrameworks();
+    const selfAssignedSkillFramework = frameworks[0]; // TODO arbitrary for now
+    const frameworkId = selfAssignedSkillFramework?.id;
+
+    // TODO this will be replaced an an AI powered search
+    const { data: searchResultsApiData, isLoading: searchLoading } = useSearchFrameworkSkills(
+        frameworkId,
+        {
+            // $or: [
+            //     { code: { $regex: `/${searchInput}/i` } }, // Case-insensitive regex match on code
+            //     { statement: { $regex: `/${searchInput}/i` } }, // Case-insensitive regex match on statement
+            // ],
+            type: 'competency',
+
+            // Doesn't work :/
+            // $and: [
+            //     { type: 'competency' },
+            //     {
+            //         $or: [
+            //             { code: { $regex: searchInput, $options: 'i' } }, // Case-insensitive regex match on code
+            //             { statement: { $regex: searchInput, $options: 'i' } }, // Case-insensitive regex match on statement
+            //         ],
+            //     },
+            // ],
+        }
+    );
+
+    const suggestedSkills =
+        // @ts-ignore
+        searchResultsApiData?.records?.map((record: ApiSkillNode) =>
+            convertApiSkillNodeToSkillTreeNode(record)
+        ) || [];
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
@@ -51,6 +90,21 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins border-solid border-t-[1px] border-grayscale-200">
                     Suggested Skills
                 </p>
+
+                {searchLoading ? (
+                    <div className="flex-1 flex justify-center pt-[30px]">
+                        <IonSpinner color="dark" name="crescent" />
+                    </div>
+                ) : (
+                    <>
+                        {suggestedSkills.map((skill, index) => (
+                            <SelfAssignedSkillRow
+                                skill={skill}
+                                framework={selfAssignedSkillFramework}
+                            />
+                        ))}
+                    </>
+                )}
             </section>
 
             <IonFooter
