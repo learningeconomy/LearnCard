@@ -2,29 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useLocation } from 'react-router-dom';
 
+import useTheme from '../../theme/hooks/useTheme';
+import useAlignments from '../../hooks/useAlignments';
+import { useLoadingLine } from '../../stores/loadingStore';
+
 import { IonContent, IonPage } from '@ionic/react';
+import Plus from 'learn-card-base/svgs/Plus';
 import MainHeader from '../../components/main-header/MainHeader';
 import SkillsMyHub from './SkillsMyHub';
-import SkillsAdminPanel from './SkillsAdminPanel';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
-import Plus from 'learn-card-base/svgs/Plus';
+import SkillsAdminPanel from './SkillsAdminPanel';
+import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
+import SkillsHubPlusOptionsModal from './SkillsHubPlusOptionsModal';
 
-import { useLoadingLine } from '../../stores/loadingStore';
 import {
-    conditionalPluralize,
+    ModalTypes,
     CredentialCategoryEnum,
-    useGetCredentialsForSkills,
+    conditionalPluralize,
+    useModal,
     useGetProfile,
     useListMySkillFrameworks,
-    useModal,
+    useGetCredentialsForSkills,
 } from 'learn-card-base';
 
 import { mapBoostsToSkills } from './skills.helpers';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 
-import useTheme from '../../theme/hooks/useTheme';
-import useAlignments from '../../hooks/useAlignments';
-import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import { LearnCardRolesEnum } from '../../components/onboarding/onboarding.helpers';
 
 enum TabEnum {
@@ -66,7 +69,10 @@ const SkillsPage: React.FC = () => {
 
     const handlePlusButton = () => {
         if (showAdminPanel) {
-            // TODO open options modal for create framework OR self-attested skill
+            newModal(<SkillsHubPlusOptionsModal />, undefined, {
+                desktop: ModalTypes.Cancel,
+                mobile: ModalTypes.Cancel,
+            });
         } else {
             // TODO open straight to self-attested skill flow
         }
