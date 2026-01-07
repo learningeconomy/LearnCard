@@ -14,6 +14,10 @@ export type AiPathwayCareer = {
         education: string;
         experience: string;
     };
+    topPaidLocations: {
+        location: string;
+        salary: number;
+    }[];
 };
 
 export const getSalaryStats = (salaries: { bucket: number; value: number }[]) => {
@@ -78,6 +82,13 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
             education: "Bachelor's degree in Computer Science, Statistics, or related field",
             experience: '2-3 years of data analysis experience',
         },
+        topPaidLocations: [
+            { location: 'San Francisco, CA', salary: 145000 },
+            { location: 'New York, NY', salary: 135000 },
+            { location: 'Seattle, WA', salary: 130000 },
+            { location: 'Boston, MA', salary: 125000 },
+            { location: 'Austin, TX', salary: 120000 },
+        ],
     },
     {
         id: 2,
@@ -128,6 +139,13 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
             education: "Bachelor's degree in Business, Marketing, or related field",
             experience: '3-5 years of account management or sales experience',
         },
+        topPaidLocations: [
+            { location: 'New York, NY', salary: 155000 },
+            { location: 'San Francisco, CA', salary: 150000 },
+            { location: 'Boston, MA', salary: 140000 },
+            { location: 'Chicago, IL', salary: 135000 },
+            { location: 'Los Angeles, CA', salary: 130000 },
+        ],
     },
     {
         id: 3,
@@ -178,5 +196,12 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
             education: "Bachelor's degree in Business, Communications, or related field",
             experience: '2-4 years of customer service or account management experience',
         },
+        topPaidLocations: [
+            { location: 'San Francisco, CA', salary: 145000 },
+            { location: 'New York, NY', salary: 140000 },
+            { location: 'Seattle, WA', salary: 135000 },
+            { location: 'Boston, MA', salary: 130000 },
+            { location: 'Austin, TX', salary: 125000 },
+        ],
     },
 ];

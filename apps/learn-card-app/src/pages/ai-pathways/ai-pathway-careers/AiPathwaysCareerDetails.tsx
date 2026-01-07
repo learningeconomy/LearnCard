@@ -4,6 +4,7 @@ import { IonFooter } from '@ionic/react';
 import AiPathwayCareerHeader from './AiPathwayCareerHeader';
 import AiPathwayCareerSkills from './AiPathwayCareerSkills';
 import AiPathwayCareerSalaries from './AiPathwayCareerSalaries';
+import AiPathwayTopPayLocations from './AiPathwayTopPayLocations';
 import AiPathwayCareerJobGrowthInfo from './AiPathwayCareersJobGrowthInfo';
 import AiPathwayCareerQualifications from './AiPathwayCareerQualifications';
 import AiPathwayCareerQualitativeInsights from './AiPathwayCareerQualitativeInsights';
@@ -33,6 +34,8 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
                     <AiPathwayCareerJobGrowthInfo career={career} />
 
                     <AiPathwayCareerQualifications career={career} />
+
+                    <AiPathwayTopPayLocations career={career} />
                 </div>
                 <IonFooter
                     mode="ios"
