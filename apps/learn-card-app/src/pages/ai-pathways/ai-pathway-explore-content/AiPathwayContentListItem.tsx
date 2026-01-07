@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import Video from 'learn-card-base/svgs/Video';
+import AiPathwayContentPreview from './AiPathwayContentPreview';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 
 import {
@@ -13,11 +14,10 @@ import {
 
 import useTheme from '../../../theme/hooks/useTheme';
 
+import { AiPathwayContent } from './ai-pathway-content.helpers';
+
 const AiPathwayContentListItem: React.FC<{
-    content: {
-        title: string;
-        url: string;
-    };
+    content: AiPathwayContent;
 }> = ({ content }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -30,6 +30,13 @@ const AiPathwayContentListItem: React.FC<{
         setMetaData(metadata);
     };
 
+    const handleViewCourse = () => {
+        newModal(<AiPathwayContentPreview content={content} />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
+    };
+
     useEffect(() => {
         handleGetVideoMetadata();
     }, [content]);
@@ -37,15 +44,14 @@ const AiPathwayContentListItem: React.FC<{
     const mediaHeight = 'min-h-[80px] max-h-[80px]';
 
     return (
-        <div className={`flex bg-grayscale-100 rounded-[20px] relative ${mediaHeight} w-full`}>
+        <div
+            role="button"
+            onClick={handleViewCourse}
+            className={`flex bg-grayscale-100 rounded-[20px] relative ${mediaHeight} w-full`}
+        >
             <>
                 <div className="w-[80px] relative overflow-hidden rounded-[20px] shadow-3xl min-h-[80px] max-h-[80px] flex-shrink-0">
-                    <a
-                        href={content.url || ''}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block h-full "
-                    >
+                    <div className="block h-full">
                         <img
                             src={metaData?.thumbnailUrl || EmptyImage}
                             alt={content.title || 'Video Cover'}
@@ -53,13 +59,10 @@ const AiPathwayContentListItem: React.FC<{
                         />
                         <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
                         <Video className="absolute left-2 bottom-2 h-[20px] w-[20px] text-white" />
-                    </a>
+                    </div>
                 </div>
 
-                <a
-                    href={content.url || ''}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <div
                     className="flex flex-1 ion-padding rounded-r-[20px] flex-col justify-between z-10 mr-[30px]"
                     style={{ textDecoration: 'none' }}
                 >
@@ -69,7 +72,7 @@ const AiPathwayContentListItem: React.FC<{
                     <p className="text-xs text-gray-400 self-start break-all">
                         {getVideoSource(content.url || '')}
                     </p>
-                </a>
+                </div>
             </>
         </div>
     );

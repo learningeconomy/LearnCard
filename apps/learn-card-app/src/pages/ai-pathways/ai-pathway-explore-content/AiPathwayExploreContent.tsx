@@ -2,15 +2,7 @@ import React from 'react';
 
 import AiPathwayContentList from './AiPathwayContentList';
 
-const dummyInsightsContent: {
-    title: string;
-    url: string;
-}[] = [
-    {
-        title: 'Javascript Beginners Course',
-        url: 'https://www.youtube.com/watch?v=x2RNw4M6cME',
-    },
-];
+import { AI_PATHWAY_CONTENT } from './ai-pathway-content.helpers';
 
 const AiPathwayExploreContent: React.FC = () => {
     return (
@@ -21,7 +13,7 @@ const AiPathwayExploreContent: React.FC = () => {
                 </div>
 
                 <div className="w-full flex flex-col items-start justify-start mt-4 gap-4">
-                    <AiPathwayContentList content={dummyInsightsContent} />
+                    <AiPathwayContentList content={AI_PATHWAY_CONTENT} />
                 </div>
             </div>
         </div>
