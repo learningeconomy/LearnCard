@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 3.9.2
+
+### Patch Changes
+
+-   [#905](https://github.com/learningeconomy/LearnCard/pull/905) [`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d) Thanks [@Custard7](https://github.com/Custard7)! - feat: [LC-1103] Dynamic Boost Templates
+
+-   Updated dependencies [[`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d)]:
+    -   @learncard/types@5.11.1
+    -   @learncard/core@9.4.2
+    -   @learncard/helpers@1.2.2
+    -   @learncard/did-web-plugin@1.1.2
+    -   @learncard/didkey-plugin@1.1.2
+    -   @learncard/didkit-plugin@1.6.2
+    -   @learncard/encryption-plugin@1.1.2
+    -   @learncard/learn-card-plugin@1.2.2
+    -   @learncard/vc-plugin@1.3.2
+    -   @learncard/vc-templates-plugin@1.1.2
+    -   @learncard/crypto-plugin@1.1.2
+    -   @learncard/expiration-plugin@1.2.2
+
 ## 3.9.1
 
 ### Patch Changes
