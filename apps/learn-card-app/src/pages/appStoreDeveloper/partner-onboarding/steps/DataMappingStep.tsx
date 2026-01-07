@@ -525,7 +525,19 @@ const BOOST_TEMPLATES = ${JSON.stringify(config, null, 2)};
 
 // Usage example:
 // const template = BOOST_TEMPLATES['course_key'];
-// await learnCard.invoke.send({ templateUri: template.uri, ... });
+// 
+// // Build templateData from the template's variables
+// const templateData = {};
+// for (const varName of template.variables) {
+//     templateData[varName] = yourData[varName]; // Map from your data source
+// }
+// 
+// await learnCard.invoke.send({
+//     type: 'boost',
+//     recipient: recipientProfileId,
+//     templateUri: template.uri,
+//     templateData,
+// });
 
 export default BOOST_TEMPLATES;`;
 
