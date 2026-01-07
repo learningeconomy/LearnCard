@@ -23,7 +23,7 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         # minify: true
-        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '@learncard/didkit-plugin-node']
+        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
         sourcemap: external
         target: 'node16'
         watch:
