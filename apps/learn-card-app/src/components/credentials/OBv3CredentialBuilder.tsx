@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     X,
     Copy,
@@ -15,10 +15,75 @@ import {
     HelpCircle,
     Upload,
     Loader2,
+    Save,
+    FolderOpen,
+    Trash2,
+    Clock,
+    Plus,
+    ChevronLeft,
+    CheckCircle2,
+    AlertCircle,
+    ShieldCheck,
 } from 'lucide-react';
 
 import { useFilestack, BoostCategoryOptionsEnum, BoostPageViewMode, useWallet } from 'learn-card-base';
 import { BoostEarnedCard } from '../boost/boost-earned-card/BoostEarnedCard';
+
+// Storage key for saved credentials
+const STORAGE_KEY = 'lc-credential-builder-saved';
+const DRAFT_KEY = 'lc-credential-builder-draft';
+
+// Saved credential type
+interface SavedCredential {
+    id: string;
+    name: string;
+    data: CredentialData;
+    createdAt: number;
+    updatedAt: number;
+}
+
+// Storage helpers
+const getSavedCredentials = (): SavedCredential[] => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+};
+
+const saveCredentials = (credentials: SavedCredential[]) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(credentials));
+};
+
+const getDraft = (): { data: CredentialData; savedAt: number } | null => {
+    try {
+        const stored = localStorage.getItem(DRAFT_KEY);
+        return stored ? JSON.parse(stored) : null;
+    } catch {
+        return null;
+    }
+};
+
+const saveDraft = (data: CredentialData) => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ data, savedAt: Date.now() }));
+};
+
+const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+};
+
+// Format relative time
+const formatRelativeTime = (timestamp: number): string => {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+
+    if (seconds < 5) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+
+    return new Date(timestamp).toLocaleDateString();
+};
 
 // Valid OBv3 Achievement Types
 const ACHIEVEMENT_TYPES = [
@@ -149,10 +214,55 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
     const [copied, setCopied] = useState(false);
     const [userDid, setUserDid] = useState<string>('did:web:preview.learncard.com');
 
+    // Saved credentials state
+    const [savedCredentials, setSavedCredentials] = useState<SavedCredential[]>([]);
+    const [currentCredentialId, setCurrentCredentialId] = useState<string | null>(null);
+    const [showLibrary, setShowLibrary] = useState(false);
+    const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+    const [showSaveAs, setShowSaveAs] = useState(false);
+    const [saveAsName, setSaveAsName] = useState('');
+
+    // Verification state
+    const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'valid' | 'invalid'>('idle');
+    const [verificationError, setVerificationError] = useState<string | null>(null);
+
+    // Load saved credentials and draft on mount
+    useEffect(() => {
+        if (isOpen) {
+            const saved = getSavedCredentials();
+            setSavedCredentials(saved);
+
+            // Load draft if no initialData and no current credential
+            if (!initialData && !currentCredentialId) {
+                const draft = getDraft();
+
+                if (draft) {
+                    setData(draft.data);
+                    setDraftSavedAt(draft.savedAt);
+                }
+            }
+        }
+    }, [isOpen, initialData, currentCredentialId]);
+
+    // Auto-save draft with debounce
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const timeoutId = setTimeout(() => {
+            // Only save draft if there's meaningful content
+            if (data.achievementName || data.achievementDescription) {
+                saveDraft(data);
+                setDraftSavedAt(Date.now());
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [data, isOpen]);
+
     // Get user's wallet for DID
     const { initWallet } = useWallet();
 
-    React.useEffect(() => {
+    useEffect(() => {
         const fetchDid = async () => {
             try {
                 const wallet = await initWallet();
@@ -178,35 +288,133 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
         setData((prev) => ({ ...prev, [field]: value }));
     };
 
-    // Build the OBv3 credential object
+    // Save credential to library
+    const handleSaveToLibrary = useCallback((name?: string) => {
+        const credName = name || data.achievementName || 'Untitled Credential';
+        const now = Date.now();
+
+        if (currentCredentialId) {
+            // Update existing
+            const updated = savedCredentials.map(c => 
+                c.id === currentCredentialId 
+                    ? { ...c, name: credName, data, updatedAt: now }
+                    : c
+            );
+            setSavedCredentials(updated);
+            saveCredentials(updated);
+        } else {
+            // Create new
+            const newCred: SavedCredential = {
+                id: crypto.randomUUID(),
+                name: credName,
+                data,
+                createdAt: now,
+                updatedAt: now,
+            };
+            const updated = [newCred, ...savedCredentials];
+            setSavedCredentials(updated);
+            saveCredentials(updated);
+            setCurrentCredentialId(newCred.id);
+        }
+
+        clearDraft();
+        setShowSaveAs(false);
+        setSaveAsName('');
+    }, [data, currentCredentialId, savedCredentials]);
+
+    // Load a saved credential
+    const handleLoadCredential = useCallback((cred: SavedCredential) => {
+        setData(cred.data);
+        setCurrentCredentialId(cred.id);
+        setShowLibrary(false);
+        clearDraft();
+    }, []);
+
+    // Delete a saved credential
+    const handleDeleteCredential = useCallback((id: string) => {
+        const updated = savedCredentials.filter(c => c.id !== id);
+        setSavedCredentials(updated);
+        saveCredentials(updated);
+
+        if (currentCredentialId === id) {
+            setCurrentCredentialId(null);
+        }
+    }, [savedCredentials, currentCredentialId]);
+
+    // Start new credential (auto-save current if it has content)
+    const handleNewCredential = useCallback(() => {
+        // Auto-save current credential if it has meaningful content and isn't already saved
+        const hasContent = data.achievementName || data.achievementDescription;
+        
+        if (hasContent && !currentCredentialId) {
+            // Save the current work as a new credential
+            const credName = data.achievementName || 'Untitled Credential';
+            const now = Date.now();
+            const newCred: SavedCredential = {
+                id: crypto.randomUUID(),
+                name: credName,
+                data,
+                createdAt: now,
+                updatedAt: now,
+            };
+            const updated = [newCred, ...savedCredentials];
+            setSavedCredentials(updated);
+            saveCredentials(updated);
+        } else if (hasContent && currentCredentialId) {
+            // Update the existing credential before starting new
+            const updated = savedCredentials.map(c => 
+                c.id === currentCredentialId 
+                    ? { ...c, data, updatedAt: Date.now() }
+                    : c
+            );
+            setSavedCredentials(updated);
+            saveCredentials(updated);
+        }
+
+        // Now start fresh
+        setData({ ...DEFAULT_DATA });
+        setCurrentCredentialId(null);
+        setShowLibrary(false);
+        clearDraft();
+    }, [data, currentCredentialId, savedCredentials]);
+
+    // Build the OBv3 credential object (proper spec-compliant structure)
     const credential = useMemo(() => {
+        const credentialId = `urn:uuid:${crypto.randomUUID()}`;
+        const achievementId = `urn:uuid:${crypto.randomUUID()}`;
+        const issuerDid = userDid || 'did:example:issuer';
+
         const cred: Record<string, unknown> = {
             '@context': [
                 'https://www.w3.org/2018/credentials/v1',
-                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
             ],
+            id: credentialId,
             type: ['VerifiableCredential', 'OpenBadgeCredential'],
             name: data.credentialName || data.achievementName || 'Untitled Credential',
+            issuer: issuerDid,
+            issuanceDate: new Date().toISOString(),
             credentialSubject: {
+                id: issuerDid, // Will be replaced with recipient DID when issued
+                type: ['AchievementSubject'],
                 achievement: {
+                    id: achievementId,
                     type: ['Achievement'],
                     name: data.achievementName || 'Untitled',
                     description: data.achievementDescription || '',
                     achievementType: data.achievementType,
+                    criteria: data.criteriaText || data.criteriaUrl
+                        ? {
+                              ...(data.criteriaText && { narrative: data.criteriaText }),
+                              ...(data.criteriaUrl && { id: data.criteriaUrl }),
+                          }
+                        : { narrative: 'Criteria for earning this credential.' },
                     ...(data.achievementImage && {
                         image: {
                             id: data.achievementImage,
                             type: 'Image',
                         },
                     }),
-                    ...(data.criteriaText || data.criteriaUrl
-                        ? {
-                              criteria: {
-                                  ...(data.criteriaText && { narrative: data.criteriaText }),
-                                  ...(data.criteriaUrl && { id: data.criteriaUrl }),
-                              },
-                          }
-                        : {}),
                 },
             },
         };
@@ -232,7 +440,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
         }
 
         return cred;
-    }, [data]);
+    }, [data, userDid]);
 
     const credentialJson = useMemo(() => JSON.stringify(credential, null, 2), [credential]);
 
@@ -241,6 +449,32 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    // Verify credential by attempting to issue it
+    const handleVerify = useCallback(async () => {
+        setVerificationStatus('verifying');
+        setVerificationError(null);
+
+        try {
+            const wallet = await initWallet();
+
+            // Try to issue the credential - this will validate the JSON-LD structure
+            await wallet.invoke.issueCredential(credential as Parameters<typeof wallet.invoke.issueCredential>[0]);
+
+            setVerificationStatus('valid');
+        } catch (err) {
+            setVerificationStatus('invalid');
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            setVerificationError(errorMessage);
+            console.error('Credential verification failed:', err);
+        }
+    }, [credential, initWallet]);
+
+    // Reset verification when data changes
+    useEffect(() => {
+        setVerificationStatus('idle');
+        setVerificationError(null);
+    }, [data]);
 
     const handleSave = () => {
         onSave?.(credential);
@@ -251,31 +485,162 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
 
     if (!isOpen) return null;
 
+    // Get current credential name for display
+    const currentCredName = savedCredentials.find(c => c.id === currentCredentialId)?.name;
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
-                            <Award className="w-5 h-5 text-white" />
-                        </div>
+                        {showLibrary ? (
+                            <button
+                                onClick={() => setShowLibrary(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <ChevronLeft className="w-5 h-5 text-gray-500" />
+                            </button>
+                        ) : (
+                            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
+                                <Award className="w-5 h-5 text-white" />
+                            </div>
+                        )}
 
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-800">Credential Builder</h2>
-                            <p className="text-xs text-gray-500">Create an Open Badges 3.0 credential</p>
+                            <h2 className="text-lg font-semibold text-gray-800">
+                                {showLibrary ? 'Saved Credentials' : 'Credential Builder'}
+                            </h2>
+
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                {showLibrary ? (
+                                    <span>{savedCredentials.length} saved credential{savedCredentials.length !== 1 ? 's' : ''}</span>
+                                ) : (
+                                    <>
+                                        {currentCredName ? (
+                                            <span className="text-cyan-600 font-medium">{currentCredName}</span>
+                                        ) : (
+                                            <span>New credential</span>
+                                        )}
+
+                                        {draftSavedAt && !currentCredentialId && (
+                                            <span className="flex items-center gap-1 text-emerald-600">
+                                                <Clock className="w-3 h-3" />
+                                                Draft saved {formatRelativeTime(draftSavedAt)}
+                                            </span>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                        <X className="w-5 h-5 text-gray-500" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {!showLibrary && (
+                            <button
+                                onClick={() => setShowLibrary(true)}
+                                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <FolderOpen className="w-4 h-4" />
+                                Library
+                                {savedCredentials.length > 0 && (
+                                    <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs font-medium">
+                                        {savedCredentials.length}
+                                    </span>
+                                )}
+                            </button>
+                        )}
+
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                            <X className="w-5 h-5 text-gray-500" />
+                        </button>
+                    </div>
                 </div>
 
-                {/* Tabs */}
+                {/* Library Panel */}
+                {showLibrary ? (
+                    <div className="flex-1 overflow-y-auto p-4">
+                        <div className="space-y-4">
+                            {/* New Credential Button */}
+                            <button
+                                onClick={handleNewCredential}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors"
+                            >
+                                <Plus className="w-5 h-5" />
+                                Create New Credential
+                            </button>
+
+                            {/* Saved Credentials List */}
+                            {savedCredentials.length > 0 ? (
+                                <div className="space-y-2">
+                                    {savedCredentials.map((cred) => (
+                                        <div
+                                            key={cred.id}
+                                            className={`p-4 border rounded-xl transition-colors ${
+                                                currentCredentialId === cred.id
+                                                    ? 'border-cyan-300 bg-cyan-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                    {cred.data.achievementImage ? (
+                                                        <img
+                                                            src={cred.data.achievementImage}
+                                                            alt=""
+                                                            className="w-8 h-8 rounded object-cover"
+                                                        />
+                                                    ) : (
+                                                        <Award className="w-5 h-5 text-cyan-600" />
+                                                    )}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-medium text-gray-800 truncate">{cred.name}</h4>
+
+                                                    <p className="text-xs text-gray-500 truncate">
+                                                        {cred.data.achievementType} • Updated {formatRelativeTime(cred.updatedAt)}
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => handleLoadCredential(cred)}
+                                                        className="px-3 py-1.5 text-sm text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                                                    >
+                                                        {currentCredentialId === cred.id ? 'Editing' : 'Load'}
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => handleDeleteCredential(cred.id)}
+                                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-8 text-center">
+                                    <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+
+                                    <p className="text-gray-600 mb-1">No saved credentials yet</p>
+
+                                    <p className="text-sm text-gray-500">
+                                        Save your credentials to quickly reuse them later
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Tabs */}
                 <div className="flex border-b border-gray-200">
                     <button
                         onClick={() => setActiveTab('build')}
@@ -635,12 +1000,59 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                 {credentialJson}
                             </pre>
 
-                            <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
-                                <p className="text-xs text-cyan-800">
-                                    <strong>Note:</strong> The <code className="bg-cyan-100 px-1 rounded">issuer</code> and{' '}
-                                    <code className="bg-cyan-100 px-1 rounded">credentialSubject.id</code> fields will be 
-                                    automatically added when you issue this credential.
-                                </p>
+                            {/* Verification Section */}
+                            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                            <ShieldCheck className="w-4 h-4 text-gray-500" />
+                                            Verify Credential Structure
+                                        </h4>
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                            Test that this credential can be issued as valid OBv3
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={handleVerify}
+                                        disabled={!isValid || verificationStatus === 'verifying'}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors disabled:opacity-50"
+                                    >
+                                        {verificationStatus === 'verifying' ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Verifying...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ShieldCheck className="w-4 h-4" />
+                                                Verify
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {verificationStatus === 'valid' && (
+                                    <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                        <div>
+                                            <p className="text-sm font-medium text-emerald-800">Valid OBv3 Credential</p>
+                                            <p className="text-xs text-emerald-600">This credential structure passed JSON-LD expansion and can be issued.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {verificationStatus === 'invalid' && (
+                                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <AlertCircle className="w-5 h-5 text-red-600" />
+                                            <p className="text-sm font-medium text-red-800">Invalid Credential Structure</p>
+                                        </div>
+                                        <p className="text-xs text-red-600 font-mono bg-red-100 p-2 rounded mt-2 overflow-x-auto">
+                                            {verificationError}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -648,17 +1060,69 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
 
                 {/* Footer */}
                 <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
-                    <button
-                        onClick={handleCopy}
-                        className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                    >
-                        {copied ? (
-                            <Check className="w-4 h-4 text-green-500" />
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleCopy}
+                            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                            {copied ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                            ) : (
+                                <Copy className="w-4 h-4" />
+                            )}
+                            Copy JSON
+                        </button>
+
+                        {/* Save to Library */}
+                        {showSaveAs ? (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={saveAsName}
+                                    onChange={(e) => setSaveAsName(e.target.value)}
+                                    placeholder={data.achievementName || 'Credential name'}
+                                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSaveToLibrary(saveAsName || undefined);
+                                        if (e.key === 'Escape') {
+                                            setShowSaveAs(false);
+                                            setSaveAsName('');
+                                        }
+                                    }}
+                                />
+
+                                <button
+                                    onClick={() => handleSaveToLibrary(saveAsName || undefined)}
+                                    className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors"
+                                >
+                                    Save
+                                </button>
+
+                                <button
+                                    onClick={() => { setShowSaveAs(false); setSaveAsName(''); }}
+                                    className="px-3 py-1.5 text-gray-600 hover:bg-gray-200 rounded-lg text-sm transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
                         ) : (
-                            <Copy className="w-4 h-4" />
+                            <button
+                                onClick={() => {
+                                    if (currentCredentialId) {
+                                        handleSaveToLibrary();
+                                    } else {
+                                        setShowSaveAs(true);
+                                    }
+                                }}
+                                disabled={!isValid}
+                                className="flex items-center gap-2 px-4 py-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                <Save className="w-4 h-4" />
+                                {currentCredentialId ? 'Save' : 'Save to Library'}
+                            </button>
                         )}
-                        Copy JSON
-                    </button>
+                    </div>
 
                     <div className="flex items-center gap-3">
                         <button
@@ -677,6 +1141,8 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                         </button>
                     </div>
                 </div>
+                </>
+                )}
             </div>
         </div>
     );
