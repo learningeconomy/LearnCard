@@ -40,6 +40,10 @@ Copy Functions:
   
 Special Variables:
   _                       - Contains the last command result
+
+LC URIs:
+  URIs like lc:network:... are highlighted and clickable.
+  Click any LC URI to copy it to clipboard.
   
 JavaScript Execution:
   Any valid JavaScript expression will be evaluated.
@@ -50,6 +54,9 @@ JavaScript Execution:
     await learnCard.invoke.getTestVc()
     copy(await learnCard.invoke.getProfile())
 `;
+
+// Regex to match LearnCard URIs like lc:network:..., lc:boost:..., etc.
+const LC_URI_REGEX = /lc:[a-zA-Z0-9]+:[^\s"',}\]]+/g;
 
 const formatOutput = (value: unknown): string => {
     if (value === undefined) return 'undefined';
@@ -64,6 +71,14 @@ const formatOutput = (value: unknown): string => {
     } catch {
         return String(value);
     }
+};
+
+// Highlight LC URIs in text with cyan color and underline
+const highlightLcUris = (text: string): string => {
+    return text.replace(LC_URI_REGEX, (match) => {
+        // Cyan color (36), underline (4), then reset (0)
+        return `\x1b[36;4m${match}\x1b[0m`;
+    });
 };
 
 const DevCli: React.FC = () => {
@@ -111,7 +126,34 @@ const DevCli: React.FC = () => {
 
             lines.forEach((line, i) => {
                 if (i > 0) term.write('\r\n');
-                term.write(`\x1b[${colorCode}m${line}\x1b[0m`);
+
+                // Check if line contains LC URIs
+                if (LC_URI_REGEX.test(line)) {
+                    // Reset regex lastIndex
+                    LC_URI_REGEX.lastIndex = 0;
+
+                    // Split line by LC URIs and highlight them
+                    let lastIndex = 0;
+                    let match;
+
+                    while ((match = LC_URI_REGEX.exec(line)) !== null) {
+                        // Write text before the URI
+                        if (match.index > lastIndex) {
+                            term.write(`\x1b[${colorCode}m${line.slice(lastIndex, match.index)}\x1b[0m`);
+                        }
+
+                        // Write the URI with cyan color and underline
+                        term.write(`\x1b[36;4m${match[0]}\x1b[0m`);
+                        lastIndex = match.index + match[0].length;
+                    }
+
+                    // Write remaining text after last URI
+                    if (lastIndex < line.length) {
+                        term.write(`\x1b[${colorCode}m${line.slice(lastIndex)}\x1b[0m`);
+                    }
+                } else {
+                    term.write(`\x1b[${colorCode}m${line}\x1b[0m`);
+                }
             });
         }
     }, []);
@@ -269,6 +311,50 @@ const DevCli: React.FC = () => {
 
         terminalInstanceRef.current = term;
         fitAddonRef.current = fitAddon;
+
+        // Register LC URI link provider for click-to-copy
+        term.registerLinkProvider({
+            provideLinks: (bufferLineNumber, callback) => {
+                const line = term.buffer.active.getLine(bufferLineNumber - 1);
+
+                if (!line) {
+                    callback(undefined);
+                    return;
+                }
+
+                const lineText = line.translateToString();
+                const links: Array<{
+                    range: { start: { x: number; y: number }; end: { x: number; y: number } };
+                    text: string;
+                    activate: () => void;
+                }> = [];
+
+                // Reset regex
+                LC_URI_REGEX.lastIndex = 0;
+                let match;
+
+                while ((match = LC_URI_REGEX.exec(lineText)) !== null) {
+                    const uri = match[0];
+                    const startX = match.index + 1; // 1-indexed
+
+                    links.push({
+                        range: {
+                            start: { x: startX, y: bufferLineNumber },
+                            end: { x: startX + uri.length, y: bufferLineNumber },
+                        },
+                        text: uri,
+                        activate: () => {
+                            navigator.clipboard.writeText(uri).then(() => {
+                                setCopyNotification(`Copied: ${uri.slice(0, 40)}${uri.length > 40 ? '...' : ''}`);
+                                setTimeout(() => setCopyNotification(null), 2000);
+                            });
+                        },
+                    });
+                }
+
+                callback(links.length > 0 ? links : undefined);
+            },
+        });
 
         // Handle resize
         const handleResize = () => {
