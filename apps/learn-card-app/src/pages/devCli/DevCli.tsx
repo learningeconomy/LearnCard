@@ -11,18 +11,17 @@ import * as types from '@learncard/types';
 import CommandSidebar from './CommandSidebar';
 
 const WELCOME_MESSAGE = `
-
 Welcome to the LearnCard Browser CLI!
 
 Variables available:
   learnCard   - Your LearnCard wallet instance
   types       - Zod validators from @learncard/types
+  _           - Last command result
 
 Example commands:
   learnCard.id.did()
   await learnCard.invoke.getTestVc()
-  await learnCard.invoke.issueCredential(await learnCard.invoke.getTestVc())
-  await learnCard.invoke.verifyCredential(vc)
+  copy(_)     - Copy last result to clipboard
 
 Type 'help' for more commands.
 `;
@@ -34,6 +33,13 @@ Available Commands:
   did                     - Show your DID
   profile                 - Show your profile
   credentials             - List credential categories
+
+Copy Functions:
+  copy(value)             - Copy any value to clipboard
+  copy(_)                 - Copy last result to clipboard
+  
+Special Variables:
+  _                       - Contains the last command result
   
 JavaScript Execution:
   Any valid JavaScript expression will be evaluated.
@@ -42,10 +48,7 @@ JavaScript Execution:
   Examples:
     learnCard.id.did()
     await learnCard.invoke.getTestVc()
-    await learnCard.invoke.issueCredential(uvc)
-    await learnCard.invoke.verifyCredential(vc)
-    await learnCard.invoke.getProfile()
-    types.VCValidator.safeParse(vc)
+    copy(await learnCard.invoke.getProfile())
 `;
 
 const formatOutput = (value: unknown): string => {
@@ -71,10 +74,25 @@ const DevCli: React.FC = () => {
     const commandBufferRef = useRef<string>('');
     const historyRef = useRef<string[]>([]);
     const historyIndexRef = useRef<number>(-1);
+    const lastResultRef = useRef<unknown>(undefined);
 
     const [isReady, setIsReady] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [copyNotification, setCopyNotification] = useState<string | null>(null);
     const { initWallet } = useWallet();
+
+    const copyToClipboard = useCallback(async (value: unknown): Promise<string> => {
+        const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopyNotification('Copied to clipboard!');
+            setTimeout(() => setCopyNotification(null), 2000);
+            return `Copied ${text.length} characters to clipboard`;
+        } catch (err) {
+            throw new Error('Failed to copy to clipboard');
+        }
+    }, []);
 
     const writePrompt = useCallback(() => {
         const term = terminalInstanceRef.current;
@@ -178,16 +196,23 @@ const DevCli: React.FC = () => {
 
         // Execute as JavaScript
         try {
-            // Create a function that has access to learnCard and types
+            // Create a function that has access to learnCard, types, copy, and _
             const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
             const fn = new AsyncFunction(
                 'learnCard',
                 'types',
+                'copy',
+                '_',
                 `return (${trimmedCommand})`
             );
 
-            const result = await fn(learnCard, types);
+            const result = await fn(learnCard, types, copyToClipboard, lastResultRef.current);
+
+            // Store result for next command (unless it's a copy result message)
+            if (typeof result !== 'string' || !result.startsWith('Copied ')) {
+                lastResultRef.current = result;
+            }
 
             term.write('\r\n');
             writeLine(formatOutput(result), '32');
@@ -197,7 +222,7 @@ const DevCli: React.FC = () => {
         }
 
         writePrompt();
-    }, [writeLine, writePrompt]);
+    }, [writeLine, writePrompt, copyToClipboard]);
 
     // Initialize terminal
     useEffect(() => {
@@ -420,18 +445,26 @@ const DevCli: React.FC = () => {
                         onToggle={() => setSidebarOpen(!sidebarOpen)}
                     />
 
-                    <div
-                        ref={terminalRef}
-                        className="dev-cli-terminal"
-                        style={{
-                            flex: 1,
-                            height: '100%',
-                            backgroundColor: '#1a1a2e',
-                            padding: '8px',
-                            letterSpacing: 'normal',
-                            minWidth: 0,
-                        }}
-                    />
+                    <div className="terminal-wrapper">
+                        <div
+                            ref={terminalRef}
+                            className="dev-cli-terminal"
+                            style={{
+                                flex: 1,
+                                height: '100%',
+                                backgroundColor: '#1a1a2e',
+                                padding: '8px',
+                                letterSpacing: 'normal',
+                                minWidth: 0,
+                            }}
+                        />
+
+                        {copyNotification && (
+                            <div className="copy-notification">
+                                <span>✓</span> {copyNotification}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <style>{`
@@ -439,6 +472,47 @@ const DevCli: React.FC = () => {
                         display: flex;
                         height: 100%;
                         overflow: hidden;
+                    }
+
+                    .terminal-wrapper {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        position: relative;
+                        min-width: 0;
+                    }
+
+                    .copy-notification {
+                        position: absolute;
+                        top: 16px;
+                        right: 16px;
+                        padding: 10px 16px;
+                        background: linear-gradient(135deg, rgba(74, 222, 128, 0.9) 0%, rgba(34, 197, 94, 0.9) 100%);
+                        color: #000;
+                        border-radius: 8px;
+                        font-size: 13px;
+                        font-weight: 500;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                        animation: slideIn 0.2s ease-out;
+                        z-index: 1000;
+                    }
+
+                    .copy-notification span {
+                        font-weight: 700;
+                    }
+
+                    @keyframes slideIn {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-10px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
                     }
 
                     .dev-cli-terminal,
