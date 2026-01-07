@@ -28,12 +28,10 @@ custom:
         CACHE_INSTANCE_SIZE: ${env:SERVERLESS_CACHE_INSTANCE_SIZE, 'cache.t2.micro'}
     esbuild:
         packager: pnpm
-        packagerOptions:
-            noFrozenLockfile: true
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '@learncard/didkit-plugin-node', 'p-limit']
+        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node', 'p-limit']
         sourcemap: external
         target: 'node20'
         watch:

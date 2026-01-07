@@ -17,10 +17,8 @@ custom:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
       packager: pnpm
-      packagerOptions:
-        noFrozenLockfile: true
       plugins: esbuildPlugins.cjs
-      external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '@learncard/didkit-plugin-node']
+      external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
       sourcemap: external
       watch:
         pattern: ['src/**/*.ts', 'dids.ts']

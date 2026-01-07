@@ -20,8 +20,6 @@ custom:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
         packager: pnpm
-        packagerOptions:
-            noFrozenLockfile: true
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
