@@ -10,6 +10,10 @@ export type AiPathwayCareer = {
         workLifeBalanceScore: number;
     };
     jobsCount: number;
+    qualifications: {
+        education: string;
+        experience: string;
+    };
 };
 
 export const getSalaryStats = (salaries: { bucket: number; value: number }[]) => {
@@ -70,6 +74,10 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
             workLifeBalanceScore: 70,
         },
         jobsCount: 32500,
+        qualifications: {
+            education: "Bachelor's degree in Computer Science, Statistics, or related field",
+            experience: '2-3 years of data analysis experience',
+        },
     },
     {
         id: 2,
@@ -116,6 +124,10 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
             workLifeBalanceScore: 50,
         },
         jobsCount: 27000,
+        qualifications: {
+            education: "Bachelor's degree in Business, Marketing, or related field",
+            experience: '3-5 years of account management or sales experience',
+        },
     },
     {
         id: 3,
@@ -162,5 +174,9 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
             workLifeBalanceScore: 80,
         },
         jobsCount: 35000,
+        qualifications: {
+            education: "Bachelor's degree in Business, Communications, or related field",
+            experience: '2-4 years of customer service or account management experience',
+        },
     },
 ];

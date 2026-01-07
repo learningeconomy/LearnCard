@@ -5,6 +5,7 @@ import AiPathwayCareerHeader from './AiPathwayCareerHeader';
 import AiPathwayCareerSkills from './AiPathwayCareerSkills';
 import AiPathwayCareerSalaries from './AiPathwayCareerSalaries';
 import AiPathwayCareerJobGrowthInfo from './AiPathwayCareersJobGrowthInfo';
+import AiPathwayCareerQualifications from './AiPathwayCareerQualifications';
 import AiPathwayCareerQualitativeInsights from './AiPathwayCareerQualitativeInsights';
 
 import { useModal } from 'learn-card-base';
@@ -30,6 +31,8 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
                     <AiPathwayCareerQualitativeInsights career={career} />
 
                     <AiPathwayCareerJobGrowthInfo career={career} />
+
+                    <AiPathwayCareerQualifications career={career} />
                 </div>
                 <IonFooter
                     mode="ios"
