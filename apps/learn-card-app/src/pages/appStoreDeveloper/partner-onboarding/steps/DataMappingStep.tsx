@@ -469,6 +469,70 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const [apiIsPolling, setApiIsPolling] = useState(false);
     const [apiPollResult, setApiPollResult] = useState<{ success: boolean; message: string } | null>(null);
     const [apiCopied, setApiCopied] = useState(false);
+    const [apiCopiedUri, setApiCopiedUri] = useState<string | null>(null);
+    const [apiCopiedConfig, setApiCopiedConfig] = useState(false);
+    const [apiViewMode, setApiViewMode] = useState<'reference' | 'example'>('reference');
+
+    // Generate a config object mapping template names/IDs to their boost URIs
+    const generateBoostConfig = useCallback(() => {
+        const config: Record<string, { uri: string; name: string; variables: string[] }> = {};
+
+        const toKey = (name: string) => name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_|_$/g, '');
+
+        issuableTemplates.forEach(template => {
+            if (template.boostUri) {
+                const key = toKey(template.name);
+                let vars: string[] = [];
+
+                if (template.obv3Template) {
+                    try {
+                        vars = extractDynamicVariables(template.obv3Template as OBv3CredentialTemplate);
+                    } catch (e) {
+                        // fallback to fields
+                    }
+                }
+
+                if (vars.length === 0 && template.fields?.length) {
+                    vars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
+                }
+
+                config[key] = {
+                    uri: template.boostUri,
+                    name: template.name,
+                    variables: vars,
+                };
+            }
+        });
+
+        return config;
+    }, [issuableTemplates]);
+
+    const handleCopyUri = async (uri: string) => {
+        await Clipboard.write({ string: uri });
+        setApiCopiedUri(uri);
+        setTimeout(() => setApiCopiedUri(null), 2000);
+    };
+
+    const handleCopyAllConfig = async () => {
+        const config = generateBoostConfig();
+        const configCode = `// Boost Templates Configuration
+// Generated from LearnCard Partner Dashboard
+
+const BOOST_TEMPLATES = ${JSON.stringify(config, null, 2)};
+
+// Usage example:
+// const template = BOOST_TEMPLATES['course_key'];
+// await learnCard.invoke.send({ templateUri: template.uri, ... });
+
+export default BOOST_TEMPLATES;`;
+
+        await Clipboard.write({ string: configCode });
+        setApiCopiedConfig(true);
+        setTimeout(() => setApiCopiedConfig(false), 2000);
+    };
 
     // Generate smart default value based on variable name
     const getSmartDefault = (varName: string): string => {
@@ -597,70 +661,123 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const generateApiCodeSnippet = () => {
         const template = selectedApiTemplate;
         const boostUri = template?.boostUri || 'urn:lc:boost:your_template_id';
+        const apiKey = project?.apiKey || 'YOUR_API_KEY';
 
         // Generate templateData from fields
         const templateDataCode = generateTemplateDataCode(template);
 
-        // Build options object for advanced options
-        let optionsCode = '';
+        // Check if sending to email (Universal Inbox) or profile ID
+        const isEmailRecipient = apiRecipientEmail && apiRecipientEmail.includes('@');
 
-        if (apiHasAdvancedOptions) {
-            const optionsParts: string[] = [];
+        if (isEmailRecipient) {
+            // Email recipient - use sendCredentialViaInbox API
+            // Build configuration object for delivery options
+            let configCode = '';
+            const configParts: string[] = [];
 
             if (apiAdvancedOptions.webhookUrl) {
-                optionsParts.push(`        webhookUrl: '${apiAdvancedOptions.webhookUrl}',`);
+                configParts.push(`            webhookUrl: '${apiAdvancedOptions.webhookUrl}',`);
             }
 
             if (apiAdvancedOptions.suppressDelivery) {
-                optionsParts.push(`        suppressDelivery: true,`);
+                configParts.push(`            delivery: { suppress: true },`);
+            } else if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || apiAdvancedOptions.recipientName) {
+                const modelParts: string[] = [];
+
+                if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl) {
+                    const issuerParts: string[] = [];
+                    if (apiAdvancedOptions.issuerName) issuerParts.push(`name: '${apiAdvancedOptions.issuerName}'`);
+                    if (apiAdvancedOptions.issuerLogoUrl) issuerParts.push(`logoUrl: '${apiAdvancedOptions.issuerLogoUrl}'`);
+                    modelParts.push(`                    issuer: { ${issuerParts.join(', ')} },`);
+                }
+
+                if (apiAdvancedOptions.recipientName) {
+                    modelParts.push(`                    recipient: { name: '${apiAdvancedOptions.recipientName}' },`);
+                }
+
+                configParts.push(`            delivery: {
+                template: {
+                    model: {
+${modelParts.join('\n')}
+                    },
+                },
+            },`);
             }
 
-            if (optionsParts.length > 0) {
-                optionsCode = `
-    options: {
-${optionsParts.join('\n')}
-    },`;
+            if (configParts.length > 0) {
+                configCode = `
+        configuration: {
+${configParts.join('\n')}
+        },`;
             }
-        }
 
-        // Unified send API - works with both email and profile recipients
-        const recipientCode = apiRecipientEmail 
-            ? `'${apiRecipientEmail}'` 
-            : `'recipient-profile-id' // or email like 'user@example.com'`;
+            return `// Installation: npm install @learncard/init
 
-        return `import { initLearnCard } from '@learncard/init';
+import { initLearnCard } from '@learncard/init';
 
-const learnCard = await initLearnCard({ 
-    seed: process.env.LEARNCARD_SEED,
-    network: true 
+// Initialize with your API key (from Project Setup)
+const learnCard = await initLearnCard({
+    network: {
+        apiToken: process.env.LEARNCARD_API_KEY, // ${apiKey.slice(0, 8)}...
+    },
 });
 
-// Your data from webhook, API, or database
-const yourData = {
-    // Map your source fields here
-    user: { name: 'John Doe', email: 'john@example.com' },
-    completion: { date: '2024-01-15', score: 95 },
+// Fetch the boost template and render with your data
+const boostCredential = await learnCard.invoke.resolveFromLCN('${boostUri}');
+
+// Apply template data using Mustache rendering
+const Mustache = require('mustache');
+const templateData = {
+${templateDataCode}
 };
 
-// Send credential using the unified send API
-// Works with email (Universal Inbox) or profile ID/DID
+const renderedCredential = JSON.parse(
+    Mustache.render(JSON.stringify(boostCredential), templateData)
+);
+
+// Send to email recipient via Universal Inbox
+const result = await learnCard.invoke.sendCredentialViaInbox({
+    recipient: { email: '${apiRecipientEmail}' },
+    credential: renderedCredential,${configCode}
+});
+
+console.log('Issuance ID:', result.issuanceId);
+console.log('Status:', result.status); // 'pending' until claimed
+// Recipient will receive an email with a link to claim their credential`;
+        } else {
+            // Profile ID recipient - use send API
+            let optionsCode = '';
+
+            if (apiHasAdvancedOptions && apiAdvancedOptions.webhookUrl) {
+                optionsCode = `
+    // webhookUrl: '${apiAdvancedOptions.webhookUrl}', // Note: webhooks not yet supported for direct send`;
+            }
+
+            return `// Installation: npm install @learncard/init
+
+import { initLearnCard } from '@learncard/init';
+
+// Initialize with your API key (from Project Setup)
+const learnCard = await initLearnCard({
+    network: {
+        apiToken: process.env.LEARNCARD_API_KEY, // ${apiKey.slice(0, 8)}...
+    },
+});
+
+// Send boost to a LearnCard user by profile ID
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: ${recipientCode},
+    recipient: 'recipient-profile-id', // The recipient's LearnCard profile ID
     templateUri: '${boostUri}',
     templateData: {
 ${templateDataCode}
     },${optionsCode}
 });
 
-// For email recipients, you'll get a claim URL
-if (result.inbox) {
-    console.log('Claim URL:', result.inbox.claimUrl);
-    console.log('Status:', result.inbox.status);
-} else {
-    // For existing users, credential is sent directly
-    console.log('Credential URI:', result.credentialUri);
-}`;
+console.log('Credential URI:', result.credentialUri);
+console.log('Boost URI:', result.uri);
+// Credential is sent directly to the user's LearnCard wallet`;
+        }
     };
 
     const handleCopyApiCode = async () => {
@@ -715,77 +832,243 @@ if (result.inbox) {
     if (integrationMethod === 'api') {
         return (
             <div className="space-y-6">
-                <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
-                    <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                {/* View Mode Toggle */}
+                <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+                    <button
+                        onClick={() => setApiViewMode('reference')}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            apiViewMode === 'reference'
+                                ? 'bg-white text-gray-800 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <FileStack className="w-4 h-4" />
+                        Boost URIs Reference
+                    </button>
 
-                    <div className="text-sm text-violet-800">
-                        <p className="font-medium mb-1">API Integration</p>
-                        <p>
-                            Use the LearnCard SDK to issue credentials programmatically. 
-                            Configure your templates below and copy the code to your application.
-                        </p>
-                    </div>
+                    <button
+                        onClick={() => setApiViewMode('example')}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            apiViewMode === 'example'
+                                ? 'bg-white text-gray-800 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <Code className="w-4 h-4" />
+                        Code Example
+                    </button>
                 </div>
 
-                {/* Template Selector - organized by master templates */}
-                {issuableTemplates.length > 0 && (
-                    <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-700">
-                            Select Course Boost to Issue
-                        </label>
+                {/* Reference View - All Boost URIs */}
+                {apiViewMode === 'reference' && (
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
+                            <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-violet-800">
+                                <p className="font-medium mb-1">Your Boost Template URIs</p>
+                                <p>
+                                    Copy individual URIs or export all as a config file for your codebase.
+                                </p>
+                            </div>
+                        </div>
 
-                        {/* Master Templates with Children */}
-                        {masterTemplates.map(master => (
-                            <div key={master.id} className="border-2 border-violet-200 rounded-xl overflow-hidden">
-                                <div className="flex items-center gap-3 p-3 bg-violet-50">
-                                    <FileStack className="w-5 h-5 text-violet-600" />
-                                    <div className="flex-1">
-                                        <p className="font-medium text-violet-800">{master.name}</p>
-                                        <p className="text-xs text-violet-600">
-                                            {master.childTemplates?.length} course boosts • Select one to issue
-                                        </p>
+                        {/* Copy All Config Button */}
+                        <button
+                            onClick={handleCopyAllConfig}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 transition-all"
+                        >
+                            {apiCopiedConfig ? (
+                                <>
+                                    <Check className="w-4 h-4" />
+                                    Copied Config!
+                                </>
+                            ) : (
+                                <>
+                                    <Download className="w-4 h-4" />
+                                    Copy All as Config ({issuableTemplates.filter(t => t.boostUri).length} templates)
+                                </>
+                            )}
+                        </button>
+
+                        {/* All Templates List */}
+                        <div className="space-y-3">
+                            {masterTemplates.map(master => (
+                                <div key={master.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
+                                        <FileStack className="w-4 h-4 text-violet-600" />
+                                        <span className="font-medium text-gray-700">{master.name}</span>
+                                        <span className="text-xs text-gray-500">
+                                            {master.childTemplates?.filter(c => c.boostUri).length} boosts
+                                        </span>
+                                    </div>
+
+                                    <div className="divide-y divide-gray-100">
+                                        {master.childTemplates?.map(child => (
+                                            <div key={child.id} className="p-3 hover:bg-gray-50">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-gray-800 truncate">{child.name}</p>
+                                                        {child.boostUri ? (
+                                                            <code className="text-xs text-gray-500 font-mono break-all">
+                                                                {child.boostUri}
+                                                            </code>
+                                                        ) : (
+                                                            <span className="text-xs text-amber-600">Not saved yet</span>
+                                                        )}
+                                                    </div>
+
+                                                    {child.boostUri && (
+                                                        <button
+                                                            onClick={() => handleCopyUri(child.boostUri!)}
+                                                            className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                        >
+                                                            {apiCopiedUri === child.boostUri ? (
+                                                                <Check className="w-4 h-4 text-emerald-500" />
+                                                            ) : (
+                                                                <Copy className="w-4 h-4" />
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
+                            ))}
 
-                                <div className="p-2 bg-white max-h-48 overflow-y-auto space-y-1">
-                                    {master.childTemplates?.map(child => (
-                                        <button
-                                            key={child.id}
-                                            onClick={() => setApiSelectedTemplate(child.id)}
-                                            className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all ${
-                                                apiSelectedTemplate === child.id
-                                                    ? 'bg-cyan-50 border-2 border-cyan-500'
-                                                    : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
-                                            }`}
-                                        >
-                                            <Award className={`w-4 h-4 ${
-                                                apiSelectedTemplate === child.id ? 'text-cyan-600' : 'text-gray-400'
-                                            }`} />
+                            {/* Standalone Templates */}
+                            {issuableTemplates.filter(t => !t.parentTemplateId).length > 0 && (
+                                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                    {masterTemplates.length > 0 && (
+                                        <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
+                                            <Award className="w-4 h-4 text-gray-500" />
+                                            <span className="font-medium text-gray-700">Other Templates</span>
+                                        </div>
+                                    )}
 
-                                            <div className="flex-1 text-left min-w-0">
-                                                <p className={`font-medium truncate ${
-                                                    apiSelectedTemplate === child.id ? 'text-cyan-800' : 'text-gray-700'
-                                                }`}>
-                                                    {child.name}
-                                                </p>
+                                    <div className="divide-y divide-gray-100">
+                                        {issuableTemplates.filter(t => !t.parentTemplateId).map(template => (
+                                            <div key={template.id} className="p-3 hover:bg-gray-50">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-gray-800 truncate">{template.name}</p>
+                                                        {template.boostUri ? (
+                                                            <code className="text-xs text-gray-500 font-mono break-all">
+                                                                {template.boostUri}
+                                                            </code>
+                                                        ) : (
+                                                            <span className="text-xs text-amber-600">Not saved yet</span>
+                                                        )}
+                                                    </div>
+
+                                                    {template.boostUri && (
+                                                        <button
+                                                            onClick={() => handleCopyUri(template.boostUri!)}
+                                                            className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                        >
+                                                            {apiCopiedUri === template.boostUri ? (
+                                                                <Check className="w-4 h-4 text-emerald-500" />
+                                                            ) : (
+                                                                <Copy className="w-4 h-4" />
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
-                                            {child.boostUri && (
-                                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
-                                                    Saved
-                                                </span>
-                                            )}
-
-                                            {apiSelectedTemplate === child.id && (
-                                                <CheckCircle2 className="w-4 h-4 text-cyan-600 flex-shrink-0" />
-                                            )}
-                                        </button>
-                                    ))}
+                        {/* API Key Reference */}
+                        {project?.apiKey && (
+                            <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm">
+                                    <p className="font-medium text-amber-800">Your API Key</p>
+                                    <p className="text-xs text-amber-700 mt-0.5">
+                                        Set <code className="bg-amber-100 px-1 rounded">LEARNCARD_API_KEY</code> in your environment to: 
+                                        <code className="bg-amber-100 px-1 rounded ml-1 font-mono">{project.apiKey.slice(0, 12)}...</code>
+                                    </p>
                                 </div>
                             </div>
-                        ))}
+                        )}
+                    </div>
+                )}
 
-                        {/* Standalone Templates (not part of a master) */}
+                {/* Example View - Code Generator */}
+                {apiViewMode === 'example' && (
+                    <>
+                        <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
+                            <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-violet-800">
+                                <p className="font-medium mb-1">Code Example Generator</p>
+                                <p>
+                                    Select a template to generate example code. Use the Reference tab to get all URIs.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Template Selector - organized by master templates */}
+                        {issuableTemplates.length > 0 && (
+                            <div className="space-y-3">
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Select Template for Example
+                                </label>
+
+                                {/* Master Templates with Children */}
+                                {masterTemplates.map(master => (
+                                    <div key={master.id} className="border-2 border-violet-200 rounded-xl overflow-hidden">
+                                        <div className="flex items-center gap-3 p-3 bg-violet-50">
+                                            <FileStack className="w-5 h-5 text-violet-600" />
+                                            <div className="flex-1">
+                                                <p className="font-medium text-violet-800">{master.name}</p>
+                                                <p className="text-xs text-violet-600">
+                                                    {master.childTemplates?.length} course boosts
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-2 bg-white max-h-48 overflow-y-auto space-y-1">
+                                            {master.childTemplates?.map(child => (
+                                                <button
+                                                    key={child.id}
+                                                    onClick={() => setApiSelectedTemplate(child.id)}
+                                                    className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all ${
+                                                        apiSelectedTemplate === child.id
+                                                            ? 'bg-cyan-50 border-2 border-cyan-500'
+                                                            : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    <Award className={`w-4 h-4 ${
+                                                        apiSelectedTemplate === child.id ? 'text-cyan-600' : 'text-gray-400'
+                                                    }`} />
+
+                                                    <div className="flex-1 text-left min-w-0">
+                                                        <p className={`font-medium truncate ${
+                                                            apiSelectedTemplate === child.id ? 'text-cyan-800' : 'text-gray-700'
+                                                        }`}>
+                                                            {child.name}
+                                                        </p>
+                                                    </div>
+
+                                                    {child.boostUri && (
+                                                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
+                                                            Saved
+                                                        </span>
+                                                    )}
+
+                                                    {apiSelectedTemplate === child.id && (
+                                                        <CheckCircle2 className="w-4 h-4 text-cyan-600 flex-shrink-0" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Standalone Templates (not part of a master) */}
                         {issuableTemplates.filter(t => !t.parentTemplateId).length > 0 && (
                             <div className="space-y-2">
                                 {masterTemplates.length > 0 && (
@@ -889,25 +1172,70 @@ if (result.inbox) {
                     </div>
                 )}
 
-                {/* Recipient Email */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Recipient Email 
-                        <span className="text-gray-400 font-normal"> (optional)</span>
+                {/* Recipient Type Selection */}
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                        Recipient Type
                     </label>
 
-                    <input
-                        type="email"
-                        value={apiRecipientEmail}
-                        onChange={(e) => setApiRecipientEmail(e.target.value)}
-                        placeholder="recipient@example.com"
-                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => setApiRecipientEmail('')}
+                            className={`p-3 rounded-xl border-2 text-left transition-all ${
+                                !apiRecipientEmail 
+                                    ? 'border-cyan-500 bg-cyan-50' 
+                                    : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                        >
+                            <p className={`font-medium ${!apiRecipientEmail ? 'text-cyan-800' : 'text-gray-700'}`}>
+                                Profile ID
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Send to existing LearnCard users
+                            </p>
+                        </button>
 
-                    <p className="text-xs text-gray-500 mt-1">
-                        Enter an email to see the Universal Inbox code. Leave blank for send-to-profile code.
-                    </p>
+                        <button
+                            onClick={() => setApiRecipientEmail(apiRecipientEmail || 'recipient@example.com')}
+                            className={`p-3 rounded-xl border-2 text-left transition-all ${
+                                apiRecipientEmail 
+                                    ? 'border-cyan-500 bg-cyan-50' 
+                                    : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                        >
+                            <p className={`font-medium ${apiRecipientEmail ? 'text-cyan-800' : 'text-gray-700'}`}>
+                                Email (Universal Inbox)
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Send to anyone via email claim link
+                            </p>
+                        </button>
+                    </div>
+
+                    {apiRecipientEmail && (
+                        <input
+                            type="email"
+                            value={apiRecipientEmail}
+                            onChange={(e) => setApiRecipientEmail(e.target.value)}
+                            placeholder="recipient@example.com"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
+                    )}
                 </div>
+
+                {/* API Key Reference */}
+                {project?.apiKey && (
+                    <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                        <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm">
+                            <p className="font-medium text-amber-800">Your API Key</p>
+                            <p className="text-xs text-amber-700 mt-0.5">
+                                Set <code className="bg-amber-100 px-1 rounded">LEARNCARD_API_KEY</code> in your environment to: 
+                                <code className="bg-amber-100 px-1 rounded ml-1 font-mono">{project.apiKey.slice(0, 12)}...</code>
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Advanced Options Toggle */}
                 <button
@@ -1102,6 +1430,9 @@ if (result.inbox) {
                         </div>
                     </div>
                 </div>
+
+                    </>
+                )}
 
                 {/* Navigation */}
                 <div className="flex gap-3 pt-4 border-t border-gray-100">
