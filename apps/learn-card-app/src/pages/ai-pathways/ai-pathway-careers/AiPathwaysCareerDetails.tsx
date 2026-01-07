@@ -48,9 +48,6 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
                         >
                             Close
                         </button>
-                        <button className="p-[11px] bg-emerald-700 rounded-full text-white shadow-button-bottom flex-1 font-poppins text-[17px] font-semibold">
-                            Start
-                        </button>
                     </div>
                 </IonFooter>
             </div>
