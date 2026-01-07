@@ -98,8 +98,8 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                 </svg>
                 {/* SVG 2: Needle */}
                 <svg
-                    viewBox="0 0 260 140"
-                    className="absolute top-[25%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
+                    viewBox="0 0 260 160"
+                    className="absolute top-[35%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
                 >
                     {/* Needle */}
                     <line
