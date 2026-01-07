@@ -41,9 +41,10 @@ Copy Functions:
 Special Variables:
   _                       - Contains the last command result
 
-LC URIs:
-  URIs like lc:network:... are highlighted and clickable.
-  Click any LC URI to copy it to clipboard.
+Clickable Identifiers:
+  LC URIs (lc:...) are highlighted in cyan
+  DIDs (did:...) are highlighted in magenta
+  Click any identifier to copy it to clipboard.
   
 JavaScript Execution:
   Any valid JavaScript expression will be evaluated.
@@ -57,6 +58,12 @@ JavaScript Execution:
 
 // Regex to match LearnCard URIs like lc:network:..., lc:boost:..., etc.
 const LC_URI_REGEX = /lc:[a-zA-Z0-9]+:[^\s"',}\]]+/g;
+
+// Regex to match DIDs like did:web:..., did:key:..., did:pkh:..., etc.
+const DID_REGEX = /did:[a-zA-Z0-9]+:[^\s"',}\]]+/g;
+
+// Combined regex for clickable identifiers (LC URIs and DIDs)
+const CLICKABLE_ID_REGEX = /(lc:[a-zA-Z0-9]+:[^\s"',}\]]+|did:[a-zA-Z0-9]+:[^\s"',}\]]+)/g;
 
 const formatOutput = (value: unknown): string => {
     if (value === undefined) return 'undefined';
@@ -73,12 +80,11 @@ const formatOutput = (value: unknown): string => {
     }
 };
 
-// Highlight LC URIs in text with cyan color and underline
-const highlightLcUris = (text: string): string => {
-    return text.replace(LC_URI_REGEX, (match) => {
-        // Cyan color (36), underline (4), then reset (0)
-        return `\x1b[36;4m${match}\x1b[0m`;
-    });
+// Get highlight color for identifier type
+const getIdColor = (id: string): string => {
+    if (id.startsWith('lc:')) return '36'; // Cyan for LC URIs
+    if (id.startsWith('did:')) return '35'; // Magenta for DIDs
+    return '36';
 };
 
 const DevCli: React.FC = () => {
@@ -127,27 +133,30 @@ const DevCli: React.FC = () => {
             lines.forEach((line, i) => {
                 if (i > 0) term.write('\r\n');
 
-                // Check if line contains LC URIs
-                if (LC_URI_REGEX.test(line)) {
-                    // Reset regex lastIndex
-                    LC_URI_REGEX.lastIndex = 0;
+                // Check if line contains clickable identifiers (LC URIs or DIDs)
+                CLICKABLE_ID_REGEX.lastIndex = 0;
 
-                    // Split line by LC URIs and highlight them
+                if (CLICKABLE_ID_REGEX.test(line)) {
+                    // Reset regex lastIndex
+                    CLICKABLE_ID_REGEX.lastIndex = 0;
+
+                    // Split line by identifiers and highlight them
                     let lastIndex = 0;
                     let match;
 
-                    while ((match = LC_URI_REGEX.exec(line)) !== null) {
-                        // Write text before the URI
+                    while ((match = CLICKABLE_ID_REGEX.exec(line)) !== null) {
+                        // Write text before the identifier
                         if (match.index > lastIndex) {
                             term.write(`\x1b[${colorCode}m${line.slice(lastIndex, match.index)}\x1b[0m`);
                         }
 
-                        // Write the URI with cyan color and underline
-                        term.write(`\x1b[36;4m${match[0]}\x1b[0m`);
+                        // Write the identifier with appropriate color and underline
+                        const idColor = getIdColor(match[0]);
+                        term.write(`\x1b[${idColor};4m${match[0]}\x1b[0m`);
                         lastIndex = match.index + match[0].length;
                     }
 
-                    // Write remaining text after last URI
+                    // Write remaining text after last identifier
                     if (lastIndex < line.length) {
                         term.write(`\x1b[${colorCode}m${line.slice(lastIndex)}\x1b[0m`);
                     }
@@ -312,7 +321,7 @@ const DevCli: React.FC = () => {
         terminalInstanceRef.current = term;
         fitAddonRef.current = fitAddon;
 
-        // Register LC URI link provider for click-to-copy
+        // Register link provider for click-to-copy (LC URIs and DIDs)
         term.registerLinkProvider({
             provideLinks: (bufferLineNumber, callback) => {
                 const line = term.buffer.active.getLine(bufferLineNumber - 1);
@@ -330,22 +339,23 @@ const DevCli: React.FC = () => {
                 }> = [];
 
                 // Reset regex
-                LC_URI_REGEX.lastIndex = 0;
+                CLICKABLE_ID_REGEX.lastIndex = 0;
                 let match;
 
-                while ((match = LC_URI_REGEX.exec(lineText)) !== null) {
-                    const uri = match[0];
+                while ((match = CLICKABLE_ID_REGEX.exec(lineText)) !== null) {
+                    const id = match[0];
                     const startX = match.index + 1; // 1-indexed
+                    const label = id.startsWith('did:') ? 'DID' : 'URI';
 
                     links.push({
                         range: {
                             start: { x: startX, y: bufferLineNumber },
-                            end: { x: startX + uri.length, y: bufferLineNumber },
+                            end: { x: startX + id.length, y: bufferLineNumber },
                         },
-                        text: uri,
+                        text: id,
                         activate: () => {
-                            navigator.clipboard.writeText(uri).then(() => {
-                                setCopyNotification(`Copied: ${uri.slice(0, 40)}${uri.length > 40 ? '...' : ''}`);
+                            navigator.clipboard.writeText(id).then(() => {
+                                setCopyNotification(`Copied ${label}: ${id.slice(0, 35)}${id.length > 35 ? '...' : ''}`);
                                 setTimeout(() => setCopyNotification(null), 2000);
                             });
                         },
