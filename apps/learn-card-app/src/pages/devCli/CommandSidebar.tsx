@@ -100,44 +100,6 @@ const COMMANDS: CommandTemplate[] = [
         category: 'credentials',
     },
 
-    // Network
-    {
-        id: 'send-boost-template',
-        name: 'Send Boost (Template)',
-        description: 'Send a boost using an existing template URI',
-        template: `await learnCard.invoke.send({
-    type: 'boost',
-    recipient: '{{recipient}}',
-    templateUri: '{{templateUri}}'
-})`,
-        params: [
-            { name: 'recipient', type: 'string', placeholder: 'profile-id or DID', description: 'Recipient profile ID or DID', required: true },
-            { name: 'templateUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost template URI', required: true },
-        ],
-        category: 'network',
-    },
-    {
-        id: 'send-boost-new',
-        name: 'Send Boost (New)',
-        description: 'Create and send a new boost',
-        template: `await learnCard.invoke.send({
-    type: 'boost',
-    recipient: '{{recipient}}',
-    template: {
-        credential: {{credential}},
-        name: '{{name}}',
-        category: '{{category}}'
-    }
-})`,
-        params: [
-            { name: 'recipient', type: 'string', placeholder: 'profile-id', description: 'Recipient profile ID', required: true },
-            { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Unsigned credential', required: true },
-            { name: 'name', type: 'string', placeholder: 'Course Completion', description: 'Boost name', required: true },
-            { name: 'category', type: 'select', options: ['Achievement', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'Category', required: true },
-        ],
-        category: 'network',
-    },
-
     // Storage
     {
         id: 'store-credential',
@@ -188,10 +150,58 @@ const COMMANDS: CommandTemplate[] = [
         category: 'profiles',
     },
 
-    // Boosts
+    // Boosts - Creation
+    {
+        id: 'create-boost',
+        name: 'Create Boost',
+        description: 'Create a new boost template',
+        template: `await learnCard.invoke.createBoost({{credential}}, {
+    name: '{{name}}',
+    category: '{{category}}'
+})`,
+        params: [
+            { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Credential template', required: true },
+            { name: 'name', type: 'string', placeholder: 'My Boost', description: 'Boost name', required: true },
+            { name: 'category', type: 'select', options: ['Achievement', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'Category', required: true },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'create-child-boost',
+        name: 'Create Child Boost',
+        description: 'Create a boost as a child of an existing boost',
+        template: `await learnCard.invoke.createChildBoost('{{parentUri}}', {{credential}}, {
+    name: '{{name}}',
+    category: '{{category}}'
+})`,
+        params: [
+            { name: 'parentUri', type: 'string', placeholder: 'urn:lc:boost:parent123', description: 'Parent boost URI', required: true },
+            { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Credential template', required: true },
+            { name: 'name', type: 'string', placeholder: 'Child Boost', description: 'Boost name', required: true },
+            { name: 'category', type: 'select', options: ['Achievement', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'Category', required: true },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'update-boost',
+        name: 'Update Boost',
+        description: 'Update boost metadata (name, category, permissions)',
+        template: `await learnCard.invoke.updateBoost('{{uri}}', {
+    name: '{{name}}',
+    category: '{{category}}'
+})`,
+        params: [
+            { name: 'uri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost URI', required: true },
+            { name: 'name', type: 'string', placeholder: 'Updated Name', description: 'New boost name', required: false },
+            { name: 'category', type: 'select', options: ['Achievement', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'New category', required: false },
+        ],
+        category: 'boosts',
+    },
+
+    // Boosts - Retrieval
     {
         id: 'get-boosts',
-        name: 'Get Boosts',
+        name: 'Get My Boosts',
         description: 'Get boost templates you\'ve created',
         template: 'await learnCard.invoke.getBoosts()',
         params: [],
@@ -213,6 +223,158 @@ const COMMANDS: CommandTemplate[] = [
         description: 'Get boosts sent to you',
         template: 'await learnCard.invoke.getReceivedBoosts()',
         params: [],
+        category: 'boosts',
+    },
+    {
+        id: 'get-boost-children',
+        name: 'Get Boost Children',
+        description: 'Get child boosts of a parent boost',
+        template: 'await learnCard.invoke.getBoostChildren("{{uri}}")',
+        params: [
+            { name: 'uri', type: 'string', placeholder: 'urn:lc:boost:parent123', description: 'Parent boost URI', required: true },
+        ],
+        category: 'boosts',
+    },
+
+    // Boosts - Sending
+    {
+        id: 'send-boost-template',
+        name: 'Send Boost (Template)',
+        description: 'Send a boost using an existing template URI',
+        template: `await learnCard.invoke.send({
+    type: 'boost',
+    recipient: '{{recipient}}',
+    templateUri: '{{templateUri}}'
+})`,
+        params: [
+            { name: 'recipient', type: 'string', placeholder: 'profile-id or DID', description: 'Recipient profile ID or DID', required: true },
+            { name: 'templateUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost template URI', required: true },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'send-boost-template-data',
+        name: 'Send Boost (with Template Data)',
+        description: 'Send a boost with dynamic template variables',
+        template: `await learnCard.invoke.send({
+    type: 'boost',
+    recipient: '{{recipient}}',
+    templateUri: '{{templateUri}}',
+    templateData: {
+        {{templateData}}
+    }
+})`,
+        params: [
+            { name: 'recipient', type: 'string', placeholder: 'profile-id', description: 'Recipient profile ID', required: true },
+            { name: 'templateUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost template URI', required: true },
+            { name: 'templateData', type: 'json', placeholder: 'courseName: "Web Dev 101",\ngrade: "A"', description: 'Key-value pairs for template variables', required: true },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'send-boost-new',
+        name: 'Send Boost (New Template)',
+        description: 'Create and send a new boost in one step',
+        template: `await learnCard.invoke.send({
+    type: 'boost',
+    recipient: '{{recipient}}',
+    template: {
+        credential: {{credential}},
+        name: '{{name}}',
+        category: '{{category}}'
+    }
+})`,
+        params: [
+            { name: 'recipient', type: 'string', placeholder: 'profile-id', description: 'Recipient profile ID', required: true },
+            { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Unsigned credential', required: true },
+            { name: 'name', type: 'string', placeholder: 'Course Completion', description: 'Boost name', required: true },
+            { name: 'category', type: 'select', options: ['Achievement', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'Category', required: true },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'sendboost-direct',
+        name: 'sendBoost (Direct)',
+        description: 'Send boost directly with options',
+        template: `await learnCard.invoke.sendBoost('{{recipient}}', '{{boostUri}}', {
+    encrypt: {{encrypt}}
+})`,
+        params: [
+            { name: 'recipient', type: 'string', placeholder: 'profile-id', description: 'Recipient profile ID', required: true },
+            { name: 'boostUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost URI', required: true },
+            { name: 'encrypt', type: 'select', options: ['true', 'false'], defaultValue: 'true', description: 'Encrypt credential', required: false },
+        ],
+        category: 'boosts',
+    },
+
+    // Boosts - Permissions & Admin
+    {
+        id: 'get-boost-admins',
+        name: 'Get Boost Admins',
+        description: 'List all admin profiles for a boost',
+        template: 'await learnCard.invoke.getBoostAdmins("{{uri}}")',
+        params: [
+            { name: 'uri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost URI', required: true },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'add-boost-admin',
+        name: 'Add Boost Admin',
+        description: 'Grant admin permissions to a profile',
+        template: 'await learnCard.invoke.addBoostAdmin("{{boostUri}}", "{{profileId}}")',
+        params: [
+            { name: 'boostUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost URI', required: true },
+            { name: 'profileId', type: 'string', placeholder: 'profile-id', description: 'Profile to grant admin', required: true },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'remove-boost-admin',
+        name: 'Remove Boost Admin',
+        description: 'Remove admin permissions from a profile',
+        template: 'await learnCard.invoke.removeBoostAdmin("{{boostUri}}", "{{profileId}}")',
+        params: [
+            { name: 'boostUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost URI', required: true },
+            { name: 'profileId', type: 'string', placeholder: 'profile-id', description: 'Profile to remove admin', required: true },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'get-boost-permissions',
+        name: 'Get Boost Permissions',
+        description: 'Get permissions for a profile on a boost',
+        template: 'await learnCard.invoke.getBoostPermissions("{{boostUri}}", "{{profileId}}")',
+        params: [
+            { name: 'boostUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost URI', required: true },
+            { name: 'profileId', type: 'string', placeholder: 'profile-id', description: 'Profile ID (optional, defaults to self)', required: false },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'update-boost-permissions',
+        name: 'Update Boost Permissions',
+        description: 'Update permissions for a profile on a boost',
+        template: `await learnCard.invoke.updateBoostPermissions('{{boostUri}}', '{{profileId}}', {
+    canIssue: {{canIssue}},
+    canRevoke: {{canRevoke}}
+})`,
+        params: [
+            { name: 'boostUri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost URI', required: true },
+            { name: 'profileId', type: 'string', placeholder: 'profile-id', description: 'Profile to update', required: true },
+            { name: 'canIssue', type: 'select', options: ['true', 'false'], defaultValue: 'true', description: 'Can issue boost', required: true },
+            { name: 'canRevoke', type: 'select', options: ['true', 'false'], defaultValue: 'false', description: 'Can revoke issued boosts', required: true },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'get-boost-recipients',
+        name: 'Get Boost Recipients',
+        description: 'Get profiles that received this boost',
+        template: 'await learnCard.invoke.getBoostRecipients("{{uri}}")',
+        params: [
+            { name: 'uri', type: 'string', placeholder: 'urn:lc:boost:abc123', description: 'Boost URI', required: true },
+        ],
         category: 'boosts',
     },
 ];
