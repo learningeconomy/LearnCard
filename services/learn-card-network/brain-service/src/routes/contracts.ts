@@ -995,18 +995,18 @@ export const contractsRouter = t.router({
                             : cred
                     );
                 console.log('credentials', credentials);
-                const transformedCredentials = credentials.map(cred => {
-                    const issuer =
-                        typeof cred.issuer === 'string'
-                            ? { id: cred.issuer }
-                            : cred.issuer || { id: '' };
+                // const transformedCredentials = credentials.map(cred => {
+                //     const issuer =
+                //         typeof cred.issuer === 'string'
+                //             ? { id: cred.issuer }
+                //             : cred.issuer || { id: '' };
 
-                    return {
-                        ...cred,
-                        issuer,
-                    };
-                });
-                console.log('transformedCredentials', transformedCredentials);
+                //     return {
+                //         ...cred,
+                //         issuer,
+                //     };
+                // });
+                // console.log('transformedCredentials', transformedCredentials);
                 const { name, email } = parsedTerms.read.personal;
 
                 const body = JSON.stringify({
@@ -1022,7 +1022,7 @@ export const contractsRouter = t.router({
                         familyName: '', // this is neecessary in order for givenName to be respected
                         email: email && email !== 'anonymous@hidden.com' ? email : '',
                     },
-                    credentials: transformedCredentials,
+                    credentials: credentials,
                 });
                 console.log('body', body);
                 try {
