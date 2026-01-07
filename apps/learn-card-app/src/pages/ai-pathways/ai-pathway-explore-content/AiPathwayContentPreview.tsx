@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
+import { Lightbox, LightboxItem } from '@learncard/react';
 import Video from 'learn-card-base/svgs/Video';
 import { IonFooter } from '@ionic/react';
 
@@ -11,6 +12,7 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
     const { closeModal } = useModal();
 
     const [metaData, setMetaData] = useState<VideoMetadata | null>(null);
+    const [currentLightboxUrl, setCurrentLightboxUrl] = useState<string | undefined>(undefined);
 
     const handleGetVideoMetadata = async () => {
         const metadata = await getVideoMetadata(content.url || '');
@@ -26,6 +28,11 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
             onClick={e => e.stopPropagation()}
             className="flex flex-col gap-[10px] bg-transparent mx-auto cursor-auto min-w-[300px] h-full"
         >
+            <Lightbox
+                items={[{ url: content.url || '', type: 'video' } as LightboxItem]}
+                currentUrl={currentLightboxUrl}
+                setCurrentUrl={setCurrentLightboxUrl}
+            />
             <div className="h-full relative overflow-hidden bg-grayscale-200">
                 <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col items-center justify-start">
                     <section className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 mt-[60px] w-full">
@@ -90,7 +97,10 @@ const AiPathwayContentPreview: React.FC<{ content: AiPathwayContent }> = ({ cont
                         >
                             Close
                         </button>
-                        <button className="p-[11px] bg-emerald-700 rounded-full text-white shadow-button-bottom flex-1 font-poppins text-[17px] font-semibold">
+                        <button
+                            onClick={() => setCurrentLightboxUrl(content.url || '')}
+                            className="p-[11px] bg-emerald-700 rounded-full text-white shadow-button-bottom flex-1 font-poppins text-[17px] font-semibold"
+                        >
                             Start
                         </button>
                     </div>
