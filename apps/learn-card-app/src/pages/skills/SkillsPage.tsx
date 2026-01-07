@@ -13,6 +13,7 @@ import SkillsMyHub from './SkillsMyHub';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillsAdminPanel from './SkillsAdminPanel';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
+import SelfAssignSkillsModal from './SelfAssignSkillsModal';
 import SkillsHubPlusOptionsModal from './SkillsHubPlusOptionsModal';
 
 import {
@@ -74,7 +75,10 @@ const SkillsPage: React.FC = () => {
                 mobile: ModalTypes.Cancel,
             });
         } else {
-            // TODO open straight to self-attested skill flow
+            newModal(<SelfAssignSkillsModal />, undefined, {
+                desktop: ModalTypes.Right,
+                mobile: ModalTypes.Right,
+            });
         }
     };
 

@@ -3,6 +3,7 @@ import React from 'react';
 import Plus from 'learn-card-base/svgs/Plus';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import CreateFrameworkModal from '../SkillFrameworks/CreateFrameworkModal';
+import SelfAssignSkillsModal from './SelfAssignSkillsModal';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 
@@ -22,6 +23,15 @@ const SkillsHubPlusOptionsModal: React.FC<SkillsHubPlusOptionsModalProps> = ({})
         );
     };
 
+    const openSelfAssignSkillsModal = () => {
+        closeModal();
+
+        newModal(<SelfAssignSkillsModal />, undefined, {
+            desktop: ModalTypes.Right,
+            mobile: ModalTypes.Right,
+        });
+    };
+
     return (
         <div className="flex flex-col p-[20px]">
             <button
@@ -36,7 +46,7 @@ const SkillsHubPlusOptionsModal: React.FC<SkillsHubPlusOptionsModalProps> = ({})
                 Create Framework
             </button>
             <button
-                // onClick={handleDeleteFramework}
+                onClick={openSelfAssignSkillsModal}
                 className="flex items-center gap-[10px] py-[10px] font-notoSans text-[18px] text-grayscale-800"
             >
                 <Plus className="w-[35px] h-[35px] p-[5px]" strokeWidth="2" />
