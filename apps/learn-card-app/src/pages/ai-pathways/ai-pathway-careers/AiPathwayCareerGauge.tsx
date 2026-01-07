@@ -101,7 +101,7 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                     viewBox="0 0 260 160"
                     className="absolute top-[35%] left-[50%] translate-x-[-50%] translate-y-[-50%] pointer-events-none"
                 >
-                    {/* Needle */}
+                    {/* main needle */}
                     <line
                         x1="130"
                         y1="130"
@@ -109,6 +109,18 @@ export const AiPathwayCareerGauge = ({ title, score }: CareerGaugeProps) => {
                         y2={130 - 140 * Math.sin((Math.PI * angle) / 180)}
                         stroke="#222"
                         strokeWidth="6"
+                        strokeLinecap="round"
+                    />
+
+                    {/* Needle tail (longer, behind pivot) */}
+                    <line
+                        x1="130"
+                        y1="130"
+                        x2={130 - 32 * Math.cos((Math.PI * angle) / 180)}
+                        y2={130 + 32 * Math.sin((Math.PI * angle) / 180)}
+                        stroke="#222"
+                        strokeWidth="6"
+                        strokeLinecap="round"
                     />
 
                     {/* Pivot outer ring */}
