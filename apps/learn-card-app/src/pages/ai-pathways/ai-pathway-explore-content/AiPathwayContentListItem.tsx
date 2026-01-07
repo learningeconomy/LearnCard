@@ -63,10 +63,10 @@ const AiPathwayContentListItem: React.FC<{
                 </div>
 
                 <div
-                    className="flex flex-1 ion-padding rounded-r-[20px] flex-col justify-between z-10 mr-[30px]"
+                    className="flex flex-1 py-4 pl-4 rounded-r-[20px] flex-col justify-between z-10 mr-[30px]"
                     style={{ textDecoration: 'none' }}
                 >
-                    <p className="line-clamp-3 pr-2 text-sm text-left text-grayscale-900 break-all">
+                    <p className="line-clamp-2 pr-2 text-sm text-left text-grayscale-900 break-all">
                         {content.title}
                     </p>
                     <p className="text-xs text-gray-400 self-start break-all">
