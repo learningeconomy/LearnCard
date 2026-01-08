@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Copy, Check, AlertCircle, RefreshCw, Code, Eye } from 'lucide-react';
+import { Copy, Check, AlertCircle, RefreshCw, Code, Eye, PlayCircle, Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 import { OBv3CredentialTemplate } from './types';
 import { templateToJson, jsonToTemplate, extractDynamicVariables } from './utils';
@@ -12,17 +12,21 @@ interface JsonPreviewProps {
     template: OBv3CredentialTemplate;
     onChange: (template: OBv3CredentialTemplate) => void;
     isEditable?: boolean;
+    onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
 }
 
 export const JsonPreview: React.FC<JsonPreviewProps> = ({
     template,
     onChange,
     isEditable = true,
+    onTestIssue,
 }) => {
     const [editMode, setEditMode] = useState(false);
     const [jsonText, setJsonText] = useState('');
     const [parseError, setParseError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [testIssueState, setTestIssueState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [testIssueError, setTestIssueError] = useState<string | null>(null);
 
     // Convert template to JSON string
     const jsonFromTemplate = useMemo(() => {
@@ -89,6 +93,32 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
         setParseError(null);
     }, [jsonFromTemplate]);
 
+    const handleTestIssue = useCallback(async () => {
+        if (!onTestIssue) return;
+
+        setTestIssueState('loading');
+        setTestIssueError(null);
+
+        try {
+            const json = templateToJson(template);
+            const result = await onTestIssue(json);
+
+            if (result.success) {
+                setTestIssueState('success');
+                console.log('Test issue successful:', result.result);
+                setTimeout(() => setTestIssueState('idle'), 3000);
+            } else {
+                setTestIssueState('error');
+                setTestIssueError(result.error || 'Unknown error');
+                setTimeout(() => setTestIssueState('idle'), 5000);
+            }
+        } catch (e) {
+            setTestIssueState('error');
+            setTestIssueError((e as Error).message);
+            setTimeout(() => setTestIssueState('idle'), 5000);
+        }
+    }, [template, onTestIssue]);
+
     return (
         <div className="h-full flex flex-col">
             {/* Header */}
@@ -151,6 +181,43 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                             </>
                         )}
                     </button>
+
+                    {onTestIssue && (
+                        <button
+                            type="button"
+                            onClick={handleTestIssue}
+                            disabled={testIssueState === 'loading' || !!parseError}
+                            className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                                testIssueState === 'success'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : testIssueState === 'error'
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                            {testIssueState === 'loading' ? (
+                                <>
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Testing...
+                                </>
+                            ) : testIssueState === 'success' ? (
+                                <>
+                                    <CheckCircle className="w-3 h-3" />
+                                    Valid!
+                                </>
+                            ) : testIssueState === 'error' ? (
+                                <>
+                                    <XCircle className="w-3 h-3" />
+                                    Failed
+                                </>
+                            ) : (
+                                <>
+                                    <PlayCircle className="w-3 h-3" />
+                                    Test Issue
+                                </>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -162,6 +229,18 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     <div className="flex-1">
                         <p className="text-xs font-medium text-red-700">Invalid JSON</p>
                         <p className="text-xs text-red-600 mt-0.5">{parseError}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Test Issue Error Banner */}
+            {testIssueError && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 border-b border-red-200">
+                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+
+                    <div className="flex-1">
+                        <p className="text-xs font-medium text-red-700">Issue Test Failed</p>
+                        <p className="text-xs text-red-600 mt-0.5">{testIssueError}</p>
                     </div>
                 </div>
             )}

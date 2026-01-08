@@ -25,6 +25,7 @@ import {
     FileSpreadsheet,
     Check,
     ArrowDown,
+    Pencil,
 } from 'lucide-react';
 
 import { useWallet } from 'learn-card-base';
@@ -219,6 +220,7 @@ interface TemplateEditorProps {
     onDelete: () => void;
     isExpanded: boolean;
     onToggle: () => void;
+    onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
 }
 
 const TemplateEditor: React.FC<TemplateEditorProps> = ({
@@ -228,6 +230,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     onDelete,
     isExpanded,
     onToggle,
+    onTestIssue,
 }) => {
     // Initialize OBv3 template from legacy or existing
     const [obv3Template, setObv3Template] = useState<OBv3CredentialTemplate>(() => {
@@ -299,6 +302,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
                         onChange={handleTemplateChange}
                         issuerName={branding?.displayName}
                         issuerImage={branding?.image}
+                        onTestIssue={onTestIssue}
                     />
                 </div>
             )}
@@ -323,6 +327,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
+
+    // Child template editing modal state
+    const [editingChild, setEditingChild] = useState<{
+        masterId: string;
+        childId: string;
+        template: OBv3CredentialTemplate;
+    } | null>(null);
 
     // CSV Catalog Import state
     const [showImportModal, setShowImportModal] = useState(false);
@@ -351,37 +362,53 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 query: { meta: { integrationId } },
             });
 
-            // First pass: convert all boosts to templates
-            const allTemplates: ExtendedTemplate[] = (result?.records || []).map((boost: Record<string, unknown>) => {
-                const meta = boost.meta as TemplateBoostMeta | undefined;
-                const templateConfig = meta?.templateConfig;
-                const credential = boost.credential as Record<string, unknown> | undefined;
+            console.log('result', result);
+            // First pass: fetch full boost data to get credentials
+            const allTemplates: ExtendedTemplate[] = [];
 
-                // Try to parse existing credential as OBv3 template
-                let obv3Template: OBv3CredentialTemplate | undefined;
+            for (const boostRecord of (result?.records || [])) {
+                const boostUri = (boostRecord as Record<string, unknown>).uri as string;
 
-                if (credential) {
-                    try {
-                        obv3Template = jsonToTemplate(credential);
-                    } catch (e) {
-                        console.warn('Failed to parse credential as OBv3:', e);
+                try {
+                    // Fetch full boost to get credential
+                    const fullBoost = await wallet.invoke.getBoost(boostUri);
+                    console.log('full boost', fullBoost);
+                    const meta = fullBoost.meta as TemplateBoostMeta | undefined;
+                    const templateConfig = meta?.templateConfig;
+                    // The credential is in the 'boost' property
+                    const credential = fullBoost.boost as Record<string, unknown> | undefined;
+
+                    // Try to parse existing credential as OBv3 template
+                    let obv3Template: OBv3CredentialTemplate | undefined;
+
+                    if (credential) {
+                        try {
+                            obv3Template = jsonToTemplate(credential);
+                        } catch (e) {
+                            console.warn('Failed to parse credential as OBv3:', e);
+                        }
                     }
-                }
 
-                return {
-                    id: boost.uri as string,
-                    boostUri: boost.uri as string,
-                    name: (boost.name as string) || 'Untitled Template',
-                    description: (boost.description as string) || '',
-                    achievementType: templateConfig?.achievementType || 'Course Completion',
-                    fields: templateConfig?.fields || [],
-                    imageUrl: boost.image as string | undefined,
-                    isNew: false,
-                    isDirty: false,
-                    obv3Template,
-                    isMasterTemplate: meta?.isMasterTemplate,
-                };
-            });
+                    // Get name/description from credential
+                    const credentialName = credential?.name as string | undefined;
+                    const credentialDesc = credential?.description as string | undefined;
+
+                    allTemplates.push({
+                        id: boostUri,
+                        boostUri,
+                        name: fullBoost.name || credentialName || 'Untitled Template',
+                        description: credentialDesc || '',
+                        achievementType: templateConfig?.achievementType || 'Course Completion',
+                        fields: templateConfig?.fields || [],
+                        isNew: false,
+                        isDirty: false,
+                        obv3Template,
+                        isMasterTemplate: meta?.isMasterTemplate,
+                    });
+                } catch (e) {
+                    console.warn('Failed to fetch boost:', boostUri, e);
+                }
+            }
 
             // Second pass: for master templates, fetch their children and collect child URIs
             const fetchedTemplates: ExtendedTemplate[] = [];
@@ -391,40 +418,55 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             for (const template of allTemplates) {
                 if (template.isMasterTemplate && template.boostUri) {
                     try {
-                        // Fetch child boosts for this master
+                        // Fetch child boost URIs for this master
                         const childrenResult = await wallet.invoke.getBoostChildren(template.boostUri, { limit: 100 });
-                        const children: ExtendedTemplate[] = (childrenResult?.records || []).map((child: Record<string, unknown>) => {
-                            const childMeta = child.meta as TemplateBoostMeta | undefined;
-                            const childConfig = childMeta?.templateConfig;
-                            const childCredential = child.credential as Record<string, unknown> | undefined;
-                            const childUri = child.uri as string;
+                        const childRecords = childrenResult?.records || [];
 
-                            // Track this URI as a child so we exclude it from top-level
+                        // Fetch full boost data for each child to get the credential
+                        const children: ExtendedTemplate[] = [];
+
+                        for (const childRecord of childRecords) {
+                            const childUri = (childRecord as Record<string, unknown>).uri as string;
                             childUris.add(childUri);
 
-                            let childObv3Template: OBv3CredentialTemplate | undefined;
+                            try {
+                                // Fetch full boost to get credential
+                                const fullChild = await wallet.invoke.getBoost(childUri);
+                                const childMeta = fullChild.meta as TemplateBoostMeta | undefined;
+                                const childConfig = childMeta?.templateConfig;
+                                // The credential is in the 'boost' property
+                                const childCredential = fullChild.boost as Record<string, unknown> | undefined;
 
-                            if (childCredential) {
-                                try {
-                                    childObv3Template = jsonToTemplate(childCredential);
-                                } catch (e) {
-                                    console.warn('Failed to parse child credential as OBv3:', e);
+                                let childObv3Template: OBv3CredentialTemplate | undefined;
+
+                                if (childCredential) {
+                                    try {
+                                        childObv3Template = jsonToTemplate(childCredential);
+                                    } catch (e) {
+                                        console.warn('Failed to parse child credential as OBv3:', e);
+                                    }
                                 }
-                            }
 
-                            return {
-                                id: childUri,
-                                boostUri: childUri,
-                                name: (child.name as string) || 'Untitled',
-                                description: (child.description as string) || '',
-                                achievementType: childConfig?.achievementType || 'Course Completion',
-                                fields: childConfig?.fields || [],
-                                isNew: false,
-                                isDirty: false,
-                                obv3Template: childObv3Template,
-                                parentTemplateId: template.id,
-                            };
-                        });
+                                // Get name/description from credential
+                                const credentialName = childCredential?.name as string | undefined;
+                                const credentialDesc = childCredential?.description as string | undefined;
+
+                                children.push({
+                                    id: childUri,
+                                    boostUri: childUri,
+                                    name: fullChild.name || credentialName || 'Untitled',
+                                    description: credentialDesc || '',
+                                    achievementType: childConfig?.achievementType || 'Course Completion',
+                                    fields: childConfig?.fields || [],
+                                    isNew: false,
+                                    isDirty: false,
+                                    obv3Template: childObv3Template,
+                                    parentTemplateId: template.id,
+                                });
+                            } catch (e) {
+                                console.warn('Failed to fetch child boost:', childUri, e);
+                            }
+                        }
 
                         fetchedTemplates.push({
                             ...template,
@@ -489,26 +531,27 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 isMasterTemplate: template.isMasterTemplate,
             };
 
-            // If updating existing boost, delete and recreate (updateBoost doesn't support credential updates)
-            if (template.boostUri) {
-                try {
-                    await wallet.invoke.deleteBoost(template.boostUri);
-                } catch (e) {
-                    console.warn('Failed to delete old boost, creating new:', e);
-                }
-            }
-
-            // Otherwise create a new boost
             const boostMetadata = {
                 name: template.name,
+                description: template.description,
                 type: template.achievementType,
                 category: 'achievement',
                 meta: boostMeta,
-                defaultPermissions: {
-                    canIssue: true,
-                },
+                status: 'DRAFT'
             };
 
+            // If updating existing boost, use updateBoost to preserve children
+            if (template.boostUri) {
+                await wallet.invoke.updateBoost(
+                    template.boostUri,
+                    boostMetadata as unknown as Parameters<typeof wallet.invoke.updateBoost>[1],
+                    credential as Parameters<typeof wallet.invoke.updateBoost>[2]
+                );
+
+                return template.boostUri;
+            }
+
+            // Otherwise create a new boost
             const boostUri = await wallet.invoke.createBoost(
                 credential as Parameters<typeof wallet.invoke.createBoost>[0],
                 boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
@@ -560,15 +603,25 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             const boostMetadata = {
                 name: template.name,
+                description: template.description,
                 type: template.achievementType,
                 category: 'achievement',
                 meta: boostMeta,
-                defaultPermissions: {
-                    canIssue: true,
-                },
+                status: 'DRAFT',
             };
 
-            // Create as child boost linked to parent
+            // If updating existing child boost, use updateBoost
+            if (template.boostUri) {
+                await wallet.invoke.updateBoost(
+                    template.boostUri,
+                    boostMetadata as unknown as Parameters<typeof wallet.invoke.updateBoost>[1],
+                    credential as Parameters<typeof wallet.invoke.updateBoost>[2]
+                );
+
+                return template.boostUri;
+            }
+
+            // Otherwise create as new child boost linked to parent
             const boostUri = await wallet.invoke.createChildBoost(
                 parentBoostUri,
                 credential as Parameters<typeof wallet.invoke.createChildBoost>[1],
@@ -603,30 +656,41 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             const savedTemplates: CredentialTemplate[] = [];
 
             for (const template of localTemplates) {
-                if (template.isNew || template.isDirty || !template.boostUri) {
+                // Check if any children need saving (for master templates)
+                const hasChildUpdates = template.isMasterTemplate && 
+                    template.childTemplates?.some(c => c.isNew || c.isDirty || !c.boostUri);
+
+                if (template.isNew || template.isDirty || !template.boostUri || hasChildUpdates) {
                     // Handle master templates with children
                     if (template.isMasterTemplate && template.childTemplates?.length) {
                         // First, save the master template
                         const parentBoostUri = await saveTemplateAsBoost(template);
 
                         if (parentBoostUri) {
-                            // Then save each child as a child boost
+                            // Save each child that needs saving
                             const savedChildren: ExtendedTemplate[] = [];
 
                             for (const child of template.childTemplates) {
-                                try {
-                                    const childBoostUri = await saveChildTemplateAsBoost(child, parentBoostUri);
+                                // Only save children that are new, dirty, or don't have a boostUri
+                                if (child.isNew || child.isDirty || !child.boostUri) {
+                                    try {
+                                        const childBoostUri = await saveChildTemplateAsBoost(child, parentBoostUri);
 
-                                    savedChildren.push({
-                                        ...child,
-                                        id: childBoostUri || child.id,
-                                        boostUri: childBoostUri || undefined,
-                                        isNew: false,
-                                        isDirty: false,
-                                    });
-                                } catch (e) {
-                                    console.error('Failed to save child boost:', e);
-                                    // Continue with other children
+                                        savedChildren.push({
+                                            ...child,
+                                            id: childBoostUri || child.id,
+                                            boostUri: childBoostUri || undefined,
+                                            isNew: false,
+                                            isDirty: false,
+                                        });
+                                    } catch (e) {
+                                        console.error('Failed to save child boost:', e);
+                                        // Keep the original child on error
+                                        savedChildren.push(child);
+                                    }
+                                } else {
+                                    // Child doesn't need saving, keep as-is
+                                    savedChildren.push(child);
                                 }
                             }
 
@@ -996,15 +1060,161 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const handleDeleteTemplate = (id: string) => {
         const template = localTemplates.find(t => t.id === id);
 
-        // If it has a boostUri, queue it for deletion on save
-        if (template?.boostUri) {
-            setPendingDeletes([...pendingDeletes, template.boostUri]);
+        if (template) {
+            const urisToDelete: string[] = [];
+
+            // For master templates, queue children for deletion first
+            if (template.isMasterTemplate && template.childTemplates?.length) {
+                for (const child of template.childTemplates) {
+                    if (child.boostUri) {
+                        urisToDelete.push(child.boostUri);
+                    }
+                }
+            }
+
+            // Then queue the master/parent template itself
+            if (template.boostUri) {
+                urisToDelete.push(template.boostUri);
+            }
+
+            if (urisToDelete.length > 0) {
+                setPendingDeletes([...pendingDeletes, ...urisToDelete]);
+            }
         }
 
         setLocalTemplates(localTemplates.filter(t => t.id !== id));
 
         if (expandedId === id) setExpandedId(null);
     };
+
+    // Open edit modal for a child template
+    const handleEditChild = (masterId: string, child: ExtendedTemplate) => {
+        // Get or create OBv3 template for the child
+        const obv3Template = child.obv3Template || legacyToOBv3(child, branding?.displayName, branding?.image);
+
+        setEditingChild({
+            masterId,
+            childId: child.id,
+            template: JSON.parse(JSON.stringify(obv3Template)), // Deep clone
+        });
+    };
+
+    // Save edited child template
+    const handleSaveChildEdit = () => {
+        if (!editingChild) return;
+
+        setLocalTemplates(prev => prev.map(master => {
+            if (master.id !== editingChild.masterId) return master;
+
+            const updatedChildren = master.childTemplates?.map(child => {
+                if (child.id !== editingChild.childId) return child;
+
+                // Convert OBv3 back to legacy format
+                const updatedChild = obv3ToLegacy(editingChild.template, child) as ExtendedTemplate;
+                updatedChild.obv3Template = editingChild.template;
+                updatedChild.isDirty = true;
+
+                return updatedChild;
+            }) as ExtendedTemplate[] | undefined;
+
+            return {
+                ...master,
+                childTemplates: updatedChildren,
+                isDirty: true,
+            } as ExtendedTemplate;
+        }));
+
+        setEditingChild(null);
+        presentToast('Child template updated', { type: ToastTypeEnum.Success });
+    };
+
+    // Cancel child edit
+    const handleCancelChildEdit = () => {
+        setEditingChild(null);
+    };
+
+    // Update the template being edited in the modal
+    const handleChildTemplateChange = (newTemplate: OBv3CredentialTemplate) => {
+        if (!editingChild) return;
+
+        setEditingChild({
+            ...editingChild,
+            template: newTemplate,
+        });
+    };
+
+    // Test issue handler - tests if a credential can be issued
+    const handleTestIssue = useCallback(async (credential: Record<string, unknown>): Promise<{ success: boolean; error?: string; result?: unknown }> => {
+        try {
+            const wallet = await initWalletRef.current();
+
+            // Replace dynamic variables with sample values
+            const replaceDynamicVariables = (obj: unknown): unknown => {
+                if (typeof obj === 'string') {
+                    // Replace {{variable_name}} with sample values
+                    return obj.replace(/\{\{(\w+)\}\}/g, (_match, varName) => {
+                        // Special handling for date fields - use actual ISO dates
+                        const lowerVar = varName.toLowerCase();
+                        if (lowerVar.includes('date') || lowerVar.includes('time')) {
+                            return new Date().toISOString();
+                        }
+
+                        // Use humanized variable name as sample value for other fields
+                        const humanized = varName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                        return `[Sample ${humanized}]`;
+                    });
+                }
+
+                if (Array.isArray(obj)) {
+                    return obj.map(replaceDynamicVariables);
+                }
+
+                if (obj && typeof obj === 'object') {
+                    const result: Record<string, unknown> = {};
+                    for (const [key, value] of Object.entries(obj)) {
+                        result[key] = replaceDynamicVariables(value);
+                    }
+                    return result;
+                }
+
+                return obj;
+            };
+
+            const renderedCredential = replaceDynamicVariables(credential) as Record<string, unknown>;
+
+            // Ensure required array fields are present and non-empty
+            const contexts = renderedCredential['@context'];
+            const types = renderedCredential['type'];
+
+            const testCredential = {
+                ...renderedCredential,
+                '@context': Array.isArray(contexts) && contexts.length > 0 
+                    ? contexts 
+                    : ['https://www.w3.org/2018/credentials/v1'],
+                type: Array.isArray(types) && types.length > 0 
+                    ? types 
+                    : ['VerifiableCredential'],
+                issuer: wallet.id.did(),
+                issuanceDate: new Date().toISOString(),
+                credentialSubject: {
+                    ...(renderedCredential.credentialSubject as Record<string, unknown> || {}),
+                    id: wallet.id.did(),
+                },
+            };
+
+            console.log('Test issuing credential:', testCredential);
+
+            const result = await wallet.invoke.issueCredential?.(testCredential as Parameters<typeof wallet.invoke.issueCredential>[0]);
+
+            if (result) {
+                return { success: true, result };
+            } else {
+                return { success: false, error: 'issueCredential returned undefined' };
+            }
+        } catch (e) {
+            return { success: false, error: (e as Error).message };
+        }
+    }, []);
 
     const hasUnsavedChanges = localTemplates.some(t => t.isNew || t.isDirty) || pendingDeletes.length > 0;
     const canProceed = localTemplates.length > 0 && localTemplates.every(t => t.name.trim());
@@ -1095,7 +1305,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 {template.childTemplates?.map((child, idx) => (
                                                     <div 
                                                         key={child.id}
-                                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 group"
                                                     >
                                                         <span className="w-6 h-6 bg-gray-200 rounded text-xs flex items-center justify-center text-gray-600 font-medium">
                                                             {idx + 1}
@@ -1111,6 +1321,18 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                         <span className="text-xs text-gray-400">
                                                             {child.fields?.length || 0} fields
                                                         </span>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditChild(template.id, child as ExtendedTemplate);
+                                                            }}
+                                                            className="p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                            title="Customize this boost"
+                                                        >
+                                                            <Pencil className="w-4 h-4" />
+                                                        </button>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1138,6 +1360,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 onDelete={() => handleDeleteTemplate(template.id)}
                                 isExpanded={expandedId === template.id}
                                 onToggle={() => setExpandedId(expandedId === template.id ? null : template.id)}
+                                onTestIssue={handleTestIssue}
                             />
                         )}
                     </div>
@@ -1413,6 +1636,67 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     Create {csvAllRows.length} Boosts
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Child Template Modal */}
+            {editingChild && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
+                                    <Pencil className="w-5 h-5 text-violet-600" />
+                                </div>
+
+                                <div>
+                                    <h3 className="font-semibold text-gray-800">
+                                        Customize Boost
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        {editingChild.template.name?.value || 'Untitled'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleCancelChildEdit}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body - CredentialBuilder */}
+                        <div className="flex-1 min-h-0 overflow-auto" style={{ height: '600px' }}>
+                            <CredentialBuilder
+                                template={editingChild.template}
+                                onChange={handleChildTemplateChange}
+                                issuerName={branding?.displayName}
+                                issuerImage={branding?.image}
+                                onTestIssue={handleTestIssue}
+                            />
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
+                            <button
+                                onClick={handleCancelChildEdit}
+                                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleSaveChildEdit}
+                                className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white rounded-xl font-medium hover:bg-violet-600 transition-colors"
+                            >
+                                <Save className="w-4 h-4" />
+                                Save Changes
+                            </button>
                         </div>
                     </div>
                 </div>

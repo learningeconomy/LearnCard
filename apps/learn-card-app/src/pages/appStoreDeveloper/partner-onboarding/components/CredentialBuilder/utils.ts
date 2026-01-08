@@ -76,34 +76,9 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         credential.image = fieldToJson(template.image);
     }
 
-    // Issuer
-    const issuer: Record<string, unknown> = {
-        type: ['Profile'],
-    };
-
-    if (template.issuer.id?.value || template.issuer.id?.isDynamic) {
-        issuer.id = fieldToJson(template.issuer.id);
-    }
-
-    issuer.name = fieldToJson(template.issuer.name) || 'Issuer';
-
-    if (template.issuer.url?.value || template.issuer.url?.isDynamic) {
-        issuer.url = fieldToJson(template.issuer.url);
-    }
-
-    if (template.issuer.email?.value || template.issuer.email?.isDynamic) {
-        issuer.email = fieldToJson(template.issuer.email);
-    }
-
-    if (template.issuer.description?.value || template.issuer.description?.isDynamic) {
-        issuer.description = fieldToJson(template.issuer.description);
-    }
-
-    if (template.issuer.image?.value || template.issuer.image?.isDynamic) {
-        issuer.image = fieldToJson(template.issuer.image);
-    }
-
-    credential.issuer = issuer;
+    // Issuer - just use the issuer ID (DID) as a string, not an object
+    // This will be replaced with wallet.id.did() during actual issuance
+    credential.issuer = fieldToJson(template.issuer.id) || '{{issuer_did}}';
 
     // Dates
     credential.issuanceDate = fieldToJson(template.issuanceDate) || '{{issue_date}}';
@@ -222,23 +197,6 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
 
     credential.credentialSubject = credentialSubject;
 
-    // Custom fields as extensions
-    if (template.customFields.length > 0) {
-        const extensions: Record<string, unknown> = {};
-
-        for (const field of template.customFields) {
-            const key = fieldToJson(field.key);
-
-            if (key) {
-                extensions[key] = fieldToJson(field.value);
-            }
-        }
-
-        if (Object.keys(extensions).length > 0) {
-            (credentialSubject as Record<string, unknown>).extensions = extensions;
-        }
-    }
-
     return credential;
 };
 
@@ -249,22 +207,17 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
     const contexts = Array.isArray(json['@context']) ? json['@context'] as string[] : DEFAULT_CONTEXTS;
     const types = Array.isArray(json.type) ? json.type as string[] : DEFAULT_TYPES;
 
-    const issuerObj = (typeof json.issuer === 'object' && json.issuer !== null) ? json.issuer as Record<string, unknown> : {};
     const subjectObj = (typeof json.credentialSubject === 'object' && json.credentialSubject !== null) ? json.credentialSubject as Record<string, unknown> : {};
     const achievementObj = (typeof subjectObj.achievement === 'object' && subjectObj.achievement !== null) ? subjectObj.achievement as Record<string, unknown> : {};
     const criteriaObj = (typeof achievementObj.criteria === 'object' && achievementObj.criteria !== null) ? achievementObj.criteria as Record<string, unknown> : undefined;
     const alignmentArr = Array.isArray(achievementObj.alignment) ? achievementObj.alignment as Record<string, unknown>[] : [];
     const evidenceArr = Array.isArray(subjectObj.evidence) ? subjectObj.evidence as Record<string, unknown>[] : [];
-    const extensionsObj = (typeof subjectObj.extensions === 'object' && subjectObj.extensions !== null) ? subjectObj.extensions as Record<string, unknown> : {};
 
-    // Parse issuer
+    // Parse issuer - can be a string (DID) or an object
+    const issuerValue = json.issuer;
     const issuer: IssuerTemplate = {
-        id: issuerObj.id ? jsonToField(issuerObj.id) : undefined,
-        name: jsonToField(issuerObj.name || ''),
-        url: issuerObj.url ? jsonToField(issuerObj.url) : undefined,
-        email: issuerObj.email ? jsonToField(issuerObj.email) : undefined,
-        description: issuerObj.description ? jsonToField(issuerObj.description) : undefined,
-        image: issuerObj.image ? jsonToField(issuerObj.image) : undefined,
+        id: issuerValue ? jsonToField(typeof issuerValue === 'string' ? issuerValue : (issuerValue as Record<string, unknown>).id) : undefined,
+        name: staticField(''),
     };
 
     // Parse achievement
@@ -304,13 +257,6 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         })),
     };
 
-    // Parse custom fields from extensions
-    const customFields: CustomFieldTemplate[] = Object.entries(extensionsObj).map(([key, value], i) => ({
-        id: `custom_${i}`,
-        key: staticField(key),
-        value: jsonToField(value),
-    }));
-
     return {
         contexts,
         types,
@@ -322,7 +268,7 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         credentialSubject,
         issuanceDate: jsonToField(json.issuanceDate || '{{issue_date}}'),
         expirationDate: json.expirationDate ? jsonToField(json.expirationDate) : undefined,
-        customFields,
+        customFields: [],
     };
 };
 

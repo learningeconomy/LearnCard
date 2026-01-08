@@ -52,12 +52,14 @@ interface CredentialBuilderProps {
     onChange: (template: OBv3CredentialTemplate) => void;
     issuerName?: string;
     issuerImage?: string;
+    onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
 }
 
 export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     template,
     onChange,
     issuerName,
+    onTestIssue,
     issuerImage,
 }) => {
     const [activeTab, setActiveTab] = useState<TabId>('builder');
@@ -266,18 +268,13 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onToggle={() => toggleSection('dates')}
                         />
 
-                        <CustomFieldsSection
-                            template={template}
-                            onChange={onChange}
-                            isExpanded={expandedSections.has('custom')}
-                            onToggle={() => toggleSection('custom')}
-                        />
                     </div>
                 ) : (
                     <JsonPreview
                         template={template}
                         onChange={onChange}
                         isEditable
+                        onTestIssue={onTestIssue}
                     />
                 )}
             </div>

@@ -42,14 +42,14 @@ const getSampleValue = (varName: string): string => {
     const lower = varName.toLowerCase();
 
     if (lower.includes('email')) return 'jane.doe@example.com';
-    if (lower.includes('date') && lower.includes('issue')) return new Date().toISOString().split('T')[0];
-    if (lower.includes('date') && lower.includes('complet')) return new Date().toISOString().split('T')[0];
+    if (lower.includes('date') && lower.includes('issue')) return new Date().toISOString();
+    if (lower.includes('date') && lower.includes('complet')) return new Date().toISOString();
     if (lower.includes('date') && lower.includes('expir')) {
         const future = new Date();
         future.setFullYear(future.getFullYear() + 2);
-        return future.toISOString().split('T')[0];
+        return future.toISOString();
     }
-    if (lower.includes('date')) return new Date().toISOString().split('T')[0];
+    if (lower.includes('date')) return new Date().toISOString();
     if (lower.includes('score') || lower.includes('grade')) return '95';
     if (lower.includes('credits') || lower.includes('hours')) return '3';
     if (lower.includes('recipient') && lower.includes('name')) return 'Jane Doe';
@@ -172,6 +172,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
             console.log("Rendered credential", renderedCredential);
             renderedCredential.credentialSubject.id = wallet.id.did()
+
             // Send via inbox
             const result = await wallet.invoke.sendCredentialViaInbox?.({
                 recipient: { type: 'email', value: testEmail },
