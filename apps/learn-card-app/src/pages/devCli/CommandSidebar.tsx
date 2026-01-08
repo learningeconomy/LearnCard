@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 
-interface CommandParam {
+export interface CommandParam {
     name: string;
     type: 'string' | 'number' | 'boolean' | 'json' | 'select';
     placeholder?: string;
@@ -10,7 +10,7 @@ interface CommandParam {
     defaultValue?: string;
 }
 
-interface CommandTemplate {
+export interface CommandTemplate {
     id: string;
     name: string;
     description: string;
@@ -19,7 +19,7 @@ interface CommandTemplate {
     category: string;
 }
 
-interface CommandCategory {
+export interface CommandCategory {
     id: string;
     name: string;
     icon: string;
@@ -35,7 +35,7 @@ const CATEGORIES: CommandCategory[] = [
     { id: 'boosts', name: 'Boosts', icon: '🚀', description: 'Boost templates and sending' },
 ];
 
-const COMMANDS: CommandTemplate[] = [
+export const COMMANDS: CommandTemplate[] = [
     // Identity
     {
         id: 'get-did',

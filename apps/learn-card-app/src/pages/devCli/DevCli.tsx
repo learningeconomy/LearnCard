@@ -8,7 +8,8 @@ import '@xterm/xterm/css/xterm.css';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import * as types from '@learncard/types';
-import CommandSidebar from './CommandSidebar';
+import CommandSidebar, { COMMANDS } from './CommandSidebar';
+import ChainBuilder, { Chain, ChainStep } from './ChainBuilder';
 
 const WELCOME_MESSAGE = `
 Welcome to the LearnCard Browser CLI!
@@ -99,6 +100,7 @@ const DevCli: React.FC = () => {
 
     const [isReady, setIsReady] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [chainSidebarOpen, setChainSidebarOpen] = useState(false);
     const [copyNotification, setCopyNotification] = useState<string | null>(null);
     const { initWallet } = useWallet();
 
@@ -527,6 +529,104 @@ const DevCli: React.FC = () => {
         }
     }, []);
 
+    const getStepCommand = useCallback((step: ChainStep): string => {
+        if (step.type === 'custom') {
+            return step.customCommand || '';
+        }
+
+        const template = COMMANDS.find(c => c.id === step.templateId);
+        if (!template) return '';
+
+        let result = template.template;
+
+        template.params.forEach(param => {
+            let value = step.paramValues[param.name] || param.defaultValue || '';
+
+            if (param.type === 'json' && value.trim()) {
+                try {
+                    const parsed = JSON.parse(value);
+                    value = JSON.stringify(parsed);
+                } catch {
+                    value = value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                }
+            }
+
+            result = result.replace(`{{${param.name}}}`, value);
+        });
+
+        return result;
+    }, []);
+
+    const handleExecuteChain = useCallback(async (chain: Chain): Promise<{ stepId: string; result?: string; error?: string }[]> => {
+        const learnCard = learnCardRef.current;
+        const term = terminalInstanceRef.current;
+
+        if (!learnCard || !term) {
+            return chain.steps.map(step => ({ stepId: step.id, error: 'Terminal or wallet not ready' }));
+        }
+
+        const results: { stepId: string; result?: string; error?: string }[] = [];
+        let lastResult: unknown = undefined;
+
+        term.write('\r\n');
+        writeLine('━━━ Running Chain: ' + chain.name + ' ━━━', '33');
+
+        for (let i = 0; i < chain.steps.length; i++) {
+            const step = chain.steps[i];
+            const command = getStepCommand(step);
+
+            term.write('\r\n');
+            writeLine(`Step ${i + 1}: ${command.substring(0, 60)}${command.length > 60 ? '...' : ''}`, '36');
+
+            if (!command.trim()) {
+                results.push({ stepId: step.id, error: 'Empty command' });
+                writeLine('  Error: Empty command', '31');
+                continue;
+            }
+
+            try {
+                const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
+                const fn = new AsyncFunction(
+                    'learnCard',
+                    'types',
+                    'copy',
+                    '_',
+                    `return (${command})`
+                );
+
+                const result = await fn(learnCard, types, copyToClipboard, lastResult);
+                lastResult = result;
+
+                const formatted = formatOutput(result);
+                results.push({ stepId: step.id, result: formatted });
+
+                writeLine('  ✓ Success', '32');
+
+                // Show truncated output
+                const lines = formatted.split('\n');
+
+                if (lines.length > 3) {
+                    writeLine('  ' + lines[0], '32');
+                    writeLine('  ' + lines[1], '32');
+                    writeLine('  ... (' + (lines.length - 2) + ' more lines)', '90');
+                } else {
+                    lines.forEach(line => writeLine('  ' + line, '32'));
+                }
+            } catch (e) {
+                const errorMsg = e instanceof Error ? e.message : String(e);
+                results.push({ stepId: step.id, error: errorMsg });
+                writeLine('  ✗ Error: ' + errorMsg, '31');
+            }
+        }
+
+        term.write('\r\n');
+        writeLine('━━━ Chain Complete ━━━', '33');
+        writePrompt();
+
+        return results;
+    }, [copyToClipboard, getStepCommand, writeLine, writePrompt]);
+
     return (
         <IonPage className="cli-page">
             <IonHeader className="cli-header">
@@ -567,6 +667,12 @@ const DevCli: React.FC = () => {
                             </div>
                         )}
                     </div>
+
+                    <ChainBuilder
+                        isOpen={chainSidebarOpen}
+                        onToggle={() => setChainSidebarOpen(!chainSidebarOpen)}
+                        onExecuteChain={handleExecuteChain}
+                    />
                 </div>
 
                 <style>{`
@@ -1044,6 +1150,515 @@ const DevCli: React.FC = () => {
                     .no-results p {
                         font-family: 'JetBrains Mono', monospace;
                         font-size: 14px;
+                    }
+
+                    /* Chain Builder Styles */
+                    .chain-toggle-closed {
+                        position: fixed;
+                        right: 0;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        width: 40px;
+                        height: 48px;
+                        background: linear-gradient(135deg, #3c3836 0%, #282828 100%);
+                        border: 1px solid #504945;
+                        border-right: none;
+                        border-radius: 8px 0 0 8px;
+                        color: #ebdbb2;
+                        font-size: 18px;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+                        z-index: 100;
+                        transition: all 0.2s ease;
+                    }
+
+                    .chain-toggle-closed:hover {
+                        background: linear-gradient(135deg, #504945 0%, #3c3836 100%);
+                        width: 48px;
+                    }
+
+                    .chain-builder {
+                        width: 340px;
+                        min-width: 340px;
+                        height: 100%;
+                        background: linear-gradient(180deg, #32302f 0%, #282828 100%);
+                        border-left: 1px solid #3c3836;
+                        display: flex;
+                        flex-direction: column;
+                        font-family: 'JetBrains Mono', monospace;
+                        overflow: hidden;
+                    }
+
+                    .chain-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding: 14px 16px;
+                        border-bottom: 1px solid #3c3836;
+                        background: rgba(0, 0, 0, 0.2);
+                    }
+
+                    .chain-header h3 {
+                        margin: 0;
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: #fbf1c7;
+                    }
+
+                    .chain-close-btn {
+                        background: none;
+                        border: none;
+                        color: #928374;
+                        font-size: 16px;
+                        cursor: pointer;
+                        padding: 4px;
+                        border-radius: 4px;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-close-btn:hover {
+                        color: #ebdbb2;
+                        background: rgba(255, 255, 255, 0.1);
+                    }
+
+                    .chain-selector {
+                        display: flex;
+                        gap: 8px;
+                        padding: 12px 16px;
+                        border-bottom: 1px solid #3c3836;
+                    }
+
+                    .chain-select {
+                        flex: 1;
+                        padding: 8px 12px;
+                        background: #1d2021;
+                        border: 1px solid #504945;
+                        border-radius: 6px;
+                        color: #ebdbb2;
+                        font-size: 12px;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                    }
+
+                    .chain-select:focus {
+                        border-color: #fe8019;
+                        outline: none;
+                    }
+
+                    .chain-new-btn {
+                        padding: 8px 14px;
+                        background: #458588;
+                        border: none;
+                        border-radius: 6px;
+                        color: #fbf1c7;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-new-btn:hover {
+                        background: #83a598;
+                    }
+
+                    .chain-name-row {
+                        display: flex;
+                        gap: 8px;
+                        padding: 12px 16px;
+                        border-bottom: 1px solid #3c3836;
+                    }
+
+                    .chain-name-input {
+                        flex: 1;
+                        padding: 8px 12px;
+                        background: #1d2021;
+                        border: 1px solid #504945;
+                        border-radius: 6px;
+                        color: #ebdbb2;
+                        font-size: 13px;
+                        font-family: 'JetBrains Mono', monospace;
+                    }
+
+                    .chain-name-input:focus {
+                        border-color: #fe8019;
+                        outline: none;
+                    }
+
+                    .chain-delete-btn {
+                        background: none;
+                        border: none;
+                        color: #928374;
+                        font-size: 14px;
+                        cursor: pointer;
+                        padding: 8px;
+                        border-radius: 6px;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-delete-btn:hover {
+                        color: #fb4934;
+                        background: rgba(251, 73, 52, 0.1);
+                    }
+
+                    .chain-steps {
+                        flex: 1;
+                        overflow-y: auto;
+                        padding: 12px;
+                    }
+
+                    .chain-empty {
+                        text-align: center;
+                        padding: 32px 16px;
+                        color: #928374;
+                        font-size: 12px;
+                    }
+
+                    .chain-step {
+                        background: #1d2021;
+                        border: 1px solid #3c3836;
+                        border-radius: 8px;
+                        margin-bottom: 10px;
+                        overflow: hidden;
+                        cursor: grab;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-step:hover {
+                        border-color: #504945;
+                    }
+
+                    .chain-step-pending { border-left: 3px solid #928374; }
+                    .chain-step-running { border-left: 3px solid #fabd2f; }
+                    .chain-step-success { border-left: 3px solid #b8bb26; }
+                    .chain-step-error { border-left: 3px solid #fb4934; }
+
+                    .chain-step-header {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 10px 12px;
+                        background: rgba(0, 0, 0, 0.2);
+                    }
+
+                    .chain-step-number {
+                        width: 22px;
+                        height: 22px;
+                        background: #504945;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #ebdbb2;
+                    }
+
+                    .chain-step-name {
+                        flex: 1;
+                        font-size: 12px;
+                        color: #ebdbb2;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+
+                    .chain-step-actions {
+                        display: flex;
+                        gap: 4px;
+                    }
+
+                    .chain-step-actions button {
+                        background: none;
+                        border: none;
+                        color: #928374;
+                        font-size: 12px;
+                        cursor: pointer;
+                        padding: 4px 6px;
+                        border-radius: 4px;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-step-actions button:hover:not(:disabled) {
+                        color: #ebdbb2;
+                        background: rgba(255, 255, 255, 0.1);
+                    }
+
+                    .chain-step-actions button:disabled {
+                        opacity: 0.3;
+                        cursor: not-allowed;
+                    }
+
+                    .chain-step-edit {
+                        padding: 12px;
+                        border-top: 1px solid #3c3836;
+                    }
+
+                    .chain-param {
+                        margin-bottom: 10px;
+                    }
+
+                    .chain-param label {
+                        display: block;
+                        font-size: 10px;
+                        color: #928374;
+                        margin-bottom: 4px;
+                        text-transform: uppercase;
+                    }
+
+                    .chain-param input,
+                    .chain-param textarea,
+                    .chain-param select {
+                        width: 100%;
+                        padding: 8px 10px;
+                        background: #282828;
+                        border: 1px solid #504945;
+                        border-radius: 4px;
+                        color: #ebdbb2;
+                        font-size: 11px;
+                        font-family: 'JetBrains Mono', monospace;
+                    }
+
+                    .chain-param input:focus,
+                    .chain-param textarea:focus,
+                    .chain-param select:focus {
+                        border-color: #fe8019;
+                        outline: none;
+                    }
+
+                    .chain-param textarea {
+                        min-height: 60px;
+                        resize: vertical;
+                    }
+
+                    .chain-custom-input {
+                        width: 100%;
+                        min-height: 80px;
+                        padding: 10px;
+                        background: #282828;
+                        border: 1px solid #504945;
+                        border-radius: 4px;
+                        color: #ebdbb2;
+                        font-size: 11px;
+                        font-family: 'JetBrains Mono', monospace;
+                        resize: vertical;
+                    }
+
+                    .chain-custom-input:focus {
+                        border-color: #fe8019;
+                        outline: none;
+                    }
+
+                    .chain-step-preview {
+                        margin-top: 10px;
+                        padding: 8px;
+                        background: #282828;
+                        border-radius: 4px;
+                        overflow-x: auto;
+                    }
+
+                    .chain-step-preview code {
+                        font-size: 10px;
+                        color: #b8bb26;
+                        word-break: break-all;
+                        white-space: pre-wrap;
+                    }
+
+                    .chain-step-output {
+                        padding: 10px 12px;
+                        border-top: 1px solid #3c3836;
+                        font-size: 11px;
+                        max-height: 120px;
+                        overflow-y: auto;
+                    }
+
+                    .chain-step-output pre {
+                        margin: 0;
+                        white-space: pre-wrap;
+                        word-break: break-all;
+                        color: #b8bb26;
+                    }
+
+                    .chain-step-output pre.error {
+                        color: #fb4934;
+                    }
+
+                    .chain-step-output-running {
+                        color: #fabd2f;
+                    }
+
+                    .chain-add-buttons {
+                        display: flex;
+                        gap: 8px;
+                        padding: 12px 16px;
+                        border-top: 1px solid #3c3836;
+                    }
+
+                    .chain-add-template-btn,
+                    .chain-add-custom-btn {
+                        flex: 1;
+                        padding: 10px;
+                        border: 1px dashed #504945;
+                        border-radius: 6px;
+                        background: transparent;
+                        color: #928374;
+                        font-size: 12px;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-add-template-btn:hover,
+                    .chain-add-custom-btn:hover {
+                        border-color: #fe8019;
+                        color: #ebdbb2;
+                        background: rgba(254, 128, 25, 0.05);
+                    }
+
+                    .chain-command-picker {
+                        position: absolute;
+                        bottom: 100px;
+                        left: 16px;
+                        right: 16px;
+                        background: #1d2021;
+                        border: 1px solid #504945;
+                        border-radius: 8px;
+                        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
+                        max-height: 300px;
+                        display: flex;
+                        flex-direction: column;
+                        overflow: hidden;
+                        z-index: 10;
+                    }
+
+                    .chain-picker-header {
+                        display: flex;
+                        gap: 8px;
+                        padding: 10px;
+                        border-bottom: 1px solid #3c3836;
+                    }
+
+                    .chain-picker-search {
+                        flex: 1;
+                        padding: 8px 10px;
+                        background: #282828;
+                        border: 1px solid #504945;
+                        border-radius: 4px;
+                        color: #ebdbb2;
+                        font-size: 12px;
+                        font-family: 'JetBrains Mono', monospace;
+                    }
+
+                    .chain-picker-search:focus {
+                        border-color: #fe8019;
+                        outline: none;
+                    }
+
+                    .chain-picker-header button {
+                        background: none;
+                        border: none;
+                        color: #928374;
+                        font-size: 14px;
+                        cursor: pointer;
+                        padding: 4px 8px;
+                    }
+
+                    .chain-picker-header button:hover {
+                        color: #ebdbb2;
+                    }
+
+                    .chain-picker-list {
+                        flex: 1;
+                        overflow-y: auto;
+                        padding: 8px;
+                    }
+
+                    .chain-picker-item {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 2px;
+                        width: 100%;
+                        padding: 10px 12px;
+                        background: transparent;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        text-align: left;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-picker-item:hover {
+                        background: rgba(254, 128, 25, 0.1);
+                    }
+
+                    .chain-picker-name {
+                        font-size: 12px;
+                        font-weight: 500;
+                        color: #ebdbb2;
+                    }
+
+                    .chain-picker-desc {
+                        font-size: 10px;
+                        color: #928374;
+                    }
+
+                    .chain-run-btn {
+                        margin: 12px 16px 16px;
+                        padding: 12px;
+                        background: linear-gradient(135deg, #98971a 0%, #b8bb26 100%);
+                        border: none;
+                        border-radius: 8px;
+                        color: #1d2021;
+                        font-size: 13px;
+                        font-weight: 600;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-run-btn:hover:not(:disabled) {
+                        background: linear-gradient(135deg, #b8bb26 0%, #98971a 100%);
+                        transform: translateY(-1px);
+                    }
+
+                    .chain-run-btn:disabled {
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                    }
+
+                    .chain-empty-state {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 48px 24px;
+                        text-align: center;
+                    }
+
+                    .chain-empty-state p {
+                        color: #928374;
+                        font-size: 13px;
+                        margin-bottom: 16px;
+                    }
+
+                    .chain-create-first-btn {
+                        padding: 12px 20px;
+                        background: #458588;
+                        border: none;
+                        border-radius: 8px;
+                        color: #fbf1c7;
+                        font-size: 13px;
+                        font-weight: 500;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-create-first-btn:hover {
+                        background: #83a598;
                     }
                 `}</style>
             </IonContent>
