@@ -490,7 +490,20 @@ const CommandSidebar: React.FC<CommandSidebarProps> = ({ onInsertCommand, isOpen
         const values = paramValues[command.id] || {};
 
         command.params.forEach(param => {
-            const value = values[param.name] || param.defaultValue || '';
+            let value = values[param.name] || param.defaultValue || '';
+
+            // For JSON params, try to minify to single line for terminal compatibility
+            if (param.type === 'json' && value.trim()) {
+                try {
+                    // Try to parse and re-stringify to minify
+                    const parsed = JSON.parse(value);
+                    value = JSON.stringify(parsed);
+                } catch {
+                    // If not valid JSON, just remove newlines
+                    value = value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                }
+            }
+
             result = result.replace(`{{${param.name}}}`, value);
         });
 
