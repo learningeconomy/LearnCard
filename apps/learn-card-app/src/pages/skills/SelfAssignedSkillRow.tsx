@@ -1,6 +1,6 @@
 import React from 'react';
 
-import SlimCaretRight from '../../components/svgs/SlimCaretRight';
+import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
 import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
@@ -26,7 +26,7 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
         <div
             role="button"
             // onClick={handleClick}
-            className="p-[10px] flex items-center gap-[10px] text-grayscale-900 bg-white rounded-[15px] shadow-box-bottom h-[72px] w-full"
+            className="p-[10px] pl-[15px] flex items-center gap-[10px] text-grayscale-900 bg-white rounded-[15px] shadow-box-bottom w-full"
         >
             <>
                 {isNodeSelected ? (
@@ -38,8 +38,11 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
 
             <CompetencyIcon icon={skill.icon} />
 
-            <div className="flex-1 min-w-0 font-poppins text-[17px] text-grayscale-900">
-                <p className="line-clamp-2">{skill.targetName}</p>
+            <div className="flex flex-col items-start">
+                {/* <p className="text-grayscale-700 text-[12px] font-poppins">Based on Resume</p> */}
+                <div className="flex-1 min-w-0 font-poppins text-[16px] text-grayscale-900">
+                    <p className="line-clamp-2">{skill.targetName}</p>
+                </div>
             </div>
 
             <button
@@ -56,8 +59,7 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
                     );
                 }}
             >
-                {/* TODO should be info icon */}
-                <SlimCaretRight className="w-[24px] h-[24px]" strokeWidth="2" />
+                <InfoIcon className="w-[30px] h-[30px] text-grayscale-500" version="thinner" />
             </button>
         </div>
     );
