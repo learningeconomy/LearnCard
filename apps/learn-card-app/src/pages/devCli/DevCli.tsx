@@ -102,7 +102,15 @@ const DevCli: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [chainSidebarOpen, setChainSidebarOpen] = useState(false);
     const [copyNotification, setCopyNotification] = useState<string | null>(null);
+    const [showWelcome, setShowWelcome] = useState(() => {
+        return !localStorage.getItem('learncard-cli-welcomed');
+    });
     const { initWallet } = useWallet();
+
+    const dismissWelcome = useCallback(() => {
+        localStorage.setItem('learncard-cli-welcomed', 'true');
+        setShowWelcome(false);
+    }, []);
 
     const copyToClipboard = useCallback(async (value: unknown): Promise<string> => {
         const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -673,6 +681,57 @@ const DevCli: React.FC = () => {
                         onToggle={() => setChainSidebarOpen(!chainSidebarOpen)}
                         onExecuteChain={handleExecuteChain}
                     />
+
+                    {showWelcome && (
+                        <div className="welcome-overlay">
+                            <div className="welcome-modal">
+                                <div className="welcome-icon">👋</div>
+
+                                <h2>Welcome to the LearnCard CLI</h2>
+
+                                <p className="welcome-intro">
+                                    This is a <strong>developer tool</strong> for exploring and testing the LearnCard API.
+                                    If you're not sure why you're here, you probably don't need this tool!
+                                </p>
+
+                                <div className="welcome-section">
+                                    <h4>🎯 What you can do here</h4>
+
+                                    <ul>
+                                        <li>Execute JavaScript commands with your LearnCard wallet</li>
+                                        <li>Issue, verify, and manage credentials</li>
+                                        <li>Test network operations and boost workflows</li>
+                                        <li>Build and run command chains for automation</li>
+                                    </ul>
+                                </div>
+
+                                <div className="welcome-section">
+                                    <h4>📚 Getting started</h4>
+
+                                    <ul>
+                                        <li><code>learnCard</code> — Your wallet instance</li>
+                                        <li><code>help</code> — Show available commands</li>
+                                        <li>Use the <strong>Command Builder</strong> (left) to explore the API</li>
+                                        <li>Use the <strong>Chain Builder</strong> (right) to automate workflows</li>
+                                    </ul>
+                                </div>
+
+                                <div className="welcome-warning">
+                                    <h4>⚠️ Important</h4>
+
+                                    <p>
+                                        This CLI executes real commands against your wallet.
+                                        Actions like issuing credentials or sending data to the network <strong>cannot be undone</strong>.
+                                        Only run commands you understand.
+                                    </p>
+                                </div>
+
+                                <button onClick={dismissWelcome} className="welcome-btn">
+                                    I understand, let's go!
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <style>{`
@@ -1804,6 +1863,141 @@ const DevCli: React.FC = () => {
 
                     .chain-trust-accept:hover {
                         background: linear-gradient(135deg, #fb4934 0%, #cc241d 100%);
+                    }
+
+                    /* Welcome Modal */
+                    .welcome-overlay {
+                        position: absolute;
+                        inset: 0;
+                        background: rgba(29, 32, 33, 0.95);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 200;
+                        padding: 24px;
+                    }
+
+                    .welcome-modal {
+                        background: linear-gradient(180deg, #32302f 0%, #282828 100%);
+                        border: 1px solid #504945;
+                        border-radius: 16px;
+                        padding: 32px;
+                        max-width: 500px;
+                        width: 100%;
+                        box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+                    }
+
+                    .welcome-icon {
+                        font-size: 56px;
+                        text-align: center;
+                        margin-bottom: 16px;
+                    }
+
+                    .welcome-modal h2 {
+                        margin: 0 0 16px;
+                        font-size: 24px;
+                        font-weight: 600;
+                        color: #fbf1c7;
+                        text-align: center;
+                        font-family: 'JetBrains Mono', monospace;
+                    }
+
+                    .welcome-intro {
+                        font-size: 14px;
+                        color: #ebdbb2;
+                        text-align: center;
+                        line-height: 1.6;
+                        margin: 0 0 24px;
+                    }
+
+                    .welcome-intro strong {
+                        color: #fe8019;
+                    }
+
+                    .welcome-section {
+                        background: rgba(0, 0, 0, 0.2);
+                        border-radius: 10px;
+                        padding: 16px;
+                        margin-bottom: 16px;
+                    }
+
+                    .welcome-section h4 {
+                        margin: 0 0 12px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: #ebdbb2;
+                    }
+
+                    .welcome-section ul {
+                        margin: 0;
+                        padding: 0 0 0 20px;
+                        font-size: 13px;
+                        color: #a89984;
+                        line-height: 1.8;
+                    }
+
+                    .welcome-section li {
+                        margin-bottom: 4px;
+                    }
+
+                    .welcome-section code {
+                        background: #1d2021;
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 12px;
+                        color: #8ec07c;
+                    }
+
+                    .welcome-section strong {
+                        color: #ebdbb2;
+                    }
+
+                    .welcome-warning {
+                        background: rgba(251, 73, 52, 0.1);
+                        border: 1px solid rgba(251, 73, 52, 0.3);
+                        border-radius: 10px;
+                        padding: 16px;
+                        margin-bottom: 24px;
+                    }
+
+                    .welcome-warning h4 {
+                        margin: 0 0 8px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: #fb4934;
+                    }
+
+                    .welcome-warning p {
+                        margin: 0;
+                        font-size: 12px;
+                        color: #ebdbb2;
+                        line-height: 1.6;
+                    }
+
+                    .welcome-warning strong {
+                        color: #fabd2f;
+                    }
+
+                    .welcome-btn {
+                        display: block;
+                        width: 100%;
+                        padding: 14px 24px;
+                        background: linear-gradient(135deg, #98971a 0%, #b8bb26 100%);
+                        border: none;
+                        border-radius: 10px;
+                        color: #1d2021;
+                        font-size: 15px;
+                        font-weight: 600;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+
+                    .welcome-btn:hover {
+                        background: linear-gradient(135deg, #b8bb26 0%, #98971a 100%);
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 16px rgba(184, 187, 38, 0.3);
                     }
                 `}</style>
             </IonContent>
