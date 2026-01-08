@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.94.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.2
+    -   @learncard/open-badge-v2-plugin@1.1.2
+    -   @learncard/react@2.9.4
+    -   @learncard/lca-api-plugin@1.1.4
+
 ## 1.94.4
 
 ### Patch Changes

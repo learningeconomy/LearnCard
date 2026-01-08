@@ -8,6 +8,7 @@ import {
     injectObv3AlignmentsIntoCredentialForBoost,
     buildObv3AlignmentsForBoost,
 } from '@services/skills-provider/inject';
+import { hasMustacheVariables } from '@helpers/template.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
@@ -85,6 +86,26 @@ export const verifyCredentialIsDerivedFromBoost = async (
     if (!isEqual(credential.boostId, boostURI)) {
         console.error('Credential boostId !== boost id', credential.boostId, boostURI);
         return false;
+    }
+
+    // If the boost template contains Mustache variables, we use a more lenient verification.
+    // We only verify that the credential type matches the template type, since other fields
+    // may have been dynamically substituted at issuance time.
+    const boostTemplateString = boost?.dataValues?.boost;
+    const isTemplatedBoost = hasMustacheVariables(boostTemplateString);
+
+    if (isTemplatedBoost) {
+        // For templated boosts, only verify the type matches
+        if (!isEqual(credential.type, boostCredential.type)) {
+            console.error(
+                'Credential type !== boost credential type (templated boost)',
+                credential.type,
+                boostCredential.type
+            );
+            return false;
+        }
+        // Templated boost passed basic verification
+        return true;
     }
 
     /// Simplify Comparison

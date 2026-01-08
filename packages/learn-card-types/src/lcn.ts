@@ -359,6 +359,7 @@ export const SendBoostInputValidator = z
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
+        templateData: z.record(z.string(), z.unknown()).optional(),
     })
     .refine(data => data.templateUri || data.template, {
         message: 'Either templateUri or template creation data must be provided.',

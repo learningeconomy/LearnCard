@@ -1,6 +1,6 @@
 {
     "name": "scoutpass-app",
-    "version": "1.89.8",
+    "version": "1.89.9",
     "private": true,
     "dependencies": {
         "@capacitor-community/sqlite": "^7.0.1",
@@ -96,6 +96,8 @@
     },
     "scripts": {
         "dev": "docker compose -f compose-local.yaml up --build",
+        "dev-no-build": "docker compose -f compose-local.yaml up",
+        "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "start": "vite",
         "docker-start": "LCN_URL=http://localhost:4000/trpc LCN_API_URL=http://localhost:4000/api CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc vite --host",
         "serve": "vite",
