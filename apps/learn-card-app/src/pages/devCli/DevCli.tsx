@@ -829,7 +829,8 @@ const DevCli: React.FC = () => {
 
                     .cli-container {
                         display: flex;
-                        height: 100%;
+                        height: calc(100vh - 56px);
+                        max-height: calc(100vh - 56px);
                         overflow: hidden;
                         background: #1d2021;
                     }
