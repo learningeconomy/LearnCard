@@ -13,19 +13,21 @@ type SelfAssignedSkillRowProps = {
     skill: SkillFrameworkNode;
     framework: SkillFramework;
     isNodeSelected?: boolean;
+    handleToggleSelect: () => void;
 };
 
 const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
     skill,
     framework,
     isNodeSelected,
+    handleToggleSelect,
 }) => {
     const { newModal } = useModal();
 
     return (
         <div
             role="button"
-            // onClick={handleClick}
+            onClick={handleToggleSelect}
             className="p-[10px] pl-[15px] flex items-center gap-[10px] text-grayscale-900 bg-white rounded-[15px] shadow-box-bottom w-full"
         >
             <>

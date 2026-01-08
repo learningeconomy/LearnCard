@@ -16,7 +16,9 @@ type SelfAssignSkillsModalProps = {};
 
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { closeModal } = useModal();
+
     const [searchInput, setSearchInput] = useState('');
+    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
 
     const { data: frameworks = [] } = useListMySkillFrameworks();
     const selfAssignedSkillFramework = frameworks[0]; // TODO arbitrary for now
@@ -50,6 +52,14 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         searchResultsApiData?.records?.map((record: ApiSkillNode) =>
             convertApiSkillNodeToSkillTreeNode(record)
         ) || [];
+
+    const handleToggleSelect = (skillId: string) => {
+        if (selectedSkills.includes(skillId)) {
+            setSelectedSkills(selectedSkills.filter(id => id !== skillId));
+        } else {
+            setSelectedSkills([...selectedSkills, skillId]);
+        }
+    };
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
@@ -101,6 +111,8 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                             <SelfAssignedSkillRow
                                 skill={skill}
                                 framework={selfAssignedSkillFramework}
+                                handleToggleSelect={() => handleToggleSelect(skill.id)}
+                                isNodeSelected={selectedSkills.includes(skill.id)}
                             />
                         ))}
                     </>
