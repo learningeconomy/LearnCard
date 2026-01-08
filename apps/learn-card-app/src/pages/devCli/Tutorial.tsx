@@ -379,6 +379,194 @@ const TUTORIALS: Tutorial[] = [
             },
         ],
     },
+    {
+        id: 'chains',
+        title: 'Building Chains',
+        description: 'Learn to automate workflows with the Chain Builder',
+        icon: '⛓️',
+        duration: '4 min',
+        steps: [
+            {
+                title: 'What are Chains?',
+                content: (
+                    <>
+                        <p>
+                            <strong>Chains</strong> let you combine multiple commands into a reusable workflow.
+                            Think of them like macros or scripts that automate repetitive tasks.
+                        </p>
+                        <p><strong>Use cases:</strong></p>
+                        <ul>
+                            <li>Issue a credential and immediately verify it</li>
+                            <li>Create a boost and send it to multiple users</li>
+                            <li>Fetch data, transform it, and store the result</li>
+                        </ul>
+                    </>
+                ),
+            },
+            {
+                title: 'Opening Chain Builder',
+                content: (
+                    <>
+                        <p>
+                            Look for the <strong>⛓️ Chain Builder</strong> tab on the right side of the terminal.
+                            Click it to open the chain builder panel.
+                        </p>
+                        <p>
+                            If you don't see it, look for the toggle button on the right edge of the screen.
+                        </p>
+                        <p><strong>Tip:</strong> You can have both the Command Sidebar (left) and Chain Builder (right) open at the same time!</p>
+                    </>
+                ),
+            },
+            {
+                title: 'Adding Steps',
+                content: (
+                    <>
+                        <p>
+                            There are two ways to add steps to a chain:
+                        </p>
+                        <ul>
+                            <li><strong>From Command Sidebar:</strong> Click "Add to Chain" on any command</li>
+                            <li><strong>Custom Command:</strong> Type any JavaScript in the Chain Builder</li>
+                        </ul>
+                        <p>
+                            Let's try it! Open the Command Sidebar, find <strong>"Get DID"</strong> under Identity,
+                            and click "Add to Chain".
+                        </p>
+                    </>
+                ),
+            },
+            {
+                title: 'The _ Variable',
+                content: (
+                    <>
+                        <p>
+                            The magic of chains is the <code>_</code> variable. It holds the result of
+                            the previous step, letting you pass data through your workflow.
+                        </p>
+                        <p><strong>Example chain:</strong></p>
+                        <ol>
+                            <li><code>learnCard.invoke.getTestVc()</code> → creates a VC</li>
+                            <li><code>await learnCard.invoke.issueCredential(_)</code> → signs it (using _ from step 1)</li>
+                            <li><code>await learnCard.invoke.verifyCredential(_)</code> → verifies it (using _ from step 2)</li>
+                        </ol>
+                    </>
+                ),
+            },
+            {
+                title: 'Reordering Steps',
+                content: (
+                    <>
+                        <p>
+                            Made a mistake? No problem! You can:
+                        </p>
+                        <ul>
+                            <li><strong>Drag</strong> steps to reorder them (grab the step card)</li>
+                            <li><strong>Delete</strong> steps with the × button</li>
+                            <li><strong>Clear all</strong> to start fresh</li>
+                        </ul>
+                        <p>
+                            The step numbers update automatically when you reorder.
+                        </p>
+                    </>
+                ),
+            },
+            {
+                title: 'Running a Chain',
+                content: (
+                    <>
+                        <p>
+                            Once your chain is ready, click <strong>"▶ Run Chain"</strong> to execute it.
+                        </p>
+                        <p>
+                            The chain runner will:
+                        </p>
+                        <ul>
+                            <li>Execute each step in order</li>
+                            <li>Show the output of each step</li>
+                            <li>Stop if any step fails</li>
+                            <li>Pass each result to the next step via <code>_</code></li>
+                        </ul>
+                    </>
+                ),
+            },
+            {
+                title: 'Saving Chains',
+                content: (
+                    <>
+                        <p>
+                            Don't lose your work! Click <strong>"💾 Save"</strong> to save your chain.
+                        </p>
+                        <ul>
+                            <li>Give your chain a descriptive name</li>
+                            <li>Saved chains appear in the "Saved Chains" section</li>
+                            <li>Click a saved chain to load it</li>
+                            <li>Chains are stored in your browser's localStorage</li>
+                        </ul>
+                    </>
+                ),
+            },
+            {
+                title: 'Exporting Chains',
+                content: (
+                    <>
+                        <p>
+                            Want to share a chain with a colleague? Click <strong>"📋 Export"</strong>
+                            to copy the chain as JSON.
+                        </p>
+                        <p>
+                            You can then:
+                        </p>
+                        <ul>
+                            <li>Paste it into a document or message</li>
+                            <li>Save it to a file for version control</li>
+                            <li>Import it later by pasting into a custom step</li>
+                        </ul>
+                    </>
+                ),
+            },
+            {
+                title: 'Example: Issue & Verify',
+                content: (
+                    <>
+                        <p>
+                            Let's build a practical chain! Add these commands in order:
+                        </p>
+                        <ol>
+                            <li><strong>Step 1:</strong> <code>learnCard.invoke.getTestVc()</code></li>
+                            <li><strong>Step 2:</strong> <code>await learnCard.invoke.issueCredential(_)</code></li>
+                            <li><strong>Step 3:</strong> <code>await learnCard.invoke.verifyCredential(_)</code></li>
+                        </ol>
+                        <p>
+                            Run it to create, sign, and verify a test credential in one go!
+                        </p>
+                    </>
+                ),
+                command: 'learnCard.invoke.getTestVc()',
+                commandLabel: 'Add Step 1',
+                hint: 'Add this as the first step of your chain, then add the other steps manually',
+            },
+            {
+                title: 'You\'re a Chain Master!',
+                content: (
+                    <>
+                        <p>
+                            🎉 <strong>Congratulations!</strong> You now know how to:
+                        </p>
+                        <ul>
+                            <li>Create multi-step command chains</li>
+                            <li>Use <code>_</code> to pass data between steps</li>
+                            <li>Reorder, save, and export chains</li>
+                            <li>Automate complex LearnCard workflows</li>
+                        </ul>
+                        <p>
+                            Start building your own chains to speed up your development workflow!
+                        </p>
+                    </>
+                ),
+            },
+        ],
+    },
 ];
 
 interface TutorialProps {
