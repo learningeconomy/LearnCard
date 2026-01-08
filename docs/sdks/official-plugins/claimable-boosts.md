@@ -86,7 +86,7 @@ async function quickstartBoost() {
 
     // 3. Create a Boost Template (the credential structure)
     console.log('Creating boost template...');
-    const boostTemplate = await claimableLearnCard.invoke.newCredential({
+    const boostTemplate = claimableLearnCard.invoke.newCredential({
       type: 'boost', 
       boostName: 'Quickstart Achievement',
       boostImage: 'https://placehold.co/400x400?text=Quickstart', // Optional placeholder image
@@ -216,7 +216,7 @@ try {
 2. Create a Boost Template: Define the structure and content of the credential (boost) you want to issue. This follows the W3C Verifiable Credential data model, often using specific LearnCard contexts.
 
 ```javascript
-const boostTemplate = await claimableLearnCard.invoke.newCredential({
+const boostTemplate = claimableLearnCard.invoke.newCredential({
     type: 'boost', 
     boostName: 'Advanced Course Completion',
     boostImage: 'https://placehold.co/400x400?text=Course', // Optional placeholder image
@@ -378,7 +378,7 @@ async function createClaimableBadgeFull() {
 
     // 3. Create boost template
     console.log('Creating boost template...');
-    const boostTemplate = await claimableLearnCard.invoke.newCredential({
+    const boostTemplate = claimableLearnCard.invoke.newCredential({
         type: 'boost', 
         boostName: 'Full Example Certificate',
         boostImage: 'https://placehold.co/400x400?text=Full+Example', // Optional placeholder image
