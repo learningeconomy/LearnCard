@@ -314,8 +314,6 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         />
 
                         <IssuerSection
-                            template={template}
-                            onChange={onChange}
                             isExpanded={expandedSections.has('issuer')}
                             onToggle={() => toggleSection('issuer')}
                         />
