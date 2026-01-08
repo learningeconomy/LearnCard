@@ -1027,6 +1027,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
         let boostName = 'Course Completion';
         let boostDescription = '';
+        let achievementTypeSet = false;
 
         // Track aggregate fields (alignment, evidence, result, related, subject)
         const alignmentData: Record<string, string> = {};
@@ -1115,6 +1116,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                 case 'achievement.achievementType':
                     template.credentialSubject.achievement.achievementType = staticField(value);
+                    achievementTypeSet = true;
                     break;
 
                 case 'achievement.criteria.narrative':
@@ -1235,6 +1237,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             if (!template.image?.value && !template.credentialSubject.achievement.image?.value) {
                 template.credentialSubject.achievement.image = staticField(defaultImage);
             }
+        }
+
+        // Default achievement type to "Course" for course catalog imports (OBv3 spec)
+        if (!achievementTypeSet) {
+            template.credentialSubject.achievement.achievementType = staticField('Course');
         }
 
         // Add issuance-level fields as DYNAMIC (Mustache variables)
