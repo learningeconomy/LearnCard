@@ -532,7 +532,7 @@ const DevCli: React.FC = () => {
             <IonHeader className="cli-header">
                 <IonToolbar className="cli-toolbar">
                     <IonButtons slot="start">
-                        <IonBackButton defaultHref="/admin-tools" className="cli-back-btn" />
+                        <IonBackButton defaultHref="/launchpad" className="cli-back-btn" />
                     </IonButtons>
 
                     <IonTitle className="cli-title">LearnCard CLI</IonTitle>
