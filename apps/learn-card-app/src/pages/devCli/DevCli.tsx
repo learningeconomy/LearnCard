@@ -1682,6 +1682,129 @@ const DevCli: React.FC = () => {
                     .chain-create-first-btn:hover {
                         background: #83a598;
                     }
+
+                    /* Trust Warning Modal */
+                    .chain-trust-overlay {
+                        position: absolute;
+                        inset: 0;
+                        background: rgba(0, 0, 0, 0.85);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 100;
+                        padding: 16px;
+                    }
+
+                    .chain-trust-modal {
+                        background: #1d2021;
+                        border: 1px solid #fb4934;
+                        border-radius: 12px;
+                        padding: 24px;
+                        max-width: 340px;
+                        box-shadow: 0 8px 32px rgba(251, 73, 52, 0.2);
+                    }
+
+                    .chain-trust-icon {
+                        font-size: 48px;
+                        text-align: center;
+                        margin-bottom: 16px;
+                    }
+
+                    .chain-trust-modal h4 {
+                        margin: 0 0 12px;
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: #fb4934;
+                        text-align: center;
+                    }
+
+                    .chain-trust-modal p {
+                        font-size: 13px;
+                        color: #ebdbb2;
+                        line-height: 1.5;
+                        margin: 0 0 12px;
+                    }
+
+                    .chain-trust-modal strong {
+                        color: #fabd2f;
+                    }
+
+                    .chain-trust-details {
+                        font-size: 11px !important;
+                        color: #928374 !important;
+                        background: rgba(0, 0, 0, 0.3);
+                        padding: 10px 12px;
+                        border-radius: 6px;
+                    }
+
+                    .chain-trust-commands {
+                        margin: 12px 0;
+                        padding: 10px 12px;
+                        background: #282828;
+                        border-radius: 6px;
+                        border: 1px solid #3c3836;
+                    }
+
+                    .chain-trust-commands p {
+                        font-size: 11px;
+                        color: #928374;
+                        margin: 0 0 8px;
+                    }
+
+                    .chain-trust-commands ul {
+                        margin: 0;
+                        padding: 0 0 0 16px;
+                        font-size: 10px;
+                        color: #8ec07c;
+                        font-family: 'JetBrains Mono', monospace;
+                    }
+
+                    .chain-trust-commands li {
+                        margin-bottom: 4px;
+                        word-break: break-all;
+                    }
+
+                    .chain-trust-actions {
+                        display: flex;
+                        gap: 10px;
+                        margin-top: 16px;
+                    }
+
+                    .chain-trust-cancel {
+                        flex: 1;
+                        padding: 10px;
+                        background: #3c3836;
+                        border: 1px solid #504945;
+                        border-radius: 6px;
+                        color: #ebdbb2;
+                        font-size: 12px;
+                        font-weight: 500;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-trust-cancel:hover {
+                        background: #504945;
+                    }
+
+                    .chain-trust-accept {
+                        flex: 1;
+                        padding: 10px;
+                        background: linear-gradient(135deg, #cc241d 0%, #fb4934 100%);
+                        border: none;
+                        border-radius: 6px;
+                        color: #fbf1c7;
+                        font-size: 12px;
+                        font-weight: 600;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-trust-accept:hover {
+                        background: linear-gradient(135deg, #fb4934 0%, #cc241d 100%);
+                    }
                 `}</style>
             </IonContent>
         </IonPage>

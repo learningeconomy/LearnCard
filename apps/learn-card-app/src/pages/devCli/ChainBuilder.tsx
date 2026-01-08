@@ -19,6 +19,8 @@ export interface Chain {
     steps: ChainStep[];
     createdAt: number;
     updatedAt: number;
+    imported?: boolean;
+    trusted?: boolean;
 }
 
 interface ChainBuilderProps {
@@ -52,6 +54,7 @@ const ChainBuilder: React.FC<ChainBuilderProps> = ({ isOpen, onToggle, onExecute
     const [commandSearch, setCommandSearch] = useState('');
     const [editingStepId, setEditingStepId] = useState<string | null>(null);
     const [draggedStepId, setDraggedStepId] = useState<string | null>(null);
+    const [showTrustWarning, setShowTrustWarning] = useState(false);
 
     const activeChain = chains.find(c => c.id === activeChainId) || null;
 
@@ -141,10 +144,13 @@ const ChainBuilder: React.FC<ChainBuilderProps> = ({ isOpen, onToggle, onExecute
                         })),
                         createdAt: Date.now(),
                         updatedAt: Date.now(),
+                        imported: true,
+                        trusted: false,
                     };
 
                     setChains(prev => [...prev, importedChain]);
                     setActiveChainId(importedChain.id);
+                    setShowTrustWarning(true);
                 } catch {
                     alert('Failed to parse chain file');
                 }
@@ -241,8 +247,21 @@ const ChainBuilder: React.FC<ChainBuilderProps> = ({ isOpen, onToggle, onExecute
         }));
     }, [activeChainId]);
 
+    const trustChain = useCallback((chainId: string) => {
+        setChains(prev => prev.map(c =>
+            c.id === chainId ? { ...c, trusted: true } : c
+        ));
+        setShowTrustWarning(false);
+    }, []);
+
     const runChain = useCallback(async () => {
         if (!activeChain || isRunning) return;
+
+        // Check if imported chain needs to be trusted first
+        if (activeChain.imported && !activeChain.trusted) {
+            setShowTrustWarning(true);
+            return;
+        }
 
         setIsRunning(true);
 
@@ -588,6 +607,62 @@ const ChainBuilder: React.FC<ChainBuilderProps> = ({ isOpen, onToggle, onExecute
                                         <span className="chain-picker-desc">{cmd.description}</span>
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {showTrustWarning && activeChain.imported && !activeChain.trusted && (
+                        <div className="chain-trust-overlay">
+                            <div className="chain-trust-modal">
+                                <div className="chain-trust-icon">⚠️</div>
+
+                                <h4>Security Warning</h4>
+
+                                <p>
+                                    This chain was imported from an external source.
+                                    <strong> Only run chains from sources you trust.</strong>
+                                </p>
+
+                                <p className="chain-trust-details">
+                                    Imported chains can execute arbitrary JavaScript code with access to your
+                                    LearnCard wallet, including issuing credentials, sending data to the network,
+                                    and accessing stored information.
+                                </p>
+
+                                <div className="chain-trust-commands">
+                                    <p>This chain contains {activeChain.steps.length} command(s):</p>
+
+                                    <ul>
+                                        {activeChain.steps.slice(0, 5).map((step, i) => {
+                                            const cmd = getStepCommand(step);
+                                            return (
+                                                <li key={step.id}>
+                                                    {cmd.length > 50 ? cmd.substring(0, 50) + '...' : cmd || '(custom command)'}
+                                                </li>
+                                            );
+                                        })}
+
+                                        {activeChain.steps.length > 5 && (
+                                            <li>...and {activeChain.steps.length - 5} more</li>
+                                        )}
+                                    </ul>
+                                </div>
+
+                                <div className="chain-trust-actions">
+                                    <button
+                                        onClick={() => setShowTrustWarning(false)}
+                                        className="chain-trust-cancel"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        onClick={() => trustChain(activeChain.id)}
+                                        className="chain-trust-accept"
+                                    >
+                                        I Trust This Chain
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
