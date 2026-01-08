@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { BoostCategoryOptionsEnum, BoostPageViewMode, useWallet } from 'learn-card-base';
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { BoostEarnedCard } from '../../../../../components/boost/boost-earned-card/BoostEarnedCard';
 
 import { OBv3CredentialTemplate, SectionId } from './types';
@@ -359,7 +360,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 <div className="w-[180px]">
                                     <BoostEarnedCard
                                         credential={previewCredential as any}
-                                        categoryType={BoostCategoryOptionsEnum.achievement}
+                                        categoryType={getDefaultCategoryForCredential(previewCredential as any) || BoostCategoryOptionsEnum.achievement}
                                         boostPageViewMode={BoostPageViewMode.Card}
                                         useWrapper={false}
                                         className="shadow-lg"

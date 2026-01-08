@@ -28,8 +28,9 @@ import {
     Pencil,
 } from 'lucide-react';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useFilestack } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
+import { ImageIcon } from 'lucide-react';
 
 import { CredentialTemplate, BrandingConfig, TemplateBoostMeta, PartnerProject } from '../types';
 import { 
@@ -444,7 +445,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
     const [issuanceFieldsIncluded, setIssuanceFieldsIncluded] = useState<Record<string, boolean>>({});
     const [templateNamePattern, setTemplateNamePattern] = useState('{{course_name}} Completion');
+    const [defaultImage, setDefaultImage] = useState<string>('');
     const csvInputRef = useRef<HTMLInputElement>(null);
+
+    // Filestack for default image upload
+    const { handleFileSelect: handleImageSelect, isLoading: isUploadingImage } = useFilestack({
+        onUpload: (url: string) => setDefaultImage(url),
+        fileType: 'image/*',
+    });
 
     const integrationId = project?.id;
 
@@ -1221,6 +1229,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             });
         });
 
+        // Apply default image if no image was mapped from CSV
+        if (defaultImage) {
+            // Only set if not already set by CSV mapping
+            if (!template.image?.value && !template.credentialSubject.achievement.image?.value) {
+                template.credentialSubject.achievement.image = staticField(defaultImage);
+            }
+        }
+
         // Add issuance-level fields as DYNAMIC (Mustache variables)
         Object.entries(issuanceFieldsIncluded).forEach(([fieldId, included]) => {
             if (!included) return;
@@ -1309,6 +1325,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         setCsvSampleRows([]);
         setColumnMappings({});
         setIssuanceFieldsIncluded({});
+        setDefaultImage('');
     };
 
     // Close import modal
@@ -1317,6 +1334,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         setCsvColumns([]);
         setCsvSampleRows([]);
         setColumnMappings({});
+        setDefaultImage('');
     };
 
     const handleUpdateTemplate = (id: string, updated: ExtendedTemplate) => {
@@ -1731,6 +1749,59 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     Course data (name, credits, etc.) will be <strong>baked in</strong>. 
                                     Recipient data (name, date) stays <strong>dynamic</strong> for issuance.
                                 </p>
+                            </div>
+
+                            {/* Default Image Section */}
+                            <div>
+                                <div className="mb-3">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Default Credential Image
+                                    </label>
+                                    <p className="text-xs text-gray-500">
+                                        This image will be used for all credentials unless overridden by a CSV column
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    {defaultImage ? (
+                                        <div className="relative group">
+                                            <img
+                                                src={defaultImage}
+                                                alt="Default credential"
+                                                className="w-20 h-20 rounded-xl object-cover border border-gray-200"
+                                            />
+
+                                            <button
+                                                onClick={() => setDefaultImage('')}
+                                                className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                                            <ImageIcon className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={handleImageSelect}
+                                        disabled={isUploadingImage}
+                                        className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                    >
+                                        {isUploadingImage ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Uploading...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="w-4 h-4" />
+                                                {defaultImage ? 'Change Image' : 'Upload Image'}
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Catalog Fields Section */}
