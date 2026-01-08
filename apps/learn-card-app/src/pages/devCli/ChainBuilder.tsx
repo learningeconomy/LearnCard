@@ -86,6 +86,76 @@ const ChainBuilder: React.FC<ChainBuilderProps> = ({ isOpen, onToggle, onExecute
         ));
     }, []);
 
+    const exportChain = useCallback((chain: Chain) => {
+        const exportData = {
+            ...chain,
+            steps: chain.steps.map(step => ({
+                ...step,
+                output: undefined,
+                error: undefined,
+                status: 'pending' as const,
+            })),
+            exportedAt: Date.now(),
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${chain.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-chain.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, []);
+
+    const importChain = useCallback(() => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+
+        input.onchange = (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target?.result as string);
+
+                    if (!data.name || !Array.isArray(data.steps)) {
+                        alert('Invalid chain file format');
+                        return;
+                    }
+
+                    const importedChain: Chain = {
+                        id: generateId(),
+                        name: data.name + ' (imported)',
+                        steps: data.steps.map((step: ChainStep) => ({
+                            ...step,
+                            id: generateId(),
+                            output: undefined,
+                            error: undefined,
+                            status: 'pending' as const,
+                        })),
+                        createdAt: Date.now(),
+                        updatedAt: Date.now(),
+                    };
+
+                    setChains(prev => [...prev, importedChain]);
+                    setActiveChainId(importedChain.id);
+                } catch {
+                    alert('Failed to parse chain file');
+                }
+            };
+
+            reader.readAsText(file);
+        };
+
+        input.click();
+    }, []);
+
     const addTemplateStep = useCallback((template: CommandTemplate) => {
         if (!activeChainId) return;
 
@@ -291,6 +361,10 @@ const ChainBuilder: React.FC<ChainBuilderProps> = ({ isOpen, onToggle, onExecute
                 <button onClick={createNewChain} className="chain-new-btn" title="New Chain">
                     +
                 </button>
+
+                <button onClick={importChain} className="chain-import-btn" title="Import Chain">
+                    📥
+                </button>
             </div>
 
             {activeChain && (
@@ -303,6 +377,14 @@ const ChainBuilder: React.FC<ChainBuilderProps> = ({ isOpen, onToggle, onExecute
                             className="chain-name-input"
                             placeholder="Chain name..."
                         />
+
+                        <button
+                            onClick={() => exportChain(activeChain)}
+                            className="chain-export-btn"
+                            title="Export Chain"
+                        >
+                            📤
+                        </button>
 
                         <button
                             onClick={() => deleteChain(activeChain.id)}

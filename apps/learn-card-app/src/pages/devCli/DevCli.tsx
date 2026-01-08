@@ -1287,7 +1287,8 @@ const DevCli: React.FC = () => {
                         outline: none;
                     }
 
-                    .chain-delete-btn {
+                    .chain-delete-btn,
+                    .chain-export-btn {
                         background: none;
                         border: none;
                         color: #928374;
@@ -1301,6 +1302,27 @@ const DevCli: React.FC = () => {
                     .chain-delete-btn:hover {
                         color: #fb4934;
                         background: rgba(251, 73, 52, 0.1);
+                    }
+
+                    .chain-export-btn:hover {
+                        color: #83a598;
+                        background: rgba(131, 165, 152, 0.1);
+                    }
+
+                    .chain-import-btn {
+                        padding: 8px 12px;
+                        background: #3c3836;
+                        border: 1px solid #504945;
+                        border-radius: 6px;
+                        color: #ebdbb2;
+                        font-size: 14px;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .chain-import-btn:hover {
+                        background: #504945;
+                        border-color: #83a598;
                     }
 
                     .chain-steps {
