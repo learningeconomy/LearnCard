@@ -27,6 +27,8 @@ export interface CommandCategory {
 }
 
 const CATEGORIES: CommandCategory[] = [
+    { id: 'helpers', name: 'Helpers', icon: '🛠️', description: 'Utility functions and helpers' },
+    { id: 'init', name: 'Initialization', icon: '⚡', description: 'Initialize LearnCard wallets' },
     { id: 'identity', name: 'Identity', icon: '🆔', description: 'DID and identity operations' },
     { id: 'credentials', name: 'Credentials', icon: '📜', description: 'Issue, verify, and manage VCs' },
     { id: 'network', name: 'Network', icon: '🌐', description: 'LearnCard Network operations' },
@@ -36,6 +38,110 @@ const CATEGORIES: CommandCategory[] = [
 ];
 
 export const COMMANDS: CommandTemplate[] = [
+    // Helpers
+    {
+        id: 'generate-random-key',
+        name: 'Generate Random Key',
+        description: 'Generate a cryptographically secure random 32-byte hex key',
+        template: 'Array.from(crypto.getRandomValues(new Uint8Array(32)), dec => dec.toString(16).padStart(2, "0")).join("")',
+        params: [],
+        category: 'helpers',
+    },
+    {
+        id: 'copy-last-result',
+        name: 'Copy Last Result',
+        description: 'Copy the last command result to clipboard',
+        template: 'copy(_)',
+        params: [],
+        category: 'helpers',
+    },
+    {
+        id: 'inspect-object-keys',
+        name: 'Inspect Object Keys',
+        description: 'List all keys of an object',
+        template: 'Object.keys({{object}})',
+        params: [
+            { name: 'object', type: 'string', placeholder: 'learnCard.invoke', description: 'Object to inspect', required: true },
+        ],
+        category: 'helpers',
+    },
+    {
+        id: 'json-stringify',
+        name: 'Pretty Print JSON',
+        description: 'Format an object as pretty JSON',
+        template: 'JSON.stringify({{object}}, null, 2)',
+        params: [
+            { name: 'object', type: 'string', placeholder: '_', description: 'Object to format', required: true },
+        ],
+        category: 'helpers',
+    },
+
+    // Initialization
+    {
+        id: 'init-empty',
+        name: 'Empty LearnCard',
+        description: 'Create an empty LearnCard (no key material, verify only)',
+        template: 'await initLearnCard({ didkit })',
+        params: [],
+        category: 'init',
+    },
+    {
+        id: 'init-from-seed',
+        name: 'LearnCard from Seed',
+        description: 'Create a LearnCard from a deterministic seed',
+        template: 'await initLearnCard({ seed: "{{seed}}", didkit })',
+        params: [
+            { name: 'seed', type: 'string', placeholder: 'my-secret-seed-hex', description: '64-char hex seed (shorter strings are zero-padded)', required: true },
+        ],
+        category: 'init',
+    },
+    {
+        id: 'init-with-network',
+        name: 'LearnCard with Network',
+        description: 'Create a LearnCard connected to LearnCard Network',
+        template: 'await initLearnCard({ seed: "{{seed}}", network: true, didkit })',
+        params: [
+            { name: 'seed', type: 'string', placeholder: 'my-secret-seed-hex', description: '64-char hex seed', required: true },
+        ],
+        category: 'init',
+    },
+    {
+        id: 'init-full',
+        name: 'Full LearnCard (Recommended)',
+        description: 'Create a fully configured LearnCard with network + cloud',
+        template: 'await initLearnCard({ seed: "{{seed}}", network: true, cloud: { url: "https://cloud.learncard.com" }, allowRemoteContexts: true, didkit })',
+        params: [
+            { name: 'seed', type: 'string', placeholder: 'my-secret-seed-hex', description: '64-char hex seed', required: true },
+        ],
+        category: 'init',
+    },
+    {
+        id: 'init-custom',
+        name: 'Custom LearnCard',
+        description: 'Create a LearnCard with no plugins (for custom builds)',
+        template: 'await initLearnCard({ custom: true })',
+        params: [],
+        category: 'init',
+    },
+    {
+        id: 'init-vc-api',
+        name: 'LearnCard with VC-API',
+        description: 'Create a LearnCard connected to default VC-API bridge',
+        template: 'await initLearnCard({ vcApi: true, didkit })',
+        params: [],
+        category: 'init',
+    },
+    {
+        id: 'init-vc-api-custom',
+        name: 'LearnCard with Custom VC-API',
+        description: 'Create a LearnCard connected to a custom VC-API endpoint',
+        template: 'await initLearnCard({ vcApi: "{{vcApiUrl}}", didkit })',
+        params: [
+            { name: 'vcApiUrl', type: 'string', placeholder: 'https://bridge.learncard.com', description: 'VC-API endpoint URL', required: true },
+        ],
+        category: 'init',
+    },
+
     // Identity
     {
         id: 'get-did',

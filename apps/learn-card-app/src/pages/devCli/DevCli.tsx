@@ -8,6 +8,8 @@ import '@xterm/xterm/css/xterm.css';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import * as types from '@learncard/types';
+import { initLearnCard } from '@learncard/init';
+import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 import CommandSidebar, { COMMANDS } from './CommandSidebar';
 import ChainBuilder, { Chain, ChainStep } from './ChainBuilder';
 import TutorialComponent from './Tutorial';
@@ -16,9 +18,11 @@ const WELCOME_MESSAGE = `
 Welcome to the LearnCard Browser CLI!
 
 Variables available:
-  learnCard   - Your LearnCard wallet instance
-  types       - Zod validators from @learncard/types
-  _           - Last command result
+  learnCard      - Your LearnCard wallet instance
+  initLearnCard  - Create new LearnCard wallets
+  didkit         - DIDKit WASM URL for wallet init
+  types          - Zod validators from @learncard/types
+  _              - Last command result
 
 Example commands:
   learnCard.id.did()
@@ -264,18 +268,20 @@ const DevCli: React.FC = () => {
 
         // Execute as JavaScript
         try {
-            // Create a function that has access to learnCard, types, copy, and _
+            // Create a function that has access to learnCard, initLearnCard, types, copy, and _
             const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
             const fn = new AsyncFunction(
                 'learnCard',
+                'initLearnCard',
+                'didkit',
                 'types',
                 'copy',
                 '_',
                 `return (${trimmedCommand})`
             );
 
-            const result = await fn(learnCard, types, copyToClipboard, lastResultRef.current);
+            const result = await fn(learnCard, initLearnCard, didkit, types, copyToClipboard, lastResultRef.current);
 
             // Store result for next command (unless it's a copy result message)
             if (typeof result !== 'string' || !result.startsWith('Copied ')) {
