@@ -68,8 +68,10 @@ custom:
 package:
   patterns: 
     - '!node_modules/**'
-    - 'node_modules/@learncard/didkit-plugin'
-    - 'node_modules/@learncard/didkit-plugin-node/**'
+    - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+    - 'node_modules/@learncard/didkit-plugin-node/*.node'
+    - 'node_modules/@learncard/didkit-plugin-node/package.json'
+    - 'node_modules/@learncard/didkit-plugin-node/dist/**'
 
 provider:
     name: aws
