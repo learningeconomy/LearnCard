@@ -80,10 +80,10 @@ const formatOutput = (value: unknown): string => {
     }
 };
 
-// Get highlight color for identifier type
+// Get highlight color for identifier type (Gruvbox colors)
 const getIdColor = (id: string): string => {
-    if (id.startsWith('lc:')) return '36'; // Cyan for LC URIs
-    if (id.startsWith('did:')) return '35'; // Magenta for DIDs
+    if (id.startsWith('lc:')) return '36'; // Aqua/Cyan for LC URIs
+    if (id.startsWith('did:')) return '35'; // Purple for DIDs
     return '36';
 };
 
@@ -119,7 +119,8 @@ const DevCli: React.FC = () => {
         const term = terminalInstanceRef.current;
 
         if (term) {
-            term.write('\r\n\x1b[36m❯\x1b[0m ');
+            // Gruvbox orange prompt
+            term.write('\r\n\x1b[38;2;254;128;25m❯\x1b[0m ');
         }
     }, []);
 
@@ -281,30 +282,35 @@ const DevCli: React.FC = () => {
 
         const term = new Terminal({
             cursorBlink: true,
+            cursorStyle: 'bar',
             fontSize: 14,
-            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+            fontFamily: '"JetBrains Mono", "Fira Code", Menlo, Monaco, "Courier New", monospace',
+            lineHeight: 1.4,
+            letterSpacing: 0,
             theme: {
-                background: '#1a1a2e',
-                foreground: '#eaeaea',
-                cursor: '#00d9ff',
-                cursorAccent: '#1a1a2e',
-                selectionBackground: '#3d3d5c',
-                black: '#1a1a2e',
-                red: '#ff6b6b',
-                green: '#4ade80',
-                yellow: '#fbbf24',
-                blue: '#60a5fa',
-                magenta: '#c084fc',
-                cyan: '#22d3ee',
-                white: '#eaeaea',
-                brightBlack: '#4a4a6a',
-                brightRed: '#ff8a8a',
-                brightGreen: '#6ee7a0',
-                brightYellow: '#fcd34d',
-                brightBlue: '#93c5fd',
-                brightMagenta: '#d8b4fe',
-                brightCyan: '#67e8f9',
-                brightWhite: '#ffffff',
+                // Gruvbox Dark Theme
+                background: '#282828',
+                foreground: '#ebdbb2',
+                cursor: '#fe8019',
+                cursorAccent: '#282828',
+                selectionBackground: '#504945',
+                selectionForeground: '#fbf1c7',
+                black: '#282828',
+                red: '#fb4934',
+                green: '#b8bb26',
+                yellow: '#fabd2f',
+                blue: '#83a598',
+                magenta: '#d3869b',
+                cyan: '#8ec07c',
+                white: '#ebdbb2',
+                brightBlack: '#928374',
+                brightRed: '#fb4934',
+                brightGreen: '#b8bb26',
+                brightYellow: '#fabd2f',
+                brightBlue: '#83a598',
+                brightMagenta: '#d3869b',
+                brightCyan: '#8ec07c',
+                brightWhite: '#fbf1c7',
             },
             allowProposedApi: true,
         });
@@ -408,10 +414,10 @@ const DevCli: React.FC = () => {
 
                     const historyCommand = historyRef.current[historyIndexRef.current];
 
-                    // Clear current line
-                    term.write('\r\x1b[36m❯\x1b[0m ');
+                    // Clear current line (Gruvbox orange prompt)
+                    term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
                     term.write(' '.repeat(commandBufferRef.current.length));
-                    term.write('\r\x1b[36m❯\x1b[0m ');
+                    term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
 
                     // Write history command
                     term.write(historyCommand);
@@ -428,16 +434,16 @@ const DevCli: React.FC = () => {
                         historyIndexRef.current++;
                         const historyCommand = historyRef.current[historyIndexRef.current];
 
-                        term.write('\r\x1b[36m❯\x1b[0m ');
+                        term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
                         term.write(' '.repeat(commandBufferRef.current.length));
-                        term.write('\r\x1b[36m❯\x1b[0m ');
+                        term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
                         term.write(historyCommand);
                         commandBufferRef.current = historyCommand;
                     } else {
                         historyIndexRef.current = -1;
-                        term.write('\r\x1b[36m❯\x1b[0m ');
+                        term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
                         term.write(' '.repeat(commandBufferRef.current.length));
-                        term.write('\r\x1b[36m❯\x1b[0m ');
+                        term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
                         commandBufferRef.current = '';
                     }
                 }
@@ -511,10 +517,10 @@ const DevCli: React.FC = () => {
         const term = terminalInstanceRef.current;
 
         if (term) {
-            // Clear current line and insert command
-            term.write('\r\x1b[36m❯\x1b[0m ');
+            // Clear current line and insert command (Gruvbox orange prompt)
+            term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
             term.write(' '.repeat(commandBufferRef.current.length));
-            term.write('\r\x1b[36m❯\x1b[0m ');
+            term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
             term.write(command);
             commandBufferRef.current = command;
             term.focus();
@@ -548,8 +554,8 @@ const DevCli: React.FC = () => {
                             style={{
                                 flex: 1,
                                 height: '100%',
-                                backgroundColor: '#1a1a2e',
-                                padding: '8px',
+                                backgroundColor: '#282828',
+                                padding: '12px',
                                 letterSpacing: 'normal',
                                 minWidth: 0,
                             }}
@@ -564,10 +570,14 @@ const DevCli: React.FC = () => {
                 </div>
 
                 <style>{`
+                    /* Import Google Fonts for better typography */
+                    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
                     .cli-container {
                         display: flex;
                         height: 100%;
                         overflow: hidden;
+                        background: #1d2021;
                     }
 
                     .terminal-wrapper {
@@ -576,38 +586,41 @@ const DevCli: React.FC = () => {
                         flex-direction: column;
                         position: relative;
                         min-width: 0;
+                        background: #282828;
                     }
 
                     .copy-notification {
                         position: absolute;
                         top: 16px;
                         right: 16px;
-                        padding: 10px 16px;
-                        background: linear-gradient(135deg, rgba(74, 222, 128, 0.9) 0%, rgba(34, 197, 94, 0.9) 100%);
-                        color: #000;
+                        padding: 12px 18px;
+                        background: linear-gradient(135deg, #b8bb26 0%, #98971a 100%);
+                        color: #282828;
                         border-radius: 8px;
                         font-size: 13px;
-                        font-weight: 500;
+                        font-weight: 600;
+                        font-family: 'JetBrains Mono', monospace;
                         display: flex;
                         align-items: center;
-                        gap: 6px;
-                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                        animation: slideIn 0.2s ease-out;
+                        gap: 8px;
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(184, 187, 38, 0.3);
+                        animation: slideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
                         z-index: 1000;
                     }
 
                     .copy-notification span {
                         font-weight: 700;
+                        font-size: 15px;
                     }
 
                     @keyframes slideIn {
                         from {
                             opacity: 0;
-                            transform: translateY(-10px);
+                            transform: translateY(-12px) scale(0.95);
                         }
                         to {
                             opacity: 1;
-                            transform: translateY(0);
+                            transform: translateY(0) scale(1);
                         }
                     }
 
@@ -624,6 +637,25 @@ const DevCli: React.FC = () => {
 
                     .dev-cli-terminal .xterm-viewport {
                         letter-spacing: normal !important;
+                        scrollbar-width: thin;
+                        scrollbar-color: #504945 #282828;
+                    }
+
+                    .dev-cli-terminal .xterm-viewport::-webkit-scrollbar {
+                        width: 8px;
+                    }
+
+                    .dev-cli-terminal .xterm-viewport::-webkit-scrollbar-track {
+                        background: #282828;
+                    }
+
+                    .dev-cli-terminal .xterm-viewport::-webkit-scrollbar-thumb {
+                        background: #504945;
+                        border-radius: 4px;
+                    }
+
+                    .dev-cli-terminal .xterm-viewport::-webkit-scrollbar-thumb:hover {
+                        background: #665c54;
                     }
 
                     .dev-cli-terminal .xterm-rows {
@@ -641,11 +673,11 @@ const DevCli: React.FC = () => {
                         transform: translateY(-50%);
                         width: 40px;
                         height: 80px;
-                        background: linear-gradient(135deg, #2d2d4a 0%, #1a1a2e 100%);
-                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        background: linear-gradient(135deg, #3c3836 0%, #282828 100%);
+                        border: 1px solid #504945;
                         border-left: none;
                         border-radius: 0 12px 12px 0;
-                        color: #fff;
+                        color: #ebdbb2;
                         font-size: 20px;
                         cursor: pointer;
                         display: flex;
@@ -656,45 +688,48 @@ const DevCli: React.FC = () => {
                     }
 
                     .sidebar-toggle-closed:hover {
-                        background: linear-gradient(135deg, #3d3d5a 0%, #2a2a3e 100%);
+                        background: linear-gradient(135deg, #504945 0%, #3c3836 100%);
                         width: 48px;
+                        border-color: #665c54;
                     }
 
                     .command-sidebar {
-                        width: 360px;
-                        min-width: 360px;
+                        width: 380px;
+                        min-width: 380px;
                         height: 100%;
-                        background: linear-gradient(180deg, #1e1e32 0%, #16162a 100%);
-                        border-right: 1px solid rgba(255, 255, 255, 0.08);
+                        background: linear-gradient(180deg, #32302f 0%, #282828 100%);
+                        border-right: 1px solid #3c3836;
                         display: flex;
                         flex-direction: column;
                         overflow: hidden;
+                        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
                     }
 
                     .sidebar-header {
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
-                        padding: 16px 20px;
-                        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-                        background: rgba(255, 255, 255, 0.02);
+                        padding: 18px 20px;
+                        border-bottom: 1px solid #3c3836;
+                        background: rgba(60, 56, 54, 0.5);
                     }
 
                     .sidebar-header h2 {
                         margin: 0;
-                        font-size: 16px;
+                        font-size: 15px;
                         font-weight: 600;
-                        color: #fff;
-                        letter-spacing: -0.02em;
+                        color: #fbf1c7;
+                        letter-spacing: 0.02em;
+                        font-family: 'JetBrains Mono', monospace;
                     }
 
                     .sidebar-close {
-                        width: 28px;
-                        height: 28px;
+                        width: 30px;
+                        height: 30px;
                         border-radius: 8px;
-                        border: none;
-                        background: rgba(255, 255, 255, 0.05);
-                        color: rgba(255, 255, 255, 0.6);
+                        border: 1px solid #504945;
+                        background: #3c3836;
+                        color: #a89984;
                         cursor: pointer;
                         display: flex;
                         align-items: center;
@@ -704,123 +739,134 @@ const DevCli: React.FC = () => {
                     }
 
                     .sidebar-close:hover {
-                        background: rgba(255, 255, 255, 0.1);
-                        color: #fff;
+                        background: #504945;
+                        color: #ebdbb2;
+                        border-color: #665c54;
                     }
 
                     .sidebar-search {
-                        padding: 12px 16px;
-                        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                        padding: 14px 16px;
+                        border-bottom: 1px solid #3c3836;
                     }
 
                     .sidebar-search input {
                         width: 100%;
-                        padding: 10px 14px;
-                        border-radius: 10px;
-                        border: 1px solid rgba(255, 255, 255, 0.1);
-                        background: rgba(0, 0, 0, 0.3);
-                        color: #fff;
+                        padding: 11px 14px;
+                        border-radius: 8px;
+                        border: 1px solid #504945;
+                        background: #1d2021;
+                        color: #ebdbb2;
                         font-size: 14px;
+                        font-family: 'JetBrains Mono', monospace;
                         outline: none;
                         transition: all 0.15s ease;
                     }
 
                     .sidebar-search input::placeholder {
-                        color: rgba(255, 255, 255, 0.4);
+                        color: #928374;
                     }
 
                     .sidebar-search input:focus {
-                        border-color: rgba(34, 211, 238, 0.5);
-                        background: rgba(0, 0, 0, 0.4);
+                        border-color: #fe8019;
+                        background: #282828;
+                        box-shadow: 0 0 0 3px rgba(254, 128, 25, 0.15);
                     }
 
                     .category-pills {
                         display: flex;
                         flex-wrap: wrap;
-                        gap: 6px;
-                        padding: 12px 16px;
-                        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                        gap: 8px;
+                        padding: 14px 16px;
+                        border-bottom: 1px solid #3c3836;
                     }
 
                     .category-pill {
-                        padding: 6px 12px;
-                        border-radius: 20px;
-                        border: 1px solid rgba(255, 255, 255, 0.1);
-                        background: transparent;
-                        color: rgba(255, 255, 255, 0.7);
+                        padding: 7px 14px;
+                        border-radius: 6px;
+                        border: 1px solid #504945;
+                        background: #3c3836;
+                        color: #bdae93;
                         font-size: 12px;
+                        font-weight: 500;
                         cursor: pointer;
                         transition: all 0.15s ease;
                         white-space: nowrap;
                     }
 
                     .category-pill:hover {
-                        background: rgba(255, 255, 255, 0.05);
-                        border-color: rgba(255, 255, 255, 0.2);
+                        background: #504945;
+                        border-color: #665c54;
+                        color: #ebdbb2;
                     }
 
                     .category-pill.active {
-                        background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(96, 165, 250, 0.2) 100%);
-                        border-color: rgba(34, 211, 238, 0.4);
-                        color: #22d3ee;
+                        background: linear-gradient(135deg, rgba(254, 128, 25, 0.2) 0%, rgba(214, 93, 14, 0.2) 100%);
+                        border-color: #fe8019;
+                        color: #fe8019;
+                        box-shadow: 0 0 0 2px rgba(254, 128, 25, 0.1);
                     }
 
                     .command-list {
                         flex: 1;
                         overflow-y: auto;
-                        padding: 12px;
+                        padding: 14px;
                     }
 
                     .command-list::-webkit-scrollbar {
-                        width: 6px;
+                        width: 8px;
                     }
 
                     .command-list::-webkit-scrollbar-track {
-                        background: transparent;
+                        background: #282828;
                     }
 
                     .command-list::-webkit-scrollbar-thumb {
-                        background: rgba(255, 255, 255, 0.1);
-                        border-radius: 3px;
+                        background: #504945;
+                        border-radius: 4px;
+                    }
+
+                    .command-list::-webkit-scrollbar-thumb:hover {
+                        background: #665c54;
                     }
 
                     .command-card {
-                        background: rgba(255, 255, 255, 0.03);
-                        border: 1px solid rgba(255, 255, 255, 0.06);
-                        border-radius: 12px;
-                        margin-bottom: 8px;
+                        background: #32302f;
+                        border: 1px solid #3c3836;
+                        border-radius: 10px;
+                        margin-bottom: 10px;
                         overflow: hidden;
                         transition: all 0.15s ease;
                     }
 
                     .command-card:hover {
-                        background: rgba(255, 255, 255, 0.05);
-                        border-color: rgba(255, 255, 255, 0.1);
+                        background: #3c3836;
+                        border-color: #504945;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
                     }
 
                     .command-header {
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
-                        padding: 12px 14px;
+                        padding: 14px 16px;
                         cursor: pointer;
                     }
 
                     .command-info h3 {
-                        margin: 0 0 2px 0;
+                        margin: 0 0 4px 0;
                         font-size: 14px;
                         font-weight: 500;
-                        color: #fff;
+                        color: #fbf1c7;
                     }
 
                     .command-info p {
                         margin: 0;
                         font-size: 12px;
-                        color: rgba(255, 255, 255, 0.5);
+                        color: #a89984;
                     }
 
                     .expand-icon {
-                        color: rgba(255, 255, 255, 0.4);
+                        color: #928374;
                         font-size: 10px;
                         transition: transform 0.2s ease;
                     }
@@ -830,64 +876,71 @@ const DevCli: React.FC = () => {
                     }
 
                     .insert-btn {
-                        padding: 6px 12px;
-                        border-radius: 8px;
+                        padding: 7px 14px;
+                        border-radius: 6px;
                         border: none;
                         font-size: 13px;
                         font-weight: 500;
                         cursor: pointer;
                         transition: all 0.15s ease;
+                        font-family: 'JetBrains Mono', monospace;
                     }
 
                     .insert-btn.quick {
-                        background: rgba(34, 211, 238, 0.15);
-                        color: #22d3ee;
-                        padding: 6px 10px;
+                        background: rgba(254, 128, 25, 0.15);
+                        color: #fe8019;
+                        padding: 7px 12px;
+                        border: 1px solid rgba(254, 128, 25, 0.3);
                     }
 
                     .insert-btn.quick:hover {
-                        background: rgba(34, 211, 238, 0.25);
+                        background: rgba(254, 128, 25, 0.25);
+                        border-color: #fe8019;
                     }
 
                     .insert-btn.primary {
                         width: 100%;
-                        padding: 10px;
-                        background: linear-gradient(135deg, #22d3ee 0%, #60a5fa 100%);
-                        color: #000;
+                        padding: 12px;
+                        background: linear-gradient(135deg, #fe8019 0%, #d65d0e 100%);
+                        color: #282828;
                         font-weight: 600;
+                        border: none;
+                        box-shadow: 0 2px 8px rgba(254, 128, 25, 0.3);
                     }
 
                     .insert-btn.primary:hover {
-                        opacity: 0.9;
+                        box-shadow: 0 4px 12px rgba(254, 128, 25, 0.4);
                         transform: translateY(-1px);
                     }
 
                     .command-params {
-                        padding: 0 14px 14px 14px;
-                        border-top: 1px solid rgba(255, 255, 255, 0.06);
+                        padding: 0 16px 16px 16px;
+                        border-top: 1px solid #3c3836;
+                        background: rgba(29, 32, 33, 0.5);
                     }
 
                     .param-field {
-                        margin-top: 12px;
+                        margin-top: 14px;
                     }
 
                     .param-field label {
                         display: block;
                         font-size: 12px;
                         font-weight: 500;
-                        color: rgba(255, 255, 255, 0.8);
+                        color: #d5c4a1;
                         margin-bottom: 4px;
+                        font-family: 'JetBrains Mono', monospace;
                     }
 
                     .param-field .required {
-                        color: #ff6b6b;
+                        color: #fb4934;
                         margin-left: 2px;
                     }
 
                     .param-field .param-desc {
                         display: block;
                         font-size: 11px;
-                        color: rgba(255, 255, 255, 0.4);
+                        color: #928374;
                         margin-bottom: 6px;
                     }
 
@@ -895,13 +948,13 @@ const DevCli: React.FC = () => {
                     .param-field textarea,
                     .param-field select {
                         width: 100%;
-                        padding: 8px 12px;
-                        border-radius: 8px;
-                        border: 1px solid rgba(255, 255, 255, 0.1);
-                        background: rgba(0, 0, 0, 0.3);
-                        color: #fff;
+                        padding: 10px 12px;
+                        border-radius: 6px;
+                        border: 1px solid #504945;
+                        background: #1d2021;
+                        color: #ebdbb2;
                         font-size: 13px;
-                        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+                        font-family: 'JetBrains Mono', monospace;
                         outline: none;
                         transition: all 0.15s ease;
                     }
@@ -909,38 +962,51 @@ const DevCli: React.FC = () => {
                     .param-field input:focus,
                     .param-field textarea:focus,
                     .param-field select:focus {
-                        border-color: rgba(34, 211, 238, 0.5);
+                        border-color: #fe8019;
+                        box-shadow: 0 0 0 3px rgba(254, 128, 25, 0.1);
                     }
 
                     .param-field textarea {
                         resize: vertical;
-                        min-height: 60px;
+                        min-height: 70px;
                     }
 
                     .param-field select {
                         cursor: pointer;
+                        appearance: none;
+                        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23928374' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+                        background-repeat: no-repeat;
+                        background-position: right 12px center;
+                        padding-right: 32px;
                     }
 
                     .command-preview {
-                        margin-top: 12px;
-                        padding: 10px 12px;
-                        background: rgba(0, 0, 0, 0.4);
-                        border-radius: 8px;
+                        margin-top: 14px;
+                        padding: 12px 14px;
+                        background: #1d2021;
+                        border: 1px solid #3c3836;
+                        border-radius: 6px;
                         overflow-x: auto;
                     }
 
                     .command-preview code {
-                        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+                        font-family: 'JetBrains Mono', monospace;
                         font-size: 12px;
-                        color: #4ade80;
+                        color: #b8bb26;
                         white-space: pre-wrap;
                         word-break: break-all;
+                        line-height: 1.5;
                     }
 
                     .no-results {
                         text-align: center;
-                        padding: 40px 20px;
-                        color: rgba(255, 255, 255, 0.4);
+                        padding: 48px 20px;
+                        color: #928374;
+                    }
+
+                    .no-results p {
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 14px;
                     }
                 `}</style>
             </IonContent>
