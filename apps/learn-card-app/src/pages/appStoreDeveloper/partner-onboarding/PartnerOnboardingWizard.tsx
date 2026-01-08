@@ -317,6 +317,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                         project={state.project!}
                         branding={state.branding!}
                         templates={state.templates}
+                        integrationMethod={state.integrationMethod!}
                         dataMapping={state.dataMapping!}
                         onComplete={handleTestComplete}
                         onBack={prevStep}
