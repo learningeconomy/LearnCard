@@ -3,7 +3,9 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Zap, ZapOff, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
+import { Zap, ZapOff, ChevronDown, ChevronUp, HelpCircle, Upload, Loader2, Settings, Lock } from 'lucide-react';
+
+import { useFilestack } from 'learn-card-base';
 
 import { TemplateFieldValue, staticField, dynamicField } from './types';
 import { labelToVariableName } from './utils';
@@ -19,6 +21,7 @@ interface FieldEditorProps {
     required?: boolean;
     disabled?: boolean;
     showDynamicToggle?: boolean;
+    enableFileUpload?: boolean;
 }
 
 export const FieldEditor: React.FC<FieldEditorProps> = ({
@@ -32,9 +35,18 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     required = false,
     disabled = false,
     showDynamicToggle = true,
+    enableFileUpload = false,
 }) => {
     const [showHelp, setShowHelp] = useState(false);
     const [customVarName, setCustomVarName] = useState(false);
+
+    const { handleFileSelect, isLoading: isUploading } = useFilestack({
+        onUpload: (url: string) => {
+            handleValueChange(url);
+        },
+        fileType: 'image/*',
+        resizeBeforeUploading: true,
+    });
 
     const handleValueChange = useCallback((value: string) => {
         onChange({
@@ -99,6 +111,35 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             );
         }
 
+        if (enableFileUpload) {
+            return (
+                <div className="flex gap-2">
+                    <input
+                        type={type}
+                        value={field.value}
+                        onChange={(e) => handleValueChange(e.target.value)}
+                        placeholder={field.isDynamic ? `Dynamic: {{${field.variableName || labelToVariableName(label)}}}` : placeholder}
+                        disabled={disabled}
+                        className={`${baseClasses} flex-1`}
+                    />
+
+                    <button
+                        type="button"
+                        onClick={handleFileSelect}
+                        disabled={disabled || isUploading}
+                        className="flex items-center gap-1 px-3 py-2 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded-lg text-sm font-medium hover:bg-cyan-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Upload image"
+                    >
+                        {isUploading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Upload className="w-4 h-4" />
+                        )}
+                    </button>
+                </div>
+            );
+        }
+
         return (
             <input
                 type={type}
@@ -110,6 +151,50 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             />
         );
     };
+
+    // Render system field (non-editable, auto-injected)
+    if (field.isSystem) {
+        return (
+            <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                        {label}
+
+                        {helpText && (
+                            <button
+                                type="button"
+                                onClick={() => setShowHelp(!showHelp)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <HelpCircle className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                    </label>
+
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                        <Settings className="w-3 h-3" />
+                        System
+                    </span>
+                </div>
+
+                {showHelp && helpText && (
+                    <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded">{helpText}</p>
+                )}
+
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <Lock className="w-4 h-4 text-amber-600 flex-shrink-0" />
+
+                    <div className="flex-1">
+                        <p className="text-sm text-amber-800 font-medium">Auto-generated at issuance</p>
+
+                        {field.systemDescription && (
+                            <p className="text-xs text-amber-600 mt-0.5">{field.systemDescription}</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-1">

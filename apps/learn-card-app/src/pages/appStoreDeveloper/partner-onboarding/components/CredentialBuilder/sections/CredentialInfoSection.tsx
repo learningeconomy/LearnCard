@@ -57,6 +57,7 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
                 placeholder="https://example.com/credential-image.png"
                 helpText="URL to an image representing the credential"
                 type="url"
+                enableFileUpload
             />
 
             <FieldEditor

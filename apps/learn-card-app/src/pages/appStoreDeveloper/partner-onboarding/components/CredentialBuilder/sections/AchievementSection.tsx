@@ -122,6 +122,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 placeholder="https://example.com/badge-image.png"
                 helpText="Badge or achievement image URL"
                 type="url"
+                enableFileUpload
             />
 
             <FieldEditor

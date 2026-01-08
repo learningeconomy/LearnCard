@@ -5,7 +5,7 @@
 import React from 'react';
 import { Building2 } from 'lucide-react';
 
-import { OBv3CredentialTemplate, IssuerTemplate, TemplateFieldValue, staticField } from '../types';
+import { OBv3CredentialTemplate, IssuerTemplate, TemplateFieldValue, staticField, systemField } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
 
 interface IssuerSectionProps {
@@ -78,14 +78,14 @@ export const IssuerSection: React.FC<IssuerSectionProps> = ({
                 placeholder="https://example.com/logo.png"
                 helpText="URL to the issuer's logo image"
                 type="url"
+                enableFileUpload
             />
 
             <FieldEditor
-                label="Issuer ID"
-                field={template.issuer.id || staticField('')}
-                onChange={(f) => updateIssuer('id', f)}
-                placeholder="did:web:your-organization.com"
-                helpText="DID or URI identifying the issuer (usually set automatically)"
+                label="Issuer ID (DID)"
+                field={systemField('Your organization\'s Decentralized Identifier (DID) from your LearnCard wallet')}
+                onChange={() => {}}
+                helpText="Automatically set to your wallet's DID when the credential is issued"
             />
         </CollapsibleSection>
     );

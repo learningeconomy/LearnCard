@@ -2,7 +2,7 @@
  * CredentialBuilder - Main interactive OBv3 credential template builder
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
     FileText,
     Code,
@@ -17,6 +17,9 @@ import {
     Users,
     Layers,
 } from 'lucide-react';
+
+import { BoostCategoryOptionsEnum, BoostPageViewMode, useWallet } from 'learn-card-base';
+import { BoostEarnedCard } from '../../../../../components/boost/boost-earned-card/BoostEarnedCard';
 
 import { OBv3CredentialTemplate, SectionId } from './types';
 import { templateToJson, validateTemplate, extractDynamicVariables } from './utils';
@@ -45,7 +48,7 @@ const PRESET_ICONS: Record<string, React.FC<{ className?: string }>> = {
     Layers,
 };
 
-type TabId = 'builder' | 'json';
+type TabId = 'builder' | 'preview' | 'json';
 
 interface CredentialBuilderProps {
     template: OBv3CredentialTemplate;
@@ -62,7 +65,25 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     onTestIssue,
     issuerImage,
 }) => {
+    const { initWallet } = useWallet();
+    const [userDid, setUserDid] = useState<string>('did:web:preview');
     const [activeTab, setActiveTab] = useState<TabId>('builder');
+
+    // Fetch user's DID from wallet
+    useEffect(() => {
+        const fetchDid = async () => {
+            try {
+                const wallet = await initWallet();
+                const did = wallet.id.did();
+
+                if (did) setUserDid(did);
+            } catch (e) {
+                // Keep default preview DID
+            }
+        };
+
+        fetchDid();
+    }, [initWallet]);
     const [expandedSections, setExpandedSections] = useState<Set<SectionId>>(
         new Set(['credential', 'achievement'])
     );
@@ -112,6 +133,52 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     const validationErrors = useMemo(() => validateTemplate(template), [template]);
     const dynamicVariables = useMemo(() => extractDynamicVariables(template), [template]);
 
+    // Build preview credential with sample values filled in
+    const previewCredential = useMemo(() => {
+        const json = templateToJson(template);
+
+        // Replace dynamic variables with sample values (same logic as test issuance)
+        const replaceDynamicVariables = (obj: unknown): unknown => {
+            if (typeof obj === 'string') {
+                return obj.replace(/\{\{(\w+)\}\}/g, (_match, varName) => {
+                    const lowerVar = varName.toLowerCase();
+
+                    if (lowerVar.includes('date') || lowerVar.includes('time')) {
+                        return new Date().toISOString();
+                    }
+
+                    const humanized = varName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                    return `[${humanized}]`;
+                });
+            }
+
+            if (Array.isArray(obj)) {
+                return obj.map(replaceDynamicVariables);
+            }
+
+            if (obj && typeof obj === 'object') {
+                const result: Record<string, unknown> = {};
+
+                for (const [key, value] of Object.entries(obj)) {
+                    result[key] = replaceDynamicVariables(value);
+                }
+
+                return result;
+            }
+
+            return obj;
+        };
+
+        const rendered = replaceDynamicVariables(json) as Record<string, unknown>;
+
+        // Add preview issuer info
+        return {
+            ...rendered,
+            issuer: userDid,
+            issuanceDate: new Date().toISOString(),
+        };
+    }, [template, userDid]);
+
     return (
         <div className="h-full flex flex-col">
             {/* Tab Bar */}
@@ -128,6 +195,19 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                     >
                         <FileText className="w-4 h-4" />
                         Builder
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('preview')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                            activeTab === 'preview'
+                                ? 'bg-cyan-100 text-cyan-700'
+                                : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                    >
+                        <Eye className="w-4 h-4" />
+                        Preview
                     </button>
 
                     <button
@@ -268,6 +348,51 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onToggle={() => toggleSection('dates')}
                         />
 
+                    </div>
+                ) : activeTab === 'preview' ? (
+                    <div className="h-full overflow-y-auto p-6">
+                        <div className="space-y-6">
+                            <p className="text-sm text-gray-600 text-center">
+                                This is how your credential will appear to recipients:
+                            </p>
+
+                            {/* Credential Card Preview */}
+                            <div className="flex justify-center py-4">
+                                <div className="w-[180px]">
+                                    <BoostEarnedCard
+                                        credential={previewCredential as any}
+                                        categoryType={BoostCategoryOptionsEnum.achievement}
+                                        boostPageViewMode={BoostPageViewMode.Card}
+                                        useWrapper={false}
+                                        className="shadow-lg"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+                                <p className="text-xs text-cyan-800 text-center">
+                                    <strong>Tip:</strong> Click the credential card above to open the full detail view,
+                                    just like recipients will see it in their wallet.
+                                </p>
+                            </div>
+
+                            {!template.image?.value && !template.credentialSubject.achievement?.image?.value && (
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <p className="text-xs text-amber-800 text-center">
+                                        <strong>Note:</strong> Add an image to make your credential more visually distinctive!
+                                    </p>
+                                </div>
+                            )}
+
+                            {dynamicVariables.length > 0 && (
+                                <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
+                                    <p className="text-xs text-violet-800 text-center">
+                                        <strong>Dynamic fields:</strong> This preview shows placeholder values.
+                                        The actual credential will use data from your API.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <JsonPreview

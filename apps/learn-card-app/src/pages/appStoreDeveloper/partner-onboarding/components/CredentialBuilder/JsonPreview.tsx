@@ -264,7 +264,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
             )}
 
             {/* JSON Content */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
                 {editMode ? (
                     <textarea
                         value={jsonText}
@@ -272,6 +272,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                         className={`w-full h-full p-4 font-mono text-xs resize-none outline-none ${
                             parseError ? 'bg-red-50' : 'bg-gray-900 text-gray-100'
                         }`}
+                        style={{ minHeight: '400px' }}
                         spellCheck={false}
                     />
                 ) : (

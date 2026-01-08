@@ -5,7 +5,7 @@
 import React from 'react';
 import { User } from 'lucide-react';
 
-import { OBv3CredentialTemplate, CredentialSubjectTemplate, TemplateFieldValue, staticField } from '../types';
+import { OBv3CredentialTemplate, CredentialSubjectTemplate, TemplateFieldValue, staticField, systemField } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
 
 interface RecipientSectionProps {
@@ -37,13 +37,6 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
             isExpanded={isExpanded}
             onToggle={onToggle}
         >
-            <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg mb-4">
-                <span className="text-xs text-emerald-700">
-                    <strong>Note:</strong> Recipient fields are typically dynamic since they change for each credential issued.
-                    The recipient's DID is automatically set when the credential is sent.
-                </span>
-            </div>
-
             <FieldEditor
                 label="Recipient Name"
                 field={subject.name || staticField('')}
@@ -53,11 +46,10 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
             />
 
             <FieldEditor
-                label="Recipient ID"
-                field={subject.id || staticField('')}
-                onChange={(f) => updateSubject('id', f)}
-                placeholder="did:..."
-                helpText="The recipient's DID (usually set automatically when issuing)"
+                label="Recipient ID (DID)"
+                field={systemField('The recipient\'s Decentralized Identifier (DID) resolved from their email or wallet')}
+                onChange={() => {}}
+                helpText="Automatically set when the credential is sent to the recipient"
             />
         </CollapsibleSection>
     );
