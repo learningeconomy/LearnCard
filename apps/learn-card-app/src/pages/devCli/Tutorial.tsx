@@ -4,6 +4,9 @@ export interface TutorialStep {
     title: string;
     content: React.ReactNode;
     command?: string;
+    commandLabel?: string;
+    followUpCommand?: string;
+    followUpLabel?: string;
     hint?: string;
     expectedOutput?: string;
 }
@@ -123,7 +126,10 @@ const TUTORIALS: Tutorial[] = [
                     </>
                 ),
                 command: 'learnCard.id.did()',
-                hint: 'Run this, then run: copy(_) to copy your DID',
+                commandLabel: '1. Get your DID',
+                followUpCommand: 'copy(_)',
+                followUpLabel: '2. Copy it to clipboard',
+                hint: 'The _ variable now contains your DID!',
             },
             {
                 title: 'Congrats!',
@@ -519,17 +525,34 @@ const TutorialComponent: React.FC<TutorialProps> = ({ isOpen, onClose, onRunComm
                             {step?.command && (
                                 <div className="tutorial-command">
                                     <div className="tutorial-command-header">
-                                        <span>Try this command:</span>
+                                        <span>{step.commandLabel || 'Try this command:'}</span>
 
                                         <button
                                             onClick={() => handleRunCommand(step.command!)}
                                             className="tutorial-run-btn"
                                         >
-                                            ▶ Run Command
+                                            ▶ Run
                                         </button>
                                     </div>
 
                                     <pre>{step.command}</pre>
+
+                                    {step.followUpCommand && (
+                                        <>
+                                            <div className="tutorial-command-header tutorial-followup-header">
+                                                <span>{step.followUpLabel || 'Then run:'}</span>
+
+                                                <button
+                                                    onClick={() => handleRunCommand(step.followUpCommand!)}
+                                                    className="tutorial-run-btn tutorial-run-btn-followup"
+                                                >
+                                                    ▶ Run
+                                                </button>
+                                            </div>
+
+                                            <pre>{step.followUpCommand}</pre>
+                                        </>
+                                    )}
 
                                     {step.hint && (
                                         <p className="tutorial-hint">💡 {step.hint}</p>

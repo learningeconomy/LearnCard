@@ -2297,6 +2297,16 @@ const DevCli: React.FC = () => {
                         transform: translateY(-1px);
                     }
 
+                    .tutorial-followup-header {
+                        margin-top: 12px;
+                        padding-top: 12px;
+                        border-top: 1px dashed #3c3836;
+                    }
+
+                    .tutorial-run-btn-followup {
+                        background: linear-gradient(135deg, #458588 0%, #83a598 100%);
+                    }
+
                     .tutorial-command pre {
                         margin: 0;
                         padding: 12px;
