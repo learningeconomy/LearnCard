@@ -528,14 +528,14 @@ const DevCli: React.FC = () => {
     }, []);
 
     return (
-        <IonPage>
-            <IonHeader>
-                <IonToolbar>
+        <IonPage className="cli-page">
+            <IonHeader className="cli-header">
+                <IonToolbar className="cli-toolbar">
                     <IonButtons slot="start">
-                        <IonBackButton defaultHref="/admin-tools" />
+                        <IonBackButton defaultHref="/admin-tools" className="cli-back-btn" />
                     </IonButtons>
 
-                    <IonTitle>LearnCard CLI</IonTitle>
+                    <IonTitle className="cli-title">LearnCard CLI</IonTitle>
                 </IonToolbar>
             </IonHeader>
 
@@ -572,6 +572,43 @@ const DevCli: React.FC = () => {
                 <style>{`
                     /* Import Google Fonts for better typography */
                     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+                    .cli-page {
+                        --ion-background-color: #1d2021;
+                    }
+
+                    .cli-header {
+                        --ion-background-color: #282828;
+                    }
+
+                    .cli-toolbar {
+                        --background: linear-gradient(180deg, #32302f 0%, #282828 100%);
+                        --border-color: #3c3836;
+                        --color: #ebdbb2;
+                        border-bottom: 1px solid #3c3836;
+                    }
+
+                    .cli-title {
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: #fbf1c7;
+                        letter-spacing: 0.02em;
+                    }
+
+                    .cli-back-btn {
+                        --color: #a89984;
+                        --color-hover: #ebdbb2;
+                        --color-focused: #fe8019;
+                    }
+
+                    .cli-back-btn::part(native) {
+                        color: #a89984;
+                    }
+
+                    .cli-back-btn::part(native):hover {
+                        color: #ebdbb2;
+                    }
 
                     .cli-container {
                         display: flex;
