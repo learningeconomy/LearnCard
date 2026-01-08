@@ -43,7 +43,17 @@ export interface CredentialField {
     required: boolean;
     description?: string;
     sourceMapping?: string;
+    /** The Mustache variable name used in the credential template (e.g., "recipient_name") */
+    variableName?: string;
 }
+
+/** Convert a field name to a valid Mustache variable name */
+export const fieldNameToVariable = (name: string): string => {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+};
 
 export interface TemplateConfig {
     fields: CredentialField[];
@@ -54,6 +64,8 @@ export interface TemplateConfig {
 export interface TemplateBoostMeta {
     integrationId: string;
     templateConfig: TemplateConfig;
+    /** If true, this is a master template with child boosts */
+    isMasterTemplate?: boolean;
 }
 
 export interface CredentialTemplate {
@@ -66,6 +78,14 @@ export interface CredentialTemplate {
     boostUri?: string;
     isNew?: boolean;
     isDirty?: boolean;
+    /** OBv3 template data for the new credential builder */
+    obv3Template?: unknown;
+    /** If true, this is a master template that should not be issued directly */
+    isMasterTemplate?: boolean;
+    /** Child templates linked to this master template */
+    childTemplates?: CredentialTemplate[];
+    /** Parent template ID if this is a child template */
+    parentTemplateId?: string;
 }
 
 export interface FieldMapping {
@@ -77,6 +97,10 @@ export interface DataMappingConfig {
     webhookUrl?: string;
     samplePayload?: Record<string, unknown>;
     mappings: FieldMapping[];
+    /** For master templates: source field that identifies which child boost to use */
+    boostSelectorField?: string;
+    /** Match type for boost selector: 'id' for exact match, 'name' for name-based fallback */
+    boostSelectorMatchType?: 'id' | 'name';
 }
 
 export type IntegrationMethod = 'webhook' | 'api' | 'csv';

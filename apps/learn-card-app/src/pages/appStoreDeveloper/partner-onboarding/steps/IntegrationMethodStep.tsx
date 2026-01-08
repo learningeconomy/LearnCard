@@ -29,25 +29,10 @@ interface MethodOption {
     bgColor: string;
     features: string[];
     recommended?: boolean;
+    comingSoon?: boolean;
 }
 
 const METHODS: MethodOption[] = [
-    {
-        id: 'webhook',
-        title: 'Webhook Integration',
-        subtitle: 'Real-time, automated',
-        description: 'Your LMS sends events to LearnCard when courses are completed. Credentials are issued automatically.',
-        icon: Webhook,
-        color: 'text-emerald-600',
-        bgColor: 'bg-emerald-100',
-        features: [
-            'Real-time credential issuance',
-            'No manual intervention needed',
-            'Works with most LMS platforms',
-            'Visual field mapping tool',
-        ],
-        recommended: true,
-    },
     {
         id: 'api',
         title: 'REST API',
@@ -62,6 +47,7 @@ const METHODS: MethodOption[] = [
             'Batch operations supported',
             'SDK available for Node.js',
         ],
+        recommended: true,
     },
     {
         id: 'csv',
@@ -77,6 +63,22 @@ const METHODS: MethodOption[] = [
             'Scheduled uploads supported',
             'Template download available',
         ],
+    },
+    {
+        id: 'webhook',
+        title: 'Webhook Integration',
+        subtitle: 'Real-time, automated',
+        description: 'Your external system sends events to LearnCard when courses are completed. Credentials are issued automatically.',
+        icon: Webhook,
+        color: 'text-gray-400',
+        bgColor: 'bg-gray-100',
+        features: [
+            'Real-time credential issuance',
+            'No manual intervention needed',
+            'Works with most platforms',
+            'Visual field mapping tool',
+        ],
+        comingSoon: true,
     },
 ];
 
@@ -96,8 +98,8 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                 <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">Choose Your Integration Method</p>
                     <p>
-                        How will your system communicate with LearnCard? We recommend webhooks for 
-                        most LMS integrations as they provide real-time, automated credential issuance.
+                        How will your system communicate with LearnCard? We recommend the REST API for 
+                        full programmatic control over credential issuance.
                     </p>
                 </div>
             </div>
@@ -111,11 +113,14 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                     return (
                         <button
                             key={method.id}
-                            onClick={() => setSelected(method.id)}
+                            onClick={() => !method.comingSoon && setSelected(method.id)}
+                            disabled={method.comingSoon}
                             className={`w-full text-left p-5 rounded-xl border-2 transition-all ${
-                                isSelected
-                                    ? 'border-cyan-500 bg-cyan-50 shadow-md'
-                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                method.comingSoon
+                                    ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                                    : isSelected
+                                        ? 'border-cyan-500 bg-cyan-50 shadow-md'
+                                        : 'border-gray-200 hover:border-gray-300 bg-white'
                             }`}
                         >
                             <div className="flex items-start gap-4">
@@ -125,18 +130,24 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
 
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="font-semibold text-gray-800">{method.title}</h3>
+                                        <h3 className={`font-semibold ${method.comingSoon ? 'text-gray-500' : 'text-gray-800'}`}>{method.title}</h3>
 
                                         {method.recommended && (
                                             <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
                                                 Recommended
                                             </span>
                                         )}
+
+                                        {method.comingSoon && (
+                                            <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
+                                                Coming Soon
+                                            </span>
+                                        )}
                                     </div>
 
                                     <p className="text-sm text-gray-500 mb-2">{method.subtitle}</p>
 
-                                    <p className="text-sm text-gray-600 mb-3">{method.description}</p>
+                                    <p className={`text-sm mb-3 ${method.comingSoon ? 'text-gray-400' : 'text-gray-600'}`}>{method.description}</p>
 
                                     <div className="flex flex-wrap gap-2">
                                         {method.features.map((feature, idx) => (
@@ -171,8 +182,8 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
 
                     {selected === 'webhook' && (
                         <p className="text-sm text-gray-600">
-                            We'll provide you with a webhook URL to configure in your LMS. When a course is completed, 
-                            your LMS will send an event to this URL, and we'll map the data to your credential template.
+                            We'll provide you with a webhook URL to configure in your external system. When a course is completed, 
+                            your external system will send an event to this URL, and we'll map the data to your credential template.
                         </p>
                     )}
 
