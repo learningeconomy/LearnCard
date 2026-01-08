@@ -10,6 +10,7 @@ import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import * as types from '@learncard/types';
 import CommandSidebar, { COMMANDS } from './CommandSidebar';
 import ChainBuilder, { Chain, ChainStep } from './ChainBuilder';
+import TutorialComponent from './Tutorial';
 
 const WELCOME_MESSAGE = `
 Welcome to the LearnCard Browser CLI!
@@ -105,11 +106,16 @@ const DevCli: React.FC = () => {
     const [showWelcome, setShowWelcome] = useState(() => {
         return !localStorage.getItem('learncard-cli-welcomed');
     });
+    const [showTutorial, setShowTutorial] = useState(false);
     const { initWallet } = useWallet();
 
-    const dismissWelcome = useCallback(() => {
+    const dismissWelcome = useCallback((startTutorial = false) => {
         localStorage.setItem('learncard-cli-welcomed', 'true');
         setShowWelcome(false);
+
+        if (startTutorial) {
+            setShowTutorial(true);
+        }
     }, []);
 
     const copyToClipboard = useCallback(async (value: unknown): Promise<string> => {
@@ -644,6 +650,16 @@ const DevCli: React.FC = () => {
                     </IonButtons>
 
                     <IonTitle className="cli-title">LearnCard CLI</IonTitle>
+
+                    <IonButtons slot="end">
+                        <button
+                            onClick={() => setShowTutorial(true)}
+                            className="cli-tutorial-btn"
+                            title="Open Tutorials"
+                        >
+                            📖 Tutorial
+                        </button>
+                    </IonButtons>
                 </IonToolbar>
             </IonHeader>
 
@@ -726,12 +742,24 @@ const DevCli: React.FC = () => {
                                     </p>
                                 </div>
 
-                                <button onClick={dismissWelcome} className="welcome-btn">
-                                    I understand, let's go!
-                                </button>
+                                <div className="welcome-actions">
+                                    <button onClick={() => dismissWelcome(true)} className="welcome-btn-tutorial">
+                                        📖 Start Tutorial
+                                    </button>
+
+                                    <button onClick={() => dismissWelcome(false)} className="welcome-btn">
+                                        Skip, I know what I'm doing
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
+
+                    <TutorialComponent
+                        isOpen={showTutorial}
+                        onClose={() => setShowTutorial(false)}
+                        onRunCommand={handleInsertCommand}
+                    />
                 </div>
 
                 <style>{`
@@ -773,6 +801,24 @@ const DevCli: React.FC = () => {
 
                     .cli-back-btn::part(native):hover {
                         color: #ebdbb2;
+                    }
+
+                    .cli-tutorial-btn {
+                        padding: 6px 12px;
+                        background: rgba(69, 133, 136, 0.2);
+                        border: 1px solid #458588;
+                        border-radius: 6px;
+                        color: #83a598;
+                        font-size: 12px;
+                        font-weight: 500;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .cli-tutorial-btn:hover {
+                        background: rgba(69, 133, 136, 0.3);
+                        color: #fbf1c7;
                     }
 
                     .cli-container {
@@ -1979,14 +2025,20 @@ const DevCli: React.FC = () => {
                         color: #fabd2f;
                     }
 
-                    .welcome-btn {
+                    .welcome-actions {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                    }
+
+                    .welcome-btn-tutorial {
                         display: block;
                         width: 100%;
                         padding: 14px 24px;
-                        background: linear-gradient(135deg, #98971a 0%, #b8bb26 100%);
+                        background: linear-gradient(135deg, #458588 0%, #83a598 100%);
                         border: none;
                         border-radius: 10px;
-                        color: #1d2021;
+                        color: #fbf1c7;
                         font-size: 15px;
                         font-weight: 600;
                         font-family: 'JetBrains Mono', monospace;
@@ -1994,10 +2046,400 @@ const DevCli: React.FC = () => {
                         transition: all 0.2s ease;
                     }
 
-                    .welcome-btn:hover {
-                        background: linear-gradient(135deg, #b8bb26 0%, #98971a 100%);
+                    .welcome-btn-tutorial:hover {
+                        background: linear-gradient(135deg, #83a598 0%, #458588 100%);
                         transform: translateY(-2px);
-                        box-shadow: 0 4px 16px rgba(184, 187, 38, 0.3);
+                        box-shadow: 0 4px 16px rgba(131, 165, 152, 0.3);
+                    }
+
+                    .welcome-btn {
+                        display: block;
+                        width: 100%;
+                        padding: 12px 24px;
+                        background: transparent;
+                        border: 1px solid #504945;
+                        border-radius: 10px;
+                        color: #a89984;
+                        font-size: 13px;
+                        font-weight: 500;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+
+                    .welcome-btn:hover {
+                        border-color: #928374;
+                        color: #ebdbb2;
+                    }
+
+                    /* Tutorial Styles */
+                    .tutorial-overlay {
+                        position: absolute;
+                        inset: 0;
+                        background: rgba(29, 32, 33, 0.95);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 150;
+                        padding: 24px;
+                    }
+
+                    .tutorial-modal {
+                        background: linear-gradient(180deg, #32302f 0%, #282828 100%);
+                        border: 1px solid #504945;
+                        border-radius: 16px;
+                        padding: 24px;
+                        max-width: 560px;
+                        width: 100%;
+                        max-height: 80vh;
+                        overflow-y: auto;
+                        box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+                    }
+
+                    .tutorial-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        margin-bottom: 16px;
+                    }
+
+                    .tutorial-header h2 {
+                        margin: 0;
+                        font-size: 22px;
+                        font-weight: 600;
+                        color: #fbf1c7;
+                        font-family: 'JetBrains Mono', monospace;
+                    }
+
+                    .tutorial-close {
+                        background: none;
+                        border: none;
+                        color: #928374;
+                        font-size: 18px;
+                        cursor: pointer;
+                        padding: 8px;
+                        border-radius: 6px;
+                        transition: all 0.15s ease;
+                    }
+
+                    .tutorial-close:hover {
+                        color: #ebdbb2;
+                        background: rgba(255, 255, 255, 0.1);
+                    }
+
+                    .tutorial-intro {
+                        color: #a89984;
+                        font-size: 14px;
+                        margin: 0 0 20px;
+                        line-height: 1.5;
+                    }
+
+                    .tutorial-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 12px;
+                    }
+
+                    .tutorial-card {
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 16px;
+                        padding: 16px;
+                        background: rgba(0, 0, 0, 0.2);
+                        border: 1px solid #3c3836;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        text-align: left;
+                        transition: all 0.15s ease;
+                    }
+
+                    .tutorial-card:hover {
+                        background: rgba(0, 0, 0, 0.3);
+                        border-color: #504945;
+                        transform: translateX(4px);
+                    }
+
+                    .tutorial-card-icon {
+                        font-size: 32px;
+                        line-height: 1;
+                    }
+
+                    .tutorial-card-content h4 {
+                        margin: 0 0 6px;
+                        font-size: 15px;
+                        font-weight: 600;
+                        color: #ebdbb2;
+                    }
+
+                    .tutorial-card-content p {
+                        margin: 0 0 8px;
+                        font-size: 12px;
+                        color: #928374;
+                        line-height: 1.4;
+                    }
+
+                    .tutorial-card-duration {
+                        font-size: 11px;
+                        color: #8ec07c;
+                        font-family: 'JetBrains Mono', monospace;
+                    }
+
+                    .tutorial-progress {
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                    }
+
+                    .tutorial-progress-icon {
+                        font-size: 24px;
+                    }
+
+                    .tutorial-progress-title {
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: #ebdbb2;
+                    }
+
+                    .tutorial-progress-step {
+                        font-size: 12px;
+                        color: #928374;
+                        margin-left: auto;
+                    }
+
+                    .tutorial-progress-bar {
+                        height: 4px;
+                        background: #3c3836;
+                        border-radius: 2px;
+                        margin-bottom: 20px;
+                        overflow: hidden;
+                    }
+
+                    .tutorial-progress-fill {
+                        height: 100%;
+                        background: linear-gradient(90deg, #458588 0%, #83a598 100%);
+                        border-radius: 2px;
+                        transition: width 0.3s ease;
+                    }
+
+                    .tutorial-step h3 {
+                        margin: 0 0 16px;
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: #fbf1c7;
+                    }
+
+                    .tutorial-step-content {
+                        font-size: 14px;
+                        color: #ebdbb2;
+                        line-height: 1.7;
+                    }
+
+                    .tutorial-step-content p {
+                        margin: 0 0 12px;
+                    }
+
+                    .tutorial-step-content ul {
+                        margin: 0 0 12px;
+                        padding-left: 20px;
+                    }
+
+                    .tutorial-step-content li {
+                        margin-bottom: 6px;
+                    }
+
+                    .tutorial-step-content strong {
+                        color: #fe8019;
+                    }
+
+                    .tutorial-step-content code {
+                        background: #1d2021;
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 12px;
+                        color: #8ec07c;
+                    }
+
+                    .tutorial-command {
+                        background: #1d2021;
+                        border: 1px solid #3c3836;
+                        border-radius: 10px;
+                        padding: 14px;
+                        margin-top: 16px;
+                    }
+
+                    .tutorial-command-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        margin-bottom: 10px;
+                    }
+
+                    .tutorial-command-header span {
+                        font-size: 12px;
+                        color: #928374;
+                    }
+
+                    .tutorial-run-btn {
+                        padding: 6px 12px;
+                        background: linear-gradient(135deg, #98971a 0%, #b8bb26 100%);
+                        border: none;
+                        border-radius: 6px;
+                        color: #1d2021;
+                        font-size: 11px;
+                        font-weight: 600;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .tutorial-run-btn:hover {
+                        transform: translateY(-1px);
+                    }
+
+                    .tutorial-command pre {
+                        margin: 0;
+                        padding: 12px;
+                        background: #282828;
+                        border-radius: 6px;
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: 12px;
+                        color: #b8bb26;
+                        overflow-x: auto;
+                        white-space: pre-wrap;
+                        word-break: break-all;
+                    }
+
+                    .tutorial-hint {
+                        margin: 10px 0 0;
+                        font-size: 11px;
+                        color: #fabd2f;
+                    }
+
+                    .tutorial-nav {
+                        display: flex;
+                        gap: 12px;
+                        margin-top: 24px;
+                    }
+
+                    .tutorial-nav-back {
+                        flex: 1;
+                        padding: 12px;
+                        background: #3c3836;
+                        border: 1px solid #504945;
+                        border-radius: 8px;
+                        color: #ebdbb2;
+                        font-size: 13px;
+                        font-weight: 500;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .tutorial-nav-back:hover {
+                        background: #504945;
+                    }
+
+                    .tutorial-nav-next {
+                        flex: 1;
+                        padding: 12px;
+                        background: linear-gradient(135deg, #458588 0%, #83a598 100%);
+                        border: none;
+                        border-radius: 8px;
+                        color: #fbf1c7;
+                        font-size: 13px;
+                        font-weight: 600;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .tutorial-nav-next:hover {
+                        background: linear-gradient(135deg, #83a598 0%, #458588 100%);
+                    }
+
+                    /* Minimized Tutorial */
+                    .tutorial-minimized {
+                        position: fixed;
+                        bottom: 20px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                        padding: 12px 16px;
+                        background: linear-gradient(135deg, #32302f 0%, #282828 100%);
+                        border: 1px solid #458588;
+                        border-radius: 12px;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+                        z-index: 150;
+                        font-family: 'JetBrains Mono', monospace;
+                    }
+
+                    .tutorial-minimized-content {
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                    }
+
+                    .tutorial-minimized-icon {
+                        font-size: 24px;
+                    }
+
+                    .tutorial-minimized-info {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                    }
+
+                    .tutorial-minimized-title {
+                        font-size: 13px;
+                        font-weight: 600;
+                        color: #ebdbb2;
+                    }
+
+                    .tutorial-minimized-progress {
+                        font-size: 11px;
+                        color: #928374;
+                    }
+
+                    .tutorial-minimized-actions {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+
+                    .tutorial-minimized-continue {
+                        padding: 8px 14px;
+                        background: linear-gradient(135deg, #458588 0%, #83a598 100%);
+                        border: none;
+                        border-radius: 6px;
+                        color: #fbf1c7;
+                        font-size: 12px;
+                        font-weight: 600;
+                        font-family: 'JetBrains Mono', monospace;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                    }
+
+                    .tutorial-minimized-continue:hover {
+                        background: linear-gradient(135deg, #83a598 0%, #458588 100%);
+                    }
+
+                    .tutorial-minimized-close {
+                        background: none;
+                        border: none;
+                        color: #928374;
+                        font-size: 14px;
+                        cursor: pointer;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        transition: all 0.15s ease;
+                    }
+
+                    .tutorial-minimized-close:hover {
+                        color: #fb4934;
+                        background: rgba(251, 73, 52, 0.1);
                     }
                 `}</style>
             </IonContent>
