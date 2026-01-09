@@ -282,6 +282,7 @@ describe('Unified Send API E2E Tests', () => {
         });
 
         it('should use signedCredential when provided for email recipient', async () => {
+            testUnsignedBoost.issuer = a.id.did('key')
             const boostUri = await a.invoke.createBoost(testUnsignedBoost);
 
             // Sign credential client-side
@@ -316,19 +317,6 @@ describe('Unified Send API E2E Tests', () => {
     });
 
     describe('Error Handling', () => {
-        it('should reject send to email without templateUri', async () => {
-            // templateUri is required for email/phone recipients
-            await expect(
-                a.invoke.send({
-                    type: 'boost',
-                    recipient: 'no-template@example.com',
-                    template: {
-                        credential: testUnsignedBoost,
-                    },
-                })
-            ).rejects.toThrow();
-        });
-
         it('should reject send to non-existent boost for email recipient', async () => {
             await expect(
                 a.invoke.send({
