@@ -5,19 +5,21 @@ import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import AiPathwayCareerDetails from './AiPathwaysCareerDetails';
 
 import { ModalTypes, useModal } from 'learn-card-base';
-import { AiPathwayCareer } from './ai-pathway-careers.helpers';
+import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
 
 export const AiPathwayCareerItem: React.FC<{
-    career: AiPathwayCareer;
-}> = ({ career }) => {
+    occupation: OccupationDetailsResponse;
+}> = ({ occupation }) => {
     const { newModal } = useModal();
 
     const openCareerDetailsModal = () => {
-        newModal(<AiPathwayCareerDetails career={career} />, undefined, {
+        newModal(<AiPathwayCareerDetails occupation={occupation} />, undefined, {
             desktop: ModalTypes.Right,
             mobile: ModalTypes.Right,
         });
     };
+
+    const medianSalary = occupation?.Wages?.NationalWagesList?.[1]?.Median;
 
     return (
         <div
@@ -28,7 +30,7 @@ export const AiPathwayCareerItem: React.FC<{
             <div className="w-full flex flex-col items-start justify-start gap-1">
                 <div className="flex items-center justify-between w-full">
                     <h4 className="pr-1 text-grayscale-800 font-semibold text-[17px] text-left line-clamp-1">
-                        {career.title}
+                        {occupation?.OnetTitle}
                     </h4>
 
                     <div>
@@ -40,11 +42,11 @@ export const AiPathwayCareerItem: React.FC<{
                         AVG. ANNUAL SALARY
                     </p>
                     <p className="text-indigo-400 text-sm text-left font-semibold">
-                        ${numeral(career.salary).format('0,0')}
+                        ${numeral(medianSalary).format('0,0')}
                     </p>
                 </div>
                 <p className="text-grayscale-600 line-clamp-2 text-sm text-left">
-                    {career.description}
+                    {occupation?.OnetDescription}
                 </p>
             </div>
         </div>

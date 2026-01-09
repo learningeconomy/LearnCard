@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -14,7 +14,18 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { useGetCurrentLCNUser } from 'learn-card-base';
+import { useGetCurrentLCNUser, useAiInsightCredential } from 'learn-card-base';
+
+export type PathwayStep = {
+    title?: string;
+    description?: string;
+    skills?: Array<{ title: string; description?: string }>;
+};
+
+export type PathwayItem = PathwayStep & {
+    pathwayUri?: string; // pathway boost uri
+    topicUri?: string; // topic boost uri
+};
 
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
@@ -22,6 +33,12 @@ const AiPathways: React.FC = () => {
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
+
+    const { data: aiInsightCredential } = useAiInsightCredential();
+
+    const strongestAreaInterest = aiInsightCredential?.insights?.strongestArea;
+    const careerKeywords =
+        strongestAreaInterest?.keywords?.occupation || strongestAreaInterest?.keywords?.jobs;
 
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
@@ -36,7 +53,7 @@ const AiPathways: React.FC = () => {
                     <div className="flex items-center justify-center flex-col relative w-full pb-[50px]">
                         <AiPathwayCourses />
                         <AiPathwaySessions />
-                        <AiPathwayCareers />
+                        <AiPathwayCareers careerKeywords={careerKeywords} />
                         <AiPathwayExploreContent />
                         <ExploreAiInsightsButton className="mt-4" />
                     </div>
