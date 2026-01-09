@@ -81,9 +81,6 @@
             "react-router": "5.3.3",
             "react-router-dom": "5.3.3",
             "@types/minimatch": "5.1.2"
-        },
-        "patchedDependencies": {
-            "serverless-esbuild@1.55.0": "patches/serverless-esbuild@1.55.0.patch"
         }
     },
     "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee"

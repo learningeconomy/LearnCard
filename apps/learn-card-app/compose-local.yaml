@@ -1,13 +1,15 @@
 services:
   app:
+    image: learncard-monorepo-local
     build:
       context: ../../
-      dockerfile: apps/learn-card-app/Dockerfile.local
+      dockerfile: Dockerfile.monorepo
     container_name: "lcn-app"
     expose:
       - 3000
     ports:
       - "3000:3000"
+    command: ["sh", "-c", "pnpm exec nx docker-start learn-card-app"]
     depends_on:
       - brain
       - cloud
@@ -22,6 +24,7 @@ services:
       LCN_API_URL: http://localhost:4000/api
       CLOUD_URL: http://localhost:4100/trpc
       API_URL: http://localhost:5100/trpc
+      SKIP_DIDKIT_NAPI: "1"
     volumes:
       - ./src:/app/apps/learn-card-app/src
       - ../../packages/learn-card-base/src:/app/packages/learn-card-base/src
@@ -58,15 +61,13 @@ services:
       __DELETE_SERVICE__REDIS3_PORT: 6379
 
   brain:
-    image: welibrary/lcn-brain-service
-    build:
-      context: ../../
-      dockerfile: services/learn-card-network/brain-service/Dockerfile.local
+    image: learncard-monorepo-local
     container_name: "lcn-brain-service"
     expose:
       - 4000
     ports:
       - "4000:4000"
+    command: ["sh", "-c", "cd services/learn-card-network/brain-service && pnpm dev"]
     depends_on:
       neo4j:
         condition: service_healthy
@@ -85,6 +86,7 @@ services:
       PORT: 4000
       SEED: a
       DOMAIN_NAME: "localhost%3A4000"
+      SKIP_DIDKIT_NAPI: "1"
       NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
       NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-this-is-the-password}
@@ -100,15 +102,13 @@ services:
       SMART_RESUME_CONTRACT_URI: ${SMART_RESUME_CONTRACT_URI:-lc:network:localhost%3A4000/trpc:contract:a1087887-88ac-4eea-9a70-71b88b728719}
 
   cloud:
-    image: welibrary/lcn-cloud-service
-    build:
-      context: ../../
-      dockerfile: services/learn-card-network/learn-cloud-service/Dockerfile.local
+    image: learncard-monorepo-local
     container_name: "lcn-cloud-service"
     expose:
       - 4100
     ports:
       - "4100:4100"
+    command: ["sh", "-c", "cd services/learn-card-network/learn-cloud-service && pnpm dev"]
     depends_on:
       - mongodb
       - redis2
@@ -122,21 +122,20 @@ services:
       IS_OFFLINE: true
       PORT: 4100
       LEARN_CLOUD_SEED: b
+      SKIP_DIDKIT_NAPI: "1"
       LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
       LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
       REDIS_HOST: redis2
       REDIS_PORT: 6379
 
   api:
-    image: lca-api-service
-    build:
-      context: ../../
-      dockerfile: services/learn-card-network/lca-api/Dockerfile.local
+    image: learncard-monorepo-local
     container_name: "lcn-api-service"
     expose:
       - 5100
     ports:
       - "5100:5100"
+    command: ["sh", "-c", "cd services/learn-card-network/lca-api && pnpm dev"]
     depends_on:
       - mongodb
       - redis3
@@ -151,6 +150,7 @@ services:
       PORT: 5100
       SEED: c
       AUTHORIZED_DIDS: did:web:localhost%3A4000
+      SKIP_DIDKIT_NAPI: "1"
       MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
       MONGO_DB_NAME: ${MONGO_DB_NAME:-lca-api}
       REDIS_HOST: redis3

@@ -1,24 +1,19 @@
-# Use an official Node runtime as the base image
 FROM node:20.10.0-slim
 
-# Skip native DIDKit build (not needed for browser apps, uses WASM fallback)
 ENV SKIP_DIDKIT_NAPI=1
+ENV NX_PARALLEL=1
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Install build dependencies and pnpm in one layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     build-essential \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g pnpm
+    && npm install -g pnpm@9.12.3
 
-# Copy root workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc .gitignore .nxignore ./
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 
-# Copy dependency manifests for better Docker caching
 COPY services/learn-card-network/lca-api/package.json services/learn-card-network/lca-api/
 COPY packages/lca-api-client/package.json packages/lca-api-client/
 COPY packages/plugins/lca-api-plugin/package.json packages/plugins/lca-api-plugin/
@@ -55,10 +50,8 @@ COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
 COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 
-# Install dependencies - done before copying source for caching
 RUN pnpm install --no-frozen-lockfile
 
-# Copy sources
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api
 COPY packages/lca-api-client packages/lca-api-client
 COPY packages/plugins/lca-api-plugin packages/plugins/lca-api-plugin
@@ -98,9 +91,6 @@ COPY apps/learn-card-app apps/learn-card-app
 RUN rm -rf node_modules/.cache/nx
 
 RUN pnpm exec nx docker-build learn-card-app
-
-# Expose the port the app runs on
-EXPOSE 3000
-
-# Serve the app
-CMD ["sh", "-c", "cd apps/learn-card-app && pnpm preview"]
+RUN pnpm exec nx build:docker network-brain-service
+RUN pnpm exec nx build:docker learn-cloud-service
+RUN pnpm exec nx build:docker lca-api-service

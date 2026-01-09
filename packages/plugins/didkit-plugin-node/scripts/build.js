@@ -6,7 +6,9 @@ const path = require('path');
 const packageDir = path.resolve(__dirname, '..');
 const hasNodeBinary = fs.readdirSync(packageDir).some(f => f.endsWith('.node'));
 
-if (process.env.CI && hasNodeBinary) {
+if (process.env.SKIP_DIDKIT_NAPI) {
+    console.log('✓ SKIP_DIDKIT_NAPI set, skipping napi build');
+} else if (process.env.CI && hasNodeBinary) {
     console.log('✓ CI detected with prebuilt binary, skipping napi build');
 } else {
     console.log('Building native addon...');

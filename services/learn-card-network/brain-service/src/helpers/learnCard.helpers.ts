@@ -1,6 +1,8 @@
+import { readFile } from 'node:fs/promises';
+
 import { generateLearnCard, LearnCard } from '@learncard/core';
 import { CryptoPlugin, CryptoPluginType } from '@learncard/crypto-plugin';
-import { getDidKitPlugin, DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin-node';
+import type { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
 import { DidKeyPlugin, getDidKeyPlugin } from '@learncard/didkey-plugin';
 import { EncryptionPluginType, getEncryptionPlugin } from '@learncard/encryption-plugin';
 import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
@@ -9,7 +11,32 @@ import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin
 import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin, DidWebPlugin } from '@learncard/did-web-plugin';
 
-// Using native Node plugin - no WASM loading needed
+// Try native plugin first, fall back to WASM
+let didKitPluginPromise: Promise<DIDKitPlugin> | null = null;
+
+const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
+    if (didKitPluginPromise) return didKitPluginPromise;
+
+    didKitPluginPromise = (async () => {
+        try {
+            const {
+                default: { getDidKitPlugin: getNativePlugin },
+            } = await import('@learncard/didkit-plugin-node');
+            return await getNativePlugin();
+        } catch (e) {
+            console.log('Native DIDKit plugin not available, falling back to WASM');
+            const {
+                default: { getDidKitPlugin: getWasmPlugin },
+            } = await import('@learncard/didkit-plugin');
+            const wasmBuffer = await readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+            );
+            return await getWasmPlugin(wasmBuffer);
+        }
+    })();
+
+    return didKitPluginPromise;
+};
 
 export type EmptyLearnCard = LearnCard<
     [CryptoPluginType, DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, LearnCardPlugin]

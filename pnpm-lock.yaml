@@ -21,11 +21,6 @@ overrides:
   react-router-dom: 5.3.3
   '@types/minimatch': 5.1.2
 
-patchedDependencies:
-  serverless-esbuild@1.55.0:
-    hash: avtqd4msgba7hxbttac7frdwmq
-    path: patches/serverless-esbuild@1.55.0.patch
-
 importers:
 
   .:
@@ -1325,7 +1320,7 @@ importers:
         version: 4.10.3(esbuild@0.27.1)(rollup@2.79.2)
       serverless-esbuild:
         specifier: ^1.25.0
-        version: 1.55.0(patch_hash=avtqd4msgba7hxbttac7frdwmq)(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10)
+        version: 1.55.0(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10)
       serverless-http:
         specifier: ^3.0.1
         version: 3.2.0
@@ -3134,6 +3129,9 @@ importers:
       '@learncard/didkey-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/didkey
+      '@learncard/didkit-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/didkit
       '@learncard/didkit-plugin-node':
         specifier: workspace:*
         version: link:../../../packages/plugins/didkit-plugin-node
@@ -3284,7 +3282,7 @@ importers:
         version: 6.3.1
       serverless-esbuild:
         specifier: 1.55.0
-        version: 1.55.0(patch_hash=avtqd4msgba7hxbttac7frdwmq)(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10)
+        version: 1.55.0(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10)
       serverless-http:
         specifier: 3.2.0
         version: 3.2.0
@@ -3441,7 +3439,7 @@ importers:
         version: 6.4.4
       serverless-esbuild:
         specifier: ^1.41.0
-        version: 1.55.0(patch_hash=avtqd4msgba7hxbttac7frdwmq)(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10)
+        version: 1.55.0(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10)
       serverless-http:
         specifier: ^3.1.1
         version: 3.2.0
@@ -3646,7 +3644,7 @@ importers:
         version: 6.3.1
       serverless-esbuild:
         specifier: 1.55.0
-        version: 1.55.0(patch_hash=avtqd4msgba7hxbttac7frdwmq)(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10)
+        version: 1.55.0(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10)
       serverless-http:
         specifier: 3.2.0
         version: 3.2.0
@@ -55418,7 +55416,7 @@ snapshots:
       ramda: 0.28.0
       semver: 7.7.3
 
-  serverless-esbuild@1.55.0(patch_hash=avtqd4msgba7hxbttac7frdwmq)(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10):
+  serverless-esbuild@1.55.0(bufferutil@4.0.9)(esbuild@0.27.1)(utf-8-validate@5.0.10):
     dependencies:
       '@effect/platform': 0.65.5(@effect/schema@0.73.4(effect@3.19.5))(effect@3.19.5)
       '@effect/platform-node': 0.60.5(@effect/platform@0.65.5(@effect/schema@0.73.4(effect@3.19.5))(effect@3.19.5))(bufferutil@4.0.9)(effect@3.19.5)(utf-8-validate@5.0.10)

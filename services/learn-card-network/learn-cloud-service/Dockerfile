@@ -1,20 +1,16 @@
 FROM node:20.10.0-slim
 
-# Set working directory to /app
+# Skip native DIDKit build (uses WASM fallback)
+ENV SKIP_DIDKIT_NAPI=1
+
 WORKDIR /app
 
-# Install dependencies for building native packages (including Rust for native DIDKit plugin)
-RUN apt-get update || : && apt-get install -y \
+# Install build dependencies and pnpm in one layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     build-essential \
-    curl
-
-# Install Rust and Cargo for building native modules
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-
-# Install PNPM package manager
-RUN npm install -g pnpm
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g pnpm
 
 # Copy everything over from the source directory to the build directory
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
@@ -35,7 +31,6 @@ COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 COPY services/learn-card-network/learn-cloud-service services/learn-card-network/learn-cloud-service
 
-# Install dependencies - Install inside container ensures parity on all machines
 RUN pnpm install --no-frozen-lockfile
 
 RUN pnpm exec nx build:docker learn-cloud-service
