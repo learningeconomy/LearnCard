@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import EyeSlash from 'learn-card-base/svgs/EyeSlash';
+import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 export enum SkillLevel {
     Hidden = 'Hidden',
@@ -60,21 +62,45 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({}) => {
                 </p>
             </div>
 
-            <div className="flex gap-[1px] w-full rounded-[20px] overflow-hidden">
-                {Object.keys(SkillLevel).map((level: string, index: number) => (
-                    <button
-                        key={level}
-                        onClick={() => setSkillLevel(level as SkillLevel)}
-                        className={`flex-1 h-[7px] ${
-                            index <= SKILL_LEVEL_META[skillLevel].value
-                                ? `bg-${color}`
-                                : 'bg-grayscale-200'
-                        }`}
-                    />
-                ))}
+            <div className="flex gap-[1px] w-full rounded-[20px]">
+                {Object.keys(SkillLevel).map((level: string, index: number) => {
+                    const isCurrentLevel = index === SKILL_LEVEL_META[skillLevel].value;
+                    return (
+                        <button
+                            key={level}
+                            onClick={() => setSkillLevel(level as SkillLevel)}
+                            className={`flex-1 h-[7px] relative ${
+                                index <= SKILL_LEVEL_META[skillLevel].value &&
+                                skillLevel !== SkillLevel.Hidden
+                                    ? `bg-${color}`
+                                    : 'bg-grayscale-200'
+                            } ${index === 0 ? 'rounded-l-[20px]' : ''} ${
+                                index === Object.keys(SkillLevel).length - 1
+                                    ? 'rounded-r-[20px]'
+                                    : ''
+                            }`}
+                        >
+                            {isCurrentLevel && (
+                                <div
+                                    className={`rounded-[20px] bg-white text-${color} border-solid border-[2px] border-${color} px-[12px] py-[6px] absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] shadow-soft-bottom`}
+                                >
+                                    {level === SkillLevel.Hidden ? (
+                                        <EyeSlash className="h-[13px] w-[14px]" />
+                                    ) : (
+                                        <Checkmark
+                                            className="h-[13px] w-[13px]"
+                                            strokeWidth="3"
+                                            version="no-padding"
+                                        />
+                                    )}
+                                </div>
+                            )}
+                        </button>
+                    );
+                })}
 
                 {/* To make sure tailwind puts these colors in the CSS */}
-                <span className="hidden bg-orange-400 bg-light-blue-500 text-light-blue-500" />
+                <span className="hidden bg-orange-400 bg-light-blue-500 text-light-blue-500 border-grayscale-700 border-orange-400 border-light-blue-500" />
             </div>
         </div>
     );
