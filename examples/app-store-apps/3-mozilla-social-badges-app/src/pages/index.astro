@@ -1,0 +1,603 @@
+---
+// Mozilla Social Badges - Open Web Community Recognition Platform
+import '../styles/main.css';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mozilla Social Badges - Recognize Open Web Contributions</title>
+  <meta name="description" content="Award and receive verifiable social badges for contributions to the open web. Powered by Mozilla and LearnCard.">
+  
+  <!-- Google Fonts - Inter for Mozilla Design System -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="/" class="nav-brand">
+      <span class="nav-logo">🦊</span>
+      <span>Mozilla Social Badges</span>
+    </a>
+    <div class="nav-status" id="auth-status">Connect Wallet</div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Recognize Open Web Heroes</h1>
+      <p>Award verifiable social badges to celebrate contributions to a healthier internet. Powered by Mozilla and LearnCard.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" id="connect-btn">
+          <span>🔗</span> Connect LearnCard
+        </button>
+        <button class="btn btn-outline" id="learn-more-btn">
+          Learn More
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="section">
+    <div class="container">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-number">10K+</div>
+          <div class="stat-label">Badges Awarded</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">500+</div>
+          <div class="stat-label">Active Contributors</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">50+</div>
+          <div class="stat-label">Communities</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Open Source</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why It Matters -->
+  <section class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">Why Social Badges Matter</h2>
+      <p class="section-subtitle">Recognition builds stronger communities. Verifiable credentials make recognition portable, private, and permanent.</p>
+      
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🌐</div>
+          <h3 class="feature-title">Open & Interoperable</h3>
+          <p class="feature-description">Your badges work everywhere. No vendor lock-in, no walled gardens. Built on open standards that put you in control.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3 class="feature-title">Privacy First</h3>
+          <p class="feature-description">You decide what to share and when. Badges are stored in your personal wallet, not on corporate servers.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">✨</div>
+          <h3 class="feature-title">Truly Yours</h3>
+          <p class="feature-description">You own your achievements. Badges can't be taken away or lost when platforms shut down.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3 class="feature-title">Cryptographically Verified</h3>
+          <p class="feature-description">Each badge is digitally signed and tamper-proof. Anyone can verify authenticity without contacting the issuer.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🚀</div>
+          <h3 class="feature-title">Community Driven</h3>
+          <p class="feature-description">Built by the community, for the community. Transparent, auditable, and aligned with Mozilla's mission.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">💫</div>
+          <h3 class="feature-title">Future Proof</h3>
+          <p class="feature-description">Based on W3C standards and decentralized technology. Your credentials will work for years to come.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Badge Templates -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Badge Templates</h2>
+      <p class="section-subtitle">Pre-configured badges ready to award. Each badge recognizes a unique contribution to the open web.</p>
+      
+      <div class="badges-grid" id="badges-grid">
+        <div class="badge-card disabled" style="--badge-color: #FF6611" data-badge-name="Firefox Champion">
+          <div class="badge-icon">🦊</div>
+          <div class="badge-name">Firefox Champion</div>
+          <div class="badge-description">Advocates for browser choice, privacy, and an open web</div>
+          <div class="badge-action">Connect wallet to award</div>
+        </div>
+        
+        <div class="badge-card disabled" style="--badge-color: #0060DF" data-badge-name="Open Web Builder">
+          <div class="badge-icon">🌐</div>
+          <div class="badge-name">Open Web Builder</div>
+          <div class="badge-description">Contributes to open web standards and technologies</div>
+          <div class="badge-action">Connect wallet to award</div>
+        </div>
+        
+        <div class="badge-card disabled" style="--badge-color: #592ACB" data-badge-name="Privacy Guardian">
+          <div class="badge-icon">🛡️</div>
+          <div class="badge-name">Privacy Guardian</div>
+          <div class="badge-description">Champions privacy, security, and data protection</div>
+          <div class="badge-action">Connect wallet to award</div>
+        </div>
+        
+        <div class="badge-card disabled" style="--badge-color: #00B3A4" data-badge-name="MDN Contributor">
+          <div class="badge-icon">📚</div>
+          <div class="badge-name">MDN Contributor</div>
+          <div class="badge-description">Improves web documentation and learning resources</div>
+          <div class="badge-action">Connect wallet to award</div>
+        </div>
+        
+        <div class="badge-card disabled" style="--badge-color: #FF298A" data-badge-name="Community Leader">
+          <div class="badge-icon">🤝</div>
+          <div class="badge-name">Community Leader</div>
+          <div class="badge-description">Builds and nurtures Mozilla communities worldwide</div>
+          <div class="badge-action">Connect wallet to award</div>
+        </div>
+        
+        <div class="badge-card disabled" style="--badge-color: #20123A" data-badge-name="Design Pioneer">
+          <div class="badge-icon">🎨</div>
+          <div class="badge-name">Design Pioneer</div>
+          <div class="badge-description">Creates beautiful, accessible web experiences</div>
+          <div class="badge-action">Connect wallet to award</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">How to Award Badges</h2>
+      <p class="section-subtitle">Simple, secure, and instant. Award badges in three easy steps.</p>
+      
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3 class="step-title">Connect Your Wallet</h3>
+          <p class="step-description">Link your LearnCard wallet to get started. Takes less than a minute.</p>
+        </div>
+        
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3 class="step-title">Choose a Badge</h3>
+          <p class="step-description">Select from our pre-configured templates or create your own.</p>
+        </div>
+        
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3 class="step-title">Award & Celebrate</h3>
+          <p class="step-description">Send the badge to deserving contributors. They'll receive it instantly in their wallet.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Community Love</h2>
+      <p class="section-subtitle">Hear from contributors who've embraced social badges</p>
+      
+      <div class="testimonials">
+        <div class="testimonial">
+          <p class="testimonial-quote">"Receiving my first Firefox Champion badge felt amazing! It's not just a digital trophy—it's a verifiable credential I can showcase anywhere."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">SK</div>
+            <div class="testimonial-info">
+              <div class="testimonial-name">Sarah Kim</div>
+              <div class="testimonial-role">Firefox Advocate</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="testimonial">
+          <p class="testimonial-quote">"As an MDN contributor, having my work recognized with a verifiable badge means I can prove my expertise to potential employers."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">MJ</div>
+            <div class="testimonial-info">
+              <div class="testimonial-name">Marcus Johnson</div>
+              <div class="testimonial-role">Web Developer</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="testimonial">
+          <p class="testimonial-quote">"The privacy-first approach is exactly what the web needs. I control my badges, not some corporation."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">AP</div>
+            <div class="testimonial-info">
+              <div class="testimonial-name">Aisha Patel</div>
+              <div class="testimonial-role">Privacy Advocate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <div class="container">
+    <div class="cta-banner">
+      <h2>Ready to Get Started?</h2>
+      <p>Join thousands of contributors recognizing each other for building a healthier internet.</p>
+      <button class="btn btn-secondary" id="cta-connect-btn">
+        <span>🔗</span> Connect Your Wallet
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="https://www.mozilla.org" class="footer-link" target="_blank" rel="noopener">Mozilla</a>
+      <a href="https://learncard.com" class="footer-link" target="_blank" rel="noopener">LearnCard</a>
+      <a href="https://docs.learncard.com" class="footer-link" target="_blank" rel="noopener">Documentation</a>
+      <a href="https://github.com/learningeconomy/learncard" class="footer-link" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-copy">
+      © 2024 Mozilla Social Badges. Built with ❤️ for the open web.
+    </div>
+  </footer>
+
+  <!-- Badge Award Modal -->
+  <div class="modal-overlay" id="award-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title">Award Badge</h3>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <p>Preparing to award badge...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { createPartnerConnect } from '@learncard/partner-connect';
+    import { actions } from 'astro:actions';
+
+    // Initialize LearnCard Partner Connect SDK
+    const learnCard = createPartnerConnect();
+
+    // State
+    let isAuthenticated = false;
+    let userIdentity = null;
+    let boostTemplates = [];
+
+    // DOM Elements
+    const authStatus = document.getElementById('auth-status');
+    const connectBtn = document.getElementById('connect-btn');
+    const ctaConnectBtn = document.getElementById('cta-connect-btn');
+    const learnMoreBtn = document.getElementById('learn-more-btn');
+    const badgesGrid = document.getElementById('badges-grid');
+    const awardModal = document.getElementById('award-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    const modalClose = document.getElementById('modal-close');
+
+    // Initialize app
+    async function init() {
+      console.log('🦊 Mozilla Social Badges initializing...');
+      
+      await loadBoostTemplates();
+      await checkAuth();
+      setupEventListeners();
+      
+      console.log('✨ App initialized');
+    }
+
+    // Load boost templates from backend
+    async function loadBoostTemplates() {
+      try {
+        console.log('📋 Loading boost templates...');
+        const result = await actions.getBoostTemplates();
+        
+        if (result.data?.success) {
+          boostTemplates = result.data.boostTemplates;
+          console.log(`✓ Loaded ${boostTemplates.length} boost templates`);
+        } else {
+          console.error('Failed to load boost templates:', result.data?.error);
+          showNotification('Failed to load badge templates', 'error');
+        }
+      } catch (error) {
+        console.error('Error loading boost templates:', error);
+        showNotification('Error loading badge templates', 'error');
+      }
+    }
+
+    // Check authentication status
+    async function checkAuth() {
+      try {
+        const identity = await learnCard.requestIdentity();
+        
+        if (identity) {
+          isAuthenticated = true;
+          userIdentity = identity;
+          updateAuthUI(true, identity);
+          enableBadges();
+        }
+      } catch (error) {
+        if (error.code === 'LC_UNAUTHENTICATED') {
+          updateAuthUI(false);
+          disableBadges();
+        } else {
+          console.error('Auth check error:', error);
+        }
+      }
+    }
+
+    // Update authentication UI
+    function updateAuthUI(authenticated, identity = null) {
+      if (authenticated && identity) {
+        const displayName = identity.user?.profile?.displayName || 'Connected';
+        authStatus.textContent = displayName;
+        authStatus.classList.add('connected');
+        
+        connectBtn.textContent = '✓ Connected';
+        connectBtn.disabled = true;
+        
+        ctaConnectBtn.textContent = '✓ Connected';
+        ctaConnectBtn.disabled = true;
+      } else {
+        authStatus.textContent = 'Connect Wallet';
+        authStatus.classList.remove('connected');
+        
+        connectBtn.innerHTML = '<span>🔗</span> Connect LearnCard';
+        connectBtn.disabled = false;
+        
+        ctaConnectBtn.innerHTML = '<span>🔗</span> Connect Your Wallet';
+        ctaConnectBtn.disabled = false;
+      }
+    }
+
+    // Enable badge cards
+    function enableBadges() {
+      const badgeCards = document.querySelectorAll('.badge-card');
+      badgeCards.forEach(card => {
+        card.classList.remove('disabled');
+        const actionText = card.querySelector('.badge-action');
+        if (actionText) {
+          actionText.textContent = 'Click to Award →';
+        }
+      });
+    }
+
+    // Disable badge cards
+    function disableBadges() {
+      const badgeCards = document.querySelectorAll('.badge-card');
+      badgeCards.forEach(card => {
+        card.classList.add('disabled');
+        const actionText = card.querySelector('.badge-action');
+        if (actionText) {
+          actionText.textContent = 'Connect wallet to award';
+        }
+      });
+    }
+
+    // Connect wallet
+    async function connectWallet() {
+      try {
+        connectBtn.innerHTML = '<span class="spinning">⏳</span> Connecting...';
+        connectBtn.disabled = true;
+        
+        ctaConnectBtn.innerHTML = '<span class="spinning">⏳</span> Connecting...';
+        ctaConnectBtn.disabled = true;
+        
+        const identity = await learnCard.requestIdentity();
+        
+        if (identity) {
+          isAuthenticated = true;
+          userIdentity = identity;
+          updateAuthUI(true, identity);
+          enableBadges();
+          
+          showNotification('Successfully connected! You can now award badges.', 'success');
+        }
+      } catch (error) {
+        console.error('Connection error:', error);
+        
+        if (error.code === 'LC_UNAUTHENTICATED') {
+          showNotification('Please log into your LearnCard account to continue.', 'error');
+        } else {
+          showNotification(`Connection failed: ${error.message}`, 'error');
+        }
+        
+        updateAuthUI(false);
+      }
+    }
+
+    // Award badge
+    async function awardBadge(badgeName, badgeColor) {
+      if (!isAuthenticated) {
+        showNotification('Please connect your wallet first', 'error');
+        return;
+      }
+
+      // Find the boost template for this badge
+      const boostTemplate = boostTemplates.find(t => t.name === badgeName);
+      
+      if (!boostTemplate || !boostTemplate.uri) {
+        showNotification('Badge template not found. Please refresh the page.', 'error');
+        return;
+      }
+
+      closeModal();
+      
+      try {
+        console.log(`🎯 Awarding ${badgeName} badge...`);
+        showNotification(`Preparing to award "${badgeName}" badge...`, 'info');
+        
+        // Initiate the template issue flow (opens LearnCard interface)
+        const response = await learnCard.initiateTemplateIssue(boostTemplate.uri);
+        
+        console.log('Badge award response:', response);
+        
+        if (response.issued) {
+          showNotification(`✨ Success! "${badgeName}" badge has been awarded!`, 'success');
+        } else {
+          showNotification('Badge award was cancelled', 'info');
+        }
+      } catch (error) {
+        console.error('Badge award error:', error);
+        
+        let errorMessage = 'Failed to award badge.';
+        
+        if (error.code === 'UNAUTHORIZED') {
+          // User is not authorized - need to assign them as admin
+          errorMessage = `You need admin access to award this badge. Requesting access...`;
+          showNotification(errorMessage, 'info');
+          
+          // Try to assign the user as admin
+          await assignUserAsAdmin(userIdentity);
+        } else if (error.code === 'TEMPLATE_NOT_FOUND') {
+          errorMessage = `Badge template not found. Please check your configuration.`;
+          showNotification(errorMessage, 'error');
+        } else if (error.message) {
+          errorMessage = `Error: ${error.message}`;
+          showNotification(errorMessage, 'error');
+        } else {
+          showNotification(errorMessage, 'error');
+        }
+      }
+    }
+
+    // Assign user as admin to all boost templates
+    async function assignUserAsAdmin(identity) {
+      try {
+        const profileId = identity.user?.profile?.profileId;
+        
+        if (!profileId) {
+          showNotification('Unable to determine your profile ID', 'error');
+          return;
+        }
+
+        console.log(`🔑 Assigning ${profileId} as admin to all boost templates...`);
+        
+        const result = await actions.assignAdminToBoostTemplates({ profileId });
+        
+        if (result.data?.success) {
+          showNotification(
+            `Admin access granted! You can now award badges. Please try again.`,
+            'success'
+          );
+        } else {
+          showNotification(
+            `Failed to grant admin access: ${result.data?.error}`,
+            'error'
+          );
+        }
+      } catch (error) {
+        console.error('Error assigning admin:', error);
+        showNotification('Error granting admin access', 'error');
+      }
+    }
+
+    // Show modal
+    function showModal() {
+      awardModal.classList.add('visible');
+    }
+
+    // Close modal
+    function closeModal() {
+      awardModal.classList.remove('visible');
+    }
+
+    // Show notification
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `alert alert-${type}`;
+      notification.style.position = 'fixed';
+      notification.style.top = '80px';
+      notification.style.right = '20px';
+      notification.style.zIndex = '9999';
+      notification.style.minWidth = '300px';
+      notification.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
+      notification.innerHTML = `<p>${message}</p>`;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(400px)';
+        
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
+    }
+
+    // Expose closeModal to window for inline onclick handlers
+    window.closeModal = closeModal;
+
+    // Setup event listeners
+    function setupEventListeners() {
+      connectBtn?.addEventListener('click', connectWallet);
+      ctaConnectBtn?.addEventListener('click', connectWallet);
+      authStatus?.addEventListener('click', () => {
+        if (!isAuthenticated) {
+          connectWallet();
+        }
+      });
+      
+      learnMoreBtn?.addEventListener('click', () => {
+        document.querySelector('.features-grid').scrollIntoView({ 
+          behavior: 'smooth' 
+        });
+      });
+      
+      badgesGrid?.addEventListener('click', (event) => {
+        const badgeCard = event.target.closest('.badge-card');
+        
+        if (badgeCard && !badgeCard.classList.contains('disabled')) {
+          const badgeName = badgeCard.dataset.badgeName;
+          const badgeColor = getComputedStyle(badgeCard).getPropertyValue('--badge-color');
+          
+          awardBadge(badgeName, badgeColor);
+        }
+      });
+      
+      modalClose?.addEventListener('click', closeModal);
+      
+      awardModal?.addEventListener('click', (event) => {
+        if (event.target === awardModal) {
+          closeModal();
+        }
+      });
+      
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && awardModal.classList.contains('visible')) {
+          closeModal();
+        }
+      });
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>

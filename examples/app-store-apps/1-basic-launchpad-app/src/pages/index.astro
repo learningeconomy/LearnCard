@@ -1,0 +1,395 @@
+---
+// Server-side data (if needed for backend integration in the future)
+const config = {
+  contractUri: import.meta.env.CONTRACT_URI || 'lc:network:network.learncard.com/trpc:contract:fc430a19-5f0d-46e2-95c5-15fa57f753c9',
+  boostUri: import.meta.env.BOOST_URI || 'lc:network:network.learncard.com/trpc:boost:fbe30973-68b2-4a87-b0ac-80938ff382c4'
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LC Partner Demo: Identity & Actions</title>
+  <meta name="description" content="LearnCard App Store Partner Demo - SSO, Credential Issuance, Feature Launch, and Credential Requests">
+  
+  <!-- Load Tailwind CSS for simple, professional styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    /* Essential styling for a full-screen, seamless iframe experience */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f7f9fb;
+    }
+
+    .card {
+      max-width: 500px;
+      width: 95%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app-container" class="card bg-white p-8 rounded-2xl shadow-2xl space-y-6">
+    <h1 class="text-3xl font-extrabold text-gray-800">LearnCard Partner App Demo</h1>
+    
+    <!-- Status Indicator -->
+    <div id="status-box" class="p-4 rounded-xl border-l-4 font-medium" role="alert">
+      <p id="auth-status" class="text-gray-700">Initializing connection...</p>
+    </div>
+
+    <!-- Controls (Hidden until authenticated) -->
+    <div id="controls" class="space-y-4 hidden">
+      <p class="text-lg font-semibold text-indigo-700">Core Feature Demos:</p>
+
+      <button
+        id="issue-cred-btn"
+        class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        1. Issue Credential (SDK: sendCredential)
+      </button>
+
+      <button
+        id="launch-ai-btn"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        2. Launch AI Tutor (SDK: launchFeature)
+      </button>
+
+      <button
+        id="ask-cred-btn"
+        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        3. Request Credential (SDK: askCredentialSearch)
+      </button>
+
+      <button
+        id="request-consent-btn"
+        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        4. Request Consent (SDK: requestConsent)
+      </button>
+
+      <button
+        id="ask-specific-cred-btn"
+        class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        5. Request Specific Credential (SDK: askCredentialSpecific)
+      </button>
+
+      <button
+        id="initiate-template-issue-btn"
+        class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+      >
+        6. Initiate Template Issue (SDK: initiateTemplateIssue)
+      </button>
+    </div>
+  </div>
+
+  <!-- Config variables for the module script -->
+  <script define:vars={{ config }}>
+    window.__LC_CONFIG = config;
+  </script>
+
+  <script>
+    import { actions } from 'astro:actions';
+    import { createPartnerConnect } from '@learncard/partner-connect';
+
+    // --- CONFIGURATION ---
+    // Initialize the LearnCard Partner Connect SDK
+    const learnCard = createPartnerConnect();
+
+    // --- STATE & UTILITIES ---
+    const statusBox = document.getElementById('status-box');
+    const statusText = document.getElementById('auth-status');
+    const controls = document.getElementById('controls');
+    let lastIssuedCredentialId = null; // Track the last issued credential ID
+
+    // Helper to update the status UI
+    function updateStatus(message, type = 'info') {
+      statusText.textContent = message;
+      statusBox.className = 'p-4 rounded-xl border-l-4 font-medium'; // Reset classes
+
+      if (type === 'success') {
+        statusBox.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+        controls.classList.remove('hidden');
+      } else if (type === 'error') {
+        statusBox.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+        controls.classList.add('hidden');
+      } else {
+        // info/loading
+        statusBox.classList.add('bg-indigo-100', 'border-indigo-500', 'text-indigo-800');
+      }
+    }
+
+    // --- IMPLEMENTATION OF ACTIONS ---
+
+    // A. SSO - Identity Request
+    async function initiateSSO() {
+      updateStatus(`Attempting LearnCard Single Sign-On...`);
+
+      try {
+        const identity = await learnCard.requestIdentity();
+
+        // --- PARTNER BACKEND SIMULATION ---
+        // PARTNER ACTION: Send this token securely to your own backend (Astro endpoint)
+        console.log('RECEIVED JWT IDENTITY TOKEN:', identity.token);
+        // Your backend would validate the JWT, look up the user, and set a partner cookie here.
+        // If validation fails, your backend should fail, and the client should show an error.
+        // ---------------------------------
+
+        updateStatus(`SSO Success! User ID received. Token passed to simulated backend.`, 'success');
+      } catch (error) {
+        if (error.code === 'LC_UNAUTHENTICATED') {
+          // Host responded that user is not logged in to LearnCard
+          updateStatus(
+            'Please log into your LearnCard app to enable this partner application.',
+            'error'
+          );
+        } else {
+          updateStatus(
+            `SSO Error: ${error.message || 'Unknown error during identity request.'}`,
+            'error'
+          );
+        }
+      }
+    }
+
+    // B. Issue Credential
+    async function handleIssueCredential() {
+      updateStatus('Issuing credential request. Waiting for user consent popup...', 'info');
+
+      try {
+        const identity = await learnCard.requestIdentity();
+
+        const { data: credential, error } = await actions.issueCredential({ recipientDid: identity.user.did });
+        if (error) {
+          console.error(error)
+          throw new Error(error)
+        }
+        console.log('CREDENTIAL:', credential);
+
+        const response = await learnCard.sendCredential(credential);
+        
+        // Save the credential ID for later use
+        if (response.credentialId) {
+          lastIssuedCredentialId = response.credentialId;
+        }
+        
+        updateStatus(`Credential Issued! New ID: ${response.credentialId}`, 'success');
+      } catch (error) {
+        updateStatus(`Issue Failed: ${error.message || 'User rejected credential.'}`, 'error');
+      }
+    }
+
+    // C. Launch Feature
+    async function handleLaunchFeature() {
+      updateStatus('Requesting LearnCard Host to launch AI Tutor...');
+
+      try {
+        await learnCard.launchFeature(
+          '/ai/topics?shortCircuitStep=newTopic&selectedAppId=null',
+          'Summarize the postMessage security model for me.'
+        );
+        updateStatus('AI Tutor launched in the main LearnCard window!', 'info');
+      } catch (error) {
+        updateStatus(`Launch Failed: ${error.message}`, 'error');
+      }
+    }
+
+    // D. Request Credential (Gated Content)
+    async function handleAskCredential() {
+      updateStatus(
+        'Requesting user to share a credential (searching for "Learning History"). Waiting for consent...',
+        'info'
+      );
+
+      try {
+        const response = await learnCard.askCredentialSearch({
+          query: [
+            {
+              type: 'QueryByTitle',
+              credentialQuery: {
+                reason: "We need to verify your teamwork skills",
+                title: "Capstone"
+              } 
+            }
+          ],
+          challenge: `challenge-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          domain: window.location.hostname
+        });
+
+        console.log('VPR RESPONSE:', response);
+        if (response && response.verifiablePresentation) {
+          // Successfully received a signed Verifiable Presentation
+          const vp = response.verifiablePresentation;
+          const credCount = Array.isArray(vp.verifiableCredential) ? vp.verifiableCredential.length : 0;
+          
+          console.log('RECEIVED VERIFIABLE PRESENTATION:', vp);
+          updateStatus(
+            `Success! User shared ${credCount} credential(s) in a signed VP. Gated content unlocked.`,
+            'success'
+          );
+        } else {
+          updateStatus('User declined to share the requested credential.', 'error');
+        }
+      } catch (error) {
+        updateStatus(
+          `Request Failed: ${error.message || 'Error requesting credential.'}`,
+          'error'
+        );
+      }
+    }
+
+    // E. Request Consent
+    async function handleRequestConsent() {
+      updateStatus(
+        'Requesting user consent for general permissions. Waiting for consent...',
+        'info'
+      );
+
+      try {
+        const response = await learnCard.requestConsent(window.__LC_CONFIG.contractUri);
+
+        console.log('CONSENT RESPONSE:', response);
+        if (response.granted) {
+          updateStatus('Consent granted! You can now access advanced features.', 'success');
+        } else {
+          updateStatus('Consent denied. Some features may be limited.', 'error');
+        }
+      } catch (error) {
+        updateStatus(
+          `Consent Request Failed: ${error.message || 'Error requesting consent.'}`,
+          'error'
+        );
+      }
+    }
+
+    // F. Request Specific Credential
+    async function handleAskSpecificCredential() {
+      updateStatus(
+        'Requesting a specific credential by ID. Waiting for user to share...',
+        'info'
+      );
+
+      // For demo purposes, use a placeholder credential ID
+      // In a real app, you would know the ID from a previous interaction or database
+      // Use the last issued credential ID if available, otherwise use a demo ID
+      const defaultId = lastIssuedCredentialId || 'demo-credential-id-12345';
+      const demoCredentialId = prompt(
+        'Enter a credential ID to request (or leave empty for the last issued credential):',
+        defaultId
+      );
+
+      if (!demoCredentialId) {
+        updateStatus('Credential request cancelled.', 'error');
+        return;
+      }
+
+      try {
+        const response = await learnCard.askCredentialSpecific(demoCredentialId);
+
+        console.log('RECEIVED SPECIFIC CREDENTIAL:', response);
+        if (response.credential) {
+          updateStatus(
+            `Success! Received credential: ${response.credential.type?.join(', ') || 'Unknown type'}`,
+            'success'
+          );
+        } else {
+          updateStatus('No credential returned.', 'error');
+        }
+      } catch (error) {
+        if (error.code === 'CREDENTIAL_NOT_FOUND') {
+          updateStatus(`Credential not found: ${demoCredentialId}`, 'error');
+        } else if (error.code === 'USER_REJECTED') {
+          updateStatus('User declined to share the credential.', 'error');
+        } else {
+          updateStatus(
+            `Request Failed: ${error.message || 'Error requesting specific credential.'}`,
+            'error'
+          );
+        }
+      }
+    }
+
+    // G. Initiate Template Issue (Boost)
+    async function handleInitiateTemplateIssue() {
+      updateStatus(
+        'Initiating template issue flow. Opening Send Boost modal...',
+        'info'
+      );
+
+      // For demo purposes, prompt for template ID
+      // In a real app, you would know the template ID from your system
+      const templateId = prompt(
+        'Enter a template/boost ID to issue:',
+        window.__LC_CONFIG.boostUri
+      );
+
+      if (!templateId) {
+        updateStatus('Template issue cancelled.', 'error');
+        return;
+      }
+
+      // Optional: prompt for draft recipients
+      const recipientsInput = prompt(
+        'Enter draft recipients (comma-separated DIDs, or leave empty):',
+        ''
+      );
+
+      const draftRecipients = recipientsInput
+        ? recipientsInput.split(',').map(did => did.trim()).filter(Boolean)
+        : [];
+
+      try {
+        const response = await learnCard.initiateTemplateIssue(templateId, draftRecipients);
+
+        console.log('TEMPLATE ISSUE RESPONSE:', response);
+
+        if (response.issued) {
+          updateStatus(
+            'Template issued successfully! User completed the boost send.',
+            'success'
+          );
+        } else {
+          updateStatus('User cancelled the boost send flow.', 'info');
+        }
+      } catch (error) {
+        if (error.code === 'UNAUTHORIZED') {
+          updateStatus(
+            'Unauthorized: You are not an admin of this template.',
+            'error'
+          );
+        } else if (error.code === 'TEMPLATE_NOT_FOUND') {
+          updateStatus(`Template not found: ${templateId}`, 'error');
+        } else {
+          updateStatus(
+            `Template Issue Failed: ${error.message || 'Error initiating template issue.'}`,
+            'error'
+          );
+        }
+      }
+    }
+
+    // --- INITIALIZATION ---
+    window.onload = function () {
+      // Attach event listeners to the buttons
+      document.getElementById('issue-cred-btn').addEventListener('click', handleIssueCredential);
+      document.getElementById('launch-ai-btn').addEventListener('click', handleLaunchFeature);
+      document.getElementById('ask-cred-btn').addEventListener('click', handleAskCredential);
+      document.getElementById('request-consent-btn').addEventListener('click', handleRequestConsent);
+      document.getElementById('ask-specific-cred-btn').addEventListener('click', handleAskSpecificCredential);
+      document.getElementById('initiate-template-issue-btn').addEventListener('click', handleInitiateTemplateIssue);
+
+      // Begin the SSO flow immediately when the app loads
+      initiateSSO();
+    };
+  </script>
+</body>
+</html>
