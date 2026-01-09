@@ -145,6 +145,7 @@ export interface PartnerOnboardingState {
 
 export const ONBOARDING_STEPS = [
     { id: 'project-setup', title: 'Project Setup', description: 'Create your project and get credentials' },
+    { id: 'signing-authority', title: 'Signing', description: 'Set up credential signing' },
     { id: 'branding', title: 'Branding', description: 'Customize your credential appearance' },
     { id: 'templates', title: 'Templates', description: 'Define your credential schemas' },
     { id: 'integration', title: 'Integration', description: 'Choose how to connect' },

@@ -11,6 +11,7 @@ import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import {
     Building2,
+    Shield,
     Palette,
     FileStack,
     Plug,
@@ -33,6 +34,7 @@ import {
 } from './types';
 
 import { ProjectSetupStep } from './steps/ProjectSetupStep';
+import { SigningAuthorityStep } from './steps/SigningAuthorityStep';
 import { BrandingStep } from './steps/BrandingStep';
 import { TemplateBuilderStep } from './steps/TemplateBuilderStep';
 import { IntegrationMethodStep } from './steps/IntegrationMethodStep';
@@ -43,7 +45,7 @@ import { IntegrationDashboard } from './dashboard';
 import { usePersistedWizardState } from './hooks';
 import { getIntegrationRoute, getSetupStep, isIntegrationActive, PartnerOnboardingGuideState } from './utils/integrationStatus';
 
-const STEP_ICONS = [Building2, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
+const STEP_ICONS = [Building2, Shield, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 
 interface StepIndicatorProps {
     steps: typeof ONBOARDING_STEPS;
@@ -254,6 +256,10 @@ const PartnerOnboardingWizard: React.FC = () => {
         nextStep();
     }, [nextStep]);
 
+    const handleSigningAuthorityComplete = useCallback(() => {
+        nextStep();
+    }, [nextStep]);
+
     const handleBrandingComplete = useCallback((branding: BrandingConfig) => {
         setState(prev => ({ ...prev, branding }));
         nextStep();
@@ -319,6 +325,14 @@ const PartnerOnboardingWizard: React.FC = () => {
 
             case 1:
                 return (
+                    <SigningAuthorityStep
+                        onComplete={handleSigningAuthorityComplete}
+                        onBack={prevStep}
+                    />
+                );
+
+            case 2:
+                return (
                     <BrandingStep
                         branding={state.branding}
                         onComplete={handleBrandingComplete}
@@ -326,7 +340,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 2:
+            case 3:
                 return (
                     <TemplateBuilderStep
                         templates={state.templates}
@@ -337,7 +351,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 3:
+            case 4:
                 return (
                     <IntegrationMethodStep
                         selectedMethod={state.integrationMethod}
@@ -346,7 +360,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 4:
+            case 5:
                 return (
                     <DataMappingStep
                         integrationMethod={state.integrationMethod!}
@@ -358,7 +372,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 5:
+            case 6:
                 return (
                     <SandboxTestStep
                         project={state.project!}
@@ -371,7 +385,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 6:
+            case 7:
                 return (
                     <ProductionStep
                         project={state.project!}
