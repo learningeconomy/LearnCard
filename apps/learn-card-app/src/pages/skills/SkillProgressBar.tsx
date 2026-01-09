@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import EyeSlash from 'learn-card-base/svgs/EyeSlash';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
@@ -48,8 +48,39 @@ type SkillProgressBarProps = {};
 
 const SkillProgressBar: React.FC<SkillProgressBarProps> = ({}) => {
     const [skillLevel, setSkillLevel] = useState<SkillLevel>(SkillLevel.Novice);
+    const [isFocused, setIsFocused] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const segmentRefs = useRef<Array<HTMLDivElement | null>>([]);
 
     const color = SKILL_LEVEL_META[skillLevel].color;
+    const levels = Object.values(SkillLevel) as SkillLevel[];
+    const currentIndex = SKILL_LEVEL_META[skillLevel].value;
+
+    const chooseIndexFromClientX = (clientX: number) => {
+        let nearestIndex = 0;
+        let nearestDistance = Infinity;
+        for (let i = 0; i < levels.length; i++) {
+            const el = segmentRefs.current[i];
+            if (!el) continue;
+            const rect = el.getBoundingClientRect();
+            if (clientX >= rect.left && clientX <= rect.right) {
+                return i;
+            }
+            const dist = clientX < rect.left ? rect.left - clientX : clientX - rect.right;
+            if (dist < nearestDistance) {
+                nearestDistance = dist;
+                nearestIndex = i;
+            }
+        }
+        return nearestIndex;
+    };
+
+    useEffect(() => {
+        const onPointerUp = () => setIsDragging(false);
+        window.addEventListener('pointerup', onPointerUp);
+        return () => window.removeEventListener('pointerup', onPointerUp);
+    }, []);
 
     return (
         <div className="flex flex-col gap-[15px]">
@@ -62,32 +93,48 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({}) => {
                 </p>
             </div>
 
-            <div className="flex gap-[1px] w-full rounded-[20px]">
-                {Object.keys(SkillLevel).map((level: string, index: number) => {
-                    const isCurrentLevel = index === SKILL_LEVEL_META[skillLevel].value;
+            <div
+                ref={containerRef}
+                className="relative flex gap-[1px] w-full rounded-[20px]"
+                onPointerDown={e => {
+                    setIsDragging(true);
+                    const idx = chooseIndexFromClientX(e.clientX);
+                    const next = levels[idx];
+                    if (next) setSkillLevel(next);
+                }}
+                onPointerMove={e => {
+                    if (!isDragging) return;
+                    const idx = chooseIndexFromClientX(e.clientX);
+                    const next = levels[idx];
+                    if (next) setSkillLevel(next);
+                }}
+            >
+                {levels.map((level, index) => {
+                    const isCurrentLevel = index === currentIndex;
                     return (
-                        <button
+                        <div
                             key={level}
-                            onClick={() => setSkillLevel(level as SkillLevel)}
-                            className={`flex-1 h-[29px] py-[11px] relative `}
+                            className={`flex-1 h-[29px] py-[11px] relative ${
+                                isDragging ? 'cursor-grabbing' : 'cursor-pointer'
+                            }`}
+                            ref={el => (segmentRefs.current[index] = el)}
                         >
                             <div
                                 className={`h-[7px]
                                     ${
-                                        index <= SKILL_LEVEL_META[skillLevel].value &&
-                                        skillLevel !== SkillLevel.Hidden
+                                        index <= currentIndex && skillLevel !== SkillLevel.Hidden
                                             ? `bg-${color}`
                                             : 'bg-grayscale-200'
                                     } ${index === 0 ? 'rounded-l-[20px]' : ''} ${
-                                    index === Object.keys(SkillLevel).length - 1
-                                        ? 'rounded-r-[20px]'
-                                        : ''
+                                    index === levels.length - 1 ? 'rounded-r-[20px]' : ''
                                 }
                                 `}
                             ></div>
                             {isCurrentLevel && (
                                 <div
-                                    className={`rounded-[20px] bg-white text-${color} border-solid border-[2px] border-${color} px-[12px] py-[6px] absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] shadow-soft-bottom`}
+                                    className={`rounded-[20px] bg-white text-${color} border-solid border-[2px] border-${color} px-[12px] py-[6px] absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] shadow-soft-bottom select-none ${
+                                        isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                                    }`}
                                 >
                                     {level === SkillLevel.Hidden ? (
                                         <EyeSlash className="h-[13px] w-[14px]" />
@@ -100,9 +147,27 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({}) => {
                                     )}
                                 </div>
                             )}
-                        </button>
+                        </div>
                     );
                 })}
+
+                {/* Invisible slider overlay for drag and keyboard accessibility */}
+                <input
+                    type="range"
+                    min={0}
+                    max={levels.length - 1}
+                    step={1}
+                    value={currentIndex}
+                    onChange={e => {
+                        const idx = Number(e.target.value);
+                        const next = levels[idx];
+                        if (next) setSkillLevel(next);
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    aria-label="Skill level"
+                    className="absolute inset-0 w-full h-[29px] opacity-0 pointer-events-none"
+                />
 
                 {/* To make sure tailwind puts these colors in the CSS */}
                 <span className="hidden bg-orange-400 bg-light-blue-500 text-light-blue-500 border-grayscale-700 border-orange-400 border-light-blue-500" />
