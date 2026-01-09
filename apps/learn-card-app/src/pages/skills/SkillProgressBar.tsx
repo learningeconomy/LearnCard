@@ -69,17 +69,22 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({}) => {
                         <button
                             key={level}
                             onClick={() => setSkillLevel(level as SkillLevel)}
-                            className={`flex-1 h-[7px] relative ${
-                                index <= SKILL_LEVEL_META[skillLevel].value &&
-                                skillLevel !== SkillLevel.Hidden
-                                    ? `bg-${color}`
-                                    : 'bg-grayscale-200'
-                            } ${index === 0 ? 'rounded-l-[20px]' : ''} ${
-                                index === Object.keys(SkillLevel).length - 1
-                                    ? 'rounded-r-[20px]'
-                                    : ''
-                            }`}
+                            className={`flex-1 h-[29px] py-[11px] relative `}
                         >
+                            <div
+                                className={`h-[7px]
+                                    ${
+                                        index <= SKILL_LEVEL_META[skillLevel].value &&
+                                        skillLevel !== SkillLevel.Hidden
+                                            ? `bg-${color}`
+                                            : 'bg-grayscale-200'
+                                    } ${index === 0 ? 'rounded-l-[20px]' : ''} ${
+                                    index === Object.keys(SkillLevel).length - 1
+                                        ? 'rounded-r-[20px]'
+                                        : ''
+                                }
+                                `}
+                            ></div>
                             {isCurrentLevel && (
                                 <div
                                     className={`rounded-[20px] bg-white text-${color} border-solid border-[2px] border-${color} px-[12px] py-[6px] absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] shadow-soft-bottom`}
