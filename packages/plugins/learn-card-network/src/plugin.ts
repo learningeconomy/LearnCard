@@ -1022,79 +1022,17 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 if (input.type === 'boost') {
-                    // Detect recipient type from string
                     const recipient = input.recipient;
-                    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
-                    const isPhone = /^\+?[1-9]\d{6,14}$/.test(recipient);
                     const isDid = recipient.startsWith('did:');
+                    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
+                    const isPhone = /^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''));
 
-                    // Route to Universal Inbox for email/phone recipients
-                    if (isEmail || isPhone) {
-                        const boostUri = input.templateUri;
-
-                        if (!boostUri) {
-                            throw new Error(
-                                'templateUri is required when sending to email/phone recipients. On-the-fly template creation for inbox is not yet supported.'
-                            );
-                        }
-
-                        // Build inbox configuration from send options
-                        const inboxConfig: Record<string, unknown> = {};
-
-                        if (input.options?.webhookUrl) {
-                            inboxConfig.webhookUrl = input.options.webhookUrl;
-                        }
-
-                        if (input.options?.suppressDelivery || input.options?.branding) {
-                            inboxConfig.delivery = {
-                                suppress: input.options.suppressDelivery,
-                                template: input.options.branding
-                                    ? {
-                                          model: {
-                                              issuer: {
-                                                  name: input.options.branding.issuerName,
-                                                  logoUrl: input.options.branding.issuerLogoUrl,
-                                              },
-                                              credential: {
-                                                  name: input.options.branding.credentialName,
-                                              },
-                                              recipient: {
-                                                  name: input.options.branding.recipientName,
-                                              },
-                                          },
-                                      }
-                                    : undefined,
-                            };
-                        }
-
-                        // Call inbox endpoint with boostUri
-                        const inboxResult = await client.inbox.issue.mutate({
-                            recipient: {
-                                type: isEmail ? 'email' : 'phone',
-                                value: recipient,
-                            },
-                            boostUri,
-                            configuration:
-                                Object.keys(inboxConfig).length > 0 ? inboxConfig : undefined,
-                        });
-
-                        // Map inbox response to send response format
-                        return {
-                            type: 'boost' as const,
-                            credentialUri: inboxResult.issuanceId, // Use issuanceId as credential reference
-                            uri: boostUri,
-                            inbox: {
-                                issuanceId: inboxResult.issuanceId,
-                                status: inboxResult.status === 'PENDING' ? 'pending' : 'claimed',
-                                claimUrl: inboxResult.claimUrl,
-                            },
-                        };
-                    }
-
-                    // Existing logic for DID/profileId recipients
+                    // For DID/profileId recipients with local signing capability, sign client-side
+                    // This optimization reduces round trips by signing locally before sending
                     const canIssueLocally = 'issueCredential' in _learnCard.invoke;
+                    const isDirectRecipient = isDid || (!isEmail && !isPhone);
 
-                    if (canIssueLocally && input.templateUri) {
+                    if (canIssueLocally && isDirectRecipient && input.templateUri) {
                         const result = await _learnCard.invoke.resolveFromLCN(input.templateUri);
                         const data = await UnsignedVCValidator.spa(result);
 
@@ -1165,6 +1103,7 @@ export async function getLearnCardNetworkPlugin(
                     }
                 }
 
+                // Let the brain service handle all routing (email/phone → inbox, profileId/DID → direct)
                 return client.boost.send.mutate(input);
             },
 

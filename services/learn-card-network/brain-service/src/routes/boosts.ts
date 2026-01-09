@@ -604,37 +604,85 @@ export const boostsRouter = t.router({
 
             // Route to Universal Inbox for email/phone recipients
             if (inboxRecipient) {
-                // Prepare the credential from boost template
-                let credential: UnsignedVC;
+                // Prepare the credential - use signedCredential if provided, otherwise from boost template
+                let credential: VC | UnsignedVC;
 
-                try {
-                    credential = JSON.parse(boost.dataValues.boost);
+                if (input.signedCredential) {
+                    // Use pre-signed credential if provided
+                    credential = input.signedCredential;
+                } else {
+                    try {
+                        // Apply templateData rendering if provided (same as direct send path)
+                        let boostJsonString = boost.dataValues.boost;
 
-                    const now = new Date().toISOString();
-                    if (isVC2Format(credential)) {
-                        credential.validFrom = now;
-                    } else {
-                        credential.issuanceDate = now;
+                        if (input.templateData && Object.keys(input.templateData).length > 0) {
+                            boostJsonString = renderBoostTemplate(
+                                boostJsonString,
+                                input.templateData as Record<string, unknown>
+                            );
+                        }
+
+                        credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+
+                        const now = new Date().toISOString();
+                        if (isVC2Format(credential)) {
+                            credential.validFrom = now;
+                        } else {
+                            credential.issuanceDate = now;
+                        }
+
+                        if (credential?.type?.includes('BoostCredential')) {
+                            (credential as Record<string, unknown>).boostId = boostUri;
+                        }
+
+                        await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, domain);
+                    } catch (e) {
+                        console.error('Failed to prepare boost credential for inbox', e);
+                        throw new TRPCError({
+                            code: 'INTERNAL_SERVER_ERROR',
+                            message: 'Failed to prepare boost credential',
+                        });
                     }
-
-                    if (credential?.type?.includes('BoostCredential')) {
-                        (credential as Record<string, unknown>).boostId = boostUri;
-                    }
-
-                    await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, domain);
-                } catch (e) {
-                    console.error('Failed to prepare boost credential for inbox', e);
-                    throw new TRPCError({
-                        code: 'INTERNAL_SERVER_ERROR',
-                        message: 'Failed to prepare boost credential',
-                    });
                 }
 
-                // Map SendOptions to inbox configuration
-                const inboxConfig = {
+                // Map SendOptions to inbox configuration (including branding)
+                const inboxConfig: {
+                    webhookUrl?: string;
+                    delivery?: {
+                        suppress: boolean;
+                        template?: {
+                            model: {
+                                issuer?: { name?: string; logoUrl?: string };
+                                credential?: { name?: string };
+                                recipient?: { name?: string };
+                            };
+                        };
+                    };
+                } = {
                     webhookUrl: input.options?.webhookUrl,
-                    delivery: input.options?.suppressDelivery ? { suppress: true } : undefined,
                 };
+
+                if (input.options?.suppressDelivery || input.options?.branding) {
+                    inboxConfig.delivery = {
+                        suppress: input.options?.suppressDelivery ?? false,
+                        template: input.options?.branding
+                            ? {
+                                  model: {
+                                      issuer: {
+                                          name: input.options.branding.issuerName,
+                                          logoUrl: input.options.branding.issuerLogoUrl,
+                                      },
+                                      credential: {
+                                          name: input.options.branding.credentialName,
+                                      },
+                                      recipient: {
+                                          name: input.options.branding.recipientName,
+                                      },
+                                  },
+                              }
+                            : undefined,
+                    };
+                }
 
                 const inboxResult = await issueToInbox(
                     profile,

@@ -1,13 +1,16 @@
 import crypto from 'crypto';
+import { vi } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
 import { sendBoost, testUnsignedBoost, testVc } from './helpers/send';
-import { Profile, Credential, Boost, SigningAuthority, SkillFramework, Skill } from '@models';
+import { Profile, Credential, Boost, SigningAuthority, SkillFramework, Skill, InboxCredential, ContactMethod } from '@models';
 import { getClaimLinkOptionsInfoForBoost, getTTLForClaimLink } from '@cache/claim-links';
 import { BoostStatus } from 'types/boost';
 import { adminRole, creatorRole, emptyRole } from './helpers/permissions';
 import { neogma } from '@instance';
 import { getIdFromUri } from '@helpers/uri.helpers';
+import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
+import * as notifications from '@helpers/notifications.helpers';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -935,6 +938,239 @@ describe('Boosts', () => {
                     templateUri: boostUri,
                 })
             ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        });
+    });
+
+    describe('send to email/phone (inbox routing)', () => {
+        beforeEach(async () => {
+            sendSpy.mockClear();
+            vi.spyOn(notifications, 'addNotificationToQueue').mockImplementation(
+                addNotificationToQueueSpy
+            );
+            addNotificationToQueueSpy.mockClear();
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+            await InboxCredential.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'inbox-sa',
+                did: userA.learnCard.id.did(),
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+            await InboxCredential.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+        });
+
+        // Note: Tests use `as any` casts because the types package needs to be rebuilt
+        // to pick up the `options` and `inbox` fields added to SendBoostInput/Response
+
+        it('should route to inbox when recipient is an email address', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'test-inbox@example.com',
+                templateUri: boostUri,
+            } as any);
+
+            expect(result.type).toBe('boost');
+            expect(result.uri).toBe(boostUri);
+            expect((result as any).inbox).toBeDefined();
+            expect((result as any).inbox?.issuanceId).toBeDefined();
+            expect((result as any).inbox?.status).toBe('pending');
+        });
+
+        it('should route to inbox with on-the-fly template creation', async () => {
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'onthefly@example.com',
+                template: {
+                    credential: testUnsignedBoost,
+                    name: 'On-the-fly Boost',
+                    category: 'Achievement',
+                },
+            } as any);
+
+            expect(result.type).toBe('boost');
+            expect(result.uri).toBeDefined();
+            expect((result as any).inbox).toBeDefined();
+            expect((result as any).inbox?.issuanceId).toBeDefined();
+            expect((result as any).inbox?.status).toBe('pending');
+        });
+
+        it('should apply templateData when sending to email', async () => {
+            const templateBoost = {
+                ...testUnsignedBoost,
+                name: 'Certificate for {{recipientName}}',
+            };
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: templateBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'template-data@example.com',
+                templateUri: boostUri,
+                templateData: {
+                    recipientName: 'John Doe',
+                },
+            } as any);
+
+            expect((result as any).inbox).toBeDefined();
+            expect((result as any).inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should pass branding options to inbox configuration', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'branding@example.com',
+                templateUri: boostUri,
+                options: {
+                    branding: {
+                        issuerName: 'Test Organization',
+                        issuerLogoUrl: 'https://example.com/logo.png',
+                        credentialName: 'Achievement Badge',
+                        recipientName: 'Jane Doe',
+                    },
+                },
+            } as any);
+
+            expect((result as any).inbox).toBeDefined();
+            expect((result as any).inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should return claimUrl when suppressDelivery is true', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'suppress@example.com',
+                templateUri: boostUri,
+                options: {
+                    suppressDelivery: true,
+                },
+            } as any);
+
+            expect((result as any).inbox).toBeDefined();
+            expect((result as any).inbox?.claimUrl).toBeDefined();
+            expect((result as any).inbox?.claimUrl).toContain('interactions');
+        });
+
+        it('should pass webhookUrl to inbox configuration', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'webhook@example.com',
+                templateUri: boostUri,
+                options: {
+                    webhookUrl: 'https://example.com/webhook',
+                },
+            } as any);
+
+            expect((result as any).inbox).toBeDefined();
+            expect((result as any).inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should use signedCredential when provided for inbox path', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const signedVc = await userA.learnCard.invoke.issueCredential(testUnsignedBoost);
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'signed@example.com',
+                templateUri: boostUri,
+                signedCredential: signedVc,
+            } as any);
+
+            expect((result as any).inbox).toBeDefined();
+            expect((result as any).inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should auto-deliver when email belongs to existing verified user', async () => {
+            // Create a contact method for userB and mark it as verified
+            const cm = await ContactMethod.createOne({
+                type: 'email',
+                value: 'verified-user@example.com',
+                isVerified: true,
+            });
+
+            // Link the contact method to userB's profile
+            const userBProfile = await Profile.findOne({ where: { profileId: 'userb' } });
+            if (userBProfile && cm) {
+                await userBProfile.relateTo({ alias: 'hasContactMethod', where: { id: cm.id } });
+            }
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'verified-user@example.com',
+                templateUri: boostUri,
+            } as any);
+
+            expect((result as any).inbox).toBeDefined();
+            // When user exists, status should be 'claimed' (auto-delivered)
+            expect((result as any).inbox?.status).toBe('claimed');
+        });
+
+        it('should not route to inbox for profileId recipient', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: boostUri,
+            } as any);
+
+            expect(result.credentialUri).toBeDefined();
+            expect((result as any).inbox).toBeUndefined();
+        });
+
+        it('should not route to inbox for DID recipient', async () => {
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result = await userA.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: userBProfile!.did,
+                templateUri: boostUri,
+            } as any);
+
+            expect(result.credentialUri).toBeDefined();
+            expect((result as any).inbox).toBeUndefined();
         });
     });
 

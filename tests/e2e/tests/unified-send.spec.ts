@@ -258,6 +258,63 @@ describe('Unified Send API E2E Tests', () => {
         });
     });
 
+    describe('TemplateData and SignedCredential for Inbox', () => {
+        it('should apply templateData when sending to email', async () => {
+            const templateBoost = {
+                ...testUnsignedBoost,
+                name: 'Certificate for {{recipientName}}',
+            };
+
+            const boostUri = await a.invoke.createBoost(templateBoost);
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'template-e2e@example.com',
+                templateUri: boostUri,
+                templateData: {
+                    recipientName: 'E2E Test User',
+                },
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+            expect(result.inbox?.status).toBe('pending');
+        });
+
+        it('should use signedCredential when provided for email recipient', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            // Sign credential client-side
+            const signedVc = await a.invoke.issueCredential(testUnsignedBoost);
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'signed-e2e@example.com',
+                templateUri: boostUri,
+                signedCredential: signedVc,
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+        });
+
+        it('should work with on-the-fly template for email recipient', async () => {
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'onthefly-e2e@example.com',
+                template: {
+                    credential: testUnsignedBoost,
+                    name: 'On-the-fly E2E Boost',
+                    category: 'Achievement',
+                },
+            });
+
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+            expect(result.uri).toBeDefined();
+        });
+    });
+
     describe('Error Handling', () => {
         it('should reject send to email without templateUri', async () => {
             // templateUri is required for email/phone recipients
