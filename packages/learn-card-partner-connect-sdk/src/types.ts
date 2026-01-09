@@ -188,5 +188,5 @@ export interface PostMessageResponse {
 export interface PendingRequest {
   resolve: (value: unknown) => void;
   reject: (error: LearnCardError) => void;
-  timeoutId: number;
+  timeoutId: ReturnType<typeof setTimeout>;
 }
