@@ -10,7 +10,6 @@ import { useDeveloperPortal } from '../useDeveloperPortal';
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import {
-    Building,
     Building2,
     Palette,
     FileStack,
@@ -26,7 +25,6 @@ import {
     PartnerOnboardingState,
     DEFAULT_ONBOARDING_STATE,
     ONBOARDING_STEPS,
-    OrganizationProfile,
     PartnerProject,
     BrandingConfig,
     CredentialTemplate,
@@ -34,7 +32,6 @@ import {
     DataMappingConfig,
 } from './types';
 
-import { OrganizationSetupStep } from './steps/OrganizationSetupStep';
 import { ProjectSetupStep } from './steps/ProjectSetupStep';
 import { BrandingStep } from './steps/BrandingStep';
 import { TemplateBuilderStep } from './steps/TemplateBuilderStep';
@@ -46,7 +43,7 @@ import { IntegrationDashboard } from './dashboard';
 import { usePersistedWizardState } from './hooks';
 import { getIntegrationStatus, getIntegrationRoute, markIntegrationActive, updateSetupStep } from './utils/integrationStatus';
 
-const STEP_ICONS = [Building, Building2, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
+const STEP_ICONS = [Building2, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 
 interface StepIndicatorProps {
     steps: typeof ONBOARDING_STEPS;
@@ -232,11 +229,6 @@ const PartnerOnboardingWizard: React.FC = () => {
         }));
     }, []);
 
-    const handleOrganizationComplete = useCallback((organization: OrganizationProfile) => {
-        setState(prev => ({ ...prev, organization }));
-        nextStep();
-    }, [nextStep]);
-
     const handleProjectComplete = useCallback((project: PartnerProject) => {
         setState(prev => ({ ...prev, project }));
         nextStep();
@@ -287,14 +279,6 @@ const PartnerOnboardingWizard: React.FC = () => {
         switch (state.currentStep) {
             case 0:
                 return (
-                    <OrganizationSetupStep
-                        organization={state.organization}
-                        onComplete={handleOrganizationComplete}
-                    />
-                );
-
-            case 1:
-                return (
                     <ProjectSetupStep
                         project={state.project}
                         onComplete={handleProjectComplete}
@@ -302,7 +286,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 2:
+            case 1:
                 return (
                     <BrandingStep
                         branding={state.branding}
@@ -311,7 +295,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 3:
+            case 2:
                 return (
                     <TemplateBuilderStep
                         templates={state.templates}
@@ -322,7 +306,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 4:
+            case 3:
                 return (
                     <IntegrationMethodStep
                         selectedMethod={state.integrationMethod}
@@ -331,7 +315,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 5:
+            case 4:
                 return (
                     <DataMappingStep
                         integrationMethod={state.integrationMethod!}
@@ -343,7 +327,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 6:
+            case 5:
                 return (
                     <SandboxTestStep
                         project={state.project!}
@@ -356,7 +340,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 7:
+            case 6:
                 return (
                     <ProductionStep
                         project={state.project!}
