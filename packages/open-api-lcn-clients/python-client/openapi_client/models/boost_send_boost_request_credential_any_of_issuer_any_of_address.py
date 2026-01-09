@@ -84,6 +84,41 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddress(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of geo
         if self.geo:
             _dict['geo'] = self.geo.to_dict()
+        # set to None if address_country (nullable) is None
+        # and model_fields_set contains the field
+        if self.address_country is None and "address_country" in self.model_fields_set:
+            _dict['addressCountry'] = None
+
+        # set to None if address_country_code (nullable) is None
+        # and model_fields_set contains the field
+        if self.address_country_code is None and "address_country_code" in self.model_fields_set:
+            _dict['addressCountryCode'] = None
+
+        # set to None if address_region (nullable) is None
+        # and model_fields_set contains the field
+        if self.address_region is None and "address_region" in self.model_fields_set:
+            _dict['addressRegion'] = None
+
+        # set to None if address_locality (nullable) is None
+        # and model_fields_set contains the field
+        if self.address_locality is None and "address_locality" in self.model_fields_set:
+            _dict['addressLocality'] = None
+
+        # set to None if street_address (nullable) is None
+        # and model_fields_set contains the field
+        if self.street_address is None and "street_address" in self.model_fields_set:
+            _dict['streetAddress'] = None
+
+        # set to None if post_office_box_number (nullable) is None
+        # and model_fields_set contains the field
+        if self.post_office_box_number is None and "post_office_box_number" in self.model_fields_set:
+            _dict['postOfficeBoxNumber'] = None
+
+        # set to None if postal_code (nullable) is None
+        # and model_fields_set contains the field
+        if self.postal_code is None and "postal_code" in self.model_fields_set:
+            _dict['postalCode'] = None
+
         return _dict
 
     @classmethod

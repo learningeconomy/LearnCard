@@ -28,10 +28,11 @@ class BoostSendBoostViaSigningAuthorityRequest(BaseModel):
     """
     BoostSendBoostViaSigningAuthorityRequest
     """ # noqa: E501
-    boost_uri: StrictStr = Field(alias="boostUri")
+    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
     signing_authority: BoostSendBoostViaSigningAuthorityRequestSigningAuthority = Field(alias="signingAuthority")
+    template_data: Optional[Dict[str, Any]] = Field(default=None, alias="templateData")
     options: Optional[BoostSendBoostRequestOptions] = None
-    __properties: ClassVar[List[str]] = ["boostUri", "signingAuthority", "options"]
+    __properties: ClassVar[List[str]] = ["boostUri", "signingAuthority", "templateData", "options"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -78,6 +79,11 @@ class BoostSendBoostViaSigningAuthorityRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
+        # set to None if boost_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+            _dict['boostUri'] = None
+
         return _dict
 
     @classmethod
@@ -92,6 +98,7 @@ class BoostSendBoostViaSigningAuthorityRequest(BaseModel):
         _obj = cls.model_validate({
             "boostUri": obj.get("boostUri"),
             "signingAuthority": BoostSendBoostViaSigningAuthorityRequestSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
+            "templateData": obj.get("templateData"),
             "options": BoostSendBoostRequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None
         })
         return _obj

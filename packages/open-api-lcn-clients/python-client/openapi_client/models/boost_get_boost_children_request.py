@@ -30,9 +30,9 @@ class BoostGetBoostChildrenRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = 25
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
-    uri: StrictStr
+    uri: Optional[StrictStr]
     query: Optional[BoostGetBoostsRequestQuery] = None
-    number_of_generations: Optional[Union[StrictFloat, StrictInt]] = Field(default=1, alias="numberOfGenerations")
+    number_of_generations: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, alias="numberOfGenerations")
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "uri", "query", "numberOfGenerations"]
 
     model_config = ConfigDict(
@@ -77,6 +77,26 @@ class BoostGetBoostChildrenRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
+        # set to None if cursor (nullable) is None
+        # and model_fields_set contains the field
+        if self.cursor is None and "cursor" in self.model_fields_set:
+            _dict['cursor'] = None
+
+        # set to None if sort (nullable) is None
+        # and model_fields_set contains the field
+        if self.sort is None and "sort" in self.model_fields_set:
+            _dict['sort'] = None
+
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
+        # set to None if number_of_generations (nullable) is None
+        # and model_fields_set contains the field
+        if self.number_of_generations is None and "number_of_generations" in self.model_fields_set:
+            _dict['numberOfGenerations'] = None
+
         return _dict
 
     @classmethod
@@ -94,7 +114,7 @@ class BoostGetBoostChildrenRequest(BaseModel):
             "sort": obj.get("sort"),
             "uri": obj.get("uri"),
             "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
-            "numberOfGenerations": obj.get("numberOfGenerations") if obj.get("numberOfGenerations") is not None else 1
+            "numberOfGenerations": obj.get("numberOfGenerations")
         })
         return _obj
 

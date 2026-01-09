@@ -30,6 +30,7 @@ class ContractsGetTermsTransactionHistory200Response(BaseModel):
     cursor: Optional[StrictStr] = None
     has_more: StrictBool = Field(alias="hasMore")
     records: List[ContractsGetTermsTransactionHistory200ResponseRecordsInner]
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["cursor", "hasMore", "records"]
 
     model_config = ConfigDict(
@@ -62,8 +63,10 @@ class ContractsGetTermsTransactionHistory200Response(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -78,6 +81,16 @@ class ContractsGetTermsTransactionHistory200Response(BaseModel):
                 if _item_records:
                     _items.append(_item_records.to_dict())
             _dict['records'] = _items
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if cursor (nullable) is None
+        # and model_fields_set contains the field
+        if self.cursor is None and "cursor" in self.model_fields_set:
+            _dict['cursor'] = None
+
         return _dict
 
     @classmethod
@@ -94,6 +107,11 @@ class ContractsGetTermsTransactionHistory200Response(BaseModel):
             "hasMore": obj.get("hasMore"),
             "records": [ContractsGetTermsTransactionHistory200ResponseRecordsInner.from_dict(_item) for _item in obj["records"]] if obj.get("records") is not None else None
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

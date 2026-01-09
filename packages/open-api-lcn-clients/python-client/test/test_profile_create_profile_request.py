@@ -45,8 +45,8 @@ class TestProfileCreateProfileRequest(unittest.TestCase):
                 hero_image = '',
                 website_link = '',
                 type = '',
-                notifications_webhook = 'http',
-                display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_display.boost_getBoostRecipients_200_response_inner_to_display(
+                notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj',
+                display = openapi_client.models.profile_create_profile_request_display.profile_createProfile_request_display(
                     background_color = '', 
                     background_image = '', 
                     fade_background_image = True, 
@@ -58,8 +58,13 @@ class TestProfileCreateProfileRequest(unittest.TestCase):
                     fade_id_background_image = True, 
                     id_background_color = '', 
                     repeat_id_background_image = True, ),
+                highlighted_credentials = [
+                    ''
+                    ],
                 role = '',
-                dob = ''
+                dob = '',
+                country = '',
+                approved = True
             )
         else:
             return ProfileCreateProfileRequest(

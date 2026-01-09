@@ -11,10 +11,11 @@ Name | Type | Description | Notes
 **status** | **str** |  | [optional] 
 **auto_connect_recipients** | **bool** |  | [optional] 
 **meta** | **Dict[str, object]** |  | [optional] 
+**default_permissions** | [**BoostGetBoost200ResponseDefaultPermissions**](BoostGetBoost200ResponseDefaultPermissions.md) |  | [optional] 
 **allow_anyone_to_create_children** | **bool** |  | [optional] 
 **claim_permissions** | [**BoostGetBoost200ResponseClaimPermissions**](BoostGetBoost200ResponseClaimPermissions.md) |  | [optional] 
 **uri** | **str** |  | 
-**boost** | [**BoostCreateBoostRequestCredentialAnyOf**](BoostCreateBoostRequestCredentialAnyOf.md) |  | 
+**boost** | [**BoostGetBoost200ResponseBoost**](BoostGetBoost200ResponseBoost.md) |  | 
 
 ## Example
 

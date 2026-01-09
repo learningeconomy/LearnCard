@@ -18,8 +18,8 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
-from openapi_client.models.profile_manager_create_profile_manager_request import ProfileManagerCreateProfileManagerRequest
+from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.profile_manager_create_child_profile_manager_request_profile import ProfileManagerCreateChildProfileManagerRequestProfile
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,8 +27,8 @@ class ProfileManagerCreateChildProfileManagerRequest(BaseModel):
     """
     ProfileManagerCreateChildProfileManagerRequest
     """ # noqa: E501
-    parent_uri: StrictStr = Field(alias="parentUri")
-    profile: ProfileManagerCreateProfileManagerRequest
+    parent_uri: Optional[StrictStr] = Field(alias="parentUri")
+    profile: ProfileManagerCreateChildProfileManagerRequestProfile
     __properties: ClassVar[List[str]] = ["parentUri", "profile"]
 
     model_config = ConfigDict(
@@ -73,6 +73,11 @@ class ProfileManagerCreateChildProfileManagerRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of profile
         if self.profile:
             _dict['profile'] = self.profile.to_dict()
+        # set to None if parent_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.parent_uri is None and "parent_uri" in self.model_fields_set:
+            _dict['parentUri'] = None
+
         return _dict
 
     @classmethod
@@ -86,7 +91,7 @@ class ProfileManagerCreateChildProfileManagerRequest(BaseModel):
 
         _obj = cls.model_validate({
             "parentUri": obj.get("parentUri"),
-            "profile": ProfileManagerCreateProfileManagerRequest.from_dict(obj["profile"]) if obj.get("profile") is not None else None
+            "profile": ProfileManagerCreateChildProfileManagerRequestProfile.from_dict(obj["profile"]) if obj.get("profile") is not None else None
         })
         return _obj
 

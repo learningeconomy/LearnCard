@@ -36,7 +36,7 @@ class BoostGetBoost200ResponseClaimPermissions(BaseModel):
     can_edit_children: StrictStr = Field(alias="canEditChildren")
     can_revoke_children: StrictStr = Field(alias="canRevokeChildren")
     can_manage_children_permissions: StrictStr = Field(alias="canManageChildrenPermissions")
-    can_manage_children_profiles: Optional[StrictBool] = Field(default=False, alias="canManageChildrenProfiles")
+    can_manage_children_profiles: Optional[StrictBool] = Field(default=None, alias="canManageChildrenProfiles")
     can_view_analytics: StrictBool = Field(alias="canViewAnalytics")
     __properties: ClassVar[List[str]] = ["role", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
 
@@ -101,7 +101,7 @@ class BoostGetBoost200ResponseClaimPermissions(BaseModel):
             "canEditChildren": obj.get("canEditChildren"),
             "canRevokeChildren": obj.get("canRevokeChildren"),
             "canManageChildrenPermissions": obj.get("canManageChildrenPermissions"),
-            "canManageChildrenProfiles": obj.get("canManageChildrenProfiles") if obj.get("canManageChildrenProfiles") is not None else False,
+            "canManageChildrenProfiles": obj.get("canManageChildrenProfiles"),
             "canViewAnalytics": obj.get("canViewAnalytics")
         })
         return _obj

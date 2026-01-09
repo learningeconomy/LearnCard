@@ -5,9 +5,12 @@ All URIs are relative to *https://network.learncard.com/api*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**contracts_add_auto_boosts_to_contract**](ContractsApi.md#contracts_add_auto_boosts_to_contract) | **POST** /consent-flow-contracts/autoboosts/add | Add autoboosts to a contract
+[**contracts_cancel_contract_request**](ContractsApi.md#contracts_cancel_contract_request) | **POST** /consent-flow-contracts/cancel-request | Cancels/removes a contract request
 [**contracts_consent_to_contract**](ContractsApi.md#contracts_consent_to_contract) | **POST** /consent-flow-contract/consent | Consent To Contract
 [**contracts_create_consent_flow_contract**](ContractsApi.md#contracts_create_consent_flow_contract) | **POST** /consent-flow-contract | Create Consent Flow Contract
 [**contracts_delete_consent_flow_contract**](ContractsApi.md#contracts_delete_consent_flow_contract) | **DELETE** /consent-flow-contract | Delete a Consent Flow Contract
+[**contracts_forward_contract_request_to_profile**](ContractsApi.md#contracts_forward_contract_request_to_profile) | **POST** /consent-flow-contracts/forward-request-to-profile | Forward a contract request
+[**contracts_get_all_contract_requests_for_profile**](ContractsApi.md#contracts_get_all_contract_requests_for_profile) | **GET** /consent-flow-contracts/all-requests-for-profile | Get all contract requests for a target profile
 [**contracts_get_all_credentials_for_terms**](ContractsApi.md#contracts_get_all_credentials_for_terms) | **POST** /consent-flow-contracts/credentials | Get all credentials written to any terms
 [**contracts_get_consent_flow_contract**](ContractsApi.md#contracts_get_consent_flow_contract) | **GET** /consent-flow-contract | Get Consent Flow Contracts
 [**contracts_get_consent_flow_contracts**](ContractsApi.md#contracts_get_consent_flow_contracts) | **POST** /consent-flow-contracts | Get Consent Flow Contracts
@@ -15,9 +18,14 @@ Method | HTTP request | Description
 [**contracts_get_consented_data**](ContractsApi.md#contracts_get_consented_data) | **POST** /consent-flow-contract/data | Get the data that has been consented for all of your contracts
 [**contracts_get_consented_data_for_contract**](ContractsApi.md#contracts_get_consented_data_for_contract) | **POST** /consent-flow-contract/data-for-contract | Get the data that has been consented for a contract
 [**contracts_get_consented_data_for_did**](ContractsApi.md#contracts_get_consented_data_for_did) | **POST** /consent-flow-contract/data-for-did | Get the data that has been consented by a did
+[**contracts_get_contract_sent_requests**](ContractsApi.md#contracts_get_contract_sent_requests) | **GET** /consent-flow-contracts/sent-requests | Get requests sent for a given contract
 [**contracts_get_credentials_for_contract**](ContractsApi.md#contracts_get_credentials_for_contract) | **POST** /consent-flow-contract/credentials | Get credentials issued via a contract
+[**contracts_get_request_status_for_profile**](ContractsApi.md#contracts_get_request_status_for_profile) | **GET** /consent-flow-contracts/request-status | Get request status for a specific profile under a contract
 [**contracts_get_terms_transaction_history**](ContractsApi.md#contracts_get_terms_transaction_history) | **POST** /consent-flow-contract/consent/history | Gets Transaction History
+[**contracts_mark_contract_request_as_seen**](ContractsApi.md#contracts_mark_contract_request_as_seen) | **POST** /consent-flow-contracts/mark-request-as-seen | Marks a contract request as seen
 [**contracts_remove_auto_boosts_from_contract**](ContractsApi.md#contracts_remove_auto_boosts_from_contract) | **POST** /consent-flow-contracts/autoboosts/remove | Remove autoboosts from a contract
+[**contracts_send_ai_insight_share_request**](ContractsApi.md#contracts_send_ai_insight_share_request) | **POST** /consent-flow-contracts/ai-insights/share-request | AI Insights, consent flow share-notifcation request
+[**contracts_send_ai_insights_contract_request**](ContractsApi.md#contracts_send_ai_insights_contract_request) | **POST** /consent-flow-contracts/ai-insights/request | AI Insights, consent flow notifcation request
 [**contracts_sync_credentials_to_contract**](ContractsApi.md#contracts_sync_credentials_to_contract) | **POST** /consent-flow-contract/sync | Sync credentials to a contract
 [**contracts_update_consented_contract_terms**](ContractsApi.md#contracts_update_consented_contract_terms) | **POST** /consent-flow-contract/consent/update | Updates Contract Terms
 [**contracts_verify_consent**](ContractsApi.md#contracts_verify_consent) | **GET** /consent-flow-contract/verify | Verifies that a profile has consented to a contract
@@ -108,8 +116,90 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **contracts_cancel_contract_request**
+> bool contracts_cancel_contract_request(contracts_cancel_contract_request_request)
+
+Cancels/removes a contract request
+
+Removes a REQUESTED_FOR relationship, cancelling the request sent to the specified target profile. Only contract writers are authorized to perform this action.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_cancel_contract_request_request import ContractsCancelContractRequestRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_cancel_contract_request_request = openapi_client.ContractsCancelContractRequestRequest() # ContractsCancelContractRequestRequest | 
+
+    try:
+        # Cancels/removes a contract request
+        api_response = api_instance.contracts_cancel_contract_request(contracts_cancel_contract_request_request)
+        print("The response of ContractsApi->contracts_cancel_contract_request:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_cancel_contract_request: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **contracts_cancel_contract_request_request** | [**ContractsCancelContractRequestRequest**](ContractsCancelContractRequestRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **contracts_consent_to_contract**
-> str contracts_consent_to_contract(contracts_consent_to_contract_request)
+> ContractsConsentToContract200Response contracts_consent_to_contract(contracts_consent_to_contract_request)
 
 Consent To Contract
 
@@ -121,6 +211,7 @@ Consents to a Contract with a hard set of terms
 
 ```python
 import openapi_client
+from openapi_client.models.contracts_consent_to_contract200_response import ContractsConsentToContract200Response
 from openapi_client.models.contracts_consent_to_contract_request import ContractsConsentToContractRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
@@ -167,7 +258,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-**str**
+[**ContractsConsentToContract200Response**](ContractsConsentToContract200Response.md)
 
 ### Authorization
 
@@ -331,6 +422,171 @@ Name | Type | Description  | Notes
 ### Return type
 
 **bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_forward_contract_request_to_profile**
+> bool contracts_forward_contract_request_to_profile(contracts_forward_contract_request_to_profile_request)
+
+Forward a contract request
+
+Forwards a contract request to another profile
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_forward_contract_request_to_profile_request import ContractsForwardContractRequestToProfileRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_forward_contract_request_to_profile_request = openapi_client.ContractsForwardContractRequestToProfileRequest() # ContractsForwardContractRequestToProfileRequest | 
+
+    try:
+        # Forward a contract request
+        api_response = api_instance.contracts_forward_contract_request_to_profile(contracts_forward_contract_request_to_profile_request)
+        print("The response of ContractsApi->contracts_forward_contract_request_to_profile:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_forward_contract_request_to_profile: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **contracts_forward_contract_request_to_profile_request** | [**ContractsForwardContractRequestToProfileRequest**](ContractsForwardContractRequestToProfileRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_get_all_contract_requests_for_profile**
+> List[ContractsGetAllContractRequestsForProfile200ResponseInner] contracts_get_all_contract_requests_for_profile(target_profile_id)
+
+Get all contract requests for a target profile
+
+Gets all contract requests from all contracts for a specified target profile. Users can query their own requests.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_get_all_contract_requests_for_profile200_response_inner import ContractsGetAllContractRequestsForProfile200ResponseInner
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    target_profile_id = 'target_profile_id_example' # str | 
+
+    try:
+        # Get all contract requests for a target profile
+        api_response = api_instance.contracts_get_all_contract_requests_for_profile(target_profile_id)
+        print("The response of ContractsApi->contracts_get_all_contract_requests_for_profile:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_get_all_contract_requests_for_profile: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **target_profile_id** | **str**|  | 
+
+### Return type
+
+[**List[ContractsGetAllContractRequestsForProfile200ResponseInner]**](ContractsGetAllContractRequestsForProfile200ResponseInner.md)
 
 ### Authorization
 
@@ -687,7 +943,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **contracts_get_consented_data**
-> ContractsGetConsentedDataForContract200Response contracts_get_consented_data(contracts_get_consented_data_request=contracts_get_consented_data_request)
+> ContractsGetConsentedData200Response contracts_get_consented_data(contracts_get_consented_data_request=contracts_get_consented_data_request)
 
 Get the data that has been consented for all of your contracts
 
@@ -699,7 +955,7 @@ This route grabs all the data that has been consented for all of your contracts
 
 ```python
 import openapi_client
-from openapi_client.models.contracts_get_consented_data_for_contract200_response import ContractsGetConsentedDataForContract200Response
+from openapi_client.models.contracts_get_consented_data200_response import ContractsGetConsentedData200Response
 from openapi_client.models.contracts_get_consented_data_request import ContractsGetConsentedDataRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
@@ -746,7 +1002,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**ContractsGetConsentedDataForContract200Response**](ContractsGetConsentedDataForContract200Response.md)
+[**ContractsGetConsentedData200Response**](ContractsGetConsentedData200Response.md)
 
 ### Authorization
 
@@ -935,6 +1191,89 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **contracts_get_contract_sent_requests**
+> List[ContractsGetContractSentRequests200ResponseInner] contracts_get_contract_sent_requests(contract_uri)
+
+Get requests sent for a given contract
+
+Gets a list of users and their request statuses for a given contract.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_get_contract_sent_requests200_response_inner import ContractsGetContractSentRequests200ResponseInner
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contract_uri = 'contract_uri_example' # str | 
+
+    try:
+        # Get requests sent for a given contract
+        api_response = api_instance.contracts_get_contract_sent_requests(contract_uri)
+        print("The response of ContractsApi->contracts_get_contract_sent_requests:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_get_contract_sent_requests: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **contract_uri** | **str**|  | 
+
+### Return type
+
+[**List[ContractsGetContractSentRequests200ResponseInner]**](ContractsGetContractSentRequests200ResponseInner.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **contracts_get_credentials_for_contract**
 > ContractsGetCredentialsForContract200Response contracts_get_credentials_for_contract(contracts_get_credentials_for_contract_request)
 
@@ -1014,6 +1353,93 @@ Name | Type | Description  | Notes
 **400** | Invalid input data |  -  |
 **401** | Authorization not provided |  -  |
 **403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_get_request_status_for_profile**
+> ContractsGetRequestStatusForProfile200Response contracts_get_request_status_for_profile(target_profile_id, contract_id=contract_id, contract_uri=contract_uri)
+
+Get request status for a specific profile under a contract
+
+Returns the request status and read status for a given profile in a specific contract.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_get_request_status_for_profile200_response import ContractsGetRequestStatusForProfile200Response
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    target_profile_id = 'target_profile_id_example' # str | 
+    contract_id = 'contract_id_example' # str |  (optional)
+    contract_uri = 'contract_uri_example' # str |  (optional)
+
+    try:
+        # Get request status for a specific profile under a contract
+        api_response = api_instance.contracts_get_request_status_for_profile(target_profile_id, contract_id=contract_id, contract_uri=contract_uri)
+        print("The response of ContractsApi->contracts_get_request_status_for_profile:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_get_request_status_for_profile: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **target_profile_id** | **str**|  | 
+ **contract_id** | **str**|  | [optional] 
+ **contract_uri** | **str**|  | [optional] 
+
+### Return type
+
+[**ContractsGetRequestStatusForProfile200Response**](ContractsGetRequestStatusForProfile200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**404** | Not found |  -  |
 **500** | Internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1101,6 +1527,88 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **contracts_mark_contract_request_as_seen**
+> bool contracts_mark_contract_request_as_seen(contracts_mark_contract_request_as_seen_request)
+
+Marks a contract request as seen
+
+Updates the read status of a contract request to "seen" for the specified target profile. Only contract writers are authorized to perform this action.
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_mark_contract_request_as_seen_request import ContractsMarkContractRequestAsSeenRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_mark_contract_request_as_seen_request = openapi_client.ContractsMarkContractRequestAsSeenRequest() # ContractsMarkContractRequestAsSeenRequest | 
+
+    try:
+        # Marks a contract request as seen
+        api_response = api_instance.contracts_mark_contract_request_as_seen(contracts_mark_contract_request_as_seen_request)
+        print("The response of ContractsApi->contracts_mark_contract_request_as_seen:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_mark_contract_request_as_seen: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **contracts_mark_contract_request_as_seen_request** | [**ContractsMarkContractRequestAsSeenRequest**](ContractsMarkContractRequestAsSeenRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **contracts_remove_auto_boosts_from_contract**
 > bool contracts_remove_auto_boosts_from_contract(contracts_remove_auto_boosts_from_contract_request)
 
@@ -1157,6 +1665,170 @@ with openapi_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **contracts_remove_auto_boosts_from_contract_request** | [**ContractsRemoveAutoBoostsFromContractRequest**](ContractsRemoveAutoBoostsFromContractRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_send_ai_insight_share_request**
+> bool contracts_send_ai_insight_share_request(contracts_send_ai_insight_share_request_request)
+
+AI Insights, consent flow share-notifcation request
+
+Sends the targeted user an AI insights share notification
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_send_ai_insight_share_request_request import ContractsSendAiInsightShareRequestRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_send_ai_insight_share_request_request = openapi_client.ContractsSendAiInsightShareRequestRequest() # ContractsSendAiInsightShareRequestRequest | 
+
+    try:
+        # AI Insights, consent flow share-notifcation request
+        api_response = api_instance.contracts_send_ai_insight_share_request(contracts_send_ai_insight_share_request_request)
+        print("The response of ContractsApi->contracts_send_ai_insight_share_request:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_send_ai_insight_share_request: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **contracts_send_ai_insight_share_request_request** | [**ContractsSendAiInsightShareRequestRequest**](ContractsSendAiInsightShareRequestRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **contracts_send_ai_insights_contract_request**
+> bool contracts_send_ai_insights_contract_request(contracts_send_ai_insights_contract_request_request)
+
+AI Insights, consent flow notifcation request
+
+Sends the targeted user an AI insights consent flow request via a notification
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.contracts_send_ai_insights_contract_request_request import ContractsSendAiInsightsContractRequestRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ContractsApi(api_client)
+    contracts_send_ai_insights_contract_request_request = openapi_client.ContractsSendAiInsightsContractRequestRequest() # ContractsSendAiInsightsContractRequestRequest | 
+
+    try:
+        # AI Insights, consent flow notifcation request
+        api_response = api_instance.contracts_send_ai_insights_contract_request(contracts_send_ai_insights_contract_request_request)
+        print("The response of ContractsApi->contracts_send_ai_insights_contract_request:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ContractsApi->contracts_send_ai_insights_contract_request: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **contracts_send_ai_insights_contract_request_request** | [**ContractsSendAiInsightsContractRequestRequest**](ContractsSendAiInsightsContractRequestRequest.md)|  | 
 
 ### Return type
 

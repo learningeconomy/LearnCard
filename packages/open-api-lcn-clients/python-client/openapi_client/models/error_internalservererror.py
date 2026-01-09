@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contact_methods_set_primary_contact_method200_response import ContactMethodsSetPrimaryContactMethod200Response
+from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -29,7 +29,8 @@ class ErrorINTERNALSERVERERROR(BaseModel):
     """ # noqa: E501
     message: StrictStr = Field(description="The error message")
     code: StrictStr = Field(description="The error code")
-    issues: Optional[List[ContactMethodsSetPrimaryContactMethod200Response]] = Field(default=None, description="An array of issues that were responsible for the error")
+    issues: Optional[List[ContactMethodsSendChallenge200Response]] = Field(default=None, description="An array of issues that were responsible for the error")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["message", "code", "issues"]
 
     model_config = ConfigDict(
@@ -62,8 +63,10 @@ class ErrorINTERNALSERVERERROR(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -78,6 +81,11 @@ class ErrorINTERNALSERVERERROR(BaseModel):
                 if _item_issues:
                     _items.append(_item_issues.to_dict())
             _dict['issues'] = _items
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
         return _dict
 
     @classmethod
@@ -92,8 +100,13 @@ class ErrorINTERNALSERVERERROR(BaseModel):
         _obj = cls.model_validate({
             "message": obj.get("message"),
             "code": obj.get("code"),
-            "issues": [ContactMethodsSetPrimaryContactMethod200Response.from_dict(_item) for _item in obj["issues"]] if obj.get("issues") is not None else None
+            "issues": [ContactMethodsSendChallenge200Response.from_dict(_item) for _item in obj["issues"]] if obj.get("issues") is not None else None
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

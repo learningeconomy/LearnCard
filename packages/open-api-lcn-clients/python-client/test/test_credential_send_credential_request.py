@@ -35,7 +35,10 @@ class TestCredentialSendCredentialRequest(unittest.TestCase):
         model = CredentialSendCredentialRequest()
         if include_optional:
             return CredentialSendCredentialRequest(
-                credential = None
+                credential = None,
+                metadata = {
+                    'key' : null
+                    }
             )
         else:
             return CredentialSendCredentialRequest(

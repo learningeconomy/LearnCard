@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 **did** | **str** |  | 
 **contract_uri** | **str** |  | 
 **boost_uri** | **str** |  | 
-**credential** | [**BoostSendBoostRequestCredential**](BoostSendBoostRequestCredential.md) |  | 
+**credential** | [**ContractsWriteCredentialToContractRequestCredential**](ContractsWriteCredentialToContractRequestCredential.md) |  | 
 
 ## Example
 
