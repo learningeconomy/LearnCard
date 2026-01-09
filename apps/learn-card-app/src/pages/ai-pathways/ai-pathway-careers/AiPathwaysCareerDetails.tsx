@@ -11,10 +11,14 @@ import AiPathwayCareerQualitativeInsights from './AiPathwayCareerQualitativeInsi
 
 import { useModal } from 'learn-card-base';
 
-import { type AiPathwayCareer } from './ai-pathway-careers.helpers';
+import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
 
-const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career }) => {
+const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }> = ({
+    occupation,
+}) => {
     const { closeModal } = useModal();
+
+    console.log(occupation);
 
     return (
         <div
@@ -23,9 +27,11 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
         >
             <div className="h-full relative overflow-hidden bg-grayscale-200">
                 <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col gap-[20px] items-center justify-start">
-                    <AiPathwayCareerHeader career={career} />
+                    <AiPathwayCareerHeader occupation={occupation} />
 
-                    <AiPathwayCareerSalaries career={career} />
+                    <AiPathwayCareerSalaries occupation={occupation} />
+
+                    {/* 
 
                     <AiPathwayCareerSkills career={career} />
 
@@ -35,7 +41,7 @@ const AiPathwayCareerDetails: React.FC<{ career: AiPathwayCareer }> = ({ career 
 
                     <AiPathwayCareerQualifications career={career} />
 
-                    <AiPathwayTopPayLocations career={career} />
+                    <AiPathwayTopPayLocations career={career} /> */}
                 </div>
                 <IonFooter
                     mode="ios"

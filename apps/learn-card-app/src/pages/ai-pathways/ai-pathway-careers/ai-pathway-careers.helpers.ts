@@ -1,3 +1,5 @@
+import { WageItem } from 'learn-card-base/types/careerOneStop';
+
 export type AiPathwayCareer = {
     id: number;
     title: string;
@@ -205,3 +207,13 @@ export const AI_PATHWAY_CAREERS: AiPathwayCareer[] = [
         ],
     },
 ];
+
+export const buildSalaryPipeData = (wages: WageItem) => {
+    return [
+        { bucket: 1, value: Number(wages.Pct10) },
+        { bucket: 2, value: Number(wages.Pct25) },
+        { bucket: 4, value: Number(wages.Median) },
+        { bucket: 6, value: Number(wages.Pct75) },
+        { bucket: 7, value: Number(wages.Pct90) },
+    ];
+};

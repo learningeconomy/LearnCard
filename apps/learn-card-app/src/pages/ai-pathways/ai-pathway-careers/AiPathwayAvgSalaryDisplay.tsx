@@ -2,9 +2,9 @@ import React from 'react';
 import numeral from 'numeral';
 
 const AiPathwayAvgSalaryDisplay: React.FC<{
-    medianSalary: number;
-    minSalary: number;
-    maxSalary: number;
+    medianSalary: string;
+    minSalary: string;
+    maxSalary: string;
 }> = ({ medianSalary, minSalary, maxSalary }) => {
     return (
         <div className="w-full flex flex-col items-center justify-start">

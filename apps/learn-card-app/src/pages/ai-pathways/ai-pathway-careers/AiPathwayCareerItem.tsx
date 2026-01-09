@@ -19,7 +19,10 @@ export const AiPathwayCareerItem: React.FC<{
         });
     };
 
-    const medianSalary = occupation?.Wages?.NationalWagesList?.[1]?.Median;
+    const wages = occupation?.Wages?.NationalWagesList;
+    const [rate, yearly] = wages;
+
+    const medianSalary = yearly?.Median;
 
     return (
         <div

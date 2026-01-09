@@ -2,17 +2,20 @@ import React from 'react';
 import numeral from 'numeral';
 
 import { BarChart, Bar, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from 'recharts';
-import { AiPathwayCareer, getSalaryStats } from './ai-pathway-careers.helpers';
-
-interface AiPathwayCareerPipeChartProps {
-    career: AiPathwayCareer;
-}
+import { AiPathwayCareer, buildSalaryPipeData, getSalaryStats } from './ai-pathway-careers.helpers';
+import { Wages } from 'learn-card-base/types/careerOneStop';
 
 const MEDIAN_BUCKET = 4;
 
-export const AiPathwayCareerPipeChart: React.FC<AiPathwayCareerPipeChartProps> = ({ career }) => {
-    const data = career.salaryData;
-    const { medianSalary, minSalary, maxSalary } = getSalaryStats(data);
+export const AiPathwayCareerPipeChart: React.FC<{ wages: Wages }> = ({ wages }) => {
+    const { NationalWagesList } = wages;
+    const [_rate, yearly] = NationalWagesList;
+
+    const data = buildSalaryPipeData(yearly);
+
+    const minSalary = yearly?.Pct10;
+    const medianSalary = yearly?.Median;
+    const maxSalary = yearly?.Pct90;
 
     return (
         <div className="w-full relative">
