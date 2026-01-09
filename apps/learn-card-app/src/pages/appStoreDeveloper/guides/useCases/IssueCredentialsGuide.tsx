@@ -33,9 +33,10 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { LEARNCARD_NETWORK_API_URL } from 'learn-card-base/constants/Networks';
 import { Clipboard } from '@capacitor/clipboard';
 
-import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
+import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { OBv3CredentialBuilder } from '../../../../components/credentials/OBv3CredentialBuilder';
+import type { GuideProps } from '../GuidePage';
 
 type AuthGrant = {
     id: string;
@@ -52,6 +53,7 @@ const STEPS = [
     { id: 'signing-authority', title: 'Set Up Signing' },
     { id: 'build-credential', title: 'Build Credential' },
     { id: 'issue', title: 'Issue & Verify' },
+    { id: 'go-live', title: 'Go Live' },
 ];
 
 const SCOPE_OPTIONS = [
@@ -1252,7 +1254,8 @@ else:
 // Step 4: Issue & Verify
 const IssueVerifyStep: React.FC<{
     onBack: () => void;
-}> = ({ onBack }) => {
+    onComplete: () => void;
+}> = ({ onBack, onComplete }) => {
     const [verifyInput, setVerifyInput] = useState('');
     const [verifying, setVerifying] = useState(false);
     const [verifyResult, setVerifyResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -1381,22 +1384,20 @@ const IssueVerifyStep: React.FC<{
                     Back
                 </button>
 
-                <a
-                    href="https://docs.learncard.com/sdks/network-plugin"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <button
+                    onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    View Full Documentation
+                    Continue to Go Live
                     <ArrowRight className="w-4 h-4" />
-                </a>
+                </button>
             </div>
         </div>
     );
 };
 
 // Main component
-const IssueCredentialsGuide: React.FC<{ selectedIntegration?: unknown; setSelectedIntegration?: unknown }> = () => {
+const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
     const guideState = useGuideState('issue-credentials', STEPS.length);
 
     const [apiToken, setApiToken] = useState('');
@@ -1438,6 +1439,24 @@ const IssueCredentialsGuide: React.FC<{ selectedIntegration?: unknown; setSelect
                 return (
                     <IssueVerifyStep
                         onBack={guideState.prevStep}
+                        onComplete={() => handleStepComplete('issue')}
+                    />
+                );
+
+            case 4:
+                return (
+                    <GoLiveStep
+                        integration={selectedIntegration}
+                        guideType="issue-credentials"
+                        onBack={guideState.prevStep}
+                        completedItems={[
+                            'Created API token for server-side access',
+                            'Configured signing authority',
+                            'Built credential template',
+                            'Tested issuing and verification',
+                        ]}
+                        title="Ready to Issue Credentials!"
+                        description="You've set up everything needed to issue verifiable credentials via API. Activate your integration to start issuing in production."
                     />
                 );
 

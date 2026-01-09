@@ -25,7 +25,7 @@ import {
 
 import { useWallet } from 'learn-card-base';
 
-import { StepProgress } from '../shared';
+import { StepProgress, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 
 import { ConsentFlowContractSelector } from '../../components/ConsentFlowContractSelector';
@@ -48,6 +48,7 @@ const STEPS = [
     { id: 'redirect-handler', title: 'Redirect Handler' },
     { id: 'api-setup', title: 'API Setup' },
     { id: 'send-credentials', title: 'Send Credentials' },
+    { id: 'go-live', title: 'Go Live' },
 ];
 
 // Step Card component for consistent styling
@@ -468,9 +469,10 @@ console.log('LearnCard DID:', learnCard.id.did());`}
 // Step 4: Send Credentials
 const SendCredentialsStep: React.FC<{
     onBack: () => void;
+    onComplete: () => void;
     contractUri: string;
     apiToken?: string;
-}> = ({ onBack, contractUri, apiToken }) => {
+}> = ({ onBack, onComplete, contractUri, apiToken }) => {
     const [showCredentialBuilder, setShowCredentialBuilder] = useState(false);
     const [builtCredential, setBuiltCredential] = useState<Record<string, unknown> | null>(null);
 
@@ -658,22 +660,20 @@ console.log('User consent records:', userConsentData.records);`}
                     Back
                 </button>
 
-                <a
-                    href="https://docs.learncard.com/core-concepts/consent-and-permissions"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <button
+                    onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-colors"
                 >
-                    View Full Documentation
-                    <ExternalLink className="w-4 h-4" />
-                </a>
+                    Continue to Go Live
+                    <ArrowRight className="w-4 h-4" />
+                </button>
             </div>
         </div>
     );
 };
 
 // Main component
-const ConsentFlowGuide: React.FC<GuideProps> = () => {
+const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
     const guideState = useGuideState('consent-flow', STEPS.length);
 
     const [contractUri, setContractUri] = useState('');
@@ -721,8 +721,26 @@ const ConsentFlowGuide: React.FC<GuideProps> = () => {
                 return (
                     <SendCredentialsStep
                         onBack={guideState.prevStep}
+                        onComplete={() => handleStepComplete('send-credentials')}
                         contractUri={contractUri}
                         apiToken={apiToken}
+                    />
+                );
+
+            case 4:
+                return (
+                    <GoLiveStep
+                        integration={selectedIntegration}
+                        guideType="consent-flow"
+                        onBack={guideState.prevStep}
+                        completedItems={[
+                            'Created consent flow contract',
+                            'Set up redirect handler',
+                            'Configured API access',
+                            'Tested sending credentials',
+                        ]}
+                        title="Ready to Connect!"
+                        description="You've set up everything needed for consent-based data sharing. Activate your integration to start connecting with users."
                     />
                 );
 

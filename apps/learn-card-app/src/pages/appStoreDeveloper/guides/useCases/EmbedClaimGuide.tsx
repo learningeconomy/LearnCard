@@ -25,7 +25,7 @@ import type { LCNIntegration } from '@learncard/types';
 import { useToast, ToastTypeEnum, useConfirmation, useFilestack, useWallet } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
 
-import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
+import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { OBv3CredentialBuilder } from '../../../../components/credentials/OBv3CredentialBuilder';
 import type { GuideProps } from '../GuidePage';
@@ -36,6 +36,7 @@ const STEPS = [
     { id: 'load-sdk', title: 'Load SDK' },
     { id: 'configure', title: 'Configure' },
     { id: 'test', title: 'Test It' },
+    { id: 'go-live', title: 'Go Live' },
 ];
 
 // Step 1: Publishable Key (shows key from selected integration)
@@ -756,10 +757,11 @@ const ConfigureStep: React.FC<{
 // Step 5: Test
 const TestStep: React.FC<{
     onBack: () => void;
+    onComplete: () => void;
     publishableKey: string;
     credential: Record<string, unknown>;
     partnerName: string;
-}> = ({ onBack, publishableKey, credential, partnerName }) => {
+}> = ({ onBack, onComplete, publishableKey, credential, partnerName }) => {
     const credentialName = (credential.name as string) || 'Untitled Credential';
     return (
         <div className="space-y-6">
@@ -883,15 +885,13 @@ const TestStep: React.FC<{
                     Back
                 </button>
 
-                <a
-                    href="https://docs.learncard.com/sdks/embed-sdk"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <button
+                    onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Full Documentation
-                    <ExternalLink className="w-4 h-4" />
-                </a>
+                    Continue to Go Live
+                    <ArrowRight className="w-4 h-4" />
+                </button>
             </div>
         </div>
     );
@@ -982,9 +982,28 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                 return (
                     <TestStep
                         onBack={guideState.prevStep}
+                        onComplete={() => handleStepComplete('test')}
                         publishableKey={publishableKey}
                         credential={credential}
                         partnerName={partnerName}
+                    />
+                );
+
+            case 5:
+                return (
+                    <GoLiveStep
+                        integration={selectedIntegration}
+                        guideType="embed-claim"
+                        onBack={guideState.prevStep}
+                        completedItems={[
+                            'Retrieved publishable key',
+                            'Added HTML target element',
+                            'Loaded the SDK',
+                            'Configured claim settings',
+                            'Tested the embed flow',
+                        ]}
+                        title="Ready to Embed!"
+                        description="You've set up everything needed to embed claim buttons on your website. Activate your integration to start accepting claims in production."
                     />
                 );
 
