@@ -68,6 +68,15 @@ type OnboardingNetworkFormProps = {
     role?: LearnCardRolesEnum | null;
     setStep?: (step: OnboardingStepsEnum) => void;
     onSuccess?: () => void;
+    formData: {
+        name: string | null | undefined;
+        dob: string | null | undefined;
+        country: string | undefined;
+        photo: string | null | undefined;
+        usMinorConsent: boolean;
+        profileId: string | null | undefined;
+    };
+    updateFormData: (updates: Partial<OnboardingNetworkFormProps['formData']>) => void;
 };
 
 const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
@@ -78,6 +87,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     setStep,
     role,
     onSuccess,
+    formData,
+    updateFormData,
 }) => {
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
@@ -89,16 +100,26 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
     const { handleLogout, isLoggingOut } = useLogout();
+    const { name, dob, country, photo, usMinorConsent, profileId } = formData;
 
-    const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
-    const [dob, setDob] = useState<string | null | undefined>('');
-    const [country, setCountry] = useState<string | undefined>(undefined);
-    const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
-    const [usMinorConsent, setUsMinorConsent] = useState<boolean>(false);
+    const handleNameChange = (value: string) => {
+        updateFormData({ name: value ?? '' });
+    };
+    const handleDobChange = (date: string) => {
+        updateFormData({ dob: date });
+    };
+    const handleCountrySelect = (selectedCountry: string) => {
+        updateFormData({ country: selectedCountry });
+    };
+    const handlePhotoUpload = (photoUrl: string) => {
+        updateFormData({ photo: photoUrl });
+    };
+    const handleUsMinorConsentToggle = (value: boolean) => {
+        updateFormData({ usMinorConsent: value });
+    };
 
     const [networkToggle, setNetworkToggle] = useState<boolean>(true);
 
-    const [profileId, setProfileId] = useState<string | null | undefined>('');
     const [isLengthValid, setIsLengthValid] = useState(false);
     const [isFormatValid, setIsFormatValid] = useState(false);
     const [isUniqueValid, setIsUniqueValid] = useState(false);
@@ -153,11 +174,11 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         const age = dob ? calculateAge(dob) : Number.NaN;
         const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
         const inEU = country ? isEUCountry(country) : false;
-        if (inEU || !isTeen) setUsMinorConsent(false);
+        if (inEU || !isTeen) handleUsMinorConsentToggle(false);
     }, [country, dob]);
 
     const onUpload = (data: UploadRes) => {
-        setPhoto(data?.url);
+        handlePhotoUpload(data?.url);
         setUploadProgress(false);
     };
 
@@ -205,7 +226,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     };
 
     const handleProfileIdInput = (value: string) => {
-        setProfileId(value);
+        updateFormData({ profileId: value });
         setProfileIdErrors({});
         setProfileIdError('');
 
@@ -448,7 +469,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             <USConsentNoticeModalContent
                 onBack={closeModal}
                 onContinue={() => {
-                    setUsMinorConsent(true);
+                    handleUsMinorConsentToggle(e.detail.checked);
                     closeModal();
                     handleUpdateUser({ skipUsConsentCheck: true });
                     console.log('///onContinue');
@@ -746,7 +767,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                     }`}
                                     onIonInput={e => {
                                         setErrors({});
-                                        setName(e.detail.value);
+                                        handleNameChange(e.detail.value);
                                     }}
                                     value={name}
                                     placeholder="Full Name"
@@ -771,11 +792,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                                 <IonDatetime
                                                     onIonChange={e => {
                                                         setErrors({});
-                                                        setDob(
-                                                            moment(e.detail.value).format(
-                                                                'YYYY-MM-DD'
-                                                            )
-                                                        );
+                                                        handleDobChange(e.detail.value as string);
                                                         closeModal();
                                                     }}
                                                     value={
@@ -836,7 +853,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                                         delete next.country;
                                                         return next;
                                                     });
-                                                    setCountry(code);
+                                                    handleCountrySelect(code);
                                                     closeModal();
                                                 }}
                                             />,
