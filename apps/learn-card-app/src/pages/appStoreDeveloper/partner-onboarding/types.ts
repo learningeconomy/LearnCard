@@ -105,6 +105,32 @@ export interface DataMappingConfig {
 
 export type IntegrationMethod = 'webhook' | 'api' | 'csv';
 
+export type IntegrationStatus = 'setup' | 'active' | 'paused';
+
+/** Extended integration config stored in integration metadata */
+export interface IntegrationConfig {
+    status: IntegrationStatus;
+    setupCompletedAt?: string;
+    setupStep?: number;
+
+    integrationMethod?: IntegrationMethod;
+    webhookUrl?: string;
+    dataMapping?: DataMappingConfig;
+
+    // Stats (computed, not stored)
+    totalCredentialsIssued?: number;
+    totalTemplates?: number;
+    lastIssuedAt?: string;
+}
+
+/** Integration with extended config for dashboard display */
+export interface IntegrationWithConfig {
+    id: string;
+    name: string;
+    createdAt?: string;
+    config?: IntegrationConfig;
+}
+
 export interface PartnerOnboardingState {
     currentStep: number;
     organization: OrganizationProfile | null;

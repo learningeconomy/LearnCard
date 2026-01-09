@@ -8,6 +8,7 @@ import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
+import { getIntegrationRoute } from '../partner-onboarding/utils/integrationStatus';
 
 import IssueCredentialsGuide from './useCases/IssueCredentialsGuide';
 import EmbedClaimGuide from './useCases/EmbedClaimGuide';
@@ -32,13 +33,14 @@ const GUIDE_COMPONENTS: Record<UseCaseId, React.FC<GuideProps>> = {
 };
 
 const GuidePage: React.FC = () => {
-    const { useCase } = useParams<{ useCase: string }>();
+    const { useCase, integrationId } = useParams<{ useCase: string; integrationId?: string }>();
     const history = useHistory();
     const location = useLocation();
     
-    // Get integrationId from URL query params
+    // Support both route param and query param for backward compatibility
     const searchParams = new URLSearchParams(location.search);
-    const urlIntegrationId = searchParams.get('integrationId');
+    const queryIntegrationId = searchParams.get('integrationId');
+    const urlIntegrationId = integrationId || queryIntegrationId;
     
     const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(urlIntegrationId);
     const [selectedIntegration, setSelectedIntegration] = useState<LCNIntegration | null>(null);
@@ -71,10 +73,6 @@ const GuidePage: React.FC = () => {
             const found = integrations.find(i => i.id === selectedIntegrationId);
             if (found) {
                 setSelectedIntegration(found);
-                // Update URL without navigation
-                const newSearchParams = new URLSearchParams(location.search);
-                newSearchParams.set('integrationId', found.id);
-                history.replace({ search: newSearchParams.toString() });
             }
         }
     }, [selectedIntegrationId, integrations]);
@@ -82,6 +80,22 @@ const GuidePage: React.FC = () => {
     const handleSetSelectedIntegration = (integration: LCNIntegration | null) => {
         setSelectedIntegration(integration);
         setSelectedIntegrationId(integration?.id || null);
+    };
+
+    // When switching integrations, navigate to that integration's correct state/guide
+    const handleIntegrationSelect = (id: string | null) => {
+        setSelectedIntegrationId(id);
+
+        if (id && integrations) {
+            const found = integrations.find(i => i.id === id);
+            if (found) {
+                setSelectedIntegration(found);
+            }
+
+            // Navigate to the correct route for this integration's state
+            const route = getIntegrationRoute(id);
+            history.push(route);
+        }
     };
 
     const useCaseId = useCase as UseCaseId;
@@ -116,7 +130,12 @@ const GuidePage: React.FC = () => {
     const headerContent = (
         <div className="flex items-center gap-3">
             <button
-                onClick={() => history.push('/app-store/developer/guides')}
+                onClick={() => {
+                    const guidesPath = selectedIntegrationId 
+                        ? `/app-store/developer/integrations/${selectedIntegrationId}/guides`
+                        : '/app-store/developer/guides';
+                    history.push(guidesPath);
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" />
@@ -126,7 +145,7 @@ const GuidePage: React.FC = () => {
             <HeaderIntegrationSelector
                 integrations={integrations || []}
                 selectedId={selectedIntegrationId}
-                onSelect={setSelectedIntegrationId}
+                onSelect={handleIntegrationSelect}
                 isLoading={isLoadingIntegrations}
             />
         </div>

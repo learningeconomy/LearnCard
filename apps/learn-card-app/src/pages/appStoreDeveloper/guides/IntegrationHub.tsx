@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { 
     Award, 
@@ -20,6 +20,7 @@ import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
+import { getIntegrationStatus, setGuideType } from '../partner-onboarding/utils/integrationStatus';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
     'award': Award,
@@ -39,6 +40,7 @@ interface UseCaseCardProps {
     color: string;
     bgColor: string;
     comingSoon?: boolean;
+    isActive?: boolean;
     onClick: () => void;
 }
 
@@ -50,6 +52,7 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
     color,
     bgColor,
     comingSoon,
+    isActive,
     onClick,
 }) => {
     const IconComponent = ICON_MAP[icon] || Award;
@@ -79,10 +82,22 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
     return (
         <button
             onClick={onClick}
-            className="group flex flex-col p-6 bg-white border border-gray-200 rounded-2xl hover:border-cyan-300 hover:shadow-lg hover:shadow-cyan-50 transition-all text-left"
+            className={`group flex flex-col p-6 bg-white border-2 rounded-2xl hover:shadow-lg transition-all text-left ${
+                isActive 
+                    ? 'border-cyan-500 shadow-lg shadow-cyan-50' 
+                    : 'border-gray-200 hover:border-cyan-300 hover:shadow-cyan-50'
+            }`}
         >
-            <div className={`w-12 h-12 ${bgColor} rounded-xl flex items-center justify-center mb-4`}>
-                <IconComponent className={`w-6 h-6 ${color}`} />
+            <div className="flex items-start justify-between mb-4">
+                <div className={`w-12 h-12 ${bgColor} rounded-xl flex items-center justify-center`}>
+                    <IconComponent className={`w-6 h-6 ${color}`} />
+                </div>
+
+                {isActive && (
+                    <span className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded-full text-xs font-medium">
+                        In Progress
+                    </span>
+                )}
             </div>
 
             <h3 className="text-lg font-semibold text-gray-800 mb-1">{title}</h3>
@@ -92,7 +107,7 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
             <p className="text-sm text-gray-600 flex-1">{description}</p>
 
             <div className="flex items-center gap-1.5 mt-4 text-cyan-600 font-medium text-sm group-hover:gap-2.5 transition-all">
-                <span>Get Started</span>
+                <span>{isActive ? 'Continue' : 'Get Started'}</span>
                 <ArrowRight className="w-4 h-4" />
             </div>
         </button>
@@ -101,23 +116,43 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 
 const IntegrationHub: React.FC = () => {
     const history = useHistory();
-    const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
+    const { integrationId: routeIntegrationId } = useParams<{ integrationId?: string }>();
+
+    const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(routeIntegrationId || null);
     const [newProjectName, setNewProjectName] = useState('');
+    const [activeGuideType, setActiveGuideType] = useState<string | null>(null);
 
     const { useIntegrations, useCreateIntegration } = useDeveloperPortal();
     const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
     const createIntegrationMutation = useCreateIntegration();
 
-    // Default to first integration when loaded
+    // Use route integration ID if available, otherwise default to first
     useEffect(() => {
-        if (!selectedIntegrationId && integrations && integrations.length > 0) {
+        if (routeIntegrationId) {
+            setSelectedIntegrationId(routeIntegrationId);
+        } else if (!selectedIntegrationId && integrations && integrations.length > 0) {
             setSelectedIntegrationId(integrations[0].id);
         }
-    }, [integrations, selectedIntegrationId]);
+    }, [integrations, selectedIntegrationId, routeIntegrationId]);
+
+    // Load the active guide type when integration changes
+    useEffect(() => {
+        if (selectedIntegrationId) {
+            const statusData = getIntegrationStatus(selectedIntegrationId);
+            setActiveGuideType(statusData.guideType || null);
+        } else {
+            setActiveGuideType(null);
+        }
+    }, [selectedIntegrationId]);
 
     const handleUseCaseClick = (useCaseId: UseCaseId) => {
         if (selectedIntegrationId) {
-            history.push(`/app-store/developer/guides/${useCaseId}?integrationId=${selectedIntegrationId}`);
+            // Save the guide type for this integration
+            setGuideType(selectedIntegrationId, useCaseId);
+            setActiveGuideType(useCaseId);
+
+            // Use nested route structure
+            history.push(`/app-store/developer/integrations/${selectedIntegrationId}/guides/${useCaseId}`);
         }
     };
 
@@ -137,12 +172,22 @@ const IntegrationHub: React.FC = () => {
     const hasIntegration = selectedIntegrationId !== null;
     const showSetupPrompt = !isLoadingIntegrations && integrations?.length === 0;
 
+    // When switching integrations on IntegrationHub, stay on IntegrationHub for that integration
+    const handleIntegrationSelect = (id: string | null) => {
+        setSelectedIntegrationId(id);
+
+        if (id) {
+            history.push(`/app-store/developer/integrations/${id}/guides`);
+        }
+    };
+
     const integrationSelector = (
         <HeaderIntegrationSelector
             integrations={integrations || []}
             selectedId={selectedIntegrationId}
-            onSelect={setSelectedIntegrationId}
+            onSelect={handleIntegrationSelect}
             isLoading={isLoadingIntegrations}
+            navigateOnSelect={false}
         />
     );
 
@@ -230,6 +275,7 @@ const IntegrationHub: React.FC = () => {
                                     <UseCaseCard
                                         key={useCase.id}
                                         {...useCase}
+                                        isActive={activeGuideType === useCase.id}
                                         onClick={() => handleUseCaseClick(useCase.id)}
                                     />
                                 ))}
@@ -238,8 +284,16 @@ const IntegrationHub: React.FC = () => {
                             {/* Enterprise Partner Onboarding */}
                             <div className="mb-12">
                                 <button
-                                    onClick={() => history.push('/app-store/developer/partner-onboarding')}
-                                    className="w-full p-6 bg-gradient-to-r from-violet-500 to-indigo-600 rounded-2xl text-left hover:from-violet-600 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 group"
+                                    onClick={() => {
+                                        if (selectedIntegrationId) {
+                                            setGuideType(selectedIntegrationId, 'partner-onboarding');
+                                            setActiveGuideType('partner-onboarding');
+                                            history.push(`/app-store/developer/integrations/${selectedIntegrationId}/setup`);
+                                        }
+                                    }}
+                                    className={`w-full p-6 bg-gradient-to-r from-violet-500 to-indigo-600 rounded-2xl text-left hover:from-violet-600 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 group ${
+                                        activeGuideType === 'partner-onboarding' ? 'ring-4 ring-white/50' : ''
+                                    }`}
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
@@ -255,6 +309,12 @@ const IntegrationHub: React.FC = () => {
                                                 <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium text-white">
                                                     Enterprise
                                                 </span>
+
+                                                {activeGuideType === 'partner-onboarding' && (
+                                                    <span className="px-2 py-0.5 bg-white/30 rounded-full text-xs font-medium text-white">
+                                                        In Progress
+                                                    </span>
+                                                )}
                                             </div>
 
                                             <p className="text-violet-100">
@@ -267,6 +327,7 @@ const IntegrationHub: React.FC = () => {
                                     </div>
                                 </button>
                             </div>
+
                         </>
                     )}
 

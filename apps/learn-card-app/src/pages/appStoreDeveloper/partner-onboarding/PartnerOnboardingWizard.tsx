@@ -1,7 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonPage, IonContent, IonHeader, IonToolbar } from '@ionic/react';
-import { Loader2 } from 'lucide-react';
+import { IonPage, IonContent } from '@ionic/react';
+import { Loader2, ArrowLeft } from 'lucide-react';
+
+import { AppStoreHeader } from '../components/AppStoreHeader';
+import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
+import { useDeveloperPortal } from '../useDeveloperPortal';
 
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
@@ -14,7 +18,6 @@ import {
     GitMerge,
     TestTube2,
     Rocket,
-    ArrowLeft,
     Check,
     ChevronRight,
 } from 'lucide-react';
@@ -41,6 +44,7 @@ import { SandboxTestStep } from './steps/SandboxTestStep';
 import { ProductionStep } from './steps/ProductionStep';
 import { IntegrationDashboard } from './dashboard';
 import { usePersistedWizardState } from './hooks';
+import { getIntegrationStatus, getIntegrationRoute, markIntegrationActive, updateSetupStep } from './utils/integrationStatus';
 
 const STEP_ICONS = [Building, Building2, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 
@@ -111,11 +115,22 @@ const PartnerOnboardingWizard: React.FC = () => {
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
+    const { useIntegrations } = useDeveloperPortal();
+    const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
+
     const [state, setState, { clear: clearPersistedState }] = usePersistedWizardState<PartnerOnboardingState>({
         key: integrationId ? `integration-${integrationId}` : 'partner-onboarding-new',
         initialState: DEFAULT_ONBOARDING_STATE,
     });
     const [isLoadingIntegration, setIsLoadingIntegration] = useState(!!integrationId);
+
+    // Handle integration switching - navigate to correct state for that integration
+    const handleIntegrationSelect = (id: string | null) => {
+        if (id) {
+            const route = getIntegrationRoute(id);
+            history.push(route);
+        }
+    };
 
     // Load integration data when navigating directly to dashboard via URL
     useEffect(() => {
@@ -167,14 +182,17 @@ const PartnerOnboardingWizard: React.FC = () => {
                     console.warn('Could not load profile:', err);
                 }
 
-                // Set state to show dashboard
+                // Check integration status to determine if we should show wizard or dashboard
+                const statusData = getIntegrationStatus(integrationId);
+                const isActive = statusData.status === 'active';
+
                 setState(prev => ({
                     ...prev,
                     project: { id: integrationId, name: `Integration ${integrationId.slice(0, 8)}`, createdAt: new Date().toISOString() },
                     templates,
                     branding,
-                    isLive: true,
-                    currentStep: ONBOARDING_STEPS.length - 1,
+                    isLive: isActive,
+                    currentStep: isActive ? ONBOARDING_STEPS.length - 1 : (statusData.setupStep || 0),
                 }));
             } catch (err) {
                 console.error('Failed to load integration:', err);
@@ -195,10 +213,16 @@ const PartnerOnboardingWizard: React.FC = () => {
     }, [state.currentStep]);
 
     const nextStep = useCallback(() => {
-        setState(prev => ({
-            ...prev,
-            currentStep: Math.min(prev.currentStep + 1, ONBOARDING_STEPS.length - 1),
-        }));
+        setState(prev => {
+            const newStep = Math.min(prev.currentStep + 1, ONBOARDING_STEPS.length - 1);
+
+            // Track setup progress for this integration
+            if (prev.project?.id) {
+                updateSetupStep(prev.project.id, newStep);
+            }
+
+            return { ...prev, currentStep: newStep };
+        });
     }, []);
 
     const prevStep = useCallback(() => {
@@ -245,7 +269,15 @@ const PartnerOnboardingWizard: React.FC = () => {
 
     const handleGoLive = useCallback(() => {
         setState(prev => ({ ...prev, isLive: true }));
-    }, []);
+
+        // Mark integration as active (setup complete)
+        if (state.project?.id) {
+            markIntegrationActive(state.project.id);
+
+            // Redirect to the integration dashboard
+            history.push(`/app-store/developer/integrations/${state.project.id}`);
+        }
+    }, [state.project?.id, history]);
 
     const handleBackToWizard = useCallback(() => {
         setState(prev => ({ ...prev, isLive: false }));
@@ -341,30 +373,33 @@ const PartnerOnboardingWizard: React.FC = () => {
 
     const currentStepInfo = ONBOARDING_STEPS[state.currentStep];
 
+    const headerContent = (
+        <div className="flex items-center gap-3">
+            <button
+                onClick={() => {
+                    const guidesPath = integrationId 
+                        ? `/app-store/developer/integrations/${integrationId}/guides`
+                        : '/app-store/developer/guides';
+                    history.push(guidesPath);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">All Guides</span>
+            </button>
+            
+            <HeaderIntegrationSelector
+                integrations={integrations || []}
+                selectedId={integrationId || null}
+                onSelect={handleIntegrationSelect}
+                isLoading={isLoadingIntegrations}
+            />
+        </div>
+    );
+
     return (
         <IonPage>
-            <IonHeader className="ion-no-border">
-                <IonToolbar className="!shadow-none border-b border-gray-200">
-                    <div className="flex items-center gap-3 px-4 py-2">
-                        <button
-                            onClick={() => history.push('/app-store/developer/guides')}
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-
-                        <div className="flex items-center gap-3">
-                            <img
-                                src="https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb"
-                                alt="LearnCard"
-                                className="w-8 h-8 rounded-lg"
-                            />
-
-                            <span className="text-lg font-semibold text-gray-700">Partner Onboarding</span>
-                        </div>
-                    </div>
-                </IonToolbar>
-            </IonHeader>
+            <AppStoreHeader title="Course Catalog Setup" rightContent={headerContent} />
 
             <IonContent>
                 {isLoadingIntegration ? (

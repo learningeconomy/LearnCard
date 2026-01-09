@@ -110,6 +110,12 @@ const GuidePage = lazyWithRetry(
 const PartnerOnboardingWizard = lazyWithRetry(
     () => import('./pages/appStoreDeveloper/partner-onboarding/PartnerOnboardingWizard')
 );
+const IntegrationsList = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/integrations/IntegrationsList')
+);
+const IntegrationDashboardPage = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/integrations/IntegrationDashboardPage')
+);
 // import ExternalConsentFlowDoor from './pages/consentFlow/ExternalConsentFlowDoor';
 // import CustomWallet from './pages/hidden/CustomWallet';
 // import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
@@ -190,7 +196,14 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/app-store/developer/guides" component={IntegrationHub} />
                         <PrivateRoute exact path="/app-store/developer/guides/:useCase" component={GuidePage} />
                         <PrivateRoute exact path="/app-store/developer/partner-onboarding" component={PartnerOnboardingWizard} />
-                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId" component={PartnerOnboardingWizard} />
+                        
+                        {/* Integration Management */}
+                        <PrivateRoute exact path="/app-store/developer/integrations" component={IntegrationsList} />
+                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId" component={IntegrationDashboardPage} />
+                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId/setup" component={PartnerOnboardingWizard} />
+                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId/guides" component={IntegrationHub} />
+                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId/guides/:useCase" component={GuidePage} />
+                        
                         <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminDashboard} />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
