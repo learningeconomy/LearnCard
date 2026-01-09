@@ -350,15 +350,33 @@ const SendBoostTemplateValidator = BoostValidator.partial()
             .optional(),
     });
 
+// Branding options for email/SMS delivery (used when recipient is email/phone)
+export const SendBrandingOptionsValidator = z.object({
+    issuerName: z.string().optional().describe('Name of the issuing organization'),
+    issuerLogoUrl: z.string().url().optional().describe('Logo URL of the issuing organization'),
+    credentialName: z.string().optional().describe('Display name for the credential'),
+    recipientName: z.string().optional().describe('Name of the recipient for personalization'),
+});
+export type SendBrandingOptions = z.infer<typeof SendBrandingOptionsValidator>;
+
+// Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
+export const SendOptionsValidator = z.object({
+    webhookUrl: z.string().url().optional().describe('Webhook URL to receive claim notifications'),
+    suppressDelivery: z.boolean().optional().describe('If true, returns claimUrl without sending email/SMS'),
+    branding: SendBrandingOptionsValidator.optional().describe('Branding for email/SMS delivery'),
+});
+export type SendOptions = z.infer<typeof SendOptionsValidator>;
+
 // Route-level validator (TRPC requires ZodObject, not discriminatedUnion)
 export const SendBoostInputValidator = z
     .object({
         type: z.literal('boost'),
-        recipient: z.string(),
+        recipient: z.string().describe('Profile ID, DID, email, or phone number (auto-detected)'),
         contractUri: z.string().optional(),
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
+        options: SendOptionsValidator.optional().describe('Options for email/phone recipients (Universal Inbox)'),
         templateData: z.record(z.string(), z.unknown()).optional(),
     })
     .refine(data => data.templateUri || data.template, {
@@ -367,10 +385,19 @@ export const SendBoostInputValidator = z
     });
 export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;
 
+// Inbox-specific response fields (only present when sent via email/phone)
+export const SendInboxResponseValidator = z.object({
+    issuanceId: z.string(),
+    status: z.enum(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']),
+    claimUrl: z.string().url().optional().describe('Present when suppressDelivery=true'),
+});
+export type SendInboxResponse = z.infer<typeof SendInboxResponseValidator>;
+
 export const SendBoostResponseValidator = z.object({
     type: z.literal('boost'),
     credentialUri: z.string(),
     uri: z.string(),
+    inbox: SendInboxResponseValidator.optional().describe('Present when sent via email/phone (Universal Inbox)'),
 });
 export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
@@ -968,23 +995,33 @@ export const IssueInboxSigningAuthorityValidator = z.object({
 
 export type IssueInboxSigningAuthority = z.infer<typeof IssueInboxSigningAuthorityValidator>;
 
-export const IssueInboxCredentialValidator = z.object({
-    // === CORE DATA (Required) ===
-    // WHAT is being sent and WHO is it for?
-    recipient: ContactMethodQueryValidator.describe('The recipient of the credential'),
-    credential: VCValidator.or(VPValidator)
-        .or(UnsignedVCValidator)
-        .describe(
-            'The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'
-        ),
+export const IssueInboxCredentialValidator = z
+    .object({
+        // === CORE DATA (Required) ===
+        // WHAT is being sent and WHO is it for?
+        recipient: ContactMethodQueryValidator.describe('The recipient of the credential'),
 
-    // === OPTIONAL FEATURES ===
-    // Add major, distinct features at the top level.
-    //consentRequest: ConsentRequestValidator.optional(),
+        // Either credential OR templateUri must be provided
+        credential: VCValidator.or(VPValidator)
+            .or(UnsignedVCValidator)
+            .optional()
+            .describe(
+                'The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'
+            ),
+        templateUri: z
+            .string()
+            .optional()
+            .describe(
+                'URI of a boost template to use for issuance. The boost credential will be resolved and used. Mutually exclusive with credential field.'
+            ),
 
-    // === PROCESS CONFIGURATION (Optional) ===
-    // HOW should this issuance be handled?
-    configuration: z
+        // === OPTIONAL FEATURES ===
+        // Add major, distinct features at the top level.
+        //consentRequest: ConsentRequestValidator.optional(),
+
+        // === PROCESS CONFIGURATION (Optional) ===
+        // HOW should this issuance be handled?
+        configuration: z
         .object({
             signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
                 'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
@@ -1000,6 +1037,12 @@ export const IssueInboxCredentialValidator = z.object({
                 .max(365)
                 .optional()
                 .describe('The number of days the credential will be valid for.'),
+            templateData: z
+                .record(z.string(), z.unknown())
+                .optional()
+                .describe(
+                    'Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided.'
+                ),
             // --- For User-Facing Delivery (Email/SMS) ---
             delivery: z
                 .object({
@@ -1080,7 +1123,11 @@ export const IssueInboxCredentialValidator = z.object({
         .describe(
             'Configuration for the credential issuance. If not provided, the default configuration will be used.'
         ),
-});
+    })
+    .refine(data => data.credential || data.templateUri, {
+        message: 'Either credential or templateUri must be provided.',
+        path: ['credential'],
+    });
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;
 

@@ -79,6 +79,8 @@ import {
     issueClaimLinkBoost,
     isDraftBoost,
     convertCredentialToBoostTemplateJSON,
+    isInboxRecipient,
+    prepareCredentialFromBoost,
 } from '@helpers/boost.helpers';
 import {
     BoostValidator,
@@ -142,6 +144,58 @@ import {
 import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationships/update';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
+import { issueToInbox } from '@helpers/inbox.helpers';
+import { SendOptions } from '@learncard/types';
+
+/**
+ * Builds inbox configuration from SendOptions for the issueToInbox helper.
+ */
+const buildInboxConfig = (
+    options: SendOptions | undefined,
+    boostUri: string
+): {
+    webhookUrl?: string;
+    boostUri?: string;
+    delivery?: {
+        suppress: boolean;
+        template?: {
+            model: {
+                issuer?: { name?: string; logoUrl?: string };
+                credential?: { name?: string };
+                recipient?: { name?: string };
+            };
+        };
+    };
+} => {
+    const config: ReturnType<typeof buildInboxConfig> = {
+        webhookUrl: options?.webhookUrl,
+        boostUri,
+    };
+
+    if (options?.suppressDelivery || options?.branding) {
+        config.delivery = {
+            suppress: options?.suppressDelivery ?? false,
+            template: options?.branding
+                ? {
+                      model: {
+                          issuer: {
+                              name: options.branding.issuerName,
+                              logoUrl: options.branding.issuerLogoUrl,
+                          },
+                          credential: {
+                              name: options.branding.credentialName,
+                          },
+                          recipient: {
+                              name: options.branding.recipientName,
+                          },
+                      },
+                  }
+                : undefined,
+        };
+    }
+
+    return config;
+};
 
 export const boostsRouter = t.router({
     getBoostAlignments: profileRoute
@@ -530,27 +584,10 @@ export const boostsRouter = t.router({
             const { contractUri } = input;
             const { domain } = ctx;
 
-            const recipientProfileId = await getProfileIdFromString(input.recipient, domain);
+            // Check if recipient is email/phone (routes to Universal Inbox)
+            const inboxRecipient = isInboxRecipient(input.recipient);
 
-            const targetProfile = recipientProfileId
-                ? await getProfileByProfileId(recipientProfileId)
-                : null;
-
-            if (!targetProfile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
-
-            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
-            if (isBlocked) {
-                throw new TRPCError({
-                    code: 'FORBIDDEN',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
-
+            // Resolve boost first (needed for both flows)
             let boost = null as BoostInstance | null;
             let boostUri = '';
             let boostCreated = false;
@@ -600,6 +637,72 @@ export const boostsRouter = t.router({
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            // Route to Universal Inbox for email/phone recipients
+            if (inboxRecipient) {
+                // Prepare the credential - use signedCredential if provided, otherwise from boost template
+                let credential: VC | UnsignedVC;
+
+                if (input.signedCredential) {
+                    credential = input.signedCredential;
+                } else {
+                    try {
+                        credential = await prepareCredentialFromBoost(boost, boostUri, domain, {
+                            templateData: input.templateData as Record<string, unknown>,
+                        });
+                    } catch (e) {
+                        console.error('Failed to prepare boost credential for inbox', e);
+                        throw new TRPCError({
+                            code: 'INTERNAL_SERVER_ERROR',
+                            message: 'Failed to prepare boost credential',
+                        });
+                    }
+                }
+
+                // Build inbox configuration from SendOptions
+                const inboxConfig = buildInboxConfig(input.options, boostUri);
+
+                const inboxResult = await issueToInbox(
+                    profile,
+                    inboxRecipient,
+                    credential,
+                    inboxConfig,
+                    ctx
+                );
+
+                return {
+                    type: 'boost' as const,
+                    credentialUri: '',
+                    uri: boostUri,
+                    inbox: {
+                        issuanceId: inboxResult.inboxCredential.id,
+                        status: inboxResult.status,
+                        claimUrl: inboxResult.claimUrl,
+                    },
+                };
+            }
+
+            // Existing flow for DID/profileId recipients
+            const recipientProfileId = await getProfileIdFromString(input.recipient, domain);
+
+            const targetProfile = recipientProfileId
+                ? await getProfileByProfileId(recipientProfileId)
+                : null;
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+            if (isBlocked) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile not found. Are you sure this person exists?',
                 });
             }
 
@@ -656,44 +759,11 @@ export const boostsRouter = t.router({
                 let unsignedVc: UnsignedVC;
 
                 try {
-                    let boostJsonString = boost.dataValues.boost;
-
-                    if (input.templateData && Object.keys(input.templateData).length > 0) {
-                        boostJsonString = renderBoostTemplate(
-                            boostJsonString,
-                            input.templateData as Record<string, unknown>
-                        );
-                    }
-
-                    unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
-
-                    const now = new Date().toISOString();
-                    if (isVC2Format(unsignedVc)) {
-                        unsignedVc.validFrom = now;
-                    } else {
-                        unsignedVc.issuanceDate = now;
-                    }
-
-                    unsignedVc.issuer = signingAuthority.relationship.did;
-
-                    if (Array.isArray(unsignedVc.credentialSubject)) {
-                        unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(
-                            subject => ({
-                                ...subject,
-                                id: getDidWeb(domain, targetProfile.profileId),
-                            })
-                        );
-                    } else {
-                        unsignedVc.credentialSubject = {
-                            ...(unsignedVc.credentialSubject || {}),
-                            id: getDidWeb(domain, targetProfile.profileId),
-                        };
-                    }
-
-                    if (unsignedVc?.type?.includes('BoostCredential'))
-                        unsignedVc.boostId = boostUri;
-
-                    await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, domain);
+                    unsignedVc = await prepareCredentialFromBoost(boost, boostUri, domain, {
+                        templateData: input.templateData as Record<string, unknown>,
+                        issuerDid: signingAuthority.relationship.did,
+                        recipientDid: getDidWeb(domain, targetProfile.profileId),
+                    });
                 } catch (e) {
                     console.error('Failed to prepare boost credential', e);
                     throw new TRPCError({

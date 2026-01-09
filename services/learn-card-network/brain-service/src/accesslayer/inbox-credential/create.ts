@@ -16,6 +16,7 @@ export const createInboxCredential = async (input: {
     recipient: ContactMethodQueryType;
     issuerProfile: ProfileType;
     webhookUrl?: string;
+    boostUri?: string;
     signingAuthority?: { endpoint: string; name: string };
     expiresInDays?: number;
 }): Promise<InboxCredentialInstance> => {
@@ -34,6 +35,7 @@ export const createInboxCredential = async (input: {
         createdAt: new Date().toISOString(),
         issuerDid: input.issuerProfile.did,
         webhookUrl: input.webhookUrl,
+        boostUri: input.boostUri,
         ...(input.signingAuthority ? {
             'signingAuthority.endpoint': input.signingAuthority.endpoint,
             'signingAuthority.name': input.signingAuthority.name,

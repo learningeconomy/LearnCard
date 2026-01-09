@@ -19,6 +19,8 @@ import {
     UnsignedVC,
 } from '@learncard/types';
 import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
+import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers';
+import { getBoostByUri } from '@accesslayer/boost/read';
 import {
     generateGuardianApprovalToken,
     generateGuardianApprovalUrl,
@@ -336,7 +338,7 @@ export const inboxRouter = t.router({
                 tags: ['Universal Inbox'],
                 summary: 'Issue Credential to Universal Inbox',
                 description:
-                    "Issue a credential to a recipient's inbox. If the recipient exists with a verified email, the credential is auto-delivered.",
+                    "Issue a credential to a recipient's inbox. If the recipient exists with a verified email, the credential is auto-delivered. Supports either a credential object or a templateUri to resolve the credential from a boost template.",
             },
             requiredScope: 'inbox:write',
         })
@@ -344,7 +346,55 @@ export const inboxRouter = t.router({
         .output(IssueInboxCredentialResponseValidator)
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { recipient, credential, configuration } = input;
+            const { recipient, credential: inputCredential, templateUri, configuration } = input;
+
+            // Resolve credential from templateUri if provided
+            let credential = inputCredential;
+            let resolvedBoostUri: string | undefined;
+
+            if (templateUri && !credential) {
+                const boostInstance = await getBoostByUri(templateUri);
+
+                if (!boostInstance) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: `Boost not found: ${templateUri}`,
+                    });
+                }
+
+                if (!boostInstance.dataValues.boost) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Boost does not contain a credential template: ${templateUri}`,
+                    });
+                }
+
+                try {
+                    // Use shared helper to prepare credential with templateData rendering,
+                    // issuance date, boostId injection, and OBv3 alignments
+                    resolvedBoostUri = getBoostUri(boostInstance.id, ctx.domain);
+
+                    credential = await prepareCredentialFromBoost(
+                        boostInstance,
+                        resolvedBoostUri,
+                        ctx.domain,
+                        { templateData: configuration?.templateData as Record<string, unknown> }
+                    );
+                } catch (e) {
+                    console.error('Failed to prepare boost credential', e);
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Failed to prepare boost credential template: ${templateUri}`,
+                    });
+                }
+            }
+
+            if (!credential) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Either credential or templateUri must be provided',
+                });
+            }
 
             // Normalize signing authority name if provided
             const normalizedConfiguration = configuration?.signingAuthority

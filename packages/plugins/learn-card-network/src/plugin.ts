@@ -1022,22 +1022,30 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 if (input.type === 'boost') {
-                    const canIssueLocally = 'issueCredential' in _learnCard.invoke;
+                    const recipient = input.recipient;
+                    const isDid = recipient.startsWith('did:');
+                    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
+                    const isPhone = /^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''));
 
-                    if (canIssueLocally && input.templateUri) {
+                    // For DID/profileId recipients with local signing capability, sign client-side
+                    // This optimization reduces round trips by signing locally before sending
+                    const canIssueLocally = 'issueCredential' in _learnCard.invoke;
+                    const isDirectRecipient = isDid || (!isEmail && !isPhone);
+
+                    if (canIssueLocally && isDirectRecipient && input.templateUri) {
                         const result = await _learnCard.invoke.resolveFromLCN(input.templateUri);
                         const data = await UnsignedVCValidator.spa(result);
 
                         if (data.success) {
                             let targetDid: string;
 
-                            if (input.recipient.startsWith('did:')) {
-                                targetDid = input.recipient;
+                            if (isDid) {
+                                targetDid = recipient;
                             } else {
-                                const targetProfile = await _learnCard.invoke.getProfile(
-                                    input.recipient
-                                );
+                                const targetProfile = await _learnCard.invoke.getProfile(recipient);
+
                                 if (!targetProfile) return client.boost.send.mutate(input);
+
                                 targetDid = targetProfile.did;
                             }
 
@@ -1095,6 +1103,7 @@ export async function getLearnCardNetworkPlugin(
                     }
                 }
 
+                // Let the brain service handle all routing (email/phone → inbox, profileId/DID → direct)
                 return client.boost.send.mutate(input);
             },
 

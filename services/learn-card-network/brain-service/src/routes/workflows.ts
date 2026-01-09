@@ -8,7 +8,10 @@ import { t, openRoute, Context } from '@routes';
 
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
+import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import { storeCredential } from '@accesslayer/credential/create';
+import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
 
 import {
     isClaimLinkAlreadySetForBoost,
@@ -610,6 +613,24 @@ async function handleInboxClaimPresentation(
 
             await markInboxCredentialAsIssued(inboxCredential.id);
             await markInboxCredentialAsIsAccepted(inboxCredential.id);
+
+            // Store credential and create boost relationship if this was a boost issuance
+            const boostUri = (inboxCredential as any).boostUri as string | undefined;
+            if (holderProfile && boostUri) {
+                const boost = await getBoostByUri(boostUri);
+                const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+
+                if (boost && issuerProfile) {
+                    // Store the credential in the database
+                    const credentialInstance = await storeCredential(finalCredential);
+
+                    // Create the boost instance relationship
+                    await createBoostInstanceOfRelationship(credentialInstance, boost);
+
+                    // Create the sent/received credential relationship
+                    await createSentCredentialRelationship(issuerProfile, holderProfile, credentialInstance);
+                }
+            }
 
             // Create claimed relationship if holder has a profile
             if (holderProfile) {
