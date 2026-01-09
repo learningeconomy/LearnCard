@@ -3,8 +3,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { IonHeader, IonToolbar } from '@ionic/react';
 import { Shield, Code2, Hammer } from 'lucide-react';
 
-import QRCodeScannerButton from '../../../components/qrcode-scanner-button/QRCodeScannerButton';
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import { AccountSwitcher } from './AccountSwitcher';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 
 interface AppStoreHeaderProps {
@@ -128,7 +127,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                             </button>
                         )}
 
-                        <QRCodeScannerButton branding={BrandingEnum.learncard} />
+                        <AccountSwitcher />
                     </div>
                 </div>
             </IonToolbar>
