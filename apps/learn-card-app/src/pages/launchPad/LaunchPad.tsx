@@ -128,6 +128,8 @@ const LaunchPad: React.FC = () => {
         consentedContractLoading,
         hasConsented,
     } = useConsentFlowByUri(contractUri);
+    console.log('contractDetails', contractDetails);
+    console.log('contractUri', contractUri);
 
     useEffect(() => {
         if (contractDetails && !suppressContractModal && !consentedContractLoading) {
@@ -212,7 +214,7 @@ const LaunchPad: React.FC = () => {
                 return false;
             }
 
-            if (item?.displayInLaunchPad === false) return false; // for apps
+            // if (item?.displayInLaunchPad === false) return false; // for apps
 
             return contractName?.includes(lowerSearch) || appName?.includes(lowerSearch);
         });

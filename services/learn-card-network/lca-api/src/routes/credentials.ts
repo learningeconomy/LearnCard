@@ -50,7 +50,9 @@ export const credentialsRouter = t.router({
                     signingAuthority.name
                 );
 
-                credential.issuer = learnCard.id.did();
+                // credential.issuer = learnCard.id.did();
+                credential.issuer = { id: learnCard.id.did() };
+
                 const verificationMethod = learnCard.id.did().startsWith('did:web')
                     ? `${learnCard.id.did()}#${signingAuthority.name}`
                     : undefined;

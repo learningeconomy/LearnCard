@@ -122,13 +122,15 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         }
 
         setStep(ConsentFlowStep.connecting);
-
+        console.log('CONSENTING TO CONTRACT!!!!!!!!!!!!!');
         try {
             const { redirectUrl } = await consentToContract({
                 terms,
                 expiresAt: shareDuration.customDuration,
                 oneTime: shareDuration.oneTimeShare,
             });
+            console.log('redirectUrl', redirectUrl);
+            return;
 
             // Sync any auto-boost credentials (if any). No need to wait.
             fetchNewContractCredentials();

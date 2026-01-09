@@ -673,6 +673,7 @@ export const contractsRouter = t.router({
                 skipNotification: true,
                 autoAcceptCredential: false,
                 contractTerms: terms,
+                skipCertification: true,
             });
         }),
 
@@ -927,14 +928,11 @@ export const contractsRouter = t.router({
 
             let redirectUrl: string | undefined;
             // SmartResume handling
-            const isSmartResume =
-                contractUri === process.env.SMART_RESUME_CONTRACT_URI ||
-                contractUri ===
-                    'lc:network:network.learncard.com/trpc:contract:55b738f0-49f4-4b33-b6c1-afa99b605cd6'; // hardcode for quick fix purposes
+            const isSmartResume = true; // hardcode for quick fix purposes
             if (isSmartResume) {
-                if (!recipientToken) {
-                    throw new Error('Missing recipientToken for SmartResume');
-                }
+                // if (!recipientToken) {
+                //     throw new Error('Missing recipientToken for SmartResume');
+                // }
 
                 const isProduction = !process.env.IS_OFFLINE;
 
@@ -955,6 +953,7 @@ export const contractsRouter = t.router({
                         scope: 'delete readonly replace',
                     }),
                 }).then(res => res.json())) as { access_token?: string };
+                console.log('accessTokenResponse', accessTokenResponse);
 
                 const accessToken = accessTokenResponse.access_token;
                 if (!accessToken) throw new Error('Missing access_token for SmartResume');
@@ -968,7 +967,7 @@ export const contractsRouter = t.router({
                     // filter out duplicates
                     ...new Set(categoryValues.flatMap(({ shared }) => shared ?? [])),
                 ];
-
+                console.log('allSharedCredentialUris', allSharedCredentialUris);
                 const resolvedCredentials = await Promise.all(
                     allSharedCredentialUris.map(async uri => {
                         try {
@@ -979,7 +978,7 @@ export const contractsRouter = t.router({
                         }
                     })
                 );
-
+                console.log('resolvedCredentials', resolvedCredentials);
                 type ResolvedCredential = {
                     issuer?: string | { id: string };
                     id?: string;
@@ -996,19 +995,19 @@ export const contractsRouter = t.router({
                             ? ({ ...cred.boostCredential, id: cred.id } as ResolvedCredential) // unwrap credential, preserve id
                             : cred
                     );
+                console.log('credentials', credentials);
+                // const transformedCredentials = credentials.map(cred => {
+                //     const issuer =
+                //         typeof cred.issuer === 'string'
+                //             ? { id: cred.issuer }
+                //             : cred.issuer || { id: '' };
 
-                const transformedCredentials = credentials.map(cred => {
-                    const issuer =
-                        typeof cred.issuer === 'string'
-                            ? { id: cred.issuer }
-                            : cred.issuer || { id: '' };
-
-                    return {
-                        ...cred,
-                        issuer,
-                    };
-                });
-
+                //     return {
+                //         ...cred,
+                //         issuer,
+                //     };
+                // });
+                // console.log('transformedCredentials', transformedCredentials);
                 const { name, email } = parsedTerms.read.personal;
 
                 const body = JSON.stringify({
@@ -1024,24 +1023,34 @@ export const contractsRouter = t.router({
                         familyName: '', // this is neecessary in order for givenName to be respected
                         email: email && email !== 'anonymous@hidden.com' ? email : '',
                     },
-                    credentials: transformedCredentials,
+                    credentials: credentials,
                 });
-
+                console.log('body', body);
                 try {
                     const response = await fetch(`${srUrl}api/v1/credentials`, {
                         method: 'POST',
                         headers: {
-                            Authorization: `Bearer ${accessToken}`,
+                            'Authorization': `Bearer ${accessToken}`,
                             'Content-Type': 'application/json',
                         },
                         body,
                     });
 
+                    const responseBody = await response.text();
+                    console.log('SmartResume API Response:', responseBody);
+
                     if (!response.ok) {
-                        throw new Error(`Error (${response.status}): ${await response.text()}`);
+                        throw new Error(`Error (${response.status}): ${responseBody}`);
                     }
 
-                    const result = (await response.json()) as { redirect_url?: string };
+                    let result;
+                    try {
+                        result = JSON.parse(responseBody);
+                    } catch (e) {
+                        throw new Error(`Failed to parse response: ${responseBody}`);
+                    }
+
+                    console.log('Parsed response:', result);
                     redirectUrl = result.redirect_url;
                 } catch (error) {
                     console.error('Error uploading credentials to SmartResume:', error);
