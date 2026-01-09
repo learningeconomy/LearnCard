@@ -648,6 +648,7 @@ export const boostsRouter = t.router({
                 // Map SendOptions to inbox configuration (including branding)
                 const inboxConfig: {
                     webhookUrl?: string;
+                    boostUri?: string;
                     delivery?: {
                         suppress: boolean;
                         template?: {
@@ -660,6 +661,7 @@ export const boostsRouter = t.router({
                     };
                 } = {
                     webhookUrl: input.options?.webhookUrl,
+                    boostUri,
                 };
 
                 if (input.options?.suppressDelivery || input.options?.branding) {

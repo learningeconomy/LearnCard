@@ -13,6 +13,9 @@ import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { sendCredential } from '@helpers/credential.helpers';
+import { getBoostByUri } from '@accesslayer/boost/read';
+import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
+import { storeCredential } from '@accesslayer/credential/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
@@ -120,7 +123,7 @@ export const issueToInbox = async (
     issuerProfile: ProfileType,
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP, 
-    configuration: IssueInboxCredentialType['configuration'] = {},
+    configuration: IssueInboxCredentialType['configuration'] & { boostUri?: string } = {},
     ctx: Context
 ): Promise<{ 
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
@@ -128,7 +131,7 @@ export const issueToInbox = async (
     claimUrl?: string;
     recipientDid?: string;
 }> => {
-    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery } = configuration;
+    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery, boostUri } = configuration;
     
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
@@ -220,10 +223,11 @@ export const issueToInbox = async (
             recipient,
             issuerProfile,
             webhookUrl,
+            boostUri,
             expiresInDays,
         });
 
-        // Send credential directly
+        // Send credential directly (this stores credential and creates sent relationship)
         await sendCredential(
             issuerProfile,
             existingProfile,
@@ -231,6 +235,15 @@ export const issueToInbox = async (
             ctx.domain // domain
         );
 
+        // If this is a boost issuance, also create the boost instance relationship
+        if (boostUri) {
+            const boost = await getBoostByUri(boostUri);
+            if (boost) {
+                // Store the credential again to get a credential instance for boost relationship
+                const credentialInstance = await storeCredential(finalCredential);
+                await createBoostInstanceOfRelationship(credentialInstance, boost);
+            }
+        }
 
         // Mark as issued and create relationship
         await markInboxCredentialAsIssued(inboxCredential.id);
@@ -280,6 +293,7 @@ export const issueToInbox = async (
             recipient,
             issuerProfile,
             webhookUrl,
+            boostUri,
             signingAuthority,
             expiresInDays,
         });

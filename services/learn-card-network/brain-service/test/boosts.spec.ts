@@ -12,6 +12,12 @@ import { getIdFromUri } from '@helpers/uri.helpers';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
 
+// Mock delivery service for inbox routing tests
+const deliverySendSpy = vi.fn().mockResolvedValue(undefined);
+vi.mock('@services/delivery/delivery.factory', () => ({
+    getDeliveryService: () => ({ send: deliverySendSpy }),
+}));
+
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
@@ -1093,6 +1099,7 @@ describe('Boosts', () => {
         });
 
         it('should use signedCredential when provided for inbox path', async () => {
+            testUnsignedBoost.issuer = userA.learnCard.id.did();
             const boostUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
             });
@@ -1112,10 +1119,15 @@ describe('Boosts', () => {
 
         it('should auto-deliver when email belongs to existing verified user', async () => {
             // Create a contact method for userB and mark it as verified
+            const now = new Date().toISOString();
             const cm = await ContactMethod.createOne({
+                id: `cm-${Date.now()}`,
                 type: 'email',
                 value: 'verified-user@example.com',
                 isVerified: true,
+                verifiedAt: now,
+                isPrimary: true,
+                createdAt: now,
             });
 
             // Link the contact method to userB's profile
