@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { useListMySkillFrameworks, useModal, useSearchFrameworkSkills } from 'learn-card-base';
+import {
+    conditionalPluralize,
+    useListMySkillFrameworks,
+    useModal,
+    useSearchFrameworkSkills,
+} from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
+import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SelfAssignedSkillRow from './SelfAssignedSkillRow';
 import { IonFooter, IonInput, IonSpinner } from '@ionic/react';
 
@@ -12,11 +18,17 @@ import {
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
 
+enum Step {
+    Add,
+    Review,
+}
+
 type SelfAssignSkillsModalProps = {};
 
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { closeModal } = useModal();
 
+    const [step, setStep] = useState<Step>(Step.Add);
     const [searchInput, setSearchInput] = useState('');
     const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
 
@@ -61,13 +73,16 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         }
     };
 
+    const isAdd = step === Step.Add;
+    const isReview = step === Step.Review;
+
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
             <div className="px-[20px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid rounded-b-[30px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <PuzzlePiece className="w-[40px] h-[40px]" version="filled" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">
-                        Add Skills
+                        {isAdd ? 'Add Skills' : 'Review Selected Skills'}
                     </h5>
                 </div>
             </div>
@@ -80,7 +95,9 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     <IonInput
                         type="text"
                         value={searchInput}
-                        placeholder="Search by skill or occupation..."
+                        placeholder={
+                            isAdd ? 'Search by skill or occupation...' : 'Search skills...'
+                        }
                         onIonInput={e => setSearchInput(e.detail.value)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
                     />
@@ -97,9 +114,15 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     )}
                 </div>
 
-                <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins border-solid border-t-[1px] border-grayscale-200">
-                    Suggested Skills
-                </p>
+                {isAdd ? (
+                    <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins border-solid border-t-[1px] border-grayscale-200">
+                        Suggested Skills
+                    </p>
+                ) : (
+                    <p className="py-[10px] text-grayscale-800 text-[17px] font-poppins">
+                        {conditionalPluralize(selectedSkills.length, 'Selected Skill')}
+                    </p>
+                )}
 
                 {searchLoading ? (
                     <div className="flex-1 flex justify-center pt-[30px]">
@@ -107,14 +130,21 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     </div>
                 ) : (
                     <>
-                        {suggestedSkills.map((skill, index) => (
-                            <SelfAssignedSkillRow
-                                skill={skill}
-                                framework={selfAssignedSkillFramework}
-                                handleToggleSelect={() => handleToggleSelect(skill.id)}
-                                isNodeSelected={selectedSkills.includes(skill.id)}
-                            />
-                        ))}
+                        {suggestedSkills.map((skill, index) => {
+                            if (isReview && !selectedSkills.includes(skill.id)) {
+                                // TODO logic will eventually have to be more sophisticated
+                                return null;
+                            }
+
+                            return (
+                                <SelfAssignedSkillRow
+                                    skill={skill}
+                                    framework={selfAssignedSkillFramework}
+                                    handleToggleSelect={() => handleToggleSelect(skill.id)}
+                                    isNodeSelected={selectedSkills.includes(skill.id)}
+                                />
+                            );
+                        })}
                     </>
                 )}
             </section>
@@ -124,18 +154,35 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
+                    {isReview && (
+                        <button
+                            onClick={() => setStep(Step.Add)}
+                            className="p-[10px] bg-white rounded-full text-grayscale-900 shadow-button-bottom border-solid border-[1px] border-grayscale-200"
+                        >
+                            <SlimCaretLeft className="w-[22px] h-[22px]" />
+                        </button>
+                    )}
+
                     <button
                         onClick={closeModal}
-                        className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
+                        className="p-[10px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px] border-solid border-[1px] border-grayscale-200 leading-[22px]"
                     >
                         Close
                     </button>
 
                     <button
-                        // onClick={isEdit ? handleEdit : handleCreate}
+                        onClick={
+                            isAdd
+                                ? () => {
+                                      setStep(Step.Review);
+                                      setSearchInput('');
+                                  }
+                                : () => {}
+                        }
                         className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1 disabled:bg-grayscale-300"
+                        disabled={selectedSkills.length === 0}
                     >
-                        Action Button
+                        {isAdd ? 'Select' : 'Save'}
                     </button>
                 </div>
             </IonFooter>
