@@ -5,7 +5,7 @@ import { ChevronDown, Plus, Loader2, Check, Settings, LayoutDashboard } from 'lu
 import type { LCNIntegration } from '@learncard/types';
 
 import { useDeveloperPortal } from '../useDeveloperPortal';
-import { getIntegrationStatus, getIntegrationRoute } from '../partner-onboarding/utils/integrationStatus';
+import { getIntegrationRoute } from '../partner-onboarding/utils/integrationStatus';
 
 interface HeaderIntegrationSelectorProps {
     integrations: LCNIntegration[];
@@ -73,12 +73,12 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
         }
     }, [isCreating]);
 
-    const handleSelectIntegration = (integrationId: string) => {
-        onSelect(integrationId);
+    const handleSelectIntegration = (integration: LCNIntegration) => {
+        onSelect(integration.id);
         setIsOpen(false);
 
         if (navigateOnSelect) {
-            const route = getIntegrationRoute(integrationId);
+            const route = getIntegrationRoute(integration);
             history.push(route);
         }
     };
@@ -120,13 +120,12 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
             {integrations.length > 0 && (
                 <div className="max-h-48 overflow-y-auto">
                     {integrations.map(integration => {
-                        const status = getIntegrationStatus(integration.id);
-                        const isSetup = status.status === 'setup';
+                        const isSetup = integration.status === 'setup' || !integration.status;
 
                         return (
                             <button
                                 key={integration.id}
-                                onClick={() => handleSelectIntegration(integration.id)}
+                                onClick={() => handleSelectIntegration(integration)}
                                 className={`w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
                                     selectedId === integration.id ? 'bg-cyan-50' : ''
                                 }`}

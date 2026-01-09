@@ -41,7 +41,7 @@ import { SandboxTestStep } from './steps/SandboxTestStep';
 import { ProductionStep } from './steps/ProductionStep';
 import { IntegrationDashboard } from './dashboard';
 import { usePersistedWizardState } from './hooks';
-import { getIntegrationStatus, getIntegrationRoute, markIntegrationActive, updateSetupStep } from './utils/integrationStatus';
+import { getIntegrationRoute, getSetupStep, isIntegrationActive, PartnerOnboardingGuideState } from './utils/integrationStatus';
 
 const STEP_ICONS = [Building2, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 
@@ -112,8 +112,10 @@ const PartnerOnboardingWizard: React.FC = () => {
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
-    const { useIntegrations } = useDeveloperPortal();
+    const { useIntegrations, useIntegration, useUpdateIntegration } = useDeveloperPortal();
     const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
+    const { data: currentIntegration } = useIntegration(integrationId ?? null);
+    const updateIntegrationMutation = useUpdateIntegration();
 
     const [state, setState, { clear: clearPersistedState }] = usePersistedWizardState<PartnerOnboardingState>({
         key: integrationId ? `integration-${integrationId}` : 'partner-onboarding-new',
@@ -124,8 +126,11 @@ const PartnerOnboardingWizard: React.FC = () => {
     // Handle integration switching - navigate to correct state for that integration
     const handleIntegrationSelect = (id: string | null) => {
         if (id) {
-            const route = getIntegrationRoute(id);
-            history.push(route);
+            const integration = integrations?.find(i => i.id === id);
+            if (integration) {
+                const route = getIntegrationRoute(integration);
+                history.push(route);
+            }
         }
     };
 
@@ -179,17 +184,18 @@ const PartnerOnboardingWizard: React.FC = () => {
                     console.warn('Could not load profile:', err);
                 }
 
-                // Check integration status to determine if we should show wizard or dashboard
-                const statusData = getIntegrationStatus(integrationId);
-                const isActive = statusData.status === 'active';
+                // Check integration status from server to determine if we should show wizard or dashboard
+                const integrationData = await wallet.invoke.getIntegration(integrationId);
+                const isActive = integrationData?.status === 'active';
+                const guideState = integrationData?.guideState as PartnerOnboardingGuideState | undefined;
 
                 setState(prev => ({
                     ...prev,
-                    project: { id: integrationId, name: `Integration ${integrationId.slice(0, 8)}`, createdAt: new Date().toISOString() },
+                    project: { id: integrationId, name: integrationData?.name || `Integration ${integrationId.slice(0, 8)}`, createdAt: new Date().toISOString() },
                     templates,
                     branding,
                     isLive: isActive,
-                    currentStep: isActive ? ONBOARDING_STEPS.length - 1 : (statusData.setupStep || 0),
+                    currentStep: isActive ? ONBOARDING_STEPS.length - 1 : (guideState?.setupStep ?? 0),
                 }));
             } catch (err) {
                 console.error('Failed to load integration:', err);
@@ -213,14 +219,28 @@ const PartnerOnboardingWizard: React.FC = () => {
         setState(prev => {
             const newStep = Math.min(prev.currentStep + 1, ONBOARDING_STEPS.length - 1);
 
-            // Track setup progress for this integration
+            // Track setup progress on the server (fire-and-forget with error logging)
             if (prev.project?.id) {
-                updateSetupStep(prev.project.id, newStep);
+                const currentGuideState = currentIntegration?.guideState as PartnerOnboardingGuideState | undefined;
+                updateIntegrationMutation.mutate(
+                    {
+                        id: prev.project.id,
+                        updates: {
+                            guideState: { ...currentGuideState, setupStep: newStep },
+                        },
+                    },
+                    {
+                        onError: (error) => {
+                            console.error('Failed to save setup progress:', error);
+                            // Don't block navigation - local state is still updated
+                        },
+                    }
+                );
             }
 
             return { ...prev, currentStep: newStep };
         });
-    }, []);
+    }, [currentIntegration?.guideState, updateIntegrationMutation]);
 
     const prevStep = useCallback(() => {
         setState(prev => ({
@@ -259,17 +279,28 @@ const PartnerOnboardingWizard: React.FC = () => {
         nextStep();
     }, [nextStep]);
 
-    const handleGoLive = useCallback(() => {
-        setState(prev => ({ ...prev, isLive: true }));
+    const handleGoLive = useCallback(async () => {
+        if (!state.project?.id) return;
 
-        // Mark integration as active (setup complete)
-        if (state.project?.id) {
-            markIntegrationActive(state.project.id);
+        try {
+            const currentGuideState = currentIntegration?.guideState as PartnerOnboardingGuideState | undefined;
+            await updateIntegrationMutation.mutateAsync({
+                id: state.project.id,
+                updates: {
+                    status: 'active',
+                    guideState: { ...currentGuideState, completedAt: new Date().toISOString() },
+                },
+            });
+
+            setState(prev => ({ ...prev, isLive: true }));
 
             // Redirect to the integration dashboard
             history.push(`/app-store/developer/integrations/${state.project.id}`);
+        } catch (error) {
+            console.error('Failed to activate integration:', error);
+            presentToast('Failed to go live. Please try again.', { type: ToastTypeEnum.Error, hasDismissButton: true });
         }
-    }, [state.project?.id, history]);
+    }, [state.project?.id, history, currentIntegration?.guideState, updateIntegrationMutation, presentToast]);
 
     const handleBackToWizard = useCallback(() => {
         setState(prev => ({ ...prev, isLive: false }));

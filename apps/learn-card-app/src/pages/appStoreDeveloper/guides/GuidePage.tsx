@@ -90,11 +90,11 @@ const GuidePage: React.FC = () => {
             const found = integrations.find(i => i.id === id);
             if (found) {
                 setSelectedIntegration(found);
-            }
 
-            // Navigate to the correct route for this integration's state
-            const route = getIntegrationRoute(id);
-            history.push(route);
+                // Navigate to the correct route for this integration's state
+                const route = getIntegrationRoute(found);
+                history.push(route);
+            }
         }
     };
 

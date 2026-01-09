@@ -1,105 +1,94 @@
+import type { LCNIntegration, LCNIntegrationStatus } from '@learncard/types';
+
 import { IntegrationStatus } from '../types';
 
-const STORAGE_KEY_PREFIX = 'lc_integration_status_';
-
-export interface IntegrationStatusData {
-    status: IntegrationStatus;
+/**
+ * Guide state for partner onboarding wizard
+ */
+export interface PartnerOnboardingGuideState {
     setupStep?: number;
+    integrationMethod?: string;
     completedAt?: string;
-    /** The guide type selected for this integration (e.g., 'issue-credentials', 'partner-onboarding') */
-    guideType?: string;
 }
 
 /**
- * Get the status of an integration from localStorage
- * Returns 'setup' if no status is stored (new integrations default to setup)
+ * Extract status data from an integration object
  */
-export const getIntegrationStatus = (integrationId: string): IntegrationStatusData => {
-    try {
-        const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}${integrationId}`);
-
-        if (stored) {
-            return JSON.parse(stored);
-        }
-    } catch (err) {
-        console.warn('Failed to read integration status:', err);
+export const getIntegrationStatusFromObject = (
+    integration: LCNIntegration | null | undefined
+): { status: LCNIntegrationStatus; guideType?: string; guideState?: Record<string, unknown> } => {
+    if (!integration) {
+        return { status: 'setup' };
     }
 
-    // Default to setup status for new/unknown integrations
-    return { status: 'setup', setupStep: 0 };
+    return {
+        status: integration.status ?? 'setup',
+        guideType: integration.guideType,
+        guideState: integration.guideState,
+    };
 };
 
 /**
- * Set the status of an integration in localStorage
+ * Get the setup step from an integration's guideState
  */
-export const setIntegrationStatus = (
-    integrationId: string,
-    data: Partial<IntegrationStatusData>
-): void => {
-    try {
-        const current = getIntegrationStatus(integrationId);
-        const updated = { ...current, ...data };
+export const getSetupStep = (integration: LCNIntegration | null | undefined): number => {
+    const guideState = integration?.guideState as PartnerOnboardingGuideState | undefined;
 
-        localStorage.setItem(`${STORAGE_KEY_PREFIX}${integrationId}`, JSON.stringify(updated));
-    } catch (err) {
-        console.warn('Failed to save integration status:', err);
-    }
-};
-
-/**
- * Mark an integration as active (setup complete)
- */
-export const markIntegrationActive = (integrationId: string): void => {
-    setIntegrationStatus(integrationId, {
-        status: 'active',
-        completedAt: new Date().toISOString(),
-    });
-};
-
-/**
- * Update the setup step for an integration
- */
-export const updateSetupStep = (integrationId: string, step: number): void => {
-    setIntegrationStatus(integrationId, { setupStep: step });
-};
-
-/**
- * Set the guide type for an integration
- */
-export const setGuideType = (integrationId: string, guideType: string): void => {
-    setIntegrationStatus(integrationId, { guideType });
+    return guideState?.setupStep ?? 0;
 };
 
 /**
  * Check if an integration has completed setup
  */
-export const isIntegrationActive = (integrationId: string): boolean => {
-    const { status } = getIntegrationStatus(integrationId);
-
-    return status === 'active';
+export const isIntegrationActive = (integration: LCNIntegration | null | undefined): boolean => {
+    return integration?.status === 'active';
 };
 
 /**
  * Get the route for an integration based on its status and guide type
  */
-export const getIntegrationRoute = (integrationId: string): string => {
-    const { status, guideType } = getIntegrationStatus(integrationId);
+export const getIntegrationRoute = (integration: LCNIntegration): string => {
+    const { status, guideType } = integration;
 
     if (status === 'active') {
-        return `/app-store/developer/integrations/${integrationId}`;
+        return `/app-store/developer/integrations/${integration.id}`;
     }
 
     // Setup status - check if guide type has been chosen
     if (guideType === 'partner-onboarding') {
         // Partner onboarding goes to the setup wizard
-        return `/app-store/developer/integrations/${integrationId}/setup`;
+        return `/app-store/developer/integrations/${integration.id}/setup`;
     }
 
     if (guideType) {
         // Other guide types go to their specific guide page
-        return `/app-store/developer/integrations/${integrationId}/guides/${guideType}`;
+        return `/app-store/developer/integrations/${integration.id}/guides/${guideType}`;
     }
 
     // No guide type chosen yet - go to IntegrationHub to choose
+    return `/app-store/developer/integrations/${integration.id}/guides`;
+};
+
+/**
+ * Get the route for an integration by ID (simplified version for when you only have the ID)
+ * Use getIntegrationRoute with the full integration object when available
+ */
+export const getIntegrationRouteById = (
+    integrationId: string,
+    status?: LCNIntegrationStatus,
+    guideType?: string
+): string => {
+    if (status === 'active') {
+        return `/app-store/developer/integrations/${integrationId}`;
+    }
+
+    if (guideType === 'partner-onboarding') {
+        return `/app-store/developer/integrations/${integrationId}/setup`;
+    }
+
+    if (guideType) {
+        return `/app-store/developer/integrations/${integrationId}/guides/${guideType}`;
+    }
+
     return `/app-store/developer/integrations/${integrationId}/guides`;
 };

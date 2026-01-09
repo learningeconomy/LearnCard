@@ -20,7 +20,6 @@ import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
-import { getIntegrationStatus, setGuideType } from '../partner-onboarding/utils/integrationStatus';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
     'award': Award,
@@ -122,9 +121,10 @@ const IntegrationHub: React.FC = () => {
     const [newProjectName, setNewProjectName] = useState('');
     const [activeGuideType, setActiveGuideType] = useState<string | null>(null);
 
-    const { useIntegrations, useCreateIntegration } = useDeveloperPortal();
+    const { useIntegrations, useCreateIntegration, useUpdateIntegration } = useDeveloperPortal();
     const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
     const createIntegrationMutation = useCreateIntegration();
+    const updateIntegrationMutation = useUpdateIntegration();
 
     // Use route integration ID if available, otherwise default to first
     useEffect(() => {
@@ -135,23 +135,32 @@ const IntegrationHub: React.FC = () => {
         }
     }, [integrations, selectedIntegrationId, routeIntegrationId]);
 
-    // Load the active guide type when integration changes
+    // Load the active guide type from server when integration changes
     useEffect(() => {
-        if (selectedIntegrationId) {
-            const statusData = getIntegrationStatus(selectedIntegrationId);
-            setActiveGuideType(statusData.guideType || null);
+        if (selectedIntegrationId && integrations) {
+            const integration = integrations.find(i => i.id === selectedIntegrationId);
+            setActiveGuideType(integration?.guideType || null);
         } else {
             setActiveGuideType(null);
         }
-    }, [selectedIntegrationId]);
+    }, [selectedIntegrationId, integrations]);
 
-    const handleUseCaseClick = (useCaseId: UseCaseId) => {
-        if (selectedIntegrationId) {
-            // Save the guide type for this integration
-            setGuideType(selectedIntegrationId, useCaseId);
+    const handleUseCaseClick = async (useCaseId: UseCaseId) => {
+        if (!selectedIntegrationId) return;
+
+        try {
+            // Save the guide type on the server
+            await updateIntegrationMutation.mutateAsync({
+                id: selectedIntegrationId,
+                updates: { guideType: useCaseId },
+            });
             setActiveGuideType(useCaseId);
 
             // Use nested route structure
+            history.push(`/app-store/developer/integrations/${selectedIntegrationId}/guides/${useCaseId}`);
+        } catch (error) {
+            console.error('Failed to save guide selection:', error);
+            // Still navigate - the guide type can be set again later
             history.push(`/app-store/developer/integrations/${selectedIntegrationId}/guides/${useCaseId}`);
         }
     };
@@ -284,12 +293,21 @@ const IntegrationHub: React.FC = () => {
                             {/* Enterprise Partner Onboarding */}
                             <div className="mb-12">
                                 <button
-                                    onClick={() => {
-                                        if (selectedIntegrationId) {
-                                            setGuideType(selectedIntegrationId, 'partner-onboarding');
+                                    onClick={async () => {
+                                        if (!selectedIntegrationId) return;
+
+                                        try {
+                                            await updateIntegrationMutation.mutateAsync({
+                                                id: selectedIntegrationId,
+                                                updates: { guideType: 'partner-onboarding' },
+                                            });
                                             setActiveGuideType('partner-onboarding');
-                                            history.push(`/app-store/developer/integrations/${selectedIntegrationId}/setup`);
+                                        } catch (error) {
+                                            console.error('Failed to save guide selection:', error);
                                         }
+
+                                        // Navigate regardless of save success
+                                        history.push(`/app-store/developer/integrations/${selectedIntegrationId}/setup`);
                                     }}
                                     className={`w-full p-6 bg-gradient-to-r from-violet-500 to-indigo-600 rounded-2xl text-left hover:from-violet-600 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 group ${
                                         activeGuideType === 'partner-onboarding' ? 'ring-4 ring-white/50' : ''
