@@ -315,6 +315,7 @@ export const sendBoost = async ({
     domain,
     skipNotification = false,
     autoAcceptCredential = false,
+    skipCertification = false,
     contractTerms,
 }: {
     from: ProfileType;
@@ -324,11 +325,14 @@ export const sendBoost = async ({
     domain: string;
     skipNotification?: boolean;
     autoAcceptCredential?: boolean;
+    skipCertification?: boolean;
     contractTerms?: DbTermsType;
 }): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
-    if (decryptedCredential) {
+
+    // Skip certification if requested or if credential can't be decrypted
+    if (decryptedCredential && !skipCertification) {
         if (process.env.NODE_ENV !== 'test') console.log('🚀 sendBoost:VC Decrypted');
         const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
         if (certifiedBoost) {

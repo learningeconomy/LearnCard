@@ -13,9 +13,8 @@ import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { sendCredential } from '@helpers/credential.helpers';
+import { sendBoost } from '@helpers/boost.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
-import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
-import { storeCredential } from '@accesslayer/credential/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
@@ -227,22 +226,24 @@ export const issueToInbox = async (
             expiresInDays,
         });
 
-        // Send credential directly (this stores credential and creates sent relationship)
-        await sendCredential(
-            issuerProfile,
-            existingProfile,
-            finalCredential,
-            ctx.domain // domain
-        );
-
-        // If this is a boost issuance, also create the boost instance relationship
+        // Send credential using appropriate helper (sendBoost handles boost tracking)
         if (boostUri) {
             const boost = await getBoostByUri(boostUri);
             if (boost) {
-                // Store the credential again to get a credential instance for boost relationship
-                const credentialInstance = await storeCredential(finalCredential);
-                await createBoostInstanceOfRelationship(credentialInstance, boost);
+                await sendBoost({
+                    from: issuerProfile,
+                    to: existingProfile,
+                    boost,
+                    credential: finalCredential,
+                    domain: ctx.domain,
+                    skipCertification: true,
+                });
+            } else {
+                // Fallback to sendCredential if boost not found
+                await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain);
             }
+        } else {
+            await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain);
         }
 
         // Mark as issued and create relationship
