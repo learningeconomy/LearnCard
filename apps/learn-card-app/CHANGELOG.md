@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.6
+
+### Patch Changes
+
+-   [#912](https://github.com/learningeconomy/LearnCard/pull/912) [`e61da3230f946b3d7238588baad502b16cee3ea1`](https://github.com/learningeconomy/LearnCard/commit/e61da3230f946b3d7238588baad502b16cee3ea1) Thanks [@Custard7](https://github.com/Custard7)! - feat: In-App CLI
+
 ## 1.94.5
 
 ### Patch Changes
