@@ -56,7 +56,7 @@ describe('Unified Send API E2E Tests', () => {
             // Should have inbox field since it was sent via email
             expect(result.inbox).toBeDefined();
             expect(result.inbox?.issuanceId).toBeDefined();
-            expect(result.inbox?.status).toBe('pending');
+            expect(result.inbox?.status).toBe('PENDING');
         });
 
         // Skipping until phone support is added
@@ -77,7 +77,7 @@ describe('Unified Send API E2E Tests', () => {
             // Should have inbox field since it was sent via phone
             expect(result.inbox).toBeDefined();
             expect(result.inbox?.issuanceId).toBeDefined();
-            expect(result.inbox?.status).toBe('pending');
+            expect(result.inbox?.status).toBe('PENDING');
         });
 
         it('should detect DID recipient and use direct send', async () => {
@@ -445,7 +445,7 @@ describe('Unified Send API E2E Tests', () => {
 
             expect(result.inbox).toBeDefined();
             expect(result.inbox?.issuanceId).toBeDefined();
-            expect(result.inbox?.status).toBe('pending');
+            expect(result.inbox?.status).toBe('PENDING');
         });
 
         it('should use signedCredential when provided for email recipient', async () => {
@@ -842,7 +842,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             expect(result1.inbox?.claimUrl).toBeDefined();
-            expect(result1.inbox?.status).toBe('pending');
+            expect(result1.inbox?.status).toBe('PENDING');
 
             // User B claims the credential - this verifies their email
             await performClaimFlow(result1.inbox!.claimUrl!, b);
@@ -861,8 +861,8 @@ describe('Unified Send API E2E Tests', () => {
                 },
             });
 
-            // Second send should be auto-delivered (status: 'claimed' means ISSUED/delivered)
-            expect(result2.inbox?.status).toBe('claimed');
+            // Second send should be auto-delivered
+            expect(result2.inbox?.status).toBe('ISSUED');
 
             // User B should have the credential in their incoming credentials
             const incoming = await b.invoke.getIncomingCredentials();
@@ -920,7 +920,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             // Should be auto-delivered
-            expect(result2.inbox?.status).toBe('claimed');
+            expect(result2.inbox?.status).toBe('ISSUED');
 
             // Boost recipients should also be tracked for auto-delivered credentials
             const finalRecipients2 = await a.invoke.getBoostRecipients(boostUri2);
@@ -964,7 +964,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             // Should be auto-delivered
-            expect(result2.inbox?.status).toBe('claimed');
+            expect(result2.inbox?.status).toBe('ISSUED');
 
             // User B should have the credential in incoming
             const incoming = await b.invoke.getIncomingCredentials();
@@ -1011,7 +1011,7 @@ describe('Unified Send API E2E Tests', () => {
 
             // All should be auto-delivered
             for (const result of sendResults) {
-                expect(result.inbox?.status).toBe('claimed');
+                expect(result.inbox?.status).toBe('ISSUED');
             }
 
             // User B should have all credentials in their incoming
@@ -1062,7 +1062,7 @@ describe('Unified Send API E2E Tests', () => {
             });
 
             // Should be auto-delivered
-            expect(result2.inbox?.status).toBe('claimed');
+            expect(result2.inbox?.status).toBe('ISSUED');
 
             // User B should have the credential in incoming
             const incoming = await b.invoke.getIncomingCredentials();

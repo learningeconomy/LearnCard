@@ -79,6 +79,8 @@ import {
     issueClaimLinkBoost,
     isDraftBoost,
     convertCredentialToBoostTemplateJSON,
+    isInboxRecipient,
+    prepareCredentialFromBoost,
 } from '@helpers/boost.helpers';
 import {
     BoostValidator,
@@ -143,20 +145,56 @@ import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationship
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 import { issueToInbox } from '@helpers/inbox.helpers';
+import { SendOptions } from '@learncard/types';
 
-// Helper to detect if recipient is email or phone (for inbox routing)
-const isInboxRecipient = (recipient: string): { type: 'email' | 'phone'; value: string } | null => {
-    // Email pattern
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
-        return { type: 'email', value: recipient };
+/**
+ * Builds inbox configuration from SendOptions for the issueToInbox helper.
+ */
+const buildInboxConfig = (
+    options: SendOptions | undefined,
+    boostUri: string
+): {
+    webhookUrl?: string;
+    boostUri?: string;
+    delivery?: {
+        suppress: boolean;
+        template?: {
+            model: {
+                issuer?: { name?: string; logoUrl?: string };
+                credential?: { name?: string };
+                recipient?: { name?: string };
+            };
+        };
+    };
+} => {
+    const config: ReturnType<typeof buildInboxConfig> = {
+        webhookUrl: options?.webhookUrl,
+        boostUri,
+    };
+
+    if (options?.suppressDelivery || options?.branding) {
+        config.delivery = {
+            suppress: options?.suppressDelivery ?? false,
+            template: options?.branding
+                ? {
+                      model: {
+                          issuer: {
+                              name: options.branding.issuerName,
+                              logoUrl: options.branding.issuerLogoUrl,
+                          },
+                          credential: {
+                              name: options.branding.credentialName,
+                          },
+                          recipient: {
+                              name: options.branding.recipientName,
+                          },
+                      },
+                  }
+                : undefined,
+        };
     }
 
-    // Phone pattern (starts with + followed by digits, or just digits with optional dashes/spaces)
-    if (/^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''))) {
-        return { type: 'phone', value: recipient };
-    }
-
-    return null;
+    return config;
 };
 
 export const boostsRouter = t.router({
@@ -608,34 +646,12 @@ export const boostsRouter = t.router({
                 let credential: VC | UnsignedVC;
 
                 if (input.signedCredential) {
-                    // Use pre-signed credential if provided
                     credential = input.signedCredential;
                 } else {
                     try {
-                        // Apply templateData rendering if provided (same as direct send path)
-                        let boostJsonString = boost.dataValues.boost;
-
-                        if (input.templateData && Object.keys(input.templateData).length > 0) {
-                            boostJsonString = renderBoostTemplate(
-                                boostJsonString,
-                                input.templateData as Record<string, unknown>
-                            );
-                        }
-
-                        credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
-
-                        const now = new Date().toISOString();
-                        if (isVC2Format(credential)) {
-                            credential.validFrom = now;
-                        } else {
-                            credential.issuanceDate = now;
-                        }
-
-                        if (credential?.type?.includes('BoostCredential')) {
-                            (credential as Record<string, unknown>).boostId = boostUri;
-                        }
-
-                        await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, domain);
+                        credential = await prepareCredentialFromBoost(boost, boostUri, domain, {
+                            templateData: input.templateData as Record<string, unknown>,
+                        });
                     } catch (e) {
                         console.error('Failed to prepare boost credential for inbox', e);
                         throw new TRPCError({
@@ -645,46 +661,8 @@ export const boostsRouter = t.router({
                     }
                 }
 
-                // Map SendOptions to inbox configuration (including branding)
-                const inboxConfig: {
-                    webhookUrl?: string;
-                    boostUri?: string;
-                    delivery?: {
-                        suppress: boolean;
-                        template?: {
-                            model: {
-                                issuer?: { name?: string; logoUrl?: string };
-                                credential?: { name?: string };
-                                recipient?: { name?: string };
-                            };
-                        };
-                    };
-                } = {
-                    webhookUrl: input.options?.webhookUrl,
-                    boostUri,
-                };
-
-                if (input.options?.suppressDelivery || input.options?.branding) {
-                    inboxConfig.delivery = {
-                        suppress: input.options?.suppressDelivery ?? false,
-                        template: input.options?.branding
-                            ? {
-                                  model: {
-                                      issuer: {
-                                          name: input.options.branding.issuerName,
-                                          logoUrl: input.options.branding.issuerLogoUrl,
-                                      },
-                                      credential: {
-                                          name: input.options.branding.credentialName,
-                                      },
-                                      recipient: {
-                                          name: input.options.branding.recipientName,
-                                      },
-                                  },
-                              }
-                            : undefined,
-                    };
-                }
+                // Build inbox configuration from SendOptions
+                const inboxConfig = buildInboxConfig(input.options, boostUri);
 
                 const inboxResult = await issueToInbox(
                     profile,
@@ -694,22 +672,13 @@ export const boostsRouter = t.router({
                     ctx
                 );
 
-                // Map inbox status to response format
-                const statusMap: Record<string, 'pending' | 'claimed' | 'expired'> = {
-                    PENDING: 'pending',
-                    ISSUED: 'claimed',
-                    CLAIMED: 'claimed',
-                    DELIVERED: 'claimed',
-                    EXPIRED: 'expired',
-                };
-
                 return {
                     type: 'boost' as const,
-                    credentialUri: '', // No credential URI for inbox issuances until claimed
+                    credentialUri: '',
                     uri: boostUri,
                     inbox: {
                         issuanceId: inboxResult.inboxCredential.id,
-                        status: statusMap[inboxResult.status] ?? 'pending',
+                        status: inboxResult.status,
                         claimUrl: inboxResult.claimUrl,
                     },
                 };
@@ -790,44 +759,11 @@ export const boostsRouter = t.router({
                 let unsignedVc: UnsignedVC;
 
                 try {
-                    let boostJsonString = boost.dataValues.boost;
-
-                    if (input.templateData && Object.keys(input.templateData).length > 0) {
-                        boostJsonString = renderBoostTemplate(
-                            boostJsonString,
-                            input.templateData as Record<string, unknown>
-                        );
-                    }
-
-                    unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
-
-                    const now = new Date().toISOString();
-                    if (isVC2Format(unsignedVc)) {
-                        unsignedVc.validFrom = now;
-                    } else {
-                        unsignedVc.issuanceDate = now;
-                    }
-
-                    unsignedVc.issuer = signingAuthority.relationship.did;
-
-                    if (Array.isArray(unsignedVc.credentialSubject)) {
-                        unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(
-                            subject => ({
-                                ...subject,
-                                id: getDidWeb(domain, targetProfile.profileId),
-                            })
-                        );
-                    } else {
-                        unsignedVc.credentialSubject = {
-                            ...(unsignedVc.credentialSubject || {}),
-                            id: getDidWeb(domain, targetProfile.profileId),
-                        };
-                    }
-
-                    if (unsignedVc?.type?.includes('BoostCredential'))
-                        unsignedVc.boostId = boostUri;
-
-                    await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, domain);
+                    unsignedVc = await prepareCredentialFromBoost(boost, boostUri, domain, {
+                        templateData: input.templateData as Record<string, unknown>,
+                        issuerDid: signingAuthority.relationship.did,
+                        recipientDid: getDidWeb(domain, targetProfile.profileId),
+                    });
                 } catch (e) {
                     console.error('Failed to prepare boost credential', e);
                     throw new TRPCError({

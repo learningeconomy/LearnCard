@@ -1,14 +1,14 @@
 import isEqual from 'lodash/isEqual';
 import cloneDeep from 'lodash/cloneDeep';
 import { v4 as uuidv4 } from 'uuid';
-import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator, ContactMethodQueryType } from '@learncard/types';
 import { isEncrypted, isVC2Format } from '@learncard/helpers';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import {
     injectObv3AlignmentsIntoCredentialForBoost,
     buildObv3AlignmentsForBoost,
 } from '@services/skills-provider/inject';
-import { hasMustacheVariables } from '@helpers/template.helpers';
+import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
@@ -497,3 +497,106 @@ export const issueClaimLinkBoost = async (
         autoAcceptCredential: true,
     });
 };
+
+/**
+ * Helper to detect if a recipient string is an email or phone number (for inbox routing)
+ */
+export const isInboxRecipient = (recipient: string): ContactMethodQueryType | null => {
+    // Email pattern
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+        return { type: 'email', value: recipient };
+    }
+
+    // Phone pattern (starts with + followed by digits, or just digits with optional dashes/spaces)
+    if (/^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''))) {
+        return { type: 'phone', value: recipient };
+    }
+
+    return null;
+};
+
+/**
+ * Prepares an unsigned credential from a boost template.
+ * Handles templateData rendering, issuance date, boostId injection, and OBv3 alignments.
+ */
+export const prepareCredentialFromBoost = async (
+    boost: BoostInstance,
+    boostUri: string,
+    domain: string,
+    options: {
+        templateData?: Record<string, unknown>;
+        recipientDid?: string;
+        issuerDid?: string;
+    } = {}
+): Promise<UnsignedVC> => {
+    const { templateData, recipientDid, issuerDid } = options;
+
+    let boostJsonString = boost.dataValues.boost;
+
+    if (templateData && Object.keys(templateData).length > 0) {
+        boostJsonString = renderBoostTemplate(boostJsonString, templateData);
+    }
+
+    const credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+
+    // Set issuance date based on VC version
+    const now = new Date().toISOString();
+    if (isVC2Format(credential)) {
+        credential.validFrom = now;
+    } else {
+        credential.issuanceDate = now;
+    }
+
+    // Set issuer if provided
+    if (issuerDid) {
+        credential.issuer = issuerDid;
+    }
+
+    // Set recipient DID in credentialSubject if provided
+    if (recipientDid) {
+        if (Array.isArray(credential.credentialSubject)) {
+            credential.credentialSubject = credential.credentialSubject.map(subject => ({
+                ...subject,
+                id: recipientDid,
+            }));
+        } else {
+            credential.credentialSubject = {
+                ...(credential.credentialSubject || {}),
+                id: recipientDid,
+            };
+        }
+    }
+
+    // Embed boostId for BoostCredential types
+    if (credential?.type?.includes('BoostCredential')) {
+        (credential as Record<string, unknown>).boostId = boostUri;
+    }
+
+    // Inject OBv3 alignments
+    await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, domain);
+
+    return credential;
+};
+
+/**
+ * Resolves a boost from a URI and validates it exists.
+ * Throws TRPCError if not found.
+ */
+export const resolveBoostByUri = async (
+    boostUri: string
+): Promise<BoostInstance> => {
+    const { TRPCError } = await import('@trpc/server');
+    const { getBoostByUri } = await import('@accesslayer/boost/read');
+
+    const boost = await getBoostByUri(boostUri);
+
+    if (!boost) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Could not find boost',
+        });
+    }
+
+    return boost;
+};
+

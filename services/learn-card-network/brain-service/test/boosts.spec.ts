@@ -994,7 +994,7 @@ describe('Boosts', () => {
             expect(result.uri).toBe(boostUri);
             expect(result.inbox).toBeDefined();
             expect(result.inbox?.issuanceId).toBeDefined();
-            expect(result.inbox?.status).toBe('pending');
+            expect(result.inbox?.status).toBe('PENDING');
         });
 
         it('should route to inbox with on-the-fly template creation', async () => {
@@ -1012,7 +1012,7 @@ describe('Boosts', () => {
             expect(result.uri).toBeDefined();
             expect(result.inbox).toBeDefined();
             expect(result.inbox?.issuanceId).toBeDefined();
-            expect(result.inbox?.status).toBe('pending');
+            expect(result.inbox?.status).toBe('PENDING');
         });
 
         it('should apply templateData when sending to email', async () => {
@@ -1147,8 +1147,8 @@ describe('Boosts', () => {
             });
 
             expect(result.inbox).toBeDefined();
-            // When user exists, status should be 'claimed' (auto-delivered)
-            expect(result.inbox?.status).toBe('claimed');
+            // When user exists, status should be 'ISSUED' (auto-delivered)
+            expect(result.inbox?.status).toBe('ISSUED');
         });
 
         it('should not route to inbox for profileId recipient', async () => {

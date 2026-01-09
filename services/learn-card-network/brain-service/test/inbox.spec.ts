@@ -1593,7 +1593,7 @@ describe('Universal Inbox', () => {
         });
     });
 
-    describe('Issue credential via boostUri', () => {
+    describe('Issue credential via templateUri', () => {
         beforeEach(async () => {
             sendSpy.mockClear();
             vi.spyOn(notifications, 'addNotificationToQueue').mockImplementation(
@@ -1619,7 +1619,7 @@ describe('Universal Inbox', () => {
             await SigningAuthority.delete({ detach: true, where: {} });
         });
 
-        it('should allow issuing a credential to inbox using boostUri instead of credential', async () => {
+        it('should allow issuing a credential to inbox using templateUri instead of credential', async () => {
             // Create a boost first
             const boostUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
@@ -1635,10 +1635,10 @@ describe('Universal Inbox', () => {
                 did: userA.learnCard.id.did(),
             });
 
-            // Issue to inbox using boostUri
+            // Issue to inbox using templateUri
             const result = await userA.clients.fullAuth.inbox.issue({
                 recipient: { type: 'email', value: 'test-boost@test.com' },
-                boostUri,
+                templateUri: boostUri,
                 configuration: {
                     signingAuthority: { endpoint: 'http://localhost:5000/api', name: 'inbox-sa' },
                 },
@@ -1651,7 +1651,7 @@ describe('Universal Inbox', () => {
             expect(result.claimUrl).toBeDefined();
         });
 
-        it('should reject if boostUri does not exist', async () => {
+        it('should reject if templateUri does not exist', async () => {
             // Create a valid boost first to get correct URI format, then use a modified version
             const validBoostUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
@@ -1668,14 +1668,14 @@ describe('Universal Inbox', () => {
             await expect(
                 userA.clients.fullAuth.inbox.issue({
                     recipient: { type: 'email', value: 'test@test.com' },
-                    boostUri: nonExistentUri,
+                    templateUri: nonExistentUri,
                 })
             ).rejects.toMatchObject({
                 code: 'NOT_FOUND',
             });
         });
 
-        it('should reject if neither credential nor boostUri is provided', async () => {
+        it('should reject if neither credential nor templateUri is provided', async () => {
             await expect(
                 userA.clients.fullAuth.inbox.issue({
                     recipient: { type: 'email', value: 'test@test.com' },
@@ -1683,7 +1683,7 @@ describe('Universal Inbox', () => {
             ).rejects.toThrow();
         });
 
-        it('should use credential if both credential and boostUri are provided', async () => {
+        it('should use credential if both credential and templateUri are provided', async () => {
             // Create a boost
             const boostUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
@@ -1696,11 +1696,11 @@ describe('Universal Inbox', () => {
                 await userA.learnCard.invoke.getTestVc()
             );
 
-            // Provide both credential and boostUri - credential should take precedence
+            // Provide both credential and templateUri - credential should take precedence
             const result = await userA.clients.fullAuth.inbox.issue({
                 recipient: { type: 'email', value: 'test-precedence@test.com' },
                 credential: signedVc,
-                boostUri,
+                templateUri: boostUri,
             });
 
             expect(result).toBeDefined();
@@ -1708,7 +1708,7 @@ describe('Universal Inbox', () => {
             expect(result.status).toBe('PENDING');
         });
 
-        it('should add boostId to credential when boostUri is used with BoostCredential type', async () => {
+        it('should add boostId to credential when templateUri is used with BoostCredential type', async () => {
             // Create a boost with BoostCredential type
             const boostUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost, // This includes 'BoostCredential' in type
@@ -1725,7 +1725,7 @@ describe('Universal Inbox', () => {
 
             const result = await userA.clients.fullAuth.inbox.issue({
                 recipient: { type: 'email', value: 'boost-id@test.com' },
-                boostUri,
+                templateUri: boostUri,
                 configuration: {
                     signingAuthority: { endpoint: 'http://localhost:5000/api', name: 'boost-sa' },
                 },
@@ -1739,7 +1739,7 @@ describe('Universal Inbox', () => {
             expect(inboxCreds.length).toBeGreaterThan(0);
         });
 
-        it('should work with different email recipient when using boostUri', async () => {
+        it('should work with different email recipient when using templateUri', async () => {
             const boostUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
                 name: 'Another Email Boost',
@@ -1755,7 +1755,7 @@ describe('Universal Inbox', () => {
 
             const result = await userA.clients.fullAuth.inbox.issue({
                 recipient: { type: 'email', value: 'another-test@test.com' },
-                boostUri,
+                templateUri: boostUri,
                 configuration: {
                     signingAuthority: { endpoint: 'http://localhost:5000/api', name: 'email-sa' },
                 },

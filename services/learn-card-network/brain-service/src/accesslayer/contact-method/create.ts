@@ -11,15 +11,19 @@ export const createContactMethod = async (input: {
     isPrimary?: boolean;
 }): Promise<ContactMethodType> => {
     const now = new Date().toISOString();
-    const contactMethodData = {
+    const contactMethodData: Record<string, unknown> = {
         id: uuid(),
         type: input.type,
         value: input.value,
         isVerified: input.isVerified ?? false,
-        verifiedAt: input.isVerified ? now : '',
         isPrimary: input.isPrimary ?? false,
         createdAt: now,
     };
+
+    // Only set verifiedAt when the contact method is verified
+    if (input.isVerified) {
+        contactMethodData.verifiedAt = now;
+    }
 
     const result = await new QueryBuilder(new BindParam({ params: contactMethodData }))
         .create({ model: ContactMethod, identifier: 'contactMethod' })
