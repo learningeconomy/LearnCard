@@ -1176,12 +1176,24 @@ export const LCNDomainOrOriginValidator = z.union([
         ),
 ]);
 
+export const LCNIntegrationStatusEnum = z.enum(['setup', 'active', 'paused']);
+export type LCNIntegrationStatus = z.infer<typeof LCNIntegrationStatusEnum>;
+
 export const LCNIntegrationValidator = z.object({
     id: z.string(),
     name: z.string(),
     description: z.string().optional(),
     publishableKey: z.string(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+
+    // Setup/onboarding status
+    status: LCNIntegrationStatusEnum.default('setup'),
+    guideType: z.string().optional(),
+    guideState: z.record(z.string(), z.any()).optional(),
+
+    // Timestamps
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
 });
 
 export type LCNIntegration = z.infer<typeof LCNIntegrationValidator>;
@@ -1190,6 +1202,7 @@ export const LCNIntegrationCreateValidator = z.object({
     name: z.string(),
     description: z.string().optional(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+    guideType: z.string().optional(),
 });
 
 export type LCNIntegrationCreateType = z.infer<typeof LCNIntegrationCreateValidator>;
@@ -1199,6 +1212,11 @@ export const LCNIntegrationUpdateValidator = z.object({
     description: z.string().optional(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).optional(),
     rotatePublishableKey: z.boolean().optional(),
+
+    // Setup/onboarding updates
+    status: LCNIntegrationStatusEnum.optional(),
+    guideType: z.string().optional(),
+    guideState: z.record(z.string(), z.any()).optional(),
 });
 
 export type LCNIntegrationUpdateType = z.infer<typeof LCNIntegrationUpdateValidator>;
@@ -1208,6 +1226,8 @@ export const LCNIntegrationQueryValidator = z
         id: StringQuery,
         name: StringQuery,
         description: StringQuery,
+        status: StringQuery,
+        guideType: StringQuery,
     })
     .partial();
 

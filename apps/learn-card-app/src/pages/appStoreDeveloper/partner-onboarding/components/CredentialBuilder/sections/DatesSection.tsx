@@ -5,7 +5,7 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
 
-import { OBv3CredentialTemplate, TemplateFieldValue, staticField } from '../types';
+import { OBv3CredentialTemplate, TemplateFieldValue, staticField, systemField } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
 
 interface DatesSectionProps {
@@ -43,20 +43,11 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
             isExpanded={isExpanded}
             onToggle={onToggle}
         >
-            <div className="flex items-start gap-2 p-3 bg-rose-50 border border-rose-200 rounded-lg mb-4">
-                <span className="text-xs text-rose-700">
-                    <strong>Note:</strong> Dates are typically dynamic. The issuance date is usually set 
-                    at the time of credential issuance. Use ISO 8601 format (e.g., 2024-01-15T00:00:00Z).
-                </span>
-            </div>
-
             <FieldEditor
                 label="Issuance Date"
-                field={template.issuanceDate}
-                onChange={(f) => updateField('issuanceDate', f)}
-                placeholder="2024-01-15T00:00:00Z"
-                helpText="When the credential was issued (ISO 8601 format)"
-                required
+                field={systemField('The current timestamp when the credential is issued (ISO 8601 format)')}
+                onChange={() => {}}
+                helpText="Automatically set to the current date/time when the credential is issued"
             />
 
             <div className="mt-4">

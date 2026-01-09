@@ -1,15 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Plus, Loader2, Check } from 'lucide-react';
+import { useHistory } from 'react-router-dom';
+import { ChevronDown, Plus, Loader2, Check, Settings, LayoutDashboard } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
 import { useDeveloperPortal } from '../useDeveloperPortal';
+import { getIntegrationRoute } from '../partner-onboarding/utils/integrationStatus';
 
 interface HeaderIntegrationSelectorProps {
     integrations: LCNIntegration[];
     selectedId: string | null;
     onSelect: (id: string | null) => void;
     isLoading: boolean;
+    /** If true, navigates to wizard/dashboard on selection based on status */
+    navigateOnSelect?: boolean;
 }
 
 export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps> = ({
@@ -17,7 +21,9 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     selectedId,
     onSelect,
     isLoading,
+    navigateOnSelect = false,
 }) => {
+    const history = useHistory();
     const [isOpen, setIsOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
@@ -67,6 +73,16 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
         }
     }, [isCreating]);
 
+    const handleSelectIntegration = (integration: LCNIntegration) => {
+        onSelect(integration.id);
+        setIsOpen(false);
+
+        if (navigateOnSelect) {
+            const route = getIntegrationRoute(integration);
+            history.push(route);
+        }
+    };
+
     const handleCreate = async () => {
         if (!newName.trim()) return;
 
@@ -76,6 +92,11 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
             setNewName('');
             setIsCreating(false);
             setIsOpen(false);
+
+            // New integrations go to IntegrationHub to choose guide type
+            if (navigateOnSelect) {
+                history.push(`/app-store/developer/integrations/${id}/guides`);
+            }
         } catch (error) {
             console.error('Failed to create integration:', error);
         }
@@ -98,26 +119,35 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
         >
             {integrations.length > 0 && (
                 <div className="max-h-48 overflow-y-auto">
-                    {integrations.map(integration => (
-                        <button
-                            key={integration.id}
-                            onClick={() => {
-                                onSelect(integration.id);
-                                setIsOpen(false);
-                            }}
-                            className={`w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
-                                selectedId === integration.id ? 'bg-cyan-50' : ''
-                            }`}
-                        >
-                            <span className={`text-sm truncate ${selectedId === integration.id ? 'text-cyan-700 font-medium' : 'text-gray-700'}`}>
-                                {integration.name}
-                            </span>
+                    {integrations.map(integration => {
+                        const isSetup = integration.status === 'setup' || !integration.status;
 
-                            {selectedId === integration.id && (
-                                <Check className="w-4 h-4 text-cyan-500 flex-shrink-0" />
-                            )}
-                        </button>
-                    ))}
+                        return (
+                            <button
+                                key={integration.id}
+                                onClick={() => handleSelectIntegration(integration)}
+                                className={`w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                                    selectedId === integration.id ? 'bg-cyan-50' : ''
+                                }`}
+                            >
+                                <div className="flex items-center gap-2 min-w-0">
+                                    {isSetup ? (
+                                        <Settings className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                                    ) : (
+                                        <LayoutDashboard className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                                    )}
+
+                                    <span className={`text-sm truncate ${selectedId === integration.id ? 'text-cyan-700 font-medium' : 'text-gray-700'}`}>
+                                        {integration.name}
+                                    </span>
+                                </div>
+
+                                {selectedId === integration.id && (
+                                    <Check className="w-4 h-4 text-cyan-500 flex-shrink-0" />
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
 

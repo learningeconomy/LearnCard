@@ -3,8 +3,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { IonHeader, IonToolbar } from '@ionic/react';
 import { Shield, Code2, Hammer } from 'lucide-react';
 
-import QRCodeScannerButton from '../../../components/qrcode-scanner-button/QRCodeScannerButton';
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import { AccountSwitcher } from './AccountSwitcher';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 
 interface AppStoreHeaderProps {
@@ -19,10 +18,14 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
     const { data: isAdmin } = useIsAdmin();
 
     const isOnAdminPage = location.pathname.includes('/app-store/admin');
-    const isOnGuidesPage = location.pathname.includes('/app-store/developer/guides');
+    const isOnGuidesPage = location.pathname.includes('/guides');
     const isOnDeveloperPage = location.pathname === '/app-store/developer' || 
         location.pathname.startsWith('/app-store/developer/new') ||
         location.pathname.startsWith('/app-store/developer/edit');
+
+    // Extract integration ID from URL if on an integration route
+    const integrationMatch = location.pathname.match(/\/integrations\/([^/]+)/);
+    const currentIntegrationId = integrationMatch?.[1] || null;
 
     const handlePortalToggle = () => {
         if (isOnAdminPage) {
@@ -67,7 +70,12 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                             </button>
 
                             <button
-                                onClick={() => history.push('/app-store/developer/guides')}
+                                onClick={() => {
+                                    const guidesPath = currentIntegrationId 
+                                        ? `/app-store/developer/integrations/${currentIntegrationId}/guides`
+                                        : '/app-store/developer/guides';
+                                    history.push(guidesPath);
+                                }}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     isOnGuidesPage
                                         ? 'bg-white text-gray-800 shadow-sm'
@@ -81,7 +89,16 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
 
                         {/* Mobile nav toggle for guides */}
                         <button
-                            onClick={() => history.push(isOnGuidesPage ? '/app-store/developer' : '/app-store/developer/guides')}
+                            onClick={() => {
+                                if (isOnGuidesPage) {
+                                    history.push('/app-store/developer');
+                                } else {
+                                    const guidesPath = currentIntegrationId 
+                                        ? `/app-store/developer/integrations/${currentIntegrationId}/guides`
+                                        : '/app-store/developer/guides';
+                                    history.push(guidesPath);
+                                }
+                            }}
                             className="sm:hidden flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                         >
                             {isOnGuidesPage ? (
@@ -110,7 +127,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                             </button>
                         )}
 
-                        <QRCodeScannerButton branding={BrandingEnum.learncard} />
+                        <AccountSwitcher />
                     </div>
                 </div>
             </IonToolbar>

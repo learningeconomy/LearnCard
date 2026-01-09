@@ -1,12 +1,15 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonPage, IonContent, IonHeader, IonToolbar } from '@ionic/react';
-import { Loader2 } from 'lucide-react';
+import { IonPage, IonContent } from '@ionic/react';
+import { Loader2, ArrowLeft } from 'lucide-react';
+
+import { AppStoreHeader } from '../components/AppStoreHeader';
+import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
+import { useDeveloperPortal } from '../useDeveloperPortal';
 
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import {
-    Building,
     Building2,
     Palette,
     FileStack,
@@ -14,7 +17,6 @@ import {
     GitMerge,
     TestTube2,
     Rocket,
-    ArrowLeft,
     Check,
     ChevronRight,
 } from 'lucide-react';
@@ -23,7 +25,6 @@ import {
     PartnerOnboardingState,
     DEFAULT_ONBOARDING_STATE,
     ONBOARDING_STEPS,
-    OrganizationProfile,
     PartnerProject,
     BrandingConfig,
     CredentialTemplate,
@@ -31,7 +32,6 @@ import {
     DataMappingConfig,
 } from './types';
 
-import { OrganizationSetupStep } from './steps/OrganizationSetupStep';
 import { ProjectSetupStep } from './steps/ProjectSetupStep';
 import { BrandingStep } from './steps/BrandingStep';
 import { TemplateBuilderStep } from './steps/TemplateBuilderStep';
@@ -41,8 +41,9 @@ import { SandboxTestStep } from './steps/SandboxTestStep';
 import { ProductionStep } from './steps/ProductionStep';
 import { IntegrationDashboard } from './dashboard';
 import { usePersistedWizardState } from './hooks';
+import { getIntegrationRoute, getSetupStep, isIntegrationActive, PartnerOnboardingGuideState } from './utils/integrationStatus';
 
-const STEP_ICONS = [Building, Building2, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
+const STEP_ICONS = [Building2, Palette, FileStack, Plug, GitMerge, TestTube2, Rocket];
 
 interface StepIndicatorProps {
     steps: typeof ONBOARDING_STEPS;
@@ -111,11 +112,27 @@ const PartnerOnboardingWizard: React.FC = () => {
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
+    const { useIntegrations, useIntegration, useUpdateIntegration } = useDeveloperPortal();
+    const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
+    const { data: currentIntegration } = useIntegration(integrationId ?? null);
+    const updateIntegrationMutation = useUpdateIntegration();
+
     const [state, setState, { clear: clearPersistedState }] = usePersistedWizardState<PartnerOnboardingState>({
         key: integrationId ? `integration-${integrationId}` : 'partner-onboarding-new',
         initialState: DEFAULT_ONBOARDING_STATE,
     });
     const [isLoadingIntegration, setIsLoadingIntegration] = useState(!!integrationId);
+
+    // Handle integration switching - navigate to correct state for that integration
+    const handleIntegrationSelect = (id: string | null) => {
+        if (id) {
+            const integration = integrations?.find(i => i.id === id);
+            if (integration) {
+                const route = getIntegrationRoute(integration);
+                history.push(route);
+            }
+        }
+    };
 
     // Load integration data when navigating directly to dashboard via URL
     useEffect(() => {
@@ -167,14 +184,18 @@ const PartnerOnboardingWizard: React.FC = () => {
                     console.warn('Could not load profile:', err);
                 }
 
-                // Set state to show dashboard
+                // Check integration status from server to determine if we should show wizard or dashboard
+                const integrationData = await wallet.invoke.getIntegration(integrationId);
+                const isActive = integrationData?.status === 'active';
+                const guideState = integrationData?.guideState as PartnerOnboardingGuideState | undefined;
+
                 setState(prev => ({
                     ...prev,
-                    project: { id: integrationId, name: `Integration ${integrationId.slice(0, 8)}`, createdAt: new Date().toISOString() },
+                    project: { id: integrationId, name: integrationData?.name || `Integration ${integrationId.slice(0, 8)}`, createdAt: new Date().toISOString() },
                     templates,
                     branding,
-                    isLive: true,
-                    currentStep: ONBOARDING_STEPS.length - 1,
+                    isLive: isActive,
+                    currentStep: isActive ? ONBOARDING_STEPS.length - 1 : (guideState?.setupStep ?? 0),
                 }));
             } catch (err) {
                 console.error('Failed to load integration:', err);
@@ -195,11 +216,31 @@ const PartnerOnboardingWizard: React.FC = () => {
     }, [state.currentStep]);
 
     const nextStep = useCallback(() => {
-        setState(prev => ({
-            ...prev,
-            currentStep: Math.min(prev.currentStep + 1, ONBOARDING_STEPS.length - 1),
-        }));
-    }, []);
+        setState(prev => {
+            const newStep = Math.min(prev.currentStep + 1, ONBOARDING_STEPS.length - 1);
+
+            // Track setup progress on the server (fire-and-forget with error logging)
+            if (prev.project?.id) {
+                const currentGuideState = currentIntegration?.guideState as PartnerOnboardingGuideState | undefined;
+                updateIntegrationMutation.mutate(
+                    {
+                        id: prev.project.id,
+                        updates: {
+                            guideState: { ...currentGuideState, setupStep: newStep },
+                        },
+                    },
+                    {
+                        onError: (error) => {
+                            console.error('Failed to save setup progress:', error);
+                            // Don't block navigation - local state is still updated
+                        },
+                    }
+                );
+            }
+
+            return { ...prev, currentStep: newStep };
+        });
+    }, [currentIntegration?.guideState, updateIntegrationMutation]);
 
     const prevStep = useCallback(() => {
         setState(prev => ({
@@ -207,11 +248,6 @@ const PartnerOnboardingWizard: React.FC = () => {
             currentStep: Math.max(prev.currentStep - 1, 0),
         }));
     }, []);
-
-    const handleOrganizationComplete = useCallback((organization: OrganizationProfile) => {
-        setState(prev => ({ ...prev, organization }));
-        nextStep();
-    }, [nextStep]);
 
     const handleProjectComplete = useCallback((project: PartnerProject) => {
         setState(prev => ({ ...prev, project }));
@@ -243,9 +279,28 @@ const PartnerOnboardingWizard: React.FC = () => {
         nextStep();
     }, [nextStep]);
 
-    const handleGoLive = useCallback(() => {
-        setState(prev => ({ ...prev, isLive: true }));
-    }, []);
+    const handleGoLive = useCallback(async () => {
+        if (!state.project?.id) return;
+
+        try {
+            const currentGuideState = currentIntegration?.guideState as PartnerOnboardingGuideState | undefined;
+            await updateIntegrationMutation.mutateAsync({
+                id: state.project.id,
+                updates: {
+                    status: 'active',
+                    guideState: { ...currentGuideState, completedAt: new Date().toISOString() },
+                },
+            });
+
+            setState(prev => ({ ...prev, isLive: true }));
+
+            // Redirect to the integration dashboard
+            history.push(`/app-store/developer/integrations/${state.project.id}`);
+        } catch (error) {
+            console.error('Failed to activate integration:', error);
+            presentToast('Failed to go live. Please try again.', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        }
+    }, [state.project?.id, history, currentIntegration?.guideState, updateIntegrationMutation, presentToast]);
 
     const handleBackToWizard = useCallback(() => {
         setState(prev => ({ ...prev, isLive: false }));
@@ -255,14 +310,6 @@ const PartnerOnboardingWizard: React.FC = () => {
         switch (state.currentStep) {
             case 0:
                 return (
-                    <OrganizationSetupStep
-                        organization={state.organization}
-                        onComplete={handleOrganizationComplete}
-                    />
-                );
-
-            case 1:
-                return (
                     <ProjectSetupStep
                         project={state.project}
                         onComplete={handleProjectComplete}
@@ -270,7 +317,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 2:
+            case 1:
                 return (
                     <BrandingStep
                         branding={state.branding}
@@ -279,7 +326,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 3:
+            case 2:
                 return (
                     <TemplateBuilderStep
                         templates={state.templates}
@@ -290,7 +337,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 4:
+            case 3:
                 return (
                     <IntegrationMethodStep
                         selectedMethod={state.integrationMethod}
@@ -299,7 +346,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 5:
+            case 4:
                 return (
                     <DataMappingStep
                         integrationMethod={state.integrationMethod!}
@@ -311,19 +358,20 @@ const PartnerOnboardingWizard: React.FC = () => {
                     />
                 );
 
-            case 6:
+            case 5:
                 return (
                     <SandboxTestStep
                         project={state.project!}
                         branding={state.branding!}
                         templates={state.templates}
+                        integrationMethod={state.integrationMethod!}
                         dataMapping={state.dataMapping!}
                         onComplete={handleTestComplete}
                         onBack={prevStep}
                     />
                 );
 
-            case 7:
+            case 6:
                 return (
                     <ProductionStep
                         project={state.project!}
@@ -340,30 +388,33 @@ const PartnerOnboardingWizard: React.FC = () => {
 
     const currentStepInfo = ONBOARDING_STEPS[state.currentStep];
 
+    const headerContent = (
+        <div className="flex items-center gap-3">
+            <button
+                onClick={() => {
+                    const guidesPath = integrationId 
+                        ? `/app-store/developer/integrations/${integrationId}/guides`
+                        : '/app-store/developer/guides';
+                    history.push(guidesPath);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">All Guides</span>
+            </button>
+            
+            <HeaderIntegrationSelector
+                integrations={integrations || []}
+                selectedId={integrationId || null}
+                onSelect={handleIntegrationSelect}
+                isLoading={isLoadingIntegrations}
+            />
+        </div>
+    );
+
     return (
         <IonPage>
-            <IonHeader className="ion-no-border">
-                <IonToolbar className="!shadow-none border-b border-gray-200">
-                    <div className="flex items-center gap-3 px-4 py-2">
-                        <button
-                            onClick={() => history.push('/app-store/developer/guides')}
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-
-                        <div className="flex items-center gap-3">
-                            <img
-                                src="https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb"
-                                alt="LearnCard"
-                                className="w-8 h-8 rounded-lg"
-                            />
-
-                            <span className="text-lg font-semibold text-gray-700">Partner Onboarding</span>
-                        </div>
-                    </div>
-                </IonToolbar>
-            </IonHeader>
+            <AppStoreHeader title="Course Catalog Setup" rightContent={headerContent} />
 
             <IonContent>
                 {isLoadingIntegration ? (

@@ -25,10 +25,12 @@ import {
     FileSpreadsheet,
     Check,
     ArrowDown,
+    Pencil,
 } from 'lucide-react';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useFilestack } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
+import { ImageIcon } from 'lucide-react';
 
 import { CredentialTemplate, BrandingConfig, TemplateBoostMeta, PartnerProject } from '../types';
 import { 
@@ -51,17 +53,82 @@ const DEFAULT_FIELDS = [
     { id: 'issue_date', name: 'Issue Date', type: 'date' as const, required: true, variableName: 'issue_date' },
 ];
 
-// Credential field options for mapping CSV columns (catalog-level = baked into boost)
+// Comprehensive OBv3 field options for mapping CSV columns
+// Based on Open Badges v3 JSON-LD context: https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json
 const CATALOG_FIELD_OPTIONS = [
-    { id: 'skip', label: '— Skip this column —', description: 'Do not include in credential' },
-    { id: 'achievement_name', label: 'Achievement Name', description: 'Name of the credential (e.g., course name)', required: true },
-    { id: 'achievement_description', label: 'Achievement Description', description: 'Description of the achievement' },
-    { id: 'credits', label: 'Credits/Hours', description: 'Number of credits or hours earned' },
-    { id: 'instructor', label: 'Instructor Name', description: 'Name of the instructor' },
-    { id: 'department', label: 'Department', description: 'Academic department or category' },
-    { id: 'course_id', label: 'Course ID', description: 'Unique identifier for the course' },
-    { id: 'custom', label: 'Custom Field', description: 'Include as a custom field' },
+    // Skip option
+    { id: 'skip', label: '— Skip this column —', description: 'Do not include in credential', group: 'skip' },
+
+    // Credential-level fields
+    { id: 'credential.name', label: 'Credential Name', description: 'Display name of the credential', group: 'credential', required: true },
+    { id: 'credential.description', label: 'Credential Description', description: 'Description of the credential', group: 'credential' },
+    { id: 'credential.image', label: 'Credential Image', description: 'URL to credential image', group: 'credential' },
+    { id: 'credential.inLanguage', label: 'Language', description: 'Language of the credential (e.g., en, es)', group: 'credential' },
+
+    // Achievement fields
+    { id: 'achievement.name', label: 'Name', description: 'Name of the achievement', group: 'achievement', required: true },
+    { id: 'achievement.description', label: 'Description', description: 'Description of the achievement', group: 'achievement' },
+    { id: 'achievement.image', label: 'Image', description: 'URL to achievement badge image', group: 'achievement' },
+    { id: 'achievement.achievementType', label: 'Type', description: 'Type: Course, Badge, Certificate, etc.', group: 'achievement' },
+    { id: 'achievement.id', label: 'ID/URL', description: 'Unique identifier/URL for the achievement', group: 'achievement' },
+    { id: 'achievement.humanCode', label: 'Human Code', description: 'Human-readable code (e.g., CS101)', group: 'achievement' },
+    { id: 'achievement.fieldOfStudy', label: 'Field of Study', description: 'Field of study or discipline', group: 'achievement' },
+    { id: 'achievement.specialization', label: 'Specialization', description: 'Area of specialization', group: 'achievement' },
+    { id: 'achievement.creditsAvailable', label: 'Credits Available', description: 'Number of credits available', group: 'achievement' },
+    { id: 'achievement.tag', label: 'Tags/Keywords', description: 'Keywords or tags for the achievement', group: 'achievement' },
+    { id: 'achievement.version', label: 'Version', description: 'Version of the achievement', group: 'achievement' },
+    { id: 'achievement.inLanguage', label: 'Language', description: 'Language of the achievement', group: 'achievement' },
+    { id: 'achievement.criteria.narrative', label: 'Criteria (Narrative)', description: 'Criteria for earning this achievement', group: 'achievement' },
+
+    // Achievement Subject fields (recipient-related but can be static)
+    { id: 'subject.creditsEarned', label: 'Credits Earned', description: 'Number of credits earned by recipient', group: 'subject' },
+    { id: 'subject.activityStartDate', label: 'Activity Start Date', description: 'When the activity started', group: 'subject' },
+    { id: 'subject.activityEndDate', label: 'Activity End Date', description: 'When the activity ended', group: 'subject' },
+    { id: 'subject.licenseNumber', label: 'License Number', description: 'License or certificate number', group: 'subject' },
+    { id: 'subject.role', label: 'Role', description: 'Role of the recipient in the activity', group: 'subject' },
+    { id: 'subject.term', label: 'Term', description: 'Academic term (e.g., Fall 2024)', group: 'subject' },
+
+    // Alignment fields (for mapping to frameworks/standards)
+    { id: 'alignment.targetName', label: 'Name', description: 'Name of aligned competency/standard', group: 'alignment' },
+    { id: 'alignment.targetUrl', label: 'URL', description: 'URL to the aligned standard', group: 'alignment' },
+    { id: 'alignment.targetDescription', label: 'Description', description: 'Description of the alignment', group: 'alignment' },
+    { id: 'alignment.targetFramework', label: 'Framework', description: 'Name of the framework (e.g., CASE)', group: 'alignment' },
+    { id: 'alignment.targetCode', label: 'Code', description: 'Code within the framework', group: 'alignment' },
+    { id: 'alignment.targetType', label: 'Type', description: 'Type of alignment target', group: 'alignment' },
+
+    // Evidence fields
+    { id: 'evidence.name', label: 'Name', description: 'Name/title of evidence', group: 'evidence' },
+    { id: 'evidence.description', label: 'Description', description: 'Description of the evidence', group: 'evidence' },
+    { id: 'evidence.narrative', label: 'Narrative', description: 'Narrative about the evidence', group: 'evidence' },
+    { id: 'evidence.genre', label: 'Genre', description: 'Type/genre of evidence', group: 'evidence' },
+    { id: 'evidence.audience', label: 'Audience', description: 'Intended audience', group: 'evidence' },
+
+    // Result fields (for scores, grades, etc.)
+    { id: 'result.value', label: 'Value', description: 'Score, grade, or result value', group: 'result' },
+    { id: 'result.status', label: 'Status', description: 'Result status (Completed, Passed, Failed)', group: 'result' },
+    { id: 'result.achievedLevel', label: 'Achieved Level', description: 'Level achieved (URL to rubric level)', group: 'result' },
+
+    // Related achievement
+    { id: 'related.id', label: 'Related: ID/URL', description: 'URL of a related achievement', group: 'related' },
+    { id: 'related.version', label: 'Related: Version', description: 'Version of the related achievement', group: 'related' },
+    { id: 'related.inLanguage', label: 'Related: Language', description: 'Language of the related achievement', group: 'related' },
+
+    // Custom extension
+    { id: 'custom', label: 'Custom Field', description: 'Include as a custom extension field', group: 'custom' },
 ];
+
+// Group labels for the dropdown
+const FIELD_GROUPS: Record<string, string> = {
+    skip: '',
+    credential: 'Credential',
+    achievement: 'Achievement',
+    subject: 'Recipient/Subject',
+    alignment: 'Alignment (Standards)',
+    evidence: 'Evidence',
+    result: 'Result',
+    related: 'Related Achievement',
+    custom: 'Extensions',
+};
 
 // Issuance-level fields (dynamic at credential issue time, not from CSV)
 const ISSUANCE_FIELDS = [
@@ -78,39 +145,75 @@ const suggestCatalogFieldMapping = (columnName: string): string => {
     const lower = columnName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
     // Course name / title → Achievement Name
-    if (lower.includes('coursename') || lower.includes('title') || (lower.includes('name') && !lower.includes('student') && !lower.includes('instructor'))) {
-        return 'achievement_name';
+    if (lower.includes('coursename') || lower.includes('title') || (lower.includes('name') && !lower.includes('student') && !lower.includes('instructor') && !lower.includes('framework'))) {
+        return 'achievement.name';
     }
 
     // Description
-    if (lower.includes('description') || lower.includes('desc') || lower.includes('summary')) {
-        return 'achievement_description';
+    if (lower.includes('description') || lower.includes('desc') || lower.includes('summary') || lower.includes('overview')) {
+        return 'achievement.description';
     }
 
-    // Credits/Hours
-    if (lower.includes('credit') || lower.includes('hour') || lower.includes('ceu') || lower.includes('pdu')) {
-        return 'credits';
+    // Achievement type
+    if (lower.includes('type') && (lower.includes('achievement') || lower.includes('credential') || lower.includes('badge'))) {
+        return 'achievement.achievementType';
     }
 
-    // Instructor
-    if (lower.includes('instructor') || lower.includes('teacher') || lower.includes('facilitator') || lower.includes('professor')) {
-        return 'instructor';
+    // Criteria
+    if (lower.includes('criteria') || lower.includes('requirement') || lower.includes('objective') || lower.includes('learning outcome')) {
+        return 'achievement.criteria.narrative';
     }
 
-    // Department
-    if (lower.includes('department') || lower.includes('dept') || lower.includes('subject') || lower.includes('category')) {
-        return 'department';
+    // Image/Badge
+    if (lower.includes('image') || lower.includes('badge') || lower.includes('icon') || lower.includes('logo')) {
+        return 'achievement.image';
     }
 
-    // Course ID
-    if (lower.includes('courseid') || lower.includes('id') || lower.includes('code') || lower.includes('number')) {
-        return 'course_id';
+    // Alignment fields
+    if (lower.includes('standard') || lower.includes('competency') || lower.includes('skill') && !lower.includes('name')) {
+        return 'alignment.targetName';
+    }
+
+    if (lower.includes('framework') && lower.includes('name')) {
+        return 'alignment.targetFramework';
+    }
+
+    if (lower.includes('framework') && (lower.includes('url') || lower.includes('link'))) {
+        return 'alignment.targetUrl';
+    }
+
+    if (lower.includes('frameworkcode') || (lower.includes('code') && lower.includes('standard'))) {
+        return 'alignment.targetCode';
+    }
+
+    // Evidence
+    if (lower.includes('evidence') && lower.includes('name')) {
+        return 'evidence.name';
+    }
+
+    if (lower.includes('evidence') && lower.includes('desc')) {
+        return 'evidence.description';
+    }
+
+    // Result/Score
+    if (lower.includes('score') || lower.includes('grade') || lower.includes('result') || lower.includes('mark')) {
+        return 'result.value';
+    }
+
+    if (lower.includes('pass') || lower.includes('fail') || lower.includes('status')) {
+        return 'result.status';
+    }
+
+    // Course ID → Achievement ID
+    if (lower.includes('courseid') || lower.includes('badgeid') || lower.includes('credentialid')) {
+        return 'achievement.id';
     }
 
     // Skip fields that are clearly issuance-level or not useful
     if (lower.includes('student') || lower.includes('email') || lower.includes('enrolled') || 
         lower.includes('capacity') || lower.includes('room') || lower.includes('schedule') ||
-        lower.includes('seat') || lower.includes('available') || lower.includes('prerequisite')) {
+        lower.includes('seat') || lower.includes('available') || lower.includes('prerequisite') ||
+        lower.includes('instructor') || lower.includes('teacher') || lower.includes('professor')) {
         return 'skip';
     }
 
@@ -219,6 +322,7 @@ interface TemplateEditorProps {
     onDelete: () => void;
     isExpanded: boolean;
     onToggle: () => void;
+    onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
 }
 
 const TemplateEditor: React.FC<TemplateEditorProps> = ({
@@ -228,6 +332,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     onDelete,
     isExpanded,
     onToggle,
+    onTestIssue,
 }) => {
     // Initialize OBv3 template from legacy or existing
     const [obv3Template, setObv3Template] = useState<OBv3CredentialTemplate>(() => {
@@ -299,6 +404,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
                         onChange={handleTemplateChange}
                         issuerName={branding?.displayName}
                         issuerImage={branding?.image}
+                        onTestIssue={onTestIssue}
                     />
                 </div>
             )}
@@ -324,6 +430,13 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
 
+    // Child template editing modal state
+    const [editingChild, setEditingChild] = useState<{
+        masterId: string;
+        childId: string;
+        template: OBv3CredentialTemplate;
+    } | null>(null);
+
     // CSV Catalog Import state
     const [showImportModal, setShowImportModal] = useState(false);
     const [csvColumns, setCsvColumns] = useState<string[]>([]);
@@ -332,7 +445,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
     const [issuanceFieldsIncluded, setIssuanceFieldsIncluded] = useState<Record<string, boolean>>({});
     const [templateNamePattern, setTemplateNamePattern] = useState('{{course_name}} Completion');
+    const [defaultImage, setDefaultImage] = useState<string>('');
     const csvInputRef = useRef<HTMLInputElement>(null);
+
+    // Filestack for default image upload
+    const { handleFileSelect: handleImageSelect, isLoading: isUploadingImage } = useFilestack({
+        onUpload: (url: string) => setDefaultImage(url),
+        fileType: 'image/*',
+    });
 
     const integrationId = project?.id;
 
@@ -351,37 +471,53 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 query: { meta: { integrationId } },
             });
 
-            // First pass: convert all boosts to templates
-            const allTemplates: ExtendedTemplate[] = (result?.records || []).map((boost: Record<string, unknown>) => {
-                const meta = boost.meta as TemplateBoostMeta | undefined;
-                const templateConfig = meta?.templateConfig;
-                const credential = boost.credential as Record<string, unknown> | undefined;
+            console.log('result', result);
+            // First pass: fetch full boost data to get credentials
+            const allTemplates: ExtendedTemplate[] = [];
 
-                // Try to parse existing credential as OBv3 template
-                let obv3Template: OBv3CredentialTemplate | undefined;
+            for (const boostRecord of (result?.records || [])) {
+                const boostUri = (boostRecord as Record<string, unknown>).uri as string;
 
-                if (credential) {
-                    try {
-                        obv3Template = jsonToTemplate(credential);
-                    } catch (e) {
-                        console.warn('Failed to parse credential as OBv3:', e);
+                try {
+                    // Fetch full boost to get credential
+                    const fullBoost = await wallet.invoke.getBoost(boostUri);
+                    console.log('full boost', fullBoost);
+                    const meta = fullBoost.meta as TemplateBoostMeta | undefined;
+                    const templateConfig = meta?.templateConfig;
+                    // The credential is in the 'boost' property
+                    const credential = fullBoost.boost as Record<string, unknown> | undefined;
+
+                    // Try to parse existing credential as OBv3 template
+                    let obv3Template: OBv3CredentialTemplate | undefined;
+
+                    if (credential) {
+                        try {
+                            obv3Template = jsonToTemplate(credential);
+                        } catch (e) {
+                            console.warn('Failed to parse credential as OBv3:', e);
+                        }
                     }
-                }
 
-                return {
-                    id: boost.uri as string,
-                    boostUri: boost.uri as string,
-                    name: (boost.name as string) || 'Untitled Template',
-                    description: (boost.description as string) || '',
-                    achievementType: templateConfig?.achievementType || 'Course Completion',
-                    fields: templateConfig?.fields || [],
-                    imageUrl: boost.image as string | undefined,
-                    isNew: false,
-                    isDirty: false,
-                    obv3Template,
-                    isMasterTemplate: meta?.isMasterTemplate,
-                };
-            });
+                    // Get name/description from credential
+                    const credentialName = credential?.name as string | undefined;
+                    const credentialDesc = credential?.description as string | undefined;
+
+                    allTemplates.push({
+                        id: boostUri,
+                        boostUri,
+                        name: fullBoost.name || credentialName || 'Untitled Template',
+                        description: credentialDesc || '',
+                        achievementType: templateConfig?.achievementType || 'Course Completion',
+                        fields: templateConfig?.fields || [],
+                        isNew: false,
+                        isDirty: false,
+                        obv3Template,
+                        isMasterTemplate: meta?.isMasterTemplate,
+                    });
+                } catch (e) {
+                    console.warn('Failed to fetch boost:', boostUri, e);
+                }
+            }
 
             // Second pass: for master templates, fetch their children and collect child URIs
             const fetchedTemplates: ExtendedTemplate[] = [];
@@ -391,40 +527,55 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             for (const template of allTemplates) {
                 if (template.isMasterTemplate && template.boostUri) {
                     try {
-                        // Fetch child boosts for this master
+                        // Fetch child boost URIs for this master
                         const childrenResult = await wallet.invoke.getBoostChildren(template.boostUri, { limit: 100 });
-                        const children: ExtendedTemplate[] = (childrenResult?.records || []).map((child: Record<string, unknown>) => {
-                            const childMeta = child.meta as TemplateBoostMeta | undefined;
-                            const childConfig = childMeta?.templateConfig;
-                            const childCredential = child.credential as Record<string, unknown> | undefined;
-                            const childUri = child.uri as string;
+                        const childRecords = childrenResult?.records || [];
 
-                            // Track this URI as a child so we exclude it from top-level
+                        // Fetch full boost data for each child to get the credential
+                        const children: ExtendedTemplate[] = [];
+
+                        for (const childRecord of childRecords) {
+                            const childUri = (childRecord as Record<string, unknown>).uri as string;
                             childUris.add(childUri);
 
-                            let childObv3Template: OBv3CredentialTemplate | undefined;
+                            try {
+                                // Fetch full boost to get credential
+                                const fullChild = await wallet.invoke.getBoost(childUri);
+                                const childMeta = fullChild.meta as TemplateBoostMeta | undefined;
+                                const childConfig = childMeta?.templateConfig;
+                                // The credential is in the 'boost' property
+                                const childCredential = fullChild.boost as Record<string, unknown> | undefined;
 
-                            if (childCredential) {
-                                try {
-                                    childObv3Template = jsonToTemplate(childCredential);
-                                } catch (e) {
-                                    console.warn('Failed to parse child credential as OBv3:', e);
+                                let childObv3Template: OBv3CredentialTemplate | undefined;
+
+                                if (childCredential) {
+                                    try {
+                                        childObv3Template = jsonToTemplate(childCredential);
+                                    } catch (e) {
+                                        console.warn('Failed to parse child credential as OBv3:', e);
+                                    }
                                 }
-                            }
 
-                            return {
-                                id: childUri,
-                                boostUri: childUri,
-                                name: (child.name as string) || 'Untitled',
-                                description: (child.description as string) || '',
-                                achievementType: childConfig?.achievementType || 'Course Completion',
-                                fields: childConfig?.fields || [],
-                                isNew: false,
-                                isDirty: false,
-                                obv3Template: childObv3Template,
-                                parentTemplateId: template.id,
-                            };
-                        });
+                                // Get name/description from credential
+                                const credentialName = childCredential?.name as string | undefined;
+                                const credentialDesc = childCredential?.description as string | undefined;
+
+                                children.push({
+                                    id: childUri,
+                                    boostUri: childUri,
+                                    name: fullChild.name || credentialName || 'Untitled',
+                                    description: credentialDesc || '',
+                                    achievementType: childConfig?.achievementType || 'Course Completion',
+                                    fields: childConfig?.fields || [],
+                                    isNew: false,
+                                    isDirty: false,
+                                    obv3Template: childObv3Template,
+                                    parentTemplateId: template.id,
+                                });
+                            } catch (e) {
+                                console.warn('Failed to fetch child boost:', childUri, e);
+                            }
+                        }
 
                         fetchedTemplates.push({
                             ...template,
@@ -489,26 +640,27 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 isMasterTemplate: template.isMasterTemplate,
             };
 
-            // If updating existing boost, delete and recreate (updateBoost doesn't support credential updates)
-            if (template.boostUri) {
-                try {
-                    await wallet.invoke.deleteBoost(template.boostUri);
-                } catch (e) {
-                    console.warn('Failed to delete old boost, creating new:', e);
-                }
-            }
-
-            // Otherwise create a new boost
             const boostMetadata = {
                 name: template.name,
+                description: template.description,
                 type: template.achievementType,
                 category: 'achievement',
                 meta: boostMeta,
-                defaultPermissions: {
-                    canIssue: true,
-                },
+                status: 'DRAFT'
             };
 
+            // If updating existing boost, use updateBoost to preserve children
+            if (template.boostUri) {
+                await wallet.invoke.updateBoost(
+                    template.boostUri,
+                    boostMetadata as unknown as Parameters<typeof wallet.invoke.updateBoost>[1],
+                    credential as Parameters<typeof wallet.invoke.updateBoost>[2]
+                );
+
+                return template.boostUri;
+            }
+
+            // Otherwise create a new boost
             const boostUri = await wallet.invoke.createBoost(
                 credential as Parameters<typeof wallet.invoke.createBoost>[0],
                 boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
@@ -560,15 +712,25 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             const boostMetadata = {
                 name: template.name,
+                description: template.description,
                 type: template.achievementType,
                 category: 'achievement',
                 meta: boostMeta,
-                defaultPermissions: {
-                    canIssue: true,
-                },
+                status: 'DRAFT',
             };
 
-            // Create as child boost linked to parent
+            // If updating existing child boost, use updateBoost
+            if (template.boostUri) {
+                await wallet.invoke.updateBoost(
+                    template.boostUri,
+                    boostMetadata as unknown as Parameters<typeof wallet.invoke.updateBoost>[1],
+                    credential as Parameters<typeof wallet.invoke.updateBoost>[2]
+                );
+
+                return template.boostUri;
+            }
+
+            // Otherwise create as new child boost linked to parent
             const boostUri = await wallet.invoke.createChildBoost(
                 parentBoostUri,
                 credential as Parameters<typeof wallet.invoke.createChildBoost>[1],
@@ -603,30 +765,41 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             const savedTemplates: CredentialTemplate[] = [];
 
             for (const template of localTemplates) {
-                if (template.isNew || template.isDirty || !template.boostUri) {
+                // Check if any children need saving (for master templates)
+                const hasChildUpdates = template.isMasterTemplate && 
+                    template.childTemplates?.some(c => c.isNew || c.isDirty || !c.boostUri);
+
+                if (template.isNew || template.isDirty || !template.boostUri || hasChildUpdates) {
                     // Handle master templates with children
                     if (template.isMasterTemplate && template.childTemplates?.length) {
                         // First, save the master template
                         const parentBoostUri = await saveTemplateAsBoost(template);
 
                         if (parentBoostUri) {
-                            // Then save each child as a child boost
+                            // Save each child that needs saving
                             const savedChildren: ExtendedTemplate[] = [];
 
                             for (const child of template.childTemplates) {
-                                try {
-                                    const childBoostUri = await saveChildTemplateAsBoost(child, parentBoostUri);
+                                // Only save children that are new, dirty, or don't have a boostUri
+                                if (child.isNew || child.isDirty || !child.boostUri) {
+                                    try {
+                                        const childBoostUri = await saveChildTemplateAsBoost(child, parentBoostUri);
 
-                                    savedChildren.push({
-                                        ...child,
-                                        id: childBoostUri || child.id,
-                                        boostUri: childBoostUri || undefined,
-                                        isNew: false,
-                                        isDirty: false,
-                                    });
-                                } catch (e) {
-                                    console.error('Failed to save child boost:', e);
-                                    // Continue with other children
+                                        savedChildren.push({
+                                            ...child,
+                                            id: childBoostUri || child.id,
+                                            boostUri: childBoostUri || undefined,
+                                            isNew: false,
+                                            isDirty: false,
+                                        });
+                                    } catch (e) {
+                                        console.error('Failed to save child boost:', e);
+                                        // Keep the original child on error
+                                        savedChildren.push(child);
+                                    }
+                                } else {
+                                    // Child doesn't need saving, keep as-is
+                                    savedChildren.push(child);
                                 }
                             }
 
@@ -854,6 +1027,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
         let boostName = 'Course Completion';
         let boostDescription = '';
+        let achievementTypeSet = false;
+
+        // Track aggregate fields (alignment, evidence, result, related, subject)
+        const alignmentData: Record<string, string> = {};
+        const evidenceData: Record<string, string> = {};
+        const resultData: Record<string, string> = {};
+        const relatedData: Record<string, string> = {};
+        const subjectData: Record<string, string> = {};
 
         // Process catalog-level mappings - BAKE IN the actual values from CSV
         Object.entries(columnMappings).forEach(([columnName, fieldType]) => {
@@ -862,23 +1043,116 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             const value = courseRow[columnName] || '';
             if (!value.trim()) return;
 
+            // Handle OBv3 field mappings based on the dot-notation field IDs
+            // Using startsWith for grouped fields, exact match for others
+            if (fieldType.startsWith('alignment.')) {
+                alignmentData[fieldType.replace('alignment.', '')] = value;
+                return;
+            }
+
+            if (fieldType.startsWith('evidence.')) {
+                evidenceData[fieldType.replace('evidence.', '')] = value;
+                return;
+            }
+
+            if (fieldType.startsWith('result.')) {
+                resultData[fieldType.replace('result.', '')] = value;
+                return;
+            }
+
+            if (fieldType.startsWith('related.')) {
+                relatedData[fieldType.replace('related.', '')] = value;
+                return;
+            }
+
+            if (fieldType.startsWith('subject.')) {
+                subjectData[fieldType.replace('subject.', '')] = value;
+                return;
+            }
+
             switch (fieldType) {
-                case 'achievement_name':
-                    template.credentialSubject.achievement.name = staticField(value);
+                // Credential-level fields
+                case 'credential.name':
+                    template.name = staticField(value);
                     boostName = value;
                     break;
 
-                case 'achievement_description':
-                    template.credentialSubject.achievement.description = staticField(value);
+                case 'credential.description':
+                    template.description = staticField(value);
                     boostDescription = value;
                     break;
 
-                case 'course_id':
-                case 'credits':
-                case 'instructor':
-                case 'department':
+                case 'credential.image':
+                    template.image = staticField(value);
+                    break;
+
+                case 'credential.inLanguage':
+                    // Add as custom field since template doesn't have inLanguage
+                    template.customFields.push({
+                        id: 'credential_language',
+                        key: staticField('Language'),
+                        value: staticField(value),
+                    });
+                    break;
+
+                // Achievement fields
+                case 'achievement.name':
+                    template.credentialSubject.achievement.name = staticField(value);
+                    if (!boostName || boostName === 'Course Completion') {
+                        boostName = value;
+                    }
+                    break;
+
+                case 'achievement.description':
+                    template.credentialSubject.achievement.description = staticField(value);
+                    if (!boostDescription) {
+                        boostDescription = value;
+                    }
+                    break;
+
+                case 'achievement.image':
+                    template.credentialSubject.achievement.image = staticField(value);
+                    break;
+
+                case 'achievement.achievementType':
+                    template.credentialSubject.achievement.achievementType = staticField(value);
+                    achievementTypeSet = true;
+                    break;
+
+                case 'achievement.criteria.narrative':
+                    if (!template.credentialSubject.achievement.criteria) {
+                        template.credentialSubject.achievement.criteria = {};
+                    }
+                    template.credentialSubject.achievement.criteria.narrative = staticField(value);
+                    break;
+
+                case 'achievement.id':
+                    template.credentialSubject.achievement.id = staticField(value);
+                    break;
+
+                // Additional achievement fields stored as custom until types support them
+                case 'achievement.humanCode':
+                case 'achievement.fieldOfStudy':
+                case 'achievement.specialization':
+                case 'achievement.creditsAvailable':
+                case 'achievement.tag':
+                case 'achievement.version':
+                case 'achievement.inLanguage': {
+                    const fieldName = fieldType.replace('achievement.', '');
+                    const displayName = fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+
+                    template.customFields.push({
+                        id: `achievement_${fieldName.toLowerCase()}`,
+                        key: staticField(displayName),
+                        value: staticField(value),
+                    });
+                    break;
+                }
+
+                // Custom extension field
                 case 'custom': {
                     const displayName = columnName.replace(/[^a-zA-Z0-9]+/g, ' ').trim();
+
                     template.customFields.push({
                         id: `custom_${columnName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
                         key: staticField(displayName),
@@ -888,6 +1162,87 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 }
             }
         });
+
+        // Create alignment entry if any alignment fields were mapped
+        if (Object.keys(alignmentData).length > 0 && (alignmentData.targetName || alignmentData.targetUrl)) {
+            if (!template.credentialSubject.achievement.alignment) {
+                template.credentialSubject.achievement.alignment = [];
+            }
+
+            template.credentialSubject.achievement.alignment.push({
+                id: `alignment_${Date.now()}`,
+                targetName: staticField(alignmentData.targetName || ''),
+                targetUrl: staticField(alignmentData.targetUrl || ''),
+                ...(alignmentData.targetDescription && { targetDescription: staticField(alignmentData.targetDescription) }),
+                ...(alignmentData.targetFramework && { targetFramework: staticField(alignmentData.targetFramework) }),
+                ...(alignmentData.targetCode && { targetCode: staticField(alignmentData.targetCode) }),
+            });
+        }
+
+        // Create evidence entry if any evidence fields were mapped
+        if (Object.keys(evidenceData).length > 0) {
+            if (!template.credentialSubject.evidence) {
+                template.credentialSubject.evidence = [];
+            }
+
+            template.credentialSubject.evidence.push({
+                id: `evidence_${Date.now()}`,
+                ...(evidenceData.name && { name: staticField(evidenceData.name) }),
+                ...(evidenceData.description && { description: staticField(evidenceData.description) }),
+                ...(evidenceData.narrative && { narrative: staticField(evidenceData.narrative) }),
+                ...(evidenceData.genre && { genre: staticField(evidenceData.genre) }),
+                ...(evidenceData.audience && { audience: staticField(evidenceData.audience) }),
+            });
+        }
+
+        // Add result data as custom fields (OBv3 results are more complex, so we use custom for now)
+        Object.entries(resultData).forEach(([key, value]) => {
+            const displayName = key === 'value' ? 'Result' : key === 'status' ? 'Status' : key === 'achievedLevel' ? 'Achieved Level' : key;
+
+            template.customFields.push({
+                id: `result_${key}`,
+                key: staticField(displayName),
+                value: staticField(value),
+            });
+        });
+
+        // Add subject data as custom fields (creditsEarned, activityStartDate, etc.)
+        Object.entries(subjectData).forEach(([key, value]) => {
+            const displayName = key
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, s => s.toUpperCase())
+                .trim();
+
+            template.customFields.push({
+                id: `subject_${key.toLowerCase()}`,
+                key: staticField(displayName),
+                value: staticField(value),
+            });
+        });
+
+        // Add related achievement data as custom fields
+        Object.entries(relatedData).forEach(([key, value]) => {
+            const displayName = key === 'id' ? 'Related Achievement' : `Related ${key.replace(/([A-Z])/g, ' $1').trim()}`;
+
+            template.customFields.push({
+                id: `related_${key.toLowerCase()}`,
+                key: staticField(displayName),
+                value: staticField(value),
+            });
+        });
+
+        // Apply default image if no image was mapped from CSV
+        if (defaultImage) {
+            // Only set if not already set by CSV mapping
+            if (!template.image?.value && !template.credentialSubject.achievement.image?.value) {
+                template.credentialSubject.achievement.image = staticField(defaultImage);
+            }
+        }
+
+        // Default achievement type to "Course" for course catalog imports (OBv3 spec)
+        if (!achievementTypeSet) {
+            template.credentialSubject.achievement.achievementType = staticField('Course');
+        }
 
         // Add issuance-level fields as DYNAMIC (Mustache variables)
         Object.entries(issuanceFieldsIncluded).forEach(([fieldId, included]) => {
@@ -977,6 +1332,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         setCsvSampleRows([]);
         setColumnMappings({});
         setIssuanceFieldsIncluded({});
+        setDefaultImage('');
     };
 
     // Close import modal
@@ -985,6 +1341,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         setCsvColumns([]);
         setCsvSampleRows([]);
         setColumnMappings({});
+        setDefaultImage('');
     };
 
     const handleUpdateTemplate = (id: string, updated: ExtendedTemplate) => {
@@ -996,15 +1353,161 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const handleDeleteTemplate = (id: string) => {
         const template = localTemplates.find(t => t.id === id);
 
-        // If it has a boostUri, queue it for deletion on save
-        if (template?.boostUri) {
-            setPendingDeletes([...pendingDeletes, template.boostUri]);
+        if (template) {
+            const urisToDelete: string[] = [];
+
+            // For master templates, queue children for deletion first
+            if (template.isMasterTemplate && template.childTemplates?.length) {
+                for (const child of template.childTemplates) {
+                    if (child.boostUri) {
+                        urisToDelete.push(child.boostUri);
+                    }
+                }
+            }
+
+            // Then queue the master/parent template itself
+            if (template.boostUri) {
+                urisToDelete.push(template.boostUri);
+            }
+
+            if (urisToDelete.length > 0) {
+                setPendingDeletes([...pendingDeletes, ...urisToDelete]);
+            }
         }
 
         setLocalTemplates(localTemplates.filter(t => t.id !== id));
 
         if (expandedId === id) setExpandedId(null);
     };
+
+    // Open edit modal for a child template
+    const handleEditChild = (masterId: string, child: ExtendedTemplate) => {
+        // Get or create OBv3 template for the child
+        const obv3Template = child.obv3Template || legacyToOBv3(child, branding?.displayName, branding?.image);
+
+        setEditingChild({
+            masterId,
+            childId: child.id,
+            template: JSON.parse(JSON.stringify(obv3Template)), // Deep clone
+        });
+    };
+
+    // Save edited child template
+    const handleSaveChildEdit = () => {
+        if (!editingChild) return;
+
+        setLocalTemplates(prev => prev.map(master => {
+            if (master.id !== editingChild.masterId) return master;
+
+            const updatedChildren = master.childTemplates?.map(child => {
+                if (child.id !== editingChild.childId) return child;
+
+                // Convert OBv3 back to legacy format
+                const updatedChild = obv3ToLegacy(editingChild.template, child) as ExtendedTemplate;
+                updatedChild.obv3Template = editingChild.template;
+                updatedChild.isDirty = true;
+
+                return updatedChild;
+            }) as ExtendedTemplate[] | undefined;
+
+            return {
+                ...master,
+                childTemplates: updatedChildren,
+                isDirty: true,
+            } as ExtendedTemplate;
+        }));
+
+        setEditingChild(null);
+        presentToast('Child template updated', { type: ToastTypeEnum.Success });
+    };
+
+    // Cancel child edit
+    const handleCancelChildEdit = () => {
+        setEditingChild(null);
+    };
+
+    // Update the template being edited in the modal
+    const handleChildTemplateChange = (newTemplate: OBv3CredentialTemplate) => {
+        if (!editingChild) return;
+
+        setEditingChild({
+            ...editingChild,
+            template: newTemplate,
+        });
+    };
+
+    // Test issue handler - tests if a credential can be issued
+    const handleTestIssue = useCallback(async (credential: Record<string, unknown>): Promise<{ success: boolean; error?: string; result?: unknown }> => {
+        try {
+            const wallet = await initWalletRef.current();
+
+            // Replace dynamic variables with sample values
+            const replaceDynamicVariables = (obj: unknown): unknown => {
+                if (typeof obj === 'string') {
+                    // Replace {{variable_name}} with sample values
+                    return obj.replace(/\{\{(\w+)\}\}/g, (_match, varName) => {
+                        // Special handling for date fields - use actual ISO dates
+                        const lowerVar = varName.toLowerCase();
+                        if (lowerVar.includes('date') || lowerVar.includes('time')) {
+                            return new Date().toISOString();
+                        }
+
+                        // Use humanized variable name as sample value for other fields
+                        const humanized = varName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                        return `[Sample ${humanized}]`;
+                    });
+                }
+
+                if (Array.isArray(obj)) {
+                    return obj.map(replaceDynamicVariables);
+                }
+
+                if (obj && typeof obj === 'object') {
+                    const result: Record<string, unknown> = {};
+                    for (const [key, value] of Object.entries(obj)) {
+                        result[key] = replaceDynamicVariables(value);
+                    }
+                    return result;
+                }
+
+                return obj;
+            };
+
+            const renderedCredential = replaceDynamicVariables(credential) as Record<string, unknown>;
+
+            // Ensure required array fields are present and non-empty
+            const contexts = renderedCredential['@context'];
+            const types = renderedCredential['type'];
+
+            const testCredential = {
+                ...renderedCredential,
+                '@context': Array.isArray(contexts) && contexts.length > 0 
+                    ? contexts 
+                    : ['https://www.w3.org/2018/credentials/v1'],
+                type: Array.isArray(types) && types.length > 0 
+                    ? types 
+                    : ['VerifiableCredential'],
+                issuer: wallet.id.did(),
+                issuanceDate: new Date().toISOString(),
+                credentialSubject: {
+                    ...(renderedCredential.credentialSubject as Record<string, unknown> || {}),
+                    id: wallet.id.did(),
+                },
+            };
+
+            console.log('Test issuing credential:', testCredential);
+
+            const result = await wallet.invoke.issueCredential?.(testCredential as Parameters<typeof wallet.invoke.issueCredential>[0]);
+
+            if (result) {
+                return { success: true, result };
+            } else {
+                return { success: false, error: 'issueCredential returned undefined' };
+            }
+        } catch (e) {
+            return { success: false, error: (e as Error).message };
+        }
+    }, []);
 
     const hasUnsavedChanges = localTemplates.some(t => t.isNew || t.isDirty) || pendingDeletes.length > 0;
     const canProceed = localTemplates.length > 0 && localTemplates.every(t => t.name.trim());
@@ -1095,7 +1598,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 {template.childTemplates?.map((child, idx) => (
                                                     <div 
                                                         key={child.id}
-                                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 group"
                                                     >
                                                         <span className="w-6 h-6 bg-gray-200 rounded text-xs flex items-center justify-center text-gray-600 font-medium">
                                                             {idx + 1}
@@ -1111,6 +1614,18 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                         <span className="text-xs text-gray-400">
                                                             {child.fields?.length || 0} fields
                                                         </span>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditChild(template.id, child as ExtendedTemplate);
+                                                            }}
+                                                            className="p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                            title="Customize this boost"
+                                                        >
+                                                            <Pencil className="w-4 h-4" />
+                                                        </button>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1138,6 +1653,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 onDelete={() => handleDeleteTemplate(template.id)}
                                 isExpanded={expandedId === template.id}
                                 onToggle={() => setExpandedId(expandedId === template.id ? null : template.id)}
+                                onTestIssue={handleTestIssue}
                             />
                         )}
                     </div>
@@ -1242,6 +1758,59 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 </p>
                             </div>
 
+                            {/* Default Image Section */}
+                            <div>
+                                <div className="mb-3">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Default Credential Image
+                                    </label>
+                                    <p className="text-xs text-gray-500">
+                                        This image will be used for all credentials unless overridden by a CSV column
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    {defaultImage ? (
+                                        <div className="relative group">
+                                            <img
+                                                src={defaultImage}
+                                                alt="Default credential"
+                                                className="w-20 h-20 rounded-xl object-cover border border-gray-200"
+                                            />
+
+                                            <button
+                                                onClick={() => setDefaultImage('')}
+                                                className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                                            <ImageIcon className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={handleImageSelect}
+                                        disabled={isUploadingImage}
+                                        className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                    >
+                                        {isUploadingImage ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Uploading...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="w-4 h-4" />
+                                                {defaultImage ? 'Change Image' : 'Upload Image'}
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Catalog Fields Section */}
                             <div>
                                 <div className="flex items-center justify-between mb-3">
@@ -1297,11 +1866,25 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                             : 'border-emerald-300 bg-white'
                                                     }`}
                                                 >
-                                                    {CATALOG_FIELD_OPTIONS.map((option: { id: string; label: string }) => (
-                                                        <option key={option.id} value={option.id}>
-                                                            {option.label}
-                                                        </option>
-                                                    ))}
+                                                    {/* Skip option */}
+                                                    <option value="skip">— Skip this column —</option>
+
+                                                    {/* Group options by category */}
+                                                    {Object.entries(FIELD_GROUPS)
+                                                        .filter(([key]) => key !== 'skip')
+                                                        .map(([groupKey, groupLabel]) => {
+                                                            const groupOptions = CATALOG_FIELD_OPTIONS.filter(o => o.group === groupKey);
+
+                                                            if (groupOptions.length === 0) return null;
+
+                                                            return (
+                                                                <optgroup key={groupKey} label={groupLabel}>
+                                                                    {groupOptions.map(option => (
+                                                                        <option key={option.id} value={option.id}>{option.label}</option>
+                                                                    ))}
+                                                                </optgroup>
+                                                            );
+                                                        })}
                                                 </select>
                                             </div>
                                         );
@@ -1413,6 +1996,67 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     Create {csvAllRows.length} Boosts
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Child Template Modal */}
+            {editingChild && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center">
+                                    <Pencil className="w-5 h-5 text-violet-600" />
+                                </div>
+
+                                <div>
+                                    <h3 className="font-semibold text-gray-800">
+                                        Customize Boost
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        {editingChild.template.name?.value || 'Untitled'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleCancelChildEdit}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body - CredentialBuilder */}
+                        <div className="flex-1 min-h-0 overflow-auto" style={{ height: '600px' }}>
+                            <CredentialBuilder
+                                template={editingChild.template}
+                                onChange={handleChildTemplateChange}
+                                issuerName={branding?.displayName}
+                                issuerImage={branding?.image}
+                                onTestIssue={handleTestIssue}
+                            />
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
+                            <button
+                                onClick={handleCancelChildEdit}
+                                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleSaveChildEdit}
+                                className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white rounded-xl font-medium hover:bg-violet-600 transition-colors"
+                            >
+                                <Save className="w-4 h-4" />
+                                Save Changes
+                            </button>
                         </div>
                     </div>
                 </div>

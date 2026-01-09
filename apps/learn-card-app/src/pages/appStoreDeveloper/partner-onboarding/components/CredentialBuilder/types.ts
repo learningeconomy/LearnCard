@@ -2,11 +2,16 @@
  * Types for the interactive OBv3 Credential Builder
  */
 
-// A field that can be static or dynamic (Mustache variable)
+// Field mode: static (user value), dynamic (mustache variable), or system (auto-injected)
+export type FieldMode = 'static' | 'dynamic' | 'system';
+
+// A field that can be static, dynamic (Mustache variable), or system-controlled
 export interface TemplateFieldValue {
     value: string;
     isDynamic: boolean;
     variableName: string;
+    isSystem?: boolean; // System-controlled field (auto-injected at issuance)
+    systemDescription?: string; // Description of what the system will inject
 }
 
 // Helper to create a static field
@@ -21,6 +26,15 @@ export const dynamicField = (variableName: string, defaultValue: string = ''): T
     value: defaultValue,
     isDynamic: true,
     variableName,
+});
+
+// Helper to create a system-controlled field
+export const systemField = (description: string): TemplateFieldValue => ({
+    value: '',
+    isDynamic: false,
+    variableName: '',
+    isSystem: true,
+    systemDescription: description,
 });
 
 // OBv3 Achievement structure

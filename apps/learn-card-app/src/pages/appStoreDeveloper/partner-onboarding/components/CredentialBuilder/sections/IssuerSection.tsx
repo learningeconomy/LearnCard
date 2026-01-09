@@ -1,33 +1,22 @@
 /**
- * IssuerSection - Issuer/Profile information
+ * IssuerSection - Issuer information (DID only - injected by system)
  */
 
 import React from 'react';
 import { Building2 } from 'lucide-react';
 
-import { OBv3CredentialTemplate, IssuerTemplate, TemplateFieldValue, staticField } from '../types';
+import { systemField } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
 
 interface IssuerSectionProps {
-    template: OBv3CredentialTemplate;
-    onChange: (template: OBv3CredentialTemplate) => void;
     isExpanded: boolean;
     onToggle: () => void;
 }
 
 export const IssuerSection: React.FC<IssuerSectionProps> = ({
-    template,
-    onChange,
     isExpanded,
     onToggle,
 }) => {
-    const updateIssuer = (key: keyof IssuerTemplate, value: TemplateFieldValue) => {
-        onChange({
-            ...template,
-            issuer: { ...template.issuer, [key]: value },
-        });
-    };
-
     return (
         <CollapsibleSection
             title="Issuer"
@@ -36,57 +25,18 @@ export const IssuerSection: React.FC<IssuerSectionProps> = ({
             onToggle={onToggle}
         >
             <FieldEditor
-                label="Issuer Name"
-                field={template.issuer.name}
-                onChange={(f) => updateIssuer('name', f)}
-                placeholder="e.g., Your Organization"
-                helpText="The name of the organization issuing this credential"
-                required
+                label="Issuer (DID)"
+                field={systemField('Your organization\'s Decentralized Identifier (DID) from your LearnCard wallet')}
+                onChange={() => {}}
+                helpText="Automatically set to your wallet's DID when the credential is issued"
             />
 
-            <FieldEditor
-                label="Issuer URL"
-                field={template.issuer.url || staticField('')}
-                onChange={(f) => updateIssuer('url', f)}
-                placeholder="https://your-organization.com"
-                helpText="Website URL of the issuing organization"
-                type="url"
-            />
-
-            <FieldEditor
-                label="Issuer Email"
-                field={template.issuer.email || staticField('')}
-                onChange={(f) => updateIssuer('email', f)}
-                placeholder="contact@your-organization.com"
-                helpText="Contact email for the issuing organization"
-                type="email"
-            />
-
-            <FieldEditor
-                label="Issuer Description"
-                field={template.issuer.description || staticField('')}
-                onChange={(f) => updateIssuer('description', f)}
-                placeholder="About the issuing organization..."
-                helpText="Brief description of the issuing organization"
-                type="textarea"
-            />
-
-            <FieldEditor
-                label="Issuer Logo"
-                field={template.issuer.image || staticField('')}
-                onChange={(f) => updateIssuer('image', f)}
-                placeholder="https://example.com/logo.png"
-                helpText="URL to the issuer's logo image"
-                type="url"
-            />
-
-            <FieldEditor
-                label="Issuer ID"
-                field={template.issuer.id || staticField('')}
-                onChange={(f) => updateIssuer('id', f)}
-                placeholder="did:web:your-organization.com"
-                helpText="DID or URI identifying the issuer (usually set automatically)"
-            />
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-2">
+                <p className="text-xs text-blue-700">
+                    <strong>Note:</strong> The issuer is automatically set to your wallet's DID. 
+                    Recipients can verify the credential was issued by you through this identifier.
+                </p>
+            </div>
         </CollapsibleSection>
     );
 };
