@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **share_all** | **bool** |  | [optional] 
 **sharing** | **bool** |  | [optional] 
-**categories** | [**Dict[str, StorageResolve200ResponseAnyOf1ReadCredentialsCategoriesValue]**](StorageResolve200ResponseAnyOf1ReadCredentialsCategoriesValue.md) |  | [optional] 
+**categories** | [**Dict[str, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue]**](ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue.md) |  | [optional] 
 
 ## Example
 

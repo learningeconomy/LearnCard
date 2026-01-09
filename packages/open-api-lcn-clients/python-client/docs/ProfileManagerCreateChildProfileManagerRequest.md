@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **parent_uri** | **str** |  | 
-**profile** | [**ProfileManagerCreateProfileManagerRequest**](ProfileManagerCreateProfileManagerRequest.md) |  | 
+**profile** | [**ProfileManagerCreateChildProfileManagerRequestProfile**](ProfileManagerCreateChildProfileManagerRequestProfile.md) |  | 
 
 ## Example
 

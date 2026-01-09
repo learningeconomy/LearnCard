@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_address_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_other_identifier_inner_identifier_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType
 from typing import Optional, Set
@@ -29,7 +29,7 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner(BaseMo
     BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner
     """ # noqa: E501
     type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
-    identifier: StrictStr
+    identifier: Optional[StrictStr]
     identifier_type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType = Field(alias="identifierType")
     __properties: ClassVar[List[str]] = ["type", "identifier", "identifierType"]
 
@@ -78,6 +78,11 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner(BaseMo
         # override the default output from pydantic by calling `to_dict()` of identifier_type
         if self.identifier_type:
             _dict['identifierType'] = self.identifier_type.to_dict()
+        # set to None if identifier (nullable) is None
+        # and model_fields_set contains the field
+        if self.identifier is None and "identifier" in self.model_fields_set:
+            _dict['identifier'] = None
+
         return _dict
 
     @classmethod

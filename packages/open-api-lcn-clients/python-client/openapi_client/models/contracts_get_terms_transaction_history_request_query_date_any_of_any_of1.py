@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -26,7 +26,7 @@ class ContractsGetTermsTransactionHistoryRequestQueryDateAnyOfAnyOf1(BaseModel):
     """
     ContractsGetTermsTransactionHistoryRequestQueryDateAnyOfAnyOf1
     """ # noqa: E501
-    lt: StrictStr = Field(alias="$lt")
+    lt: Optional[StrictStr] = Field(alias="$lt")
     __properties: ClassVar[List[str]] = ["$lt"]
 
     model_config = ConfigDict(
@@ -68,6 +68,11 @@ class ContractsGetTermsTransactionHistoryRequestQueryDateAnyOfAnyOf1(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if lt (nullable) is None
+        # and model_fields_set contains the field
+        if self.lt is None and "lt" in self.model_fields_set:
+            _dict['$lt'] = None
+
         return _dict
 
     @classmethod

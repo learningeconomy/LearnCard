@@ -15,7 +15,7 @@ Name | Type | Description | Notes
 **can_edit_children** | **str** |  | [optional] 
 **can_revoke_children** | **str** |  | [optional] 
 **can_manage_children_permissions** | **str** |  | [optional] 
-**can_manage_children_profiles** | **bool** |  | [optional] [default to False]
+**can_manage_children_profiles** | **bool** |  | [optional] 
 **can_view_analytics** | **bool** |  | [optional] 
 
 ## Example

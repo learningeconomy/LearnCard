@@ -17,14 +17,18 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
 from typing import List
-from openapi_client.models.claim_hook_delete_claim_hook_request import ClaimHookDeleteClaimHookRequest
 from openapi_client.models.contact_methods_add_contact_method200_response import ContactMethodsAddContactMethod200Response
 from openapi_client.models.contact_methods_add_contact_method_request import ContactMethodsAddContactMethodRequest
+from openapi_client.models.contact_methods_create_contact_method_session200_response import ContactMethodsCreateContactMethodSession200Response
+from openapi_client.models.contact_methods_create_contact_method_session_request import ContactMethodsCreateContactMethodSessionRequest
 from openapi_client.models.contact_methods_get_my_contact_methods200_response_inner import ContactMethodsGetMyContactMethods200ResponseInner
-from openapi_client.models.contact_methods_set_primary_contact_method200_response import ContactMethodsSetPrimaryContactMethod200Response
+from openapi_client.models.contact_methods_remove_contact_method_request import ContactMethodsRemoveContactMethodRequest
+from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
+from openapi_client.models.contact_methods_send_challenge_request import ContactMethodsSendChallengeRequest
 from openapi_client.models.contact_methods_set_primary_contact_method_request import ContactMethodsSetPrimaryContactMethodRequest
-from openapi_client.models.contact_methods_verify_contact_method200_response import ContactMethodsVerifyContactMethod200Response
 from openapi_client.models.contact_methods_verify_contact_method_request import ContactMethodsVerifyContactMethodRequest
+from openapi_client.models.contact_methods_verify_with_credential200_response import ContactMethodsVerifyWithCredential200Response
+from openapi_client.models.contact_methods_verify_with_credential_request import ContactMethodsVerifyWithCredentialRequest
 
 from openapi_client.api_client import ApiClient, RequestSerialized
 from openapi_client.api_response import ApiResponse
@@ -331,6 +335,285 @@ class ContactMethodsApi:
 
 
     @validate_call
+    def contact_methods_create_contact_method_session(
+        self,
+        contact_methods_create_contact_method_session_request: ContactMethodsCreateContactMethodSessionRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ContactMethodsCreateContactMethodSession200Response:
+        """Create Contact Method Session
+
+        Creates a short-lived claim session for the specified contact method and returns a claim URL that can be used to claim pending inbox credentials.
+
+        :param contact_methods_create_contact_method_session_request: (required)
+        :type contact_methods_create_contact_method_session_request: ContactMethodsCreateContactMethodSessionRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contact_methods_create_contact_method_session_serialize(
+            contact_methods_create_contact_method_session_request=contact_methods_create_contact_method_session_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContactMethodsCreateContactMethodSession200Response",
+            '400': "ErrorBADREQUEST",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contact_methods_create_contact_method_session_with_http_info(
+        self,
+        contact_methods_create_contact_method_session_request: ContactMethodsCreateContactMethodSessionRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ContactMethodsCreateContactMethodSession200Response]:
+        """Create Contact Method Session
+
+        Creates a short-lived claim session for the specified contact method and returns a claim URL that can be used to claim pending inbox credentials.
+
+        :param contact_methods_create_contact_method_session_request: (required)
+        :type contact_methods_create_contact_method_session_request: ContactMethodsCreateContactMethodSessionRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contact_methods_create_contact_method_session_serialize(
+            contact_methods_create_contact_method_session_request=contact_methods_create_contact_method_session_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContactMethodsCreateContactMethodSession200Response",
+            '400': "ErrorBADREQUEST",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contact_methods_create_contact_method_session_without_preload_content(
+        self,
+        contact_methods_create_contact_method_session_request: ContactMethodsCreateContactMethodSessionRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Create Contact Method Session
+
+        Creates a short-lived claim session for the specified contact method and returns a claim URL that can be used to claim pending inbox credentials.
+
+        :param contact_methods_create_contact_method_session_request: (required)
+        :type contact_methods_create_contact_method_session_request: ContactMethodsCreateContactMethodSessionRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contact_methods_create_contact_method_session_serialize(
+            contact_methods_create_contact_method_session_request=contact_methods_create_contact_method_session_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContactMethodsCreateContactMethodSession200Response",
+            '400': "ErrorBADREQUEST",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contact_methods_create_contact_method_session_serialize(
+        self,
+        contact_methods_create_contact_method_session_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if contact_methods_create_contact_method_session_request is not None:
+            _body_params = contact_methods_create_contact_method_session_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/contact-methods/session',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def contact_methods_get_my_contact_methods(
         self,
         _request_timeout: Union[
@@ -588,7 +871,7 @@ class ContactMethodsApi:
     @validate_call
     def contact_methods_remove_contact_method(
         self,
-        claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest,
+        contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -601,13 +884,13 @@ class ContactMethodsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ContactMethodsSetPrimaryContactMethod200Response:
+    ) -> ContactMethodsSendChallenge200Response:
         """Remove Contact Method
 
         Remove a contact method from the profile
 
-        :param claim_hook_delete_claim_hook_request: (required)
-        :type claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest
+        :param contact_methods_remove_contact_method_request: (required)
+        :type contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -631,7 +914,7 @@ class ContactMethodsApi:
         """ # noqa: E501
 
         _param = self._contact_methods_remove_contact_method_serialize(
-            claim_hook_delete_claim_hook_request=claim_hook_delete_claim_hook_request,
+            contact_methods_remove_contact_method_request=contact_methods_remove_contact_method_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -639,7 +922,7 @@ class ContactMethodsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContactMethodsSetPrimaryContactMethod200Response",
+            '200': "ContactMethodsSendChallenge200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -659,7 +942,7 @@ class ContactMethodsApi:
     @validate_call
     def contact_methods_remove_contact_method_with_http_info(
         self,
-        claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest,
+        contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -672,13 +955,13 @@ class ContactMethodsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[ContactMethodsSetPrimaryContactMethod200Response]:
+    ) -> ApiResponse[ContactMethodsSendChallenge200Response]:
         """Remove Contact Method
 
         Remove a contact method from the profile
 
-        :param claim_hook_delete_claim_hook_request: (required)
-        :type claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest
+        :param contact_methods_remove_contact_method_request: (required)
+        :type contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -702,7 +985,7 @@ class ContactMethodsApi:
         """ # noqa: E501
 
         _param = self._contact_methods_remove_contact_method_serialize(
-            claim_hook_delete_claim_hook_request=claim_hook_delete_claim_hook_request,
+            contact_methods_remove_contact_method_request=contact_methods_remove_contact_method_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -710,7 +993,7 @@ class ContactMethodsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContactMethodsSetPrimaryContactMethod200Response",
+            '200': "ContactMethodsSendChallenge200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -730,7 +1013,7 @@ class ContactMethodsApi:
     @validate_call
     def contact_methods_remove_contact_method_without_preload_content(
         self,
-        claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest,
+        contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -748,8 +1031,8 @@ class ContactMethodsApi:
 
         Remove a contact method from the profile
 
-        :param claim_hook_delete_claim_hook_request: (required)
-        :type claim_hook_delete_claim_hook_request: ClaimHookDeleteClaimHookRequest
+        :param contact_methods_remove_contact_method_request: (required)
+        :type contact_methods_remove_contact_method_request: ContactMethodsRemoveContactMethodRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -773,7 +1056,7 @@ class ContactMethodsApi:
         """ # noqa: E501
 
         _param = self._contact_methods_remove_contact_method_serialize(
-            claim_hook_delete_claim_hook_request=claim_hook_delete_claim_hook_request,
+            contact_methods_remove_contact_method_request=contact_methods_remove_contact_method_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -781,7 +1064,7 @@ class ContactMethodsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContactMethodsSetPrimaryContactMethod200Response",
+            '200': "ContactMethodsSendChallenge200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -796,7 +1079,7 @@ class ContactMethodsApi:
 
     def _contact_methods_remove_contact_method_serialize(
         self,
-        claim_hook_delete_claim_hook_request,
+        contact_methods_remove_contact_method_request,
         _request_auth,
         _content_type,
         _headers,
@@ -822,8 +1105,8 @@ class ContactMethodsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if claim_hook_delete_claim_hook_request is not None:
-            _body_params = claim_hook_delete_claim_hook_request
+        if contact_methods_remove_contact_method_request is not None:
+            _body_params = contact_methods_remove_contact_method_request
 
 
         # set the HTTP header `Accept`
@@ -872,6 +1155,285 @@ class ContactMethodsApi:
 
 
     @validate_call
+    def contact_methods_send_challenge(
+        self,
+        contact_methods_send_challenge_request: ContactMethodsSendChallengeRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ContactMethodsSendChallenge200Response:
+        """Send Contact Method Challenge (OTP)
+
+        Generates a 6-digit OTP and sends it to the specified contact method, caching it for short-lived verification.
+
+        :param contact_methods_send_challenge_request: (required)
+        :type contact_methods_send_challenge_request: ContactMethodsSendChallengeRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contact_methods_send_challenge_serialize(
+            contact_methods_send_challenge_request=contact_methods_send_challenge_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContactMethodsSendChallenge200Response",
+            '400': "ErrorBADREQUEST",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contact_methods_send_challenge_with_http_info(
+        self,
+        contact_methods_send_challenge_request: ContactMethodsSendChallengeRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ContactMethodsSendChallenge200Response]:
+        """Send Contact Method Challenge (OTP)
+
+        Generates a 6-digit OTP and sends it to the specified contact method, caching it for short-lived verification.
+
+        :param contact_methods_send_challenge_request: (required)
+        :type contact_methods_send_challenge_request: ContactMethodsSendChallengeRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contact_methods_send_challenge_serialize(
+            contact_methods_send_challenge_request=contact_methods_send_challenge_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContactMethodsSendChallenge200Response",
+            '400': "ErrorBADREQUEST",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contact_methods_send_challenge_without_preload_content(
+        self,
+        contact_methods_send_challenge_request: ContactMethodsSendChallengeRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Send Contact Method Challenge (OTP)
+
+        Generates a 6-digit OTP and sends it to the specified contact method, caching it for short-lived verification.
+
+        :param contact_methods_send_challenge_request: (required)
+        :type contact_methods_send_challenge_request: ContactMethodsSendChallengeRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contact_methods_send_challenge_serialize(
+            contact_methods_send_challenge_request=contact_methods_send_challenge_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContactMethodsSendChallenge200Response",
+            '400': "ErrorBADREQUEST",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contact_methods_send_challenge_serialize(
+        self,
+        contact_methods_send_challenge_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if contact_methods_send_challenge_request is not None:
+            _body_params = contact_methods_send_challenge_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/contact-methods/challenge',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def contact_methods_set_primary_contact_method(
         self,
         contact_methods_set_primary_contact_method_request: ContactMethodsSetPrimaryContactMethodRequest,
@@ -887,7 +1449,7 @@ class ContactMethodsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ContactMethodsSetPrimaryContactMethod200Response:
+    ) -> ContactMethodsSendChallenge200Response:
         """Set Primary Contact Method
 
         Set a contact method as the primary one for the profile
@@ -925,7 +1487,7 @@ class ContactMethodsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContactMethodsSetPrimaryContactMethod200Response",
+            '200': "ContactMethodsSendChallenge200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -958,7 +1520,7 @@ class ContactMethodsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[ContactMethodsSetPrimaryContactMethod200Response]:
+    ) -> ApiResponse[ContactMethodsSendChallenge200Response]:
         """Set Primary Contact Method
 
         Set a contact method as the primary one for the profile
@@ -996,7 +1558,7 @@ class ContactMethodsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContactMethodsSetPrimaryContactMethod200Response",
+            '200': "ContactMethodsSendChallenge200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1067,7 +1629,7 @@ class ContactMethodsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContactMethodsSetPrimaryContactMethod200Response",
+            '200': "ContactMethodsSendChallenge200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1173,7 +1735,7 @@ class ContactMethodsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ContactMethodsVerifyContactMethod200Response:
+    ) -> ContactMethodsVerifyWithCredential200Response:
         """Verify Contact Method
 
         Verify a contact method using the verification token
@@ -1211,7 +1773,7 @@ class ContactMethodsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContactMethodsVerifyContactMethod200Response",
+            '200': "ContactMethodsVerifyWithCredential200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1244,7 +1806,7 @@ class ContactMethodsApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[ContactMethodsVerifyContactMethod200Response]:
+    ) -> ApiResponse[ContactMethodsVerifyWithCredential200Response]:
         """Verify Contact Method
 
         Verify a contact method using the verification token
@@ -1282,7 +1844,7 @@ class ContactMethodsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContactMethodsVerifyContactMethod200Response",
+            '200': "ContactMethodsVerifyWithCredential200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1353,7 +1915,7 @@ class ContactMethodsApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "ContactMethodsVerifyContactMethod200Response",
+            '200': "ContactMethodsVerifyWithCredential200Response",
             '400': "ErrorBADREQUEST",
             '401': "ErrorUNAUTHORIZED",
             '403': "ErrorFORBIDDEN",
@@ -1428,6 +1990,292 @@ class ContactMethodsApi:
         return self.api_client.param_serialize(
             method='POST',
             resource_path='/profile/contact-methods/verify',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def contact_methods_verify_with_credential(
+        self,
+        contact_methods_verify_with_credential_request: ContactMethodsVerifyWithCredentialRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ContactMethodsVerifyWithCredential200Response:
+        """Verify Contact Method With Credential
+
+        Verify ownership of a contact method using a cryptographically verified proof-of-login Verifiable Presentation JWT.
+
+        :param contact_methods_verify_with_credential_request: (required)
+        :type contact_methods_verify_with_credential_request: ContactMethodsVerifyWithCredentialRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contact_methods_verify_with_credential_serialize(
+            contact_methods_verify_with_credential_request=contact_methods_verify_with_credential_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContactMethodsVerifyWithCredential200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def contact_methods_verify_with_credential_with_http_info(
+        self,
+        contact_methods_verify_with_credential_request: ContactMethodsVerifyWithCredentialRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[ContactMethodsVerifyWithCredential200Response]:
+        """Verify Contact Method With Credential
+
+        Verify ownership of a contact method using a cryptographically verified proof-of-login Verifiable Presentation JWT.
+
+        :param contact_methods_verify_with_credential_request: (required)
+        :type contact_methods_verify_with_credential_request: ContactMethodsVerifyWithCredentialRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contact_methods_verify_with_credential_serialize(
+            contact_methods_verify_with_credential_request=contact_methods_verify_with_credential_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContactMethodsVerifyWithCredential200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def contact_methods_verify_with_credential_without_preload_content(
+        self,
+        contact_methods_verify_with_credential_request: ContactMethodsVerifyWithCredentialRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Verify Contact Method With Credential
+
+        Verify ownership of a contact method using a cryptographically verified proof-of-login Verifiable Presentation JWT.
+
+        :param contact_methods_verify_with_credential_request: (required)
+        :type contact_methods_verify_with_credential_request: ContactMethodsVerifyWithCredentialRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._contact_methods_verify_with_credential_serialize(
+            contact_methods_verify_with_credential_request=contact_methods_verify_with_credential_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "ContactMethodsVerifyWithCredential200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _contact_methods_verify_with_credential_serialize(
+        self,
+        contact_methods_verify_with_credential_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if contact_methods_verify_with_credential_request is not None:
+            _body_params = contact_methods_verify_with_credential_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/profile/contact-methods/verify-with-credential',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,

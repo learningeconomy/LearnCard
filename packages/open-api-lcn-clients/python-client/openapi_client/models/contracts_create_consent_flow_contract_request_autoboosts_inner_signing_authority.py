@@ -26,9 +26,9 @@ class ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority(B
     """
     ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority
     """ # noqa: E501
-    endpoint: StrictStr
     name: StrictStr
-    __properties: ClassVar[List[str]] = ["endpoint", "name"]
+    endpoint: StrictStr
+    __properties: ClassVar[List[str]] = ["name", "endpoint"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -81,8 +81,8 @@ class ContractsCreateConsentFlowContractRequestAutoboostsInnerSigningAuthority(B
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "endpoint": obj.get("endpoint"),
-            "name": obj.get("name")
+            "name": obj.get("name"),
+            "endpoint": obj.get("endpoint")
         })
         return _obj
 

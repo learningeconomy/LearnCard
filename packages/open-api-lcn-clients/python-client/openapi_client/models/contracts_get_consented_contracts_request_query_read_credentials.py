@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.storage_resolve200_response_any_of1_read_credentials_categories_value import StorageResolve200ResponseAnyOf1ReadCredentialsCategoriesValue
+from openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials_categories_value import ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -29,7 +29,7 @@ class ContractsGetConsentedContractsRequestQueryReadCredentials(BaseModel):
     """ # noqa: E501
     share_all: Optional[StrictBool] = Field(default=None, alias="shareAll")
     sharing: Optional[StrictBool] = None
-    categories: Optional[Dict[str, StorageResolve200ResponseAnyOf1ReadCredentialsCategoriesValue]] = None
+    categories: Optional[Dict[str, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue]] = None
     __properties: ClassVar[List[str]] = ["shareAll", "sharing", "categories"]
 
     model_config = ConfigDict(
@@ -93,7 +93,7 @@ class ContractsGetConsentedContractsRequestQueryReadCredentials(BaseModel):
             "shareAll": obj.get("shareAll"),
             "sharing": obj.get("sharing"),
             "categories": dict(
-                (_k, StorageResolve200ResponseAnyOf1ReadCredentialsCategoriesValue.from_dict(_v))
+                (_k, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue.from_dict(_v))
                 for _k, _v in obj["categories"].items()
             )
             if obj.get("categories") is not None

@@ -26,6 +26,27 @@ class TestProfilesApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
+    def test_inbox_approve_guardian_request(self) -> None:
+        """Test case for inbox_approve_guardian_request
+
+        Approve Guardian Request
+        """
+        pass
+
+    def test_inbox_approve_guardian_request_by_path(self) -> None:
+        """Test case for inbox_approve_guardian_request_by_path
+
+        Approve Guardian Request (GET)
+        """
+        pass
+
+    def test_inbox_send_guardian_approval_email(self) -> None:
+        """Test case for inbox_send_guardian_approval_email
+
+        Send Guardian Approval Email
+        """
+        pass
+
     def test_profile_accept_connection_request(self) -> None:
         """Test case for profile_accept_connection_request
 
@@ -149,6 +170,20 @@ class TestProfilesApi(unittest.TestCase):
         """Test case for profile_get_profile
 
         Get your profile information
+        """
+        pass
+
+    def test_profile_invalidate_invite(self) -> None:
+        """Test case for profile_invalidate_invite
+
+        Invalidate an invitation
+        """
+        pass
+
+    def test_profile_list_invites(self) -> None:
+        """Test case for profile_list_invites
+
+        List valid connection invitations
         """
         pass
 

@@ -35,7 +35,7 @@ class TestInboxIssueRequest(unittest.TestCase):
         model = InboxIssueRequest()
         if include_optional:
             return InboxIssueRequest(
-                recipient = None,
+                recipient = openapi_client.models.inbox_issue_request_recipient.inbox_issue_request_recipient(),
                 credential = None,
                 configuration = openapi_client.models.inbox_issue_request_configuration.inbox_issue_request_configuration(
                     signing_authority = openapi_client.models.inbox_issue_request_configuration_signing_authority.inbox_issue_request_configuration_signingAuthority(
@@ -59,7 +59,7 @@ class TestInboxIssueRequest(unittest.TestCase):
             )
         else:
             return InboxIssueRequest(
-                recipient = None,
+                recipient = openapi_client.models.inbox_issue_request_recipient.inbox_issue_request_recipient(),
                 credential = None,
         )
         """

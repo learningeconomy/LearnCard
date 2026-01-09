@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **cursor** | **str** |  | [optional] 
 **has_more** | **bool** |  | 
-**records** | [**List[BoostGetBoostRecipients200ResponseInner]**](BoostGetBoostRecipients200ResponseInner.md) |  | 
+**records** | [**List[BoostGetPaginatedBoostRecipients200ResponseRecordsInner]**](BoostGetPaginatedBoostRecipients200ResponseRecordsInner.md) |  | 
 
 ## Example
 

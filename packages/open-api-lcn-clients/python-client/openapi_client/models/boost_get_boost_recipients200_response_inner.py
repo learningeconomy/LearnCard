@@ -28,9 +28,10 @@ class BoostGetBoostRecipients200ResponseInner(BaseModel):
     BoostGetBoostRecipients200ResponseInner
     """ # noqa: E501
     to: BoostGetBoostRecipients200ResponseInnerTo
-    var_from: StrictStr = Field(alias="from")
+    var_from: Optional[StrictStr] = Field(alias="from")
     received: Optional[StrictStr] = None
     uri: Optional[StrictStr] = None
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["to", "from", "received", "uri"]
 
     model_config = ConfigDict(
@@ -63,8 +64,10 @@ class BoostGetBoostRecipients200ResponseInner(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -75,6 +78,26 @@ class BoostGetBoostRecipients200ResponseInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of to
         if self.to:
             _dict['to'] = self.to.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if var_from (nullable) is None
+        # and model_fields_set contains the field
+        if self.var_from is None and "var_from" in self.model_fields_set:
+            _dict['from'] = None
+
+        # set to None if received (nullable) is None
+        # and model_fields_set contains the field
+        if self.received is None and "received" in self.model_fields_set:
+            _dict['received'] = None
+
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
         return _dict
 
     @classmethod
@@ -92,6 +115,11 @@ class BoostGetBoostRecipients200ResponseInner(BaseModel):
             "received": obj.get("received"),
             "uri": obj.get("uri")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

@@ -6,7 +6,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **parent_uri** | **str** |  | 
-**boost** | [**BoostCreateBoostRequest**](BoostCreateBoostRequest.md) |  | 
+**boost** | [**BoostCreateChildBoostRequestBoost**](BoostCreateChildBoostRequestBoost.md) |  | 
+**skills** | [**List[BoostSendRequestTemplateSkillsInner]**](BoostSendRequestTemplateSkillsInner.md) |  | [optional] 
 
 ## Example
 

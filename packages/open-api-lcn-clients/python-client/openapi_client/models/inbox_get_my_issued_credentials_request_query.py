@@ -29,8 +29,9 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
     current_status: Optional[StrictStr] = Field(default=None, alias="currentStatus")
     id: Optional[StrictStr] = None
     is_signed: Optional[StrictBool] = Field(default=None, alias="isSigned")
+    is_accepted: Optional[StrictBool] = Field(default=None, alias="isAccepted")
     issuer_did: Optional[StrictStr] = Field(default=None, alias="issuerDid")
-    __properties: ClassVar[List[str]] = ["currentStatus", "id", "isSigned", "issuerDid"]
+    __properties: ClassVar[List[str]] = ["currentStatus", "id", "isSigned", "isAccepted", "issuerDid"]
 
     @field_validator('current_status')
     def current_status_validate_enum(cls, value):
@@ -38,8 +39,8 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED']):
-            raise ValueError("must be one of enum values ('PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED')")
+        if value not in set(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']):
+            raise ValueError("must be one of enum values ('PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED')")
         return value
 
     model_config = ConfigDict(
@@ -81,6 +82,16 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if id (nullable) is None
+        # and model_fields_set contains the field
+        if self.id is None and "id" in self.model_fields_set:
+            _dict['id'] = None
+
+        # set to None if issuer_did (nullable) is None
+        # and model_fields_set contains the field
+        if self.issuer_did is None and "issuer_did" in self.model_fields_set:
+            _dict['issuerDid'] = None
+
         return _dict
 
     @classmethod
@@ -96,6 +107,7 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
             "currentStatus": obj.get("currentStatus"),
             "id": obj.get("id"),
             "isSigned": obj.get("isSigned"),
+            "isAccepted": obj.get("isAccepted"),
             "issuerDid": obj.get("issuerDid")
         })
         return _obj

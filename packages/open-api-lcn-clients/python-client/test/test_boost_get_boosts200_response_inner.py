@@ -43,6 +43,19 @@ class TestBoostGetBoosts200ResponseInner(unittest.TestCase):
                 meta = {
                     'key' : null
                     },
+                default_permissions = openapi_client.models.boost_get_boost_200_response_claim_permissions.boost_getBoost_200_response_claimPermissions(
+                    role = '', 
+                    can_edit = True, 
+                    can_issue = True, 
+                    can_revoke = True, 
+                    can_manage_permissions = True, 
+                    can_issue_children = '', 
+                    can_create_children = '', 
+                    can_edit_children = '', 
+                    can_revoke_children = '', 
+                    can_manage_children_permissions = '', 
+                    can_manage_children_profiles = True, 
+                    can_view_analytics = True, ),
                 allow_anyone_to_create_children = True,
                 uri = ''
             )

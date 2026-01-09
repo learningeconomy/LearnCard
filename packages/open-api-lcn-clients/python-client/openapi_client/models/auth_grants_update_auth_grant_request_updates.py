@@ -69,6 +69,16 @@ class AuthGrantsUpdateAuthGrantRequestUpdates(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if description (nullable) is None
+        # and model_fields_set contains the field
+        if self.description is None and "description" in self.model_fields_set:
+            _dict['description'] = None
+
         return _dict
 
     @classmethod

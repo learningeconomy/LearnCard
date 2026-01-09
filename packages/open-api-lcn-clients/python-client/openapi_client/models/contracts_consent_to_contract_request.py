@@ -28,10 +28,11 @@ class ContractsConsentToContractRequest(BaseModel):
     ContractsConsentToContractRequest
     """ # noqa: E501
     terms: ContractsConsentToContractRequestTerms
-    contract_uri: StrictStr = Field(alias="contractUri")
+    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    __properties: ClassVar[List[str]] = ["terms", "contractUri", "expiresAt", "oneTime"]
+    recipient_token: Optional[StrictStr] = Field(default=None, alias="recipientToken")
+    __properties: ClassVar[List[str]] = ["terms", "contractUri", "expiresAt", "oneTime", "recipientToken"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -75,6 +76,21 @@ class ContractsConsentToContractRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
+        # set to None if contract_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
+            _dict['contractUri'] = None
+
+        # set to None if expires_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.expires_at is None and "expires_at" in self.model_fields_set:
+            _dict['expiresAt'] = None
+
+        # set to None if recipient_token (nullable) is None
+        # and model_fields_set contains the field
+        if self.recipient_token is None and "recipient_token" in self.model_fields_set:
+            _dict['recipientToken'] = None
+
         return _dict
 
     @classmethod
@@ -90,7 +106,8 @@ class ContractsConsentToContractRequest(BaseModel):
             "terms": ContractsConsentToContractRequestTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "contractUri": obj.get("contractUri"),
             "expiresAt": obj.get("expiresAt"),
-            "oneTime": obj.get("oneTime")
+            "oneTime": obj.get("oneTime"),
+            "recipientToken": obj.get("recipientToken")
         })
         return _obj
 

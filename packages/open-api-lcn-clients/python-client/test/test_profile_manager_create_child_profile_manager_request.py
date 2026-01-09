@@ -36,7 +36,7 @@ class TestProfileManagerCreateChildProfileManagerRequest(unittest.TestCase):
         if include_optional:
             return ProfileManagerCreateChildProfileManagerRequest(
                 parent_uri = '',
-                profile = openapi_client.models.profile_manager_create_profile_manager_request.profileManager_createProfileManager_request(
+                profile = openapi_client.models.profile_manager_create_child_profile_manager_request_profile.profileManager_createChildProfileManager_request_profile(
                     display_name = '', 
                     short_bio = '', 
                     bio = '', 
@@ -47,7 +47,7 @@ class TestProfileManagerCreateChildProfileManagerRequest(unittest.TestCase):
         else:
             return ProfileManagerCreateChildProfileManagerRequest(
                 parent_uri = '',
-                profile = openapi_client.models.profile_manager_create_profile_manager_request.profileManager_createProfileManager_request(
+                profile = openapi_client.models.profile_manager_create_child_profile_manager_request_profile.profileManager_createChildProfileManager_request_profile(
                     display_name = '', 
                     short_bio = '', 
                     bio = '', 

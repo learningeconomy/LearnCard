@@ -13,85 +13,122 @@
 
 
 from __future__ import annotations
+from inspect import getfullargspec
+import json
 import pprint
 import re  # noqa: F401
-import json
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
+from typing import Optional
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOf
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOf1
+from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
+from typing_extensions import Literal, Self
+from pydantic import Field
 
-from pydantic import BaseModel, ConfigDict
-from typing import Any, ClassVar, Dict, List
-from openapi_client.models.storage_resolve200_response_any_of_any_of_read import StorageResolve200ResponseAnyOfAnyOfRead
-from openapi_client.models.storage_resolve200_response_any_of_any_of_write import StorageResolve200ResponseAnyOfAnyOfWrite
-from typing import Optional, Set
-from typing_extensions import Self
+STORAGERESOLVE200RESPONSEANYOFANYOF_ANY_OF_SCHEMAS = ["StorageResolve200ResponseAnyOfAnyOfAnyOf", "StorageResolve200ResponseAnyOfAnyOfAnyOf1"]
 
 class StorageResolve200ResponseAnyOfAnyOf(BaseModel):
     """
     StorageResolve200ResponseAnyOfAnyOf
-    """ # noqa: E501
-    read: StorageResolve200ResponseAnyOfAnyOfRead
-    write: StorageResolve200ResponseAnyOfAnyOfWrite
-    __properties: ClassVar[List[str]] = ["read", "write"]
+    """
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        validate_assignment=True,
-        protected_namespaces=(),
-    )
+    # data type: StorageResolve200ResponseAnyOfAnyOfAnyOf
+    anyof_schema_1_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOf] = None
+    # data type: StorageResolve200ResponseAnyOfAnyOfAnyOf1
+    anyof_schema_2_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOf1] = None
+    if TYPE_CHECKING:
+        actual_instance: Optional[Union[StorageResolve200ResponseAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOf1]] = None
+    else:
+        actual_instance: Any = None
+    any_of_schemas: Set[str] = { "StorageResolve200ResponseAnyOfAnyOfAnyOf", "StorageResolve200ResponseAnyOfAnyOfAnyOf1" }
 
+    model_config = {
+        "validate_assignment": True,
+        "protected_namespaces": (),
+    }
 
-    def to_str(self) -> str:
-        """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.model_dump(by_alias=True))
+    def __init__(self, *args, **kwargs) -> None:
+        if args:
+            if len(args) > 1:
+                raise ValueError("If a position argument is used, only 1 is allowed to set `actual_instance`")
+            if kwargs:
+                raise ValueError("If a position argument is used, keyword arguments cannot be used.")
+            super().__init__(actual_instance=args[0])
+        else:
+            super().__init__(**kwargs)
+
+    @field_validator('actual_instance')
+    def actual_instance_must_validate_anyof(cls, v):
+        instance = StorageResolve200ResponseAnyOfAnyOf.model_construct()
+        error_messages = []
+        # validate data type: StorageResolve200ResponseAnyOfAnyOfAnyOf
+        if not isinstance(v, StorageResolve200ResponseAnyOfAnyOfAnyOf):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `StorageResolve200ResponseAnyOfAnyOfAnyOf`")
+        else:
+            return v
+
+        # validate data type: StorageResolve200ResponseAnyOfAnyOfAnyOf1
+        if not isinstance(v, StorageResolve200ResponseAnyOfAnyOfAnyOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `StorageResolve200ResponseAnyOfAnyOfAnyOf1`")
+        else:
+            return v
+
+        if error_messages:
+            # no match
+            raise ValueError("No match found when setting the actual_instance in StorageResolve200ResponseAnyOfAnyOf with anyOf schemas: StorageResolve200ResponseAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOf1. Details: " + ", ".join(error_messages))
+        else:
+            return v
+
+    @classmethod
+    def from_dict(cls, obj: Dict[str, Any]) -> Self:
+        return cls.from_json(json.dumps(obj))
+
+    @classmethod
+    def from_json(cls, json_str: str) -> Self:
+        """Returns the object represented by the json string"""
+        instance = cls.model_construct()
+        error_messages = []
+        # anyof_schema_1_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOf] = None
+        try:
+            instance.actual_instance = StorageResolve200ResponseAnyOfAnyOfAnyOf.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_2_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOf1] = None
+        try:
+            instance.actual_instance = StorageResolve200ResponseAnyOfAnyOfAnyOf1.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+
+        if error_messages:
+            # no match
+            raise ValueError("No match found when deserializing the JSON string into StorageResolve200ResponseAnyOfAnyOf with anyOf schemas: StorageResolve200ResponseAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOf1. Details: " + ", ".join(error_messages))
+        else:
+            return instance
 
     def to_json(self) -> str:
-        """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        """Returns the JSON representation of the actual instance"""
+        if self.actual_instance is None:
+            return "null"
 
-    @classmethod
-    def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of StorageResolve200ResponseAnyOfAnyOf from a JSON string"""
-        return cls.from_dict(json.loads(json_str))
+        if hasattr(self.actual_instance, "to_json") and callable(self.actual_instance.to_json):
+            return self.actual_instance.to_json()
+        else:
+            return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Return the dictionary representation of the model using alias.
-
-        This has the following differences from calling pydantic's
-        `self.model_dump(by_alias=True)`:
-
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
-        """
-        excluded_fields: Set[str] = set([
-        ])
-
-        _dict = self.model_dump(
-            by_alias=True,
-            exclude=excluded_fields,
-            exclude_none=True,
-        )
-        # override the default output from pydantic by calling `to_dict()` of read
-        if self.read:
-            _dict['read'] = self.read.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of write
-        if self.write:
-            _dict['write'] = self.write.to_dict()
-        return _dict
-
-    @classmethod
-    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of StorageResolve200ResponseAnyOfAnyOf from a dict"""
-        if obj is None:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], StorageResolve200ResponseAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOf1]]:
+        """Returns the dict representation of the actual instance"""
+        if self.actual_instance is None:
             return None
 
-        if not isinstance(obj, dict):
-            return cls.model_validate(obj)
+        if hasattr(self.actual_instance, "to_dict") and callable(self.actual_instance.to_dict):
+            return self.actual_instance.to_dict()
+        else:
+            return self.actual_instance
 
-        _obj = cls.model_validate({
-            "read": StorageResolve200ResponseAnyOfAnyOfRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
-            "write": StorageResolve200ResponseAnyOfAnyOfWrite.from_dict(obj["write"]) if obj.get("write") is not None else None
-        })
-        return _obj
+    def to_str(self) -> str:
+        """Returns the string representation of the actual instance"""
+        return pprint.pformat(self.model_dump())
 
 
