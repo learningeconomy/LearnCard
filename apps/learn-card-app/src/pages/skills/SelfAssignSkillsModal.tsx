@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
-    conditionalPluralize,
-    useListMySkillFrameworks,
     useModal,
+    useListMySkillFrameworks,
     useSearchFrameworkSkills,
+    ModalTypes,
+    conditionalPluralize,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
@@ -11,6 +12,7 @@ import Search from 'learn-card-base/svgs/Search';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SelfAssignedSkillRow from './SelfAssignedSkillRow';
+import SkillsCloseConfirmationModal from './SkillsCloseConfirmationModal';
 import { IonFooter, IonInput, IonSpinner } from '@ionic/react';
 
 import {
@@ -26,7 +28,7 @@ enum Step {
 type SelfAssignSkillsModalProps = {};
 
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
-    const { closeModal } = useModal();
+    const { closeModal, newModal } = useModal();
 
     const [step, setStep] = useState<Step>(Step.Add);
     const [searchInput, setSearchInput] = useState('');
@@ -70,6 +72,21 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
             setSelectedSkills(selectedSkills.filter(id => id !== skillId));
         } else {
             setSelectedSkills([...selectedSkills, skillId]);
+        }
+    };
+
+    const handleClose = () => {
+        if (selectedSkills.length > 0) {
+            newModal(
+                <SkillsCloseConfirmationModal />,
+                { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+                {
+                    desktop: ModalTypes.Center,
+                    mobile: ModalTypes.Center,
+                }
+            );
+        } else {
+            closeModal();
         }
     };
 
@@ -164,7 +181,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     )}
 
                     <button
-                        onClick={closeModal}
+                        onClick={handleClose}
                         className="p-[10px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px] border-solid border-[1px] border-grayscale-200 leading-[22px]"
                     >
                         Close
