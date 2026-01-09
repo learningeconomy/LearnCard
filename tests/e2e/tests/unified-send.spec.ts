@@ -201,27 +201,14 @@ describe('Unified Send API E2E Tests', () => {
     });
 
     describe('Email/Phone Claim Flow', () => {
-        it('should allow anonymous user to claim credential sent via email', async () => {
-            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
-
-            const result = await a.invoke.send({
-                type: 'boost',
-                recipient: 'claim-flow@example.com',
-                templateUri: boostUri,
-                options: {
-                    suppressDelivery: true,
-                },
-            });
-
-            expect(result.inbox?.claimUrl).toBeDefined();
-
-            // Parse the claim URL
-            const interactionUrl = parseInteractionUrl(result.inbox!.claimUrl!);
+        // Helper to perform the full claim flow
+        const performClaimFlow = async (claimUrl: string, claimer: LearnCard) => {
+            const interactionUrl = parseInteractionUrl(claimUrl);
             expect(interactionUrl).not.toBeNull();
 
-            // Initiate the claim flow
             const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl!.workflowId}/exchanges/${interactionUrl!.interactionId}`;
 
+            // Initiate the claim flow
             const vcapiResponse = await fetch(vcapiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -234,8 +221,8 @@ describe('Unified Send API E2E Tests', () => {
 
             const vpr = vcapiData.verifiablePresentationRequest;
 
-            // Create a DID auth VP from user B
-            const vp = await b.invoke.getDidAuthVp({
+            // Create a DID auth VP
+            const vp = await claimer.invoke.getDidAuthVp({
                 challenge: vpr.challenge,
                 domain: vpr.domain,
             });
@@ -253,8 +240,188 @@ describe('Unified Send API E2E Tests', () => {
             expect(claimData.verifiablePresentation).toBeDefined();
             expect(claimData.verifiablePresentation.verifiableCredential).toBeDefined();
 
-            const vc = claimData.verifiablePresentation.verifiableCredential[0];
+            return claimData.verifiablePresentation.verifiableCredential[0];
+        };
+
+        it('should allow anonymous user to claim credential sent via email', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'claim-flow@example.com',
+                templateUri: boostUri,
+                options: {
+                    suppressDelivery: true,
+                },
+            });
+
+            expect(result.inbox?.claimUrl).toBeDefined();
+
+            const vc = await performClaimFlow(result.inbox!.claimUrl!, b);
             expect(vc.type).toContain('BoostCredential');
+        });
+
+        it('should apply templateData to the claimed credential', async () => {
+            const templateBoost = {
+                ...testUnsignedBoost,
+                name: 'Certificate for {{recipientName}}',
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    achievement: {
+                        ...testUnsignedBoost.credentialSubject.achievement,
+                        name: '{{courseName}} Completion Certificate',
+                        description: 'Awarded to {{recipientName}} for completing {{courseName}}',
+                    },
+                },
+            };
+
+            const boostUri = await a.invoke.createBoost(templateBoost);
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'template-claim@example.com',
+                templateUri: boostUri,
+                templateData: {
+                    recipientName: 'Alice Johnson',
+                    courseName: 'Advanced TypeScript',
+                },
+                options: {
+                    suppressDelivery: true,
+                },
+            });
+
+            expect(result.inbox?.claimUrl).toBeDefined();
+
+            const vc = await performClaimFlow(result.inbox!.claimUrl!, b);
+
+            // Verify templateData was applied to the credential
+            expect(vc.name).toBe('Certificate for Alice Johnson');
+            expect(vc.credentialSubject.achievement.name).toBe('Advanced TypeScript Completion Certificate');
+            expect(vc.credentialSubject.achievement.description).toContain('Alice Johnson');
+            expect(vc.credentialSubject.achievement.description).toContain('Advanced TypeScript');
+        });
+
+        it('should preserve signedCredential through claim flow', async () => {
+            // Set up the unsigned boost with user A as issuer
+            const unsignedBoost = {
+                ...testUnsignedBoost,
+                issuer: a.id.did('key'),
+            };
+
+            const boostUri = await a.invoke.createBoost(unsignedBoost);
+
+            // Sign the credential client-side
+            const signedVc = await a.invoke.issueCredential(unsignedBoost);
+            const originalProof = signedVc.proof;
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'signed-claim@example.com',
+                templateUri: boostUri,
+                signedCredential: signedVc,
+                options: {
+                    suppressDelivery: true,
+                },
+            });
+
+            expect(result.inbox?.claimUrl).toBeDefined();
+
+            const claimedVc = await performClaimFlow(result.inbox!.claimUrl!, b);
+
+            // Verify the credential proof matches the original signed credential
+            expect(claimedVc.proof).toBeDefined();
+            expect(claimedVc.proof.type).toBe(originalProof.type);
+            expect(claimedVc.proof.verificationMethod).toBe(originalProof.verificationMethod);
+        });
+
+        it('should allow claiming credential created with on-the-fly template', async () => {
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'onthefly-claim@example.com',
+                template: {
+                    credential: testUnsignedBoost,
+                    name: 'On-the-fly Claimable Boost',
+                    category: 'Achievement',
+                },
+                options: {
+                    suppressDelivery: true,
+                },
+            });
+
+            expect(result.inbox?.claimUrl).toBeDefined();
+            expect(result.uri).toBeDefined();
+
+            // Verify boost was created
+            const boost = await a.invoke.getBoost(result.uri);
+            expect(boost).toBeDefined();
+            expect(boost.name).toBe('On-the-fly Claimable Boost');
+
+            // Claim the credential
+            const vc = await performClaimFlow(result.inbox!.claimUrl!, b);
+            expect(vc.type).toContain('BoostCredential');
+        });
+
+        it('should set correct credentialSubject.id on claimed credential', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'subject-id@example.com',
+                templateUri: boostUri,
+                options: {
+                    suppressDelivery: true,
+                },
+            });
+
+            expect(result.inbox?.claimUrl).toBeDefined();
+
+            const vc = await performClaimFlow(result.inbox!.claimUrl!, b);
+
+            // Verify the credential subject ID is set to the claimer's DID
+            const bProfile = await b.invoke.getProfile();
+            expect(vc.credentialSubject.id).toBe(bProfile!.did);
+        });
+
+        it('should verify claimed credential has a proof', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'verify-proof@example.com',
+                templateUri: boostUri,
+                options: {
+                    suppressDelivery: true,
+                },
+            });
+
+            expect(result.inbox?.claimUrl).toBeDefined();
+
+            const vc = await performClaimFlow(result.inbox!.claimUrl!, b);
+
+            expect(vc.proof).toBeDefined();
+            expect(vc.proof.proofValue).toBeDefined();
+            // Because we're using the unified-send-sa signing authority, the verification method should include it
+            expect(vc.proof.verificationMethod.includes('unified-send-sa')).toBeTruthy();
+        });
+
+        it('should include boostId in claimed credential', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            const result = await a.invoke.send({
+                type: 'boost',
+                recipient: 'boost-id@example.com',
+                templateUri: boostUri,
+                options: {
+                    suppressDelivery: true,
+                },
+            });
+
+            expect(result.inbox?.claimUrl).toBeDefined();
+
+            const vc = await performClaimFlow(result.inbox!.claimUrl!, b);
+
+            // Verify boostId is set correctly
+            expect(vc.boostId).toBe(boostUri);
         });
     });
 

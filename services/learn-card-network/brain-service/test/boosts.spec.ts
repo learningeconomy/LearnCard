@@ -973,9 +973,6 @@ describe('Boosts', () => {
             await ContactMethod.delete({ detach: true, where: {} });
         });
 
-        // Note: Tests use `as any` casts because the types package needs to be rebuilt
-        // to pick up the `options` and `inbox` fields added to SendBoostInput/Response
-
         it('should route to inbox when recipient is an email address', async () => {
             const boostUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
@@ -985,13 +982,13 @@ describe('Boosts', () => {
                 type: 'boost',
                 recipient: 'test-inbox@example.com',
                 templateUri: boostUri,
-            } as any);
+            });
 
             expect(result.type).toBe('boost');
             expect(result.uri).toBe(boostUri);
-            expect((result as any).inbox).toBeDefined();
-            expect((result as any).inbox?.issuanceId).toBeDefined();
-            expect((result as any).inbox?.status).toBe('pending');
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+            expect(result.inbox?.status).toBe('pending');
         });
 
         it('should route to inbox with on-the-fly template creation', async () => {
@@ -1003,13 +1000,13 @@ describe('Boosts', () => {
                     name: 'On-the-fly Boost',
                     category: 'Achievement',
                 },
-            } as any);
+            });
 
             expect(result.type).toBe('boost');
             expect(result.uri).toBeDefined();
-            expect((result as any).inbox).toBeDefined();
-            expect((result as any).inbox?.issuanceId).toBeDefined();
-            expect((result as any).inbox?.status).toBe('pending');
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
+            expect(result.inbox?.status).toBe('pending');
         });
 
         it('should apply templateData when sending to email', async () => {
@@ -1029,10 +1026,10 @@ describe('Boosts', () => {
                 templateData: {
                     recipientName: 'John Doe',
                 },
-            } as any);
+            });
 
-            expect((result as any).inbox).toBeDefined();
-            expect((result as any).inbox?.issuanceId).toBeDefined();
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
         });
 
         it('should pass branding options to inbox configuration', async () => {
@@ -1052,10 +1049,10 @@ describe('Boosts', () => {
                         recipientName: 'Jane Doe',
                     },
                 },
-            } as any);
+            });
 
-            expect((result as any).inbox).toBeDefined();
-            expect((result as any).inbox?.issuanceId).toBeDefined();
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
         });
 
         it('should return claimUrl when suppressDelivery is true', async () => {
@@ -1070,11 +1067,11 @@ describe('Boosts', () => {
                 options: {
                     suppressDelivery: true,
                 },
-            } as any);
+            });
 
-            expect((result as any).inbox).toBeDefined();
-            expect((result as any).inbox?.claimUrl).toBeDefined();
-            expect((result as any).inbox?.claimUrl).toContain('interactions');
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.claimUrl).toBeDefined();
+            expect(result.inbox?.claimUrl).toContain('interactions');
         });
 
         it('should pass webhookUrl to inbox configuration', async () => {
@@ -1089,10 +1086,10 @@ describe('Boosts', () => {
                 options: {
                     webhookUrl: 'https://example.com/webhook',
                 },
-            } as any);
+            });
 
-            expect((result as any).inbox).toBeDefined();
-            expect((result as any).inbox?.issuanceId).toBeDefined();
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
         });
 
         it('should use signedCredential when provided for inbox path', async () => {
@@ -1107,10 +1104,10 @@ describe('Boosts', () => {
                 recipient: 'signed@example.com',
                 templateUri: boostUri,
                 signedCredential: signedVc,
-            } as any);
+            });
 
-            expect((result as any).inbox).toBeDefined();
-            expect((result as any).inbox?.issuanceId).toBeDefined();
+            expect(result.inbox).toBeDefined();
+            expect(result.inbox?.issuanceId).toBeDefined();
         });
 
         it('should auto-deliver when email belongs to existing verified user', async () => {
@@ -1135,11 +1132,11 @@ describe('Boosts', () => {
                 type: 'boost',
                 recipient: 'verified-user@example.com',
                 templateUri: boostUri,
-            } as any);
+            });
 
-            expect((result as any).inbox).toBeDefined();
+            expect(result.inbox).toBeDefined();
             // When user exists, status should be 'claimed' (auto-delivered)
-            expect((result as any).inbox?.status).toBe('claimed');
+            expect(result.inbox?.status).toBe('claimed');
         });
 
         it('should not route to inbox for profileId recipient', async () => {
@@ -1151,10 +1148,10 @@ describe('Boosts', () => {
                 type: 'boost',
                 recipient: 'userb',
                 templateUri: boostUri,
-            } as any);
+            });
 
             expect(result.credentialUri).toBeDefined();
-            expect((result as any).inbox).toBeUndefined();
+            expect(result.inbox).toBeUndefined();
         });
 
         it('should not route to inbox for DID recipient', async () => {
@@ -1167,10 +1164,10 @@ describe('Boosts', () => {
                 type: 'boost',
                 recipient: userBProfile!.did,
                 templateUri: boostUri,
-            } as any);
+            });
 
             expect(result.credentialUri).toBeDefined();
-            expect((result as any).inbox).toBeUndefined();
+            expect(result.inbox).toBeUndefined();
         });
     });
 
