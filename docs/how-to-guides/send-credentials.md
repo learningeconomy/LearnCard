@@ -132,6 +132,7 @@ const result = await learnCard.invoke.send({
 3. **Prepares the credential** - Uses your template or creates a new boost on-the-fly
 4. **Signs the credential** - Uses client-side signing if available, otherwise falls back to your registered signing authority
 5. **Delivers the credential** - Direct delivery or sends claim email/SMS based on recipient type
+6. **Auto-delivery for verified users** - If the email/phone is already verified and linked to a LearnCard profile, the credential is delivered directly to their wallet without requiring them to click a claim link
 
 ### Response
 
@@ -143,12 +144,20 @@ interface SendResponse {
     
     // Only present when sent to email/phone recipients
     inbox?: {
-        issuanceId: string;           // Tracking ID for this issuance
-        status: 'pending' | 'claimed'; // Current claim status
-        claimUrl?: string;             // Present when suppressDelivery=true
+        issuanceId: string;  // Tracking ID for this issuance
+        status: 
+            | 'PENDING'      // Waiting to be claimed
+            | 'ISSUED'       // Auto-delivered to verified user
+            | 'CLAIMED';     // Claimed via claim link
+        claimUrl?: string;   // Present when suppressDelivery=true
+        recipientDid?: string; // DID of recipient (present when ISSUED)
     };
 }
 ```
+
+{% hint style="success" %}
+**Auto-Delivery**: When `status` is `ISSUED`, the credential was automatically delivered to the recipient's wallet because their email/phone was already verified. No claim link was needed!
+{% endhint %}
 
 ### Options (for Email/Phone Recipients)
 
@@ -173,6 +182,35 @@ options: {
 - Routes the credential through the consent flow if terms exist
 - Creates a `RELATED_TO` relationship between new boosts and the contract
 {% endhint %}
+
+{% hint style="info" %}
+**Email Verification**: When a recipient claims a credential via an email claim link, their email address becomes a **verified contact method** linked to their LearnCard profile. This means:
+- Future credentials sent to that email will be **auto-delivered** directly to their wallet
+- No claim link is needed for subsequent issuances
+- The issuer receives `status: 'ISSUED'` instead of `status: 'PENDING'`
+{% endhint %}
+
+---
+
+## Tracking Boost Recipients
+
+You can track which users have received credentials from a specific boost template using `getBoostRecipients`:
+
+```typescript
+// Get all recipients of a boost
+const recipients = await learnCard.invoke.getBoostRecipients(boostUri);
+
+console.log(recipients);
+// [
+//   { to: { profileId: 'alice-123', did: 'did:key:z6Mk...' }, sent: '2025-01-09T...' },
+//   { to: { profileId: 'bob-456', did: 'did:key:z6Mk...' }, sent: '2025-01-08T...' },
+// ]
+```
+
+This is useful for:
+- **Auditing**: See who has received a specific credential
+- **Preventing duplicates**: Check if a user already received a boost before sending
+- **Analytics**: Track issuance metrics for your credentials
 
 ---
 
