@@ -1,12 +1,11 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
 import { loginTestAccount, logoutTestAccount } from './test.helpers';
-import { gameFlowContract, testContract } from './consent-flow.helpers';
+import { gameFlowContract, testContract, BoostCategoryOptionsEnum } from './consent-flow.helpers';
 import { FAMILY, FamilyCMSPage, FamilyHandler } from './family.page';
 import { LaunchPadPage } from './launchpad.page';
 import { GameFlowPage, gameRedirectUrl } from './game-flow.page';
 import { ConsentFlowPage } from './consent-flow.page';
-import { BoostCategoryOptionsEnum } from '../src/components/boost/boost-options/boostOptions';
 
 test.describe('ConsentFlow', () => {
     test('External Door - Logged In - Full Flow', async ({ page }) => {
