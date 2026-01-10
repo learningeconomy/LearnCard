@@ -945,6 +945,21 @@ describe('Boosts', () => {
                 })
             ).rejects.toMatchObject({ code: 'FORBIDDEN' });
         });
+
+        it('should allow sending a provisional boost', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: 'PROVISIONAL',
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: 'userb',
+                    templateUri: boostUri,
+                })
+            ).resolves.not.toThrow();
+        });
     });
 
     describe('send to email/phone (inbox routing)', () => {
@@ -1630,6 +1645,28 @@ describe('Boosts', () => {
             expect(newBoost.name).toEqual('nice');
         });
 
+        it('should allow you to update a provisional boosts name', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: BoostStatus.enum.PROVISIONAL,
+            });
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boost = boosts.records[0]!;
+            const uri = boost.uri;
+
+            expect(boost.status).toBe(BoostStatus.enum.PROVISIONAL);
+            expect(boost.name).toBeUndefined();
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { name: 'nice' } })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const newBoost = newBoosts.records[0]!;
+
+            expect(newBoost.name).toEqual('nice');
+        });
+
         it('should prevent you from updating a published boosts category', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
@@ -1740,6 +1777,35 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
+
+            const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({
+                uri,
+            });
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({
+                    uri,
+                    updates: { credential: testUnsignedBoost },
+                })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const newBoost = newBoosts.records[0]!;
+
+            expect(
+                await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })
+            ).not.toMatchObject(beforeUpdateBoostCredential);
+        });
+
+        it('should allow you to update provisional boost credential', async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.PROVISIONAL,
+            });
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boost = boosts.records[0]!;
+            const uri = boost.uri;
+
+            expect(boost.status).toBe(BoostStatus.enum.PROVISIONAL);
 
             const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({
                 uri,
@@ -2525,6 +2591,32 @@ describe('Boosts', () => {
                     userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })
                 ).rejects.toMatchObject({
                     code: 'FORBIDDEN',
+                });
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
+        it('should allow generating a claim boost link for a provisional boost', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: BoostStatus.enum.PROVISIONAL,
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name: sa.relationship.name,
+                };
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })
+                ).resolves.toMatchObject({
+                    boostUri: uri,
                 });
             } else {
                 expect(sa).toBeDefined();

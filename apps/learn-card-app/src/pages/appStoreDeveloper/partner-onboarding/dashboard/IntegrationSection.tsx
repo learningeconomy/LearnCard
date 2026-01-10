@@ -60,36 +60,27 @@ const learnCard = await initLearnCard({
     network: true 
 });
 
-// Option 1: Send to existing LearnCard user
+// Send credential - works with profile ID, DID, email, or phone
+// The recipient type is auto-detected
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'recipient-profile-id',
+    recipient: 'recipient@example.com', // or profile ID, DID, phone
     templateUri: '${boostUri}',
+    templateData: {
+        // Your dynamic template fields here
+        recipientName: 'John Doe',
+    },
+    options: {
+        // Branding options (for email/phone recipients)
+        branding: {
+            issuerName: 'Your Organization',
+            recipientName: 'John Doe',
+        },
+    },
 });
 
-// Option 2: Send via email (Universal Inbox)
-const inboxResult = await learnCard.invoke.sendCredentialViaInbox({ 
-    recipient: { 
-        type: 'email',
-        value: 'recipient@example.com' 
-    }, 
-    credential: {
-        "@context": [
-            "https://www.w3.org/2018/credentials/v1",
-            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
-        ],
-        "type": ["VerifiableCredential", "OpenBadgeCredential"],
-        "name": "${templateName}",
-        "credentialSubject": {
-            "type": ["AchievementSubject"],
-            "achievement": {
-                "type": ["Achievement"],
-                "name": "${templateName}",
-                "description": "${currentTemplate?.description || 'Completed successfully.'}"
-            }
-        }
-    }
-});`;
+console.log('Credential URI:', result.credentialUri);
+// For email/phone: result.inbox?.issuanceId, result.inbox?.status`;
     }, [currentTemplate]);
 
     const webhookPayloadExample = useMemo(() => {

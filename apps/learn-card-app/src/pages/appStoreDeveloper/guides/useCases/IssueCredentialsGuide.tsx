@@ -725,6 +725,37 @@ const BuildCredentialStep: React.FC<{
         };
     }, []);
 
+    // Build options code for the unified send() API
+    const buildOptionsCode = () => {
+        const parts: string[] = [];
+
+        if (advancedOptions.webhookUrl) {
+            parts.push(`        webhookUrl: '${advancedOptions.webhookUrl}',`);
+        }
+
+        if (advancedOptions.suppressDelivery) {
+            parts.push(`        suppressDelivery: true,`);
+        }
+
+        if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
+            const brandingParts: string[] = [];
+            if (advancedOptions.issuerName) brandingParts.push(`            issuerName: '${advancedOptions.issuerName}',`);
+            if (advancedOptions.issuerLogoUrl) brandingParts.push(`            issuerLogoUrl: '${advancedOptions.issuerLogoUrl}',`);
+            if (advancedOptions.recipientName) brandingParts.push(`            recipientName: '${advancedOptions.recipientName}',`);
+
+            parts.push(`        branding: {
+${brandingParts.join('\n')}
+        },`);
+        }
+
+        return parts.length > 0 ? `
+    options: {
+${parts.join('\n')}
+    },` : '';
+    };
+
+    const optionsCode = buildOptionsCode();
+
     const codeSnippet = `// Install: npm install @learncard/init
 
 import { initLearnCard } from '@learncard/init';
@@ -737,38 +768,69 @@ const learnCard = await initLearnCard({ network: true, apiKey: API_TOKEN });
 
 // Your credential (built with Credential Builder)
 const credential = ${credentialJsonIndented};
-${configObject ? `
-// Configuration for custom branding, webhooks, etc.
-const configuration = ${configJsonIndented};
-` : ''}
-// Send credential via Universal Inbox (for email recipients)${recipientEmail ? `
-await learnCard.invoke.sendCredentialViaInbox({
-    recipient: {
-        type: 'email',
-        value: '${recipientEmail}',
-    },
-    credential,${configObject ? `
-    configuration,` : ''}
+
+// Send credential using unified send() API
+// Recipient type is auto-detected: profile ID, DID, email, or phone${recipientEmail ? `
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: '${recipientEmail}',
+    template: {
+        credential,
+        name: credential.name || 'Credential',
+        category: 'Achievement',
+    },${optionsCode}
 });` : `
-// await learnCard.invoke.sendCredentialViaInbox({
-//     recipient: {
-//         type: 'email',
-//         value: 'recipient@example.com',
-//     },
-//     credential,${configObject ? `
-//     configuration,` : ''}
+// const result = await learnCard.invoke.send({
+//     type: 'boost',
+//     recipient: 'recipient@example.com', // or profile ID, DID, phone
+//     template: {
+//         credential,
+//         name: credential.name || 'Credential',
+//         category: 'Achievement',
+//     },${optionsCode ? optionsCode.split('\n').map(l => '// ' + l.slice(1)).join('\n') : ''}
 // });`}
 ${advancedOptions.suppressDelivery ? `
 // Since delivery is suppressed, get the claim URL from the response:
-// const { claimUrl } = await learnCard.invoke.sendCredentialViaInbox({...});
+// const { claimUrl } = result.inbox;
 // Use claimUrl in your own UI or email system.` : ''}
-// The recipient will receive an email with a link to claim their credential.
-// Once claimed, the credential is signed and added to their wallet.
-console.log('Credential sent to inbox!');
+
+console.log('Credential URI:', result.credentialUri);
+// For email/phone: result.inbox?.issuanceId, result.inbox?.status
 
 // Verify your credential was sent:
 const sent = await learnCard.invoke.getMySentInboxCredentials();
 console.log('Sent credentials:', sent.records);`;
+
+    // Build Python options object
+    const buildPythonOptions = () => {
+        const parts: string[] = [];
+
+        if (advancedOptions.webhookUrl) {
+            parts.push(`        "webhookUrl": "${advancedOptions.webhookUrl}",`);
+        }
+
+        if (advancedOptions.suppressDelivery) {
+            parts.push(`        "suppressDelivery": True,`);
+        }
+
+        if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
+            const brandingParts: string[] = [];
+            if (advancedOptions.issuerName) brandingParts.push(`            "issuerName": "${advancedOptions.issuerName}",`);
+            if (advancedOptions.issuerLogoUrl) brandingParts.push(`            "issuerLogoUrl": "${advancedOptions.issuerLogoUrl}",`);
+            if (advancedOptions.recipientName) brandingParts.push(`            "recipientName": "${advancedOptions.recipientName}",`);
+
+            parts.push(`        "branding": {
+${brandingParts.join('\n')}
+        },`);
+        }
+
+        return parts.length > 0 ? `
+    "options": {
+${parts.join('\n')}
+    },` : '';
+    };
+
+    const pythonOptionsCode = buildPythonOptions();
 
     const pythonSnippet = `# Install: pip install requests
 
@@ -778,26 +840,24 @@ import json
 # Your API token from Step 1
 API_TOKEN = "${apiToken || 'YOUR_API_TOKEN'}"
 
-# API endpoint
-API_URL = "${networkUrl}/inbox/issue"
+# API endpoint for unified send
+API_URL = "${networkUrl}/trpc/profile.send"
 
 # Your credential (built with Credential Builder)
 credential = ${credentialJsonIndented.replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}
-${configObject ? `
-# Configuration for custom branding, webhooks, etc.
-configuration = ${configJsonIndented.replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}
-` : ''}
-# Build the request payload
+
+# Build the request payload using unified send API
 payload = {
-    "recipient": {
-        "type": "email",
-        "value": "${recipientEmail || 'recipient@example.com'}"
-    },
-    "credential": credential${configObject ? `,
-    "configuration": configuration` : ''}
+    "type": "boost",
+    "recipient": "${recipientEmail || 'recipient@example.com'}",
+    "template": {
+        "credential": credential,
+        "name": credential.get("name", "Credential"),
+        "category": "Achievement"
+    },${pythonOptionsCode}
 }
 
-# Send credential via Universal Inbox API
+# Send credential using unified send API
 response = requests.post(
     API_URL,
     headers={
@@ -809,22 +869,54 @@ response = requests.post(
 
 if response.ok:
     data = response.json()
-    print("Credential sent to inbox!")
-    print(f"Claim URL: {data.get('claimUrl', 'N/A')}")
+    print("Credential sent!")
+    print(f"Credential URI: {data.get('credentialUri', 'N/A')}")
+    # For email/phone recipients:
+    inbox = data.get('inbox', {})
+    if inbox:
+        print(f"Issuance ID: {inbox.get('issuanceId', 'N/A')}")
+        print(f"Status: {inbox.get('status', 'N/A')}")
 else:
     print(f"Error: {response.status_code} - {response.text}")`;
 
-    const curlSnippet = `curl -X POST ${networkUrl}/inbox/issue \\
+    // Build cURL options JSON
+    const buildCurlOptions = () => {
+        const opts: Record<string, unknown> = {};
+
+        if (advancedOptions.webhookUrl) {
+            opts.webhookUrl = advancedOptions.webhookUrl;
+        }
+
+        if (advancedOptions.suppressDelivery) {
+            opts.suppressDelivery = true;
+        }
+
+        if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
+            opts.branding = {};
+            if (advancedOptions.issuerName) (opts.branding as Record<string, string>).issuerName = advancedOptions.issuerName;
+            if (advancedOptions.issuerLogoUrl) (opts.branding as Record<string, string>).issuerLogoUrl = advancedOptions.issuerLogoUrl;
+            if (advancedOptions.recipientName) (opts.branding as Record<string, string>).recipientName = advancedOptions.recipientName;
+        }
+
+        return Object.keys(opts).length > 0 ? opts : null;
+    };
+
+    const curlOptions = buildCurlOptions();
+    const curlPayload = {
+        type: 'boost',
+        recipient: recipientEmail || 'recipient@example.com',
+        template: {
+            credential,
+            name: (credential as Record<string, unknown>).name || 'Credential',
+            category: 'Achievement',
+        },
+        ...(curlOptions && { options: curlOptions }),
+    };
+
+    const curlSnippet = `curl -X POST ${networkUrl}/trpc/profile.send \\
   -H "Authorization: Bearer ${apiToken || 'YOUR_API_TOKEN'}" \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "recipient": {
-      "type": "email",
-      "value": "${recipientEmail || 'recipient@example.com'}"
-    },
-    "credential": ${JSON.stringify(credential, null, 6).split('\n').map((line, i) => i === 0 ? line : '      ' + line).join('\n')}${configObject ? `,
-    "configuration": ${JSON.stringify(configObject, null, 6).split('\n').map((line, i) => i === 0 ? line : '      ' + line).join('\n')}` : ''}
-  }'`;
+  -d '${JSON.stringify(curlPayload, null, 2).split('\n').map((line, i) => i === 0 ? line : '  ' + line).join('\n')}'`;
 
     // Get selected grant name for display
     const selectedGrant = authGrants.find(g => g.id === selectedGrantId);

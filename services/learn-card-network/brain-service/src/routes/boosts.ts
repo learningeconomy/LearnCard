@@ -78,6 +78,7 @@ import {
     sendBoost,
     issueClaimLinkBoost,
     isDraftBoost,
+    isEditableBoost,
     convertCredentialToBoostTemplateJSON,
     isInboxRecipient,
     prepareCredentialFromBoost,
@@ -1861,7 +1862,7 @@ export const boostsRouter = t.router({
 
             if (meta) actualUpdates.meta = meta;
 
-            if (isDraftBoost(boost)) {
+            if (isEditableBoost(boost)) {
                 if (name) actualUpdates.name = name;
                 if (category) actualUpdates.category = category;
                 if (type) actualUpdates.type = type;
@@ -1882,7 +1883,7 @@ export const boostsRouter = t.router({
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'Published Boosts can only have their meta or defaultPermissions updated. Draft Boosts can update any field.',
+                        'LIVE Boosts can only have their meta or defaultPermissions updated. DRAFT and PROVISIONAL Boosts can update any field.',
                 });
             }
 

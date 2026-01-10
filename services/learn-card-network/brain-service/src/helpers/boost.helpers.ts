@@ -43,6 +43,14 @@ export const isDraftBoost = (boost: BoostInstance): boolean => {
     return boost.status === BoostStatus.enum.DRAFT;
 };
 
+export const isProvisionalBoost = (boost: BoostInstance): boolean => {
+    return boost.status === BoostStatus.enum.PROVISIONAL;
+};
+
+export const isEditableBoost = (boost: BoostInstance): boolean => {
+    return isDraftBoost(boost) || isProvisionalBoost(boost);
+};
+
 export const convertCredentialToBoostTemplateJSON = (
     credential: VC | UnsignedVC,
     defaultIssuerDid?: string

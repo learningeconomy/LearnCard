@@ -223,7 +223,22 @@ export const PaginatedClaimHooksValidator = PaginationResponseValidator.extend({
 });
 export type PaginatedClaimHooksType = z.infer<typeof PaginatedClaimHooksValidator>;
 
-export const LCNBoostStatus = z.enum(['DRAFT', 'LIVE']);
+/**
+ * Status states for Boosts that control what actions can be performed.
+ *
+ * - **DRAFT**: Work in progress. Can edit all fields, but cannot send or generate claim links.
+ * - **PROVISIONAL**: Active but iterating. Can both edit all fields AND send/issue credentials. Ideal for testing in production or soft launches.
+ * - **LIVE**: Official/finalized. Can only edit meta and defaultPermissions. Core properties are locked for consistency.
+ *
+ * @example
+ * ```typescript
+ * // Create a provisional boost for testing
+ * const boostUri = await learnCard.invoke.createBoost(credential, {
+ *   status: 'PROVISIONAL',
+ * });
+ * ```
+ */
+export const LCNBoostStatus = z.enum(['DRAFT', 'PROVISIONAL', 'LIVE']);
 export type LCNBoostStatusEnum = z.infer<typeof LCNBoostStatus>;
 
 export const BoostValidator = z.object({

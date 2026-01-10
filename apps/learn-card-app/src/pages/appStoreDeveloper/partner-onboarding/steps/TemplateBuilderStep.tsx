@@ -646,7 +646,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 type: template.achievementType,
                 category: 'achievement',
                 meta: boostMeta,
-                status: 'DRAFT'
+                status: 'PROVISIONAL'
             };
 
             // If updating existing boost, use updateBoost to preserve children
@@ -716,7 +716,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 type: template.achievementType,
                 category: 'achievement',
                 meta: boostMeta,
-                status: 'DRAFT',
+                status: 'PROVISIONAL',
             };
 
             // If updating existing child boost, use updateBoost

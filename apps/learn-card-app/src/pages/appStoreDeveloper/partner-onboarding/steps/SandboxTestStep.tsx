@@ -157,42 +157,24 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                 templateData[varName] = getSampleValue(varName);
             });
 
-            // Fetch and render the boost template
-            const boostCredential = await wallet.invoke.resolveFromLCN?.(selectedTemplate.boostUri);
-
-            if (!boostCredential) {
-                throw new Error('Could not fetch boost template');
-            }
-
-            // Render with Mustache
-            const Mustache = await import('mustache');
-            const renderedCredential = JSON.parse(
-                Mustache.default.render(JSON.stringify(boostCredential), templateData)
-            );
-
-            console.log("Rendered credential", renderedCredential);
-            renderedCredential.credentialSubject.id = wallet.id.did()
-
-            // Send via inbox
-            const result = await wallet.invoke.sendCredentialViaInbox?.({
-                recipient: { type: 'email', value: testEmail },
-                credential: renderedCredential,
-                configuration: {
-                    delivery: {
-                        suppress: false,
-                        template: {
-                            model: {
-                                issuer: { name: branding.displayName },
-                                recipient: { name: templateData.recipient_name || 'Test Recipient' },
-                            },
-                        },
+            // Use unified send() - auto-detects email recipient and handles templating
+            const result = await wallet.invoke.send?.({
+                type: 'boost',
+                recipient: testEmail,
+                templateUri: selectedTemplate.boostUri,
+                templateData,
+                options: {
+                    branding: {
+                        issuerName: branding.displayName,
+                        issuerLogoUrl: branding.image,
+                        recipientName: templateData.recipient_name || 'Test Recipient',
                     },
                 },
             });
 
             setTestStatus('success');
             setTestResult({
-                credentialId: result?.issuanceId || `test_${Date.now().toString(36)}`,
+                credentialId: result?.inbox?.issuanceId || result?.credentialUri || `test_${Date.now().toString(36)}`,
             });
 
             presentToast('Test credential sent successfully!', { type: ToastTypeEnum.Success });

@@ -678,52 +678,42 @@ export default BOOST_TEMPLATES;`;
         // Generate templateData from fields
         const templateDataCode = generateTemplateDataCode(template);
 
-        // Check if sending to email (Universal Inbox) or profile ID
-        const isEmailRecipient = apiRecipientEmail && apiRecipientEmail.includes('@');
+        // Build options code for branding (used for email/phone recipients)
+        let optionsCode = '';
+        const optionsParts: string[] = [];
 
-        if (isEmailRecipient) {
-            // Email recipient - use sendCredentialViaInbox API
-            // Build configuration object for delivery options
-            let configCode = '';
-            const configParts: string[] = [];
+        if (apiAdvancedOptions.webhookUrl) {
+            optionsParts.push(`        webhookUrl: '${apiAdvancedOptions.webhookUrl}',`);
+        }
 
-            if (apiAdvancedOptions.webhookUrl) {
-                configParts.push(`            webhookUrl: '${apiAdvancedOptions.webhookUrl}',`);
-            }
+        if (apiAdvancedOptions.suppressDelivery) {
+            optionsParts.push(`        suppressDelivery: true,`);
+        }
 
-            if (apiAdvancedOptions.suppressDelivery) {
-                configParts.push(`            delivery: { suppress: true },`);
-            } else if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || apiAdvancedOptions.recipientName) {
-                const modelParts: string[] = [];
+        if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || apiAdvancedOptions.recipientName) {
+            const brandingParts: string[] = [];
+            if (apiAdvancedOptions.issuerName) brandingParts.push(`            issuerName: '${apiAdvancedOptions.issuerName}',`);
+            if (apiAdvancedOptions.issuerLogoUrl) brandingParts.push(`            issuerLogoUrl: '${apiAdvancedOptions.issuerLogoUrl}',`);
+            if (apiAdvancedOptions.recipientName) brandingParts.push(`            recipientName: '${apiAdvancedOptions.recipientName}',`);
 
-                if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl) {
-                    const issuerParts: string[] = [];
-                    if (apiAdvancedOptions.issuerName) issuerParts.push(`name: '${apiAdvancedOptions.issuerName}'`);
-                    if (apiAdvancedOptions.issuerLogoUrl) issuerParts.push(`logoUrl: '${apiAdvancedOptions.issuerLogoUrl}'`);
-                    modelParts.push(`                    issuer: { ${issuerParts.join(', ')} },`);
-                }
+            optionsParts.push(`        branding: {
+${brandingParts.join('\n')}
+        },`);
+        }
 
-                if (apiAdvancedOptions.recipientName) {
-                    modelParts.push(`                    recipient: { name: '${apiAdvancedOptions.recipientName}' },`);
-                }
+        if (optionsParts.length > 0) {
+            optionsCode = `
+    options: {
+${optionsParts.join('\n')}
+    },`;
+        }
 
-                configParts.push(`            delivery: {
-                template: {
-                    model: {
-${modelParts.join('\n')}
-                    },
-                },
-            },`);
-            }
+        // Determine recipient example
+        const recipientExample = apiRecipientEmail && apiRecipientEmail.includes('@') 
+            ? apiRecipientEmail 
+            : 'recipient-profile-id';
 
-            if (configParts.length > 0) {
-                configCode = `
-        configuration: {
-${configParts.join('\n')}
-        },`;
-            }
-
-            return `// Installation: npm install @learncard/init
+        return `// Installation: npm install @learncard/init
 
 import { initLearnCard } from '@learncard/init';
 
@@ -734,52 +724,11 @@ const learnCard = await initLearnCard({
     },
 });
 
-// Fetch the boost template and render with your data
-const boostCredential = await learnCard.invoke.resolveFromLCN('${boostUri}');
-
-// Apply template data using Mustache rendering
-const Mustache = require('mustache');
-const templateData = {
-${templateDataCode}
-};
-
-const renderedCredential = JSON.parse(
-    Mustache.render(JSON.stringify(boostCredential), templateData)
-);
-
-// Send to email recipient via Universal Inbox
-const result = await learnCard.invoke.sendCredentialViaInbox({
-    recipient: { email: '${apiRecipientEmail}' },
-    credential: renderedCredential,${configCode}
-});
-
-console.log('Issuance ID:', result.issuanceId);
-console.log('Status:', result.status); // 'pending' until claimed
-// Recipient will receive an email with a link to claim their credential`;
-        } else {
-            // Profile ID recipient - use send API
-            let optionsCode = '';
-
-            if (apiHasAdvancedOptions && apiAdvancedOptions.webhookUrl) {
-                optionsCode = `
-    // webhookUrl: '${apiAdvancedOptions.webhookUrl}', // Note: webhooks not yet supported for direct send`;
-            }
-
-            return `// Installation: npm install @learncard/init
-
-import { initLearnCard } from '@learncard/init';
-
-// Initialize with your API key (from Project Setup)
-const learnCard = await initLearnCard({
-    network: {
-        apiToken: process.env.LEARNCARD_API_KEY, // ${apiKey.slice(0, 8)}...
-    },
-});
-
-// Send boost to a LearnCard user by profile ID
+// Send credential using unified send() API
+// Recipient type is auto-detected: profile ID, DID, email, or phone
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'recipient-profile-id', // The recipient's LearnCard profile ID
+    recipient: '${recipientExample}', // profile ID, DID, email, or phone
     templateUri: '${boostUri}',
     templateData: {
 ${templateDataCode}
@@ -788,8 +737,11 @@ ${templateDataCode}
 
 console.log('Credential URI:', result.credentialUri);
 console.log('Boost URI:', result.uri);
-// Credential is sent directly to the user's LearnCard wallet`;
-        }
+
+// For email/phone recipients:
+// result.inbox?.issuanceId - tracking ID
+// result.inbox?.status - 'PENDING', 'ISSUED', or 'CLAIMED'
+// result.inbox?.claimUrl - present if suppressDelivery=true`;
     };
 
     const handleCopyApiCode = async () => {

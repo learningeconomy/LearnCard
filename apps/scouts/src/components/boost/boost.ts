@@ -6,8 +6,23 @@ import Document from 'learn-card-base/svgs/Document';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { AddressSpec } from '../locationSearch/location.helpers';
 
+/**
+ * Status states for Boosts that control what actions can be performed.
+ *
+ * | Status | Can Edit All Fields | Can Send/Issue | Use Case |
+ * |--------|---------------------|----------------|----------|
+ * | DRAFT | ✅ Yes | ❌ No | Work in progress |
+ * | PROVISIONAL | ✅ Yes | ✅ Yes | Active but iterating |
+ * | LIVE | ❌ Only meta | ✅ Yes | Official/finalized |
+ */
 export enum LCNBoostStatusEnum {
+    /** Work in progress. Can edit all fields, but cannot send or generate claim links. */
     draft = 'DRAFT',
+
+    /** Active but iterating. Can both edit all fields AND send/issue credentials. Ideal for testing in production or soft launches. */
+    provisional = 'PROVISIONAL',
+
+    /** Official/finalized. Can only edit meta and defaultPermissions. Core properties are locked for consistency. */
     live = 'LIVE',
 }
 
