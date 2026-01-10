@@ -299,15 +299,25 @@ export const COMMANDS: CommandTemplate[] = [
     {
         id: 'create-boost',
         name: 'Create Boost',
-        description: 'Create a new boost template',
-        template: `await learnCard.invoke.createBoost({{credential}}, {
-    name: '{{name}}',
-    category: '{{category}}'
-})`,
+        description: 'Create a new boost template with optional default permissions',
+        template: `await learnCard.invoke.createBoost({{credential}}, { name: '{{name}}', category: '{{category}}'{{#defaultPermissions}}, defaultPermissions: { {{defaultPermissions}} }{{/defaultPermissions}} })`,
         params: [
             { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Credential template', required: true },
             { name: 'name', type: 'string', placeholder: 'My Boost', description: 'Boost name', required: true },
             { name: 'category', type: 'select', options: ['Achievement', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'Category', required: true },
+            { name: 'defaultPermissions', type: 'json', placeholder: 'canIssue: true, canEdit: false', description: 'Default permissions for all users (canIssue, canEdit, canRevoke, canManagePermissions, canViewAnalytics)', required: false },
+        ],
+        category: 'boosts',
+    },
+    {
+        id: 'create-boost-open',
+        name: 'Create Open Boost',
+        description: 'Create a boost that anyone can issue (community badge)',
+        template: `await learnCard.invoke.createBoost({{credential}}, { name: '{{name}}', category: '{{category}}', defaultPermissions: { canIssue: true } })`,
+        params: [
+            { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Credential template', required: true },
+            { name: 'name', type: 'string', placeholder: 'Community Badge', description: 'Boost name', required: true },
+            { name: 'category', type: 'select', options: ['Achievement', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Social Badge', description: 'Category', required: true },
         ],
         category: 'boosts',
     },
@@ -315,15 +325,13 @@ export const COMMANDS: CommandTemplate[] = [
         id: 'create-child-boost',
         name: 'Create Child Boost',
         description: 'Create a boost as a child of an existing boost',
-        template: `await learnCard.invoke.createChildBoost('{{parentUri}}', {{credential}}, {
-    name: '{{name}}',
-    category: '{{category}}'
-})`,
+        template: `await learnCard.invoke.createChildBoost('{{parentUri}}', {{credential}}, { name: '{{name}}', category: '{{category}}'{{#defaultPermissions}}, defaultPermissions: { {{defaultPermissions}} }{{/defaultPermissions}} })`,
         params: [
             { name: 'parentUri', type: 'string', placeholder: 'urn:lc:boost:parent123', description: 'Parent boost URI', required: true },
             { name: 'credential', type: 'json', placeholder: 'unsignedVC', description: 'Credential template', required: true },
             { name: 'name', type: 'string', placeholder: 'Child Boost', description: 'Boost name', required: true },
             { name: 'category', type: 'select', options: ['Achievement', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'Category', required: true },
+            { name: 'defaultPermissions', type: 'json', placeholder: 'canIssue: true', description: 'Default permissions for all users', required: false },
         ],
         category: 'boosts',
     },
@@ -331,14 +339,12 @@ export const COMMANDS: CommandTemplate[] = [
         id: 'update-boost',
         name: 'Update Boost',
         description: 'Update boost metadata (name, category, permissions)',
-        template: `await learnCard.invoke.updateBoost('{{uri}}', {
-    name: '{{name}}',
-    category: '{{category}}'
-})`,
+        template: `await learnCard.invoke.updateBoost('{{uri}}', { name: '{{name}}', category: '{{category}}'{{#defaultPermissions}}, defaultPermissions: { {{defaultPermissions}} }{{/defaultPermissions}} })`,
         params: [
             { name: 'uri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI', required: true },
             { name: 'name', type: 'string', placeholder: 'Updated Name', description: 'New boost name', required: false },
             { name: 'category', type: 'select', options: ['Achievement', 'ID', 'Skill', 'Learning History', 'Work History', 'Social Badge'], defaultValue: 'Achievement', description: 'New category', required: false },
+            { name: 'defaultPermissions', type: 'json', placeholder: 'canIssue: true, canEdit: true', description: 'Default permissions (canIssue, canEdit, canRevoke, canManagePermissions, canViewAnalytics)', required: false },
         ],
         category: 'boosts',
     },
@@ -610,6 +616,19 @@ const CommandSidebar: React.FC<CommandSidebarProps> = ({ onInsertCommand, isOpen
                 }
             }
 
+            // Handle conditional sections: {{#paramName}}...{{/paramName}}
+            // If value is empty, remove the entire section; otherwise, keep content and replace {{paramName}}
+            const conditionalRegex = new RegExp(`\\{\\{#${param.name}\\}\\}([\\s\\S]*?)\\{\\{/${param.name}\\}\\}`, 'g');
+
+            if (value.trim()) {
+                // Keep the content inside the conditional, then replace the param placeholder
+                result = result.replace(conditionalRegex, '$1');
+            } else {
+                // Remove the entire conditional section
+                result = result.replace(conditionalRegex, '');
+            }
+
+            // Replace standard placeholders
             result = result.replace(`{{${param.name}}}`, value);
         });
 
