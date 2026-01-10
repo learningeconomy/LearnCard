@@ -3,9 +3,24 @@ import numeral from 'numeral';
 
 import ArrowUp from 'learn-card-base/svgs/ArrowUp';
 
-import { type AiPathwayCareer } from './ai-pathway-careers.helpers';
+import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
 
-export const AiPathwayCareerJobGrowthInfo: React.FC<{ career: AiPathwayCareer }> = ({ career }) => {
+export const AiPathwayCareerJobGrowthInfo: React.FC<{ occupation: OccupationDetailsResponse }> = ({
+    occupation,
+}) => {
+    const projection = occupation.Projections?.Projections?.[0];
+
+    const jobGrowth = projection
+        ? {
+              annualOpenings: Number(projection.ProjectedAnnualJobOpening),
+              percentChange: Number(projection.PerCentChange),
+              estimatedYear: Number(projection.EstimatedYear),
+              projectedYear: Number(projection.ProjectedYear),
+          }
+        : undefined;
+
+    if (!jobGrowth) return null;
+
     return (
         <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full gap-2">
             <div className="w-full flex items-center justify-start">
@@ -19,9 +34,11 @@ export const AiPathwayCareerJobGrowthInfo: React.FC<{ career: AiPathwayCareer }>
                     <ArrowUp className="text-grayscale-900 mt-1" />
                 </span>
                 <p className="text-grayscale-800 text-sm text-left">
-                    In the last 5 years, there’s been a medium demand for {career?.title} in the
-                    market with a total of {numeral(career.jobsCount).format('0,0')} new job
-                    openings for this role.
+                    From {jobGrowth.estimatedYear} to {jobGrowth.projectedYear}, demand for{' '}
+                    <strong>{occupation.OnetTitle}</strong> is projected to grow by{' '}
+                    <strong>{jobGrowth.percentChange}%</strong>, with approximately{' '}
+                    <strong>{numeral(jobGrowth.annualOpenings).format('0,0')}</strong> job openings
+                    per year.
                 </p>
             </div>
         </div>

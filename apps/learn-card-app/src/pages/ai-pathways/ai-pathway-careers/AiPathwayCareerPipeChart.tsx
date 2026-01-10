@@ -2,7 +2,7 @@ import React from 'react';
 import numeral from 'numeral';
 
 import { BarChart, Bar, XAxis, YAxis, ReferenceLine, ResponsiveContainer } from 'recharts';
-import { AiPathwayCareer, buildSalaryPipeData, getSalaryStats } from './ai-pathway-careers.helpers';
+import { buildSalaryPipeData } from './ai-pathway-careers.helpers';
 import { Wages } from 'learn-card-base/types/careerOneStop';
 
 const MEDIAN_BUCKET = 4;

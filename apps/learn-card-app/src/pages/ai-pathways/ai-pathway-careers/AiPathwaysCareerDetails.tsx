@@ -30,18 +30,14 @@ const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }
                     <AiPathwayCareerHeader occupation={occupation} />
 
                     <AiPathwayCareerSalaries occupation={occupation} />
+                    <AiPathwayCareerSkills occupation={occupation} />
 
-                    {/* 
+                    {/* <AiPathwayCareerQualitativeInsights occupation={occupation} /> */}
 
-                    <AiPathwayCareerSkills career={career} />
+                    <AiPathwayCareerJobGrowthInfo occupation={occupation} />
+                    <AiPathwayCareerQualifications occupation={occupation} />
 
-                    <AiPathwayCareerQualitativeInsights career={career} />
-
-                    <AiPathwayCareerJobGrowthInfo career={career} />
-
-                    <AiPathwayCareerQualifications career={career} />
-
-                    <AiPathwayTopPayLocations career={career} /> */}
+                    {/* <AiPathwayTopPayLocations career={career} /> */}
                 </div>
                 <IonFooter
                     mode="ios"
