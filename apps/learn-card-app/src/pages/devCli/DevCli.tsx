@@ -141,6 +141,7 @@ const DevCli: React.FC = () => {
         if (term) {
             // Gruvbox orange prompt
             term.write('\r\n\x1b[38;2;254;128;25m❯\x1b[0m ');
+            term.scrollToBottom();
         }
     }, []);
 
@@ -185,6 +186,8 @@ const DevCli: React.FC = () => {
                     term.write(`\x1b[${colorCode}m${line}\x1b[0m`);
                 }
             });
+
+            term.scrollToBottom();
         }
     }, []);
 
@@ -344,10 +347,25 @@ const DevCli: React.FC = () => {
         term.loadAddon(webLinksAddon);
 
         term.open(terminalRef.current);
-        fitAddon.fit();
+
+        // Initial fit with a small delay to let container size stabilize
+        requestAnimationFrame(() => {
+            fitAddon.fit();
+            term.scrollToBottom();
+        });
 
         terminalInstanceRef.current = term;
         fitAddonRef.current = fitAddon;
+
+        // Use ResizeObserver to refit terminal when container size changes
+        const resizeObserver = new ResizeObserver(() => {
+            requestAnimationFrame(() => {
+                fitAddon.fit();
+                term.scrollToBottom();
+            });
+        });
+
+        resizeObserver.observe(terminalRef.current);
 
         // Register link provider for click-to-copy (LC URIs and DIDs)
         term.registerLinkProvider({
@@ -483,6 +501,7 @@ const DevCli: React.FC = () => {
 
         return () => {
             window.removeEventListener('resize', handleResize);
+            resizeObserver.disconnect();
             term.dispose();
             terminalInstanceRef.current = null;
         };
@@ -504,6 +523,12 @@ const DevCli: React.FC = () => {
                     term.write('\r\n');
                     writeLine(`Your DID: ${wallet.id.did()}`, '32');
                     writePrompt();
+
+                    // Force scroll after initial content with delay for layout
+                    setTimeout(() => {
+                        fitAddonRef.current?.fit();
+                        term.scrollToBottom();
+                    }, 150);
                 }
             } catch (e) {
                 console.error('Failed to initialize LearnCard:', e);
@@ -515,6 +540,12 @@ const DevCli: React.FC = () => {
                     term.write('\r\n');
                     writeLine(`Warning: LearnCard initialization failed - ${e instanceof Error ? e.message : String(e)}`, '33');
                     writePrompt();
+
+                    // Force scroll after initial content with delay for layout
+                    setTimeout(() => {
+                        fitAddonRef.current?.fit();
+                        term.scrollToBottom();
+                    }, 150);
                 }
 
                 setIsReady(true);
@@ -539,13 +570,17 @@ const DevCli: React.FC = () => {
         const term = terminalInstanceRef.current;
 
         if (term) {
+            // Flatten multi-line commands to single line for terminal compatibility
+            const flattenedCommand = command.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
             // Clear current line and insert command (Gruvbox orange prompt)
             term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
             term.write(' '.repeat(commandBufferRef.current.length));
             term.write('\r\x1b[38;2;254;128;25m❯\x1b[0m ');
-            term.write(command);
-            commandBufferRef.current = command;
+            term.write(flattenedCommand);
+            commandBufferRef.current = flattenedCommand;
             term.focus();
+            term.scrollToBottom();
         }
     }, []);
 
@@ -678,18 +713,12 @@ const DevCli: React.FC = () => {
                     />
 
                     <div className="terminal-wrapper">
-                        <div
-                            ref={terminalRef}
-                            className="dev-cli-terminal"
-                            style={{
-                                flex: 1,
-                                height: '100%',
-                                backgroundColor: '#282828',
-                                padding: '12px',
-                                letterSpacing: 'normal',
-                                minWidth: 0,
-                            }}
-                        />
+                        <div className="terminal-padding-wrapper">
+                            <div
+                                ref={terminalRef}
+                                className="dev-cli-terminal"
+                            />
+                        </div>
 
                         {copyNotification && (
                             <div className="copy-notification">
@@ -841,6 +870,21 @@ const DevCli: React.FC = () => {
                         flex-direction: column;
                         position: relative;
                         min-width: 0;
+                        background: #282828;
+                    }
+
+                    .terminal-padding-wrapper {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        padding: 12px;
+                        min-height: 0;
+                        overflow: hidden;
+                    }
+
+                    .dev-cli-terminal {
+                        flex: 1;
+                        min-height: 0;
                         background: #282828;
                     }
 
