@@ -36,13 +36,20 @@ export interface OccupationDetailsResponse {
     OnetDescription: string;
 
     Wages: Wages;
+
     BrightOutlook: 'Bright' | 'Average' | 'Below Average' | string;
     BrightOutlookCategory: string | null;
     Green: 'Yes' | 'No';
+
     COSVideoURL: string | null;
 
+    EducationTraining: EducationTraining;
+
+    Tasks: TaskItem[];
+    Dwas: DwaItem[];
+
     AlternateTitles: string[] | null;
-    RelatedOnetTitles: string[] | null;
+    RelatedOnetTitles: Record<string, string> | null;
 
     StFips: string;
     Location: string;
@@ -52,6 +59,7 @@ export interface OccupationDetailsResponse {
     InterestDataList: ElementScore[] | null;
     SkillsDataList: ElementScore[] | null;
     KnowledgeDataList: ElementScore[] | null;
+    AbilityDataList: ElementScore[] | null;
 
     SocInfo: SocInfo;
     Projections: Projections;
@@ -59,6 +67,8 @@ export interface OccupationDetailsResponse {
     TrainingPrograms: string[] | null;
 
     ToolsAndTechOccupationDetails: ToolsAndTechnologyDetails | null;
+
+    WorkValuesOccupationDetails?: WorkValuesOccupationDetails;
 }
 
 export interface Wages {
@@ -88,10 +98,40 @@ export interface WageItem {
     AreaName: string;
 }
 
-export interface VideoItem {
-    VideoCode: string;
-    VideoTitle: string;
-    VideoType: string;
+export interface EducationTraining {
+    EducationType: {
+        EducationLevel: string;
+        Value: string;
+    }[];
+
+    EducationCode: string;
+    EducationTitle: string;
+
+    ExperienceCode: string;
+    ExperienceTitle: string;
+
+    TrainingCode: string;
+    TrainingTitle: string;
+
+    OccupationTitle: string;
+
+    MatOccupation: {
+        MatOccCode: string;
+        MatOccTitle: string;
+    };
+}
+
+export interface TaskItem {
+    TaskDescription: string;
+    TaskId: string;
+    DataValue: string;
+}
+
+export interface DwaItem {
+    DwaTitle: string;
+    DwaId: string;
+    DataValue: string;
+    TaskId: string;
 }
 
 export interface ElementScore {
@@ -138,7 +178,6 @@ export interface IndustryEmployment {
     ProjectEmployment: number;
     IagCode: string;
 }
-
 export interface ToolsAndTechnologyDetails {
     OnetCode: string | null;
     OnetTitle: string | null;
@@ -172,4 +211,15 @@ export interface TechnologyExample {
     Name: string;
     Hot_Technology: 'Y' | 'N';
     In_Demand: 'Y' | 'N';
+}
+
+export interface VideoItem {
+    VideoCode: string;
+    VideoTitle: string;
+    VideoType: string;
+}
+
+export interface WorkValuesOccupationDetails {
+    WorkValue: string;
+    Characteristics: string[];
 }
