@@ -1490,7 +1490,7 @@ const IssueVerifyStep: React.FC<{
 
 // Main component
 const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
-    const guideState = useGuideState('issue-credentials', STEPS.length);
+    const guideState = useGuideState('issue-credentials', STEPS.length, selectedIntegration);
 
     const [apiToken, setApiToken] = useState('');
 

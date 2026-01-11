@@ -674,7 +674,7 @@ console.log('User consent records:', userConsentData.records);`}
 
 // Main component
 const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
-    const guideState = useGuideState('consent-flow', STEPS.length);
+    const guideState = useGuideState('consent-flow', STEPS.length, selectedIntegration);
 
     const [contractUri, setContractUri] = useState('');
     const [redirectUrl, setRedirectUrl] = useState('');

@@ -52,7 +52,7 @@ import {
 
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
-import { StepProgress, CodeOutputPanel } from '../shared';
+import { StepProgress, CodeOutputPanel, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useWallet, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
@@ -335,6 +335,7 @@ const STEPS = [
     { id: 'choose-features', title: 'Choose Features' },
     { id: 'feature-setup', title: 'Feature Setup' },
     { id: 'your-app', title: 'Your App' },
+    { id: 'go-live', title: 'Go Live' },
 ];
 
 // Step 0: Getting Started (combined setup step - single scrollable page)
@@ -4389,10 +4390,11 @@ const PeerBadgesSetup: React.FC<{
 // Step 3: Your App (summary with code)
 const YourAppStep: React.FC<{
     onBack: () => void;
+    onComplete: () => void;
     selectedFeatures: string[];
     selectedListing: AppStoreListing | null;
     featureSetupState: Record<string, Record<string, unknown>>;
-}> = ({ onBack, selectedFeatures, selectedListing, featureSetupState }) => {
+}> = ({ onBack, onComplete, selectedFeatures, selectedListing, featureSetupState }) => {
     const { useUpdateListing } = useDeveloperPortal();
     const updateMutation = useUpdateListing();
     const { presentToast } = useToast();
@@ -5512,13 +5514,22 @@ initializeApp();`);
             </div>
 
             {/* Navigation */}
-            <div className="flex gap-3">
+            <div className="flex justify-between gap-3">
                 <button
                     onClick={onBack}
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Back
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-200"
+                >
+                    <Rocket className="w-5 h-5" />
+                    Continue to Go Live
+                    <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
         </div>
@@ -5527,7 +5538,7 @@ initializeApp();`);
 
 // Main component
 const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedIntegration }) => {
-    const guideState = useGuideState('embed-app', STEPS.length);
+    const guideState = useGuideState('embed-app', STEPS.length, selectedIntegration);
 
     // Guide-wide state (persists across all steps)
     const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(null);
@@ -5635,9 +5646,27 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                 return (
                     <YourAppStep
                         onBack={guideState.prevStep}
+                        onComplete={() => handleStepComplete('your-app')}
                         selectedFeatures={selectedFeatures}
                         selectedListing={selectedListing}
                         featureSetupState={featureSetupState}
+                    />
+                );
+
+            case 4:
+                return (
+                    <GoLiveStep
+                        integration={selectedIntegration}
+                        guideType="embed-app"
+                        onBack={guideState.prevStep}
+                        completedItems={[
+                            'SDK installed and configured',
+                            'App listing created',
+                            `${selectedFeatures.length} feature${selectedFeatures.length !== 1 ? 's' : ''} configured`,
+                            'Integration code generated',
+                        ]}
+                        title="Ready to Go Live!"
+                        description="Your embedded app integration is complete. Activate it to start using it in production."
                     />
                 );
 

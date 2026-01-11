@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import type { LCNIntegration } from '@learncard/types';
 
 import type { GuideState, UseCaseId } from '../types';
-
-const STORAGE_KEY_PREFIX = 'lc_guide_state_';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
 
 export interface UseGuideStateReturn {
     state: GuideState;
@@ -19,36 +19,91 @@ export interface UseGuideStateReturn {
     resetGuide: () => void;
 }
 
-export function useGuideState(useCaseId: UseCaseId, totalSteps: number): UseGuideStateReturn {
-    const storageKey = `${STORAGE_KEY_PREFIX}${useCaseId}`;
+/**
+ * Get step from URL query params if present
+ */
+const getStepFromUrl = (): number | null => {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const stepParam = params.get('step');
 
-    const loadState = (): GuideState => {
-        try {
-            const stored = localStorage.getItem(storageKey);
+        if (stepParam) {
+            const step = parseInt(stepParam, 10);
 
-            if (stored) {
-                return JSON.parse(stored);
+            if (!isNaN(step) && step >= 0) {
+                return step;
             }
-        } catch (e) {
-            console.error('Failed to load guide state:', e);
+        }
+    } catch (e) {
+        // Ignore URL parsing errors
+    }
+
+    return null;
+};
+
+/**
+ * Hook to manage guide state, synced with server-side integration.guideState
+ */
+export function useGuideState(
+    useCaseId: UseCaseId,
+    totalSteps: number,
+    integration?: LCNIntegration | null
+): UseGuideStateReturn {
+    const { useUpdateIntegration } = useDeveloperPortal();
+    const updateIntegrationMutation = useUpdateIntegration();
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Load initial state from integration's guideState or defaults
+    const loadState = useCallback((): GuideState => {
+        const serverState = integration?.guideState as GuideState | undefined;
+
+        // Check URL for step override (for deep linking)
+        const urlStep = getStepFromUrl();
+
+        if (serverState) {
+            return {
+                currentStep: urlStep !== null && urlStep < totalSteps 
+                    ? urlStep 
+                    : (serverState.currentStep ?? 0),
+                completedSteps: serverState.completedSteps || [],
+                config: serverState.config || {},
+            };
         }
 
         return {
-            currentStep: 0,
+            currentStep: urlStep !== null && urlStep < totalSteps ? urlStep : 0,
             completedSteps: [],
             config: {},
         };
-    };
+    }, [integration?.guideState, totalSteps]);
 
     const [state, setState] = useState<GuideState>(loadState);
 
+    // Sync state when integration changes (e.g., after server refresh)
+    useEffect(() => {
+        const newState = loadState();
+
+        setState(newState);
+    }, [integration?.id, integration?.guideState]);
+
+    // Save state to server (debounced)
     const saveState = useCallback((newState: GuideState) => {
-        try {
-            localStorage.setItem(storageKey, JSON.stringify(newState));
-        } catch (e) {
-            console.error('Failed to save guide state:', e);
+        if (!integration) return;
+
+        // Debounce saves to avoid too many API calls
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
         }
-    }, [storageKey]);
+
+        saveTimeoutRef.current = setTimeout(() => {
+            updateIntegrationMutation.mutate({
+                id: integration.id,
+                updates: {
+                    guideState: newState,
+                },
+            });
+        }, 500);
+    }, [integration, updateIntegrationMutation]);
 
     const isStepComplete = useCallback((stepId: string) => {
         return state.completedSteps.includes(stepId);

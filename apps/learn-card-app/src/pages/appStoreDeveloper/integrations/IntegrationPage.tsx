@@ -1,41 +1,35 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { Loader2 } from 'lucide-react';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
-import { useDeveloperPortal } from '../useDeveloperPortal';
+import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { DashboardRouter } from '../dashboards';
-
-interface RouteParams {
-    integrationId: string;
-}
 
 /**
  * IntegrationPage - Main page for viewing/managing an integration.
  * Routes to the appropriate dashboard based on the integration's guideType and status.
  */
 const IntegrationPage: React.FC = () => {
-    const { integrationId } = useParams<RouteParams>();
-
-    const { useIntegrations, useIntegration } = useDeveloperPortal();
-    const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
-    const { data: integration, isLoading: isLoadingIntegration } = useIntegration(integrationId);
-
-    const isLoading = isLoadingIntegrations || isLoadingIntegration;
+    const {
+        currentIntegrationId,
+        currentIntegration,
+        integrations,
+        isLoadingIntegrations,
+        selectIntegration,
+    } = useDeveloperPortalContext();
 
     const integrationSelector = (
         <HeaderIntegrationSelector
-            integrations={integrations || []}
-            selectedId={integrationId}
-            onSelect={() => {}} // Navigation handled by the selector
+            integrations={integrations}
+            selectedId={currentIntegrationId}
+            onSelect={selectIntegration}
             isLoading={isLoadingIntegrations}
-            navigateOnSelect={true}
         />
     );
 
-    if (isLoading) {
+    if (isLoadingIntegrations) {
         return (
             <IonPage>
                 <AppStoreHeader title="Developer Portal" rightContent={integrationSelector} />
@@ -54,7 +48,7 @@ const IntegrationPage: React.FC = () => {
         );
     }
 
-    if (!integration) {
+    if (!currentIntegration) {
         return (
             <IonPage>
                 <AppStoreHeader title="Developer Portal" rightContent={integrationSelector} />
@@ -79,7 +73,7 @@ const IntegrationPage: React.FC = () => {
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
                     <DashboardRouter
-                        integration={integration}
+                        integration={currentIntegration}
                         isLoading={false}
                     />
                 </div>

@@ -11,6 +11,7 @@ import {
     AlertCircle,
     Loader2,
 } from 'lucide-react';
+import type { LCNIntegration } from '@learncard/types';
 
 import { useWallet } from 'learn-card-base';
 
@@ -475,8 +476,11 @@ const TestStep: React.FC<{
 };
 
 // Main component
-const VerifyCredentialsGuide: React.FC<{ selectedIntegration?: unknown; setSelectedIntegration?: unknown }> = () => {
-    const guideState = useGuideState('verify-credentials', STEPS.length);
+const VerifyCredentialsGuide: React.FC<{
+    selectedIntegration: LCNIntegration | null;
+    setSelectedIntegration: (integration: LCNIntegration | null) => void;
+}> = ({ selectedIntegration }) => {
+    const guideState = useGuideState('verify-credentials', STEPS.length, selectedIntegration);
 
     const handleStepComplete = (stepId: string) => {
         guideState.markStepComplete(stepId);

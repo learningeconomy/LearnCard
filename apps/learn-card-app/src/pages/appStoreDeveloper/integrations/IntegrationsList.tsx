@@ -196,8 +196,8 @@ const IntegrationsList: React.FC = () => {
             setNewProjectName('');
             setShowCreateForm(false);
 
-            // Navigate to the new integration's setup
-            history.push(`/app-store/developer/integrations/${integrationId}/setup`);
+            // Navigate to the new integration's guides hub to choose a guide
+            history.push(`/app-store/developer/integrations/${integrationId}/guides`);
         } catch (error) {
             console.error('Failed to create project:', error);
 
@@ -209,13 +209,8 @@ const IntegrationsList: React.FC = () => {
     };
 
     const handleIntegrationClick = (integration: IntegrationWithConfig) => {
-        const status = integration.config?.status || 'setup';
-
-        if (status === 'setup') {
-            history.push(`/app-store/developer/integrations/${integration.id}/setup`);
-        } else {
-            history.push(`/app-store/developer/integrations/${integration.id}`);
-        }
+        // Always use guides pattern for consistent navigation experience
+        history.push(`/app-store/developer/integrations/${integration.id}/guides`);
     };
 
     const integrationsWithConfig: IntegrationWithConfig[] = (integrations || []).map(i => {

@@ -14,6 +14,7 @@ import {
     Trash2,
     Loader2,
 } from 'lucide-react';
+import type { LCNIntegration } from '@learncard/types';
 
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
@@ -592,8 +593,11 @@ const TestStep: React.FC<{
 };
 
 // Main component
-const ServerWebhooksGuide: React.FC<{ selectedIntegration?: unknown; setSelectedIntegration?: unknown }> = () => {
-    const guideState = useGuideState('server-webhooks', STEPS.length);
+const ServerWebhooksGuide: React.FC<{
+    selectedIntegration: LCNIntegration | null;
+    setSelectedIntegration: (integration: LCNIntegration | null) => void;
+}> = ({ selectedIntegration }) => {
+    const guideState = useGuideState('server-webhooks', STEPS.length, selectedIntegration);
 
     const [apiToken, setApiToken] = useState('');
     const [webhookUrl, setWebhookUrl] = useState('');

@@ -4,6 +4,7 @@ import { IonPage, IonContent } from '@ionic/react';
 import { Sparkles, Send, Rocket, ArrowRight, Loader2 } from 'lucide-react';
 
 import { useDeveloperPortal } from './useDeveloperPortal';
+import { useDeveloperPortalContext } from './DeveloperPortalContext';
 import { HeaderIntegrationSelector } from './components/HeaderIntegrationSelector';
 import { PartnerDashboard } from './components/PartnerDashboard';
 import { AppStoreHeader } from './components/AppStoreHeader';
@@ -11,38 +12,38 @@ import type { ExtendedAppStoreListing } from './types';
 
 const DeveloperPortal: React.FC = () => {
     const history = useHistory();
-    const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
+    const [newProjectName, setNewProjectName] = useState('');
 
+    // Use context for integration state
     const {
-        useIntegrations,
-        useCreateIntegration,
+        currentIntegrationId,
+        integrations,
+        isLoadingIntegrations,
+        selectIntegration,
+        createIntegration,
+        isCreatingIntegration,
+    } = useDeveloperPortalContext();
+
+    // For listing management, we still need direct access to some hooks
+    const {
         useListingsForIntegration,
         useDeleteListing,
         useSubmitForReview,
     } = useDeveloperPortal();
 
-    const [newProjectName, setNewProjectName] = useState('');
+    // Default to first integration when none selected but integrations exist
+    const selectedIntegrationId = currentIntegrationId || (integrations.length > 0 ? integrations[0].id : null);
 
-    const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
-
-    // Default to first integration when loaded
-    useEffect(() => {
-        if (!selectedIntegrationId && integrations && integrations.length > 0) {
-            setSelectedIntegrationId(integrations[0].id);
-        }
-    }, [integrations, selectedIntegrationId]);
     const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(selectedIntegrationId);
 
     const deleteMutation = useDeleteListing();
     const submitMutation = useSubmitForReview();
-    const createIntegrationMutation = useCreateIntegration();
 
     const handleCreateFirstProject = async () => {
         if (!newProjectName.trim()) return;
 
         try {
-            const integrationId = await createIntegrationMutation.mutateAsync(newProjectName.trim());
-            setSelectedIntegrationId(integrationId);
+            await createIntegration(newProjectName.trim());
             setNewProjectName('');
         } catch (error) {
             console.error('Failed to create project:', error);
@@ -77,9 +78,9 @@ const DeveloperPortal: React.FC = () => {
 
     const integrationSelector = (
         <HeaderIntegrationSelector
-            integrations={integrations || []}
+            integrations={integrations}
             selectedId={selectedIntegrationId}
-            onSelect={setSelectedIntegrationId}
+            onSelect={selectIntegration}
             isLoading={isLoadingIntegrations}
         />
     );
@@ -160,15 +161,15 @@ const DeveloperPortal: React.FC = () => {
                                         onKeyDown={e => e.key === 'Enter' && handleCreateFirstProject()}
                                         placeholder="e.g. My Awesome Project"
                                         className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
-                                        disabled={createIntegrationMutation.isPending}
+                                        disabled={isCreatingIntegration}
                                     />
 
                                     <button
                                         onClick={handleCreateFirstProject}
-                                        disabled={!newProjectName.trim() || createIntegrationMutation.isPending}
+                                        disabled={!newProjectName.trim() || isCreatingIntegration}
                                         className="px-5 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-200 flex items-center gap-2"
                                     >
-                                        {createIntegrationMutation.isPending ? (
+                                        {isCreatingIntegration ? (
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         ) : (
                                             <>

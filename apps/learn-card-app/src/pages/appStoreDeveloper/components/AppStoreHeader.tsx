@@ -5,6 +5,7 @@ import { Shield, Code2, Hammer } from 'lucide-react';
 
 import { AccountSwitcher } from './AccountSwitcher';
 import { useDeveloperPortal } from '../useDeveloperPortal';
+import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 
 interface AppStoreHeaderProps {
     title?: string;
@@ -17,15 +18,14 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
     const { useIsAdmin } = useDeveloperPortal();
     const { data: isAdmin } = useIsAdmin();
 
+    // Get current integration from context (derived from URL)
+    const { currentIntegrationId, goToIntegrationHub } = useDeveloperPortalContext();
+
     const isOnAdminPage = location.pathname.includes('/app-store/admin');
     const isOnGuidesPage = location.pathname.includes('/guides');
     const isOnDeveloperPage = location.pathname === '/app-store/developer' || 
         location.pathname.startsWith('/app-store/developer/new') ||
         location.pathname.startsWith('/app-store/developer/edit');
-
-    // Extract integration ID from URL if on an integration route
-    const integrationMatch = location.pathname.match(/\/integrations\/([^/]+)/);
-    const currentIntegrationId = integrationMatch?.[1] || null;
 
     const handlePortalToggle = () => {
         if (isOnAdminPage) {
@@ -70,12 +70,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                             </button>
 
                             <button
-                                onClick={() => {
-                                    const guidesPath = currentIntegrationId 
-                                        ? `/app-store/developer/integrations/${currentIntegrationId}/guides`
-                                        : '/app-store/developer/guides';
-                                    history.push(guidesPath);
-                                }}
+                                onClick={goToIntegrationHub}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     isOnGuidesPage
                                         ? 'bg-white text-gray-800 shadow-sm'
@@ -93,10 +88,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                                 if (isOnGuidesPage) {
                                     history.push('/app-store/developer');
                                 } else {
-                                    const guidesPath = currentIntegrationId 
-                                        ? `/app-store/developer/integrations/${currentIntegrationId}/guides`
-                                        : '/app-store/developer/guides';
-                                    history.push(guidesPath);
+                                    goToIntegrationHub();
                                 }
                             }}
                             className="sm:hidden flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"

@@ -45,24 +45,30 @@ export const isIntegrationActive = (integration: LCNIntegration | null | undefin
 };
 
 /**
+ * Get the current step from integration's server-side guideState
+ */
+export const getGuideCurrentStep = (integration: LCNIntegration): number => {
+    const guideState = integration.guideState as { currentStep?: number } | undefined;
+    return guideState?.currentStep ?? 0;
+};
+
+/**
  * Get the route for an integration based on its status and guide type
+ * If in setup mode, routes to the furthest step in the guide
  */
 export const getIntegrationRoute = (integration: LCNIntegration): string => {
-    const { status, guideType } = integration;
+    const { guideType } = integration;
 
-    if (status === 'active') {
-        return `/app-store/developer/integrations/${integration.id}`;
-    }
-
-    // Setup status - check if guide type has been chosen
-    if (guideType === 'partner-onboarding') {
-        // Partner onboarding goes to the setup wizard
-        return `/app-store/developer/integrations/${integration.id}/setup`;
-    }
-
+    // Always route to guides pattern for better header/context
     if (guideType) {
-        // Other guide types go to their specific guide page
-        return `/app-store/developer/integrations/${integration.id}/guides/${guideType}`;
+        const currentStep = getGuideCurrentStep(integration);
+        const baseRoute = `/app-store/developer/integrations/${integration.id}/guides/${guideType}`;
+
+        if (currentStep > 0) {
+            return `${baseRoute}?step=${currentStep}`;
+        }
+
+        return baseRoute;
     }
 
     // No guide type chosen yet - go to IntegrationHub to choose
@@ -75,17 +81,10 @@ export const getIntegrationRoute = (integration: LCNIntegration): string => {
  */
 export const getIntegrationRouteById = (
     integrationId: string,
-    status?: LCNIntegrationStatus,
+    _status?: LCNIntegrationStatus,
     guideType?: string
 ): string => {
-    if (status === 'active') {
-        return `/app-store/developer/integrations/${integrationId}`;
-    }
-
-    if (guideType === 'partner-onboarding') {
-        return `/app-store/developer/integrations/${integrationId}/setup`;
-    }
-
+    // Always route to guides pattern for better header/context
     if (guideType) {
         return `/app-store/developer/integrations/${integrationId}/guides/${guideType}`;
     }

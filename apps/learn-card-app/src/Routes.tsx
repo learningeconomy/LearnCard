@@ -92,29 +92,11 @@ const PostConsentFlowDataFeed = lazyWithRetry(
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 
 // App Store Developer Portal
-const DeveloperPortal = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/DeveloperPortal')
-);
-const SubmissionForm = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/SubmissionForm')
+const DeveloperPortalRoutes = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/DeveloperPortalRoutes')
 );
 const AppStoreAdminDashboard = lazyWithRetry(
     () => import('./pages/appStoreAdmin/AdminDashboard')
-);
-const IntegrationHub = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/guides/IntegrationHub')
-);
-const GuidePage = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/guides/GuidePage')
-);
-const PartnerOnboardingWizard = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/partner-onboarding/PartnerOnboardingWizard')
-);
-const IntegrationsList = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/integrations/IntegrationsList')
-);
-const IntegrationDashboardPage = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/integrations/IntegrationDashboardPage')
 );
 // import ExternalConsentFlowDoor from './pages/consentFlow/ExternalConsentFlowDoor';
 // import CustomWallet from './pages/hidden/CustomWallet';
@@ -185,24 +167,8 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
 
-                        {/* App Store Developer Portal */}
-                        <PrivateRoute exact path="/app-store/developer" component={DeveloperPortal} />
-                        <PrivateRoute exact path="/app-store/developer/new" component={SubmissionForm} />
-                        <PrivateRoute
-                            exact
-                            path="/app-store/developer/edit/:listingId"
-                            component={SubmissionForm}
-                        />
-                        <PrivateRoute exact path="/app-store/developer/guides" component={IntegrationHub} />
-                        <PrivateRoute exact path="/app-store/developer/guides/:useCase" component={GuidePage} />
-                        <PrivateRoute exact path="/app-store/developer/partner-onboarding" component={PartnerOnboardingWizard} />
-                        
-                        {/* Integration Management */}
-                        <PrivateRoute exact path="/app-store/developer/integrations" component={IntegrationsList} />
-                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId" component={IntegrationDashboardPage} />
-                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId/setup" component={PartnerOnboardingWizard} />
-                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId/guides" component={IntegrationHub} />
-                        <PrivateRoute exact path="/app-store/developer/integrations/:integrationId/guides/:useCase" component={GuidePage} />
+                        {/* App Store Developer Portal - all routes wrapped in context provider */}
+                        <PrivateRoute path="/app-store/developer" component={DeveloperPortalRoutes} />
                         
                         <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminDashboard} />
 

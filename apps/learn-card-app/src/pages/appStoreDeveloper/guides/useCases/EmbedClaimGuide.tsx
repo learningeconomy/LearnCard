@@ -899,7 +899,7 @@ const TestStep: React.FC<{
 
 // Main component
 const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedIntegration }) => {
-    const guideState = useGuideState('embed-claim', STEPS.length);
+    const guideState = useGuideState('embed-claim', STEPS.length, selectedIntegration);
 
     // Derive publishable key from selected integration
     const publishableKey = selectedIntegration?.publishableKey || '';

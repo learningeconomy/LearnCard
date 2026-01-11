@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useHistory, useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useHistory, Redirect } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { 
     Award, 
@@ -18,6 +18,7 @@ import {
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
+import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
 
@@ -28,6 +29,7 @@ const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
     'shield-check': ShieldCheck,
     'check-circle': CheckCircle,
     'webhook': Webhook,
+    'rocket': Rocket,
 };
 
 interface UseCaseCardProps {
@@ -115,62 +117,52 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 
 const IntegrationHub: React.FC = () => {
     const history = useHistory();
-    const { integrationId: routeIntegrationId } = useParams<{ integrationId?: string }>();
-
-    const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(routeIntegrationId || null);
     const [newProjectName, setNewProjectName] = useState('');
-    const [activeGuideType, setActiveGuideType] = useState<string | null>(null);
 
-    const { useIntegrations, useCreateIntegration, useUpdateIntegration } = useDeveloperPortal();
-    const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
-    const createIntegrationMutation = useCreateIntegration();
+    // Use context for all state management
+    const {
+        currentIntegrationId,
+        currentIntegration,
+        integrations,
+        isLoadingIntegrations,
+        selectIntegration,
+        selectGuide,
+        createIntegration,
+        isCreatingIntegration,
+    } = useDeveloperPortalContext();
+
+    const { useUpdateIntegration } = useDeveloperPortal();
     const updateIntegrationMutation = useUpdateIntegration();
 
-    // Use route integration ID if available, otherwise default to first
-    useEffect(() => {
-        if (routeIntegrationId) {
-            setSelectedIntegrationId(routeIntegrationId);
-        } else if (!selectedIntegrationId && integrations && integrations.length > 0) {
-            setSelectedIntegrationId(integrations[0].id);
-        }
-    }, [integrations, selectedIntegrationId, routeIntegrationId]);
+    // If no integration ID in URL but integrations exist, redirect to first one
+    if (!currentIntegrationId && !isLoadingIntegrations && integrations.length > 0) {
+        return <Redirect to={`/app-store/developer/integrations/${integrations[0].id}/guides`} />;
+    }
 
-    // Load the active guide type from server when integration changes
-    useEffect(() => {
-        if (selectedIntegrationId && integrations) {
-            const integration = integrations.find(i => i.id === selectedIntegrationId);
-            setActiveGuideType(integration?.guideType || null);
-        } else {
-            setActiveGuideType(null);
-        }
-    }, [selectedIntegrationId, integrations]);
+    const activeGuideType = currentIntegration?.guideType || null;
 
     const handleUseCaseClick = async (useCaseId: UseCaseId) => {
-        if (!selectedIntegrationId) return;
+        if (!currentIntegrationId) return;
 
         try {
             // Save the guide type on the server
             await updateIntegrationMutation.mutateAsync({
-                id: selectedIntegrationId,
+                id: currentIntegrationId,
                 updates: { guideType: useCaseId },
             });
-            setActiveGuideType(useCaseId);
-
-            // Use nested route structure
-            history.push(`/app-store/developer/integrations/${selectedIntegrationId}/guides/${useCaseId}`);
         } catch (error) {
             console.error('Failed to save guide selection:', error);
-            // Still navigate - the guide type can be set again later
-            history.push(`/app-store/developer/integrations/${selectedIntegrationId}/guides/${useCaseId}`);
         }
+
+        // Navigate to guide
+        selectGuide(useCaseId);
     };
 
     const handleCreateFirstProject = async () => {
         if (!newProjectName.trim()) return;
 
         try {
-            const integrationId = await createIntegrationMutation.mutateAsync(newProjectName.trim());
-            setSelectedIntegrationId(integrationId);
+            await createIntegration(newProjectName.trim());
             setNewProjectName('');
         } catch (error) {
             console.error('Failed to create project:', error);
@@ -178,25 +170,15 @@ const IntegrationHub: React.FC = () => {
     };
 
     const useCaseList = Object.values(USE_CASES);
-    const hasIntegration = selectedIntegrationId !== null;
-    const showSetupPrompt = !isLoadingIntegrations && integrations?.length === 0;
-
-    // When switching integrations on IntegrationHub, stay on IntegrationHub for that integration
-    const handleIntegrationSelect = (id: string | null) => {
-        setSelectedIntegrationId(id);
-
-        if (id) {
-            history.push(`/app-store/developer/integrations/${id}/guides`);
-        }
-    };
+    const hasIntegration = currentIntegrationId !== null;
+    const showSetupPrompt = !isLoadingIntegrations && integrations.length === 0;
 
     const integrationSelector = (
         <HeaderIntegrationSelector
-            integrations={integrations || []}
-            selectedId={selectedIntegrationId}
-            onSelect={handleIntegrationSelect}
+            integrations={integrations}
+            selectedId={currentIntegrationId}
+            onSelect={selectIntegration}
             isLoading={isLoadingIntegrations}
-            navigateOnSelect={false}
         />
     );
 
@@ -236,15 +218,15 @@ const IntegrationHub: React.FC = () => {
                                         onKeyDown={e => e.key === 'Enter' && handleCreateFirstProject()}
                                         placeholder="e.g. My Awesome App"
                                         className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
-                                        disabled={createIntegrationMutation.isPending}
+                                        disabled={isCreatingIntegration}
                                     />
 
                                     <button
                                         onClick={handleCreateFirstProject}
-                                        disabled={!newProjectName.trim() || createIntegrationMutation.isPending}
+                                        disabled={!newProjectName.trim() || isCreatingIntegration}
                                         className="px-5 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-200 flex items-center gap-2"
                                     >
-                                        {createIntegrationMutation.isPending ? (
+                                        {isCreatingIntegration ? (
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         ) : (
                                             <>
@@ -290,27 +272,12 @@ const IntegrationHub: React.FC = () => {
                                 ))}
                             </div>
 
-                            {/* Enterprise Partner Onboarding */}
+                            {/* Enterprise Course Catalog */}
                             <div className="mb-12">
                                 <button
-                                    onClick={async () => {
-                                        if (!selectedIntegrationId) return;
-
-                                        try {
-                                            await updateIntegrationMutation.mutateAsync({
-                                                id: selectedIntegrationId,
-                                                updates: { guideType: 'partner-onboarding' },
-                                            });
-                                            setActiveGuideType('partner-onboarding');
-                                        } catch (error) {
-                                            console.error('Failed to save guide selection:', error);
-                                        }
-
-                                        // Navigate regardless of save success
-                                        history.push(`/app-store/developer/integrations/${selectedIntegrationId}/setup`);
-                                    }}
+                                    onClick={() => handleUseCaseClick('course-catalog' as UseCaseId)}
                                     className={`w-full p-6 bg-gradient-to-r from-violet-500 to-indigo-600 rounded-2xl text-left hover:from-violet-600 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 group ${
-                                        activeGuideType === 'partner-onboarding' ? 'ring-4 ring-white/50' : ''
+                                        activeGuideType === 'course-catalog' ? 'ring-4 ring-white/50' : ''
                                     }`}
                                 >
                                     <div className="flex items-center gap-4">
@@ -328,7 +295,7 @@ const IntegrationHub: React.FC = () => {
                                                     Enterprise
                                                 </span>
 
-                                                {activeGuideType === 'partner-onboarding' && (
+                                                {activeGuideType === 'course-catalog' && (
                                                     <span className="px-2 py-0.5 bg-white/30 rounded-full text-xs font-medium text-white">
                                                         In Progress
                                                     </span>

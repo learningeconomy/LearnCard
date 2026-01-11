@@ -1,19 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useHistory } from 'react-router-dom';
 import { ChevronDown, Plus, Loader2, Check, Settings, LayoutDashboard } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
-import { useDeveloperPortal } from '../useDeveloperPortal';
-import { getIntegrationRoute } from '../partner-onboarding/utils/integrationStatus';
+import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 
 interface HeaderIntegrationSelectorProps {
     integrations: LCNIntegration[];
     selectedId: string | null;
     onSelect: (id: string | null) => void;
     isLoading: boolean;
-    /** If true, navigates to wizard/dashboard on selection based on status */
-    navigateOnSelect?: boolean;
 }
 
 export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps> = ({
@@ -21,9 +17,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     selectedId,
     onSelect,
     isLoading,
-    navigateOnSelect = false,
 }) => {
-    const history = useHistory();
     const [isOpen, setIsOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
@@ -32,8 +26,7 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const { useCreateIntegration } = useDeveloperPortal();
-    const createMutation = useCreateIntegration();
+    const { createIntegration, isCreatingIntegration } = useDeveloperPortalContext();
 
     const selectedIntegration = integrations.find(i => i.id === selectedId);
 
@@ -76,27 +69,16 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     const handleSelectIntegration = (integration: LCNIntegration) => {
         onSelect(integration.id);
         setIsOpen(false);
-
-        if (navigateOnSelect) {
-            const route = getIntegrationRoute(integration);
-            history.push(route);
-        }
     };
 
     const handleCreate = async () => {
         if (!newName.trim()) return;
 
         try {
-            const id = await createMutation.mutateAsync(newName.trim());
-            onSelect(id);
+            await createIntegration(newName.trim());
             setNewName('');
             setIsCreating(false);
             setIsOpen(false);
-
-            // New integrations go to IntegrationHub to choose guide type
-            if (navigateOnSelect) {
-                history.push(`/app-store/developer/integrations/${id}/guides`);
-            }
         } catch (error) {
             console.error('Failed to create integration:', error);
         }
@@ -173,10 +155,10 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
 
                             <button
                                 onClick={handleCreate}
-                                disabled={!newName.trim() || createMutation.isPending}
+                                disabled={!newName.trim() || isCreatingIntegration}
                                 className="px-3 py-1.5 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                {createMutation.isPending ? (
+                                {isCreatingIntegration ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
                                     'Add'

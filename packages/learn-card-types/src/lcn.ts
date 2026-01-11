@@ -973,6 +973,7 @@ export const InboxCredentialValidator = z.object({
     createdAt: z.string(),
     issuerDid: z.string(),
     webhookUrl: z.string().optional(),
+    boostUri: z.string().optional(),
     signingAuthority: z
         .object({
             endpoint: z.string().optional(),
@@ -998,6 +999,7 @@ export const InboxCredentialQueryValidator = z
         isSigned: z.boolean(),
         isAccepted: z.boolean().optional(),
         issuerDid: z.string(),
+        boostUri: z.string(),
     })
     .partial();
 
