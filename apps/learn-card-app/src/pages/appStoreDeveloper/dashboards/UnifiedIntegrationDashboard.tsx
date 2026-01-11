@@ -378,7 +378,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
             integration={integration}
             title={integration.name}
             subtitle={getSubtitle()}
-            onBack={onBack}
+            // onBack={onBack}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
             statsBar={<QuickStats stats={quickStats} />}

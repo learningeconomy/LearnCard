@@ -54,12 +54,17 @@ export const getGuideCurrentStep = (integration: LCNIntegration): number => {
 
 /**
  * Get the route for an integration based on its status and guide type
- * If in setup mode, routes to the furthest step in the guide
+ * If active, routes to the dashboard. If in setup mode, routes to the guide.
  */
 export const getIntegrationRoute = (integration: LCNIntegration): string => {
-    const { guideType } = integration;
+    const { guideType, status } = integration;
 
-    // Always route to guides pattern for better header/context
+    // If integration is active, go straight to the dashboard
+    if (status === 'active') {
+        return `/app-store/developer/integrations/${integration.id}`;
+    }
+
+    // If in setup mode, route to the guide
     if (guideType) {
         const currentStep = getGuideCurrentStep(integration);
         const baseRoute = `/app-store/developer/integrations/${integration.id}/guides/${guideType}`;
@@ -81,10 +86,15 @@ export const getIntegrationRoute = (integration: LCNIntegration): string => {
  */
 export const getIntegrationRouteById = (
     integrationId: string,
-    _status?: LCNIntegrationStatus,
+    status?: LCNIntegrationStatus,
     guideType?: string
 ): string => {
-    // Always route to guides pattern for better header/context
+    // If integration is active, go straight to the dashboard
+    if (status === 'active') {
+        return `/app-store/developer/integrations/${integrationId}`;
+    }
+
+    // If in setup mode, route to the guide
     if (guideType) {
         return `/app-store/developer/integrations/${integrationId}/guides/${guideType}`;
     }

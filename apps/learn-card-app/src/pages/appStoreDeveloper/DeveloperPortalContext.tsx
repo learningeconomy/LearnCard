@@ -61,7 +61,10 @@ export const DeveloperPortalProvider: React.FC<DeveloperPortalProviderProps> = (
 
         const integration = integrations.find(i => i.id === id);
 
-        if (integration?.guideType) {
+        if (integration?.status === 'active') {
+            // Active integrations go to their dashboard
+            history.push(`/app-store/developer/integrations/${id}`);
+        } else if (integration?.guideType) {
             // If integration has a guide type, go directly to that guide
             history.push(`/app-store/developer/integrations/${id}/guides/${integration.guideType}`);
         } else {
@@ -77,14 +80,17 @@ export const DeveloperPortalProvider: React.FC<DeveloperPortalProviderProps> = (
     }, [history, currentIntegrationId]);
 
     const goToIntegrationHub = useCallback(() => {
-        if (currentIntegrationId) {
-            history.push(`/app-store/developer/integrations/${currentIntegrationId}/guides`);
+        if (currentIntegration?.status === 'active') {
+            // Active integrations go to their dashboard
+            history.push(`/app-store/developer/integrations/${currentIntegration.id}`);
+        } else if (currentIntegrationId) {
+            history.push(`/app-store/developer/integrations/${currentIntegrationId}`);
         } else if (integrations.length > 0) {
-            history.push(`/app-store/developer/integrations/${integrations[0].id}/guides`);
+            history.push(`/app-store/developer/integrations/${integrations[0].id}`);
         } else {
             history.push('/app-store/developer/guides');
         }
-    }, [history, currentIntegrationId, integrations]);
+    }, [history, currentIntegration, currentIntegrationId, integrations]);
 
     const goToApps = useCallback(() => {
         history.push('/app-store/developer');

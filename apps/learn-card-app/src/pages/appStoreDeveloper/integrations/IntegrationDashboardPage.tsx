@@ -1,51 +1,49 @@
 import React from 'react';
-import { useHistory, useParams } from 'react-router-dom';
-import { IonPage, IonContent, IonHeader, IonToolbar } from '@ionic/react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useHistory } from 'react-router-dom';
+import { IonPage, IonContent } from '@ionic/react';
+import { Loader2 } from 'lucide-react';
 
-import { useDeveloperPortal } from '../useDeveloperPortal';
+import { AppStoreHeader } from '../components/AppStoreHeader';
+import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
+import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { UnifiedIntegrationDashboard } from '../dashboards';
-
-interface RouteParams {
-    integrationId: string;
-}
 
 const IntegrationDashboardPage: React.FC = () => {
     const history = useHistory();
-    const { integrationId } = useParams<RouteParams>();
 
-    const { useIntegrations } = useDeveloperPortal();
-    const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
-
-    const integration = integrations?.find(i => i.id === integrationId);
+    const {
+        currentIntegrationId,
+        currentIntegration,
+        integrations,
+        isLoadingIntegrations,
+        selectIntegration,
+    } = useDeveloperPortalContext();
 
     const handleBack = () => {
-        history.push('/app-store/developer/integrations');
+        history.push('/app-store/developer');
     };
+
+    const headerContent = (
+        <HeaderIntegrationSelector
+            integrations={integrations}
+            selectedId={currentIntegrationId}
+            onSelect={selectIntegration}
+            isLoading={isLoadingIntegrations}
+        />
+    );
 
     if (isLoadingIntegrations) {
         return (
             <IonPage>
-                <IonHeader className="ion-no-border">
-                    <IonToolbar className="!shadow-none border-b border-gray-200">
-                        <div className="flex items-center gap-3 px-4 py-2">
-                            <button
-                                onClick={handleBack}
-                                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
+                <AppStoreHeader title="Developer Portal" rightContent={headerContent} />
 
-                            <span className="text-lg font-semibold text-gray-700">Loading...</span>
-                        </div>
-                    </IonToolbar>
-                </IonHeader>
-
-                <IonContent>
-                    <div className="flex items-center justify-center min-h-[400px]">
-                        <div className="text-center">
-                            <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                            <p className="text-sm text-gray-500 mt-3">Loading integration...</p>
+                <IonContent className="ion-padding">
+                    <div className="max-w-5xl mx-auto">
+                        <div className="flex items-center justify-center min-h-[400px]">
+                            <div className="text-center">
+                                <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
+                                <p className="text-sm text-gray-500 mt-3">Loading integration...</p>
+                            </div>
                         </div>
                     </div>
                 </IonContent>
@@ -53,41 +51,30 @@ const IntegrationDashboardPage: React.FC = () => {
         );
     }
 
-    if (!integration) {
+    if (!currentIntegration) {
         return (
             <IonPage>
-                <IonHeader className="ion-no-border">
-                    <IonToolbar className="!shadow-none border-b border-gray-200">
-                        <div className="flex items-center gap-3 px-4 py-2">
-                            <button
-                                onClick={handleBack}
-                                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
+                <AppStoreHeader title="Developer Portal" rightContent={headerContent} />
 
-                            <span className="text-lg font-semibold text-gray-700">Integration Not Found</span>
-                        </div>
-                    </IonToolbar>
-                </IonHeader>
+                <IonContent className="ion-padding">
+                    <div className="max-w-5xl mx-auto">
+                        <div className="flex items-center justify-center min-h-[400px]">
+                            <div className="text-center max-w-md">
+                                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                                    Integration Not Found
+                                </h2>
 
-                <IonContent>
-                    <div className="flex items-center justify-center min-h-[400px]">
-                        <div className="text-center max-w-md">
-                            <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                                Integration Not Found
-                            </h2>
+                                <p className="text-gray-500 mb-6">
+                                    The integration you're looking for doesn't exist or you don't have access to it.
+                                </p>
 
-                            <p className="text-gray-500 mb-6">
-                                The integration you're looking for doesn't exist or you don't have access to it.
-                            </p>
-
-                            <button
-                                onClick={handleBack}
-                                className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
-                            >
-                                Back to Integrations
-                            </button>
+                                <button
+                                    onClick={handleBack}
+                                    className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                                >
+                                    Back to Apps
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </IonContent>
@@ -97,11 +84,12 @@ const IntegrationDashboardPage: React.FC = () => {
 
     return (
         <IonPage>
-            <IonContent>
-                <div className="max-w-5xl mx-auto px-4 py-6">
+            <AppStoreHeader title="Developer Portal" rightContent={headerContent} />
+
+            <IonContent className="ion-padding">
+                <div className="max-w-5xl mx-auto py-4">
                     <UnifiedIntegrationDashboard
-                        integration={integration}
-                        onBack={handleBack}
+                        integration={currentIntegration}
                     />
                 </div>
             </IonContent>

@@ -22,7 +22,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
     const { currentIntegrationId, goToIntegrationHub } = useDeveloperPortalContext();
 
     const isOnAdminPage = location.pathname.includes('/app-store/admin');
-    const isOnGuidesPage = location.pathname.includes('/guides');
+    const isOnGuidesPage = location.pathname.includes('/integrations');
     const isOnDeveloperPage = location.pathname === '/app-store/developer' || 
         location.pathname.startsWith('/app-store/developer/new') ||
         location.pathname.startsWith('/app-store/developer/edit');
