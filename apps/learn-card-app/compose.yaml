@@ -143,6 +143,7 @@ services:
       MONGO_DB_NAME: ${MONGO_DB_NAME:-lca-api}
       REDIS_URL: redis3
       REDIS_PORT: 6379
+      METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
 
   neo4j:
     image: neo4j:latest
