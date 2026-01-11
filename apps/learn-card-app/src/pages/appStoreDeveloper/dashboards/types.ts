@@ -8,6 +8,9 @@ export interface DashboardConfig {
     showBranding: boolean;
     showSigningAuthority: boolean;
     showConnections: boolean;
+    showAppListings: boolean;
+    showPartnerConnect: boolean;
+    showAppConfig: boolean;
 }
 
 export interface DashboardStats {
@@ -81,6 +84,9 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
         showBranding: true,
         showSigningAuthority: false,
         showConnections: false,
+        showAppListings: false,
+        showPartnerConnect: false,
+        showAppConfig: false,
     };
 
     switch (guideType) {
@@ -93,11 +99,20 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
             };
 
         case 'embed-claim':
-        case 'embed-app':
             return {
                 ...baseConfig,
                 showEmbedCode: true,
                 showTemplates: true,
+            };
+
+        case 'embed-app':
+            return {
+                ...baseConfig,
+                showAppListings: true,
+                showPartnerConnect: true,
+                showAppConfig: true,
+                showTemplates: true,
+                showContracts: true,
             };
 
         case 'consent-flow':

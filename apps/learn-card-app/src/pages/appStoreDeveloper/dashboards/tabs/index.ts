@@ -10,3 +10,6 @@ export { IntegrationSettingsTab } from './IntegrationSettingsTab';
 export { AnalyticsTab } from './AnalyticsTab';
 export { IntegrationCodeTab } from './IntegrationCodeTab';
 export { TestingTab } from './TestingTab';
+export { AppListingsTab } from './AppListingsTab';
+export { PartnerConnectTab } from './PartnerConnectTab';
+export { AppConfigTab } from './AppConfigTab';
