@@ -13,7 +13,6 @@ import {
     Users,
     Shield,
     Palette,
-    Plug,
     TestTube2,
     FileCode,
     Layout,
@@ -35,7 +34,6 @@ import {
     ConnectionsTab,
     SigningTab,
     BrandingTab,
-    IntegrationSettingsTab,
     AnalyticsTab,
     IntegrationCodeTab,
     TestingTab,
@@ -105,7 +103,6 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
         tabs.push({ id: 'testing', label: 'Testing', icon: TestTube2 });
     }
 
-    tabs.push({ id: 'integration', label: 'Settings', icon: Plug });
     tabs.push({ id: 'analytics', label: 'Analytics', icon: BarChart3 });
 
     return tabs;
@@ -469,13 +466,6 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     integration={integration}
                     templates={templates}
                     branding={branding}
-                />
-            )}
-
-            {activeTab === 'integration' && (
-                <IntegrationSettingsTab
-                    integration={integration}
-                    onStatusChange={() => handleRefresh()}
                 />
             )}
 
