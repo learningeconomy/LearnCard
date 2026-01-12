@@ -12,13 +12,14 @@ import {
     ArrowDownRight,
 } from 'lucide-react';
 
-import type { DashboardStats } from '../types';
+import type { DashboardStats, CredentialTemplate } from '../types';
 
 interface AnalyticsTabProps {
     stats: DashboardStats;
+    templates?: CredentialTemplate[];
 }
 
-export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats }) => {
+export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [] }) => {
     const claimRateColor = stats.claimRate >= 70 ? 'text-emerald-600' : stats.claimRate >= 40 ? 'text-amber-600' : 'text-red-500';
     const claimRateBg = stats.claimRate >= 70 ? 'bg-emerald-500' : stats.claimRate >= 40 ? 'bg-amber-500' : 'bg-red-500';
 

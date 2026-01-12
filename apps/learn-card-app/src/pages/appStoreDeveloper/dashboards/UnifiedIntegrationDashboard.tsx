@@ -50,6 +50,7 @@ import {
     BrandingConfig,
     getConfigForGuideType,
 } from './types';
+import { useIntegrationActivity } from './hooks/useIntegrationActivity';
 
 function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
     const tabs: DashboardTabConfig[] = [
@@ -345,13 +346,25 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
     const handleRefresh = () => loadDashboardData(true);
 
+    // Use merged activity stats (combines boost recipients + inbox credentials)
+    const { stats: activityStats } = useIntegrationActivity(templates);
+
+    // Use activity stats for issuance metrics, fall back to loaded stats for other metrics
+    const mergedStats: DashboardStats = {
+        ...stats,
+        totalIssued: activityStats.totalSent || stats.totalIssued,
+        totalClaimed: activityStats.totalClaimed || stats.totalClaimed,
+        pendingClaims: activityStats.pendingClaims || stats.pendingClaims,
+        claimRate: activityStats.claimRate || stats.claimRate,
+    };
+
     const quickStats: StatItem[] = [
-        { label: 'Credentials Issued', value: stats.totalIssued, icon: Zap, iconBgColor: 'bg-cyan-100', iconColor: 'text-cyan-600' },
-        { label: 'Claimed', value: stats.totalClaimed, icon: CheckCircle2, iconBgColor: 'bg-emerald-100', iconColor: 'text-emerald-600' },
-        { label: 'Pending', value: stats.pendingClaims, icon: AlertCircle, iconBgColor: 'bg-amber-100', iconColor: 'text-amber-600' },
+        { label: 'Credentials Issued', value: mergedStats.totalIssued, icon: Zap, iconBgColor: 'bg-cyan-100', iconColor: 'text-cyan-600' },
+        { label: 'Claimed', value: mergedStats.totalClaimed, icon: CheckCircle2, iconBgColor: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+        { label: 'Pending', value: mergedStats.pendingClaims, icon: AlertCircle, iconBgColor: 'bg-amber-100', iconColor: 'text-amber-600' },
         config.showApiTokens
-            ? { label: 'Active Tokens', value: stats.activeTokens, icon: Key, iconBgColor: 'bg-violet-100', iconColor: 'text-violet-600' }
-            : { label: 'Claim Rate', value: `${stats.claimRate.toFixed(1)}%`, icon: BarChart3, iconBgColor: 'bg-violet-100', iconColor: 'text-violet-600' },
+            ? { label: 'Active Tokens', value: mergedStats.activeTokens, icon: Key, iconBgColor: 'bg-violet-100', iconColor: 'text-violet-600' }
+            : { label: 'Claim Rate', value: `${mergedStats.claimRate.toFixed(1)}%`, icon: BarChart3, iconBgColor: 'bg-violet-100', iconColor: 'text-violet-600' },
     ];
 
     if (isLoading) {
@@ -471,7 +484,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
             )}
 
             {activeTab === 'analytics' && (
-                <AnalyticsTab stats={stats} />
+                <AnalyticsTab stats={mergedStats} templates={templates} />
             )}
         </DashboardLayout>
     );
