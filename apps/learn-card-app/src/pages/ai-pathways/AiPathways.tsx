@@ -39,12 +39,15 @@ const AiPathways: React.FC = () => {
     const { data: learningPathwaysData, isLoading: fetchPathwaysLoading } = useAiPathways();
 
     const strongestAreaInterest = aiInsightCredential?.insights?.strongestArea;
-    const careerKeywords =
-        strongestAreaInterest?.keywords?.occupation ||
-        strongestAreaInterest?.keywords?.jobs ||
-        getFirstAvailableKeywords(learningPathwaysData || []);
 
-    console.log('careerKeywords', careerKeywords);
+    let careerKeywords = null;
+    if (strongestAreaInterest?.keywords?.occupation?.length) {
+        careerKeywords = strongestAreaInterest.keywords.occupation;
+    } else if (strongestAreaInterest?.keywords?.jobs?.length) {
+        careerKeywords = strongestAreaInterest.keywords.jobs;
+    }
+
+    careerKeywords = careerKeywords || getFirstAvailableKeywords(learningPathwaysData || []);
 
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>

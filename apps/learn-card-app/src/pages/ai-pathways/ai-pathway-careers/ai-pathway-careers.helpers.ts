@@ -223,9 +223,9 @@ export const getFirstAvailableKeywords = (
 ): string[] => {
     for (const pathway of pathways) {
         const keywords =
-            pathway.keywords?.careers ||
-            pathway.keywords?.occupation ||
-            pathway.keywords?.jobs ||
+            (pathway.keywords?.careers?.length && pathway.keywords.careers) ||
+            (pathway.keywords?.occupation?.length && pathway.keywords.occupation) ||
+            (pathway.keywords?.jobs?.length && pathway.keywords.jobs) ||
             [];
 
         if (keywords && keywords.length > 0) {
