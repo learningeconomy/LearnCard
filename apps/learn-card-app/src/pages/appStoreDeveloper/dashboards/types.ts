@@ -101,6 +101,7 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
         case 'embed-claim':
             return {
                 ...baseConfig,
+                showApiTokens: true,
                 showEmbedCode: true,
                 showTemplates: true,
             };
@@ -108,6 +109,7 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
         case 'embed-app':
             return {
                 ...baseConfig,
+                showApiTokens: true,
                 showAppListings: true,
                 showPartnerConnect: true,
                 showAppConfig: true,
@@ -127,6 +129,7 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
         default:
             return {
                 ...baseConfig,
+                showApiTokens: true,
                 showTemplates: true,
             };
     }

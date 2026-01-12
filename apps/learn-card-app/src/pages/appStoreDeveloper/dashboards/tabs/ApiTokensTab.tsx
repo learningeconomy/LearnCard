@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Key, Copy, Check, Trash2, Plus, Loader2 } from 'lucide-react';
+import { Key, Copy, Check, Trash2, Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { useWallet } from 'learn-card-base';
@@ -7,23 +7,73 @@ import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import type { AuthGrant } from '../types';
 
+const SCOPE_OPTIONS = [
+    { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
+    { label: 'Credentials Only', value: 'credential:* presentation:*', description: 'Issue and manage credentials' },
+];
+
 interface ApiTokensTabProps {
     authGrants: AuthGrant[];
     onRefresh: () => void;
     guideType?: string;
 }
 
-export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefresh, guideType }) => {
+export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefresh }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [revokingId, setRevokingId] = useState<string | null>(null);
+    const [copyingId, setCopyingId] = useState<string | null>(null);
 
-    const copyChallenge = async (challenge: string, id: string) => {
-        await Clipboard.write({ string: challenge });
-        setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2000);
-        presentToast('Token copied!', { hasDismissButton: true });
+    // Create form state
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [newTokenName, setNewTokenName] = useState('');
+    const [selectedScope, setSelectedScope] = useState('*:*');
+    const [creating, setCreating] = useState(false);
+
+    const createToken = async () => {
+        if (!newTokenName.trim()) return;
+
+        try {
+            setCreating(true);
+            const wallet = await initWallet();
+
+            await wallet.invoke.addAuthGrant({
+                name: newTokenName.trim(),
+                description: 'Created from Integration Dashboard',
+                scope: selectedScope,
+            });
+
+            presentToast('API Token created!', { hasDismissButton: true });
+            setNewTokenName('');
+            setSelectedScope('*:*');
+            setShowCreateForm(false);
+            onRefresh();
+        } catch (err) {
+            console.error('Failed to create token:', err);
+            presentToast('Failed to create token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const copyToken = async (grantId: string) => {
+        setCopyingId(grantId);
+        try {
+            const wallet = await initWallet();
+            const token = await wallet.invoke.getAPITokenForAuthGrant(grantId);
+
+            await Clipboard.write({ string: token });
+            setCopiedId(grantId);
+            setTimeout(() => setCopiedId(null), 2000);
+            presentToast('Token copied!', { hasDismissButton: true });
+        } catch (err) {
+            console.error('Failed to copy token:', err);
+            presentToast('Failed to copy token', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        } finally {
+            setCopyingId(null);
+        }
     };
 
     const revokeToken = async (grantId: string) => {
@@ -44,10 +94,6 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
     const activeGrants = authGrants.filter(g => g.status === 'active');
     const revokedGrants = authGrants.filter(g => g.status === 'revoked');
 
-    const createTokenUrl = guideType 
-        ? `/app-store/developer/guides/${guideType}`
-        : '/app-store/developer/guides/issue-credentials';
-
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -56,13 +102,74 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
                     <p className="text-sm text-gray-500">Manage tokens for server-side credential issuance</p>
                 </div>
 
-                <a
-                    href={createTokenUrl}
-                    className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    Create Token
-                </a>
+                {!showCreateForm && (
+                    <button
+                        onClick={() => setShowCreateForm(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create Token
+                    </button>
+                )}
+            </div>
+
+            {/* Create Token Form */}
+            {showCreateForm && (
+                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-4">
+                    <h3 className="font-medium text-gray-800">Create New API Token</h3>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Token Name</label>
+                        <input
+                            type="text"
+                            value={newTokenName}
+                            onChange={(e) => setNewTokenName(e.target.value)}
+                            placeholder="e.g., Production Server"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Permissions</label>
+                        <select
+                            value={selectedScope}
+                            onChange={(e) => setSelectedScope(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        >
+                            {SCOPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                            {SCOPE_OPTIONS.find(o => o.value === selectedScope)?.description}
+                        </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={createToken}
+                            disabled={creating || !newTokenName.trim()}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                        >
+                            {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                            {creating ? 'Creating...' : 'Create Token'}
+                        </button>
+                        <button
+                            onClick={() => { setShowCreateForm(false); setNewTokenName(''); }}
+                            className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Security Warning */}
+            <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                    <strong>Security:</strong> Never expose your API token in client-side code or commit it to version control.
+                </p>
             </div>
 
             {activeGrants.length === 0 ? (
@@ -91,15 +198,19 @@ export const ApiTokensTab: React.FC<ApiTokensTabProps> = ({ authGrants, onRefres
 
                                 <div className="flex items-center gap-2">
                                     <button
-                                        onClick={() => copyChallenge(grant.challenge, grant.id)}
-                                        className="p-2 text-gray-500 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                                        onClick={() => copyToken(grant.id)}
+                                        disabled={copyingId === grant.id}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded-lg transition-colors disabled:opacity-50"
                                         title="Copy token"
                                     >
-                                        {copiedId === grant.id ? (
+                                        {copyingId === grant.id ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : copiedId === grant.id ? (
                                             <Check className="w-4 h-4 text-emerald-500" />
                                         ) : (
                                             <Copy className="w-4 h-4" />
                                         )}
+                                        Copy
                                     </button>
 
                                     <button
