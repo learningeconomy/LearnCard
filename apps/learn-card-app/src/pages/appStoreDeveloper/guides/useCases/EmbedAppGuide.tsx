@@ -1342,7 +1342,8 @@ const TemplateManager: React.FC<{
     appName?: string;
     codeStyle?: TemplateCodeStyle;
     contractUri?: string;
-}> = ({ appListingId, appName, codeStyle = 'initiateTemplateIssue', contractUri }) => {
+    integrationId?: string;
+}> = ({ appListingId, appName, codeStyle = 'initiateTemplateIssue', contractUri, integrationId }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
@@ -1451,7 +1452,7 @@ const TemplateManager: React.FC<{
                 name: (credential.name as string) || 'Template',
                 type: ((credential.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
                 category: 'achievement',
-                meta: { appListingId }, // Store app listing ID in metadata for filtering
+                meta: { appListingId, integrationId }, // Store both app listing ID and integration ID for filtering
                 defaultPermissions: {
                     canIssue: true, // Public template - anyone can issue
                 },
@@ -2663,7 +2664,8 @@ if (result.granted) {
                                     {/* Template Manager */}
                                     <TemplateManager 
                                         appListingId={selectedListing?.listing_id} 
-                                        appName={selectedListing?.display_name} 
+                                        appName={selectedListing?.display_name}
+                                        integrationId={selectedIntegration?.id}
                                     />
                                 </>
                             )}
@@ -2738,7 +2740,8 @@ const FeatureSetupStep: React.FC<{
     featureSetupState: Record<string, Record<string, unknown>>;
     setFeatureSetupState: (state: Record<string, Record<string, unknown>>) => void;
     selectedListing: AppStoreListing | null;
-}> = ({ onComplete, onBack, selectedFeatures, currentFeatureIndex, setCurrentFeatureIndex, featureSetupState, setFeatureSetupState, selectedListing }) => {
+    integrationId?: string;
+}> = ({ onComplete, onBack, selectedFeatures, currentFeatureIndex, setCurrentFeatureIndex, featureSetupState, setFeatureSetupState, selectedListing, integrationId }) => {
     // Get features that require setup
     const featuresNeedingSetup = selectedFeatures
         .map(id => FEATURES.find(f => f.id === id))
@@ -2788,6 +2791,7 @@ const FeatureSetupStep: React.FC<{
                         selectedListing={selectedListing}
                         featureSetupState={featureSetupState}
                         setFeatureSetupState={setFeatureSetupState}
+                        integrationId={integrationId}
                     />
                 );
 
@@ -2798,6 +2802,7 @@ const FeatureSetupStep: React.FC<{
                         onBack={handleFeatureBack}
                         isLastFeature={isLastFeature}
                         selectedListing={selectedListing}
+                        integrationId={integrationId}
                     />
                 );
 
@@ -2884,7 +2889,8 @@ const IssueCredentialsSetup: React.FC<{
     selectedListing: AppStoreListing | null;
     featureSetupState: Record<string, Record<string, unknown>>;
     setFeatureSetupState: (state: Record<string, Record<string, unknown>>) => void;
-}> = ({ onComplete, onBack, isLastFeature, selectedListing, featureSetupState, setFeatureSetupState }) => {
+    integrationId?: string;
+}> = ({ onComplete, onBack, isLastFeature, selectedListing, featureSetupState, setFeatureSetupState, integrationId }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
@@ -3284,6 +3290,7 @@ console.log('Credential synced:', result);`;
                                     appName={selectedListing.display_name}
                                     codeStyle="send"
                                     contractUri={contractUri}
+                                    integrationId={integrationId}
                                 />
                             ) : (
                                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
@@ -4300,7 +4307,8 @@ const PeerBadgesSetup: React.FC<{
     onBack: () => void;
     isLastFeature: boolean;
     selectedListing: AppStoreListing | null;
-}> = ({ onComplete, onBack, isLastFeature, selectedListing }) => {
+    integrationId?: string;
+}> = ({ onComplete, onBack, isLastFeature, selectedListing, integrationId }) => {
     return (
         <div className="space-y-6">
             <div>
@@ -4349,6 +4357,7 @@ const PeerBadgesSetup: React.FC<{
                 <TemplateManager
                     appListingId={selectedListing.listing_id}
                     appName={selectedListing.display_name}
+                    integrationId={integrationId}
                 />
             ) : (
                 <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
@@ -4394,12 +4403,58 @@ const YourAppStep: React.FC<{
     const updateMutation = useUpdateListing();
     const { presentToast } = useToast();
     const { newModal } = useModal();
+    const { initWallet } = useWallet();
 
     const [copiedCode, setCopiedCode] = useState(false);
     const [showConfigEditor, setShowConfigEditor] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showConfigMismatchPrompt, setShowConfigMismatchPrompt] = useState(false);
     const [hasCheckedConfig, setHasCheckedConfig] = useState(false);
+    const [peerBadgeTemplates, setPeerBadgeTemplates] = useState<BoostTemplate[]>([]);
+
+    // Fetch peer badge templates for this app listing
+    useEffect(() => {
+        if (!selectedListing?.listing_id || !selectedFeatures.includes('peer-badges')) {
+            setPeerBadgeTemplates([]);
+            return;
+        }
+
+        let cancelled = false;
+
+        const fetchTemplates = async () => {
+            try {
+                const wallet = await initWallet();
+                const result = await wallet.invoke.getPaginatedBoosts({
+                    limit: 100,
+                    query: { meta: { appListingId: selectedListing.listing_id } }
+                });
+
+                if (!cancelled) {
+                    const templates = (result?.records || []).map((boost: Record<string, unknown>) => ({
+                        uri: boost.uri as string,
+                        name: boost.name as string || 'Untitled Template',
+                        description: boost.description as string,
+                        type: boost.type as string,
+                        category: boost.category as string,
+                        image: boost.image as string,
+                        createdAt: boost.createdAt as string,
+                    }));
+                    setPeerBadgeTemplates(templates);
+                }
+            } catch (err) {
+                console.error('Failed to fetch peer badge templates:', err);
+                if (!cancelled) {
+                    setPeerBadgeTemplates([]);
+                }
+            }
+        };
+
+        fetchTemplates();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedListing?.listing_id, selectedFeatures, initWallet]);
 
     // Extract configured values from feature setup state
     const issueCredentialsState = featureSetupState['issue-credentials'] || {};
@@ -4837,9 +4892,53 @@ async function issueCredentialViaConsent(recipientProfileId: string) {
         // PEER BADGES
         // ===================
         if (selectedFeatures.includes('peer-badges')) {
+            // Generate template configuration from actual templates
+            const templateConfigJson = peerBadgeTemplates.length > 0
+                ? JSON.stringify(
+                    peerBadgeTemplates.map(t => ({
+                        id: t.uri.split(':').pop() || t.uri, // Extract short ID for easier reference
+                        uri: t.uri,
+                        name: t.name,
+                        description: t.description || '',
+                        type: t.type || 'achievement',
+                    })),
+                    null,
+                    4
+                )
+                : `[
+    {
+        "id": "example-badge",
+        "uri": "urn:lc:boost:YOUR_TEMPLATE_URI",
+        "name": "Example Badge",
+        "description": "Create templates in the Peer Badges setup step",
+        "type": "achievement"
+    }
+]`;
+
             sections.push(`
 // ============================================================
-// PEER-TO-PEER BADGES
+// PEER-TO-PEER BADGES - Template Configuration
+// ============================================================
+// Your available badge templates that users can send to each other.
+// Each template has a unique URI that you pass to initiateTemplateIssuance.
+//
+// LLM INTEGRATION NOTE: Use these template URIs when calling sendPeerBadge().
+// Match the badge type to the user's intent (e.g., "thank you" -> gratitude badge).
+
+const PEER_BADGE_TEMPLATES = ${templateConfigJson};
+
+// Helper to find a template by name or type
+function findTemplate(query: string) {
+    const q = query.toLowerCase();
+    return PEER_BADGE_TEMPLATES.find(t => 
+        t.name.toLowerCase().includes(q) || 
+        t.description.toLowerCase().includes(q) ||
+        t.type.toLowerCase().includes(q)
+    );
+}
+
+// ============================================================
+// PEER-TO-PEER BADGES - Send Functions
 // ============================================================
 // Let users send badges to each other within your app
 // 
@@ -4848,20 +4947,40 @@ async function issueCredentialViaConsent(recipientProfileId: string) {
 //   2. User selects a recipient from their contacts
 //   3. Badge is sent from your app on behalf of the user
 
-async function sendPeerBadge() {
+/**
+ * Send a peer badge using a specific template
+ * @param templateUri - The URI of the badge template (from PEER_BADGE_TEMPLATES)
+ */
+async function sendPeerBadge(templateUri: string) {
     try {
         await learnCard.initiateTemplateIssuance({
-            // TODO: Replace with your peer badge template URI
-            // Create templates at: /admin-tools/view-managed-boosts
-            boostUri: 'urn:lc:boost:YOUR_PEER_BADGE_TEMPLATE',
+            boostUri: templateUri,
         });
         
-        console.log('Peer badge flow initiated');
+        console.log('Peer badge flow initiated with template:', templateUri);
     } catch (error) {
         console.error('Failed to initiate peer badge:', error);
         throw error;
     }
-}`);
+}
+
+/**
+ * Send a peer badge by searching for a matching template
+ * @param searchQuery - Search term to find a matching template (e.g., "thank you", "great job")
+ */
+async function sendPeerBadgeByName(searchQuery: string) {
+    const template = findTemplate(searchQuery);
+    
+    if (!template) {
+        throw new Error(\`No template found matching: \${searchQuery}. Available: \${PEER_BADGE_TEMPLATES.map(t => t.name).join(', ')}\`);
+    }
+    
+    return sendPeerBadge(template.uri);
+}
+
+// Example usage:
+// sendPeerBadge(PEER_BADGE_TEMPLATES[0].uri);  // Send first template
+// sendPeerBadgeByName('thank you');             // Find and send by name`);
         }
 
         // ===================
@@ -5634,6 +5753,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                         featureSetupState={featureSetupState}
                         setFeatureSetupState={setFeatureSetupState}
                         selectedListing={selectedListing}
+                        integrationId={selectedIntegration?.id}
                     />
                 );
 

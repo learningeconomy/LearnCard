@@ -273,23 +273,34 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 }
             }
 
-            // Fetch credential stats - filter by this integration's boost URIs
+            // Fetch credential stats using getPaginatedBoostRecipients for complete analytics
+            // This captures ALL sends (profileId, DID, email, phone) not just inbox sends
             let totalIssued = 0;
-            let totalClaimed = 0;
+            let totalAccepted = 0;
             try {
-                const sentCredentials = await wallet.invoke.getMySentInboxCredentials?.({ limit: 500 });
-                const records = sentCredentials?.records || [];
+                for (const boostUri of integrationBoostUris) {
+                    try {
+                        // getPaginatedBoostRecipients(uri, limit, cursor, includeUnacceptedBoosts)
+                        const recipients = await wallet.invoke.getPaginatedBoostRecipients?.(
+                            boostUri,
+                            500,        // limit
+                            undefined,  // cursor
+                            true        // includeUnacceptedBoosts
+                        );
 
-                // Filter to only credentials from this integration's boosts
-                const integrationRecords = records.filter((r: any) =>
-                    r.boostUri && integrationBoostUris.has(r.boostUri)
-                );
-
-                totalIssued = integrationRecords.length;
-                totalClaimed = integrationRecords.filter((r: any) => r.currentStatus === 'CLAIMED').length;
+                        const records = recipients?.records || [];
+                        totalIssued += records.length;
+                        // Count accepted = has a 'received' date (credential was accepted)
+                        totalAccepted += records.filter((r: any) => r.received).length;
+                    } catch (e) {
+                        console.warn('Could not load recipients for boost:', boostUri, e);
+                    }
+                }
             } catch (err) {
                 console.warn('Could not load credential stats:', err);
             }
+
+            const totalClaimed = totalAccepted;
 
             // Load branding from profile
             if (config.showBranding && !branding) {
