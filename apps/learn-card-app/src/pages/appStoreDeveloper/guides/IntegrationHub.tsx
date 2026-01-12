@@ -134,10 +134,7 @@ const IntegrationHub: React.FC = () => {
     const { useUpdateIntegration } = useDeveloperPortal();
     const updateIntegrationMutation = useUpdateIntegration();
 
-    // If no integration ID in URL but integrations exist, redirect to first one
-    if (!currentIntegrationId && !isLoadingIntegrations && integrations.length > 0) {
-        return <Redirect to={`/app-store/developer/integrations/${integrations[0].id}/guides`} />;
-    }
+    // No auto-redirect to first integration - let user select from dropdown
 
     const activeGuideType = currentIntegration?.guideType || null;
 

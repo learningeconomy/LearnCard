@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import React from 'react';
+import { useHistory, Redirect } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { Sparkles, Send, Rocket, ArrowRight, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import { useDeveloperPortal } from './useDeveloperPortal';
 import { useDeveloperPortalContext } from './DeveloperPortalContext';
@@ -10,58 +10,52 @@ import { PartnerDashboard } from './components/PartnerDashboard';
 import { AppStoreHeader } from './components/AppStoreHeader';
 import type { ExtendedAppStoreListing } from './types';
 
+/**
+ * DeveloperPortal - Apps listing page for a specific integration
+ * Route: /app-store/developer/integrations/:integrationId/apps
+ */
 const DeveloperPortal: React.FC = () => {
     const history = useHistory();
-    const [newProjectName, setNewProjectName] = useState('');
 
-    // Use context for integration state
+    // Use context for integration state (derived from URL)
     const {
         currentIntegrationId,
+        currentIntegration,
         integrations,
         isLoadingIntegrations,
         selectIntegration,
-        createIntegration,
-        isCreatingIntegration,
     } = useDeveloperPortalContext();
 
-    // For listing management, we still need direct access to some hooks
+    // For listing management
     const {
         useListingsForIntegration,
         useDeleteListing,
         useSubmitForReview,
     } = useDeveloperPortal();
 
-    // Default to first integration when none selected but integrations exist
-    const selectedIntegrationId = currentIntegrationId || (integrations.length > 0 ? integrations[0].id : null);
-
-    const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(selectedIntegrationId);
+    const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(currentIntegrationId);
 
     const deleteMutation = useDeleteListing();
     const submitMutation = useSubmitForReview();
 
-    const handleCreateFirstProject = async () => {
-        if (!newProjectName.trim()) return;
-
-        try {
-            await createIntegration(newProjectName.trim());
-            setNewProjectName('');
-        } catch (error) {
-            console.error('Failed to create project:', error);
-        }
-    };
+    // If no integration ID in URL, redirect to landing page
+    if (!currentIntegrationId && !isLoadingIntegrations) {
+        return <Redirect to="/app-store/developer" />;
+    }
 
     const handleCreateNew = () => {
-        if (selectedIntegrationId) {
-            history.push(`/app-store/developer/new?integrationId=${selectedIntegrationId}`);
+        if (currentIntegrationId) {
+            history.push(`/app-store/developer/integrations/${currentIntegrationId}/apps/new`);
         }
     };
 
     const handleEditListing = (listing: ExtendedAppStoreListing) => {
-        history.push({
-            pathname: `/app-store/developer/edit/${listing.listing_id}`,
-            search: `?integrationId=${selectedIntegrationId}`,
-            state: { listing },
-        });
+        if (currentIntegrationId) {
+            history.push({
+                pathname: `/app-store/developer/integrations/${currentIntegrationId}/apps/${listing.listing_id}`,
+                state: { listing },
+            });
+        }
     };
 
     const handleDeleteListing = async (listingId: string) => {
@@ -79,11 +73,29 @@ const DeveloperPortal: React.FC = () => {
     const integrationSelector = (
         <HeaderIntegrationSelector
             integrations={integrations}
-            selectedId={selectedIntegrationId}
+            selectedId={currentIntegrationId}
             onSelect={selectIntegration}
             isLoading={isLoadingIntegrations}
         />
     );
+
+    // Show loader while loading
+    if (isLoadingIntegrations) {
+        return (
+            <IonPage>
+                <AppStoreHeader title="Developer Portal" rightContent={integrationSelector} />
+
+                <IonContent className="ion-padding">
+                    <div className="flex items-center justify-center min-h-[400px]">
+                        <div className="text-center">
+                            <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
+                            <p className="text-sm text-gray-500 mt-3">Loading...</p>
+                        </div>
+                    </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
 
     return (
         <IonPage>
@@ -91,152 +103,27 @@ const DeveloperPortal: React.FC = () => {
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto">
-                    {/* (<div className="text-center mb-6">
-                        <h1 className="text-2xl font-semibold text-gray-700 tracking-tight">Partner Portal</h1>
-                        <p className="text-gray-500 mt-1">Manage your app listings and track their approval status</p>
-                    </div>)} */}
-
-                    {selectedIntegrationId && (
-                        <PartnerDashboard
-                            listings={(listings || []) as ExtendedAppStoreListing[]}
-                            isLoading={isLoadingListings}
-                            onRefresh={handleRefresh}
-                            onCreateNew={handleCreateNew}
-                            onEditListing={handleEditListing}
-                            onSubmitForReview={handleSubmitForReview}
-                            onDeleteListing={handleDeleteListing}
-                        />
-                    )}
-
-                    {!selectedIntegrationId && !isLoadingIntegrations && integrations?.length === 0 && (
-                        <div className="max-w-2xl mx-auto py-8">
-                            {/* Beta Banner */}
-                            <div className="mb-6 mx-auto max-w-md">
-                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                                        <Sparkles className="w-4 h-4 text-amber-600" />
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-amber-800">
-                                            Developer Portal Beta
-                                        </p>
-
-                                        <p className="text-xs text-amber-600">
-                                            Early access — features may change as we improve
-                                        </p>
-                                    </div>
-
-                                    <span className="flex-shrink-0 px-2 py-0.5 bg-amber-200 text-amber-800 text-xs font-semibold rounded-full uppercase">
-                                        Beta
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="text-center mb-8">
-                                <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-200">
-                                    <Rocket className="w-8 h-8 text-white" />
-                                </div>
-
-                                <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-                                    Publish Your App
-                                </h2>
-
-                                <p className="text-gray-500 max-w-md mx-auto">
-                                    Share your app with thousands of users. It only takes a few minutes to get started.
-                                </p>
-                            </div>
-
-                            {/* Input above the fold */}
-                            <div className="max-w-md mx-auto mb-10">
-                                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                                    Name your first project
-                                </label>
-
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={newProjectName}
-                                        onChange={e => setNewProjectName(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && handleCreateFirstProject()}
-                                        placeholder="e.g. My Awesome Project"
-                                        className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
-                                        disabled={isCreatingIntegration}
-                                    />
-
-                                    <button
-                                        onClick={handleCreateFirstProject}
-                                        disabled={!newProjectName.trim() || isCreatingIntegration}
-                                        className="px-5 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-200 flex items-center gap-2"
-                                    >
-                                        {isCreatingIntegration ? (
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                        ) : (
-                                            <>
-                                                Get Started
-                                                <ArrowRight className="w-4 h-4" />
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-
-                                <p className="text-xs text-gray-400 mt-3 text-center">
-                                    Free to publish • No coding required
-                                </p>
-                            </div>
-
-                            {/* How it works - below the fold */}
-                            {/* <div className="border-t border-gray-100 pt-8">
-                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide text-center mb-4">
-                                    How it works
-                                </p>
-
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 p-4">
-                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-violet-100 text-violet-600">
-                                            <Sparkles className="w-4 h-4" />
-                                        </div>
-
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-gray-800 text-sm">Create</h3>
-
-                                            <p className="text-xs text-gray-500">
-                                                Build your listing with details, icon, and screenshots.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 p-4">
-                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-100 text-amber-600">
-                                            <Send className="w-4 h-4" />
-                                        </div>
-
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-gray-800 text-sm">Submit</h3>
-
-                                            <p className="text-xs text-gray-500">
-                                                Submit for review by our team.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 p-4">
-                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-100 text-emerald-600">
-                                            <Rocket className="w-4 h-4" />
-                                        </div>
-
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-gray-800 text-sm">Publish</h3>
-
-                                            <p className="text-xs text-gray-500">
-                                                Go live in the App Store for users to discover.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> */}
+                    {/* Project name header
+                    {currentIntegration && (
+                        <div className="mb-4">
+                            <h1 className="text-xl font-semibold text-gray-800">
+                                {currentIntegration.name}
+                            </h1>
+                            <p className="text-sm text-gray-500">
+                                Manage app listings for this project
+                            </p>
                         </div>
-                    )}
+                    )} */}
+
+                    <PartnerDashboard
+                        listings={(listings || []) as ExtendedAppStoreListing[]}
+                        isLoading={isLoadingListings}
+                        onRefresh={handleRefresh}
+                        onCreateNew={handleCreateNew}
+                        onEditListing={handleEditListing}
+                        onSubmitForReview={handleSubmitForReview}
+                        onDeleteListing={handleDeleteListing}
+                    />
                 </div>
             </IonContent>
         </IonPage>

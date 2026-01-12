@@ -1862,12 +1862,7 @@ const UseApiStep: React.FC<{
     const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(selectedIntegration?.id || null);
     const createListingMutation = useCreateListing();
 
-    // Auto-select first integration
-    useEffect(() => {
-        if (integrations && integrations.length > 0 && !selectedIntegration) {
-            setSelectedIntegration(integrations[0]);
-        }
-    }, [integrations, selectedIntegration]);
+    // No auto-selection of integration - user selects via header dropdown
 
     // Auto-select first listing when integration changes
     useEffect(() => {

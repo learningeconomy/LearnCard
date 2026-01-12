@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { ChevronDown, Plus, Loader2, Check, Settings, LayoutDashboard } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -18,6 +19,8 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     onSelect,
     isLoading,
 }) => {
+    const history = useHistory();
+    const location = useLocation();
     const [isOpen, setIsOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
@@ -27,6 +30,9 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     const inputRef = useRef<HTMLInputElement>(null);
 
     const { createIntegration, isCreatingIntegration } = useDeveloperPortalContext();
+
+    // Detect if we're on Apps side (has /apps in path) vs Build side
+    const isOnAppsPage = location.pathname.includes('/apps');
 
     const selectedIntegration = integrations.find(i => i.id === selectedId);
 
@@ -67,8 +73,16 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     }, [isCreating]);
 
     const handleSelectIntegration = (integration: LCNIntegration) => {
-        onSelect(integration.id);
         setIsOpen(false);
+        
+        // Navigate based on current context (Apps vs Build)
+        if (isOnAppsPage) {
+            // On Apps side - navigate to that integration's apps page
+            history.push(`/app-store/developer/integrations/${integration.id}/apps`);
+        } else {
+            // On Build side - use the existing onSelect which handles navigation
+            onSelect(integration.id);
+        }
     };
 
     const handleCreate = async () => {
