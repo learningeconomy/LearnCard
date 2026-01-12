@@ -62,6 +62,9 @@ services:
 
   brain:
     image: learncard-monorepo-local
+    build:
+      context: ../../
+      dockerfile: Dockerfile.monorepo
     container_name: "lcn-brain-service"
     expose:
       - 4000
@@ -103,6 +106,9 @@ services:
 
   cloud:
     image: learncard-monorepo-local
+    build:
+      context: ../../
+      dockerfile: Dockerfile.monorepo
     container_name: "lcn-cloud-service"
     expose:
       - 4100
@@ -130,6 +136,9 @@ services:
 
   api:
     image: learncard-monorepo-local
+    build:
+      context: ../../
+      dockerfile: Dockerfile.monorepo
     container_name: "lcn-api-service"
     expose:
       - 5100

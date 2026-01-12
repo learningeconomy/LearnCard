@@ -64,6 +64,9 @@ services:
 
     cloud:
         image: learncard-monorepo-local
+        build:
+            context: ../../
+            dockerfile: Dockerfile.monorepo
 
         expose:
             - 4100
@@ -111,6 +114,9 @@ services:
 
     signing:
         image: learncard-monorepo-local
+        build:
+            context: ../../
+            dockerfile: Dockerfile.monorepo
 
         expose:
             - 4200

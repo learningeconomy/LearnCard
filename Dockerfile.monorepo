@@ -1,15 +1,17 @@
+# syntax=docker/dockerfile:1.7
 FROM node:20.10.0-slim
 
 ENV SKIP_DIDKIT_NAPI=1
-ENV NX_PARALLEL=1
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt \
+    --mount=type=cache,target=/var/lib/apt \
+    apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     build-essential \
-    && rm -rf /var/lib/apt/lists/* \
-    && npm install -g pnpm@9.12.3
+    && npm install -g pnpm@9.12.3 \
+    && pnpm config set store-dir /pnpm/store
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc .gitignore .nxignore ./
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
@@ -50,7 +52,8 @@ COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
 COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 
-RUN pnpm install --no-frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install
 
 COPY services/learn-card-network/lca-api services/learn-card-network/lca-api
 COPY packages/lca-api-client packages/lca-api-client
@@ -88,9 +91,8 @@ COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vpqr packages/plugins/vpqr
 COPY apps/learn-card-app apps/learn-card-app
 
-RUN rm -rf node_modules/.cache/nx
-
-RUN pnpm exec nx docker-build learn-card-app
-RUN pnpm exec nx build:docker network-brain-service
-RUN pnpm exec nx build:docker learn-cloud-service
-RUN pnpm exec nx build:docker lca-api-service
+RUN --mount=type=cache,id=nx-cache,target=/app/.nx \
+    pnpm exec nx docker-build learn-card-app && \
+    pnpm exec nx build:docker network-brain-service && \
+    pnpm exec nx build:docker learn-cloud-service && \
+    pnpm exec nx build:docker lca-api-service
