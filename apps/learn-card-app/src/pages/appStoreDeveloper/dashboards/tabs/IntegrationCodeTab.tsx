@@ -34,7 +34,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { useToast } from 'learn-card-base/hooks/useToast';
 
 import type { CredentialTemplate } from '../types';
-import { CodeBlock } from '../../components/CodeBlock';
+import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
 import { 
     extractDynamicVariables, 
     OBv3CredentialTemplate,
@@ -316,10 +316,10 @@ ${optionsParts.join('\n')}
 
 import { initLearnCard } from '@learncard/init';
 
-// Initialize with your API key
+// Initialize with your API Token (get from "API Tokens" tab)
 const learnCard = await initLearnCard({
     network: {
-        apiToken: process.env.LEARNCARD_API_KEY, // ${apiKey.slice(0, 12)}...
+        apiToken: process.env.LEARNCARD_API_TOKEN, // Your API Token
     },
 });
 
@@ -341,6 +341,73 @@ console.log('Boost URI:', result.uri);
 // result.inbox?.issuanceId - tracking ID
 // result.inbox?.status - 'PENDING', 'ISSUED', or 'CLAIMED'
 // result.inbox?.claimUrl - present if suppressDelivery=true`;
+    };
+
+    // Generate cURL code snippet
+    const generateCurlCodeSnippet = () => {
+        const boostUri = selectedTemplate?.boostUri || 'urn:lc:boost:your_template_id';
+        // API Token should come from API Tokens tab
+        const apiKey = 'YOUR_API_TOKEN'; // Get from API Tokens tab
+        const recipientExample = apiRecipientEmail.trim() || 'recipient@example.com';
+
+        // Build templateData object
+        const templateData: Record<string, string> = {};
+        templateVariables.forEach(varName => {
+            templateData[varName] = apiTemplateData[varName] || getSmartDefault(varName);
+        });
+
+        // Build options object
+        const options: Record<string, unknown> = {};
+
+        if (advancedOptions.webhookUrl) {
+            options.webhookUrl = advancedOptions.webhookUrl;
+        }
+
+        if (advancedOptions.suppressDelivery) {
+            options.suppressDelivery = true;
+        }
+
+        if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
+            options.branding = {};
+            if (advancedOptions.issuerName) (options.branding as Record<string, string>).issuerName = advancedOptions.issuerName;
+            if (advancedOptions.issuerLogoUrl) (options.branding as Record<string, string>).issuerLogoUrl = advancedOptions.issuerLogoUrl;
+            if (advancedOptions.recipientName) (options.branding as Record<string, string>).recipientName = advancedOptions.recipientName;
+        }
+
+        // Build the full payload
+        const payload: Record<string, unknown> = {
+            type: 'boost',
+            recipient: recipientExample,
+            templateUri: boostUri,
+            templateData,
+        };
+
+        if (Object.keys(options).length > 0) {
+            payload.options = options;
+        }
+
+        const payloadJson = JSON.stringify(payload, null, 2)
+            .split('\n')
+            .map((line, i) => i === 0 ? line : '  ' + line)
+            .join('\n');
+
+        return `# Send credential via LearnCard Network API
+# API Documentation: https://docs.learncard.com/api
+#
+# Get your API Token from the "API Tokens" tab in your dashboard.
+# Create a token with "Full Access" or "Credentials Only" scope.
+
+curl -X POST "https://network.learncard.com/api/send" \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '${payloadJson}'
+
+# Response includes:
+# - credentialUri: The URI of the issued credential
+# - uri: The boost URI
+# - inbox.issuanceId: Tracking ID for email/phone recipients
+# - inbox.status: 'PENDING', 'ISSUED', or 'CLAIMED'
+# - inbox.claimUrl: Present if suppressDelivery=true`;
     };
 
     const handleCopyApiCode = async () => {
@@ -878,24 +945,13 @@ console.log('Boost URI:', result.uri);
                     )}
 
                     {/* Code Output */}
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                <Code className="w-4 h-4 text-cyan-600" />
-                                Your Code
-                            </div>
-
-                            <button
-                                onClick={handleCopyApiCode}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                            >
-                                {apiCopied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                {apiCopied ? 'Copied!' : 'Copy'}
-                            </button>
-                        </div>
-
-                        <CodeBlock code={generateApiCodeSnippet()} />
-                    </div>
+                    <CodeOutputPanel
+                        title="Your Code"
+                        snippets={{
+                            typescript: generateApiCodeSnippet(),
+                            curl: generateCurlCodeSnippet(),
+                        }}
+                    />
                 </div>
             )}
         </div>
