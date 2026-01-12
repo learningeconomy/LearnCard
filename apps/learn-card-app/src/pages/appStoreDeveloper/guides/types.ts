@@ -69,6 +69,15 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         color: 'text-emerald-600',
         bgColor: 'bg-emerald-100',
     },
+    'course-catalog': {
+        id: 'course-catalog',
+        title: 'Connect Course Catalog',
+        subtitle: 'Enterprise LMS integration',
+        description: 'Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance.',
+        icon: 'rocket',
+        color: 'text-violet-600',
+        bgColor: 'bg-violet-100',
+    },
     'verify-credentials': {
         id: 'verify-credentials',
         title: 'Verify Credentials',
@@ -88,14 +97,5 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         color: 'text-orange-600',
         bgColor: 'bg-orange-100',
         comingSoon: true,
-    },
-    'course-catalog': {
-        id: 'course-catalog',
-        title: 'Connect Course Catalog',
-        subtitle: 'Enterprise LMS integration',
-        description: 'Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance.',
-        icon: 'rocket',
-        color: 'text-violet-600',
-        bgColor: 'bg-violet-100',
-    },
+    }
 };

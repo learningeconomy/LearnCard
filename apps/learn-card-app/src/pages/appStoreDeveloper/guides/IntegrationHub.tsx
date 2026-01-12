@@ -269,47 +269,6 @@ const IntegrationHub: React.FC = () => {
                                 ))}
                             </div>
 
-                            {/* Enterprise Course Catalog */}
-                            <div className="mb-12">
-                                <button
-                                    onClick={() => handleUseCaseClick('course-catalog' as UseCaseId)}
-                                    className={`w-full p-6 bg-gradient-to-r from-violet-500 to-indigo-600 rounded-2xl text-left hover:from-violet-600 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 group ${
-                                        activeGuideType === 'course-catalog' ? 'ring-4 ring-white/50' : ''
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-                                            <Rocket className="w-7 h-7 text-white" />
-                                        </div>
-
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-xl font-semibold text-white">
-                                                    Connect Course Catalog
-                                                </h3>
-
-                                                <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium text-white">
-                                                    Enterprise
-                                                </span>
-
-                                                {activeGuideType === 'course-catalog' && (
-                                                    <span className="px-2 py-0.5 bg-white/30 rounded-full text-xs font-medium text-white">
-                                                        In Progress
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <p className="text-violet-100">
-                                                Full guided setup for LMS partners. Configure webhooks, build credential templates, 
-                                                map your data, and go live with automatic credential issuance.
-                                            </p>
-                                        </div>
-
-                                        <ArrowRight className="w-6 h-6 text-white/70 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                                    </div>
-                                </button>
-                            </div>
-
                         </>
                     )}
 
