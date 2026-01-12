@@ -429,8 +429,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
             {activeTab === 'contracts' && (
                 <ContractsTab
-                    contracts={contracts}
-                    onRefresh={handleRefresh}
+                    integration={integration}
                 />
             )}
 

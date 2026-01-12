@@ -7,7 +7,7 @@
  * Mirrors functionality from EmbedAppGuide's YourAppStep.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
     Globe,
     Lock,
@@ -39,6 +39,7 @@ import { CodeBlock } from '../../components/CodeBlock';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
 import { AppPreviewModal } from '../../components/AppPreviewModal';
 import type { ExtendedAppStoreListing } from '../../types';
+import type { EmbedAppGuideConfig, GuideState } from '../../guides/types';
 
 interface UrlCheckResult {
     id: string;
@@ -89,67 +90,61 @@ const PERMISSIONS: Permission[] = [
     },
 ];
 
+/**
+ * Check if a URL can be embedded in an iframe
+ * 
+ * IMPORTANT: CORS headers are NOT required for iframe embedding!
+ * What matters for iframe embedding:
+ * - X-Frame-Options header (must NOT be DENY or SAMEORIGIN unless same origin)
+ * - Content-Security-Policy frame-ancestors directive
+ * 
+ * We can't directly check these headers from the browser due to CORS,
+ * but we CAN check if the URL is valid and uses HTTPS.
+ * The actual iframe embedding test is done in the Preview.
+ */
 const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
     const results: UrlCheckResult[] = [
-        { id: 'https', label: 'HTTPS', status: 'pending' },
-        { id: 'reachable', label: 'Reachable', status: 'pending' },
-        { id: 'cors', label: 'CORS Headers', status: 'pending' },
+        { id: 'https', label: 'HTTPS Protocol', status: 'pending' },
+        { id: 'valid', label: 'Valid URL Format', status: 'pending' },
+        { id: 'iframe', label: 'Iframe Embedding', status: 'pending' },
     ];
 
-    try {
-        const parsed = new URL(url);
+    // Check URL format
+    let parsed: URL;
 
-        if (parsed.protocol === 'https:') {
-            results[0] = { ...results[0], status: 'pass', message: 'Using secure HTTPS' };
-        } else if (parsed.protocol === 'http:') {
-            if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
-                results[0] = { ...results[0], status: 'warn', message: 'HTTP allowed for localhost' };
-            } else {
-                results[0] = { ...results[0], status: 'fail', message: 'HTTPS required for production' };
-            }
-        } else {
-            results[0] = { ...results[0], status: 'fail', message: 'Invalid protocol' };
-        }
+    try {
+        parsed = new URL(url);
+        results[1] = { ...results[1], status: 'pass', message: 'URL is valid' };
     } catch {
-        results[0] = { ...results[0], status: 'fail', message: 'Invalid URL format' };
-        results[1] = { ...results[1], status: 'fail', message: 'Cannot check - invalid URL' };
-        results[2] = { ...results[2], status: 'fail', message: 'Cannot check - invalid URL' };
+        results[0] = { ...results[0], status: 'fail', message: 'Invalid URL' };
+        results[1] = { ...results[1], status: 'fail', message: 'Invalid URL format' };
+        results[2] = { ...results[2], status: 'fail', message: 'Cannot check' };
         return results;
     }
 
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-        const response = await fetch(url, {
-            method: 'HEAD',
-            mode: 'cors',
-            signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        results[1] = { ...results[1], status: 'pass', message: `Status ${response.status}` };
-
-        const corsHeader = response.headers.get('Access-Control-Allow-Origin');
-
-        if (corsHeader === '*' || corsHeader) {
-            results[2] = { ...results[2], status: 'pass', message: `CORS: ${corsHeader}` };
+    // Check HTTPS
+    if (parsed.protocol === 'https:') {
+        results[0] = { ...results[0], status: 'pass', message: 'Using secure HTTPS' };
+    } else if (parsed.protocol === 'http:') {
+        if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+            results[0] = { ...results[0], status: 'warn', message: 'HTTP okay for localhost' };
         } else {
-            results[2] = { ...results[2], status: 'warn', message: 'CORS header not visible (may still work)' };
+            results[0] = { ...results[0], status: 'fail', message: 'HTTPS required for production' };
         }
-    } catch (err) {
-        if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-            results[1] = { ...results[1], status: 'warn', message: 'Blocked by CORS or unreachable' };
-            results[2] = { ...results[2], status: 'fail', message: 'CORS not configured or blocking' };
-        } else if (err instanceof DOMException && err.name === 'AbortError') {
-            results[1] = { ...results[1], status: 'fail', message: 'Request timed out (10s)' };
-            results[2] = { ...results[2], status: 'pending', message: 'Could not check' };
-        } else {
-            results[1] = { ...results[1], status: 'fail', message: 'Network error' };
-            results[2] = { ...results[2], status: 'pending', message: 'Could not check' };
-        }
+    } else {
+        results[0] = { ...results[0], status: 'fail', message: 'Must be HTTP or HTTPS' };
     }
+
+    // For iframe embedding, we can't reliably check X-Frame-Options from the browser
+    // because the browser won't expose those headers due to CORS restrictions.
+    // The best test is to actually try embedding in an iframe (Preview button).
+    // 
+    // We'll mark this as "info" status and explain the user should use Preview.
+    results[2] = {
+        ...results[2],
+        status: 'warn',
+        message: 'Use Preview to test embedding'
+    };
 
     return results;
 };
@@ -178,21 +173,85 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
     const [showHeaderExamples, setShowHeaderExamples] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
 
-    // Auto-select first listing
+    // ============================================================
+    // EXTRACT GUIDE SELECTIONS FOR REFERENCE
+    // ============================================================
+    const guideSelections = useMemo(() => {
+        const guideState = integration?.guideState as GuideState | undefined;
+        const savedConfig = guideState?.config?.embedAppConfig as EmbedAppGuideConfig | undefined;
+
+        return {
+            selectedFeatures: savedConfig?.selectedFeatures || [],
+            featureConfig: savedConfig?.featureConfig || {},
+            selectedListingId: savedConfig?.selectedListingId,
+        };
+    }, [integration?.guideState]);
+
+    // Map guide features to permission IDs
+    const guidePermissions = useMemo(() => {
+        const perms = ['identity']; // Always required
+
+        if (guideSelections.selectedFeatures.includes('issue-credentials')) {
+            perms.push('issue-credentials');
+        }
+
+        if (guideSelections.selectedFeatures.includes('peer-badges')) {
+            perms.push('issue-credentials'); // Peer badges need issue permission
+        }
+
+        if (guideSelections.selectedFeatures.includes('request-credentials')) {
+            perms.push('request-credentials');
+        }
+
+        if (guideSelections.selectedFeatures.includes('request-data-consent')) {
+            perms.push('consent');
+        }
+
+        if (guideSelections.selectedFeatures.includes('launch-feature')) {
+            perms.push('navigation');
+        }
+
+        return [...new Set(perms)]; // Deduplicate
+    }, [guideSelections.selectedFeatures]);
+
+    // Auto-select listing from guide or first available
     useEffect(() => {
         if (listings && listings.length > 0 && !selectedListing) {
-            const first = listings[0];
-            setSelectedListing(first);
+            // Try to find the listing selected in the guide
+            let listingToSelect = guideSelections.selectedListingId
+                ? listings.find(l => l.listing_id === guideSelections.selectedListingId)
+                : null;
 
-            try {
-                const config = JSON.parse(first.launch_config_json || '{}');
-                if (config.url) setAppUrl(config.url);
-                if (config.permissions) setSelectedPermissions(config.permissions);
-            } catch (e) {
-                // ignore
+            // Fall back to first listing
+            if (!listingToSelect) {
+                listingToSelect = listings[0];
+            }
+
+            if (listingToSelect) {
+                setSelectedListing(listingToSelect);
+
+                try {
+                    const config = JSON.parse(listingToSelect.launch_config_json || '{}');
+
+                    if (config.url) {
+                        setAppUrl(config.url);
+                    }
+
+                    // Use listing permissions if available, otherwise use guide permissions
+                    if (config.permissions && config.permissions.length > 0) {
+                        setSelectedPermissions(config.permissions);
+                    } else if (guidePermissions.length > 0) {
+                        setSelectedPermissions(guidePermissions);
+                    }
+                } catch (e) {
+                    // Use guide permissions as fallback
+                    if (guidePermissions.length > 0) {
+                        setSelectedPermissions(guidePermissions);
+                    }
+                }
             }
         }
-    }, [listings, selectedListing]);
+    }, [listings, selectedListing, guideSelections.selectedListingId, guidePermissions]);
 
     // Sync with external listing
     useEffect(() => {
@@ -201,22 +260,32 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
 
             try {
                 const config = JSON.parse(externalListing.launch_config_json || '{}');
-                if (config.url) setAppUrl(config.url);
-                if (config.permissions) setSelectedPermissions(config.permissions);
+
+                if (config.url) {
+                    setAppUrl(config.url);
+                }
+
+                if (config.permissions && config.permissions.length > 0) {
+                    setSelectedPermissions(config.permissions);
+                } else if (guidePermissions.length > 0) {
+                    setSelectedPermissions(guidePermissions);
+                }
             } catch (e) {
-                // ignore
+                if (guidePermissions.length > 0) {
+                    setSelectedPermissions(guidePermissions);
+                }
             }
         }
-    }, [externalListing]);
+    }, [externalListing, guidePermissions]);
 
     const handleCheckUrl = useCallback(async () => {
         if (!appUrl.trim()) return;
 
         setIsChecking(true);
         setCheckResults([
-            { id: 'https', label: 'HTTPS', status: 'pending' },
-            { id: 'reachable', label: 'Reachable', status: 'pending' },
-            { id: 'cors', label: 'CORS Headers', status: 'pending' },
+            { id: 'https', label: 'HTTPS Protocol', status: 'checking' },
+            { id: 'valid', label: 'Valid URL Format', status: 'checking' },
+            { id: 'iframe', label: 'Iframe Embedding', status: 'checking' },
         ]);
 
         const results = await checkUrl(appUrl.trim());
@@ -294,10 +363,10 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
         switch (id) {
             case 'https':
                 return <Lock className="w-4 h-4 text-gray-400" />;
-            case 'reachable':
+            case 'valid':
+                return <Globe className="w-4 h-4 text-gray-400" />;
+            case 'iframe':
                 return <Monitor className="w-4 h-4 text-gray-400" />;
-            case 'cors':
-                return <Shield className="w-4 h-4 text-gray-400" />;
             default:
                 return null;
         }
@@ -389,7 +458,7 @@ module.exports = nextConfig;`;
                                 }
                             }
                         }}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800"
                     >
                         {listings.map(listing => (
                             <option key={listing.listing_id} value={listing.listing_id}>
@@ -417,14 +486,14 @@ module.exports = nextConfig;`;
                         <label className="block text-sm font-medium text-gray-700">App URL</label>
 
                         <div className="flex gap-2">
-                            <div className="flex-1 flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-cyan-500">
-                                <Globe className="w-4 h-4 text-gray-400" />
+                            <div className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-cyan-500 focus-within:border-cyan-500">
+                                <Globe className="w-4 h-4 text-gray-400 flex-shrink-0" />
                                 <input
                                     type="url"
                                     value={appUrl}
                                     onChange={handleUrlChange}
                                     placeholder="https://your-app.com"
-                                    className="flex-1 outline-none"
+                                    className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && appUrl.trim()) {
                                             handleCheckUrl();
@@ -592,14 +661,25 @@ module.exports = nextConfig;`;
 
                     {/* Permissions */}
                     <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-700">Permissions</label>
-                        <p className="text-xs text-gray-500">
-                            Select what your app can access from the wallet
-                        </p>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Permissions</label>
+                                <p className="text-xs text-gray-500">
+                                    Select what your app can access from the wallet
+                                </p>
+                            </div>
+
+                            {guideSelections.selectedFeatures.length > 0 && (
+                                <div className="text-xs text-cyan-600 bg-cyan-50 px-2 py-1 rounded-lg">
+                                    {guidePermissions.length} from guide setup
+                                </div>
+                            )}
+                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {PERMISSIONS.map(perm => {
                                 const isSelected = selectedPermissions.includes(perm.id);
+                                const isFromGuide = guidePermissions.includes(perm.id);
 
                                 return (
                                     <button
@@ -617,13 +697,18 @@ module.exports = nextConfig;`;
                                         </div>
 
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <span className={`font-medium text-sm ${isSelected ? 'text-cyan-700' : 'text-gray-700'}`}>
                                                     {perm.name}
                                                 </span>
                                                 {perm.required && (
                                                     <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">
                                                         Required
+                                                    </span>
+                                                )}
+                                                {isFromGuide && !perm.required && (
+                                                    <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-600 text-xs rounded">
+                                                        From Guide
                                                     </span>
                                                 )}
                                             </div>
