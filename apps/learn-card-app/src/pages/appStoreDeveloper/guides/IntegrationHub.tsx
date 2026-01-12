@@ -14,6 +14,7 @@ import {
     ExternalLink,
     Rocket,
     Loader2,
+    Lock,
 } from 'lucide-react';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
@@ -21,6 +22,7 @@ import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelect
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
+import { useBetaAccess } from '../components/BetaGate';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
     'award': Award,
@@ -42,6 +44,7 @@ interface UseCaseCardProps {
     bgColor: string;
     comingSoon?: boolean;
     isActive?: boolean;
+    isLocked?: boolean;
     onClick: () => void;
 }
 
@@ -54,6 +57,7 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
     bgColor,
     comingSoon,
     isActive,
+    isLocked,
     onClick,
 }) => {
     const IconComponent = ICON_MAP[icon] || Award;
@@ -76,6 +80,35 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                 <p className="text-sm text-gray-400 mb-3">{subtitle}</p>
 
                 <p className="text-sm text-gray-400 flex-1">{description}</p>
+            </div>
+        );
+    }
+
+    // Beta access: show locked state for guides user doesn't have access to
+    if (isLocked) {
+        return (
+            <div className="flex flex-col p-6 bg-gray-50 border-2 border-gray-200 rounded-2xl">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                        <IconComponent className="w-6 h-6 text-gray-400" />
+                    </div>
+
+                    <span className="px-2 py-1 bg-gray-200 text-gray-500 rounded-full text-xs font-medium flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        Locked
+                    </span>
+                </div>
+
+                <h3 className="text-lg font-semibold text-gray-500 mb-1">{title}</h3>
+
+                <p className="text-sm text-gray-400 mb-3">{subtitle}</p>
+
+                <p className="text-sm text-gray-400 flex-1">{description}</p>
+
+                <div className="flex items-center gap-1.5 mt-4 text-gray-400 font-medium text-sm">
+                    <Lock className="w-4 h-4" />
+                    <span>Request Access</span>
+                </div>
             </div>
         );
     }
@@ -118,6 +151,9 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 const IntegrationHub: React.FC = () => {
     const history = useHistory();
     const [newProjectName, setNewProjectName] = useState('');
+
+    // Beta access check - to remove beta gate, delete this line and isLocked prop below
+    const { isGuideUnlocked } = useBetaAccess();
 
     // Use context for all state management
     const {
@@ -312,6 +348,7 @@ const IntegrationHub: React.FC = () => {
                                         key={useCase.id}
                                         {...useCase}
                                         isActive={activeGuideType === useCase.id}
+                                        isLocked={!isGuideUnlocked(useCase.id)}
                                         onClick={() => handleUseCaseClick(useCase.id)}
                                     />
                                 ))}
