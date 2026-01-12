@@ -341,9 +341,27 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
         }
     }, [integration.id, config, branding, presentToast]);
 
+    // Reset state and reload when integration changes
     useEffect(() => {
+        // Reset all state when integration changes
+        setActiveTab('overview');
+        setAuthGrants([]);
+        setTemplates([]);
+        setContracts([]);
+        setStats({
+            totalIssued: 0,
+            totalClaimed: 0,
+            pendingClaims: 0,
+            claimRate: 0,
+            activeTokens: 0,
+            templateCount: 0,
+            activeContracts: 0,
+            totalConnections: 0,
+        });
+
+        // Load fresh data for the new integration
         loadDashboardData();
-    }, []);
+    }, [integration.id]);
 
     const handleRefresh = () => loadDashboardData(true);
 
