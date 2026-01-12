@@ -32,6 +32,93 @@ export interface GuideState {
     config: Record<string, unknown>;
 }
 
+// ============================================================
+// EMBED APP GUIDE - Persisted Configuration
+// ============================================================
+// This interface defines all user selections that should be 
+// persisted across page refreshes and navigation
+
+export interface EmbedAppFeatureConfig {
+    'issue-credentials'?: {
+        mode: 'prompt-claim' | 'sync-wallet';
+        credentialName?: string;
+        credentialData?: Record<string, unknown>;
+        contractUri?: string;
+    };
+
+    'peer-badges'?: {
+        templateUris: string[];
+    };
+
+    'request-credentials'?: {
+        mode: 'query' | 'specific';
+        queryTitle?: string;
+        queryReason?: string;
+    };
+
+    'request-data-consent'?: {
+        contractUri: string;
+    };
+
+    'launch-feature'?: {
+        selectedFeatureIds: string[];
+        featureParams: Record<string, string>;
+    };
+}
+
+export interface EmbedAppGuideConfig {
+    // Step 0: Getting Started
+    selectedListingId: string | null;
+
+    // Step 1: Choose Features
+    selectedFeatures: string[];
+
+    // Step 2: Feature Setup - Per-feature configuration
+    featureConfig: EmbedAppFeatureConfig;
+}
+
+// ============================================================
+// LLM Integration Metadata
+// ============================================================
+// Structured output for LLM consumption
+
+export interface TemplateMetadata {
+    uri: string;
+    name: string;
+    description?: string;
+    type?: string;
+}
+
+export interface ContractMetadata {
+    uri: string;
+    type: 'data-consent' | 'issue-credentials';
+    name?: string;
+}
+
+export interface LLMIntegrationMetadata {
+    app: {
+        name: string;
+        listingId: string;
+        integrationId: string;
+    };
+
+    features: string[];
+
+    templates: {
+        peerBadges: TemplateMetadata[];
+        issueCredentials: TemplateMetadata[];
+    };
+
+    contracts: {
+        dataConsent: string | null;
+        issueCredentials: string | null;
+    };
+
+    permissions: string[];
+
+    generatedAt: string;
+}
+
 export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
     'issue-credentials': {
         id: 'issue-credentials',

@@ -63,6 +63,7 @@ import { PERMISSION_OPTIONS } from '../../types';
 import type { AppPermission, LaunchConfig, ExtendedAppStoreListing } from '../../types';
 import { AppPreviewModal } from '../../components/AppPreviewModal';
 import type { GuideProps } from '../GuidePage';
+import type { EmbedAppGuideConfig, EmbedAppFeatureConfig, LLMIntegrationMetadata, TemplateMetadata } from '../types';
 
 // URL Check types and helper
 interface UrlCheckResult {
@@ -4398,7 +4399,8 @@ const YourAppStep: React.FC<{
     selectedFeatures: string[];
     selectedListing: AppStoreListing | null;
     featureSetupState: Record<string, Record<string, unknown>>;
-}> = ({ onBack, onComplete, selectedFeatures, selectedListing, featureSetupState }) => {
+    integrationId?: string;
+}> = ({ onBack, onComplete, selectedFeatures, selectedListing, featureSetupState, integrationId }) => {
     const { useUpdateListing } = useDeveloperPortal();
     const updateMutation = useUpdateListing();
     const { presentToast } = useToast();
@@ -4411,50 +4413,89 @@ const YourAppStep: React.FC<{
     const [showConfigMismatchPrompt, setShowConfigMismatchPrompt] = useState(false);
     const [hasCheckedConfig, setHasCheckedConfig] = useState(false);
     const [peerBadgeTemplates, setPeerBadgeTemplates] = useState<BoostTemplate[]>([]);
+    const [issueCredentialTemplates, setIssueCredentialTemplates] = useState<BoostTemplate[]>([]);
 
-    // Fetch peer badge templates for this app listing
+    // ============================================================
+    // FETCH ALL TEMPLATES - by both appListingId AND integrationId
+    // ============================================================
     useEffect(() => {
-        if (!selectedListing?.listing_id || !selectedFeatures.includes('peer-badges')) {
+        const needsPeerBadges = selectedFeatures.includes('peer-badges');
+        const needsIssueCredentials = selectedFeatures.includes('issue-credentials');
+
+        if (!needsPeerBadges && !needsIssueCredentials) {
             setPeerBadgeTemplates([]);
+            setIssueCredentialTemplates([]);
             return;
         }
 
         let cancelled = false;
 
-        const fetchTemplates = async () => {
+        const fetchAllTemplates = async () => {
             try {
                 const wallet = await initWallet();
-                const result = await wallet.invoke.getPaginatedBoosts({
-                    limit: 100,
-                    query: { meta: { appListingId: selectedListing.listing_id } }
-                });
+                const allTemplates: BoostTemplate[] = [];
+                const seenUris = new Set<string>();
+
+                // Helper to add templates without duplicates
+                const addTemplates = (records: Record<string, unknown>[]) => {
+                    for (const boost of records) {
+                        const uri = boost.uri as string;
+
+                        if (!seenUris.has(uri)) {
+                            seenUris.add(uri);
+                            allTemplates.push({
+                                uri,
+                                name: boost.name as string || 'Untitled Template',
+                                description: boost.description as string,
+                                type: boost.type as string,
+                                category: boost.category as string,
+                                image: boost.image as string,
+                                createdAt: boost.createdAt as string,
+                            });
+                        }
+                    }
+                };
+
+                // Fetch by appListingId
+                if (selectedListing?.listing_id) {
+                    const byListing = await wallet.invoke.getPaginatedBoosts({
+                        limit: 100,
+                        query: { meta: { appListingId: selectedListing.listing_id } }
+                    });
+                    addTemplates(byListing?.records || []);
+                }
+
+                // Fetch by integrationId
+                if (integrationId) {
+                    const byIntegration = await wallet.invoke.getPaginatedBoosts({
+                        limit: 100,
+                        query: { meta: { integrationId } }
+                    });
+                    addTemplates(byIntegration?.records || []);
+                }
 
                 if (!cancelled) {
-                    const templates = (result?.records || []).map((boost: Record<string, unknown>) => ({
-                        uri: boost.uri as string,
-                        name: boost.name as string || 'Untitled Template',
-                        description: boost.description as string,
-                        type: boost.type as string,
-                        category: boost.category as string,
-                        image: boost.image as string,
-                        createdAt: boost.createdAt as string,
-                    }));
-                    setPeerBadgeTemplates(templates);
+                    // All templates can be used for peer badges
+                    setPeerBadgeTemplates(allTemplates);
+                    // All templates can also be used for issue-credentials sync mode
+                    setIssueCredentialTemplates(allTemplates);
                 }
             } catch (err) {
-                console.error('Failed to fetch peer badge templates:', err);
+                console.error('Failed to fetch templates:', err);
+
                 if (!cancelled) {
                     setPeerBadgeTemplates([]);
+                    setIssueCredentialTemplates([]);
                 }
             }
         };
 
-        fetchTemplates();
+        fetchAllTemplates();
 
         return () => {
             cancelled = true;
         };
-    }, [selectedListing?.listing_id, selectedFeatures, initWallet]);
+    }, [selectedListing?.listing_id, integrationId, selectedFeatures, initWallet]);
 
     // Extract configured values from feature setup state
     const issueCredentialsState = featureSetupState['issue-credentials'] || {};
@@ -4692,18 +4733,70 @@ const YourAppStep: React.FC<{
     const generateCode = () => {
         const sections: string[] = [];
 
+        // Build LLM-friendly metadata object
+        const dataConsentContractUri = (requestDataConsentState.contractUri as string) || null;
+        const issueContractUri = (issueCredentialsState.contractUri as string) || null;
+
+        const llmMetadata: LLMIntegrationMetadata = {
+            app: {
+                name: selectedListing?.display_name || 'Your App Name',
+                listingId: selectedListing?.listing_id || '',
+                integrationId: integrationId || '',
+            },
+            features: selectedFeatures,
+            templates: {
+                peerBadges: peerBadgeTemplates.map(t => ({
+                    uri: t.uri,
+                    name: t.name,
+                    description: t.description,
+                    type: t.type,
+                })),
+                issueCredentials: issueCredentialTemplates.map(t => ({
+                    uri: t.uri,
+                    name: t.name,
+                    description: t.description,
+                    type: t.type,
+                })),
+            },
+            contracts: {
+                dataConsent: dataConsentContractUri,
+                issueCredentials: issueContractUri,
+            },
+            permissions: computeRequiredPermissions(),
+            generatedAt: new Date().toISOString(),
+        };
+
         // ===================
-        // HEADER / METADATA
+        // HEADER / METADATA (LLM-OPTIMIZED)
         // ===================
         sections.push(`/**
- * LearnCard Embedded App Integration
- * ==================================
+ * ================================================================
+ * LEARNCARD EMBEDDED APP INTEGRATION
+ * ================================================================
  * 
  * App: ${selectedListing?.display_name || 'Your App Name'}
- * Generated: ${new Date().toISOString().split('T')[0]}
+ * Listing ID: ${selectedListing?.listing_id || 'NOT_SET'}
+ * Integration ID: ${integrationId || 'NOT_SET'}
+ * Generated: ${new Date().toISOString()}
  * 
  * Features configured:
  * ${selectedFeatures.map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`).join('\n * ')}
+ * 
+ * ================================================================
+ * LLM INTEGRATION METADATA
+ * ================================================================
+ * The following JSON contains all configured URIs and settings.
+ * Use these values directly - no placeholders to replace!
+ * 
+ * @llm-config
+${JSON.stringify(llmMetadata, null, 2).split('\n').map(line => ' * ' + line).join('\n')}
+ * 
+ * ================================================================
+ * QUICK REFERENCE
+ * ================================================================
+ * ${peerBadgeTemplates.length > 0 ? `Peer Badge Templates: ${peerBadgeTemplates.length} available` : 'Peer Badge Templates: None configured'}
+ * ${dataConsentContractUri ? `Data Consent Contract: ${dataConsentContractUri}` : 'Data Consent Contract: Not configured'}
+ * ${issueContractUri ? `Issue Credentials Contract: ${issueContractUri}` : 'Issue Credentials Contract: Not configured'}
  * 
  * Prerequisites:
  *   1. Install the SDK: npm install @learncard/partner-connect
@@ -4827,7 +4920,22 @@ async function issueCredentialToUser() {
     }
 }`);
             } else {
-                // sync-wallet mode
+                // sync-wallet mode - use actual template URIs if available
+                const firstTemplate = issueCredentialTemplates[0];
+                const templateUri = firstTemplate?.uri || 'urn:lc:boost:YOUR_TEMPLATE_URI';
+                const templateNote = firstTemplate 
+                    ? `Using template: "${firstTemplate.name}" (${templateUri})`
+                    : 'No templates configured - create one in the setup step';
+
+                // Generate template list for server-side code
+                const templateListJson = issueCredentialTemplates.length > 0
+                    ? JSON.stringify(issueCredentialTemplates.map(t => ({
+                        uri: t.uri,
+                        name: t.name,
+                        description: t.description || '',
+                    })), null, 4)
+                    : '[]';
+
                 sections.push(`
 // ============================================================
 // ISSUE CREDENTIALS - Sync to Wallet (Server-Side)
@@ -4839,7 +4947,13 @@ async function issueCredentialToUser() {
 //   2. Your SERVER issues credentials using your signing authority
 //   3. Credentials appear in user's wallet automatically
 //
+// Contract URI: ${contractUri || 'NOT_CONFIGURED'}
+// ${templateNote}
+//
 // IMPORTANT: This requires server-side code with your signing authority
+
+// Available credential templates for issuance:
+const CREDENTIAL_TEMPLATES = ${templateListJson};
 
 // --- CLIENT-SIDE: Request consent from user ---
 async function requestUserConsent() {
@@ -4851,6 +4965,7 @@ async function requestUserConsent() {
         // Notify your server that consent was granted
         await fetch('/api/consent-granted', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userId: result.userId,
                 contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}'
@@ -4873,17 +4988,20 @@ const learnCard = await initLearnCard({
 });
 
 // Issue credential to user via consent contract
-async function issueCredentialViaConsent(recipientProfileId: string) {
+async function issueCredentialViaConsent(recipientProfileId: string, templateUri?: string) {
     const result = await learnCard.invoke.send({
         type: 'boost',
         recipient: recipientProfileId,
-        templateUri: 'urn:lc:boost:YOUR_TEMPLATE_URI',
+        templateUri: templateUri || '${templateUri}',
         contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}',
     });
     
     console.log('Credential issued:', result);
     return result;
 }
+
+// Example: Issue credential using first available template
+// await issueCredentialViaConsent('user-profile-id', CREDENTIAL_TEMPLATES[0]?.uri);
 */`);
             }
         }
@@ -5653,12 +5771,63 @@ initializeApp();`);
 // Main component
 const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedIntegration }) => {
     const guideState = useGuideState('embed-app', STEPS.length, selectedIntegration);
+    const { useListingsForIntegration } = useDeveloperPortal();
+    const { data: listings } = useListingsForIntegration(selectedIntegration?.id || null);
 
     // Guide-wide state (persists across all steps)
     const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(null);
     const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
     const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
     const [featureSetupState, setFeatureSetupState] = useState<Record<string, Record<string, unknown>>>({});
+    const [hasRestoredState, setHasRestoredState] = useState(false);
+
+    // ============================================================
+    // STATE PERSISTENCE - Restore from guideState.config on mount
+    // ============================================================
+    useEffect(() => {
+        if (hasRestoredState) return;
+
+        const savedConfig = guideState.getConfig<EmbedAppGuideConfig>('embedAppConfig');
+
+        if (savedConfig) {
+            // Restore selected features
+            if (savedConfig.selectedFeatures?.length > 0) {
+                setSelectedFeatures(savedConfig.selectedFeatures);
+            }
+
+            // Restore feature config
+            if (savedConfig.featureConfig) {
+                setFeatureSetupState(savedConfig.featureConfig as Record<string, Record<string, unknown>>);
+            }
+
+            // Restore selected listing (need to find it in the listings array)
+            if (savedConfig.selectedListingId && listings) {
+                const listing = listings.find(l => l.listing_id === savedConfig.selectedListingId);
+
+                if (listing) {
+                    setSelectedListing(listing);
+                }
+            }
+        }
+
+        setHasRestoredState(true);
+    }, [guideState, listings, hasRestoredState]);
+
+    // ============================================================
+    // STATE PERSISTENCE - Sync state changes to guideState.config
+    // ============================================================
+    useEffect(() => {
+        // Don't save until we've restored (prevents overwriting with empty state)
+        if (!hasRestoredState) return;
+
+        const config: EmbedAppGuideConfig = {
+            selectedListingId: selectedListing?.listing_id || null,
+            selectedFeatures,
+            featureConfig: featureSetupState as EmbedAppFeatureConfig,
+        };
+
+        guideState.updateConfig('embedAppConfig', config);
+    }, [selectedListing?.listing_id, selectedFeatures, featureSetupState, hasRestoredState]);
 
     // Reset guide if step is out of bounds (e.g., after changing step count)
     useEffect(() => {
@@ -5765,6 +5934,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                         selectedFeatures={selectedFeatures}
                         selectedListing={selectedListing}
                         featureSetupState={featureSetupState}
+                        integrationId={selectedIntegration?.id}
                     />
                 );
 
