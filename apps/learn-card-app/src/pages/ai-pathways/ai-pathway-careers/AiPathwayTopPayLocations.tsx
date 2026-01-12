@@ -1,10 +1,29 @@
 import React from 'react';
 import numeral from 'numeral';
 
-import { type AiPathwayCareer } from './ai-pathway-careers.helpers';
+import { useSalariesForKeyword } from 'learn-card-base/react-query/queries/careerOneStop';
 
-export const AiPathwayTopPayLocations: React.FC<{ career: AiPathwayCareer }> = ({ career }) => {
-    const { topPaidLocations } = career;
+import type {
+    OccupationDetailsResponse,
+    CareerOneStopLocationResult,
+} from 'learn-card-base/types/careerOneStop';
+
+export const AiPathwayTopPayLocations: React.FC<{ occupation: OccupationDetailsResponse }> = ({
+    occupation,
+}) => {
+    const { data } = useSalariesForKeyword({
+        keyword: occupation.OnetTitle,
+    });
+
+    const topPaidLocations: { location: string; salary: number }[] =
+        data?.LocationsList?.map((l: CareerOneStopLocationResult) => {
+            const [rate, yearly] = l.OccupationList?.[0]?.WageInfo || [];
+
+            return {
+                location: l.LocationName,
+                salary: yearly?.Pct90,
+            };
+        }) || [];
 
     return (
         <div className="bg-white rounded-[24px] p-[20px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 w-full gap-4">

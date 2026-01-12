@@ -223,3 +223,42 @@ export interface WorkValuesOccupationDetails {
     WorkValue: string;
     Characteristics: string[];
 }
+
+// salaries
+export type CareerOneStopLocationSalary = {
+    RateType: 'Hourly' | 'Annual';
+    Pct10: string;
+    Pct25: string;
+    Median: string;
+    Pct75: string;
+    Pct90: string;
+    StFips: string;
+    Area: string;
+    AreaName: string;
+};
+
+export type CareerOneStopSocInfo = {
+    SocCode: string;
+    SocTitle: string;
+    SocDescription: string;
+};
+
+export type CareerOneStopOccupationRequest = {
+    InputOccupation: string;
+    InputOccupationCode: string;
+    InputOccupationTitle: string;
+};
+
+export type CareerOneStopSalariesOccupation = {
+    Code: string;
+    Title: string;
+    Request: CareerOneStopOccupationRequest;
+    WageInfo: CareerOneStopLocationSalary[];
+    SocInfo: CareerOneStopSocInfo;
+};
+
+export type CareerOneStopLocationResult = {
+    LocationName: string;
+    InputLocation: string;
+    OccupationList: CareerOneStopSalariesOccupation[];
+};

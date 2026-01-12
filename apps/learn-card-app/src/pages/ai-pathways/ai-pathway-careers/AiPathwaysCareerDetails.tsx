@@ -7,7 +7,7 @@ import AiPathwayCareerSalaries from './AiPathwayCareerSalaries';
 import AiPathwayTopPayLocations from './AiPathwayTopPayLocations';
 import AiPathwayCareerJobGrowthInfo from './AiPathwayCareersJobGrowthInfo';
 import AiPathwayCareerQualifications from './AiPathwayCareerQualifications';
-import AiPathwayCareerQualitativeInsights from './AiPathwayCareerQualitativeInsights';
+// import AiPathwayCareerQualitativeInsights from './AiPathwayCareerQualitativeInsights';
 
 import { useModal } from 'learn-card-base';
 
@@ -17,8 +17,6 @@ const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }
     occupation,
 }) => {
     const { closeModal } = useModal();
-
-    console.log(occupation);
 
     return (
         <div
@@ -37,7 +35,7 @@ const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }
                     <AiPathwayCareerJobGrowthInfo occupation={occupation} />
                     <AiPathwayCareerQualifications occupation={occupation} />
 
-                    {/* <AiPathwayTopPayLocations career={career} /> */}
+                    <AiPathwayTopPayLocations occupation={occupation} />
                 </div>
                 <IonFooter
                     mode="ios"
