@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, Redirect } from 'react-router-dom';
+import { useParams, useHistory, Redirect } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
@@ -34,6 +34,7 @@ const GUIDE_COMPONENTS: Record<UseCaseId, React.FC<GuideProps>> = {
 };
 
 const GuidePage: React.FC = () => {
+    const history = useHistory();
     const { useCase } = useParams<{ useCase: string }>();
 
     // Use context for all state management
@@ -149,9 +150,9 @@ const GuidePage: React.FC = () => {
 
     const headerContent = (
         <div className="flex items-center gap-3">
-            {!isActive && (
+            {!isActive && currentIntegrationId && (
                 <button
-                    onClick={goToIntegrationHub}
+                    onClick={() => history.push(`/app-store/developer/integrations/${currentIntegrationId}/guides`)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
