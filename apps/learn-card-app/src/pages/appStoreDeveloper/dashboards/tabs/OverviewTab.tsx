@@ -12,11 +12,17 @@ import {
     Clock,
     Loader2,
     Mail,
+    User,
+    Calendar,
+    Link as LinkIcon,
+    X,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
+import { useModal, ModalTypes } from 'learn-card-base';
+
 import type { DashboardConfig, DashboardStats, CredentialTemplate } from '../types';
-import { useIntegrationActivity, formatRelativeTime } from '../hooks/useIntegrationActivity';
+import { useIntegrationActivity, formatRelativeTime, ActivityItem } from '../hooks/useIntegrationActivity';
 
 interface OverviewTabProps {
     integration: LCNIntegration;
@@ -24,6 +30,247 @@ interface OverviewTabProps {
     stats: DashboardStats;
     templates: CredentialTemplate[];
     onNavigate: (tabId: string) => void;
+}
+
+interface IssuanceDetailModalProps {
+    item: ActivityItem;
+}
+
+const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
+    const isClaimed = item.status === 'claimed';
+    const isPending = item.status === 'pending';
+    const isExpired = item.status === 'expired';
+    const isInbox = item.type === 'inbox';
+
+    let statusColor = 'text-cyan-600';
+    let statusBg = 'bg-cyan-100';
+    let statusLabel = 'Sent';
+
+    if (isClaimed) {
+        statusColor = 'text-emerald-600';
+        statusBg = 'bg-emerald-100';
+        statusLabel = 'Claimed';
+    } else if (isPending && isInbox) {
+        statusColor = 'text-amber-600';
+        statusBg = 'bg-amber-100';
+        statusLabel = 'Pending Claim';
+    } else if (isExpired) {
+        statusColor = 'text-gray-500';
+        statusBg = 'bg-gray-100';
+        statusLabel = 'Expired';
+    }
+
+    const sentDate = new Date(item.sentAt);
+    const claimedDate = item.claimedAt ? new Date(item.claimedAt) : null;
+
+    // Calculate time to claim if claimed
+    const timeToClaimMs = claimedDate ? claimedDate.getTime() - sentDate.getTime() : null;
+    const timeToClaimText = timeToClaimMs ? formatDuration(timeToClaimMs) : null;
+
+    // Calculate time since sent
+    const timeSinceSentMs = Date.now() - sentDate.getTime();
+    const timeSinceSentText = formatDuration(timeSinceSentMs);
+
+    return (
+        <div className="bg-white rounded-2xl overflow-hidden w-full max-w-md">
+            <div className="p-6 overflow-x-hidden">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Issuance Details</h2>
+
+                <div className="space-y-5">
+                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${statusBg}`}>
+                            {isClaimed ? (
+                                <CheckCircle2 className={`w-6 h-6 ${statusColor}`} />
+                            ) : isInbox ? (
+                                <Mail className={`w-6 h-6 ${statusColor}`} />
+                            ) : (
+                                <Send className={`w-6 h-6 ${statusColor}`} />
+                            )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 text-lg truncate">{item.templateName}</h3>
+
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusBg} ${statusColor}`}>
+                                    {statusLabel}
+                                </span>
+
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${isInbox ? 'bg-violet-100 text-violet-700' : 'bg-cyan-100 text-cyan-700'}`}>
+                                    {isInbox ? 'Email Delivery' : 'Direct Send'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                <User className="w-4 h-4 text-gray-600" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm text-gray-500">Recipient</p>
+                                <p className="font-medium text-gray-900 truncate">{item.recipientName}</p>
+                                {item.recipientId && (
+                                    <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">{item.recipientId}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                <Calendar className="w-4 h-4 text-gray-600" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm text-gray-500">Sent</p>
+                                <p className="font-medium text-gray-900">
+                                    {sentDate.toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                    })}
+                                    {' at '}
+                                    {sentDate.toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                    {timeSinceSentText} ago
+                                </p>
+                            </div>
+                        </div>
+
+                        {claimedDate && (
+                            <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm text-gray-500">Claimed</p>
+                                    <p className="font-medium text-gray-900">
+                                        {claimedDate.toLocaleDateString('en-US', {
+                                            weekday: 'short',
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric',
+                                        })}
+                                        {' at '}
+                                        {claimedDate.toLocaleTimeString('en-US', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                    </p>
+                                    {timeToClaimText && (
+                                        <p className="text-xs text-emerald-600">
+                                            Claimed in {timeToClaimText}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {!isClaimed && !isExpired && (
+                            <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                                    <Clock className="w-4 h-4 text-amber-600" />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm text-gray-500">Awaiting Claim</p>
+                                    <p className="font-medium text-amber-700">
+                                        Waiting for {timeSinceSentText}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                        Recipient has not claimed this credential yet
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="pt-2 border-t border-gray-100">
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Technical Details</p>
+
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                        <Zap className="w-4 h-4 text-gray-600" />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm text-gray-500">Delivery Method</p>
+                                        <p className="font-medium text-gray-900">
+                                            {isInbox ? 'Universal Inbox (Email)' : 'Direct to Profile'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {item.boostUri && (
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                            <LinkIcon className="w-4 h-4 text-gray-600" />
+                                        </div>
+
+                                        <div className="min-w-0 flex-1 overflow-hidden">
+                                            <p className="text-sm text-gray-500">Template URI</p>
+                                            <p className="font-mono text-xs text-gray-600 break-all">
+                                                {item.boostUri}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {item.credentialUri && (
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                            <Award className="w-4 h-4 text-gray-600" />
+                                        </div>
+
+                                        <div className="min-w-0 flex-1 overflow-hidden">
+                                            <p className="text-sm text-gray-500">Credential URI</p>
+                                            <p className="font-mono text-xs text-gray-600 break-all">
+                                                {item.credentialUri}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                        <FileText className="w-4 h-4 text-gray-600" />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm text-gray-500">Activity ID</p>
+                                        <p className="font-mono text-xs text-gray-600 break-all">
+                                            {item.id}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Helper to format duration
+function formatDuration(ms: number): string {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''}`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''}`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+    return 'less than a minute';
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -34,6 +281,14 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     onNavigate,
 }) => {
     const { activity, isLoading: activityLoading } = useIntegrationActivity(templates, { limit: 10 });
+    const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
+
+    const handleActivityItemClick = (item: ActivityItem) => {
+        newModal(
+            <IssuanceDetailModal item={item} />,
+            { sectionClassName: '!max-w-[450px]' }
+        );
+    };
 
     const quickActions = [];
 
@@ -182,9 +437,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             }
 
                             return (
-                                <div
+                                <button
                                     key={item.id}
-                                    className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl"
+                                    onClick={() => handleActivityItemClick(item)}
+                                    className="w-full flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-left"
                                 >
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColor}`}>
                                         <Icon className={`w-4 h-4 ${textColor}`} />
@@ -216,7 +472,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                         <Clock className="w-3 h-3" />
                                         {formatRelativeTime(item.sentAt)}
                                     </div>
-                                </div>
+                                </button>
                             );
                         })}
 
