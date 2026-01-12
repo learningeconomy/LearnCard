@@ -277,7 +277,7 @@ const legacyToOBv3 = (legacy: CredentialTemplate, issuerName?: string, issuerIma
         if (field.id === 'recipient_name' || varName === 'recipient_name') {
             template.credentialSubject.name = dynamicField('recipient_name', '');
         } else if (field.id === 'issue_date' || varName === 'issue_date') {
-            template.issuanceDate = dynamicField('issue_date', '');
+            template.validFrom = dynamicField('issue_date', '');
         } else {
             // Add as custom field
             template.customFields.push({
@@ -1027,7 +1027,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     break;
 
                 case 'issue_date':
-                    template.issuanceDate = dynamicField('issue_date', '');
+                    template.validFrom = dynamicField('issue_date', '');
                     break;
 
                 case 'completion_date':
@@ -1047,7 +1047,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     break;
 
                 case 'expiration_date':
-                    template.expirationDate = dynamicField('expiration_date', '');
+                    template.validUntil = dynamicField('expiration_date', '');
                     break;
             }
         });
@@ -1331,7 +1331,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     break;
 
                 case 'issue_date':
-                    template.issuanceDate = dynamicField('issue_date', '');
+                    template.validFrom = dynamicField('issue_date', '');
                     break;
 
                 case 'completion_date':
@@ -1351,7 +1351,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     break;
 
                 case 'expiration_date':
-                    template.expirationDate = dynamicField('expiration_date', '');
+                    template.validUntil = dynamicField('expiration_date', '');
                     break;
             }
         });
@@ -1560,12 +1560,12 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 ...renderedCredential,
                 '@context': Array.isArray(contexts) && contexts.length > 0 
                     ? contexts 
-                    : ['https://www.w3.org/2018/credentials/v1'],
+                    : ['https://www.w3.org/ns/credentials/v2'],
                 type: Array.isArray(types) && types.length > 0 
                     ? types 
                     : ['VerifiableCredential'],
                 issuer: wallet.id.did(),
-                issuanceDate: new Date().toISOString(),
+                validFrom: new Date().toISOString(),
                 credentialSubject: {
                     ...(renderedCredential.credentialSubject as Record<string, unknown> || {}),
                     id: wallet.id.did(),

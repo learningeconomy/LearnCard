@@ -80,11 +80,11 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
     // This will be replaced with wallet.id.did() during actual issuance
     credential.issuer = fieldToJson(template.issuer.id) || '{{issuer_did}}';
 
-    // Dates
-    credential.issuanceDate = fieldToJson(template.issuanceDate) || '{{issue_date}}';
+    // Dates (VC v2 syntax)
+    credential.validFrom = fieldToJson(template.validFrom) || '{{issue_date}}';
 
-    if (template.expirationDate?.value || template.expirationDate?.isDynamic) {
-        credential.expirationDate = fieldToJson(template.expirationDate);
+    if (template.validUntil?.value || template.validUntil?.isDynamic) {
+        credential.validUntil = fieldToJson(template.validUntil);
     }
 
     // Credential Subject
@@ -267,8 +267,8 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         image: json.image ? jsonToField(json.image) : undefined,
         issuer,
         credentialSubject,
-        issuanceDate: jsonToField(json.issuanceDate || '{{issue_date}}'),
-        expirationDate: json.expirationDate ? jsonToField(json.expirationDate) : undefined,
+        validFrom: jsonToField(json.validFrom || json.issuanceDate || '{{issue_date}}'),
+        validUntil: json.validUntil || json.expirationDate ? jsonToField(json.validUntil || json.expirationDate) : undefined,
         customFields: [],
     };
 };
@@ -300,8 +300,8 @@ export const extractDynamicVariables = (template: OBv3CredentialTemplate): strin
     checkField(template.issuer.image);
 
     // Dates
-    checkField(template.issuanceDate);
-    checkField(template.expirationDate);
+    checkField(template.validFrom);
+    checkField(template.validUntil);
 
     // Credential Subject
     checkField(template.credentialSubject.id);

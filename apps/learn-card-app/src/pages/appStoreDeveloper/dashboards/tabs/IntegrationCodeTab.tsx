@@ -131,6 +131,17 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
     const getSmartDefault = (varName: string): string => {
         const lower = varName.toLowerCase();
 
+        // VC v2 date fields
+        if (lower === 'validfrom' || lower === 'valid_from') {
+            return new Date().toISOString();
+        }
+
+        if (lower === 'validuntil' || lower === 'valid_until') {
+            const future = new Date();
+            future.setFullYear(future.getFullYear() + 2);
+            return future.toISOString();
+        }
+
         if (lower.includes('date') || lower.includes('issued') || lower.includes('completed')) {
             return new Date().toISOString();
         }

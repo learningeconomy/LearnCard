@@ -176,7 +176,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
         return {
             ...rendered,
             issuer: userDid,
-            issuanceDate: new Date().toISOString(),
+            validFrom: new Date().toISOString(),
         };
     }, [template, userDid]);
 

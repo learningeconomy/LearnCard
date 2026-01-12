@@ -21,18 +21,18 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
     isExpanded,
     onToggle,
 }) => {
-    const updateField = (key: 'issuanceDate' | 'expirationDate', value: TemplateFieldValue) => {
+    const updateField = (key: 'validFrom' | 'validUntil', value: TemplateFieldValue) => {
         onChange({ ...template, [key]: value });
     };
 
-    const hasExpiration = template.expirationDate !== undefined;
+    const hasExpiration = template.validUntil !== undefined;
 
     const toggleExpiration = () => {
         if (hasExpiration) {
-            const { expirationDate, ...rest } = template;
+            const { validUntil, ...rest } = template;
             onChange(rest as OBv3CredentialTemplate);
         } else {
-            onChange({ ...template, expirationDate: staticField('') });
+            onChange({ ...template, validUntil: staticField('') });
         }
     };
 
@@ -70,8 +70,8 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
                 {hasExpiration && (
                     <FieldEditor
                         label=""
-                        field={template.expirationDate || staticField('')}
-                        onChange={(f) => updateField('expirationDate', f)}
+                        field={template.validUntil || staticField('')}
+                        onChange={(f) => updateField('validUntil', f)}
                         placeholder="2025-01-15T00:00:00Z"
                         helpText="When the credential expires (optional, ISO 8601 format)"
                     />

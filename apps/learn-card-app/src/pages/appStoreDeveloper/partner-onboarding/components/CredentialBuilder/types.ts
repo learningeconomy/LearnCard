@@ -117,9 +117,9 @@ export interface OBv3CredentialTemplate {
     // Subject
     credentialSubject: CredentialSubjectTemplate;
     
-    // Dates
-    issuanceDate: TemplateFieldValue;
-    expirationDate?: TemplateFieldValue;
+    // Dates (VC v2 syntax)
+    validFrom: TemplateFieldValue;
+    validUntil?: TemplateFieldValue;
     
     // Custom fields in extensions
     customFields: CustomFieldTemplate[];
@@ -180,16 +180,14 @@ export const OBV3_ACHIEVEMENT_TYPES = [
     'SecondarySchoolDiploma',
 ] as const;
 
-// Default OBv3 contexts
+// Default OBv3 contexts (VC v2)
 export const DEFAULT_CONTEXTS = [
-    'https://www.w3.org/2018/credentials/v1',
+    'https://www.w3.org/ns/credentials/v2',
     'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
-    'https://ctx.learncard.com/boosts/1.0.0.json',
 ];
 
 // Default types
 export const DEFAULT_TYPES = [
     'VerifiableCredential',
     'OpenBadgeCredential',
-    'BoostCredential',
 ];

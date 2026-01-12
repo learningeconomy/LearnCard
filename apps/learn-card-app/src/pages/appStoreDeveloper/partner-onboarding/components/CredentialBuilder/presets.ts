@@ -33,7 +33,7 @@ const createBaseTemplate = (overrides: Partial<OBv3CredentialTemplate>): OBv3Cre
             description: staticField(''),
         },
     },
-    issuanceDate: dynamicField('issue_date', ''),
+    validFrom: dynamicField('issue_date', ''),
     customFields: [],
     ...overrides,
 });
@@ -120,7 +120,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
                     },
                 },
             },
-            expirationDate: dynamicField('expiration_date', ''),
+            validUntil: dynamicField('expiration_date', ''),
         }),
     },
     {
@@ -170,7 +170,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
                     },
                 },
             },
-            expirationDate: dynamicField('expiration_date', ''),
+            validUntil: dynamicField('expiration_date', ''),
             customFields: [
                 {
                     id: 'license_number',
@@ -204,7 +204,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
                     },
                 },
             },
-            expirationDate: dynamicField('membership_expiration', ''),
+            validUntil: dynamicField('membership_expiration', ''),
             customFields: [
                 {
                     id: 'member_id',
