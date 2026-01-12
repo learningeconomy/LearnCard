@@ -480,7 +480,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             <USConsentNoticeModalContent
                 onBack={closeModal}
                 onContinue={() => {
-                    handleUsMinorConsentToggle(e.detail.checked);
+                    handleUsMinorConsentToggle(true);
                     closeModal();
                     handleUpdateUser({ skipUsConsentCheck: true });
                     console.log('///onContinue');
