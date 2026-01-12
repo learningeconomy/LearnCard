@@ -237,6 +237,54 @@ const IntegrationHub: React.FC = () => {
                         </div>
                     )}
 
+                    {/* Select project prompt when integrations exist but none selected */}
+                    {!hasIntegration && !showSetupPrompt && (
+                        <div className="max-w-2xl mx-auto py-12">
+                            {/* Hero section */}
+                            <div className="text-center mb-10">
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 rounded-full text-sm font-medium mb-4">
+                                    <Sparkles className="w-4 h-4" />
+                                    <span>Integration Guides</span>
+                                </div>
+
+                                <h1 className="text-3xl font-bold text-gray-800 mb-3">
+                                    Build Your Integration
+                                </h1>
+
+                                <p className="text-gray-500 max-w-lg mx-auto text-lg">
+                                    Select a project from the dropdown above to get started, or browse the available guides below.
+                                </p>
+                            </div>
+
+                            {/* Guide preview cards - clickable but prompt to select project */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                                {useCaseList.slice(0, 4).map(useCase => {
+                                    const IconComponent = ICON_MAP[useCase.icon] || Award;
+
+                                    return (
+                                        <div
+                                            key={useCase.id}
+                                            className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl"
+                                        >
+                                            <div className={`w-10 h-10 ${useCase.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                                                <IconComponent className={`w-5 h-5 ${useCase.color}`} />
+                                            </div>
+
+                                            <div>
+                                                <h3 className="font-medium text-gray-800">{useCase.title}</h3>
+                                                <p className="text-sm text-gray-500">{useCase.subtitle}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <p className="text-center text-sm text-gray-500">
+                                Select a project above to access all {useCaseList.length} guides
+                            </p>
+                        </div>
+                    )}
+
                     {/* Main content when integration is selected */}
                     {hasIntegration && (
                         <>
