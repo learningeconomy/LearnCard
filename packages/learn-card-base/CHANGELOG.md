@@ -1,5 +1,19 @@
 # learn-card-base
 
+## 0.1.5
+
+### Patch Changes
+
+-   [#912](https://github.com/learningeconomy/LearnCard/pull/912) [`e61da3230f946b3d7238588baad502b16cee3ea1`](https://github.com/learningeconomy/LearnCard/commit/e61da3230f946b3d7238588baad502b16cee3ea1) Thanks [@Custard7](https://github.com/Custard7)! - feat: In-App CLI
+
+## 0.1.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.2
+    -   @learncard/lca-api-plugin@1.1.4
+
 ## 0.1.3
 
 ### Patch Changes

@@ -6,6 +6,7 @@ export enum AdminToolOptionsEnum {
     BULK_UPLOAD = 'Bulk Upload',
     CONSENT_FLOW = 'Consent Flow',
     SYNC_ALL_CREDENTIALS = 'Sync All Credentials',
+    CLI = 'CLI',
 }
 
 export type AdminToolOption = {
@@ -80,5 +81,13 @@ export const developerToolOptions: AdminToolOption[] = [
             'Scan your wallet and sync all credentials to all consented contracts based on your sharing settings.',
         actionLabel: 'Sync Now',
         type: AdminToolOptionsEnum.SYNC_ALL_CREDENTIALS,
+    },
+    {
+        id: 6,
+        label: 'Developer CLI',
+        title: 'LearnCard CLI',
+        description: 'Interactive terminal for exploring and testing the LearnCard API.',
+        actionLabel: 'Open CLI',
+        type: AdminToolOptionsEnum.CLI,
     },
 ];

@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.94.7
+
+### Patch Changes
+
+-   [#915](https://github.com/learningeconomy/LearnCard/pull/915) [`b7026a050057612469121715d85f1d6c2443b34a`](https://github.com/learningeconomy/LearnCard/commit/b7026a050057612469121715d85f1d6c2443b34a) Thanks [@Custard7](https://github.com/Custard7)! - fix: CLI offscreen
+
+## 1.94.6
+
+### Patch Changes
+
+-   [#912](https://github.com/learningeconomy/LearnCard/pull/912) [`e61da3230f946b3d7238588baad502b16cee3ea1`](https://github.com/learningeconomy/LearnCard/commit/e61da3230f946b3d7238588baad502b16cee3ea1) Thanks [@Custard7](https://github.com/Custard7)! - feat: In-App CLI
+
+## 1.94.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.2
+    -   @learncard/open-badge-v2-plugin@1.1.2
+    -   @learncard/react@2.9.4
+    -   @learncard/lca-api-plugin@1.1.4
+
 ## 1.94.4
 
 ### Patch Changes

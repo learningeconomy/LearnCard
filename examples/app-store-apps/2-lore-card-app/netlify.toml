@@ -1,0 +1,14 @@
+#############################################
+##  Configuration for Netlify deployments  ##
+#############################################
+
+[build.environment]
+# Global Context Default
+[build]
+command = "pnpm exec nx build 2-lore-card-app"
+publish = "dist/"
+
+[[headers]]
+for = "/*"
+[headers.values]
+Access-Control-Allow-Origin = "*"

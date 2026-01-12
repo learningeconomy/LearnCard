@@ -120,22 +120,23 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
         achievement.image = fieldToJson(template.credentialSubject.achievement.image);
     }
 
-    // Criteria
-    if (template.credentialSubject.achievement.criteria) {
-        const criteria: Record<string, unknown> = {};
+    // Criteria - OBv3 requires criteria to always be present
+    const criteria: Record<string, unknown> = {};
 
-        if (template.credentialSubject.achievement.criteria.id?.value || template.credentialSubject.achievement.criteria.id?.isDynamic) {
-            criteria.id = fieldToJson(template.credentialSubject.achievement.criteria.id);
-        }
-
-        if (template.credentialSubject.achievement.criteria.narrative?.value || template.credentialSubject.achievement.criteria.narrative?.isDynamic) {
-            criteria.narrative = fieldToJson(template.credentialSubject.achievement.criteria.narrative);
-        }
-
-        if (Object.keys(criteria).length > 0) {
-            achievement.criteria = criteria;
-        }
+    if (template.credentialSubject.achievement.criteria?.id?.value || template.credentialSubject.achievement.criteria?.id?.isDynamic) {
+        criteria.id = fieldToJson(template.credentialSubject.achievement.criteria.id);
     }
+
+    if (template.credentialSubject.achievement.criteria?.narrative?.value || template.credentialSubject.achievement.criteria?.narrative?.isDynamic) {
+        criteria.narrative = fieldToJson(template.credentialSubject.achievement.criteria.narrative);
+    }
+
+    // Always include criteria (required by OBv3), default to empty narrative if none provided
+    if (Object.keys(criteria).length === 0) {
+        criteria.narrative = '';
+    }
+
+    achievement.criteria = criteria;
 
     // Alignment
     if (template.credentialSubject.achievement.alignment && template.credentialSubject.achievement.alignment.length > 0) {

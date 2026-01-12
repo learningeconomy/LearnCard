@@ -363,6 +363,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                         categoryType={getDefaultCategoryForCredential(previewCredential as any) || BoostCategoryOptionsEnum.achievement}
                                         boostPageViewMode={BoostPageViewMode.Card}
                                         useWrapper={false}
+                                        verifierState={false}
                                         className="shadow-lg"
                                     />
                                 </div>
