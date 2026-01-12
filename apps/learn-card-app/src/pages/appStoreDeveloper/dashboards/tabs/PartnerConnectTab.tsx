@@ -7,7 +7,7 @@
  * Mirrors functionality from EmbedAppGuide's UseApiStep and YourAppStep.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Code,
     Copy,
@@ -30,7 +30,8 @@ import {
 } from 'lucide-react';
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import { useToast, ToastTypeEnum, useWallet } from 'learn-card-base';
+import type { EmbedAppGuideConfig, LLMIntegrationMetadata, TemplateMetadata, GuideState } from '../../guides/types';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { CodeBlock } from '../../components/CodeBlock';
@@ -61,6 +62,24 @@ interface PartnerConnectTabProps {
     integration: LCNIntegration;
     selectedListing?: AppStoreListing | null;
 }
+
+interface BoostTemplate {
+    uri: string;
+    name: string;
+    description?: string;
+    type?: string;
+    category?: string;
+    image?: string;
+    createdAt?: string;
+}
+
+const FEATURES = [
+    { id: 'issue-credentials', title: 'Issue Credentials', icon: <Award className="w-4 h-4" /> },
+    { id: 'peer-badges', title: 'Peer-to-Peer Badges', icon: <Send className="w-4 h-4" /> },
+    { id: 'request-credentials', title: 'Request Credentials', icon: <FileSearch className="w-4 h-4" /> },
+    { id: 'request-data-consent', title: 'Request Data Consent', icon: <ClipboardCheck className="w-4 h-4" /> },
+    { id: 'launch-feature', title: 'Launch Features', icon: <Navigation className="w-4 h-4" /> },
+];
 
 const METHODS: ApiMethod[] = [
     {
@@ -375,9 +394,428 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
     selectedListing,
 }) => {
     const { presentToast } = useToast();
+    const { initWallet } = useWallet();
     const [selectedMethodId, setSelectedMethodId] = useState('requestIdentity');
-    const [showInstall, setShowInstall] = useState(true);
+    const [showInstall, setShowInstall] = useState(false);
+    const [showApiReference, setShowApiReference] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
+    const [templates, setTemplates] = useState<BoostTemplate[]>([]);
+
+    // ============================================================
+    // EXTRACT SAVED CONFIG FROM GUIDE STATE
+    // ============================================================
+    const guideState = integration?.guideState as GuideState | undefined;
+    const savedConfig = guideState?.config?.embedAppConfig as EmbedAppGuideConfig | undefined;
+    const selectedFeatures = savedConfig?.selectedFeatures || [];
+    const featureConfig = savedConfig?.featureConfig || {};
+
+    // Extract feature-specific configuration
+    const issueCredentialsConfig = featureConfig['issue-credentials'];
+    const requestDataConsentConfig = featureConfig['request-data-consent'];
+    const requestCredentialsConfig = featureConfig['request-credentials'];
+
+    const hasConfig = selectedFeatures.length > 0;
+
+    // ============================================================
+    // FETCH TEMPLATES - by both appListingId AND integrationId
+    // ============================================================
+    useEffect(() => {
+        if (!selectedListing?.listing_id && !integration?.id) {
+            setTemplates([]);
+            return;
+        }
+
+        let cancelled = false;
+
+        const fetchAllTemplates = async () => {
+            try {
+                const wallet = await initWallet();
+                const allTemplates: BoostTemplate[] = [];
+                const seenUris = new Set<string>();
+
+                const addTemplates = (records: Record<string, unknown>[]) => {
+                    for (const boost of records) {
+                        const uri = boost.uri as string;
+
+                        if (!seenUris.has(uri)) {
+                            seenUris.add(uri);
+                            allTemplates.push({
+                                uri,
+                                name: boost.name as string || 'Untitled Template',
+                                description: boost.description as string,
+                                type: boost.type as string,
+                                category: boost.category as string,
+                                image: boost.image as string,
+                                createdAt: boost.createdAt as string,
+                            });
+                        }
+                    }
+                };
+
+                // Fetch by appListingId
+                if (selectedListing?.listing_id) {
+                    const byListing = await wallet.invoke.getPaginatedBoosts({
+                        limit: 100,
+                        query: { meta: { appListingId: selectedListing.listing_id } }
+                    });
+                    addTemplates(byListing?.records || []);
+                }
+
+                // Fetch by integrationId
+                if (integration?.id) {
+                    const byIntegration = await wallet.invoke.getPaginatedBoosts({
+                        limit: 100,
+                        query: { meta: { integrationId: integration.id } }
+                    });
+                    addTemplates(byIntegration?.records || []);
+                }
+
+                if (!cancelled) {
+                    setTemplates(allTemplates);
+                }
+            } catch (err) {
+                console.error('Failed to fetch templates:', err);
+
+                if (!cancelled) {
+                    setTemplates([]);
+                }
+            }
+        };
+
+        fetchAllTemplates();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedListing?.listing_id, integration?.id, initWallet]);
+
+    // ============================================================
+    // GENERATE PERSONALIZED CODE
+    // ============================================================
+    const generatePersonalizedCode = useMemo(() => {
+        const sections: string[] = [];
+
+        // Build LLM-friendly metadata
+        const dataConsentContractUri = requestDataConsentConfig?.contractUri || null;
+        const issueContractUri = issueCredentialsConfig?.contractUri || null;
+
+        const llmMetadata: LLMIntegrationMetadata = {
+            app: {
+                name: selectedListing?.display_name || 'Your App Name',
+                listingId: selectedListing?.listing_id || '',
+                integrationId: integration?.id || '',
+            },
+            features: selectedFeatures,
+            templates: {
+                peerBadges: templates.map(t => ({
+                    uri: t.uri,
+                    name: t.name,
+                    description: t.description,
+                    type: t.type,
+                })),
+                issueCredentials: templates.map(t => ({
+                    uri: t.uri,
+                    name: t.name,
+                    description: t.description,
+                    type: t.type,
+                })),
+            },
+            contracts: {
+                dataConsent: dataConsentContractUri,
+                issueCredentials: issueContractUri,
+            },
+            permissions: ['request_identity', ...(selectedFeatures.includes('issue-credentials') ? ['send_credential'] : []), ...(selectedFeatures.includes('peer-badges') ? ['initiate_template_issuance'] : [])],
+            generatedAt: new Date().toISOString(),
+        };
+
+        // HEADER
+        sections.push(`/**
+ * ================================================================
+ * LEARNCARD EMBEDDED APP INTEGRATION
+ * ================================================================
+ * 
+ * App: ${selectedListing?.display_name || 'Your App Name'}
+ * Listing ID: ${selectedListing?.listing_id || 'NOT_SET'}
+ * Integration ID: ${integration?.id || 'NOT_SET'}
+ * Generated: ${new Date().toISOString()}
+ * 
+ * Features configured:
+ * ${selectedFeatures.length > 0 ? selectedFeatures.map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`).join('\n * ') : '  - None selected (complete the setup wizard first)'}
+ * 
+ * ================================================================
+ * LLM INTEGRATION METADATA
+ * ================================================================
+ * The following JSON contains all configured URIs and settings.
+ * Use these values directly - no placeholders to replace!
+ * 
+ * @llm-config
+${JSON.stringify(llmMetadata, null, 2).split('\n').map(line => ' * ' + line).join('\n')}
+ * 
+ * ================================================================
+ * QUICK REFERENCE
+ * ================================================================
+ * ${templates.length > 0 ? `Templates: ${templates.length} available` : 'Templates: None configured'}
+ * ${dataConsentContractUri ? `Data Consent Contract: ${dataConsentContractUri}` : 'Data Consent Contract: Not configured'}
+ * ${issueContractUri ? `Issue Credentials Contract: ${issueContractUri}` : 'Issue Credentials Contract: Not configured'}
+ * 
+ * Prerequisites:
+ *   1. Install the SDK: npm install @learncard/partner-connect
+ *   2. Your app must be served in an iframe within LearnCard
+ *   3. Configure CORS headers to allow iframe embedding
+ * 
+ * Documentation: https://docs.learncard.com/sdks/partner-connect
+ */`);
+
+        // IMPORTS
+        sections.push(`
+// ============================================================
+// IMPORTS
+// ============================================================
+import { createPartnerConnect } from '@learncard/partner-connect';`);
+
+        // SDK INITIALIZATION
+        sections.push(`
+// ============================================================
+// SDK INITIALIZATION
+// ============================================================
+const learnCard = createPartnerConnect({
+    hostOrigin: 'https://learncard.app',
+});`);
+
+        // USER IDENTITY
+        sections.push(`
+// ============================================================
+// USER IDENTITY
+// ============================================================
+async function getUserIdentity() {
+    try {
+        const identity = await learnCard.requestIdentity();
+        
+        console.log('User DID:', identity.did);
+        console.log('Display Name:', identity.profile.displayName);
+        console.log('Profile ID:', identity.profile.profileId);
+        
+        return identity;
+    } catch (error) {
+        console.error('Failed to get user identity:', error);
+        throw error;
+    }
+}`);
+
+        // ISSUE CREDENTIALS
+        if (selectedFeatures.includes('issue-credentials')) {
+            const mode = issueCredentialsConfig?.mode || 'prompt-claim';
+
+            if (mode === 'prompt-claim') {
+                sections.push(`
+// ============================================================
+// ISSUE CREDENTIALS - Prompt to Claim
+// ============================================================
+async function issueCredentialToUser() {
+    const identity = await learnCard.requestIdentity();
+    const recipientDid = identity.did;
+
+    // Build credential (customize fields as needed)
+    const credential = {
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+            "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+        ],
+        "type": ["VerifiableCredential", "OpenBadgeCredential"],
+        "name": "${issueCredentialsConfig?.credentialName || 'Achievement Badge'}",
+        "issuer": {
+            "id": "YOUR_ISSUER_DID", // Replace with your issuer DID
+            "name": "${selectedListing?.display_name || 'Your Organization'}"
+        },
+        "credentialSubject": {
+            "id": recipientDid,
+            "achievement": {
+                "type": ["Achievement"],
+                "name": "${issueCredentialsConfig?.credentialName || 'Achievement Badge'}",
+                "achievementType": "Badge"
+            }
+        }
+    };
+
+    // Send to your server for signing, then prompt user
+    const response = await fetch('/api/issue-credential', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential, recipientDid })
+    });
+
+    const { issuedVC } = await response.json();
+
+    const result = await learnCard.sendCredential({ credential: issuedVC });
+
+    if (result.success) {
+        console.log('Credential claimed!');
+    }
+}`);
+            } else {
+                // sync-wallet mode
+                const firstTemplate = templates[0];
+                const templateUri = firstTemplate?.uri || 'urn:lc:boost:YOUR_TEMPLATE_URI';
+                const contractUri = issueContractUri || 'urn:lc:contract:YOUR_CONTRACT_URI';
+
+                sections.push(`
+// ============================================================
+// ISSUE CREDENTIALS - Sync to Wallet (Server-Side)
+// ============================================================
+// Contract URI: ${contractUri}
+// ${firstTemplate ? `Using template: "${firstTemplate.name}" (${templateUri})` : 'No templates configured'}
+
+const CREDENTIAL_TEMPLATES = ${JSON.stringify(templates.map(t => ({ uri: t.uri, name: t.name, description: t.description || '' })), null, 4)};
+
+async function requestUserConsent() {
+    const result = await learnCard.requestConsent({
+        contractUri: '${contractUri}',
+    });
+    
+    if (result.granted) {
+        await fetch('/api/consent-granted', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: result.userId, contractUri: '${contractUri}' })
+        });
+        return true;
+    }
+    return false;
+}`);
+            }
+        }
+
+        // PEER BADGES
+        if (selectedFeatures.includes('peer-badges')) {
+            const templateConfigJson = templates.length > 0
+                ? JSON.stringify(templates.map(t => ({
+                    id: t.uri.split(':').pop() || t.uri,
+                    uri: t.uri,
+                    name: t.name,
+                    description: t.description || '',
+                    type: t.type || 'achievement',
+                })), null, 4)
+                : '[]';
+
+            sections.push(`
+// ============================================================
+// PEER-TO-PEER BADGES - Template Configuration
+// ============================================================
+// LLM INTEGRATION NOTE: Use these template URIs when calling sendPeerBadge().
+
+const PEER_BADGE_TEMPLATES = ${templateConfigJson};
+
+function findTemplate(query: string) {
+    const q = query.toLowerCase();
+    return PEER_BADGE_TEMPLATES.find(t =>
+        t.name.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q) ||
+        t.type.toLowerCase().includes(q)
+    );
+}
+
+async function sendPeerBadge(templateUri: string) {
+    try {
+        await learnCard.initiateTemplateIssuance({ boostUri: templateUri });
+        console.log('Peer badge flow initiated with template:', templateUri);
+    } catch (error) {
+        console.error('Failed to initiate peer badge:', error);
+        throw error;
+    }
+}
+
+async function sendPeerBadgeByName(searchQuery: string) {
+    const template = findTemplate(searchQuery);
+
+    if (!template) {
+        throw new Error(\`No template found matching: \${searchQuery}. Available: \${PEER_BADGE_TEMPLATES.map(t => t.name).join(', ')}\`);
+    }
+
+    return sendPeerBadge(template.uri);
+}`);
+        }
+
+        // REQUEST CREDENTIALS
+        if (selectedFeatures.includes('request-credentials')) {
+            const queryTitle = requestCredentialsConfig?.queryTitle || 'Share Your Credentials';
+            const queryReason = requestCredentialsConfig?.queryReason || 'Please share relevant credentials';
+
+            sections.push(`
+// ============================================================
+// REQUEST CREDENTIALS
+// ============================================================
+async function requestUserCredentials() {
+    try {
+        const response = await learnCard.askCredentialSearch({
+            title: "${queryTitle}",
+            reason: "${queryReason}",
+        });
+
+        if (response.credentials?.length > 0) {
+            console.log('User shared', response.credentials.length, 'credentials');
+            return response.credentials;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error requesting credentials:', error);
+        throw error;
+    }
+}`);
+        }
+
+        // REQUEST DATA CONSENT
+        if (selectedFeatures.includes('request-data-consent')) {
+            const contractUri = dataConsentContractUri || 'urn:lc:contract:YOUR_CONTRACT_URI';
+
+            sections.push(`
+// ============================================================
+// REQUEST DATA CONSENT
+// ============================================================
+// Contract URI: ${contractUri}
+
+async function requestDataConsent() {
+    try {
+        const result = await learnCard.requestConsent({
+            contractUri: '${contractUri}',
+        });
+
+        if (result.granted) {
+            console.log('User granted consent! User ID:', result.userId);
+
+            await fetch('/api/consent-granted', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: result.userId, contractUri: '${contractUri}' })
+            });
+
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Failed to request consent:', error);
+        throw error;
+    }
+}`);
+        }
+
+        // LAUNCH FEATURE
+        if (selectedFeatures.includes('launch-feature')) {
+            sections.push(`
+// ============================================================
+// LAUNCH WALLET FEATURES
+// ============================================================
+async function launchWalletFeature(path: string, description?: string) {
+    await learnCard.launchFeature(path, description);
+}
+
+// Available paths:
+// launchWalletFeature('/wallet', 'View your credentials');
+// launchWalletFeature('/contacts', 'Manage connections');
+// launchWalletFeature('/settings', 'Update preferences');`);
+        }
+
+        return sections.join('\n');
+    }, [selectedFeatures, selectedListing, integration, templates, issueCredentialsConfig, requestDataConsentConfig, requestCredentialsConfig]);
 
     const selectedMethod = useMemo(
         () => METHODS.find(m => m.id === selectedMethodId) || METHODS[0],
@@ -419,8 +857,74 @@ console.log('User:', identity.profile.displayName);`;
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">Partner Connect SDK</h2>
                 <p className="text-sm text-gray-500">
-                    Integration code for your embedded app
+                    {hasConfig 
+                        ? `Your personalized integration code for ${selectedListing?.display_name || 'your app'}`
+                        : 'Complete the setup wizard to generate personalized code'
+                    }
                 </p>
+            </div>
+
+            {/* ============================================================ */}
+            {/* YOUR INTEGRATION - Personalized Code Section */}
+            {/* ============================================================ */}
+            <div className="border-2 border-cyan-200 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-50 to-white">
+                <div className="p-4 border-b border-cyan-200 bg-cyan-50/50">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-cyan-100 rounded-lg">
+                                <Code className="w-5 h-5 text-cyan-600" />
+                            </div>
+
+                            <div>
+                                <h3 className="font-semibold text-gray-800">
+                                    {hasConfig ? 'Your Integration Code' : 'Integration Code'}
+                                </h3>
+                                <p className="text-xs text-gray-500">
+                                    {hasConfig 
+                                        ? `${selectedFeatures.length} feature${selectedFeatures.length !== 1 ? 's' : ''} configured • ${templates.length} template${templates.length !== 1 ? 's' : ''} available`
+                                        : 'Run the setup wizard to configure features'
+                                    }
+                                </p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => handleCopy(generatePersonalizedCode, 'personalized')}
+                            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition-colors"
+                        >
+                            {copied === 'personalized' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            {copied === 'personalized' ? 'Copied!' : 'Copy All'}
+                        </button>
+                    </div>
+
+                    {/* Selected Features Summary */}
+                    {hasConfig && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            {selectedFeatures.map(featureId => {
+                                const feature = FEATURES.find(f => f.id === featureId);
+                                return feature ? (
+                                    <div
+                                        key={featureId}
+                                        className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-cyan-200 rounded-full text-xs font-medium text-cyan-700"
+                                    >
+                                        {feature.icon}
+                                        {feature.title}
+                                    </div>
+                                ) : null;
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-4">
+                    <CodeBlock code={generatePersonalizedCode} maxHeight="max-h-[500px]" />
+
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-sm text-amber-800">
+                            <strong>💡 LLM-Ready:</strong> Copy this code and paste it into an AI assistant (like ChatGPT or Claude) along with your requirements. The <code className="bg-amber-100 px-1 rounded">@llm-config</code> section contains all your template URIs and settings.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Installation Section */}
@@ -482,10 +986,25 @@ console.log('User:', identity.profile.displayName);`;
                 )}
             </div>
 
-            {/* API Reference */}
-            <div>
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">API Reference</h3>
+            {/* API Reference - Collapsible */}
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                    onClick={() => setShowApiReference(!showApiReference)}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <Code className="w-5 h-5 text-gray-600" />
+                        <div className="text-left">
+                            <h3 className="font-medium text-gray-800">API Reference</h3>
+                            <p className="text-xs text-gray-500">Explore all available SDK methods</p>
+                        </div>
+                    </div>
 
+                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showApiReference ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showApiReference && (
+                <div className="p-4 border-t border-gray-200">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                     {/* Method Navigation */}
                     <div className="lg:col-span-4 space-y-3">
@@ -645,6 +1164,8 @@ console.log('User:', identity.profile.displayName);`;
                         )}
                     </div>
                 </div>
+                </div>
+                )}
             </div>
 
             {/* Resources */}
