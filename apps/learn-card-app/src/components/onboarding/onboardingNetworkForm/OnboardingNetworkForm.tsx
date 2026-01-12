@@ -699,7 +699,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             isFormatValid &&
             isUniqueValid &&
             !isCheckingUnique);
-    const isContinueDisabled = !hasValidDob || !hasValidCountry || !hasValidProfileId || isLoading;
+    const isContinueDisabled =
+        !hasValidDob ||
+        !hasValidCountry ||
+        !hasValidProfileId ||
+        isLoading ||
+        Object.keys(errors).length > 0;
 
     return (
         <div className="w-full h-full bg-white relative overflow-y-auto">
