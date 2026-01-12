@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import moment from 'moment';
+import DatePicker from 'react-datepicker';
 
 import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
@@ -37,6 +38,7 @@ import {
     BrandingEnum,
     useToast,
     ToastTypeEnum,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -95,6 +97,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
+    const { isDesktop, isMobile } = useDeviceTypeByWidth();
 
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
@@ -225,17 +228,25 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         return false;
     };
 
+    const validateProfileIdValue = (value: string) => {
+        const lengthOk = value.length >= 3 && value.length <= 25;
+        setIsLengthValid(lengthOk);
+        const formatOk = /^[a-zA-Z0-9-]+$/.test(value);
+        setIsFormatValid(formatOk);
+    };
+
     const handleProfileIdInput = (value: string) => {
         updateFormData({ profileId: value });
         setProfileIdErrors({});
         setProfileIdError('');
-
-        const lengthOk = value.length >= 3 && value.length <= 25;
-        setIsLengthValid(lengthOk);
-
-        const formatOk = /^[a-zA-Z0-9-]+$/.test(value);
-        setIsFormatValid(formatOk);
+        validateProfileIdValue(value);
     };
+
+    useEffect(() => {
+        if (profileId) {
+            validateProfileIdValue(profileId);
+        }
+    }, [role]);
 
     const handleStorageUpdate = async () => {
         if (!currentUser?.privateKey) return;
@@ -782,49 +793,135 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             </div>
 
                             <div className="flex flex-col items-center justify-center w-full mt-2">
-                                <button
-                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
-                                        errors?.dob ? 'login-input-email-error' : ''
-                                    }`}
-                                    onClick={() => {
-                                        newModal(
-                                            <div className="w-full h-full transparent flex items-center justify-center">
-                                                <IonDatetime
-                                                    onIonChange={e => {
-                                                        setErrors({});
-                                                        handleDobChange(e.detail.value as string);
-                                                        closeModal();
-                                                    }}
-                                                    value={
-                                                        dob
-                                                            ? moment(dob).format('YYYY-MM-DD')
-                                                            : null
-                                                    }
-                                                    id="datetime"
-                                                    presentation="date"
-                                                    className="bg-white text-black rounded-[20px] w-full shadow-3xl z-50 font-notoSans"
-                                                    showDefaultButtons
-                                                    color="indigo-500"
-                                                    max={moment().format('YYYY-MM-DD')}
-                                                    min="1900-01-01"
-                                                    onIonCancel={closeModal}
-                                                />
-                                            </div>,
-                                            {
-                                                disableCloseHandlers: true,
-                                                sectionClassName:
-                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
-                                            },
-                                            {
-                                                desktop: ModalTypes.Center,
-                                                mobile: ModalTypes.Center,
+                                {isDesktop && (
+                                    <div className="relative w-full">
+                                        <DatePicker
+                                            selected={
+                                                dob ? moment(dob, 'YYYY-MM-DD').toDate() : null
                                             }
-                                        );
-                                    }}
-                                >
-                                    {dob ? moment(dob).format('MMMM Do, YYYY') : 'Date of Birth'}
-                                    <Calendar className="w-[30px] text-grayscale-700" />
-                                </button>
+                                            onChange={(date: Date | null) => {
+                                                setErrors(prev => ({ ...prev, dob: undefined }));
+                                                if (!date) {
+                                                    handleDobChange('');
+                                                } else {
+                                                    const formattedDate =
+                                                        moment(date).format('YYYY-MM-DD');
+                                                    handleDobChange(formattedDate);
+                                                }
+                                            }}
+                                            onBlur={e => {
+                                                const inputValue = e.target.value;
+                                                if (!inputValue) {
+                                                    handleDobChange('');
+                                                    return;
+                                                }
+                                                const formats = [
+                                                    'MMMM D, YYYY',
+                                                    'MM/DD/YYYY',
+                                                    'M/D/YYYY',
+                                                    'MM-DD-YYYY',
+                                                    'M-D-YYYY',
+                                                    'MMMM D YYYY',
+                                                ];
+
+                                                const parsed = moment(inputValue, formats, true);
+
+                                                if (!parsed.isValid()) {
+                                                    setErrors(prev => ({
+                                                        ...prev,
+                                                        dob: 'Please enter a valid date',
+                                                    }));
+                                                    return;
+                                                }
+
+                                                // Check if year is before 1900
+                                                if (parsed.year() < 1900) {
+                                                    setErrors(prev => ({
+                                                        ...prev,
+                                                        dob: 'Year must be 1900 or later',
+                                                    }));
+                                                    return;
+                                                }
+                                                if (parsed.isAfter(moment(), 'day')) {
+                                                    setErrors(prev => ({
+                                                        ...prev,
+                                                        dob: 'Date cannot be in the future',
+                                                    }));
+                                                    return;
+                                                }
+                                                // If we get here, the date is valid
+                                                const formattedDate = parsed.format('YYYY-MM-DD');
+                                                handleDobChange(formattedDate);
+                                                setErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.dob;
+                                                    return newErrors;
+                                                });
+                                            }}
+                                            placeholderText="Date of Birth"
+                                            showMonthDropdown
+                                            showYearDropdown
+                                            dropdownMode="select"
+                                            maxDate={new Date()}
+                                            wrapperClassName="w-full"
+                                            popperClassName="z-[9999]"
+                                            dateFormat="MMMM d, yyyy"
+                                            className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
+                                                errors?.dob ? 'login-input-email-error' : ''
+                                            }`}
+                                        />
+                                        <Calendar className="pointer-events-none absolute right-[16px] top-[50%] -translate-y-1/2 text-grayscale-700 w-[24px]" />
+                                    </div>
+                                )}
+                                {isMobile && (
+                                    <button
+                                        className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
+                                            errors?.dob ? 'login-input-email-error' : ''
+                                        }`}
+                                        onClick={() => {
+                                            newModal(
+                                                <div className="w-full h-full transparent flex items-center justify-center">
+                                                    <IonDatetime
+                                                        onIonChange={e => {
+                                                            setErrors({});
+                                                            handleDobChange(
+                                                                e.detail.value as string
+                                                            );
+                                                            closeModal();
+                                                        }}
+                                                        value={
+                                                            dob
+                                                                ? moment(dob).format('YYYY-MM-DD')
+                                                                : null
+                                                        }
+                                                        id="datetime"
+                                                        presentation="date"
+                                                        className="bg-white text-black rounded-[20px] w-full shadow-3xl z-50 font-notoSans"
+                                                        showDefaultButtons
+                                                        color="indigo-500"
+                                                        max={moment().format('YYYY-MM-DD')}
+                                                        min="1900-01-01"
+                                                        onIonCancel={closeModal}
+                                                    />
+                                                </div>,
+                                                {
+                                                    disableCloseHandlers: true,
+                                                    sectionClassName:
+                                                        '!bg-transparent !border-none !shadow-none !rounded-none',
+                                                },
+                                                {
+                                                    desktop: ModalTypes.Center,
+                                                    mobile: ModalTypes.Center,
+                                                }
+                                            );
+                                        }}
+                                    >
+                                        {dob
+                                            ? moment(dob).format('MMMM Do, YYYY')
+                                            : 'Date of Birth'}
+                                        <Calendar className="w-[30px] text-grayscale-700" />
+                                    </button>
+                                )}
 
                                 {dob && !Number.isNaN(calculateAge(dob)) && (
                                     <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
