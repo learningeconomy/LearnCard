@@ -4,15 +4,12 @@ import {
     ArrowLeft,
     CheckCircle2,
     AlertTriangle,
-    Activity,
-    Award,
-    AlertCircle,
-    Clock,
-    ToggleLeft,
-    ToggleRight,
-    ExternalLink,
-    Settings,
-    BarChart3,
+    Shield,
+    Palette,
+    FileStack,
+    Code2,
+    Loader2,
+    PartyPopper,
 } from 'lucide-react';
 
 import { PartnerProject } from '../types';
@@ -24,13 +21,6 @@ interface ProductionStepProps {
     onBack: () => void;
 }
 
-interface DashboardStats {
-    credentialsIssued: number;
-    errors: number;
-    pending: number;
-    lastActivity: string | null;
-}
-
 export const ProductionStep: React.FC<ProductionStepProps> = ({
     project,
     isLive,
@@ -38,239 +28,157 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
     onBack,
 }) => {
     const [showConfirmation, setShowConfirmation] = useState(false);
+    const [isActivating, setIsActivating] = useState(false);
 
-    // Simulated dashboard stats
-    const [stats] = useState<DashboardStats>({
-        credentialsIssued: isLive ? 0 : 0,
-        errors: 0,
-        pending: 0,
-        lastActivity: null,
-    });
+    const handleGoLiveClick = () => {
+        setShowConfirmation(true);
+    };
 
-    const handleToggleLive = () => {
-        if (!isLive) {
-            setShowConfirmation(true);
+    const handleConfirmGoLive = async () => {
+        setIsActivating(true);
+
+        try {
+            await onGoLive();
+        } finally {
+            setIsActivating(false);
+            setShowConfirmation(false);
         }
     };
 
-    const handleConfirmGoLive = () => {
-        setShowConfirmation(false);
-        onGoLive();
-    };
+    // Setup checklist - things completed in previous steps
+    const setupChecklist = [
+        { icon: Shield, label: 'Signing authority configured', done: true },
+        { icon: Palette, label: 'Branding & profile set up', done: true },
+        { icon: FileStack, label: 'Credential templates created', done: true },
+        { icon: Code2, label: 'Integration code configured', done: true },
+    ];
 
     return (
         <div className="space-y-6">
-            {/* Status Banner */}
-            {isLive ? (
-                <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-
-                    <div className="flex-1">
-                        <p className="font-medium text-emerald-800">Integration is Live!</p>
-                        <p className="text-sm text-emerald-700 mt-1">
-                            Your integration is active and ready to issue credentials. Monitor activity below.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-100 rounded-full">
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-sm font-medium text-emerald-700">Live</span>
-                    </div>
+            {/* Ready to Launch Banner */}
+            <div className="flex items-start gap-4 p-5 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl">
+                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                    <Rocket className="w-7 h-7 text-emerald-600" />
                 </div>
-            ) : (
-                <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
-                    <div className="flex-1">
-                        <p className="font-medium text-amber-800">Test Mode Active</p>
-                        <p className="text-sm text-amber-700 mt-1">
-                            Your integration is in test mode. Toggle to live mode when you're ready to start issuing real credentials.
-                        </p>
-                    </div>
+                <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-gray-800">Ready to Go Live!</h2>
 
-                    <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 rounded-full">
-                        <span className="w-2 h-2 bg-amber-500 rounded-full" />
-                        <span className="text-sm font-medium text-amber-700">Test</span>
-                    </div>
-                </div>
-            )}
-
-            {/* Live Toggle */}
-            <div className="p-4 border border-gray-200 rounded-xl">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                            isLive ? 'bg-emerald-100' : 'bg-gray-100'
-                        }`}>
-                            <Rocket className={`w-5 h-5 ${isLive ? 'text-emerald-600' : 'text-gray-500'}`} />
-                        </div>
-
-                        <div>
-                            <h3 className="font-semibold text-gray-800">Production Mode</h3>
-                            <p className="text-sm text-gray-500">
-                                {isLive ? 'Credentials are being issued to real users' : 'Click to activate your integration'}
-                            </p>
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={handleToggleLive}
-                        disabled={isLive}
-                        className={`p-1 rounded-full transition-colors ${
-                            isLive ? 'cursor-default' : 'hover:bg-gray-100'
-                        }`}
-                    >
-                        {isLive ? (
-                            <ToggleRight className="w-12 h-12 text-emerald-500" />
-                        ) : (
-                            <ToggleLeft className="w-12 h-12 text-gray-400" />
-                        )}
-                    </button>
+                    <p className="text-sm text-gray-600 mt-1">
+                        Your integration setup is complete. When you activate production mode, 
+                        your system will be able to issue real verifiable credentials to users.
+                    </p>
                 </div>
             </div>
+
+            {/* Setup Summary */}
+            <div className="p-5 border border-gray-200 rounded-xl">
+                <h3 className="font-medium text-gray-800 mb-4">Setup Complete</h3>
+
+                <div className="space-y-3">
+                    {setupChecklist.map((item, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                <item.icon className="w-4 h-4 text-emerald-600" />
+                            </div>
+
+                            <span className="flex-1 text-sm text-gray-700">{item.label}</span>
+
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* What Happens Next */}
+            <div className="p-5 bg-blue-50 border border-blue-200 rounded-xl">
+                <h3 className="font-medium text-blue-800 mb-2">What happens when you go live?</h3>
+
+                <ul className="text-sm text-blue-700 space-y-2">
+                    <li className="flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        <span>Your integration status changes from "setup" to "active"</span>
+                    </li>
+
+                    <li className="flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        <span>API calls will issue real credentials that recipients can store in their wallets</span>
+                    </li>
+
+                    <li className="flex items-start gap-2">
+                        <span className="text-blue-400 mt-0.5">•</span>
+                        <span>You'll be redirected to your integration dashboard to monitor activity</span>
+                    </li>
+                </ul>
+            </div>
+
+            {/* Go Live Button */}
+            <button
+                onClick={handleGoLiveClick}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/25"
+            >
+                <Rocket className="w-5 h-5" />
+                Activate Production Mode
+            </button>
 
             {/* Confirmation Modal */}
             {showConfirmation && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                                <Rocket className="w-6 h-6 text-emerald-600" />
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-5">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                <PartyPopper className="w-7 h-7 text-emerald-600" />
                             </div>
 
                             <div>
-                                <h3 className="font-semibold text-gray-800">Go Live?</h3>
-                                <p className="text-sm text-gray-500">This will activate your integration</p>
+                                <h3 className="text-lg font-semibold text-gray-800">Ready to Launch?</h3>
+                                <p className="text-sm text-gray-500">Activate your integration</p>
                             </div>
                         </div>
 
                         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                            <div className="flex items-start gap-2">
-                                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
-                                <p className="text-sm text-amber-800">
-                                    Once live, your system will start issuing real credentials to users. 
-                                    Make sure you've completed testing.
-                                </p>
+                                <div className="text-sm text-amber-800">
+                                    <p className="font-medium mb-1">Before you go live:</p>
+                                    <ul className="space-y-1 text-amber-700">
+                                        <li>• Ensure you've tested credential issuance in sandbox</li>
+                                        <li>• Verify your API integration is working correctly</li>
+                                        <li>• Confirm your branding and templates are finalized</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
 
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowConfirmation(false)}
-                                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                                disabled={isActivating}
+                                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
 
                             <button
                                 onClick={handleConfirmGoLive}
-                                className="flex-1 px-4 py-3 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors"
+                                disabled={isActivating}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50"
                             >
-                                Go Live
+                                {isActivating ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Activating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Rocket className="w-4 h-4" />
+                                        Go Live
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Dashboard Stats */}
-            <div className="space-y-4">
-                <h3 className="font-medium text-gray-800 flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-gray-500" />
-                    Dashboard
-                </h3>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Award className="w-4 h-4 text-emerald-500" />
-                            <span className="text-xs text-gray-500">Issued</span>
-                        </div>
-
-                        <p className="text-2xl font-bold text-gray-800">{stats.credentialsIssued}</p>
-                    </div>
-
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Clock className="w-4 h-4 text-amber-500" />
-                            <span className="text-xs text-gray-500">Pending</span>
-                        </div>
-
-                        <p className="text-2xl font-bold text-gray-800">{stats.pending}</p>
-                    </div>
-
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                        <div className="flex items-center gap-2 mb-2">
-                            <AlertCircle className="w-4 h-4 text-red-500" />
-                            <span className="text-xs text-gray-500">Errors</span>
-                        </div>
-
-                        <p className="text-2xl font-bold text-gray-800">{stats.errors}</p>
-                    </div>
-
-                    <div className="p-4 bg-gray-50 rounded-xl">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Activity className="w-4 h-4 text-blue-500" />
-                            <span className="text-xs text-gray-500">Last Activity</span>
-                        </div>
-
-                        <p className="text-sm font-medium text-gray-800">
-                            {stats.lastActivity || 'No activity yet'}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Activity Log Placeholder */}
-            <div className="p-4 border border-gray-200 rounded-xl">
-                <h3 className="font-medium text-gray-800 mb-3">Recent Activity</h3>
-
-                {isLive ? (
-                    <div className="text-center py-8 text-gray-500">
-                        <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No activity yet</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                            Credentials will appear here as they're issued
-                        </p>
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-gray-500">
-                        <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">Waiting to go live</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                            Activate production mode to start tracking activity
-                        </p>
-                    </div>
-                )}
-            </div>
-
-            {/* Quick Links */}
-            {isLive && (
-                <div className="grid grid-cols-2 gap-4">
-                    <a
-                        href="#"
-                        className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl hover:border-cyan-300 hover:bg-cyan-50 transition-colors"
-                    >
-                        <Settings className="w-5 h-5 text-gray-500" />
-
-                        <div>
-                            <p className="font-medium text-gray-800">Settings</p>
-                            <p className="text-xs text-gray-500">Manage configuration</p>
-                        </div>
-                    </a>
-
-                    <a
-                        href="#"
-                        className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl hover:border-cyan-300 hover:bg-cyan-50 transition-colors"
-                    >
-                        <ExternalLink className="w-5 h-5 text-gray-500" />
-
-                        <div>
-                            <p className="font-medium text-gray-800">Documentation</p>
-                            <p className="text-xs text-gray-500">API reference</p>
-                        </div>
-                    </a>
                 </div>
             )}
 
@@ -281,18 +189,8 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    Back to Testing
                 </button>
-
-                {isLive && (
-                    <a
-                        href="/app-store/developer/guides"
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
-                    >
-                        <CheckCircle2 className="w-4 h-4" />
-                        Done - Return to Hub
-                    </a>
-                )}
             </div>
         </div>
     );
