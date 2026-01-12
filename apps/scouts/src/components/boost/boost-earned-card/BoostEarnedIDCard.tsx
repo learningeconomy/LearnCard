@@ -24,6 +24,7 @@ import {
     useModal,
     useWallet,
     useGetVCInfo,
+    categoryMetadata,
 } from 'learn-card-base';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
