@@ -552,13 +552,13 @@ export default BOOST_TEMPLATES;`;
         const lower = varName.toLowerCase();
 
         if (lower.includes('date') || lower.includes('issued') || lower.includes('completed')) {
-            return new Date().toISOString().split('T')[0];
+            return new Date().toISOString();
         }
 
         if (lower.includes('expir')) {
             const future = new Date();
             future.setFullYear(future.getFullYear() + 2);
-            return future.toISOString().split('T')[0];
+            return future.toISOString();
         }
 
         if (lower.includes('score') || lower.includes('grade')) {

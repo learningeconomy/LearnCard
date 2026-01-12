@@ -459,13 +459,13 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                 Send Another
                             </button>
 
-                            <a
+                            {/* <a
                                 href="#"
                                 className="flex items-center gap-2 px-4 py-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition-colors"
                             >
                                 <ExternalLink className="w-4 h-4" />
                                 View in Wallet
-                            </a>
+                            </a> */}
                         </div>
                     </div>
                 )}

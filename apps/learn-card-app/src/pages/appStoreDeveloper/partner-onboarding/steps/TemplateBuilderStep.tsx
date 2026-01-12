@@ -43,6 +43,7 @@ import {
     TEMPLATE_PRESETS,
     staticField,
     dynamicField,
+    systemField,
 } from '../components/CredentialBuilder';
 
 const TEMPLATE_META_VERSION = '2.0.0';
@@ -130,14 +131,17 @@ const FIELD_GROUPS: Record<string, string> = {
     custom: 'Extensions',
 };
 
-// Issuance-level fields (dynamic at credential issue time, not from CSV)
+// Issuance-level fields - distinguished by type:
+// - 'dynamic': Mustache variable that user provides at issuance time
+// - 'system': Auto-injected by the system (recipient DID, etc.)
 const ISSUANCE_FIELDS = [
-    { id: 'recipient_name', label: 'Recipient Name', description: 'Name of the credential recipient', required: true, defaultIncluded: true },
-    { id: 'recipient_email', label: 'Recipient Email', description: 'Email for sending the credential', required: true, defaultIncluded: true },
-    { id: 'issue_date', label: 'Issue Date', description: 'When the credential was issued', required: false, defaultIncluded: true },
-    { id: 'completion_date', label: 'Completion Date', description: 'When the course was completed', required: false, defaultIncluded: false },
-    { id: 'score', label: 'Score/Grade', description: 'Score or grade achieved', required: false, defaultIncluded: false },
-    { id: 'expiration_date', label: 'Expiration Date', description: 'When the credential expires', required: false, defaultIncluded: false },
+    { id: 'recipient_name', label: 'Recipient Name', description: 'Name of the credential recipient', type: 'dynamic' as const, required: true, defaultIncluded: true },
+    { id: 'recipient_email', label: 'Recipient Email', description: 'Email for sending the credential (used for delivery, not in credential)', type: 'system' as const, required: true, defaultIncluded: false },
+    { id: 'recipient_did', label: 'Recipient DID', description: 'Auto-injected recipient identifier', type: 'system' as const, required: false, defaultIncluded: true },
+    { id: 'issue_date', label: 'Issue Date', description: 'When the credential was issued', type: 'dynamic' as const, required: false, defaultIncluded: true },
+    { id: 'completion_date', label: 'Completion Date', description: 'When the course was completed', type: 'dynamic' as const, required: false, defaultIncluded: false },
+    { id: 'score', label: 'Score/Grade', description: 'Score or grade achieved', type: 'dynamic' as const, required: false, defaultIncluded: false },
+    { id: 'expiration_date', label: 'Expiration Date', description: 'When the credential expires', type: 'dynamic' as const, required: false, defaultIncluded: false },
 ];
 
 // Smart mapping suggestions for catalog columns (baked into each boost)
@@ -923,43 +927,103 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         }
 
         // Process catalog-level mappings as DYNAMIC variables in master template
+        // Uses dot-notation field IDs matching CATALOG_FIELD_OPTIONS
         Object.entries(columnMappings).forEach(([columnName, fieldType]) => {
             if (fieldType === 'skip') return;
 
             const varName = columnName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+            const displayName = columnName.replace(/[^a-zA-Z0-9]+/g, ' ').trim();
 
-            switch (fieldType) {
-                case 'achievement_name':
-                    template.credentialSubject.achievement.name = dynamicField(varName, '');
-                    break;
+            // Handle credential-level fields
+            if (fieldType === 'credential.name') {
+                template.name = dynamicField(varName, '');
+                return;
+            }
 
-                case 'achievement_description':
-                    template.credentialSubject.achievement.description = dynamicField(varName, '');
-                    break;
+            if (fieldType === 'credential.description') {
+                template.description = dynamicField(varName, '');
+                return;
+            }
 
-                case 'course_id':
-                case 'credits':
-                case 'instructor':
-                case 'department':
-                case 'custom': {
-                    const displayName = columnName.replace(/[^a-zA-Z0-9]+/g, ' ').trim();
-                    template.customFields.push({
-                        id: `custom_${varName}`,
-                        key: staticField(displayName),
-                        value: dynamicField(varName, ''),
-                    });
-                    break;
+            if (fieldType === 'credential.image') {
+                template.image = dynamicField(varName, '');
+                return;
+            }
+
+            // Handle achievement fields
+            if (fieldType === 'achievement.name') {
+                template.credentialSubject.achievement.name = dynamicField(varName, '');
+                return;
+            }
+
+            if (fieldType === 'achievement.description') {
+                template.credentialSubject.achievement.description = dynamicField(varName, '');
+                return;
+            }
+
+            if (fieldType === 'achievement.image') {
+                template.credentialSubject.achievement.image = dynamicField(varName, '');
+                return;
+            }
+
+            if (fieldType === 'achievement.achievementType') {
+                template.credentialSubject.achievement.achievementType = dynamicField(varName, '');
+                return;
+            }
+
+            if (fieldType === 'achievement.id') {
+                template.credentialSubject.achievement.id = dynamicField(varName, '');
+                return;
+            }
+
+            if (fieldType === 'achievement.criteria.narrative') {
+                if (!template.credentialSubject.achievement.criteria) {
+                    template.credentialSubject.achievement.criteria = {};
                 }
+                template.credentialSubject.achievement.criteria.narrative = dynamicField(varName, '');
+                return;
+            }
+
+            // For alignment, evidence, result, subject, related, and custom fields
+            // Add as custom fields with dynamic values in master template
+            if (fieldType.startsWith('alignment.') || 
+                fieldType.startsWith('evidence.') || 
+                fieldType.startsWith('result.') || 
+                fieldType.startsWith('subject.') || 
+                fieldType.startsWith('related.') ||
+                fieldType.startsWith('achievement.') ||
+                fieldType === 'custom' ||
+                fieldType === 'credential.inLanguage') {
+                template.customFields.push({
+                    id: `custom_${varName}`,
+                    key: staticField(displayName),
+                    value: dynamicField(varName, ''),
+                });
             }
         });
 
-        // Add issuance-level fields as DYNAMIC variables
+        // Add issuance-level fields based on their type (dynamic or system)
+        const issuanceFieldDefs = ISSUANCE_FIELDS.reduce((acc, f) => ({ ...acc, [f.id]: f }), {} as Record<string, typeof ISSUANCE_FIELDS[0]>);
+
         Object.entries(issuanceFieldsIncluded).forEach(([fieldId, included]) => {
             if (!included) return;
+
+            const fieldDef = issuanceFieldDefs[fieldId];
+            const isSystem = fieldDef?.type === 'system';
 
             switch (fieldId) {
                 case 'recipient_name':
                     template.credentialSubject.name = dynamicField('recipient_name', '');
+                    break;
+
+                case 'recipient_did':
+                    // System field - auto-injected at issuance
+                    template.credentialSubject.id = systemField('Recipient DID (auto-injected)');
+                    break;
+
+                case 'recipient_email':
+                    // System field - used for delivery, not stored in credential
+                    // No action needed as it's handled at send time
                     break;
 
                 case 'issue_date':
@@ -988,7 +1052,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             }
         });
 
-        template.name = dynamicField('course_name', 'Course Completion');
+        // Find a name column mapped to achievement.name for the template name
+        const nameColumn = Object.entries(columnMappings).find(([_, type]) => type === 'achievement.name')?.[0];
+        const nameVarName = nameColumn ? nameColumn.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') : 'course_name';
+        template.name = dynamicField(nameVarName, 'Course Completion');
         template.description = staticField('Master template for course completion credentials');
 
         const dynamicVars = extractDynamicVariables(template);
@@ -1244,13 +1311,23 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             template.credentialSubject.achievement.achievementType = staticField('Course');
         }
 
-        // Add issuance-level fields as DYNAMIC (Mustache variables)
+        // Add issuance-level fields based on their type (dynamic or system)
         Object.entries(issuanceFieldsIncluded).forEach(([fieldId, included]) => {
             if (!included) return;
 
             switch (fieldId) {
                 case 'recipient_name':
                     template.credentialSubject.name = dynamicField('recipient_name', '');
+                    break;
+
+                case 'recipient_did':
+                    // System field - auto-injected at issuance
+                    template.credentialSubject.id = systemField('Recipient DID (auto-injected)');
+                    break;
+
+                case 'recipient_email':
+                    // System field - used for delivery, not stored in credential
+                    // No action needed as it's handled at send time
                     break;
 
                 case 'issue_date':
@@ -1896,23 +1973,27 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             <div>
                                 <div className="mb-3">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        Issuance Fields (Dynamic at credential time)
+                                        Issuance Fields
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        These fields stay as variables — you'll provide values when issuing credentials
+                                        <span className="text-violet-600 font-medium">Dynamic</span> = you provide at issuance time • 
+                                        <span className="text-cyan-600 font-medium ml-1">System</span> = auto-injected
                                     </p>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
                                     {ISSUANCE_FIELDS.map(field => {
                                         const isIncluded = issuanceFieldsIncluded[field.id] ?? field.defaultIncluded;
+                                        const isSystem = field.type === 'system';
 
                                         return (
                                             <label
                                                 key={field.id}
                                                 className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
                                                     isIncluded
-                                                        ? 'border-violet-200 bg-violet-50'
+                                                        ? isSystem
+                                                            ? 'border-cyan-200 bg-cyan-50'
+                                                            : 'border-violet-200 bg-violet-50'
                                                         : 'border-gray-200 bg-gray-50'
                                                 }`}
                                             >
@@ -1923,15 +2004,28 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                         ...prev,
                                                         [field.id]: e.target.checked
                                                     }))}
-                                                    className="w-4 h-4 rounded border-gray-300 text-violet-500 focus:ring-violet-500"
+                                                    className={`w-4 h-4 rounded border-gray-300 focus:ring-2 ${
+                                                        isSystem 
+                                                            ? 'text-cyan-500 focus:ring-cyan-500' 
+                                                            : 'text-violet-500 focus:ring-violet-500'
+                                                    }`}
                                                 />
 
                                                 <div className="flex-1">
-                                                    <div className="font-medium text-gray-800 text-sm">{field.label}</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium text-gray-800 text-sm">{field.label}</span>
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                                            isSystem 
+                                                                ? 'bg-cyan-100 text-cyan-700' 
+                                                                : 'bg-violet-100 text-violet-700'
+                                                        }`}>
+                                                            {isSystem ? 'System' : 'Dynamic'}
+                                                        </span>
+                                                    </div>
                                                     <div className="text-xs text-gray-500">{field.description}</div>
                                                 </div>
 
-                                                {isIncluded && (
+                                                {isIncluded && !isSystem && (
                                                     <code className="text-xs text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded">
                                                         {`{{${field.id}}}`}
                                                     </code>
@@ -1950,7 +2044,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                 <div className="space-y-2">
                                     {csvSampleRows.slice(0, 3).map((row, idx) => {
-                                        const nameCol = Object.entries(columnMappings).find(([_, type]) => type === 'achievement_name')?.[0];
+                                        const nameCol = Object.entries(columnMappings).find(([_, type]) => type === 'achievement.name')?.[0];
                                         const name = nameCol ? row[nameCol] : `Course ${idx + 1}`;
 
                                         return (
