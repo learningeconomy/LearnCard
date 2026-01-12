@@ -11,7 +11,6 @@ import {
     IonTabButton,
     IonTabs,
     IonSplitPane,
-    useIonModal,
     IonMenuToggle,
 } from '@ionic/react';
 import Burger from './components/svgs/Burger';
@@ -27,13 +26,15 @@ import {
     useIsLoggedIn,
     QRCodeScannerStore,
     usePrefetchCredentials,
-    useIsCollapsed,
     usePrefetchBoosts,
+    useModal,
+    ModalTypes,
+    useSyncConsentFlow,
+    useIsCollapsed,
     useWeb3Auth,
     LOGIN_REDIRECTS,
-    Modals,
-    useSyncConsentFlow,
     lazyWithRetry,
+    Modals,
 } from 'learn-card-base';
 const Routes = lazyWithRetry(() => import('./Routes').then(module => ({ default: module.Routes })));
 import { tabRoutes } from './constants';
@@ -119,17 +120,24 @@ const AppRouter: React.FC = () => {
     useSetFirebaseAnalyticsUserId({ debug: false });
     useSyncConsentFlow(enablePrefetch);
 
-    const [presentBoostSelectModal, dismissBoosSelectModal] = useIonModal(BoostSelectMenu, {
-        handleCloseModal: () => dismissBoosSelectModal(),
-        showCloseButton: false,
-        showNewBoost: true,
-        title: (
-            <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                Who do you want to send to?
-            </p>
-        ),
-        history,
+    const { newModal: newBoostSelectModal, closeModal: closeBoostSelectModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
+
+    const openBoostSelectModal = () => {
+        newBoostSelectModal(
+            <BoostSelectMenu
+                handleCloseModal={closeBoostSelectModal}
+                showCloseButton={false}
+                showNewBoost={true}
+                history={history as any}
+                boostCredential={{} as any}
+                boostUri=""
+                profileId=""
+            />
+        );
+    };
 
     const handleLoginAsync = useCallback(async () => {
         const web3Auth = await web3AuthInit({
@@ -140,7 +148,7 @@ const AppRouter: React.FC = () => {
             branding: BrandingEnum.scoutPass,
             showLoading: false,
         });
-        await web3Auth?.connectTo(WALLET_ADAPTERS.OPENLOGIN);
+        await (web3Auth as any)?.connectTo((WALLET_ADAPTERS as any).OPENLOGIN);
     }, [web3AuthInit]);
 
     useEffect(() => {
@@ -224,7 +232,9 @@ const AppRouter: React.FC = () => {
                             </IonRouterOutlet>
                             <div
                                 className={`background-gradient-navbar ${getBackgroundGradientForNavbar(
-                                    location.pathname
+                                    {
+                                        path: location.pathname,
+                                    }
                                 )}`}
                             ></div>
                             {isLoggedIn && showNavBar(location.pathname) ? (

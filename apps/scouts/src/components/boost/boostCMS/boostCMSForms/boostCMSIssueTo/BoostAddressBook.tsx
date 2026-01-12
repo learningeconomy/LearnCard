@@ -9,7 +9,6 @@ import {
     IonInput,
     IonRow,
     IonCol,
-    useIonModal,
     IonPage,
     IonHeader,
     IonToolbar,
@@ -28,6 +27,8 @@ import {
     UserProfilePicture,
     conditionalPluralize,
     BoostUserTypeEnum,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 import Plus from 'learn-card-base/svgs/Plus';
@@ -37,6 +38,7 @@ import BoostAddressBookContactList from './BoostAddressBookContactList';
 import BoostAddressBookContactOptions from './BoostAddressBookContactOptions';
 
 import Lottie from 'react-lottie-player';
+// @ts-ignore
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import PurpGhost from '../../../../../assets/lotties/purpghost.json';
 
@@ -110,7 +112,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const [loading, setLoading] = useState<boolean>(false);
     const [issueMode, setIssueMode] = useState<BoostUserTypeEnum>(BoostUserTypeEnum.someone);
     const [localIssueTo, setLocalIssueTo] = useState<BoostCMSIssueTo[]>(
-        state?.[collectionPropName]
+        ((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []
     );
 
     // --- Limit Search Scope for Troop Leaders / Admins ---
@@ -150,70 +152,71 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     // --- End Limit Search Scope ---
 
     useEffect(() => {
-        if (state?.[collectionPropName].length > 0) {
-            setLocalIssueTo(state?.[collectionPropName]);
+        if ((state as any)?.[collectionPropName]?.length > 0) {
+            setLocalIssueTo(((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []);
         } else {
             return;
         }
     }, [state]);
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(BoostAddressBookContactOptions, {
-        state: state,
-        setState: setState,
-        setIssueMode,
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: true,
-        title: (
-            <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
-                Select Recipient
-            </p>
-        ),
-        search,
-        setSearch,
-        searchResults,
-        isLoading,
-        collectionPropName,
+    const { newModal: newContactOptionsModal, closeModal: closeContactOptionsModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(BoostAddressBookContactOptions, {
-        state: state,
-        setState: setState,
-        setIssueMode,
-        handleCloseModal: () => dismissSheetModal(),
-        showCloseButton: false,
-        title: (
-            <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
-                Select Recipient
-            </p>
-        ),
-        search,
-        setSearch,
-        searchResults,
-        isLoading,
-        collectionPropName,
+    const { newModal: newAddressBookModal, closeModal: closeAddressBookModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
-    // modal call for directly accessing the addressbook
-    const [presentAddressBook, dismissAddressbook] = useIonModal(BoostAddressBook, {
-        state: state,
-        setState: setState,
-        viewMode: BoostAddressBookViewMode.full,
-        mode: BoostAddressBookEditMode.edit,
-        handleCloseModal: (closeAddressBookOptionsModal: boolean = false) => {
-            dismissAddressbook();
-            if (closeAddressBookOptionsModal) {
-                handleCloseModal();
-            }
-        },
-        _issueTo: localIssueTo,
-        _setIssueTo: setLocalIssueTo,
+    const openContactOptions = (isSheet: boolean) => {
+        newContactOptionsModal(
+            <BoostAddressBookContactOptions
+                state={state as any}
+                setState={setState as any}
+                setIssueMode={setIssueMode}
+                handleCloseModal={() => closeContactOptionsModal()}
+                showCloseButton={!isSheet}
+                title={
+                    <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
+                        Select Recipient
+                    </p>
+                }
+                search={search}
+                setSearch={setSearch}
+                searchResults={searchResults}
+                isLoading={isLoading}
+                collectionPropName={collectionPropName}
+            />
+        );
+    };
 
-        search,
-        setSearch,
-        searchResults,
-        isLoading,
-        collectionPropName,
-    });
+    const openAddressBook = () => {
+        newAddressBookModal(
+            <BoostAddressBook
+                state={state as any}
+                setState={setState as any}
+                viewMode={BoostAddressBookViewMode.full}
+                mode={BoostAddressBookEditMode.edit}
+                handleCloseModal={(closeAddressBookOptionsModal: boolean = false) => {
+                    closeAddressBookModal();
+                    if (closeAddressBookOptionsModal) {
+                        handleCloseModal();
+                    }
+                }}
+                _issueTo={localIssueTo || []}
+                _setIssueTo={setLocalIssueTo as any}
+                search={search || ''}
+                setSearch={setSearch as any}
+                searchResults={searchResults || []}
+                isLoading={!!isLoading}
+                collectionPropName={collectionPropName}
+                boostUri={boostUri}
+                recipients={recipients}
+                recipientsLoading={recipientsLoading}
+            />
+        );
+    };
 
     const loadConnections = async () => {
         if (isTroopLeader) {
@@ -244,7 +247,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         setState(prevState => {
             return {
                 ...prevState,
-                [collectionPropName]: [..._issueTo],
+                [collectionPropName]: [...(_issueTo || [])],
             };
         });
         handleCloseModal?.(true);
@@ -321,7 +324,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                             className="text-grayscale-50 p-0 mr-[10px]"
                                             onClick={() => {
                                                 handleCloseModal?.(false);
-                                                _setIssueTo([...state?.[collectionPropName]]);
+                                                _setIssueTo?.([
+                                                    ...((state as any)?.[collectionPropName] || []),
+                                                ]);
                                                 setSearch?.('');
                                             }}
                                         >
@@ -337,7 +342,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                             autocapitalize="on"
                                             placeholder={searchPlaceholder}
                                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                                            onIonInput={e => handleSearch(e?.detail?.value)}
+                                            onIonInput={e => handleSearch(e?.detail?.value || '')}
                                             debounce={100}
                                             type="text"
                                         />
@@ -360,8 +365,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={connectionsToShow}
                             mode={mode}
-                            _issueTo={_issueTo}
-                            _setIssueTo={_setIssueTo}
+                            _issueTo={_issueTo || []}
+                            _setIssueTo={_setIssueTo as any}
                             collectionPropName={collectionPropName}
                         />
                     )}
@@ -384,10 +389,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         <BoostAddressBookContactList
                             state={state}
                             setState={setState}
-                            contacts={searchResults}
+                            contacts={(searchResults || []) as any}
                             mode={mode}
-                            _issueTo={_issueTo}
-                            _setIssueTo={_setIssueTo}
+                            _issueTo={_issueTo || []}
+                            _setIssueTo={_setIssueTo as any}
                             collectionPropName={collectionPropName}
                         />
                     )}
@@ -434,14 +439,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                     boostSearchStore.set.contextCredential(resolvedCredential);
 
                                     if (showContactOptions) {
-                                        presentCenterModal({
-                                            cssClass: 'center-modal user-options-modal',
-                                            backdropDismiss: false,
-                                            showBackdrop: false,
-                                        });
+                                        openContactOptions(false);
                                         // bypass showing the contact options modal
                                     } else {
-                                        presentAddressBook();
+                                        openAddressBook();
                                     }
                                 }}
                                 className="flex items-center justify-center text-grayscale-800 rounded-full bg-white w-12 h-12 shadow-3xl modal-btn-desktop"
@@ -455,14 +456,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                         boostSearchStore.set.boostUri(parentBoostUri);
                                         boostSearchStore.set.contextCredential(resolvedCredential);
 
-                                        presentCenterModal({
-                                            cssClass: 'center-modal user-options-modal',
-                                            backdropDismiss: false,
-                                            showBackdrop: false,
-                                        });
+                                        openContactOptions(false);
                                         // bypass showing the contact options modal
                                     } else {
-                                        presentAddressBook();
+                                        openAddressBook();
                                     }
                                 }}
                                 className="flex items-center justify-center text-grayscale-800 rounded-full bg-white w-12 h-12 shadow-3xl modal-btn-mobile"
@@ -480,10 +477,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             state={state}
                             setIssueMode={setIssueMode}
                             setState={setState}
-                            contacts={state?.[collectionPropName]}
+                            contacts={(state as any)?.[collectionPropName] || []}
                             mode={mode}
-                            _issueTo={_issueTo}
-                            _setIssueTo={_setIssueTo}
+                            _issueTo={_issueTo || []}
+                            _setIssueTo={_setIssueTo as any}
                             collectionPropName={collectionPropName}
                         />
                     </IonCol>

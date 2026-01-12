@@ -4,14 +4,14 @@ import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
-import { IonCol, IonPage, useIonModal } from '@ionic/react';
+import { IonCol, IonPage } from '@ionic/react';
 import Camera from 'learn-card-base/svgs/Camera';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import AddressBookQRCode from '../addressBook-qrcode/AddressBookQRCode';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import ScannerPermissionsPrompt from '../../../components/scanner-permissions-prompt/ScannerPermissionsPrompt';
 
-import { QRCodeScannerStore, useToast, ToastTypeEnum } from 'learn-card-base';
+import { QRCodeScannerStore, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 
 import { useWallet } from 'learn-card-base';
 import Search from 'learn-card-base/svgs/Search';
@@ -38,33 +38,33 @@ const AddressBookContactOptions: React.FC<{
         }
     }, [walletDid]);
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookQRCode, {
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: true,
-        title: (
-            <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900 text-center">
-                Add Contact
-            </p>
-        ),
-        subTitle: (
-            <p className="flex items-center justify-center w-full h-full text-grayscale-900 text-center text-base">
-                Have your contact scan this code.
-            </p>
-        ),
+    const { newModal: newQRCodeModal, closeModal: closeQRCodeModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
+
+    const { newModal: newScannerPromptModal, closeModal: closeScannerPromptModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
+    });
+
+    const openQRCodeModal = () => {
+        newQRCodeModal(<AddressBookQRCode handleCloseModal={closeQRCodeModal} />);
+    };
 
     const showScanner = async () => {
         handleCloseModal();
         QRCodeScannerStore.set.showScanner(true);
     };
 
-    const [presentScannerPromptModal, dismissScannerPromptModal] = useIonModal(
-        ScannerPermissionsPrompt,
-        {
-            handleCloseModal: () => dismissScannerPromptModal(),
-            showScanner: showScanner,
-        }
-    );
+    const openScannerPromptModal = () => {
+        newScannerPromptModal(
+            <ScannerPermissionsPrompt
+                handleCloseModal={closeScannerPromptModal}
+                showScanner={showScanner}
+            />
+        );
+    };
 
     const handleScan = async () => {
         const scannerPermissions = await BarcodeScanner.checkPermissions();
@@ -77,11 +77,7 @@ const AddressBookContactOptions: React.FC<{
             scannerPermissions.camera === 'prompt'
         ) {
             handleCloseModal();
-            presentScannerPromptModal({
-                cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                backdropDismiss: false,
-                showBackdrop: false,
-            });
+            openScannerPromptModal();
             return;
         } else {
             const reqScannerPermissions = await BarcodeScanner.requestPermissions();
@@ -139,13 +135,7 @@ const AddressBookContactOptions: React.FC<{
                 </div>
                 <div className="w-full flex items-center justify-center px-4">
                     <button
-                        onClick={() =>
-                            presentCenterModal({
-                                cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                            })
-                        }
+                        onClick={() => openQRCodeModal()}
                         className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
                     >
                         <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" /> Show Code

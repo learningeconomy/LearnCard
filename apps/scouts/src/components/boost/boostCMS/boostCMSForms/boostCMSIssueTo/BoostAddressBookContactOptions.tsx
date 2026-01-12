@@ -14,7 +14,6 @@ import {
     IonFooter,
     IonHeader,
     IonPage,
-    useIonModal,
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
@@ -28,7 +27,7 @@ import {
     BoostAddressBookViewMode,
 } from './BoostAddressBook';
 
-import { QRCodeScannerStore, useToast, ToastTypeEnum } from 'learn-card-base';
+import { QRCodeScannerStore, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
 
 import { useWallet } from 'learn-card-base';
@@ -71,7 +70,9 @@ const BoostAddressBookContactOptions: React.FC<{
 
     const { presentToast } = useToast();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
-    const [_issueTo, _setIssueTo] = useState<BoostCMSIssueTo[]>(state?.[collectionPropName]);
+    const [_issueTo, _setIssueTo] = useState<BoostCMSIssueTo[]>(
+        (state as any)?.[collectionPropName]
+    );
     const [walletDid, setWalletDid] = useState<string>('');
     const query = usePathQuery();
     const history = useHistory();
@@ -88,71 +89,67 @@ const BoostAddressBookContactOptions: React.FC<{
         }
     }, [walletDid]);
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookQRCode, {
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: true,
-        title: (
-            <p className="font-mouse flex items-center justify-center text-2xl w-full h-full text-grayscale-900 text-center">
-                Add Contact
-            </p>
-        ),
-        subTitle: (
-            <p className="flex items-center justify-center w-full h-full text-grayscale-900 text-center text-base">
-                Have your contact scan this code.
-            </p>
-        ),
-        collectionPropName,
+    const { newModal: newQRCodeModal, closeModal: closeQRCodeModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(AddressBookQRCode, {
-        handleCloseModal: () => dismissSheetModal(),
-        showCloseButton: false,
-        title: (
-            <p className="font-mouse flex items-center justify-center text-2xl w-full h-full text-grayscale-900 text-center">
-                Add Contact
-            </p>
-        ),
-        subTitle: (
-            <p className="flex items-center justify-center w-full h-full text-grayscale-900 text-center text-base">
-                Have your contact scan this code.
-            </p>
-        ),
-        collectionPropName,
+    const { newModal: newAddressBookModal, closeModal: closeAddressBookModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
-    const [presentAddressBook, dismissAddressbook] = useIonModal(BoostAddressBook, {
-        state: state,
-        setState: setState,
-        viewMode: BoostAddressBookViewMode.full,
-        mode: BoostAddressBookEditMode.edit,
-        handleCloseModal: (closeAddressBookOptionsModal: boolean = false) => {
-            dismissAddressbook();
-            if (closeAddressBookOptionsModal) {
-                handleCloseModal();
-            }
-        },
-        _issueTo: _issueTo,
-        _setIssueTo: _setIssueTo,
-
-        search,
-        setSearch,
-        searchResults,
-        isLoading,
-        collectionPropName,
+    const { newModal: newScannerPromptModal, closeModal: closeScannerPromptModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
+
+    const openQRCodeModal = (isSheet: boolean) => {
+        newQRCodeModal(<AddressBookQRCode handleCloseModal={closeQRCodeModal} />);
+    };
+
+    const openAddressBook = () => {
+        newAddressBookModal(
+            <BoostAddressBook
+                state={state as any}
+                setState={setState as any}
+                viewMode={BoostAddressBookViewMode.full}
+                mode={BoostAddressBookEditMode.edit}
+                handleCloseModal={(closeAddressBookOptionsModal: boolean = false) => {
+                    closeAddressBookModal();
+                    if (closeAddressBookOptionsModal) {
+                        handleCloseModal();
+                    }
+                }}
+                _issueTo={_issueTo}
+                _setIssueTo={_setIssueTo}
+                search={search}
+                setSearch={setSearch}
+                searchResults={searchResults as any}
+                isLoading={isLoading}
+                collectionPropName={collectionPropName}
+                boostUri={(state as any).parentID?.boostUri ?? ''}
+                recipients={[]}
+                recipientsLoading={false}
+            />
+        );
+    };
+
+    const openScannerPromptModal = () => {
+        newScannerPromptModal(
+            <ScannerPermissionsPrompt
+                handleCloseModal={closeScannerPromptModal}
+                showScanner={showScanner}
+            />
+        );
+    };
 
     const showScanner = async () => {
         handleCloseModal();
         QRCodeScannerStore.set.showScanner(true);
     };
 
-    const [presentScannerPromptModal, dismissScannerPromptModal] = useIonModal(
-        ScannerPermissionsPrompt,
-        {
-            handleCloseModal: () => dismissScannerPromptModal(),
-            showScanner: showScanner,
-        }
-    );
+    const [presentScannerPromptModal, dismissScannerPromptModal] = [() => {}, () => {}]; // Removed useIonModal
 
     const handleScan = async () => {
         const scannerPermissions = await BarcodeScanner.checkPermissions();
@@ -165,11 +162,7 @@ const BoostAddressBookContactOptions: React.FC<{
             scannerPermissions.camera === 'prompt'
         ) {
             handleCloseModal();
-            presentScannerPromptModal({
-                cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                backdropDismiss: false,
-                showBackdrop: false,
-            });
+            openScannerPromptModal();
             return;
         } else {
             const reqScannerPermissions = await BarcodeScanner.requestPermissions();
@@ -224,9 +217,9 @@ const BoostAddressBookContactOptions: React.FC<{
 
             try {
                 setState(prevState => {
-                    const collection = prevState?.[collectionPropName] ?? [];
+                    const collection = (prevState as any)?.[collectionPropName] ?? [];
                     const userExistsInCollection = collection?.find(
-                        users => users?.profileId === selfProfile?.profileId
+                        (users: any) => users?.profileId === selfProfile?.profileId
                     );
 
                     if (userExistsInCollection) return { ...prevState };
@@ -238,7 +231,7 @@ const BoostAddressBookContactOptions: React.FC<{
                 });
 
                 handleCloseModal();
-            } catch (e) {
+            } catch (e: any) {
                 console.log('///Add yourself error', e);
                 throw new Error('There was an error', e);
             }
@@ -260,7 +253,7 @@ const BoostAddressBookContactOptions: React.FC<{
 
         // Looping back to re-use BoostAddressBook here is insanity
         //   It's a big tangle right now though. Should eventually refactor to use BoostSearch
-        presentAddressBook();
+        openAddressBook();
     };
 
     return (

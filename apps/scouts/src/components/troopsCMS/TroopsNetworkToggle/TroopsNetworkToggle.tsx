@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { IonSpinner, useIonModal } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import CaretDown from '../../svgs/CaretDown';
 import TroopsNetworkList from './TroopsNetworkList';
 
 import { TroopsCMSState, troopsCMSViewModeDefaults, TroopsCMSViewModeEnum } from '../troopCMSState';
-import { CredentialCategoryEnum, useGetIDs } from 'learn-card-base';
+import { CredentialCategoryEnum, useGetIDs, useModal, ModalTypes } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 type TroopsNetworkToggleProps = {
@@ -26,30 +26,38 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
     const { data: earnedBoostIDs } = useGetIDs();
 
     const nationalNetworkIds =
-        earnedBoostIDs?.filter(
+        (earnedBoostIDs as any[])?.filter(
             cred =>
-                getDefaultCategoryForCredential(cred) ===
+                getDefaultCategoryForCredential(cred as any) ===
                 CredentialCategoryEnum.nationalNetworkAdminId
         ) ?? [];
 
     const nationalNetworkIdsCount = nationalNetworkIds.length ?? 0;
 
-    const [presentModal, closeModal] = useIonModal(TroopsNetworkList, {
-        handleCloseModal: () => closeModal(),
-        state: state,
-        setState: setState,
-        viewMode: viewMode,
-        nationalNetworkIds: nationalNetworkIds,
+    const { newModal, closeModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
+
+    const openNetworkList = () => {
+        newModal(
+            <TroopsNetworkList
+                handleCloseModal={() => closeModal()}
+                state={state}
+                setState={setState}
+                viewMode={viewMode}
+                nationalNetworkIds={nationalNetworkIds as any}
+            />
+        );
+    };
 
     if (viewMode === TroopsCMSViewModeEnum.global) return <></>;
 
     if (viewMode === TroopsCMSViewModeEnum.network) {
-        const {
-            image: globalNetworkImage,
-            title: globalNetworkTitle,
-            color: globalColor,
-        } = troopsCMSViewModeDefaults?.global;
+        const globalDefaults = troopsCMSViewModeDefaults?.global;
+        const globalNetworkImage = globalDefaults?.image ?? '';
+        const globalNetworkTitle = globalDefaults?.title ?? '';
+        const globalColor = globalDefaults?.color ?? 'sp-purple-base';
 
         const globalNetwork = state?.parentID;
 
@@ -104,7 +112,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
     return (
         <button
             disabled={disableClick}
-            onClick={() => presentModal()}
+            onClick={() => openNetworkList()}
             className="w-full rounded-full pl-2 pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-300 mt-4 mb-4"
         >
             <div className="flex items-center justify-start">
