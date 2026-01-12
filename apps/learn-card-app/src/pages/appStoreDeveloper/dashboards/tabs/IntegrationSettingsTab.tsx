@@ -414,7 +414,7 @@ export const IntegrationSettingsTab: React.FC<IntegrationSettingsTabProps> = ({ 
 
             {/* Documentation Link */}
             <a
-                href="https://docs.learncard.com/api"
+                href="https://docs.learncard.com/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 p-4 border border-gray-200 rounded-xl text-cyan-600 hover:bg-cyan-50 hover:border-cyan-300 transition-colors"

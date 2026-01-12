@@ -709,9 +709,7 @@ ${optionsParts.join('\n')}
         }
 
         // Determine recipient example
-        const recipientExample = apiRecipientEmail && apiRecipientEmail.includes('@') 
-            ? apiRecipientEmail 
-            : 'recipient-profile-id';
+        const recipientExample = apiRecipientEmail.trim() || 'recipient-profile-id';
 
         return `// Installation: npm install @learncard/init
 
@@ -1136,55 +1134,23 @@ console.log('Boost URI:', result.uri);
                     </div>
                 )}
 
-                {/* Recipient Type Selection */}
-                <div className="space-y-3">
+                {/* Recipient Input */}
+                <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                        Recipient Type
+                        Recipient
                     </label>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={() => setApiRecipientEmail('')}
-                            className={`p-3 rounded-xl border-2 text-left transition-all ${
-                                !apiRecipientEmail 
-                                    ? 'border-cyan-500 bg-cyan-50' 
-                                    : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                        >
-                            <p className={`font-medium ${!apiRecipientEmail ? 'text-cyan-800' : 'text-gray-700'}`}>
-                                Profile ID
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Send to existing LearnCard users
-                            </p>
-                        </button>
+                    <input
+                        type="text"
+                        value={apiRecipientEmail}
+                        onChange={(e) => setApiRecipientEmail(e.target.value)}
+                        placeholder="Profile ID or email address"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
 
-                        <button
-                            onClick={() => setApiRecipientEmail(apiRecipientEmail || 'recipient@example.com')}
-                            className={`p-3 rounded-xl border-2 text-left transition-all ${
-                                apiRecipientEmail 
-                                    ? 'border-cyan-500 bg-cyan-50' 
-                                    : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                        >
-                            <p className={`font-medium ${apiRecipientEmail ? 'text-cyan-800' : 'text-gray-700'}`}>
-                                Email (Universal Inbox)
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Send to anyone via email claim link
-                            </p>
-                        </button>
-                    </div>
-
-                    {apiRecipientEmail && (
-                        <input
-                            type="email"
-                            value={apiRecipientEmail}
-                            onChange={(e) => setApiRecipientEmail(e.target.value)}
-                            placeholder="recipient@example.com"
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        />
-                    )}
+                    <p className="text-xs text-gray-500">
+                        Enter a LearnCard Profile ID or an email address
+                    </p>
                 </div>
 
                 {/* API Key Reference */}
