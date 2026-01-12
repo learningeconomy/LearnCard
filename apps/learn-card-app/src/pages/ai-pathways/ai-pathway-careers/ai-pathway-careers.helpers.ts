@@ -217,3 +217,21 @@ export const buildSalaryPipeData = (wages: WageItem) => {
         { bucket: 7, value: Number(wages.Pct90) },
     ];
 };
+
+export const getFirstAvailableKeywords = (
+    pathways: { keywords?: { occupation?: string[]; jobs?: string[]; careers?: string[] } }[]
+): string[] => {
+    for (const pathway of pathways) {
+        const keywords =
+            pathway.keywords?.careers ||
+            pathway.keywords?.occupation ||
+            pathway.keywords?.jobs ||
+            [];
+
+        if (keywords && keywords.length > 0) {
+            return keywords;
+        }
+    }
+
+    return [];
+};

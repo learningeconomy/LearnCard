@@ -14,7 +14,8 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { useGetCurrentLCNUser, useAiInsightCredential } from 'learn-card-base';
+import { useGetCurrentLCNUser, useAiInsightCredential, useAiPathways } from 'learn-card-base';
+import { getFirstAvailableKeywords } from './ai-pathway-careers/ai-pathway-careers.helpers';
 
 export type PathwayStep = {
     title?: string;
@@ -35,10 +36,15 @@ const AiPathways: React.FC = () => {
     const { backgroundSecondaryColor } = colors;
 
     const { data: aiInsightCredential } = useAiInsightCredential();
+    const { data: learningPathwaysData, isLoading: fetchPathwaysLoading } = useAiPathways();
 
     const strongestAreaInterest = aiInsightCredential?.insights?.strongestArea;
     const careerKeywords =
-        strongestAreaInterest?.keywords?.occupation || strongestAreaInterest?.keywords?.jobs;
+        strongestAreaInterest?.keywords?.occupation ||
+        strongestAreaInterest?.keywords?.jobs ||
+        getFirstAvailableKeywords(learningPathwaysData || []);
+
+    console.log('careerKeywords', careerKeywords);
 
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>

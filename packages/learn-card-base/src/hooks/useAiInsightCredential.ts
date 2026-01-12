@@ -1,8 +1,27 @@
 import { VCValidator, VC } from '@learncard/types';
-import { useQuery, useQueryClient, useMutation, QueryClient } from '@tanstack/react-query';
-import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
-import { LCR } from 'learn-card-base/types/credential-records';
+import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
+
+import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+
+// Types for pathway data
+interface PathwayStep {
+    title?: string;
+    description?: string;
+    skills?: string[];
+    keywords?: Record<string, string>;
+}
+
+interface PathwayItem {
+    title?: string;
+    description?: string;
+    skills?: string[];
+    pathwayUri?: string;
+    topicUri?: string;
+    keywords?: Record<string, string>;
+}
 
 const queryKey = ['useAiInsightCredential'];
 
@@ -80,6 +99,74 @@ export const useAiInsightCredential = () => {
         queryKey: ['useAiInsightCredential'],
         queryFn: async () => getOrCreateAiInsightCredential(await initWallet(), queryClient, true),
         staleTime: 1000 * 60 * 60 * 24 * 7, // 1 week
+    });
+};
+
+export const useAiPathways = () => {
+    const { data: aiInsightCredential } = useAiInsightCredential();
+    const { initWallet, resolveCredential } = useWallet();
+
+    return useQuery({
+        queryKey: ['useAiPathways', aiInsightCredential?.insights?.suggestedPathways],
+        queryFn: async () => {
+            if (!aiInsightCredential?.insights?.suggestedPathways?.length) return [];
+
+            const wallet = await initWallet();
+            const creds = await Promise.all(
+                aiInsightCredential.insights.suggestedPathways.map(async (uri: string) => {
+                    try {
+                        return await resolveCredential(uri);
+                    } catch (e) {
+                        console.warn('Failed to resolve pathway credential:', uri, e);
+                        return undefined;
+                    }
+                })
+            );
+
+            const items = await Promise.all(
+                creds.filter(Boolean).map(async cred => {
+                    const vc: any = unwrapBoostCredential(cred as any);
+                    const pathwayBoostUri: string | undefined = (cred as any)?.boostId;
+
+                    // Try to find the parent topic via familial lookup
+                    let topicUri: string | undefined;
+                    if (pathwayBoostUri) {
+                        try {
+                            const family = await wallet.invoke.getFamilialBoosts(pathwayBoostUri, {
+                                parentGenerations: 3,
+                                childGenerations: 0,
+                                limit: 100,
+                            });
+                            const topic = family?.records?.find(
+                                (r: any) =>
+                                    r?.category ===
+                                    categoryMetadata[CredentialCategoryEnum.aiTopic]
+                                        .contractCredentialTypeOverride
+                            );
+                            topicUri = topic?.uri;
+                        } catch (e) {
+                            console.warn('Failed to fetch familial boosts for pathway', e);
+                        }
+                    }
+
+                    const lp = vc?.learningPathway;
+                    const step: PathwayStep = lp?.step ?? lp ?? {};
+                    const item: PathwayItem = {
+                        title: step?.title,
+                        description: step?.description,
+                        skills: step?.skills ?? [],
+                        pathwayUri: pathwayBoostUri,
+                        topicUri,
+                        keywords: step?.keywords ?? {},
+                    };
+
+                    return item;
+                })
+            );
+
+            return items.filter(item => !!(item.title || item.description));
+        },
+        staleTime: 1000 * 60 * 60 * 24, // 1 day
     });
 };
 
