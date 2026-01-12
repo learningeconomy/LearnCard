@@ -44,7 +44,8 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'tokens', label: 'API Tokens', icon: Key },
     { id: 'signing', label: 'Signing Authority', icon: Shield },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    // Analytics tab hidden for now - will add back when we have time-series data
+    // { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
 export const IssueCredentialsDashboard: React.FC<IssueCredentialsDashboardProps> = ({
@@ -195,9 +196,11 @@ export const IssueCredentialsDashboard: React.FC<IssueCredentialsDashboardProps>
                 <SigningTab integration={integration} />
             )}
 
+            {/* Analytics tab hidden for now
             {activeTab === 'analytics' && (
                 <AnalyticsTab stats={stats} />
             )}
+            */}
         </DashboardLayout>
     );
 };

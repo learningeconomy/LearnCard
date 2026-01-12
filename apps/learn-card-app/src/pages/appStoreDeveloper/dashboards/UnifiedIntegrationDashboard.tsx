@@ -104,7 +104,8 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
         tabs.push({ id: 'testing', label: 'Testing', icon: TestTube2 });
     }
 
-    tabs.push({ id: 'analytics', label: 'Analytics', icon: BarChart3 });
+    // Analytics tab hidden for now - will add back when we have time-series data
+    // tabs.push({ id: 'analytics', label: 'Analytics', icon: BarChart3 });
 
     return tabs;
 }
@@ -483,9 +484,11 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 />
             )}
 
+            {/* Analytics tab hidden for now
             {activeTab === 'analytics' && (
                 <AnalyticsTab stats={mergedStats} templates={templates} />
             )}
+            */}
         </DashboardLayout>
     );
 };
