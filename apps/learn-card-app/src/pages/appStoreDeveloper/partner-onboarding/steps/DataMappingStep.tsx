@@ -832,10 +832,21 @@ curl -X POST "https://network.learncard.com/api/send" \\
         setApiIsPolling(true);
         setApiPollResult(null);
 
+        const boostUri = selectedApiTemplate?.boostUri;
+
         try {
             const wallet = await initWalletRef.current();
-            const initialCount = await wallet.invoke.getMySentInboxCredentials?.({ limit: 1 });
-            const initialTotal = initialCount?.hasMore ? 100 : (initialCount?.records?.length || 0);
+
+            // Get initial counts for both inbox credentials and boost recipients
+            const initialInbox = await wallet.invoke.getMySentInboxCredentials?.({ limit: 25 });
+            const initialInboxCount = initialInbox?.records?.length ?? 0;
+
+            let initialBoostRecipientsCount = 0;
+            if (boostUri) {
+                // getPaginatedBoostRecipients takes (boostUri, limit, cursor)
+                const initialBoostRecipients = await wallet.invoke.getPaginatedBoostRecipients?.(boostUri, 25);
+                initialBoostRecipientsCount = initialBoostRecipients?.records?.length ?? 0;
+            }
 
             // Poll for 30 seconds
             let attempts = 0;
@@ -849,13 +860,28 @@ curl -X POST "https://network.learncard.com/api/send" \\
                 }
 
                 attempts++;
-                const current = await wallet.invoke.getMySentInboxCredentials?.({ limit: 1 });
-                const currentTotal = current?.hasMore ? 100 : (current?.records?.length || 0);
 
-                if (currentTotal > initialTotal) {
+                // Check inbox credentials (for email/phone recipients)
+                const currentInbox = await wallet.invoke.getMySentInboxCredentials?.({ limit: 25 });
+                const currentInboxCount = currentInbox?.records?.length ?? 0;
+
+                if (currentInboxCount > initialInboxCount) {
                     setApiIsPolling(false);
-                    setApiPollResult({ success: true, message: 'Credential sent successfully!' });
+                    setApiPollResult({ success: true, message: 'Credential sent successfully to email/phone recipient!' });
                     return;
+                }
+
+                // Check boost recipients (for profile ID/DID recipients)
+                if (boostUri) {
+                    // getPaginatedBoostRecipients takes (boostUri, limit, cursor)
+                    const currentBoostRecipients = await wallet.invoke.getPaginatedBoostRecipients?.(boostUri, 25);
+                    const currentBoostRecipientsCount = currentBoostRecipients?.records?.length ?? 0;
+
+                    if (currentBoostRecipientsCount > initialBoostRecipientsCount) {
+                        setApiIsPolling(false);
+                        setApiPollResult({ success: true, message: 'Credential sent successfully to profile!' });
+                        return;
+                    }
                 }
 
                 setTimeout(poll, 2000);
