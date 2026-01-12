@@ -3,23 +3,26 @@ import {
     Key,
     Code,
     Award,
-    Palette,
-    Plug,
     FileText,
-    Users,
     Shield,
     ExternalLink,
     Send,
     Zap,
+    CheckCircle2,
+    Clock,
+    Loader2,
+    Mail,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
-import type { DashboardConfig, DashboardStats } from '../types';
+import type { DashboardConfig, DashboardStats, CredentialTemplate } from '../types';
+import { useIntegrationActivity, formatRelativeTime } from '../hooks/useIntegrationActivity';
 
 interface OverviewTabProps {
     integration: LCNIntegration;
     config: DashboardConfig;
     stats: DashboardStats;
+    templates: CredentialTemplate[];
     onNavigate: (tabId: string) => void;
 }
 
@@ -27,8 +30,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     integration,
     config,
     stats,
+    templates,
     onNavigate,
 }) => {
+    const { activity, isLoading: activityLoading } = useIntegrationActivity(templates, { limit: 10 });
+
     const quickActions = [];
 
     if (config.showApiTokens) {
@@ -86,15 +92,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         });
     }
 
-    quickActions.push({
-        id: 'integration',
-        icon: Plug,
-        iconColor: 'text-cyan-600',
-        title: 'Integration Settings',
-        description: 'API keys and configuration',
-        hoverColor: 'hover:border-cyan-300 hover:bg-cyan-50',
-    });
-
     // Always add documentation link
     const docsUrl = getDocsUrl(integration.guideType);
 
@@ -133,15 +130,101 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
 
-                {stats.totalIssued === 0 ? (
+                {activityLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+                    </div>
+                ) : activity.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                         <Zap className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                         <p>No activity yet</p>
-                        <p className="text-sm mt-1">Complete your integration to start seeing activity</p>
+                        <p className="text-sm mt-1">Credentials will appear here as they're issued</p>
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-gray-500">
-                        <p>Activity feed coming soon</p>
+                    <div className="space-y-3">
+                        {activity.map(item => {
+                            const isClaimed = item.status === 'claimed';
+                            const isPending = item.status === 'pending';
+                            const isExpired = item.status === 'expired';
+                            const isInbox = item.type === 'inbox';
+
+                            // Determine icon and colors based on status
+                            let bgColor = 'bg-cyan-100';
+                            let textColor = 'text-cyan-600';
+                            let badgeBg = 'bg-cyan-100';
+                            let badgeText = 'text-cyan-700';
+                            let statusLabel = 'Sent';
+                            let Icon = Send;
+
+                            if (isClaimed) {
+                                bgColor = 'bg-emerald-100';
+                                textColor = 'text-emerald-600';
+                                badgeBg = 'bg-emerald-100';
+                                badgeText = 'text-emerald-700';
+                                statusLabel = 'Claimed';
+                                Icon = CheckCircle2;
+                            } else if (isPending && isInbox) {
+                                bgColor = 'bg-amber-100';
+                                textColor = 'text-amber-600';
+                                badgeBg = 'bg-amber-100';
+                                badgeText = 'text-amber-700';
+                                statusLabel = 'Pending';
+                                Icon = Mail;
+                            } else if (isExpired) {
+                                bgColor = 'bg-gray-100';
+                                textColor = 'text-gray-500';
+                                badgeBg = 'bg-gray-100';
+                                badgeText = 'text-gray-600';
+                                statusLabel = 'Expired';
+                                Icon = Clock;
+                            } else if (isInbox) {
+                                Icon = Mail;
+                            }
+
+                            return (
+                                <div
+                                    key={item.id}
+                                    className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl"
+                                >
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColor}`}>
+                                        <Icon className={`w-4 h-4 ${textColor}`} />
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-medium text-gray-800 truncate">
+                                                {item.templateName}
+                                            </span>
+
+                                            <span className={`text-xs px-1.5 py-0.5 rounded ${badgeBg} ${badgeText}`}>
+                                                {statusLabel}
+                                            </span>
+
+                                            {isInbox && (
+                                                <span className="text-xs px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">
+                                                    Email
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <p className="text-sm text-gray-500 truncate">
+                                            To: {item.recipientName}
+                                        </p>
+                                    </div>
+
+                                    <div className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
+                                        <Clock className="w-3 h-3" />
+                                        {formatRelativeTime(item.sentAt)}
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {stats.totalIssued > activity.length && (
+                            <p className="text-center text-sm text-gray-500 pt-2">
+                                Showing {activity.length} of {stats.totalIssued} credentials
+                            </p>
+                        )}
                     </div>
                 )}
             </div>

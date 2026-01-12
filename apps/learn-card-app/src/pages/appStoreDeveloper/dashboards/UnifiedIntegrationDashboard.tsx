@@ -399,6 +399,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     integration={integration}
                     config={config}
                     stats={stats}
+                    templates={templates}
                     onNavigate={setActiveTab}
                 />
             )}
