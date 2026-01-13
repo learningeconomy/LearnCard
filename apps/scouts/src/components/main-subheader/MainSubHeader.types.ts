@@ -75,13 +75,13 @@ export const SubheaderContentType: Record<
 
     // Scouts - Skills
     [SubheaderTypeEnum.Skill]: {
-        title: 'Skills Hub',
+        title: 'Competencies Hub',
         IconComponent: SkillsIconWithShape,
         iconColor: 'text-indigo-500',
         textColor: 'text-grayscale-900',
         bgColor: 'bg-white',
         helperText: 'Your',
-        helperTextClickable: 'skill roadmap.',
+        helperTextClickable: 'competency roadmap.',
     },
 
     // Not currently used in Scouts
