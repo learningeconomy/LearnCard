@@ -24,6 +24,7 @@ import {
     X,
     FileSpreadsheet,
     Check,
+    CheckCircle2,
     ArrowDown,
     Pencil,
 } from 'lucide-react';
@@ -113,9 +114,6 @@ const CATALOG_FIELD_OPTIONS = [
     { id: 'related.id', label: 'Related: ID/URL', description: 'URL of a related achievement', group: 'related' },
     { id: 'related.version', label: 'Related: Version', description: 'Version of the related achievement', group: 'related' },
     { id: 'related.inLanguage', label: 'Related: Language', description: 'Language of the related achievement', group: 'related' },
-
-    // Custom extension
-    { id: 'custom', label: 'Custom Field', description: 'Include as a custom extension field', group: 'custom' },
 ];
 
 // Group labels for the dropdown
@@ -128,7 +126,6 @@ const FIELD_GROUPS: Record<string, string> = {
     evidence: 'Evidence',
     result: 'Result',
     related: 'Related Achievement',
-    custom: 'Extensions',
 };
 
 // Issuance-level fields - distinguished by type:
@@ -136,9 +133,9 @@ const FIELD_GROUPS: Record<string, string> = {
 // - 'system': Auto-injected by the system (recipient DID, etc.)
 const ISSUANCE_FIELDS = [
     { id: 'recipient_name', label: 'Recipient Name', description: 'Name of the credential recipient', type: 'dynamic' as const, required: true, defaultIncluded: true },
-    { id: 'recipient_email', label: 'Recipient Email', description: 'Email for sending the credential (used for delivery, not in credential)', type: 'system' as const, required: true, defaultIncluded: false },
+    { id: 'recipient_email', label: 'Recipient Email', description: 'Email for sending the credential (used for delivery, not in credential)', type: 'system' as const, required: true, defaultIncluded: true },
     { id: 'recipient_did', label: 'Recipient DID', description: 'Auto-injected recipient identifier', type: 'system' as const, required: false, defaultIncluded: true },
-    { id: 'issue_date', label: 'Issue Date', description: 'When the credential was issued', type: 'dynamic' as const, required: false, defaultIncluded: true },
+    { id: 'issue_date', label: 'Issue Date', description: 'Auto-set when credential is issued', type: 'system' as const, required: false, defaultIncluded: true },
     { id: 'completion_date', label: 'Completion Date', description: 'When the course was completed', type: 'dynamic' as const, required: false, defaultIncluded: false },
     { id: 'score', label: 'Score/Grade', description: 'Score or grade achieved', type: 'dynamic' as const, required: false, defaultIncluded: false },
     { id: 'expiration_date', label: 'Expiration Date', description: 'When the credential expires', type: 'dynamic' as const, required: false, defaultIncluded: false },
@@ -221,8 +218,8 @@ const suggestCatalogFieldMapping = (columnName: string): string => {
         return 'skip';
     }
 
-    // Default to custom field for other columns
-    return 'custom';
+    // Default to skip for unmapped columns (no custom extensions)
+    return 'skip';
 };
 
 interface TemplateBuilderStepProps {
@@ -1027,21 +1024,22 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     break;
 
                 case 'issue_date':
-                    template.validFrom = dynamicField('issue_date', '');
+                    // System field - auto-set at issuance time
+                    template.validFrom = systemField('issue_date');
                     break;
 
                 case 'completion_date':
-                    template.customFields.push({
-                        id: 'custom_completion_date',
-                        key: staticField('Completion Date'),
-                        value: dynamicField('completion_date', ''),
-                    });
+                    // Use proper OBv3 activityEndDate field
+                    template.credentialSubject.activityEndDate = dynamicField('completion_date', '');
                     break;
 
                 case 'score':
-                    template.customFields.push({
-                        id: 'custom_score',
-                        key: staticField('Score'),
+                    // Use proper OBv3 Result structure for scores/grades
+                    if (!template.credentialSubject.result) {
+                        template.credentialSubject.result = [];
+                    }
+                    template.credentialSubject.result.push({
+                        id: 'result_score',
                         value: dynamicField('score', ''),
                     });
                     break;
@@ -1197,36 +1195,39 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     template.credentialSubject.achievement.id = staticField(value);
                     break;
 
-                // Additional achievement fields stored as custom until types support them
+                // Additional achievement fields - now properly supported in OBv3
                 case 'achievement.humanCode':
+                    template.credentialSubject.achievement.humanCode = staticField(value);
+                    break;
+
                 case 'achievement.fieldOfStudy':
+                    template.credentialSubject.achievement.fieldOfStudy = staticField(value);
+                    break;
+
                 case 'achievement.specialization':
+                    template.credentialSubject.achievement.specialization = staticField(value);
+                    break;
+
                 case 'achievement.creditsAvailable':
+                    template.credentialSubject.achievement.creditsAvailable = staticField(value);
+                    break;
+
                 case 'achievement.tag':
+                    // Tags are an array - split by comma if multiple
+                    if (!template.credentialSubject.achievement.tag) {
+                        template.credentialSubject.achievement.tag = [];
+                    }
+                    const tags = value.split(',').map(t => t.trim()).filter(Boolean);
+                    template.credentialSubject.achievement.tag.push(...tags);
+                    break;
+
                 case 'achievement.version':
-                case 'achievement.inLanguage': {
-                    const fieldName = fieldType.replace('achievement.', '');
-                    const displayName = fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
-
-                    template.customFields.push({
-                        id: `achievement_${fieldName.toLowerCase()}`,
-                        key: staticField(displayName),
-                        value: staticField(value),
-                    });
+                    template.credentialSubject.achievement.version = staticField(value);
                     break;
-                }
 
-                // Custom extension field
-                case 'custom': {
-                    const displayName = columnName.replace(/[^a-zA-Z0-9]+/g, ' ').trim();
-
-                    template.customFields.push({
-                        id: `custom_${columnName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
-                        key: staticField(displayName),
-                        value: staticField(value),
-                    });
+                case 'achievement.inLanguage':
+                    template.credentialSubject.achievement.inLanguage = staticField(value);
                     break;
-                }
             }
         });
 
@@ -1262,41 +1263,59 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             });
         }
 
-        // Add result data as custom fields (OBv3 results are more complex, so we use custom for now)
-        Object.entries(resultData).forEach(([key, value]) => {
-            const displayName = key === 'value' ? 'Result' : key === 'status' ? 'Status' : key === 'achievedLevel' ? 'Achieved Level' : key;
+        // Add result data using proper OBv3 Result structure
+        if (Object.keys(resultData).length > 0) {
+            if (!template.credentialSubject.result) {
+                template.credentialSubject.result = [];
+            }
 
-            template.customFields.push({
-                id: `result_${key}`,
-                key: staticField(displayName),
-                value: staticField(value),
+            template.credentialSubject.result.push({
+                id: `result_${Date.now()}`,
+                ...(resultData.value && { value: staticField(resultData.value) }),
+                ...(resultData.status && { status: staticField(resultData.status) }),
+                ...(resultData.achievedLevel && { achievedLevel: staticField(resultData.achievedLevel) }),
             });
-        });
+        }
 
-        // Add subject data as custom fields (creditsEarned, activityStartDate, etc.)
+        // Add subject data using proper OBv3 AchievementSubject fields
         Object.entries(subjectData).forEach(([key, value]) => {
-            const displayName = key
-                .replace(/([A-Z])/g, ' $1')
-                .replace(/^./, s => s.toUpperCase())
-                .trim();
-
-            template.customFields.push({
-                id: `subject_${key.toLowerCase()}`,
-                key: staticField(displayName),
-                value: staticField(value),
-            });
+            switch (key) {
+                case 'creditsEarned':
+                    template.credentialSubject.creditsEarned = staticField(value);
+                    break;
+                case 'activityStartDate':
+                    template.credentialSubject.activityStartDate = staticField(value);
+                    break;
+                case 'activityEndDate':
+                    template.credentialSubject.activityEndDate = staticField(value);
+                    break;
+                case 'term':
+                    template.credentialSubject.term = staticField(value);
+                    break;
+                case 'licenseNumber':
+                    template.credentialSubject.licenseNumber = staticField(value);
+                    break;
+                case 'role':
+                    template.credentialSubject.role = staticField(value);
+                    break;
+            }
         });
 
-        // Add related achievement data as custom fields
-        Object.entries(relatedData).forEach(([key, value]) => {
-            const displayName = key === 'id' ? 'Related Achievement' : `Related ${key.replace(/([A-Z])/g, ' $1').trim()}`;
+        // Related achievement data - store as tags for now (OBv3 related is complex)
+        if (Object.keys(relatedData).length > 0 && relatedData.id) {
+            // Related achievements could be added to alignment or as a separate structure
+            // For simplicity, add related URL to alignment if provided
+            if (!template.credentialSubject.achievement.alignment) {
+                template.credentialSubject.achievement.alignment = [];
+            }
 
-            template.customFields.push({
-                id: `related_${key.toLowerCase()}`,
-                key: staticField(displayName),
-                value: staticField(value),
+            template.credentialSubject.achievement.alignment.push({
+                id: `related_${Date.now()}`,
+                targetName: staticField(relatedData.id || 'Related Achievement'),
+                targetUrl: staticField(relatedData.id || ''),
+                ...(relatedData.version && { targetDescription: staticField(`Version: ${relatedData.version}`) }),
             });
-        });
+        }
 
         // Apply default image if no image was mapped from CSV
         if (defaultImage) {
@@ -1331,21 +1350,22 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                     break;
 
                 case 'issue_date':
-                    template.validFrom = dynamicField('issue_date', '');
+                    // System field - auto-set at issuance time
+                    template.validFrom = systemField('issue_date');
                     break;
 
                 case 'completion_date':
-                    template.customFields.push({
-                        id: 'custom_completion_date',
-                        key: staticField('Completion Date'),
-                        value: dynamicField('completion_date', ''),
-                    });
+                    // Use proper OBv3 activityEndDate field
+                    template.credentialSubject.activityEndDate = dynamicField('completion_date', '');
                     break;
 
                 case 'score':
-                    template.customFields.push({
-                        id: 'custom_score',
-                        key: staticField('Score'),
+                    // Use proper OBv3 Result structure for scores/grades
+                    if (!template.credentialSubject.result) {
+                        template.credentialSubject.result = [];
+                    }
+                    template.credentialSubject.result.push({
+                        id: 'result_score',
                         value: dynamicField('score', ''),
                     });
                     break;
@@ -1976,24 +1996,21 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         Issuance Fields
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        <span className="text-violet-600 font-medium">Dynamic</span> = you provide at issuance time • 
-                                        <span className="text-cyan-600 font-medium ml-1">System</span> = auto-injected
+                                        <span className="text-violet-600 font-medium">Dynamic</span> = you provide at issuance time
                                     </p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
-                                    {ISSUANCE_FIELDS.map(field => {
+                                {/* Dynamic fields - user can toggle */}
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                    {ISSUANCE_FIELDS.filter(f => f.type === 'dynamic').map(field => {
                                         const isIncluded = issuanceFieldsIncluded[field.id] ?? field.defaultIncluded;
-                                        const isSystem = field.type === 'system';
 
                                         return (
                                             <label
                                                 key={field.id}
                                                 className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
                                                     isIncluded
-                                                        ? isSystem
-                                                            ? 'border-cyan-200 bg-cyan-50'
-                                                            : 'border-violet-200 bg-violet-50'
+                                                        ? 'border-violet-200 bg-violet-50'
                                                         : 'border-gray-200 bg-gray-50'
                                                 }`}
                                             >
@@ -2004,28 +2021,20 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                         ...prev,
                                                         [field.id]: e.target.checked
                                                     }))}
-                                                    className={`w-4 h-4 rounded border-gray-300 focus:ring-2 ${
-                                                        isSystem 
-                                                            ? 'text-cyan-500 focus:ring-cyan-500' 
-                                                            : 'text-violet-500 focus:ring-violet-500'
-                                                    }`}
+                                                    className="w-4 h-4 rounded border-gray-300 text-violet-500 focus:ring-2 focus:ring-violet-500"
                                                 />
 
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-medium text-gray-800 text-sm">{field.label}</span>
-                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                                                            isSystem 
-                                                                ? 'bg-cyan-100 text-cyan-700' 
-                                                                : 'bg-violet-100 text-violet-700'
-                                                        }`}>
-                                                            {isSystem ? 'System' : 'Dynamic'}
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-violet-100 text-violet-700">
+                                                            Dynamic
                                                         </span>
                                                     </div>
                                                     <div className="text-xs text-gray-500">{field.description}</div>
                                                 </div>
 
-                                                {isIncluded && !isSystem && (
+                                                {isIncluded && (
                                                     <code className="text-xs text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded">
                                                         {`{{${field.id}}}`}
                                                     </code>
@@ -2033,6 +2042,25 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                             </label>
                                         );
                                     })}
+                                </div>
+
+                                {/* System fields - informational only */}
+                                <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
+                                            System
+                                        </span>
+                                        <span className="text-xs text-cyan-700 font-medium">Auto-injected at issuance</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        {ISSUANCE_FIELDS.filter(f => f.type === 'system').map(field => (
+                                            <div key={field.id} className="flex items-center gap-2 text-xs text-cyan-800">
+                                                <CheckCircle2 className="w-3 h-3 text-cyan-600" />
+                                                <span className="font-medium">{field.label}</span>
+                                                <span className="text-cyan-600">— {field.description}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 

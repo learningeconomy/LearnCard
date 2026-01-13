@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Copy, Check, AlertCircle, RefreshCw, Code, Eye, PlayCircle, Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 import { OBv3CredentialTemplate } from './types';
-import { templateToJson, jsonToTemplate, extractDynamicVariables } from './utils';
+import { templateToJson, jsonToTemplate, extractVariablesByType } from './utils';
 
 interface JsonPreviewProps {
     template: OBv3CredentialTemplate;
@@ -46,9 +46,9 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
         }
     }, [jsonFromTemplate, editMode]);
 
-    // Extract dynamic variables for display
-    const dynamicVariables = useMemo(() => {
-        return extractDynamicVariables(template);
+    // Extract variables by type for display
+    const { system: systemVariables, dynamic: dynamicVariables } = useMemo(() => {
+        return extractVariablesByType(template);
     }, [template]);
 
     const handleCopy = useCallback(async () => {
@@ -245,21 +245,50 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                 </div>
             )}
 
-            {/* Dynamic Variables Summary */}
-            {dynamicVariables.length > 0 && !editMode && (
-                <div className="p-3 bg-violet-50 border-b border-violet-200">
-                    <p className="text-xs font-medium text-violet-700 mb-1">Dynamic Variables ({dynamicVariables.length})</p>
+            {/* Variables Summary */}
+            {(dynamicVariables.length > 0 || systemVariables.length > 0) && !editMode && (
+                <div className="p-3 bg-gray-50 border-b border-gray-200 space-y-2">
+                    {/* Dynamic Variables - user must provide */}
+                    {dynamicVariables.length > 0 && (
+                        <div>
+                            <p className="text-xs font-medium text-violet-700 mb-1">
+                                Dynamic Variables ({dynamicVariables.length})
+                                <span className="font-normal text-gray-500 ml-1">— provide at issuance</span>
+                            </p>
 
-                    <div className="flex flex-wrap gap-1">
-                        {dynamicVariables.map(v => (
-                            <code
-                                key={v}
-                                className="text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded"
-                            >
-                                {`{{${v}}}`}
-                            </code>
-                        ))}
-                    </div>
+                            <div className="flex flex-wrap gap-1">
+                                {dynamicVariables.map(v => (
+                                    <code
+                                        key={v}
+                                        className="text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded"
+                                    >
+                                        {`{{${v}}}`}
+                                    </code>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* System Variables - auto-injected */}
+                    {systemVariables.length > 0 && (
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">
+                                System Variables ({systemVariables.length})
+                                <span className="font-normal ml-1">— auto-injected</span>
+                            </p>
+
+                            <div className="flex flex-wrap gap-1">
+                                {systemVariables.map(v => (
+                                    <code
+                                        key={v}
+                                        className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded"
+                                    >
+                                        {`{{${v}}}`}
+                                    </code>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

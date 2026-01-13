@@ -6,6 +6,7 @@ import {
     OBv3CredentialTemplate,
     staticField,
     dynamicField,
+    systemField,
     DEFAULT_CONTEXTS,
     DEFAULT_TYPES,
 } from './types';
@@ -24,6 +25,7 @@ const createBaseTemplate = (overrides: Partial<OBv3CredentialTemplate>): OBv3Cre
     types: DEFAULT_TYPES,
     name: staticField(''),
     issuer: {
+        id: systemField('issuer_did'),
         name: staticField(''),
     },
     credentialSubject: {
@@ -33,7 +35,7 @@ const createBaseTemplate = (overrides: Partial<OBv3CredentialTemplate>): OBv3Cre
             description: staticField(''),
         },
     },
-    validFrom: dynamicField('issue_date', ''),
+    validFrom: systemField('issue_date'),
     customFields: [],
     ...overrides,
 });

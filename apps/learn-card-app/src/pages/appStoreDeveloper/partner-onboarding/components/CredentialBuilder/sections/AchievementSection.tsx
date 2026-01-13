@@ -133,6 +133,119 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 helpText="Unique identifier for this achievement type"
             />
 
+            {/* Additional OBv3 Achievement Fields */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Details</h4>
+
+                <div className="grid grid-cols-2 gap-3">
+                    <FieldEditor
+                        label="Human Code"
+                        field={achievement.humanCode || staticField('')}
+                        onChange={(f) => updateAchievement('humanCode', f)}
+                        placeholder="e.g., CS101"
+                        helpText="Human-readable code (course number)"
+                    />
+
+                    <FieldEditor
+                        label="Credits Available"
+                        field={achievement.creditsAvailable || staticField('')}
+                        onChange={(f) => updateAchievement('creditsAvailable', f)}
+                        placeholder="e.g., 3"
+                        helpText="Number of credits"
+                    />
+
+                    <FieldEditor
+                        label="Field of Study"
+                        field={achievement.fieldOfStudy || staticField('')}
+                        onChange={(f) => updateAchievement('fieldOfStudy', f)}
+                        placeholder="e.g., Computer Science"
+                        helpText="Academic discipline"
+                    />
+
+                    <FieldEditor
+                        label="Specialization"
+                        field={achievement.specialization || staticField('')}
+                        onChange={(f) => updateAchievement('specialization', f)}
+                        placeholder="e.g., Web Development"
+                        helpText="Area of specialization"
+                    />
+
+                    <FieldEditor
+                        label="Version"
+                        field={achievement.version || staticField('')}
+                        onChange={(f) => updateAchievement('version', f)}
+                        placeholder="e.g., 1.0"
+                        helpText="Version of this achievement"
+                    />
+
+                    <FieldEditor
+                        label="Language"
+                        field={achievement.inLanguage || staticField('')}
+                        onChange={(f) => updateAchievement('inLanguage', f)}
+                        placeholder="e.g., en"
+                        helpText="Language code (ISO 639-1)"
+                    />
+                </div>
+
+                {/* Tags */}
+                <div className="mt-3">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Tags</label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                        {(achievement.tag || []).map((tag, index) => (
+                            <span
+                                key={index}
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs"
+                            >
+                                {tag}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const newTags = [...(achievement.tag || [])];
+                                        newTags.splice(index, 1);
+                                        onChange({
+                                            ...template,
+                                            credentialSubject: {
+                                                ...template.credentialSubject,
+                                                achievement: { ...achievement, tag: newTags },
+                                            },
+                                        });
+                                    }}
+                                    className="text-amber-500 hover:text-amber-700"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Add tag and press Enter"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const input = e.currentTarget;
+                                const value = input.value.trim();
+                                if (value) {
+                                    onChange({
+                                        ...template,
+                                        credentialSubject: {
+                                            ...template.credentialSubject,
+                                            achievement: {
+                                                ...achievement,
+                                                tag: [...(achievement.tag || []), value],
+                                            },
+                                        },
+                                    });
+                                    input.value = '';
+                                }
+                            }
+                        }}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Keywords for categorization</p>
+                </div>
+            </div>
+
             {/* Criteria Sub-section */}
             <div className="mt-4 pt-4 border-t border-gray-100">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Criteria</h4>

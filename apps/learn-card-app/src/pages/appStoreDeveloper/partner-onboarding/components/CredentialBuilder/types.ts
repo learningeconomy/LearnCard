@@ -37,6 +37,31 @@ export const systemField = (description: string): TemplateFieldValue => ({
     systemDescription: description,
 });
 
+// OBv3 Result structure (for grades/scores)
+export interface ResultTemplate {
+    id: string; // Internal ID for React keys
+    resultDescription?: TemplateFieldValue; // Reference to ResultDescription id
+    value?: TemplateFieldValue; // The actual result value (e.g., "A", "95")
+    status?: TemplateFieldValue; // Status like "Completed", "Passed"
+    achievedLevel?: TemplateFieldValue; // Reference to RubricCriterionLevel
+}
+
+// OBv3 ResultDescription structure (defines possible results for an achievement)
+export interface ResultDescriptionTemplate {
+    id: string; // Internal ID and also used as reference
+    name: TemplateFieldValue; // e.g., "Final Grade"
+    resultType?: TemplateFieldValue; // e.g., "LetterGrade", "GradePointAverage", "Percent"
+    allowedValue?: string[]; // e.g., ["A", "B", "C", "D", "F"]
+    requiredValue?: TemplateFieldValue; // Minimum passing value
+}
+
+// OBv3 IdentifierEntry structure (for otherIdentifier arrays)
+export interface IdentifierEntryTemplate {
+    id: string; // Internal ID for React keys
+    identifier: TemplateFieldValue;
+    identifierType: TemplateFieldValue; // e.g., "sourcedId", "systemId"
+}
+
 // OBv3 Achievement structure
 export interface AchievementTemplate {
     id?: TemplateFieldValue;
@@ -49,6 +74,16 @@ export interface AchievementTemplate {
         narrative?: TemplateFieldValue;
     };
     alignment?: AlignmentTemplate[];
+    // Additional OBv3 fields
+    humanCode?: TemplateFieldValue; // Human-readable code like "CS101"
+    fieldOfStudy?: TemplateFieldValue;
+    specialization?: TemplateFieldValue;
+    creditsAvailable?: TemplateFieldValue;
+    tag?: string[]; // Tags/keywords array
+    inLanguage?: TemplateFieldValue;
+    version?: TemplateFieldValue;
+    otherIdentifier?: IdentifierEntryTemplate[];
+    resultDescription?: ResultDescriptionTemplate[]; // Defines possible results
 }
 
 // OBv3 Alignment structure
@@ -88,6 +123,15 @@ export interface CredentialSubjectTemplate {
     name?: TemplateFieldValue; // Recipient name
     achievement: AchievementTemplate;
     evidence?: EvidenceTemplate[];
+    // Additional OBv3 AchievementSubject fields
+    result?: ResultTemplate[]; // Actual achieved results
+    creditsEarned?: TemplateFieldValue;
+    activityStartDate?: TemplateFieldValue;
+    activityEndDate?: TemplateFieldValue;
+    term?: TemplateFieldValue; // Academic term
+    licenseNumber?: TemplateFieldValue;
+    role?: TemplateFieldValue;
+    identifier?: IdentifierEntryTemplate[]; // Recipient identifiers
 }
 
 // Custom extension field

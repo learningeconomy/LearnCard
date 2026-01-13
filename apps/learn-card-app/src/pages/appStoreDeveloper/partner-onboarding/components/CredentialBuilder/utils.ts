@@ -13,9 +13,13 @@ import {
     CustomFieldTemplate,
     staticField,
     dynamicField,
+    systemField,
     DEFAULT_CONTEXTS,
     DEFAULT_TYPES,
 } from './types';
+
+// Known system variables that are auto-injected at issuance time
+const SYSTEM_VARIABLES = ['issue_date', 'issuer_did', 'recipient_did'];
 
 /**
  * Convert a TemplateFieldValue to its JSON representation
@@ -34,6 +38,7 @@ export const fieldToJson = (field: TemplateFieldValue | undefined): string | und
 /**
  * Parse a JSON value back to a TemplateFieldValue
  * Detects Mustache syntax and extracts variable name
+ * Preserves system field status for known system variables
  */
 export const jsonToField = (value: unknown): TemplateFieldValue => {
     if (value === undefined || value === null) {
@@ -46,7 +51,14 @@ export const jsonToField = (value: unknown): TemplateFieldValue => {
     const mustacheMatch = strValue.match(/^\{\{(\w+)\}\}$/);
 
     if (mustacheMatch) {
-        return dynamicField(mustacheMatch[1], '');
+        const varName = mustacheMatch[1];
+
+        // Check if this is a known system variable
+        if (SYSTEM_VARIABLES.includes(varName)) {
+            return systemField(varName);
+        }
+
+        return dynamicField(varName, '');
     }
 
     return staticField(strValue);
@@ -138,6 +150,71 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
 
     achievement.criteria = criteria;
 
+    // Additional Achievement fields (OBv3 spec-compliant)
+    const ach = template.credentialSubject.achievement;
+
+    if (ach.humanCode?.value || ach.humanCode?.isDynamic) {
+        achievement.humanCode = fieldToJson(ach.humanCode);
+    }
+
+    if (ach.fieldOfStudy?.value || ach.fieldOfStudy?.isDynamic) {
+        achievement.fieldOfStudy = fieldToJson(ach.fieldOfStudy);
+    }
+
+    if (ach.specialization?.value || ach.specialization?.isDynamic) {
+        achievement.specialization = fieldToJson(ach.specialization);
+    }
+
+    if (ach.creditsAvailable?.value || ach.creditsAvailable?.isDynamic) {
+        achievement.creditsAvailable = fieldToJson(ach.creditsAvailable);
+    }
+
+    if (ach.tag && ach.tag.length > 0) {
+        achievement.tag = ach.tag;
+    }
+
+    if (ach.inLanguage?.value || ach.inLanguage?.isDynamic) {
+        achievement.inLanguage = fieldToJson(ach.inLanguage);
+    }
+
+    if (ach.version?.value || ach.version?.isDynamic) {
+        achievement.version = fieldToJson(ach.version);
+    }
+
+    // Achievement otherIdentifier
+    if (ach.otherIdentifier && ach.otherIdentifier.length > 0) {
+        achievement.otherIdentifier = ach.otherIdentifier.map(oi => ({
+            type: 'IdentifierEntry',
+            identifier: fieldToJson(oi.identifier),
+            identifierType: fieldToJson(oi.identifierType),
+        }));
+    }
+
+    // ResultDescription (defines possible results for this achievement)
+    if (ach.resultDescription && ach.resultDescription.length > 0) {
+        achievement.resultDescription = ach.resultDescription.map(rd => {
+            const desc: Record<string, unknown> = {
+                id: rd.id,
+                type: ['ResultDescription'],
+                name: fieldToJson(rd.name),
+            };
+
+            if (rd.resultType?.value || rd.resultType?.isDynamic) {
+                desc.resultType = fieldToJson(rd.resultType);
+            }
+
+            if (rd.allowedValue && rd.allowedValue.length > 0) {
+                desc.allowedValue = rd.allowedValue;
+            }
+
+            if (rd.requiredValue?.value || rd.requiredValue?.isDynamic) {
+                desc.requiredValue = fieldToJson(rd.requiredValue);
+            }
+
+            return desc;
+        });
+    }
+
     // Alignment
     if (template.credentialSubject.achievement.alignment && template.credentialSubject.achievement.alignment.length > 0) {
         achievement.alignment = template.credentialSubject.achievement.alignment.map(a => {
@@ -164,6 +241,70 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
     }
 
     credentialSubject.achievement = achievement;
+
+    // Additional CredentialSubject fields (OBv3 AchievementSubject spec-compliant)
+    const subj = template.credentialSubject;
+
+    if (subj.creditsEarned?.value || subj.creditsEarned?.isDynamic) {
+        credentialSubject.creditsEarned = fieldToJson(subj.creditsEarned);
+    }
+
+    if (subj.activityStartDate?.value || subj.activityStartDate?.isDynamic) {
+        credentialSubject.activityStartDate = fieldToJson(subj.activityStartDate);
+    }
+
+    if (subj.activityEndDate?.value || subj.activityEndDate?.isDynamic) {
+        credentialSubject.activityEndDate = fieldToJson(subj.activityEndDate);
+    }
+
+    if (subj.term?.value || subj.term?.isDynamic) {
+        credentialSubject.term = fieldToJson(subj.term);
+    }
+
+    if (subj.licenseNumber?.value || subj.licenseNumber?.isDynamic) {
+        credentialSubject.licenseNumber = fieldToJson(subj.licenseNumber);
+    }
+
+    if (subj.role?.value || subj.role?.isDynamic) {
+        credentialSubject.role = fieldToJson(subj.role);
+    }
+
+    // Recipient identifiers
+    if (subj.identifier && subj.identifier.length > 0) {
+        credentialSubject.identifier = subj.identifier.map(id => ({
+            type: 'IdentityObject',
+            identityHash: fieldToJson(id.identifier),
+            identityType: fieldToJson(id.identifierType),
+            hashed: false,
+        }));
+    }
+
+    // Results (actual achieved grades/scores)
+    if (subj.result && subj.result.length > 0) {
+        credentialSubject.result = subj.result.map(r => {
+            const result: Record<string, unknown> = {
+                type: ['Result'],
+            };
+
+            if (r.resultDescription?.value || r.resultDescription?.isDynamic) {
+                result.resultDescription = fieldToJson(r.resultDescription);
+            }
+
+            if (r.value?.value || r.value?.isDynamic) {
+                result.value = fieldToJson(r.value);
+            }
+
+            if (r.status?.value || r.status?.isDynamic) {
+                result.status = fieldToJson(r.status);
+            }
+
+            if (r.achievedLevel?.value || r.achievedLevel?.isDynamic) {
+                result.achievedLevel = fieldToJson(r.achievedLevel);
+            }
+
+            return result;
+        });
+    }
 
     // Evidence
     if (template.credentialSubject.evidence && template.credentialSubject.evidence.length > 0) {
@@ -213,6 +354,10 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
     const criteriaObj = (typeof achievementObj.criteria === 'object' && achievementObj.criteria !== null) ? achievementObj.criteria as Record<string, unknown> : undefined;
     const alignmentArr = Array.isArray(achievementObj.alignment) ? achievementObj.alignment as Record<string, unknown>[] : [];
     const evidenceArr = Array.isArray(subjectObj.evidence) ? subjectObj.evidence as Record<string, unknown>[] : [];
+    const resultArr = Array.isArray(subjectObj.result) ? subjectObj.result as Record<string, unknown>[] : [];
+    const resultDescArr = Array.isArray(achievementObj.resultDescription) ? achievementObj.resultDescription as Record<string, unknown>[] : [];
+    const otherIdArr = Array.isArray(achievementObj.otherIdentifier) ? achievementObj.otherIdentifier as Record<string, unknown>[] : [];
+    const subjectIdArr = Array.isArray(subjectObj.identifier) ? subjectObj.identifier as Record<string, unknown>[] : [];
 
     // Parse issuer - can be a string (DID) or an object
     const issuerValue = json.issuer;
@@ -221,7 +366,7 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
         name: staticField(''),
     };
 
-    // Parse achievement
+    // Parse achievement with all OBv3 fields
     const achievement: AchievementTemplate = {
         id: achievementObj.id ? jsonToField(achievementObj.id) : undefined,
         name: jsonToField(achievementObj.name || ''),
@@ -240,9 +385,29 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
             targetFramework: a.targetFramework ? jsonToField(a.targetFramework) : undefined,
             targetCode: a.targetCode ? jsonToField(a.targetCode) : undefined,
         })),
+        // Additional OBv3 Achievement fields
+        humanCode: achievementObj.humanCode ? jsonToField(achievementObj.humanCode) : undefined,
+        fieldOfStudy: achievementObj.fieldOfStudy ? jsonToField(achievementObj.fieldOfStudy) : undefined,
+        specialization: achievementObj.specialization ? jsonToField(achievementObj.specialization) : undefined,
+        creditsAvailable: achievementObj.creditsAvailable ? jsonToField(achievementObj.creditsAvailable) : undefined,
+        tag: Array.isArray(achievementObj.tag) ? achievementObj.tag as string[] : undefined,
+        inLanguage: achievementObj.inLanguage ? jsonToField(achievementObj.inLanguage) : undefined,
+        version: achievementObj.version ? jsonToField(achievementObj.version) : undefined,
+        otherIdentifier: otherIdArr.length > 0 ? otherIdArr.map((oi, i) => ({
+            id: `otherId_${i}`,
+            identifier: jsonToField(oi.identifier || ''),
+            identifierType: jsonToField(oi.identifierType || ''),
+        })) : undefined,
+        resultDescription: resultDescArr.length > 0 ? resultDescArr.map((rd, i) => ({
+            id: (rd.id as string) || `resultDesc_${i}`,
+            name: jsonToField(rd.name || ''),
+            resultType: rd.resultType ? jsonToField(rd.resultType) : undefined,
+            allowedValue: Array.isArray(rd.allowedValue) ? rd.allowedValue as string[] : undefined,
+            requiredValue: rd.requiredValue ? jsonToField(rd.requiredValue) : undefined,
+        })) : undefined,
     };
 
-    // Parse credential subject
+    // Parse credential subject with all OBv3 AchievementSubject fields
     const credentialSubject: CredentialSubjectTemplate = {
         id: subjectObj.id ? jsonToField(subjectObj.id) : undefined,
         name: subjectObj.name ? jsonToField(subjectObj.name) : undefined,
@@ -256,6 +421,25 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
             genre: e.genre ? jsonToField(e.genre) : undefined,
             audience: e.audience ? jsonToField(e.audience) : undefined,
         })),
+        // Additional OBv3 AchievementSubject fields
+        creditsEarned: subjectObj.creditsEarned ? jsonToField(subjectObj.creditsEarned) : undefined,
+        activityStartDate: subjectObj.activityStartDate ? jsonToField(subjectObj.activityStartDate) : undefined,
+        activityEndDate: subjectObj.activityEndDate ? jsonToField(subjectObj.activityEndDate) : undefined,
+        term: subjectObj.term ? jsonToField(subjectObj.term) : undefined,
+        licenseNumber: subjectObj.licenseNumber ? jsonToField(subjectObj.licenseNumber) : undefined,
+        role: subjectObj.role ? jsonToField(subjectObj.role) : undefined,
+        identifier: subjectIdArr.length > 0 ? subjectIdArr.map((id, i) => ({
+            id: `subjectId_${i}`,
+            identifier: jsonToField(id.identityHash || id.identifier || ''),
+            identifierType: jsonToField(id.identityType || id.identifierType || ''),
+        })) : undefined,
+        result: resultArr.length > 0 ? resultArr.map((r, i) => ({
+            id: `result_${i}`,
+            resultDescription: r.resultDescription ? jsonToField(r.resultDescription) : undefined,
+            value: r.value ? jsonToField(r.value) : undefined,
+            status: r.status ? jsonToField(r.status) : undefined,
+            achievedLevel: r.achievedLevel ? jsonToField(r.achievedLevel) : undefined,
+        })) : undefined,
     };
 
     return {
@@ -274,7 +458,134 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
 };
 
 /**
- * Extract all dynamic variables from a template
+ * Extract variables from a template, separated by type (system vs dynamic)
+ */
+export interface ExtractedVariables {
+    system: string[];
+    dynamic: string[];
+}
+
+export const extractVariablesByType = (template: OBv3CredentialTemplate): ExtractedVariables => {
+    const systemVars: Set<string> = new Set();
+    const dynamicVars: Set<string> = new Set();
+
+    const checkField = (field: TemplateFieldValue | undefined) => {
+        if (field?.isDynamic && field.variableName) {
+            if (field.isSystem) {
+                systemVars.add(field.variableName);
+            } else {
+                dynamicVars.add(field.variableName);
+            }
+        }
+    };
+
+    // Core fields
+    checkField(template.id);
+    checkField(template.name);
+    checkField(template.description);
+    checkField(template.image);
+
+    // Issuer
+    checkField(template.issuer.id);
+    checkField(template.issuer.name);
+    checkField(template.issuer.url);
+    checkField(template.issuer.email);
+    checkField(template.issuer.description);
+    checkField(template.issuer.image);
+
+    // Dates
+    checkField(template.validFrom);
+    checkField(template.validUntil);
+
+    // Credential Subject
+    checkField(template.credentialSubject.id);
+    checkField(template.credentialSubject.name);
+
+    // Achievement
+    const ach = template.credentialSubject.achievement;
+    checkField(ach.id);
+    checkField(ach.name);
+    checkField(ach.description);
+    checkField(ach.achievementType);
+    checkField(ach.image);
+    checkField(ach.criteria?.id);
+    checkField(ach.criteria?.narrative);
+    checkField(ach.humanCode);
+    checkField(ach.fieldOfStudy);
+    checkField(ach.specialization);
+    checkField(ach.creditsAvailable);
+    checkField(ach.inLanguage);
+    checkField(ach.version);
+
+    // Achievement otherIdentifier
+    ach.otherIdentifier?.forEach(oi => {
+        checkField(oi.identifier);
+        checkField(oi.identifierType);
+    });
+
+    // ResultDescription
+    ach.resultDescription?.forEach(rd => {
+        checkField(rd.name);
+        checkField(rd.resultType);
+        checkField(rd.requiredValue);
+    });
+
+    // Alignment
+    ach.alignment?.forEach(a => {
+        checkField(a.targetName);
+        checkField(a.targetUrl);
+        checkField(a.targetDescription);
+        checkField(a.targetFramework);
+        checkField(a.targetCode);
+    });
+
+    // CredentialSubject additional fields
+    const subj = template.credentialSubject;
+    checkField(subj.creditsEarned);
+    checkField(subj.activityStartDate);
+    checkField(subj.activityEndDate);
+    checkField(subj.term);
+    checkField(subj.licenseNumber);
+    checkField(subj.role);
+
+    // Recipient identifiers
+    subj.identifier?.forEach(id => {
+        checkField(id.identifier);
+        checkField(id.identifierType);
+    });
+
+    // Results
+    subj.result?.forEach(r => {
+        checkField(r.resultDescription);
+        checkField(r.value);
+        checkField(r.status);
+        checkField(r.achievedLevel);
+    });
+
+    // Evidence
+    template.credentialSubject.evidence?.forEach(e => {
+        checkField(e.type);
+        checkField(e.name);
+        checkField(e.description);
+        checkField(e.narrative);
+        checkField(e.genre);
+        checkField(e.audience);
+    });
+
+    // Custom fields (legacy support)
+    template.customFields?.forEach(f => {
+        checkField(f.key);
+        checkField(f.value);
+    });
+
+    return {
+        system: Array.from(systemVars).sort(),
+        dynamic: Array.from(dynamicVars).sort(),
+    };
+};
+
+/**
+ * Extract all dynamic variables from a template (legacy - returns all variables)
  */
 export const extractDynamicVariables = (template: OBv3CredentialTemplate): string[] => {
     const variables: Set<string> = new Set();
@@ -308,21 +619,64 @@ export const extractDynamicVariables = (template: OBv3CredentialTemplate): strin
     checkField(template.credentialSubject.name);
 
     // Achievement
-    checkField(template.credentialSubject.achievement.id);
-    checkField(template.credentialSubject.achievement.name);
-    checkField(template.credentialSubject.achievement.description);
-    checkField(template.credentialSubject.achievement.achievementType);
-    checkField(template.credentialSubject.achievement.image);
-    checkField(template.credentialSubject.achievement.criteria?.id);
-    checkField(template.credentialSubject.achievement.criteria?.narrative);
+    const ach = template.credentialSubject.achievement;
+    checkField(ach.id);
+    checkField(ach.name);
+    checkField(ach.description);
+    checkField(ach.achievementType);
+    checkField(ach.image);
+    checkField(ach.criteria?.id);
+    checkField(ach.criteria?.narrative);
+    checkField(ach.humanCode);
+    checkField(ach.fieldOfStudy);
+    checkField(ach.specialization);
+    checkField(ach.creditsAvailable);
+    checkField(ach.inLanguage);
+    checkField(ach.version);
+
+    // Achievement otherIdentifier
+    ach.otherIdentifier?.forEach(oi => {
+        checkField(oi.identifier);
+        checkField(oi.identifierType);
+    });
+
+    // ResultDescription
+    ach.resultDescription?.forEach(rd => {
+        checkField(rd.name);
+        checkField(rd.resultType);
+        checkField(rd.requiredValue);
+    });
 
     // Alignment
-    template.credentialSubject.achievement.alignment?.forEach(a => {
+    ach.alignment?.forEach(a => {
         checkField(a.targetName);
         checkField(a.targetUrl);
         checkField(a.targetDescription);
         checkField(a.targetFramework);
         checkField(a.targetCode);
+    });
+
+    // CredentialSubject additional fields
+    const subj = template.credentialSubject;
+    checkField(subj.creditsEarned);
+    checkField(subj.activityStartDate);
+    checkField(subj.activityEndDate);
+    checkField(subj.term);
+    checkField(subj.licenseNumber);
+    checkField(subj.role);
+
+    // Recipient identifiers
+    subj.identifier?.forEach(id => {
+        checkField(id.identifier);
+        checkField(id.identifierType);
+    });
+
+    // Results
+    subj.result?.forEach(r => {
+        checkField(r.resultDescription);
+        checkField(r.value);
+        checkField(r.status);
+        checkField(r.achievedLevel);
     });
 
     // Evidence
@@ -335,8 +689,8 @@ export const extractDynamicVariables = (template: OBv3CredentialTemplate): strin
         checkField(e.audience);
     });
 
-    // Custom fields
-    template.customFields.forEach(f => {
+    // Custom fields (legacy support)
+    template.customFields?.forEach(f => {
         checkField(f.key);
         checkField(f.value);
     });
