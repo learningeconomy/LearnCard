@@ -347,7 +347,7 @@ export const sendBoost = async ({
 
     // Skip certification if requested or if credential can't be decrypted or if it's not a boost credential
     let _skipCertification = skipCertification || !decryptedCredential || !decryptedCredential?.type?.includes('BoostCredential');
-    if (!_skipCertification) {
+    if (!_skipCertification && decryptedCredential) {
         const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
         if (certifiedBoost) {
             const credentialInstance = await storeCredential(certifiedBoost);

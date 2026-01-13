@@ -43,7 +43,7 @@ describe('Credential Activity', () => {
         await CredentialActivity.delete({ detach: true, where: {} });
     });
 
-    describe('createCredentialActivity', () => 
+    describe('createCredentialActivity', () => {
         it('should create an activity record with basic fields', async () => {
             const activityId = await createCredentialActivity({
                 actorProfileId: 'usera',
@@ -87,6 +87,111 @@ describe('Credential Activity', () => {
             });
 
             expect(activityId).toBe(providedActivityId);
+        });
+
+        it('should create FAILED event type', async () => {
+            const activityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'FAILED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                metadata: { error: 'Signing authority not found' },
+            });
+
+            expect(activityId).toBeDefined();
+
+            const activity = await getActivityById(activityId);
+
+            expect(activity).toBeDefined();
+            expect(activity?.eventType).toBe('FAILED');
+            expect(activity?.metadata?.error).toBe('Signing authority not found');
+        });
+
+        it('should chain FAILED event to original activityId', async () => {
+            // Create initial CREATED event
+            const originalActivityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CREATED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                boostUri: 'lc:network:localhost%3A3000/trpc:boost:test123',
+            });
+
+            // Create FAILED event chained to original
+            const failedActivityId = await createCredentialActivity({
+                activityId: originalActivityId,
+                actorProfileId: 'usera',
+                eventType: 'FAILED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                boostUri: 'lc:network:localhost%3A3000/trpc:boost:test123',
+                metadata: { error: 'Test failure' },
+            });
+
+            // Both should have the same activityId
+            expect(failedActivityId).toBe(originalActivityId);
+
+            // Query activities and verify lifecycle
+            const activities = await getActivitiesForProfile('usera', { limit: 10 });
+            const chainedActivities = activities.filter(a => a.activityId === originalActivityId);
+
+            expect(chainedActivities.length).toBe(2);
+            expect(chainedActivities.some(a => a.eventType === 'CREATED')).toBe(true);
+            expect(chainedActivities.some(a => a.eventType === 'FAILED')).toBe(true);
+        });
+
+        it('should store integrationId on activity', async () => {
+            const integrationId = 'test-integration-123';
+
+            const activityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+                integrationId,
+            });
+
+            const activity = await getActivityById(activityId);
+
+            expect(activity).toBeDefined();
+            expect(activity?.integrationId).toBe(integrationId);
+        });
+
+        it('should preserve integrationId when chaining events', async () => {
+            const integrationId = 'chain-integration-456';
+
+            // Create initial CREATED event with integrationId
+            const originalActivityId = await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CREATED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                integrationId,
+            });
+
+            // Create CLAIMED event chained to original with same integrationId
+            await createCredentialActivity({
+                activityId: originalActivityId,
+                actorProfileId: 'usera',
+                eventType: 'CLAIMED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                recipientProfileId: 'userb',
+                source: 'claimLink',
+                integrationId,
+            });
+
+            // Query and verify both have integrationId
+            const activities = await getActivitiesForProfile('usera', { limit: 10 });
+            const chainedActivities = activities.filter(a => a.activityId === originalActivityId);
+
+            expect(chainedActivities.length).toBe(2);
+            expect(chainedActivities.every(a => a.integrationId === integrationId)).toBe(true);
         });
     });
 
@@ -231,6 +336,66 @@ describe('Credential Activity', () => {
             expect(stats.delivered).toBeGreaterThanOrEqual(2);
             expect(stats.claimed).toBeGreaterThanOrEqual(1);
         });
+
+        it('should count FAILED events in stats', async () => {
+            // Create a CREATED event
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'CREATED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                activityId: 'failed-activity',
+            });
+
+            // Create a FAILED event chained to it
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'FAILED',
+                recipientType: 'email',
+                recipientIdentifier: 'test@example.com',
+                source: 'send',
+                activityId: 'failed-activity',
+                metadata: { error: 'Test failure' },
+            });
+
+            const stats = await getActivityStatsForProfile('usera');
+
+            expect(stats.failed).toBeGreaterThanOrEqual(1);
+            expect(stats.created).toBeGreaterThanOrEqual(1);
+        });
+
+        it('should filter stats by integrationId', async () => {
+            const integrationId = 'stats-integration-test';
+
+            // Create activities with integrationId
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+                integrationId,
+            });
+
+            // Create activity without integrationId
+            await createCredentialActivity({
+                actorProfileId: 'usera',
+                eventType: 'DELIVERED',
+                recipientType: 'profile',
+                recipientIdentifier: 'userb',
+                source: 'send',
+            });
+
+            const filteredStats = await getActivityStatsForProfile('usera', { integrationId });
+            const allStats = await getActivityStatsForProfile('usera');
+
+            expect(filteredStats.delivered).toBe(1);
+            expect(allStats.delivered).toBeGreaterThanOrEqual(2);
+        });
+
+        // Note: boostUri filtering requires FOR_BOOST relationship to actual Boost nodes
+        // This is covered in E2E tests where real Boosts are created
     });
 
     describe('getActivityById', () => {

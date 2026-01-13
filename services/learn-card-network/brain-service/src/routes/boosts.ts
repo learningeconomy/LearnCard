@@ -2541,17 +2541,17 @@ export const boostsRouter = t.router({
                 });
             }
 
-            try {
-                // Log DELIVERED activity first to get activityId for chaining
-                const activityId = await logCredentialSent({
-                    actorProfileId: boostOwner.profileId,
-                    recipientType: 'profile',
-                    recipientIdentifier: profile.profileId,
-                    recipientProfileId: profile.profileId,
-                    boostUri,
-                    source: 'claimLink',
-                });
+            // Log DELIVERED activity first to get activityId for chaining (outside try for catch access)
+            const activityId = await logCredentialSent({
+                actorProfileId: boostOwner.profileId,
+                recipientType: 'profile',
+                recipientIdentifier: profile.profileId,
+                recipientProfileId: profile.profileId,
+                boostUri,
+                source: 'claimLink',
+            });
 
+            try {
                 const sentBoostUri = await issueClaimLinkBoost(
                     boost,
                     ctx.domain,

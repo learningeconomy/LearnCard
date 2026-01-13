@@ -689,6 +689,7 @@ async function handleInboxClaimPresentation(
             // Log FAILED activity - chain to original activityId/integrationId if available
             const failedActivityId = (inboxCredential as any).activityId as string | undefined;
             const failedIntegrationId = (inboxCredential as any).integrationId as string | undefined;
+            const failedBoostUri = (inboxCredential as any).boostUri as string | undefined;
             const failedIssuerProfile = await getProfileByDid(inboxCredential.issuerDid);
             if (failedIssuerProfile) {
                 try {
@@ -698,7 +699,7 @@ async function handleInboxClaimPresentation(
                         recipientType: contactMethod.type as 'email' | 'phone',
                         recipientIdentifier: contactMethod.value,
                         recipientProfileId: holderProfile?.profileId,
-                        boostUri,
+                        boostUri: failedBoostUri,
                         integrationId: failedIntegrationId,
                         source: 'claimLink',
                         metadata: {
