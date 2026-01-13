@@ -24,7 +24,9 @@ import {
     X,
     FileSpreadsheet,
     Check,
+    CheckCircle,
     CheckCircle2,
+    XCircle,
     ArrowDown,
     Pencil,
 } from 'lucide-react';
@@ -324,6 +326,8 @@ interface TemplateEditorProps {
     isExpanded: boolean;
     onToggle: () => void;
     onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
+    onValidationChange?: (templateId: string, status: 'unknown' | 'validating' | 'valid' | 'invalid' | 'dirty', error?: string) => void;
+    validationStatus?: 'unknown' | 'validating' | 'valid' | 'invalid' | 'dirty';
 }
 
 const TemplateEditor: React.FC<TemplateEditorProps> = ({
@@ -334,6 +338,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     isExpanded,
     onToggle,
     onTestIssue,
+    onValidationChange,
+    validationStatus = 'unknown',
 }) => {
     // Initialize OBv3 template from legacy or existing
     const [obv3Template, setObv3Template] = useState<OBv3CredentialTemplate>(() => {
@@ -354,6 +360,11 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
         legacyTemplate.obv3Template = newObv3;
         onChange(legacyTemplate);
     }, [template, onChange]);
+
+    // Handle validation status changes from CredentialBuilder
+    const handleValidationChange = useCallback((status: 'unknown' | 'validating' | 'valid' | 'invalid' | 'dirty', error?: string) => {
+        onValidationChange?.(template.id, status, error);
+    }, [template.id, onValidationChange]);
 
     return (
         <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -406,6 +417,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
                         issuerName={branding?.displayName}
                         issuerImage={branding?.image}
                         onTestIssue={onTestIssue}
+                        onValidationChange={handleValidationChange}
+                        initialValidationStatus={validationStatus}
                     />
                 </div>
             )}
@@ -431,12 +444,28 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
 
+    // Validation status tracking for each template
+    type ValidationStatus = 'unknown' | 'validating' | 'valid' | 'invalid' | 'dirty';
+    const [validationStatuses, setValidationStatuses] = useState<Record<string, { status: ValidationStatus; error?: string }>>({});
+
+    // Handle validation status changes from TemplateEditor
+    const handleValidationChange = useCallback((templateId: string, status: ValidationStatus, error?: string) => {
+        setValidationStatuses(prev => ({
+            ...prev,
+            [templateId]: { status, error },
+        }));
+    }, []);
+
     // Child template editing modal state
     const [editingChild, setEditingChild] = useState<{
         masterId: string;
         childId: string;
         template: OBv3CredentialTemplate;
     } | null>(null);
+
+    // Child template validation state
+    const [childValidationStatus, setChildValidationStatus] = useState<ValidationStatus>('unknown');
+    const [childValidationError, setChildValidationError] = useState<string | null>(null);
 
     // CSV Catalog Import state
     const [showImportModal, setShowImportModal] = useState(false);
@@ -1521,7 +1550,15 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     // Cancel child edit
     const handleCancelChildEdit = () => {
         setEditingChild(null);
+        setChildValidationStatus('unknown');
+        setChildValidationError(null);
     };
+
+    // Handle child template validation status changes
+    const handleChildValidationChange = useCallback((status: ValidationStatus, error?: string) => {
+        setChildValidationStatus(status);
+        setChildValidationError(error || null);
+    }, []);
 
     // Update the template being edited in the modal
     const handleChildTemplateChange = (newTemplate: OBv3CredentialTemplate) => {
@@ -1607,7 +1644,17 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     }, []);
 
     const hasUnsavedChanges = localTemplates.some(t => t.isNew || t.isDirty) || pendingDeletes.length > 0;
-    const canProceed = localTemplates.length > 0 && localTemplates.every(t => t.name.trim());
+
+    // Check if any templates have invalid validation status
+    const hasInvalidTemplates = localTemplates.some(t => validationStatuses[t.id]?.status === 'invalid');
+    const hasUnvalidatedTemplates = localTemplates.some(t => {
+        const status = validationStatuses[t.id]?.status;
+        return !status || status === 'unknown' || status === 'dirty';
+    });
+
+    const canProceed = localTemplates.length > 0 && 
+        localTemplates.every(t => t.name.trim()) && 
+        !hasInvalidTemplates;
 
     if (isLoading) {
         return (
@@ -1637,6 +1684,27 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <span>You have unsaved changes. Click "Save & Continue" to save your templates.</span>
+                </div>
+            )}
+
+            {/* Validation Warnings */}
+            {hasInvalidTemplates && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm">
+                    <XCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>
+                        <strong>Validation failed:</strong> One or more templates failed validation. 
+                        Expand the template and click the validation badge to see details.
+                    </span>
+                </div>
+            )}
+
+            {!hasInvalidTemplates && hasUnvalidatedTemplates && (
+                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
+                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>
+                        <strong>Tip:</strong> Click the "Validate" button in each template to verify your credentials 
+                        will issue correctly before saving.
+                    </span>
                 </div>
             )}
 
@@ -1751,6 +1819,8 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 isExpanded={expandedId === template.id}
                                 onToggle={() => setExpandedId(expandedId === template.id ? null : template.id)}
                                 onTestIssue={handleTestIssue}
+                                onValidationChange={handleValidationChange}
+                                validationStatus={validationStatuses[template.id]?.status || 'unknown'}
                             />
                         )}
                     </div>
@@ -2160,25 +2230,53 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 issuerName={branding?.displayName}
                                 issuerImage={branding?.image}
                                 onTestIssue={handleTestIssue}
+                                onValidationChange={handleChildValidationChange}
+                                initialValidationStatus={childValidationStatus}
                             />
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
-                            <button
-                                onClick={handleCancelChildEdit}
-                                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                            >
-                                Cancel
-                            </button>
+                        <div className="flex items-center justify-between gap-3 p-4 border-t border-gray-200 bg-gray-50">
+                            {/* Validation status hint */}
+                            <div className="flex-1">
+                                {childValidationStatus === 'invalid' && childValidationError && (
+                                    <div className="flex items-start gap-2 text-sm text-red-700">
+                                        <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                        <span className="line-clamp-2">{childValidationError}</span>
+                                    </div>
+                                )}
+                                {childValidationStatus === 'unknown' && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                        <span>Click "Validate" in the builder to verify before saving</span>
+                                    </div>
+                                )}
+                                {childValidationStatus === 'valid' && (
+                                    <div className="flex items-center gap-2 text-sm text-emerald-600">
+                                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                                        <span>Credential validated successfully</span>
+                                    </div>
+                                )}
+                            </div>
 
-                            <button
-                                onClick={handleSaveChildEdit}
-                                className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white rounded-xl font-medium hover:bg-violet-600 transition-colors"
-                            >
-                                <Save className="w-4 h-4" />
-                                Save Changes
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={handleCancelChildEdit}
+                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    onClick={handleSaveChildEdit}
+                                    disabled={childValidationStatus === 'invalid'}
+                                    className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white rounded-xl font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    title={childValidationStatus === 'invalid' ? 'Fix validation errors before saving' : undefined}
+                                >
+                                    <Save className="w-4 h-4" />
+                                    Save Changes
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

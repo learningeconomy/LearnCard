@@ -13,6 +13,7 @@ interface JsonPreviewProps {
     onChange: (template: OBv3CredentialTemplate) => void;
     isEditable?: boolean;
     onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
+    onValidate?: () => Promise<void>;
 }
 
 export const JsonPreview: React.FC<JsonPreviewProps> = ({
@@ -20,6 +21,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
     onChange,
     isEditable = true,
     onTestIssue,
+    onValidate,
 }) => {
     const [editMode, setEditMode] = useState(false);
     const [jsonText, setJsonText] = useState('');
@@ -86,7 +88,15 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
         setEditMode(false);
         setJsonText(jsonFromTemplate);
         setParseError(null);
-    }, [jsonFromTemplate]);
+
+        // Auto-validate after exiting edit mode (saving changes)
+        if (onValidate && !parseError) {
+            // Small delay to let the template update propagate
+            setTimeout(() => {
+                onValidate();
+            }, 100);
+        }
+    }, [jsonFromTemplate, onValidate, parseError]);
 
     const handleResetJson = useCallback(() => {
         setJsonText(jsonFromTemplate);
