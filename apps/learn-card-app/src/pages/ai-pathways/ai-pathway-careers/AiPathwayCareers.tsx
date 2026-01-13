@@ -5,7 +5,11 @@ import AiPathwayCareerItem from './AiPathwayCareerItem';
 import { useOccupationDetailsForKeyword } from 'learn-card-base/react-query/queries/careerOneStop';
 
 const AiPathwayCareers: React.FC<{ careerKeywords?: string[] }> = ({ careerKeywords = [] }) => {
-    const { data: occupations } = useOccupationDetailsForKeyword(careerKeywords?.[0] || '');
+    const { data: occupations, isLoading } = useOccupationDetailsForKeyword(
+        careerKeywords?.[0] || ''
+    );
+
+    if (!isLoading && (!careerKeywords?.length || !occupations?.length)) return null;
 
     return (
         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center px-4 mt-4">
