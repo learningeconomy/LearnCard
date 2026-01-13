@@ -109,7 +109,21 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         updateFormData({ name: value ?? '' });
     };
     const handleDobChange = (date: string) => {
+        setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.dob;
+            return newErrors;
+        });
         updateFormData({ dob: date });
+        if (date) {
+            const age = calculateAge(date);
+            if (isNaN(age) || age < 13) {
+                setErrors(prev => ({
+                    ...prev,
+                    dob: ['You must be at least 13 years old'],
+                }));
+            }
+        }
     };
     const handleCountrySelect = (selectedCountry: string) => {
         updateFormData({ country: selectedCountry });
@@ -800,10 +814,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             <div className="flex flex-col items-center justify-center w-full mt-2">
                                 <DatePickerInput
                                     value={dob || ''}
-                                    onChange={(newDob: string) => {
-                                        setErrors(prev => ({ ...prev, dob: undefined }));
-                                        handleDobChange(newDob);
-                                    }}
+                                    onChange={handleDobChange}
                                     error={errors?.dob?.[0]}
                                     isMobile={!isDesktop}
                                     label="Date of Birth"
