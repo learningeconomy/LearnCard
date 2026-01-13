@@ -738,7 +738,8 @@ const learnCard = await initLearnCard({
 // Recipient type is auto-detected: profile ID, DID, email, or phone
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: '${recipientExample}', // profile ID, DID, email, or phone
+    recipient: '${recipientExample}', // profile ID, DID, email, or phone${integrationId ? `
+    integrationId: '${integrationId}', // Track activity for this integration` : ''},
     templateUri: '${boostUri}',
     templateData: {
 ${templateDataCode}
@@ -747,6 +748,7 @@ ${templateDataCode}
 
 console.log('Credential URI:', result.credentialUri);
 console.log('Boost URI:', result.uri);
+console.log('Activity ID:', result.activityId); // Use to track lifecycle
 
 // For email/phone recipients:
 // result.inbox?.issuanceId - tracking ID
@@ -792,6 +794,11 @@ console.log('Boost URI:', result.uri);
             templateUri: boostUri,
             templateData,
         };
+
+        // Add integrationId for activity tracking if available
+        if (integrationId) {
+            payload.integrationId = integrationId;
+        }
 
         if (Object.keys(options).length > 0) {
             payload.options = options;

@@ -6,8 +6,9 @@ import type { CredentialTemplate } from '../types';
 
 /**
  * Activity record from unified CredentialActivity API
+ * Exported for use in UI components
  */
-interface CredentialActivityRecord {
+export interface CredentialActivityRecord {
     id: string;
     activityId: string;
     eventType: 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED' | 'FAILED';
@@ -42,39 +43,66 @@ interface CredentialActivityStats {
     claimRate: number;
 }
 
+export type CredentialEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED' | 'FAILED';
+
 /**
- * Unified activity item for display
+ * Get display label for event type
+ * CREATED and DELIVERED both display as "Sent" in the UI
  */
-export interface ActivityItem {
-    id: string;
-    type: 'boost' | 'inbox';
-    templateName: string;
-    templateId: string;
-    boostUri?: string;
+export function getEventTypeLabel(eventType: CredentialEventType): string {
+    switch (eventType) {
+        case 'CREATED': return 'Sent';
+        case 'DELIVERED': return 'Sent';
+        case 'CLAIMED': return 'Claimed';
+        case 'EXPIRED': return 'Expired';
+        case 'FAILED': return 'Failed';
+    }
+}
 
-    // Recipient info
-    recipientName: string;
-    recipientId?: string;
-    recipientEmail?: string;
+/**
+ * Check if activity is inbox-based (email/phone)
+ */
+export function isInboxActivity(record: CredentialActivityRecord): boolean {
+    return record.recipientType === 'email' || record.recipientType === 'phone';
+}
 
-    // Timestamps
-    sentAt: string;
-    claimedAt?: string;
+/**
+ * Get display name for recipient
+ */
+export function getRecipientDisplayName(record: CredentialActivityRecord): string {
+    return record.recipientProfile?.displayName || record.recipientIdentifier || 'Unknown';
+}
 
-    // Status
-    status: 'sent' | 'claimed' | 'pending' | 'expired';
+/**
+ * Get template/credential name for display
+ */
+export function getActivityName(record: CredentialActivityRecord): string {
+    return record.boost?.name || 'Credential';
+}
 
-    // Original data reference
-    credentialUri?: string;
+/**
+ * Get error message from failed activity metadata
+ */
+export function getActivityError(record: CredentialActivityRecord): string | undefined {
+    if (record.eventType !== 'FAILED') return undefined;
+    return record.metadata?.error ? String(record.metadata.error) : undefined;
+}
+
+/**
+ * Format source for display
+ */
+export function formatActivitySource(source: string): string {
+    if (source === 'claimLink') return 'Claim Link';
+    if (source === 'send') return 'API Send';
+    return source || 'Unknown';
 }
 
 export interface IntegrationActivityResult {
-    activity: ActivityItem[];
+    activity: CredentialActivityRecord[];
     isLoading: boolean;
     error: Error | null;
     refetch: () => void;
 
-    // Stats from unified API
     stats: {
         totalSent: number;
         totalClaimed: number;
@@ -88,17 +116,21 @@ export interface IntegrationActivityResult {
  * 
  * This replaces the previous complex implementation that combined boost recipients
  * and inbox credentials from separate sources. Now uses a single unified API.
+ * 
+ * @param templates - Credential templates to filter by (optional)
+ * @param options.limit - Maximum number of activities to fetch
+ * @param options.integrationId - Filter activities by integration ID for accurate per-integration stats
  */
 export function useIntegrationActivity(
     templates: CredentialTemplate[],
-    options: { limit?: number } = {}
+    options: { limit?: number; integrationId?: string } = {}
 ): IntegrationActivityResult {
-    const { limit = 20 } = options;
+    const { limit = 20, integrationId } = options;
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
-    const [activity, setActivity] = useState<ActivityItem[]>([]);
+    const [activity, setActivity] = useState<CredentialActivityRecord[]>([]);
     const [stats, setStats] = useState<IntegrationActivityResult['stats']>({
         totalSent: 0,
         totalClaimed: 0,
@@ -109,15 +141,8 @@ export function useIntegrationActivity(
     const [error, setError] = useState<Error | null>(null);
     const [fetchKey, setFetchKey] = useState(0);
 
-    // Get boostUris from templates for filtering
+    // Get boostUris from templates for client-side filtering
     const boostUris = templates.map(t => t.boostUri).filter(Boolean) as string[];
-
-    // Create a map of boostUri -> template for quick lookup
-    const templateMap = new Map<string, CredentialTemplate>();
-
-    templates.forEach(t => {
-        if (t.boostUri) templateMap.set(t.boostUri, t);
-    });
 
     // Fetch activity and stats
     useEffect(() => {
@@ -129,64 +154,25 @@ export function useIntegrationActivity(
                 const wallet = await initWalletRef.current();
 
                 // Fetch activity records using unified API
+                // Use integrationId for server-side filtering when available
                 const activityResult = await (wallet.invoke as any).getMyActivities?.({
                     limit,
+                    integrationId,
                 });
 
-                // Fetch stats using unified API
+                // Fetch stats using unified API with integrationId for accurate per-integration stats
                 const statsResult = await (wallet.invoke as any).getActivityStats?.({
                     boostUris: boostUris.length > 0 ? boostUris : undefined,
+                    integrationId,
                 });
-
 
                 if (cancelled) return;
 
-                // Transform activity records to ActivityItem format
-                const items: ActivityItem[] = [];
+                // Pass through all records - server already filters by integrationId
+                // Client-side filtering by boostUri is not needed since stats API handles it
+                const records: CredentialActivityRecord[] = activityResult?.records || [];
 
-                if (activityResult?.records) {
-                    for (const record of activityResult.records as CredentialActivityRecord[]) {
-                        // Filter by templates if we have them
-                        if (boostUris.length > 0 && record.boostUri && !boostUris.includes(record.boostUri)) {
-                            continue;
-                        }
-
-                        const template = record.boostUri ? templateMap.get(record.boostUri) : undefined;
-                        const isInbox = record.recipientType === 'email' || record.recipientType === 'phone';
-
-                        // Determine status from eventType
-                        let status: ActivityItem['status'] = 'sent';
-
-                        if (record.eventType === 'CLAIMED') {
-                            status = 'claimed';
-                        } else if (record.eventType === 'EXPIRED') {
-                            status = 'expired';
-                        } else if (record.eventType === 'CREATED' && isInbox) {
-                            status = 'pending';
-                        } else if (record.eventType === 'DELIVERED') {
-                            status = 'sent';
-                        }
-
-                        items.push({
-                            id: record.id,
-                            type: isInbox ? 'inbox' : 'boost',
-                            templateName: record.boost?.name || template?.name || 'Credential',
-                            templateId: template?.id || record.boostUri || record.id,
-                            boostUri: record.boostUri,
-                            recipientName: record.recipientProfile?.displayName 
-                                || record.recipientIdentifier 
-                                || 'Unknown',
-                            recipientId: record.recipientType === 'profile' ? record.recipientIdentifier : undefined,
-                            recipientEmail: record.recipientType === 'email' ? record.recipientIdentifier : undefined,
-                            sentAt: record.timestamp,
-                            claimedAt: record.eventType === 'CLAIMED' ? record.timestamp : undefined,
-                            status,
-                            credentialUri: record.credentialUri,
-                        });
-                    }
-                }
-
-                setActivity(items);
+                setActivity(records);
 
                 // Set stats from unified API
                 if (statsResult) {
@@ -218,7 +204,7 @@ export function useIntegrationActivity(
         return () => {
             cancelled = true;
         };
-    }, [boostUris.join(','), limit, fetchKey]);
+    }, [boostUris.join(','), limit, integrationId, fetchKey]);
 
     // Refetch function
     const refetch = useCallback(() => {

@@ -5,6 +5,7 @@ import {
     getActivitiesForProfile,
     getActivityStatsForProfile,
     getActivityById,
+    getActivityChain,
 } from '@accesslayer/credential-activity/read';
 import {
     CredentialActivityEventTypeValidator,
@@ -120,6 +121,39 @@ export const activityRouter = t.router({
             }
 
             return activity;
+        }),
+
+    getActivityChain: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/activity/credentials/{activityId}/chain',
+                tags: ['Activity'],
+                summary: 'Get Activity Chain',
+                description:
+                    'Returns all events in a credential activity chain by activityId. Shows the full lifecycle (e.g., CREATED → CLAIMED).',
+            },
+            requiredScope: 'activity:read',
+        })
+        .input(
+            z.object({
+                activityId: z.string(),
+            })
+        )
+        .output(z.array(CredentialActivityWithDetailsValidator))
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { activityId } = input;
+
+            const chain = await getActivityChain(activityId);
+
+            // Only return chain if it belongs to the authenticated user
+            if (chain.length > 0 && chain[0]?.actorProfileId !== profile.profileId) {
+                return [];
+            }
+
+            return chain;
         }),
 });
 

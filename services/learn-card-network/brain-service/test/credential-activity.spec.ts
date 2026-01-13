@@ -584,6 +584,96 @@ describe('Credential Activity', () => {
                 expect(stats.delivered).toBeGreaterThanOrEqual(1);
                 expect(typeof stats.claimRate).toBe('number');
             });
+
+            it('should return activity chain via route', async () => {
+                const activityId = await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                // Add a CLAIMED event with the same activityId
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'CLAIMED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'acceptCredential',
+                    activityId,
+                });
+
+                const chain = await userA.clients.fullAuth.activity.getActivityChain({ activityId });
+
+                expect(chain).toHaveLength(2);
+                expect(chain[0]?.eventType).toBe('DELIVERED');
+                expect(chain[1]?.eventType).toBe('CLAIMED');
+                expect(chain[0]?.activityId).toBe(activityId);
+                expect(chain[1]?.activityId).toBe(activityId);
+            });
+
+            it('should return empty array for non-existent activity chain', async () => {
+                const chain = await userA.clients.fullAuth.activity.getActivityChain({ 
+                    activityId: 'non-existent-id' 
+                });
+
+                expect(chain).toHaveLength(0);
+            });
+
+            it('should return empty array when querying another user activity chain', async () => {
+                const activityId = await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                // UserA should be able to get their own activity chain
+                const ownChain = await userA.clients.fullAuth.activity.getActivityChain({ activityId });
+
+                expect(ownChain).toHaveLength(1);
+
+                // UserB should NOT be able to get userA's activity chain
+                const otherChain = await userB.clients.fullAuth.activity.getActivityChain({ activityId });
+
+                expect(otherChain).toHaveLength(0);
+            });
+
+            it('should return chain in chronological order (oldest first)', async () => {
+                const activityId = await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'CREATED',
+                    recipientType: 'email',
+                    recipientIdentifier: 'test@example.com',
+                    source: 'send',
+                });
+
+                // Small delay to ensure different timestamps
+                await new Promise(resolve => setTimeout(resolve, 10));
+
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'CLAIMED',
+                    recipientType: 'email',
+                    recipientIdentifier: 'test@example.com',
+                    source: 'claimLink',
+                    activityId,
+                });
+
+                const chain = await userA.clients.fullAuth.activity.getActivityChain({ activityId });
+
+                expect(chain).toHaveLength(2);
+                expect(chain[0]?.eventType).toBe('CREATED');
+                expect(chain[1]?.eventType).toBe('CLAIMED');
+
+                // Verify chronological order
+                const firstTimestamp = new Date(chain[0]!.timestamp).getTime();
+                const secondTimestamp = new Date(chain[1]!.timestamp).getTime();
+
+                expect(firstTimestamp).toBeLessThanOrEqual(secondTimestamp);
+            });
         });
     });
 

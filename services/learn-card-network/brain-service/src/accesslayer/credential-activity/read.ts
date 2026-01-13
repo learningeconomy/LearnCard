@@ -194,7 +194,8 @@ export const getActivityStatsForProfile = async (
     const expired = typeof expiredVal?.toNumber === 'function' ? expiredVal.toNumber() : (expiredVal ?? 0);
     const failed = typeof failedVal?.toNumber === 'function' ? failedVal.toNumber() : (failedVal ?? 0);
 
-    const claimRate = delivered > 0 ? (claimed / delivered) * 100 : 0;
+    const totalSent = created + delivered;
+    const claimRate = totalSent > 0 ? (claimed / totalSent) * 100 : 0;
 
     return {
         total,
@@ -205,6 +206,54 @@ export const getActivityStatsForProfile = async (
         failed,
         claimRate: Math.round(claimRate * 100) / 100,
     };
+};
+
+/**
+ * Get all events in an activity chain by activityId
+ * Returns events ordered by timestamp (oldest first) to show the lifecycle
+ */
+export const getActivityChain = async (
+    activityId: string
+): Promise<CredentialActivityWithDetails[]> => {
+    const query = `
+        MATCH (a:CredentialActivity {activityId: $activityId})
+        OPTIONAL MATCH (a)-[:FOR_BOOST]->(b:Boost)
+        OPTIONAL MATCH (a)-[:TO_RECIPIENT]->(r:Profile)
+        RETURN a, b, r
+        ORDER BY a.timestamp ASC
+    `;
+
+    const result = await neogma.queryRunner.run(query, { activityId });
+
+    return result.records.map(record => {
+        const activity = record.get('a').properties;
+        const boost = record.get('b')?.properties;
+        const recipient = record.get('r')?.properties;
+
+        let parsedMetadata: Record<string, unknown> | undefined;
+
+        if (activity.metadata) {
+            try {
+                parsedMetadata = JSON.parse(activity.metadata);
+            } catch {
+                parsedMetadata = undefined;
+            }
+        }
+
+        return {
+            ...activity,
+            metadata: parsedMetadata,
+            boost: boost ? {
+                id: boost.id,
+                name: boost.name,
+                category: boost.category,
+            } : undefined,
+            recipientProfile: recipient ? {
+                profileId: recipient.profileId,
+                displayName: recipient.displayName,
+            } : undefined,
+        };
+    });
 };
 
 export const getActivityById = async (

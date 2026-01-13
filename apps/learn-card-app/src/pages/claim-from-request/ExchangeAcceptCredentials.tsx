@@ -9,7 +9,7 @@ import {
     IonRow,
     IonLoading,
 } from '@ionic/react';
-import { Gift, Check, X as XIcon, Loader2 } from 'lucide-react';
+import { Gift, Check, X as XIcon, Loader2, AlertCircle, Home, HelpCircle } from 'lucide-react';
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import X from 'learn-card-base/svgs/X';
@@ -241,9 +241,77 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         return (
             <IonPage>
                 <IonContent fullscreen className="ion-padding">
-                    <div className="flex flex-col items-center justify-center h-full">
-                        <h1 className="text-xl font-bold">Error</h1>
-                        <p>No credential data found to accept.</p>
+                    <div className="min-h-full bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden">
+                            {/* Header with icon */}
+                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-8 text-center">
+                                <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                    <AlertCircle className="w-10 h-10 text-white" />
+                                </div>
+
+                                <h1 className="text-2xl font-bold text-white mb-2">
+                                    No Credentials Found
+                                </h1>
+
+                                <p className="text-amber-100 text-sm">
+                                    This link doesn't contain any credentials
+                                </p>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-6">
+                                <div className="space-y-4 mb-6">
+                                    <p className="text-gray-600 text-center text-sm">
+                                        The credential link you followed doesn't have any credentials to claim. This could happen if:
+                                    </p>
+
+                                    <ul className="text-sm text-gray-500 space-y-2 pl-4">
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-amber-500 mt-0.5">•</span>
+                                            The credential has already been claimed
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-amber-500 mt-0.5">•</span>
+                                            The link has expired
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-amber-500 mt-0.5">•</span>
+                                            The issuer removed the credential
+                                        </li>
+                                    </ul>
+
+                                    {/* Suggestion box */}
+                                    <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
+                                        <p className="text-xs font-medium text-cyan-600 uppercase tracking-wide mb-2">
+                                            What to do
+                                        </p>
+
+                                        <p className="text-sm text-cyan-800">
+                                            Contact the person or organization that sent you this link to request a new one.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Action buttons */}
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={() => history.push('/')}
+                                        className="w-full py-4 px-6 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
+                                    >
+                                        <Home className="w-5 h-5" />
+                                        Go to Home
+                                    </button>
+
+                                    <button
+                                        onClick={() => window.open('mailto:support@learncard.com', '_blank')}
+                                        className="w-full py-3 px-6 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <HelpCircle className="w-4 h-4" />
+                                        Contact Support
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </IonContent>
             </IonPage>

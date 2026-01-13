@@ -1855,6 +1855,12 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.activity.getActivity.query(options);
             },
+
+            getActivityChain: async (_learnCard, options) => {
+                await ensureUser();
+
+                return client.activity.getActivityChain.query(options);
+            },
         },
     };
 }

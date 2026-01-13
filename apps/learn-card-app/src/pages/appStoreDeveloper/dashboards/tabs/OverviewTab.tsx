@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Key,
     Code,
@@ -16,13 +16,28 @@ import {
     Calendar,
     Link as LinkIcon,
     X,
+    AlertTriangle,
+    Activity,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 
 import type { DashboardConfig, DashboardStats, CredentialTemplate } from '../types';
-import { useIntegrationActivity, formatRelativeTime, ActivityItem } from '../hooks/useIntegrationActivity';
+import {
+    useIntegrationActivity,
+    formatRelativeTime,
+    CredentialActivityRecord,
+    CredentialEventType,
+    getEventTypeLabel,
+    isInboxActivity,
+    getRecipientDisplayName,
+    getActivityName,
+    getActivityError,
+    formatActivitySource,
+} from '../hooks/useIntegrationActivity';
+
+import { useWallet } from 'learn-card-base/hooks/useWallet';
 
 interface OverviewTabProps {
     integration: LCNIntegration;
@@ -30,46 +45,79 @@ interface OverviewTabProps {
     stats: DashboardStats;
     templates: CredentialTemplate[];
     onNavigate: (tabId: string) => void;
+    refreshKey?: number;
 }
 
 interface IssuanceDetailModalProps {
-    item: ActivityItem;
+    item: CredentialActivityRecord;
+}
+
+// Helper to get styling for an event type
+function getEventStyling(eventType: string) {
+    switch (eventType) {
+        case 'CLAIMED':
+            return { color: 'text-emerald-600', bg: 'bg-emerald-100', Icon: CheckCircle2 };
+        case 'FAILED':
+            return { color: 'text-red-600', bg: 'bg-red-100', Icon: AlertTriangle };
+        case 'EXPIRED':
+            return { color: 'text-gray-500', bg: 'bg-gray-100', Icon: Clock };
+        default:
+            return { color: 'text-cyan-600', bg: 'bg-cyan-100', Icon: Send };
+    }
 }
 
 const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
-    const isClaimed = item.status === 'claimed';
-    const isPending = item.status === 'pending';
-    const isExpired = item.status === 'expired';
-    const isInbox = item.type === 'inbox';
+    const { initWallet } = useWallet();
+    const [activityChain, setActivityChain] = useState<CredentialActivityRecord[]>([]);
+    const [isLoadingChain, setIsLoadingChain] = useState(true);
 
-    let statusColor = 'text-cyan-600';
-    let statusBg = 'bg-cyan-100';
-    let statusLabel = 'Sent';
+    // Fetch the full activity chain
+    useEffect(() => {
+        const fetchChain = async () => {
+            if (!item.activityId) {
+                setActivityChain([item]);
+                setIsLoadingChain(false);
+                return;
+            }
 
-    if (isClaimed) {
-        statusColor = 'text-emerald-600';
-        statusBg = 'bg-emerald-100';
-        statusLabel = 'Claimed';
-    } else if (isPending && isInbox) {
-        statusColor = 'text-amber-600';
-        statusBg = 'bg-amber-100';
-        statusLabel = 'Pending Claim';
-    } else if (isExpired) {
-        statusColor = 'text-gray-500';
-        statusBg = 'bg-gray-100';
-        statusLabel = 'Expired';
-    }
+            try {
+                const wallet = await initWallet();
+                const chain = await wallet.invoke.getActivityChain({ activityId: item.activityId });
+                setActivityChain(chain?.length > 0 ? chain : [item]);
+            } catch (err) {
+                console.error('Failed to fetch activity chain:', err);
+                setActivityChain([item]);
+            } finally {
+                setIsLoadingChain(false);
+            }
+        };
 
-    const sentDate = new Date(item.sentAt);
-    const claimedDate = item.claimedAt ? new Date(item.claimedAt) : null;
+        fetchChain();
+    }, [item.activityId, initWallet]);
 
-    // Calculate time to claim if claimed
-    const timeToClaimMs = claimedDate ? claimedDate.getTime() - sentDate.getTime() : null;
-    const timeToClaimText = timeToClaimMs ? formatDuration(timeToClaimMs) : null;
+    // Determine current status from the chain (latest event)
+    const latestEvent = activityChain.length > 0 ? activityChain[activityChain.length - 1] : item;
+    const currentEventType = latestEvent?.eventType || item.eventType;
+    const isInbox = isInboxActivity(item);
+    const { color: statusColor, bg: statusBg } = getEventStyling(currentEventType);
+    const statusLabel = getEventTypeLabel(currentEventType);
 
-    // Calculate time since sent
-    const timeSinceSentMs = Date.now() - sentDate.getTime();
-    const timeSinceSentText = formatDuration(timeSinceSentMs);
+    // Check if credential has been claimed
+    const isClaimed = activityChain.some(e => e.eventType === 'CLAIMED');
+    const isFailed = activityChain.some(e => e.eventType === 'FAILED');
+    const isExpired = activityChain.some(e => e.eventType === 'EXPIRED');
+    const isPending = !isClaimed && !isFailed && !isExpired;
+
+    const firstEvent = activityChain[0] || item;
+    const timestamp = new Date(firstEvent.timestamp);
+    const errorMessage = getActivityError(latestEvent || item);
+    const sourceLabel = formatActivitySource(item.source);
+    const recipientName = getRecipientDisplayName(item);
+    const templateName = getActivityName(item);
+
+    // Calculate time since event
+    const timeSinceEventMs = Date.now() - timestamp.getTime();
+    const timeSinceEventText = formatDuration(timeSinceEventMs);
 
     return (
         <div className="bg-white rounded-2xl overflow-hidden w-full max-w-md">
@@ -79,8 +127,12 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                 <div className="space-y-5">
                     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${statusBg}`}>
-                            {isClaimed ? (
+                            {currentEventType === 'CLAIMED' ? (
                                 <CheckCircle2 className={`w-6 h-6 ${statusColor}`} />
+                            ) : currentEventType === 'FAILED' ? (
+                                <AlertTriangle className={`w-6 h-6 ${statusColor}`} />
+                            ) : currentEventType === 'EXPIRED' ? (
+                                <Clock className={`w-6 h-6 ${statusColor}`} />
                             ) : isInbox ? (
                                 <Mail className={`w-6 h-6 ${statusColor}`} />
                             ) : (
@@ -89,7 +141,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-lg truncate">{item.templateName}</h3>
+                            <h3 className="font-semibold text-gray-900 text-lg truncate">{templateName}</h3>
 
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusBg} ${statusColor}`}>
@@ -111,9 +163,9 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm text-gray-500">Recipient</p>
-                                <p className="font-medium text-gray-900 truncate">{item.recipientName}</p>
-                                {item.recipientId && (
-                                    <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">{item.recipientId}</p>
+                                <p className="font-medium text-gray-900 truncate">{recipientName}</p>
+                                {item.recipientType === 'profile' && (
+                                    <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">{item.recipientIdentifier}</p>
                                 )}
                             </div>
                         </div>
@@ -124,57 +176,42 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                             </div>
 
                             <div className="min-w-0 flex-1">
-                                <p className="text-sm text-gray-500">Sent</p>
+                                <p className="text-sm text-gray-500">Event Time</p>
                                 <p className="font-medium text-gray-900">
-                                    {sentDate.toLocaleDateString('en-US', {
+                                    {timestamp.toLocaleDateString('en-US', {
                                         weekday: 'short',
                                         year: 'numeric',
                                         month: 'short',
                                         day: 'numeric',
                                     })}
                                     {' at '}
-                                    {sentDate.toLocaleTimeString('en-US', {
+                                    {timestamp.toLocaleTimeString('en-US', {
                                         hour: '2-digit',
                                         minute: '2-digit',
                                     })}
                                 </p>
                                 <p className="text-xs text-gray-400">
-                                    {timeSinceSentText} ago
+                                    {timeSinceEventText} ago
                                 </p>
                             </div>
                         </div>
 
-                        {claimedDate && (
+                        {isFailed && errorMessage && (
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                                    <AlertTriangle className="w-4 h-4 text-red-600" />
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-sm text-gray-500">Claimed</p>
-                                    <p className="font-medium text-gray-900">
-                                        {claimedDate.toLocaleDateString('en-US', {
-                                            weekday: 'short',
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                        })}
-                                        {' at '}
-                                        {claimedDate.toLocaleTimeString('en-US', {
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                        })}
+                                    <p className="text-sm text-gray-500">Error</p>
+                                    <p className="text-sm text-red-600">
+                                        {errorMessage}
                                     </p>
-                                    {timeToClaimText && (
-                                        <p className="text-xs text-emerald-600">
-                                            Claimed in {timeToClaimText}
-                                        </p>
-                                    )}
                                 </div>
                             </div>
                         )}
 
-                        {!isClaimed && !isExpired && (
+                        {isPending && (
                             <div className="flex items-start gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
                                     <Clock className="w-4 h-4 text-amber-600" />
@@ -183,11 +220,47 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm text-gray-500">Awaiting Claim</p>
                                     <p className="font-medium text-amber-700">
-                                        Waiting for {timeSinceSentText}
+                                        Waiting for {timeSinceEventText}
                                     </p>
                                     <p className="text-xs text-gray-400">
                                         Recipient has not claimed this credential yet
                                     </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Activity Timeline */}
+                        {activityChain.length > 0 && (
+                            <div className="pt-2 border-t border-gray-100">
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Activity Timeline</p>
+
+                                <div className="space-y-2">
+                                    {isLoadingChain ? (
+                                        <p className="text-sm text-gray-400">Loading timeline...</p>
+                                    ) : (
+                                        activityChain.map((event, index) => {
+                                            const { color, bg, Icon } = getEventStyling(event.eventType);
+                                            const eventTime = new Date(event.timestamp);
+
+                                            return (
+                                                <div key={event.id} className="flex items-center gap-3">
+                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}>
+                                                        <Icon className={`w-3 h-3 ${color}`} />
+                                                    </div>
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className={`text-sm font-medium ${color}`}>
+                                                            {getEventTypeLabel(event.eventType)}
+                                                        </span>
+                                                    </div>
+
+                                                    <span className="text-xs text-gray-400">
+                                                        {eventTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -206,6 +279,17 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                         <p className="font-medium text-gray-900">
                                             {isInbox ? 'Universal Inbox (Email)' : 'Direct to Profile'}
                                         </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                        <Activity className="w-4 h-4 text-gray-600" />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm text-gray-500">Source</p>
+                                        <p className="font-medium text-gray-900">{sourceLabel}</p>
                                     </div>
                                 </div>
 
@@ -247,7 +331,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm text-gray-500">Activity ID</p>
                                         <p className="font-mono text-xs text-gray-600 break-all">
-                                            {item.id}
+                                            {item.activityId}
                                         </p>
                                     </div>
                                 </div>
@@ -279,11 +363,23 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     stats,
     templates,
     onNavigate,
+    refreshKey,
 }) => {
-    const { activity, isLoading: activityLoading } = useIntegrationActivity(templates, { limit: 10 });
+    const { activity, isLoading: activityLoading, refetch } = useIntegrationActivity(templates, { 
+        limit: 10,
+        integrationId: integration.id,
+    });
+
+    // Refetch when refreshKey changes
+    useEffect(() => {
+        if (refreshKey && refreshKey > 0) {
+            refetch();
+        }
+    }, [refreshKey, refetch]);
+
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
-    const handleActivityItemClick = (item: ActivityItem) => {
+    const handleActivityItemClick = (item: CredentialActivityRecord) => {
         newModal(
             <IssuanceDetailModal item={item} />,
             { sectionClassName: '!max-w-[450px]' }
@@ -398,43 +494,42 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 ) : (
                     <div className="space-y-3">
                         {activity.map(item => {
-                            const isClaimed = item.status === 'claimed';
-                            const isPending = item.status === 'pending';
-                            const isExpired = item.status === 'expired';
-                            const isInbox = item.type === 'inbox';
+                            const { eventType } = item;
+                            const isInbox = isInboxActivity(item);
+                            const templateName = getActivityName(item);
+                            const recipientName = getRecipientDisplayName(item);
+                            const statusLabel = getEventTypeLabel(eventType);
 
-                            // Determine icon and colors based on status
+                            // Determine icon and colors based on event type
                             let bgColor = 'bg-cyan-100';
                             let textColor = 'text-cyan-600';
                             let badgeBg = 'bg-cyan-100';
                             let badgeText = 'text-cyan-700';
-                            let statusLabel = 'Sent';
                             let Icon = Send;
 
-                            if (isClaimed) {
+                            if (eventType === 'CLAIMED') {
                                 bgColor = 'bg-emerald-100';
                                 textColor = 'text-emerald-600';
                                 badgeBg = 'bg-emerald-100';
                                 badgeText = 'text-emerald-700';
-                                statusLabel = 'Claimed';
                                 Icon = CheckCircle2;
-                            } else if (isPending && isInbox) {
-                                bgColor = 'bg-amber-100';
-                                textColor = 'text-amber-600';
-                                badgeBg = 'bg-amber-100';
-                                badgeText = 'text-amber-700';
-                                statusLabel = 'Pending';
-                                Icon = Mail;
-                            } else if (isExpired) {
+                            } else if (eventType === 'FAILED') {
+                                bgColor = 'bg-red-100';
+                                textColor = 'text-red-600';
+                                badgeBg = 'bg-red-100';
+                                badgeText = 'text-red-700';
+                                Icon = AlertTriangle;
+                            } else if (eventType === 'EXPIRED') {
                                 bgColor = 'bg-gray-100';
                                 textColor = 'text-gray-500';
                                 badgeBg = 'bg-gray-100';
                                 badgeText = 'text-gray-600';
-                                statusLabel = 'Expired';
                                 Icon = Clock;
                             } else if (isInbox) {
+                                // CREATED or DELIVERED to inbox - use Mail icon, cyan color
                                 Icon = Mail;
                             }
+                            // CREATED and DELIVERED both use cyan (default) - "Sent" status
 
                             return (
                                 <button
@@ -449,7 +544,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <span className="font-medium text-gray-800 truncate">
-                                                {item.templateName}
+                                                {templateName}
                                             </span>
 
                                             <span className={`text-xs px-1.5 py-0.5 rounded ${badgeBg} ${badgeText}`}>
@@ -464,13 +559,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                         </div>
 
                                         <p className="text-sm text-gray-500 truncate">
-                                            To: {item.recipientName}
+                                            To: {recipientName}
                                         </p>
                                     </div>
 
                                     <div className="text-xs text-gray-400 flex items-center gap-1 flex-shrink-0">
                                         <Clock className="w-3 h-3" />
-                                        {formatRelativeTime(item.sentAt)}
+                                        {formatRelativeTime(item.timestamp)}
                                     </div>
                                 </button>
                             );

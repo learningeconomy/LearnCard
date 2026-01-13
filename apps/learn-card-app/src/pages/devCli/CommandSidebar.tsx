@@ -31,10 +31,10 @@ const CATEGORIES: CommandCategory[] = [
     { id: 'init', name: 'Initialization', icon: '⚡', description: 'Initialize LearnCard wallets' },
     { id: 'identity', name: 'Identity', icon: '🆔', description: 'DID and identity operations' },
     { id: 'credentials', name: 'Credentials', icon: '📜', description: 'Issue, verify, and manage VCs' },
-    { id: 'network', name: 'Network', icon: '🌐', description: 'LearnCard Network operations' },
     { id: 'storage', name: 'Storage', icon: '💾', description: 'Store and retrieve data' },
     { id: 'profiles', name: 'Profiles', icon: '👤', description: 'Profile management' },
     { id: 'boosts', name: 'Boosts', icon: '🚀', description: 'Boost templates and sending' },
+    { id: 'activity', name: 'Activity', icon: '📊', description: 'Credential activity tracking and stats' },
 ];
 
 export const COMMANDS: CommandTemplate[] = [
@@ -557,6 +557,51 @@ export const COMMANDS: CommandTemplate[] = [
             { name: 'uri', type: 'string', placeholder: 'lc:boost:...', description: 'Boost URI to delete', required: true },
         ],
         category: 'boosts',
+    },
+
+    // Activity
+    {
+        id: 'get-my-activities',
+        name: 'Get My Activities',
+        description: 'Get paginated credential activity for your profile (sends, claims, failures)',
+        template: `await learnCard.invoke.getMyActivities({
+    limit: {{limit}}, integrationId: "{{integrationId}}"
+})`,
+        params: [
+            { name: 'limit', type: 'number', placeholder: '25', defaultValue: '25', description: 'Max results to return', required: false },
+            { name: 'integrationId', type: 'string', placeholder: 'your-integration-id', description: 'Filter by integration ID (optional)', required: false },
+        ],
+        category: 'activity',
+    },
+    {
+        id: 'get-activity-stats',
+        name: 'Get Activity Stats',
+        description: 'Get aggregated credential activity stats (issued, claimed, failed, claim rate)',
+        template: `await learnCard.invoke.getActivityStats({ integrationId: "{{integrationId}}" })`,
+        params: [
+            { name: 'integrationId', type: 'string', placeholder: 'your-integration-id', description: 'Integration ID (optional)', required: false },
+        ],
+        category: 'activity',
+    },
+    {
+        id: 'get-activity',
+        name: 'Get Activity by ID',
+        description: 'Get details of a specific credential activity by its activity ID',
+        template: 'await learnCard.invoke.getActivity({ activityId: "{{activityId}}" })',
+        params: [
+            { name: 'activityId', type: 'string', placeholder: 'activity-uuid', description: 'Activity ID to look up', required: true },
+        ],
+        category: 'activity',
+    },
+    {
+        id: 'get-activity-chain',
+        name: 'Get Activity Chain',
+        description: 'Get all events in a credential activity chain (e.g., CREATED → CLAIMED)',
+        template: 'await learnCard.invoke.getActivityChain({ activityId: "{{activityId}}" })',
+        params: [
+            { name: 'activityId', type: 'string', placeholder: 'activity-uuid', description: 'Activity ID to look up the chain for', required: true },
+        ],
+        category: 'activity',
     },
 ];
 

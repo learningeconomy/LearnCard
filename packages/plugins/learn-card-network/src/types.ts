@@ -739,6 +739,8 @@ export type LearnCardNetworkPluginMethods = {
     }) => Promise<CredentialActivityStats>;
 
     getActivity: (options: { activityId: string }) => Promise<CredentialActivityRecord | null>;
+
+    getActivityChain: (options: { activityId: string }) => Promise<CredentialActivityRecord[]>;
 };
 
 /** @group LearnCardNetwork Plugin */

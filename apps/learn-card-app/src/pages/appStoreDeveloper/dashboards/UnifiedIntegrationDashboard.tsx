@@ -130,6 +130,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const [activeTab, setActiveTab] = useState<string>('overview');
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const [authGrants, setAuthGrants] = useState<AuthGrant[]>([]);
     const [templates, setTemplates] = useState<CredentialTemplate[]>([]);
@@ -272,35 +273,6 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 }
             }
 
-            // Fetch credential stats using getPaginatedBoostRecipients for complete analytics
-            // This captures ALL sends (profileId, DID, email, phone) not just inbox sends
-            let totalIssued = 0;
-            let totalAccepted = 0;
-            try {
-                for (const boostUri of integrationBoostUris) {
-                    try {
-                        // getPaginatedBoostRecipients(uri, limit, cursor, includeUnacceptedBoosts)
-                        const recipients = await wallet.invoke.getPaginatedBoostRecipients?.(
-                            boostUri,
-                            500,        // limit
-                            undefined,  // cursor
-                            true        // includeUnacceptedBoosts
-                        );
-
-                        const records = recipients?.records || [];
-                        totalIssued += records.length;
-                        // Count accepted = has a 'received' date (credential was accepted)
-                        totalAccepted += records.filter((r: any) => r.received).length;
-                    } catch (e) {
-                        console.warn('Could not load recipients for boost:', boostUri, e);
-                    }
-                }
-            } catch (err) {
-                console.warn('Could not load credential stats:', err);
-            }
-
-            const totalClaimed = totalAccepted;
-
             // Load branding from profile
             if (config.showBranding && !branding) {
                 try {
@@ -319,19 +291,15 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 }
             }
 
-            const pendingClaims = totalIssued - totalClaimed;
-            const claimRate = totalIssued > 0 ? (totalClaimed / totalIssued) * 100 : 0;
-
-            setStats({
-                totalIssued,
-                totalClaimed,
-                pendingClaims,
-                claimRate,
+            // Stats for credential activity are fetched via useIntegrationActivity hook
+            // Only set non-activity stats here
+            setStats(prev => ({
+                ...prev,
                 activeTokens: activeTokenCount,
                 templateCount: templates.length || boostsResult?.records?.length || 0,
                 activeContracts: activeContractsCount,
                 totalConnections: 0,
-            });
+            }));
         } catch (err) {
             console.error('Failed to load dashboard data:', err);
             presentToast('Failed to load dashboard data', { type: ToastTypeEnum.Error, hasDismissButton: true });
@@ -363,27 +331,33 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
         loadDashboardData();
     }, [integration.id]);
 
-    const handleRefresh = () => loadDashboardData(true);
+    // Fetch credential activity stats using the unified API
+    // Stats are filtered by integrationId for accurate per-integration metrics
+    const { stats: activityStats, refetch: refetchActivity } = useIntegrationActivity(templates, { 
+        integrationId: integration.id,
+    });
 
-    // Use merged activity stats (combines boost recipients + inbox credentials)
-    const { stats: activityStats } = useIntegrationActivity(templates);
-
-    // Use activity stats for issuance metrics, fall back to loaded stats for other metrics
-    const mergedStats: DashboardStats = {
-        ...stats,
-        totalIssued: activityStats.totalSent || stats.totalIssued,
-        totalClaimed: activityStats.totalClaimed || stats.totalClaimed,
-        pendingClaims: activityStats.pendingClaims || stats.pendingClaims,
-        claimRate: activityStats.claimRate || stats.claimRate,
+    const handleRefresh = () => {
+        loadDashboardData(true);
+        refetchActivity();
+        setRefreshKey(k => k + 1);
     };
 
+    // Combine activity stats (credential metrics) with loaded stats (tokens, contracts, etc.)
+    const mergedStats: DashboardStats = {
+        ...stats,
+        totalIssued: activityStats.totalSent,
+        totalClaimed: activityStats.totalClaimed,
+        pendingClaims: activityStats.pendingClaims,
+        claimRate: activityStats.claimRate,
+    };
+
+    // Stats use event type terminology: Created + Delivered = Sent, then Claimed, Pending (unclaimed), Claim Rate
     const quickStats: StatItem[] = [
-        { label: 'Credentials Issued', value: mergedStats.totalIssued, icon: Zap, iconBgColor: 'bg-cyan-100', iconColor: 'text-cyan-600' },
+        { label: 'Credentials Sent', value: mergedStats.totalIssued, icon: Zap, iconBgColor: 'bg-cyan-100', iconColor: 'text-cyan-600' },
         { label: 'Claimed', value: mergedStats.totalClaimed, icon: CheckCircle2, iconBgColor: 'bg-emerald-100', iconColor: 'text-emerald-600' },
         { label: 'Pending', value: mergedStats.pendingClaims, icon: AlertCircle, iconBgColor: 'bg-amber-100', iconColor: 'text-amber-600' },
-        config.showApiTokens
-            ? { label: 'Active Tokens', value: mergedStats.activeTokens, icon: Key, iconBgColor: 'bg-violet-100', iconColor: 'text-violet-600' }
-            : { label: 'Claim Rate', value: `${mergedStats.claimRate.toFixed(1)}%`, icon: BarChart3, iconBgColor: 'bg-violet-100', iconColor: 'text-violet-600' },
+        { label: 'Claim Rate', value: `${mergedStats.claimRate.toFixed(1)}%`, icon: BarChart3, iconBgColor: 'bg-violet-100', iconColor: 'text-violet-600' },
     ];
 
     if (isLoading) {
@@ -433,6 +407,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     stats={stats}
                     templates={templates}
                     onNavigate={setActiveTab}
+                    refreshKey={refreshKey}
                 />
             )}
 

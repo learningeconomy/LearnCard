@@ -778,7 +778,8 @@ const result = await learnCard.invoke.send({
         credential,
         name: credential.name || 'Credential',
         category: 'Achievement',
-    },${optionsCode}
+    },
+    // integrationId: 'your-integration-id', // Optional: track activity per integration${optionsCode}
 });` : `
 // const result = await learnCard.invoke.send({
 //     type: 'boost',
@@ -787,7 +788,8 @@ const result = await learnCard.invoke.send({
 //         credential,
 //         name: credential.name || 'Credential',
 //         category: 'Achievement',
-//     },${optionsCode ? optionsCode.split('\n').map(l => '// ' + l.slice(1)).join('\n') : ''}
+//     },
+//     // integrationId: 'your-integration-id', // Optional: track activity per integration${optionsCode ? optionsCode.split('\n').map(l => '// ' + l.slice(1)).join('\n') : ''}
 // });`}
 ${advancedOptions.suppressDelivery ? `
 // Since delivery is suppressed, get the claim URL from the response:
