@@ -44,11 +44,13 @@ const SKILL_LEVEL_META = {
     },
 };
 
-type SkillProgressBarProps = {};
+type SkillProgressBarProps = {
+    proficiencyLevel?: SkillLevel;
+    onChange?: (level: SkillLevel) => void;
+};
 
-const SkillProgressBar: React.FC<SkillProgressBarProps> = ({}) => {
-    const [skillLevel, setSkillLevel] = useState<SkillLevel>(SkillLevel.Novice);
-    const [isFocused, setIsFocused] = useState(false);
+const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, onChange }) => {
+    const [skillLevel, setSkillLevel] = useState<SkillLevel>(proficiencyLevel ?? SkillLevel.Novice);
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const segmentRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -82,6 +84,12 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({}) => {
         return () => window.removeEventListener('pointerup', onPointerUp);
     }, []);
 
+    useEffect(() => {
+        if (proficiencyLevel && proficiencyLevel !== skillLevel) {
+            setSkillLevel(proficiencyLevel);
+        }
+    }, [proficiencyLevel]);
+
     return (
         <div className="flex flex-col gap-[15px]">
             <div className="flex flex-col">
@@ -100,13 +108,19 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({}) => {
                     setIsDragging(true);
                     const idx = chooseIndexFromClientX(e.clientX);
                     const next = levels[idx];
-                    if (next) setSkillLevel(next);
+                    if (next) {
+                        setSkillLevel(next);
+                        onChange?.(next);
+                    }
                 }}
                 onPointerMove={e => {
                     if (!isDragging) return;
                     const idx = chooseIndexFromClientX(e.clientX);
                     const next = levels[idx];
-                    if (next) setSkillLevel(next);
+                    if (next) {
+                        setSkillLevel(next);
+                        onChange?.(next);
+                    }
                 }}
             >
                 {levels.map((level, index) => {
@@ -161,10 +175,11 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({}) => {
                     onChange={e => {
                         const idx = Number(e.target.value);
                         const next = levels[idx];
-                        if (next) setSkillLevel(next);
+                        if (next) {
+                            setSkillLevel(next);
+                            onChange?.(next);
+                        }
                     }}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
                     aria-label="Skill level"
                     className="absolute inset-0 w-full h-[29px] opacity-0 pointer-events-none"
                 />

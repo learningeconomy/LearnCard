@@ -4,7 +4,7 @@ import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
-import SkillProgressBar from './SkillProgressBar';
+import SkillProgressBar, { SkillLevel } from './SkillProgressBar';
 import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
 
 import { ModalTypes, useModal } from 'learn-card-base';
@@ -16,6 +16,8 @@ type SelfAssignedSkillRowProps = {
     framework: SkillFramework;
     isNodeSelected?: boolean;
     handleToggleSelect: () => void;
+    proficiencyLevel?: SkillLevel;
+    onChangeProficiency?: (level: SkillLevel) => void;
 };
 
 const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
@@ -23,6 +25,8 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
     framework,
     isNodeSelected,
     handleToggleSelect,
+    proficiencyLevel,
+    onChangeProficiency,
 }) => {
     const { newModal } = useModal();
     const [isExpanded, setIsExpanded] = useState(true);
@@ -73,7 +77,10 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
                 <div className="flex flex-col gap-[15px] items-center p-[10px] border-solid border-t-[1px] border-grayscale-200">
                     {isExpanded && (
                         <div className="bg-grayscale-50 flex flex-col gap-[15px] w-full">
-                            <SkillProgressBar />
+                            <SkillProgressBar
+                                proficiencyLevel={proficiencyLevel}
+                                onChange={onChangeProficiency}
+                            />
                         </div>
                     )}
                     <button

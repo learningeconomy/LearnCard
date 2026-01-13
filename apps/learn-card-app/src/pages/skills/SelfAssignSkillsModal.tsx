@@ -19,6 +19,7 @@ import {
     ApiSkillNode,
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
+import { SkillLevel } from './SkillProgressBar';
 
 enum Step {
     Add,
@@ -32,7 +33,12 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
     const [step, setStep] = useState<Step>(Step.Add);
     const [searchInput, setSearchInput] = useState('');
-    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+    const [selectedSkills, setSelectedSkills] = useState<
+        {
+            id: string;
+            proficiency: SkillLevel;
+        }[]
+    >([]);
 
     const { data: frameworks = [] } = useListMySkillFrameworks();
     const selfAssignedSkillFramework = frameworks[0]; // TODO arbitrary for now
@@ -68,10 +74,11 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         ) || [];
 
     const handleToggleSelect = (skillId: string) => {
-        if (selectedSkills.includes(skillId)) {
-            setSelectedSkills(selectedSkills.filter(id => id !== skillId));
+        const isAlreadySelected = selectedSkills.some(s => s.id === skillId);
+        if (isAlreadySelected) {
+            setSelectedSkills(selectedSkills.filter(s => s.id !== skillId));
         } else {
-            setSelectedSkills([...selectedSkills, skillId]);
+            setSelectedSkills([...selectedSkills, { id: skillId, proficiency: SkillLevel.Novice }]);
         }
     };
 
@@ -148,7 +155,8 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 ) : (
                     <>
                         {suggestedSkills.map((skill, index) => {
-                            if (isReview && !selectedSkills.includes(skill.id)) {
+                            const selected = selectedSkills.find(s => s.id === skill.id);
+                            if (isReview && !selected) {
                                 // TODO logic will eventually have to be more sophisticated
                                 return null;
                             }
@@ -158,7 +166,15 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                                     skill={skill}
                                     framework={selfAssignedSkillFramework}
                                     handleToggleSelect={() => handleToggleSelect(skill.id)}
-                                    isNodeSelected={selectedSkills.includes(skill.id)}
+                                    isNodeSelected={!!selected}
+                                    proficiencyLevel={selected?.proficiency ?? SkillLevel.Novice}
+                                    onChangeProficiency={level =>
+                                        setSelectedSkills(prev =>
+                                            prev.map(s =>
+                                                s.id === skill.id ? { ...s, proficiency: level } : s
+                                            )
+                                        )
+                                    }
                                 />
                             );
                         })}
