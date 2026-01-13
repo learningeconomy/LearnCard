@@ -122,7 +122,7 @@ export const issueToInbox = async (
     issuerProfile: ProfileType,
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP, 
-    configuration: IssueInboxCredentialType['configuration'] & { boostUri?: string } = {},
+    configuration: IssueInboxCredentialType['configuration'] & { boostUri?: string; activityId?: string; integrationId?: string } = {},
     ctx: Context
 ): Promise<{ 
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
@@ -130,7 +130,7 @@ export const issueToInbox = async (
     claimUrl?: string;
     recipientDid?: string;
 }> => {
-    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery, boostUri } = configuration;
+    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery, boostUri, activityId, integrationId } = configuration;
     
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
@@ -223,6 +223,8 @@ export const issueToInbox = async (
             issuerProfile,
             webhookUrl,
             boostUri,
+            activityId,
+            integrationId,
             expiresInDays,
         });
 
@@ -295,6 +297,8 @@ export const issueToInbox = async (
             issuerProfile,
             webhookUrl,
             boostUri,
+            activityId,
+            integrationId,
             signingAuthority,
             expiresInDays,
         });

@@ -51,6 +51,7 @@ import { createClaimedRelationship } from '@accesslayer/inbox-credential/relatio
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
+import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 
 export const inboxRouter = t.router({
     // Request guardian approval via email
@@ -646,6 +647,18 @@ export const inboxRouter = t.router({
                             }
                         }
 
+                        // Log credential activity for inbox claim - chain to original activityId
+                        await logCredentialClaimed({
+                            activityId: inboxCredential.activityId || undefined,
+                            actorProfileId: profile.profileId,
+                            recipientType: cm.type as 'email' | 'phone',
+                            recipientIdentifier: cm.value,
+                            recipientProfileId: profile.profileId,
+                            inboxCredentialId: inboxCredential.id,
+                            boostUri: inboxCredential.boostUri || undefined,
+                            source: 'inbox',
+                        });
+
                         claimed += 1;
                         verifiableCredentials.push(finalCredential);
                     } catch (error) {
@@ -653,6 +666,25 @@ export const inboxRouter = t.router({
                             `Failed to finalize inbox credential ${inboxCredential.id}:`,
                             error
                         );
+
+                        // Log FAILED activity - chain to original activityId/integrationId if available
+                        try {
+                            await logCredentialFailed({
+                                activityId: inboxCredential.activityId || undefined,
+                                actorProfileId: profile.profileId,
+                                recipientType: cm.type as 'email' | 'phone',
+                                recipientIdentifier: cm.value,
+                                recipientProfileId: profile.profileId,
+                                boostUri: inboxCredential.boostUri || undefined,
+                                integrationId: (inboxCredential as any).integrationId || undefined,
+                                source: 'claimLink',
+                                metadata: {
+                                    error: error instanceof Error ? error.message : 'Unknown error',
+                                },
+                            });
+                        } catch (logError) {
+                            console.error('Failed to log credential failed activity:', logError);
+                        }
 
                         // Error webhook if configured
                         if (inboxCredential.webhookUrl) {

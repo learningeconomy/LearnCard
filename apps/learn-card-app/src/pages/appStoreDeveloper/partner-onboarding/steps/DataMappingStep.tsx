@@ -837,16 +837,12 @@ curl -X POST "https://network.learncard.com/api/send" \\
         try {
             const wallet = await initWalletRef.current();
 
-            // Get initial counts for both inbox credentials and boost recipients
-            const initialInbox = await wallet.invoke.getMySentInboxCredentials?.({ limit: 25 });
-            const initialInboxCount = initialInbox?.records?.length ?? 0;
-
-            let initialBoostRecipientsCount = 0;
-            if (boostUri) {
-                // getPaginatedBoostRecipients takes (boostUri, limit, cursor)
-                const initialBoostRecipients = await wallet.invoke.getPaginatedBoostRecipients?.(boostUri, 25);
-                initialBoostRecipientsCount = initialBoostRecipients?.records?.length ?? 0;
-            }
+            // Get initial activity count using unified activity API
+            const initialActivities = await (wallet.invoke as any).getMyActivities?.({
+                limit: 1,
+                boostUri,
+            });
+            const initialTimestamp = initialActivities?.records?.[0]?.timestamp;
 
             // Poll for 30 seconds
             let attempts = 0;
@@ -861,27 +857,26 @@ curl -X POST "https://network.learncard.com/api/send" \\
 
                 attempts++;
 
-                // Check inbox credentials (for email/phone recipients)
-                const currentInbox = await wallet.invoke.getMySentInboxCredentials?.({ limit: 25 });
-                const currentInboxCount = currentInbox?.records?.length ?? 0;
+                // Check for new activity using unified activity API
+                const currentActivities = await (wallet.invoke as any).getMyActivities?.({
+                    limit: 1,
+                    boostUri,
+                });
 
-                if (currentInboxCount > initialInboxCount) {
+                const latestTimestamp = currentActivities?.records?.[0]?.timestamp;
+                const latestEvent = currentActivities?.records?.[0];
+
+                // Detect new activity by comparing timestamps
+                if (latestTimestamp && latestTimestamp !== initialTimestamp) {
                     setApiIsPolling(false);
-                    setApiPollResult({ success: true, message: 'Credential sent successfully to email/phone recipient!' });
+
+                    const recipientType = latestEvent?.recipientType;
+                    const message = recipientType === 'profile'
+                        ? 'Credential sent successfully to profile!'
+                        : 'Credential sent successfully to email/phone recipient!';
+
+                    setApiPollResult({ success: true, message });
                     return;
-                }
-
-                // Check boost recipients (for profile ID/DID recipients)
-                if (boostUri) {
-                    // getPaginatedBoostRecipients takes (boostUri, limit, cursor)
-                    const currentBoostRecipients = await wallet.invoke.getPaginatedBoostRecipients?.(boostUri, 25);
-                    const currentBoostRecipientsCount = currentBoostRecipients?.records?.length ?? 0;
-
-                    if (currentBoostRecipientsCount > initialBoostRecipientsCount) {
-                        setApiIsPolling(false);
-                        setApiPollResult({ success: true, message: 'Credential sent successfully to profile!' });
-                        return;
-                    }
                 }
 
                 setTimeout(poll, 2000);

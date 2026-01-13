@@ -1836,6 +1836,25 @@ export async function getLearnCardNetworkPlugin(
             },
 
             getLCNClient: () => client,
+
+            // Activity
+            getMyActivities: async (_learnCard, options = {}) => {
+                await ensureUser();
+
+                return client.activity.getMyActivities.query(options);
+            },
+
+            getActivityStats: async (_learnCard, options = {}) => {
+                await ensureUser();
+
+                return client.activity.getActivityStats.query(options);
+            },
+
+            getActivity: async (_learnCard, options) => {
+                await ensureUser();
+
+                return client.activity.getActivity.query(options);
+            },
         },
     };
 }

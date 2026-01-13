@@ -38,6 +38,7 @@ import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-pro
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import { EXHAUSTED, exhaustExchangeChallengeForToken, getExchangeChallengeStateForToken, setValidExchangeChallengeForToken } from '@cache/exchanges';
 import { randomUUID } from 'crypto';
 
@@ -637,6 +638,24 @@ async function handleInboxClaimPresentation(
                 await createClaimedRelationship(holderProfile.profileId, inboxCredential.id, claimToken);
             }
 
+            // Log CLAIMED activity - chain to original activityId/integrationId if available
+            // activityId and integrationId are stored on the inbox credential
+            const activityId = (inboxCredential as any).activityId as string | undefined;
+            const integrationId = (inboxCredential as any).integrationId as string | undefined;
+            const issuerProfileForActivity = await getProfileByDid(inboxCredential.issuerDid);
+            if (issuerProfileForActivity) {
+                await logCredentialClaimed({
+                    activityId,
+                    actorProfileId: issuerProfileForActivity.profileId,
+                    recipientType: contactMethod.type as 'email' | 'phone',
+                    recipientIdentifier: contactMethod.value,
+                    recipientProfileId: holderProfile?.profileId,
+                    boostUri,
+                    integrationId,
+                    source: 'claimLink',
+                });
+            }
+
             // Trigger webhook if configured
             if (inboxCredential.webhookUrl) {
                 const learnCard = await getLearnCard();
@@ -667,6 +686,30 @@ async function handleInboxClaimPresentation(
         } catch (error) {
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
             
+            // Log FAILED activity - chain to original activityId/integrationId if available
+            const failedActivityId = (inboxCredential as any).activityId as string | undefined;
+            const failedIntegrationId = (inboxCredential as any).integrationId as string | undefined;
+            const failedIssuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+            if (failedIssuerProfile) {
+                try {
+                    await logCredentialFailed({
+                        activityId: failedActivityId,
+                        actorProfileId: failedIssuerProfile.profileId,
+                        recipientType: contactMethod.type as 'email' | 'phone',
+                        recipientIdentifier: contactMethod.value,
+                        recipientProfileId: holderProfile?.profileId,
+                        boostUri,
+                        integrationId: failedIntegrationId,
+                        source: 'claimLink',
+                        metadata: {
+                            error: error instanceof Error ? error.message : 'Unknown error',
+                        },
+                    });
+                } catch (logError) {
+                    console.error('Failed to log credential failed activity:', logError);
+                }
+            }
+
             try {
                 // Trigger webhook for error if configured
                 if (inboxCredential.webhookUrl) {

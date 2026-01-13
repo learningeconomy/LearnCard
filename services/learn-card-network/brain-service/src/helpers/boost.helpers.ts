@@ -325,6 +325,9 @@ export const sendBoost = async ({
     autoAcceptCredential = false,
     skipCertification = false,
     contractTerms,
+    metadata,
+    activityId,
+    integrationId,
 }: {
     from: ProfileType;
     to: ProfileType;
@@ -335,20 +338,23 @@ export const sendBoost = async ({
     autoAcceptCredential?: boolean;
     skipCertification?: boolean;
     contractTerms?: DbTermsType;
+    metadata?: Record<string, unknown>;
+    activityId?: string;
+    integrationId?: string;
 }): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
 
-    // Skip certification if requested or if credential can't be decrypted
-    if (decryptedCredential && !skipCertification) {
-        if (process.env.NODE_ENV !== 'test') console.log('🚀 sendBoost:VC Decrypted');
+    // Skip certification if requested or if credential can't be decrypted or if it's not a boost credential
+    let _skipCertification = skipCertification || !decryptedCredential || !decryptedCredential?.type?.includes('BoostCredential');
+    if (!_skipCertification) {
         const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
         if (certifiedBoost) {
             const credentialInstance = await storeCredential(certifiedBoost);
 
             const tasks = [
                 createBoostInstanceOfRelationship(credentialInstance, boost),
-                createSentCredentialRelationship(from, to, credentialInstance),
+                createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId),
             ];
             // If this credential is being issued via a contract, create that relationship
             if (contractTerms) {
@@ -378,7 +384,7 @@ export const sendBoost = async ({
 
         const tasks = [
             createBoostInstanceOfRelationship(credentialInstance, boost),
-            createSentCredentialRelationship(from, to, credentialInstance),
+            createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId),
         ];
 
         if (contractTerms) {

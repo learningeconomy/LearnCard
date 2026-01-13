@@ -1,33 +1,49 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import type { BoostRecipientInfo } from '@learncard/types';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 import { useWallet } from 'learn-card-base';
-import { useGetBoostRecipients } from 'learn-card-base';
 
 import type { CredentialTemplate } from '../types';
 
-// Inbox credential type (matches what getMyIssuedCredentials returns)
-interface InboxCredential {
+/**
+ * Activity record from unified CredentialActivity API
+ */
+interface CredentialActivityRecord {
     id: string;
-    credential: string;
-    isSigned: boolean;
-    currentStatus: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED';
-    isAccepted?: boolean;
-    expiresAt: string;
-    createdAt: string;
-    issuerDid: string;
-    webhookUrl?: string;
+    activityId: string;
+    eventType: 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED' | 'FAILED';
+    timestamp: string;
+    actorProfileId: string;
+    recipientType: 'profile' | 'email' | 'phone';
+    recipientIdentifier: string;
     boostUri?: string;
-    signingAuthority?: {
-        endpoint?: string;
+    credentialUri?: string;
+    inboxCredentialId?: string;
+    integrationId?: string;
+    source: string;
+    metadata?: Record<string, unknown>;
+    boost?: {
+        id: string;
         name?: string;
+        category?: string;
+    };
+    recipientProfile?: {
+        profileId: string;
+        displayName?: string;
     };
 }
 
+interface CredentialActivityStats {
+    total: number;
+    created: number;
+    delivered: number;
+    claimed: number;
+    expired: number;
+    failed: number;
+    claimRate: number;
+}
+
 /**
- * Unified activity item representing either:
- * - A boost sent to a profile ID/DID (from getBoostRecipients)
- * - A credential sent to an email via Universal Inbox (from getMyIssuedCredentials)
+ * Unified activity item for display
  */
 export interface ActivityItem {
     id: string;
@@ -58,7 +74,7 @@ export interface IntegrationActivityResult {
     error: Error | null;
     refetch: () => void;
 
-    // Stats derived from activity
+    // Stats from unified API
     stats: {
         totalSent: number;
         totalClaimed: number;
@@ -68,11 +84,10 @@ export interface IntegrationActivityResult {
 }
 
 /**
- * Hook to fetch unified activity across both:
- * - Boost recipients (credentials sent to profile IDs/DIDs)
- * - Inbox credentials (credentials sent to emails)
+ * Hook to fetch unified activity using the new CredentialActivity API.
  * 
- * Filters by the templates associated with an integration.
+ * This replaces the previous complex implementation that combined boost recipients
+ * and inbox credentials from separate sources. Now uses a single unified API.
  */
 export function useIntegrationActivity(
     templates: CredentialTemplate[],
@@ -83,222 +98,132 @@ export function useIntegrationActivity(
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
-    const [inboxCredentials, setInboxCredentials] = useState<InboxCredential[]>([]);
-    const [inboxLoading, setInboxLoading] = useState(true);
-    const [inboxError, setInboxError] = useState<Error | null>(null);
+    const [activity, setActivity] = useState<ActivityItem[]>([]);
+    const [stats, setStats] = useState<IntegrationActivityResult['stats']>({
+        totalSent: 0,
+        totalClaimed: 0,
+        pendingClaims: 0,
+        claimRate: 0,
+    });
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
     const [fetchKey, setFetchKey] = useState(0);
 
-    // Get all templates with boostUri
-    const templatesWithUri = useMemo(
-        () => templates.filter(t => t.boostUri),
-        [templates]
-    );
+    // Get boostUris from templates for filtering
+    const boostUris = templates.map(t => t.boostUri).filter(Boolean) as string[];
 
     // Create a map of boostUri -> template for quick lookup
-    const templateMap = useMemo(() => {
-        const map = new Map<string, CredentialTemplate>();
+    const templateMap = new Map<string, CredentialTemplate>();
 
-        templatesWithUri.forEach(t => {
-            if (t.boostUri) map.set(t.boostUri, t);
-        });
+    templates.forEach(t => {
+        if (t.boostUri) templateMap.set(t.boostUri, t);
+    });
 
-        return map;
-    }, [templatesWithUri]);
-
-    // Fetch boost recipients for each template (up to 5 to avoid too many requests)
-    const template0 = templatesWithUri[0];
-    const template1 = templatesWithUri[1];
-    const template2 = templatesWithUri[2];
-    const template3 = templatesWithUri[3];
-    const template4 = templatesWithUri[4];
-
-    const { data: recipients0, isLoading: loading0 } = useGetBoostRecipients(template0?.boostUri ?? null);
-    const { data: recipients1, isLoading: loading1 } = useGetBoostRecipients(template1?.boostUri ?? null);
-    const { data: recipients2, isLoading: loading2 } = useGetBoostRecipients(template2?.boostUri ?? null);
-    const { data: recipients3, isLoading: loading3 } = useGetBoostRecipients(template3?.boostUri ?? null);
-    const { data: recipients4, isLoading: loading4 } = useGetBoostRecipients(template4?.boostUri ?? null);
-
-    const boostRecipientsLoading = loading0 || loading1 || loading2 || loading3 || loading4;
-
-    // Fetch inbox credentials
+    // Fetch activity and stats
     useEffect(() => {
         let cancelled = false;
 
-        const fetchInboxCredentials = async () => {
-            // Don't return early if no templates - still fetch to see what's there
+        const fetchActivity = async () => {
             try {
-                setInboxLoading(true);
+                setIsLoading(true);
                 const wallet = await initWalletRef.current();
 
-                // Fetch inbox credentials issued by this profile
-                // Note: getMySentInboxCredentials is the method exposed by the wallet
-                const result = await (wallet.invoke as any).getMySentInboxCredentials?.({ limit: 100 });
+                // Fetch activity records using unified API
+                const activityResult = await (wallet.invoke as any).getMyActivities?.({
+                    limit,
+                });
+
+                // Fetch stats using unified API
+                const statsResult = await (wallet.invoke as any).getActivityStats?.({
+                    boostUris: boostUris.length > 0 ? boostUris : undefined,
+                });
+
 
                 if (cancelled) return;
 
-                if (result?.records) {
-                    // Extract boostId from the credential JSON and attach to record
-                    const enriched = result.records.map((cred: InboxCredential) => {
-                        try {
-                            const parsed = JSON.parse(cred.credential);
-                            return { ...cred, boostUri: parsed.boostId || cred.boostUri };
-                        } catch {
-                            return cred;
+                // Transform activity records to ActivityItem format
+                const items: ActivityItem[] = [];
+
+                if (activityResult?.records) {
+                    for (const record of activityResult.records as CredentialActivityRecord[]) {
+                        // Filter by templates if we have them
+                        if (boostUris.length > 0 && record.boostUri && !boostUris.includes(record.boostUri)) {
+                            continue;
                         }
-                    });
 
-                    // Filter to only credentials for our templates (if we have templates)
-                    const boostUris = new Set(templatesWithUri.map(t => t.boostUri).filter(Boolean));
+                        const template = record.boostUri ? templateMap.get(record.boostUri) : undefined;
+                        const isInbox = record.recipientType === 'email' || record.recipientType === 'phone';
 
-                    const filtered = boostUris.size > 0
-                        ? enriched.filter((cred: InboxCredential) => cred.boostUri && boostUris.has(cred.boostUri))
-                        : enriched;
+                        // Determine status from eventType
+                        let status: ActivityItem['status'] = 'sent';
 
-                    setInboxCredentials(filtered);
-                } else {
-                    setInboxCredentials([]);
+                        if (record.eventType === 'CLAIMED') {
+                            status = 'claimed';
+                        } else if (record.eventType === 'EXPIRED') {
+                            status = 'expired';
+                        } else if (record.eventType === 'CREATED' && isInbox) {
+                            status = 'pending';
+                        } else if (record.eventType === 'DELIVERED') {
+                            status = 'sent';
+                        }
+
+                        items.push({
+                            id: record.id,
+                            type: isInbox ? 'inbox' : 'boost',
+                            templateName: record.boost?.name || template?.name || 'Credential',
+                            templateId: template?.id || record.boostUri || record.id,
+                            boostUri: record.boostUri,
+                            recipientName: record.recipientProfile?.displayName 
+                                || record.recipientIdentifier 
+                                || 'Unknown',
+                            recipientId: record.recipientType === 'profile' ? record.recipientIdentifier : undefined,
+                            recipientEmail: record.recipientType === 'email' ? record.recipientIdentifier : undefined,
+                            sentAt: record.timestamp,
+                            claimedAt: record.eventType === 'CLAIMED' ? record.timestamp : undefined,
+                            status,
+                            credentialUri: record.credentialUri,
+                        });
+                    }
                 }
 
-                setInboxError(null);
+                setActivity(items);
+
+                // Set stats from unified API
+                if (statsResult) {
+                    const apiStats = statsResult as CredentialActivityStats;
+
+                    setStats({
+                        totalSent: apiStats.delivered + apiStats.created,
+                        totalClaimed: apiStats.claimed,
+                        pendingClaims: (apiStats.delivered + apiStats.created) - apiStats.claimed,
+                        claimRate: apiStats.claimRate,
+                    });
+                }
+
+                setError(null);
             } catch (err) {
                 if (cancelled) return;
-                console.error('[useIntegrationActivity] Failed to fetch inbox credentials:', err);
-                setInboxError(err instanceof Error ? err : new Error('Failed to fetch inbox credentials'));
-                setInboxCredentials([]);
+                console.error('[useIntegrationActivity] Failed to fetch activity:', err);
+                setError(err instanceof Error ? err : new Error('Failed to fetch activity'));
+                setActivity([]);
             } finally {
                 if (!cancelled) {
-                    setInboxLoading(false);
+                    setIsLoading(false);
                 }
             }
         };
 
-        fetchInboxCredentials();
+        fetchActivity();
 
         return () => {
             cancelled = true;
         };
-    }, [templatesWithUri, fetchKey]);
+    }, [boostUris.join(','), limit, fetchKey]);
 
     // Refetch function
     const refetch = useCallback(() => {
         setFetchKey(k => k + 1);
     }, []);
-
-    // Combine all activity
-    const activity = useMemo(() => {
-        const items: ActivityItem[] = [];
-
-        // Add boost recipients
-        const addBoostRecipients = (
-            recipients: (BoostRecipientInfo & { sent?: string })[] | undefined,
-            template: CredentialTemplate | undefined
-        ) => {
-            if (!recipients || !template) return;
-
-            recipients.forEach((r, idx) => {
-                const sentAt = (r as any).sent || new Date().toISOString();
-                const isClaimed = Boolean(r.received);
-
-                items.push({
-                    id: `boost-${template.id}-${idx}-${sentAt}`,
-                    type: 'boost',
-                    templateName: template.name,
-                    templateId: template.id,
-                    boostUri: template.boostUri,
-                    recipientName: r.to?.displayName || r.to?.profileId || 'Unknown',
-                    recipientId: r.to?.profileId,
-                    sentAt,
-                    claimedAt: r.received,
-                    status: isClaimed ? 'claimed' : 'sent',
-                    credentialUri: r.uri,
-                });
-            });
-        };
-
-        addBoostRecipients(recipients0, template0);
-        addBoostRecipients(recipients1, template1);
-        addBoostRecipients(recipients2, template2);
-        addBoostRecipients(recipients3, template3);
-        addBoostRecipients(recipients4, template4);
-
-        // Add inbox credentials
-        inboxCredentials.forEach((cred) => {
-            const template = cred.boostUri ? templateMap.get(cred.boostUri) : undefined;
-            const templateName = template?.name || 'Credential';
-
-            let status: ActivityItem['status'] = 'pending';
-
-            if (cred.currentStatus === 'CLAIMED' || cred.isAccepted) {
-                status = 'claimed';
-            } else if (cred.currentStatus === 'EXPIRED') {
-                status = 'expired';
-            } else if (cred.currentStatus === 'PENDING' || cred.currentStatus === 'ISSUED' || cred.currentStatus === 'DELIVERED') {
-                status = 'pending';
-            }
-
-            items.push({
-                id: `inbox-${cred.id}`,
-                type: 'inbox',
-                templateName,
-                templateId: template?.id || cred.boostUri || cred.id,
-                boostUri: cred.boostUri,
-                recipientName: 'Email recipient',
-                recipientEmail: undefined,
-                sentAt: cred.createdAt,
-                claimedAt: status === 'claimed' ? cred.createdAt : undefined,
-                status,
-            });
-        });
-
-        // Sort by sent date descending (most recent first)
-        items.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
-
-        // Return limited results
-        return items.slice(0, limit);
-    }, [
-        recipients0, recipients1, recipients2, recipients3, recipients4,
-        template0, template1, template2, template3, template4,
-        inboxCredentials, templateMap, limit,
-    ]);
-
-    // Calculate stats from all activity (not just limited)
-    const stats = useMemo(() => {
-        // Count all boost recipients
-        let boostSent = 0;
-        let boostClaimed = 0;
-
-        const countBoostRecipients = (recipients: (BoostRecipientInfo & { sent?: string })[] | undefined) => {
-            if (!recipients) return;
-
-            recipients.forEach(r => {
-                boostSent++;
-
-                if (r.received) boostClaimed++;
-            });
-        };
-
-        countBoostRecipients(recipients0);
-        countBoostRecipients(recipients1);
-        countBoostRecipients(recipients2);
-        countBoostRecipients(recipients3);
-        countBoostRecipients(recipients4);
-
-        // Count inbox credentials
-        const inboxSent = inboxCredentials.length;
-        const inboxClaimed = inboxCredentials.filter(
-            c => c.currentStatus === 'CLAIMED' || c.isAccepted
-        ).length;
-
-        const totalSent = boostSent + inboxSent;
-        const totalClaimed = boostClaimed + inboxClaimed;
-        const pendingClaims = totalSent - totalClaimed;
-        const claimRate = totalSent > 0 ? Math.round((totalClaimed / totalSent) * 100) : 0;
-
-        return { totalSent, totalClaimed, pendingClaims, claimRate };
-    }, [recipients0, recipients1, recipients2, recipients3, recipients4, inboxCredentials]);
-
-    const isLoading = boostRecipientsLoading || inboxLoading;
-    const error = inboxError;
 
     return { activity, isLoading, error, refetch, stats };
 }

@@ -16,6 +16,7 @@ export type InboxCredentialType = {
     issuerDid: string;
     webhookUrl?: string;
     boostUri?: string; // URI of the boost this credential is an instance of
+    activityId?: string; // Links to CredentialActivity for lifecycle tracking
     'signingAuthority.endpoint'?: string;
     'signingAuthority.name'?: string;
 };
@@ -80,6 +81,7 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             issuerDid: { type: 'string', required: true },
             webhookUrl: { type: 'string', required: false },
             boostUri: { type: 'string', required: false },
+            activityId: { type: 'string', required: false },
             'signingAuthority.endpoint': { type: 'string', required: false },
             'signingAuthority.name': { type: 'string', required: false },
         },

@@ -17,6 +17,8 @@ export const createInboxCredential = async (input: {
     issuerProfile: ProfileType;
     webhookUrl?: string;
     boostUri?: string;
+    activityId?: string;
+    integrationId?: string;
     signingAuthority?: { endpoint: string; name: string };
     expiresInDays?: number;
 }): Promise<InboxCredentialInstance> => {
@@ -36,6 +38,8 @@ export const createInboxCredential = async (input: {
         issuerDid: input.issuerProfile.did,
         webhookUrl: input.webhookUrl,
         boostUri: input.boostUri,
+        activityId: input.activityId,
+        integrationId: input.integrationId,
         ...(input.signingAuthority ? {
             'signingAuthority.endpoint': input.signingAuthority.endpoint,
             'signingAuthority.name': input.signingAuthority.name,
