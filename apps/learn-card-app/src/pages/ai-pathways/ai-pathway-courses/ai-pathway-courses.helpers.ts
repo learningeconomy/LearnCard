@@ -1,3 +1,4 @@
+import { OccupationDetailsOptions } from 'learn-card-base/types/careerOneStop';
 import Megaphone from '../../../assets/images/course.megaphone.icon.png';
 
 export type AiPathwayCourse = {
@@ -54,3 +55,8 @@ export const AI_PATHWAY_COURSES: AiPathwayCourse[] = [
         image: Megaphone,
     },
 ];
+
+export const getKeywordsForCourses = (occupations: OccupationDetailsOptions[]) => {
+    const keywords = occupations.flatMap(occupation => occupation.OnetTitle);
+    return keywords;
+};

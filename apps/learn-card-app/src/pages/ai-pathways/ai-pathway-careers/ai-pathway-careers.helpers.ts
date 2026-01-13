@@ -235,3 +235,24 @@ export const getFirstAvailableKeywords = (
 
     return [];
 };
+
+export const getAllKeywords = (
+    pathways: { keywords?: { occupation?: string[]; jobs?: string[]; careers?: string[] } }[]
+): string[] => {
+    const allKeywords: string[] = [];
+
+    for (const pathway of pathways) {
+        if (pathway.keywords?.careers?.length) {
+            allKeywords.push(...pathway.keywords.careers);
+        }
+        if (pathway.keywords?.occupation?.length) {
+            allKeywords.push(...pathway.keywords.occupation);
+        }
+        if (pathway.keywords?.jobs?.length) {
+            allKeywords.push(...pathway.keywords.jobs);
+        }
+    }
+
+    // Remove duplicates while preserving order
+    return [...new Set(allKeywords)];
+};

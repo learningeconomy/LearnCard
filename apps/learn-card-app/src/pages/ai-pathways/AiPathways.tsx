@@ -15,7 +15,10 @@ import { CredentialCategoryEnum } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useGetCurrentLCNUser, useAiInsightCredential, useAiPathways } from 'learn-card-base';
-import { getFirstAvailableKeywords } from './ai-pathway-careers/ai-pathway-careers.helpers';
+import {
+    getFirstAvailableKeywords,
+    getAllKeywords,
+} from './ai-pathway-careers/ai-pathway-careers.helpers';
 
 export type PathwayStep = {
     title?: string;
@@ -48,6 +51,7 @@ const AiPathways: React.FC = () => {
     }
 
     careerKeywords = careerKeywords || getFirstAvailableKeywords(learningPathwaysData || []);
+    const allKeywords = getAllKeywords(learningPathwaysData || []);
 
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
@@ -60,7 +64,7 @@ const AiPathways: React.FC = () => {
                         hidePlusBtn={true}
                     />
                     <div className="flex items-center justify-center flex-col relative w-full pb-[50px]">
-                        <AiPathwayCourses />
+                        <AiPathwayCourses keywords={allKeywords} />
                         <AiPathwaySessions />
                         <AiPathwayCareers careerKeywords={careerKeywords} />
                         <AiPathwayExploreContent />
