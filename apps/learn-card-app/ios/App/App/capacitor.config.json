@@ -42,7 +42,7 @@
 		"CapacitorUpdater": {
 			"appId": "com.learncard.app",
 			"autoUpdate": true,
-			"defaultChannel": "production"
+			"defaultChannel": "1.0.2"
 		}
 	},
 	"packageClassList": [

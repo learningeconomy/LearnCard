@@ -103,6 +103,8 @@ import ManageConsentFlowContractsPage from './pages/adminToolsPage/ManageConsent
 import SigningAuthoritiesPage from './pages/adminToolsPage/SigningAuthoritiesPage';
 import APITokensPage from './pages/adminToolsPage/api-tokens/APITokensPage';
 
+const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
+
 import AiSessionTopicsContainer from './components/ai-sessions/AiSessionTopicsContainer';
 import AiSessionsContainer from './components/ai-sessions/AiSessionsContainer';
 import UserVerifyEmail from './components/user-profile/UserContact/UserVerifyEmail';
@@ -321,6 +323,8 @@ export const Routes: React.FC = () => {
                         <Route exact path="/hidden/custom-wallet" component={CustomWallet} />
 
                         <Route exact path="/hidden/seed" component={LoginWithSeed} />
+
+                        <PrivateRoute exact path="/cli" component={DevCli} />
                     </Switch>
                 </GenericErrorBoundary>
             </Suspense>
