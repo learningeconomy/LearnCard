@@ -1,4 +1,4 @@
-import { useEffect, useCallback, memo } from 'react';
+import { useEffect, useCallback, memo, useState } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useLocation, useHistory } from 'react-router-dom';
@@ -20,6 +20,7 @@ import SideMenu from './components/sidemenu/SideMenu';
 import MeritBadgesIcon from 'learn-card-base/svgs/MeritBadgesIcon';
 import BoostSelectMenu from './components/boost/boost-select-menu/BoostSelectMenu';
 import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
+import LoginOverlay from './components/auth/LoginOverlay';
 
 import {
     getNavBarColor,
@@ -88,6 +89,17 @@ const AppRouter: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const collapsed = useIsCollapsed();
     const isChapiInteraction = useIsChapiInteraction();
+    const [showLoginOverlay, setShowLoginOverlay] = useState(false);
+
+    useEffect(() => {
+        if (isLoggedIn && location.pathname.includes('/login')) {
+            setShowLoginOverlay(true);
+        }
+
+        if (isLoggedIn && !location.pathname.includes('/login')) {
+            setShowLoginOverlay(false);
+        }
+    }, [isLoggedIn, location.pathname]);
 
     // Initialize Sentry only once when the component mounts
     useEffect(() => {
@@ -198,10 +210,11 @@ const AppRouter: React.FC = () => {
 
     const unreadCount = notificationsData?.notifications?.length || null;
 
-    const hideSideMenu = location.pathname === '/consent-flow';
+    const hideSideMenu = location.pathname === '/consent-flow' || location.pathname.includes('/login');
 
     return (
         <>
+            <LoginOverlay isOpen={showLoginOverlay} />
             <div id="app-router" style={{ display: showScanner ? 'none' : 'block' }}>
                 <IonSplitPane
                     contentId="main"
