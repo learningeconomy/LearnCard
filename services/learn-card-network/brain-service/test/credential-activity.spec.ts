@@ -423,40 +423,167 @@ describe('Credential Activity', () => {
     });
 
     describe('Activity Routes', () => {
-        it('should require auth to get activities', async () => {
-            await expect(
-                noAuthClient.activity.getMyActivities({ limit: 10 })
-            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
-        });
-
-        it('should return activities via route', async () => {
-            await createCredentialActivity({
-                actorProfileId: 'usera',
-                eventType: 'DELIVERED',
-                recipientType: 'profile',
-                recipientIdentifier: 'userb',
-                source: 'send',
+        describe('Authentication', () => {
+            it('should not allow unauthenticated access to getMyActivities', async () => {
+                await expect(
+                    noAuthClient.activity.getMyActivities({ limit: 10 })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             });
 
-            const result = await userA.clients.fullAuth.activity.getMyActivities({ limit: 10 });
-
-            expect(result.records).toHaveLength(1);
-            expect(result.hasMore).toBe(false);
-        });
-
-        it('should return stats via route', async () => {
-            await createCredentialActivity({
-                actorProfileId: 'usera',
-                eventType: 'DELIVERED',
-                recipientType: 'profile',
-                recipientIdentifier: 'userb',
-                source: 'send',
+            it('should not allow unauthenticated access to getActivityStats', async () => {
+                await expect(
+                    noAuthClient.activity.getActivityStats({})
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             });
 
-            const stats = await userA.clients.fullAuth.activity.getActivityStats({});
+            it('should not allow unauthenticated access to getActivity', async () => {
+                await expect(
+                    noAuthClient.activity.getActivity({ activityId: 'test-id' })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
 
-            expect(stats.delivered).toBeGreaterThanOrEqual(1);
-            expect(typeof stats.claimRate).toBe('number');
+            it('should not allow partial auth access to getMyActivities', async () => {
+                await expect(
+                    userA.clients.partialAuth.activity.getMyActivities({ limit: 10 })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('should not allow partial auth access to getActivityStats', async () => {
+                await expect(
+                    userA.clients.partialAuth.activity.getActivityStats({})
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('should not allow partial auth access to getActivity', async () => {
+                await expect(
+                    userA.clients.partialAuth.activity.getActivity({ activityId: 'test-id' })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+        });
+
+        describe('Authorization', () => {
+            it('should only return own activities via getMyActivities', async () => {
+                // Create activity for userA
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                // Create activity for userB
+                await createCredentialActivity({
+                    actorProfileId: 'userb',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'usera',
+                    source: 'send',
+                });
+
+                // UserA should only see their own activity
+                const userAActivities = await userA.clients.fullAuth.activity.getMyActivities({ limit: 10 });
+
+                expect(userAActivities.records).toHaveLength(1);
+                expect(userAActivities.records[0].actorProfileId).toBe('usera');
+
+                // UserB should only see their own activity
+                const userBActivities = await userB.clients.fullAuth.activity.getMyActivities({ limit: 10 });
+
+                expect(userBActivities.records).toHaveLength(1);
+                expect(userBActivities.records[0].actorProfileId).toBe('userb');
+            });
+
+            it('should only return own stats via getActivityStats', async () => {
+                // Create activities for both users
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                await createCredentialActivity({
+                    actorProfileId: 'userb',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'usera',
+                    source: 'send',
+                });
+
+                await createCredentialActivity({
+                    actorProfileId: 'userb',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'usera',
+                    source: 'send',
+                });
+
+                // UserA should see stats for only their activity
+                const userAStats = await userA.clients.fullAuth.activity.getActivityStats({});
+
+                expect(userAStats.delivered).toBe(1);
+
+                // UserB should see stats for only their activities
+                const userBStats = await userB.clients.fullAuth.activity.getActivityStats({});
+
+                expect(userBStats.delivered).toBe(2);
+            });
+
+            it('should return null when querying another user activity via getActivity', async () => {
+                // Create activity for userA
+                const activityId = await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                // UserA should be able to get their own activity
+                const ownActivity = await userA.clients.fullAuth.activity.getActivity({ activityId });
+
+                expect(ownActivity).not.toBeNull();
+                expect(ownActivity?.activityId).toBe(activityId);
+
+                // UserB should NOT be able to get userA's activity
+                const otherActivity = await userB.clients.fullAuth.activity.getActivity({ activityId });
+
+                expect(otherActivity).toBeNull();
+            });
+        });
+
+        describe('Functionality', () => {
+            it('should return activities via route', async () => {
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                const result = await userA.clients.fullAuth.activity.getMyActivities({ limit: 10 });
+
+                expect(result.records).toHaveLength(1);
+                expect(result.hasMore).toBe(false);
+            });
+
+            it('should return stats via route', async () => {
+                await createCredentialActivity({
+                    actorProfileId: 'usera',
+                    eventType: 'DELIVERED',
+                    recipientType: 'profile',
+                    recipientIdentifier: 'userb',
+                    source: 'send',
+                });
+
+                const stats = await userA.clients.fullAuth.activity.getActivityStats({});
+
+                expect(stats.delivered).toBeGreaterThanOrEqual(1);
+                expect(typeof stats.claimRate).toBe('number');
+            });
         });
     });
 

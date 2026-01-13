@@ -98,7 +98,7 @@ export const activityRouter = t.router({
                 tags: ['Activity'],
                 summary: 'Get Credential Activity by ID',
                 description:
-                    'Returns details of a specific credential activity by its activity ID.',
+                    'Returns details of a specific credential activity by its activity ID. Only returns activities belonging to the authenticated profile.',
             },
             requiredScope: 'activity:read',
         })
@@ -108,10 +108,18 @@ export const activityRouter = t.router({
             })
         )
         .output(CredentialActivityWithDetailsValidator.nullable())
-        .query(async ({ input }) => {
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
             const { activityId } = input;
 
-            return getActivityById(activityId);
+            const activity = await getActivityById(activityId);
+
+            // Only return activity if it belongs to the authenticated user
+            if (activity && activity.actorProfileId !== profile.profileId) {
+                return null;
+            }
+
+            return activity;
         }),
 });
 
