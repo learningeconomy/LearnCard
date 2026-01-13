@@ -126,54 +126,52 @@ const AddressBookContactOptions: React.FC<{
     };
 
     return (
-        <IonPage id="user-options-modal">
-            <ModalLayout handleOnClick={handleCloseModal}>
-                <div className="flex w-full flex-col items-center justify-center mb-4">
-                    <div className="flex w-full items-center justify-center">
-                        <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>Add Contact</h6>
-                    </div>
+        <div className="py-[20px]">
+            <div className="flex w-full flex-col items-center justify-center mb-4">
+                <div className="flex w-full items-center justify-center">
+                    <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>Add Contact</h6>
                 </div>
-                <div className="w-full flex items-center justify-center px-4">
-                    <button
-                        onClick={() => openQRCodeModal()}
-                        className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
-                    >
-                        <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" /> Show Code
-                    </button>
-                </div>
+            </div>
+            <div className="w-full flex items-center justify-center px-4">
+                <button
+                    onClick={() => openQRCodeModal()}
+                    className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
+                >
+                    <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" /> Show Code
+                </button>
+            </div>
 
-                {Capacitor.isNativePlatform() && (
-                    <div className="w-full flex items-center justify-center mt-2 px-4">
-                        <button
-                            onClick={handleScan}
-                            className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg modal-btn-mobile"
-                        >
-                            <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> Scan Code
-                        </button>
-                    </div>
-                )}
-
+            {Capacitor.isNativePlatform() && (
                 <div className="w-full flex items-center justify-center mt-2 px-4">
                     <button
-                        onClick={handleShare}
-                        className="flex items-center justify-center font-medium bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
+                        onClick={handleScan}
+                        className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg modal-btn-mobile"
                     >
-                        <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" /> Share Code
+                        <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> Scan Code
                     </button>
                 </div>
+            )}
 
-                {showSearch && (
-                    <div className="w-full flex items-center justify-center mt-2 px-4">
-                        <button
-                            onClick={onSearchClick}
-                            className="flex items-center justify-center font-medium bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
-                        >
-                            <Search className="ml-[5px] h-[24px] w-[25px] mr-2" /> Search
-                        </button>
-                    </div>
-                )}
-            </ModalLayout>
-        </IonPage>
+            <div className="w-full flex items-center justify-center mt-2 px-4">
+                <button
+                    onClick={handleShare}
+                    className="flex items-center justify-center font-medium bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
+                >
+                    <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" /> Share Code
+                </button>
+            </div>
+
+            {showSearch && (
+                <div className="w-full flex items-center justify-center mt-2 px-4">
+                    <button
+                        onClick={onSearchClick}
+                        className="flex items-center justify-center font-medium bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
+                    >
+                        <Search className="ml-[5px] h-[24px] w-[25px] mr-2" /> Search
+                    </button>
+                </div>
+            )}
+        </div>
     );
 };
 
