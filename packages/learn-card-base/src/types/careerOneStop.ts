@@ -5,6 +5,9 @@ export type CareerOneStopOccupation = {
 };
 
 export type OccupationDetailsOptions = {
+    occupationDescription: string;
+    OnetCode: string;
+    OnetTitle: string;
     training?: boolean;
     interest?: boolean;
     videos?: boolean;
@@ -261,4 +264,36 @@ export type CareerOneStopLocationResult = {
     LocationName: string;
     InputLocation: string;
     OccupationList: CareerOneStopSalariesOccupation[];
+};
+
+// training programs
+export type ProgramLength = {
+    Name: string; // e.g. "4 years"
+    Value: string; // e.g. "4 years"
+};
+
+export type TrainingOccupation = {
+    Name: string; // e.g. "Software Developers"
+    Value: string; // e.g. "Software Developers"
+};
+
+export type TrainingProgram = {
+    ID: string;
+    SchoolName: string;
+    SchoolUrl: string;
+    Address: string;
+    City: string;
+    StateAbbr: string;
+    StateName: string;
+    Zip: string;
+    Phone: string;
+    Distance: number | null;
+    Region: string;
+    RegionCode: string;
+    TotalEnrollment: number | null;
+    ProgramName: string;
+    StudentGraduated: string;
+    ElementID: string;
+    ProgramLength: ProgramLength[];
+    Occupationslist: TrainingOccupation[];
 };
