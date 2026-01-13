@@ -294,8 +294,21 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                 </div>
             </div>
 
+            {/* Custom Schema Warning */}
+            {template.schemaType && template.schemaType !== 'obv3' && (
+                <div className="px-4 py-3 bg-violet-50 border-b border-violet-200">
+                    <p className="text-sm text-violet-800">
+                        <strong>Custom Credential Schema</strong>
+                    </p>
+                    <p className="text-xs text-violet-600 mt-1">
+                        This credential uses a {template.schemaType === 'clr2' ? 'CLR 2.0' : 'custom'} schema. 
+                        The Builder UI is not available for this credential type. Use the <strong>JSON</strong> tab to edit directly.
+                    </p>
+                </div>
+            )}
+
             {/* Validation Errors */}
-            {validationErrors.length > 0 && activeTab === 'builder' && (
+            {validationErrors.length > 0 && activeTab === 'builder' && template.schemaType === 'obv3' && (
                 <div className="px-4 py-2 bg-amber-50 border-b border-amber-200">
                     <p className="text-xs text-amber-700">
                         <strong>Missing required fields:</strong> {validationErrors.join(', ')}
@@ -305,7 +318,29 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
             {/* Content */}
             <div className="flex-1 overflow-hidden">
-                {activeTab === 'builder' ? (
+                {activeTab === 'builder' && template.schemaType !== 'obv3' && template.schemaType ? (
+                    <div className="h-full flex items-center justify-center p-8">
+                        <div className="text-center max-w-md">
+                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-100 flex items-center justify-center">
+                                <Code className="w-8 h-8 text-violet-600" />
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-800 mb-2">
+                                JSON-Only Mode
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-4">
+                                This credential uses a {template.schemaType === 'clr2' ? 'CLR 2.0' : 'custom'} schema 
+                                that doesn't map to the OBv3 builder fields. Switch to the JSON tab to edit this credential directly.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('json')}
+                                className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                            >
+                                Open JSON Editor
+                            </button>
+                        </div>
+                    </div>
+                ) : activeTab === 'builder' ? (
                     <div className="h-full overflow-y-auto p-4 space-y-3">
                         <CredentialInfoSection
                             template={template}

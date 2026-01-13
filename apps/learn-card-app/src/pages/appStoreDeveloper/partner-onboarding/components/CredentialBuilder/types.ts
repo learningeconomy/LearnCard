@@ -141,8 +141,17 @@ export interface CustomFieldTemplate {
     value: TemplateFieldValue;
 }
 
+// Schema type for credential detection
+export type CredentialSchemaType = 'obv3' | 'clr2' | 'custom';
+
 // Full OBv3 Credential Template
 export interface OBv3CredentialTemplate {
+    // Schema type detection (for hybrid mode)
+    schemaType?: CredentialSchemaType;
+    
+    // Raw JSON storage for non-OBv3 credentials (passthrough mode)
+    rawJson?: Record<string, unknown>;
+    
     // Contexts (usually fixed)
     contexts: string[];
     

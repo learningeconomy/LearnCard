@@ -11,6 +11,7 @@ import {
     AlignmentTemplate,
     EvidenceTemplate,
     CustomFieldTemplate,
+    CredentialSchemaType,
     staticField,
     dynamicField,
     systemField,
@@ -20,6 +21,43 @@ import {
 
 // Known system variables that are auto-injected at issuance time
 const SYSTEM_VARIABLES = ['issue_date', 'issuer_did', 'recipient_did'];
+
+/**
+ * Detect the credential schema type from JSON structure
+ */
+export const detectSchemaType = (json: Record<string, unknown>): CredentialSchemaType => {
+    const contexts = Array.isArray(json['@context']) ? json['@context'] as string[] : [];
+    const types = Array.isArray(json.type) ? json.type as string[] : [];
+
+    // Check for OBv3 indicators
+    const isOBv3 = contexts.some(c => 
+        typeof c === 'string' && (
+            c.includes('openbadges') || 
+            c.includes('ob/v3') ||
+            c.includes('purl.imsglobal.org/spec/ob')
+        )
+    ) && types.some(t => 
+        t === 'OpenBadgeCredential' 
+    );
+
+    if (isOBv3) return 'obv3';
+
+    // Check for CLR 2.0 indicators
+    const isCLR = contexts.some(c => 
+        typeof c === 'string' && (
+            c.includes('clr/v2') ||
+            c.includes('comprehensivelearnerrecord')
+        )
+    ) || types.some(t => 
+        t === 'ClrCredential' ||
+        t === 'ComprehensiveLearnerRecord'
+    );
+
+    if (isCLR) return 'clr2';
+
+    // Default to custom for unknown schemas
+    return 'custom';
+};
 
 /**
  * Convert a TemplateFieldValue to its JSON representation
@@ -68,6 +106,11 @@ export const jsonToField = (value: unknown): TemplateFieldValue => {
  * Convert OBv3CredentialTemplate to a JSON credential object
  */
 export const templateToJson = (template: OBv3CredentialTemplate): Record<string, unknown> => {
+    // If we have raw JSON stored (non-OBv3 credential), return it directly
+    if (template.rawJson && template.schemaType !== 'obv3') {
+        return template.rawJson;
+    }
+
     const credential: Record<string, unknown> = {
         '@context': template.contexts,
         type: template.types,
@@ -346,8 +389,31 @@ export const templateToJson = (template: OBv3CredentialTemplate): Record<string,
  * Parse a JSON credential object back to OBv3CredentialTemplate
  */
 export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTemplate => {
+    const schemaType = detectSchemaType(json);
     const contexts = Array.isArray(json['@context']) ? json['@context'] as string[] : DEFAULT_CONTEXTS;
     const types = Array.isArray(json.type) ? json.type as string[] : DEFAULT_TYPES;
+
+    // For non-OBv3 credentials, store raw JSON and create minimal template
+    if (schemaType !== 'obv3') {
+        return {
+            schemaType,
+            rawJson: json,
+            contexts,
+            types,
+            name: staticField(String(json.name || 'Custom Credential')),
+            issuer: {
+                name: staticField(''),
+            },
+            credentialSubject: {
+                achievement: {
+                    name: staticField(''),
+                    description: staticField(''),
+                },
+            },
+            validFrom: staticField(''),
+            customFields: [],
+        };
+    }
 
     const subjectObj = (typeof json.credentialSubject === 'object' && json.credentialSubject !== null) ? json.credentialSubject as Record<string, unknown> : {};
     const achievementObj = (typeof subjectObj.achievement === 'object' && subjectObj.achievement !== null) ? subjectObj.achievement as Record<string, unknown> : {};
@@ -443,6 +509,7 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
     };
 
     return {
+        schemaType: 'obv3',
         contexts,
         types,
         id: json.id ? jsonToField(json.id) : undefined,
@@ -458,6 +525,39 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
 };
 
 /**
+ * Extract all mustache variables from any JSON object (for raw/custom credentials)
+ */
+export const extractVariablesFromRawJson = (json: unknown): { system: string[]; dynamic: string[] } => {
+    const systemVars: Set<string> = new Set();
+    const dynamicVars: Set<string> = new Set();
+
+    const scan = (obj: unknown): void => {
+        if (typeof obj === 'string') {
+            const matches = obj.matchAll(/\{\{(\w+)\}\}/g);
+            for (const m of matches) {
+                const varName = m[1];
+                if (SYSTEM_VARIABLES.includes(varName)) {
+                    systemVars.add(varName);
+                } else {
+                    dynamicVars.add(varName);
+                }
+            }
+        } else if (Array.isArray(obj)) {
+            obj.forEach(scan);
+        } else if (obj && typeof obj === 'object') {
+            Object.values(obj).forEach(scan);
+        }
+    };
+
+    scan(json);
+
+    return {
+        system: Array.from(systemVars).sort(),
+        dynamic: Array.from(dynamicVars).sort(),
+    };
+};
+
+/**
  * Extract variables from a template, separated by type (system vs dynamic)
  */
 export interface ExtractedVariables {
@@ -466,6 +566,11 @@ export interface ExtractedVariables {
 }
 
 export const extractVariablesByType = (template: OBv3CredentialTemplate): ExtractedVariables => {
+    // For non-OBv3 credentials with rawJson, extract from the raw JSON directly
+    if (template.rawJson && template.schemaType !== 'obv3') {
+        return extractVariablesFromRawJson(template.rawJson);
+    }
+
     const systemVars: Set<string> = new Set();
     const dynamicVars: Set<string> = new Set();
 

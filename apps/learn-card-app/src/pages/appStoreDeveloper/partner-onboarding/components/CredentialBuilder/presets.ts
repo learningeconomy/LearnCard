@@ -62,23 +62,20 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
                     name: dynamicField('course_name', 'Course Name'),
                     description: dynamicField('course_description', 'Course description'),
                     achievementType: staticField('Course'),
+                    humanCode: dynamicField('course_code', ''),
                     criteria: {
                         narrative: staticField('Successfully completed all course requirements and assessments.'),
                     },
                 },
+                activityEndDate: dynamicField('completion_date', ''),
+                result: [
+                    {
+                        id: 'result_score',
+                        value: dynamicField('score', ''),
+                    },
+                ],
             },
-            customFields: [
-                {
-                    id: 'completion_date',
-                    key: staticField('completionDate'),
-                    value: dynamicField('completion_date', ''),
-                },
-                {
-                    id: 'score',
-                    key: staticField('score'),
-                    value: dynamicField('score', ''),
-                },
-            ],
+            customFields: [],
         }),
     },
     {
@@ -143,14 +140,14 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
                         narrative: dynamicField('skill_criteria', 'Demonstrated proficiency through assessment.'),
                     },
                 },
+                result: [
+                    {
+                        id: 'result_proficiency',
+                        value: dynamicField('proficiency_level', 'Proficient'),
+                    },
+                ],
             },
-            customFields: [
-                {
-                    id: 'proficiency_level',
-                    key: staticField('proficiencyLevel'),
-                    value: dynamicField('proficiency_level', 'Proficient'),
-                },
-            ],
+            customFields: [],
         }),
     },
     {
@@ -171,20 +168,10 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
                         narrative: staticField('Met all requirements for licensure.'),
                     },
                 },
+                licenseNumber: dynamicField('license_number', ''),
             },
             validUntil: dynamicField('expiration_date', ''),
-            customFields: [
-                {
-                    id: 'license_number',
-                    key: staticField('licenseNumber'),
-                    value: dynamicField('license_number', ''),
-                },
-                {
-                    id: 'issuing_authority',
-                    key: staticField('issuingAuthority'),
-                    value: dynamicField('issuing_authority', ''),
-                },
-            ],
+            customFields: [],
         }),
     },
     {
@@ -205,20 +192,16 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
                         narrative: staticField('Active member in good standing.'),
                     },
                 },
+                identifier: [
+                    {
+                        id: 'member_id_entry',
+                        identifier: dynamicField('member_id', ''),
+                        identifierType: staticField('memberId'),
+                    },
+                ],
+                role: dynamicField('membership_level', 'Standard'),
             },
-            validUntil: dynamicField('membership_expiration', ''),
-            customFields: [
-                {
-                    id: 'member_id',
-                    key: staticField('memberId'),
-                    value: dynamicField('member_id', ''),
-                },
-                {
-                    id: 'membership_level',
-                    key: staticField('membershipLevel'),
-                    value: dynamicField('membership_level', 'Standard'),
-                },
-            ],
+            customFields: [],
         }),
     },
     {
@@ -235,18 +218,13 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
                     name: dynamicField('micro_credential_name', 'Micro-Credential Name'),
                     description: dynamicField('micro_credential_description', 'What was learned'),
                     achievementType: staticField('MicroCredential'),
+                    creditsAvailable: dynamicField('duration_hours', ''),
                     criteria: {
                         narrative: dynamicField('learning_objectives', 'Completed all learning objectives.'),
                     },
                 },
             },
-            customFields: [
-                {
-                    id: 'duration_hours',
-                    key: staticField('durationHours'),
-                    value: dynamicField('duration_hours', ''),
-                },
-            ],
+            customFields: [],
         }),
     },
 ];
