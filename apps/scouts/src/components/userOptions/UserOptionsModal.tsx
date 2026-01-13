@@ -10,17 +10,17 @@ import {
     IonItem,
     IonHeader,
     IonPage,
-    useIonModal,
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import DeleteUserConfirmationPrompt from './DeleteUserConfirmationPrompt';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 const UserOptions: React.FC<{
     handleCloseModal: () => void;
     handleLogout: () => void;
     showFixedFooter?: boolean;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     footer?: React.ReactNode;
 }> = ({
     handleCloseModal,
@@ -30,18 +30,14 @@ const UserOptions: React.FC<{
     showFixedFooter = false,
     footer,
 }) => {
-    const [presentCenterModal, dismissCenterModal] = useIonModal(DeleteUserConfirmationPrompt, {
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: true,
-        showFixedFooter: false,
-        handleLogout: () => onLogout(),
+    const { newModal: newCenterModal, closeModal: closeCenterModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(DeleteUserConfirmationPrompt, {
-        handleCloseModal: () => dismissSheetModal(),
-        showCloseButton: false,
-        showFixedFooter: true,
-        handleLogout: () => onLogout()
+    const { newModal: newSheetModal, closeModal: closeSheetModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
     });
 
     const userOptions = [
@@ -56,6 +52,24 @@ const UserOptions: React.FC<{
         handleCloseModal();
         handleLogout();
     }
+
+    const presentCenterModal = () => {
+        newCenterModal(
+            <DeleteUserConfirmationPrompt
+                handleCloseModal={() => closeCenterModal()}
+                handleLogout={() => onLogout()}
+            />
+        );
+    };
+
+    const presentSheetModal = () => {
+        newSheetModal(
+            <DeleteUserConfirmationPrompt
+                handleCloseModal={() => closeSheetModal()}
+                handleLogout={() => onLogout()}
+            />
+        );
+    };
 
     const fixedFooterStyles = showFixedFooter ? 'absolute bottom-[25%] left-0 w-full' : '';
 
@@ -79,27 +93,14 @@ const UserOptions: React.FC<{
                         <IonItem className="w-full" key={link.id}>
                             {/* desktop */}
                             <button
-                                onClick={() =>
-                                    presentCenterModal({
-                                        cssClass: 'center-modal user-options-modal delete-user-modal',
-                                        backdropDismiss: false,
-                                        showBackdrop: false,
-                                    })
-                                }
+                                onClick={() => presentCenterModal()}
                                 className="w-full flex items-center justify-center px-[15px] my-[10px] font-medium text-lg modal-btn-desktop"
                             >
                                 {link.title}
                             </button>
                             {/* mobile */}
                             <button
-                                onClick={() => {
-                                    presentSheetModal({
-                                        cssClass: 'mobile-modal user-options-modal',
-                                        // initialBreakpoint: 1,
-                                        // breakpoints: [0, 0, 0, 0],
-                                        handleBehavior: 'cycle',
-                                    });
-                                }}
+                                onClick={() => presentSheetModal()}
                                 className="w-full flex items-center justify-center px-[15px] my-[10px] font-medium text-lg modal-btn-mobile"
                             >
                                 {link.title}

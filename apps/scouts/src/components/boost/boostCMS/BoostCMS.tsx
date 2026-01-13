@@ -1,9 +1,9 @@
 // oxlint-disable-next-line no-unused-vars
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonCol, IonContent, IonGrid, IonPage, IonRow, useIonModal } from '@ionic/react';
+import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
 import BoostAddressBook, {
     BoostAddressBookEditMode,
@@ -24,10 +24,6 @@ import BoostPreviewBody from './BoostPreview/BoostPreviewBody';
 import BoostCMSIDAppearanceController from './boostCMSForms/boostCMSAppearance/BoostCMSIDAppearanceController';
 import BoostCMSIDCard from '../boost-id-card/BoostIDCard';
 import BoostCMSCustomTypeForm from './boostCMSForms/boostCMSTitleForm/BoostCMSCustomTypeForm';
-// Legacy skill selector (hardcoded skills)
-// oxlint-disable-next-line no-unused-vars
-import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
-// New framework-based skill selector (Neo4j backend)
 import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
 
 import { useAddCredentialToWallet } from '../mutations';
@@ -78,6 +74,7 @@ import {
     BoostCategoryOptionsEnum,
     useToast,
     ToastTypeEnum,
+    useGetBoostPermissions,
 } from 'learn-card-base';
 
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
@@ -85,9 +82,6 @@ import useWallet from 'learn-card-base/hooks/useWallet';
 import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
-import { useGetBoostPermissions } from 'learn-card-base';
-// oxlint-disable-next-line no-unused-vars
-import { BadgePackOptionsEnum } from '../boost-select-menu/badge-pack.helper';
 import boostSearchStore from 'apps/scouts/src/stores/boostSearchStore';
 
 const BoostCMS: React.FC<{
@@ -119,14 +113,9 @@ const BoostCMS: React.FC<{
 
     const { data: boostPermissionData } = useGetBoostPermissions(parentUri);
 
-    // oxlint-disable-next-line no-unused-vars
-    const { data: myTroopIdData, isLoading: troopIdDataLoading } = useGetCurrentUserTroopIds();
+    const { data: myTroopIdData } = useGetCurrentUserTroopIds();
 
     let overrideCustomize = boostPermissionData?.canCreateChildren ? true : false;
-
-    // if it is a "template" boost eg hardcoded boost pack it will have no permission data
-    // for now simply base on if user is NSO admin or global admin
-    // this is based on the document they provided
 
     if (boostPermissionData === undefined) {
         overrideCustomize =
@@ -140,12 +129,15 @@ const BoostCMS: React.FC<{
         useScoutPassStylesPackRegistry();
     const { data: searchResults, isLoading: loading } = useGetSearchProfiles(search ?? '');
     const { mutate: addCredentialToWallet } = useAddCredentialToWallet();
-    const { newModal } = useModal();
+    const { newModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
 
     const _boostCategoryType =
         category || (query.get('boostCategoryType') as BoostCategoryOptionsEnum);
     const _boostSubCategoryType = achievementType || query.get('boostSubCategoryType');
-    const _boostUserType = boostUserType || query.get('boostUserType');
+    const _boostUserType = boostUserType || (query.get('boostUserType') as BoostUserTypeEnum);
     const _otherUserProfileId = query.get('otherUserProfileId') ?? '';
 
     const { data: profile } = useGetProfile();
@@ -165,7 +157,7 @@ const BoostCMS: React.FC<{
             badgeThumbnail: getDefaultAchievementTypeImage(
                 _boostCategoryType,
                 _boostSubCategoryType,
-                boostCategoryOptions[_boostCategoryType].CategoryImage,
+                boostCategoryOptions[_boostCategoryType]?.CategoryImage,
                 boostAppearanceBadgeList
             ),
             idBackgroundImage: getDefaultIDBackgroundImage(_boostCategoryType),
@@ -186,7 +178,7 @@ const BoostCMS: React.FC<{
     const isMembership = _boostCategoryType === BoostCategoryOptionsEnum.membership;
     const isMeritBadge = _boostCategoryType === BoostCategoryOptionsEnum.meritBadge;
 
-    const issueToLength = state?.issueTo?.length;
+    const issueToLength = state?.issueTo?.length || 0;
 
     useEffect(() => {
         const loadOtherUser = async () => {
@@ -196,7 +188,7 @@ const BoostCMS: React.FC<{
                 const otherUser = await wallet?.invoke?.getProfile(_otherUserProfileId);
 
                 const userAlreadyExists = state?.issueTo.find(
-                    issuee => issuee.profileId === otherUser.profileId
+                    issuee => issuee.profileId === otherUser?.profileId
                 );
 
                 if (userAlreadyExists) {
@@ -227,7 +219,6 @@ const BoostCMS: React.FC<{
                 return {
                     ...prevState,
                     [_boostCategoryType]: [
-                        // oxlint-disable-next-line no-unsafe-optional-chaining
                         ...prevState?.[_boostCategoryType],
                         {
                             title: customTypeTitle,
@@ -243,11 +234,11 @@ const BoostCMS: React.FC<{
             return {
                 ...prevState,
                 appearance: {
-                    ...state?.appearance,
+                    ...prevState.appearance,
                     badgeThumbnail: getDefaultAchievementTypeImage(
                         _boostCategoryType,
                         _boostSubCategoryType,
-                        boostCategoryOptions[_boostCategoryType].CategoryImage,
+                        boostCategoryOptions[_boostCategoryType]?.CategoryImage,
                         boostAppearanceBadgeList
                     ),
                 },
@@ -324,22 +315,20 @@ const BoostCMS: React.FC<{
 
     const handleNextStep = () => {
         if (currentStep === BoostCMSStepsEnum.create) {
-            dismissModal();
             setCurrentStep(BoostCMSStepsEnum.publish);
             logAnalyticsEvent('boostCMS_publish', {
                 timestamp: Date.now(),
                 action: 'publish',
-                boostType: state?.basicInfo?.achievementType,
-                category: state?.basicInfo?.type,
+                boostType: state?.basicInfo?.achievementType as any,
+                category: state?.basicInfo?.type as any,
             });
         } else if (currentStep === BoostCMSStepsEnum.publish) {
-            dismissModal();
             setCurrentStep(BoostCMSStepsEnum.issueTo);
             logAnalyticsEvent('boostCMS_issue_to', {
                 timestamp: Date.now(),
                 action: 'issue_to',
-                boostType: state?.basicInfo?.achievementType,
-                category: state?.basicInfo?.type,
+                boostType: state?.basicInfo?.achievementType as any,
+                category: state?.basicInfo?.type as any,
             });
         }
     };
@@ -353,22 +342,11 @@ const BoostCMS: React.FC<{
     };
 
     const handlePreview = async () => {
-        if (isID || isMeritBadge) {
-            setIonicModalBackground(state?.appearance?.backgroundImage);
-        }
-
-        presentModal({
-            backdropDismiss: true,
-            showBackdrop: false,
-            onWillDismiss: () => {
-                resetIonicModalBackground();
-            },
-        });
+        openPreview();
     };
 
     const handleAddAdmin = async (wallet: BespokeLearnCard, boostUri: string) => {
-        // oxlint-disable-next-line no-unused-vars
-        const adminForVC = await Promise.all(
+        await Promise.all(
             state?.admins.map(async issuee => {
                 const adminForBoost = await addAdmin(wallet, boostUri, issuee?.profileId);
                 return adminForBoost;
@@ -376,13 +354,11 @@ const BoostCMS: React.FC<{
         );
     };
 
-    // oxlint-disable-next-line no-unused-vars
     const handleSaveAndQuit = async (goBack: boolean = false) => {
         const wallet = await initWallet();
 
         try {
             setIsSaveLoading(true);
-            dismissModal();
 
             const skillIds = extractSkillIdsFromAlignments(state?.alignments ?? []);
 
@@ -413,7 +389,7 @@ const BoostCMS: React.FC<{
             });
 
             if (boostUri && state?.admins?.length > 0) {
-                handleAddAdmin(wallet, boostUri);
+                if (wallet) handleAddAdmin(wallet, boostUri);
             }
 
             if (boostUri) {
@@ -453,7 +429,6 @@ const BoostCMS: React.FC<{
 
         try {
             setIsPublishLoading(true);
-            dismissModal();
 
             const skillIds = extractSkillIdsFromAlignments(state?.alignments ?? []);
 
@@ -486,7 +461,7 @@ const BoostCMS: React.FC<{
                 }
             }
             if (boostUri && state?.admins?.length > 0) {
-                handleAddAdmin(wallet, boostUri);
+                if (wallet) handleAddAdmin(wallet, boostUri);
             }
         } catch (e) {
             setIsPublishLoading(false);
@@ -503,31 +478,38 @@ const BoostCMS: React.FC<{
 
         try {
             setIsLoading(true);
-            if (boostUri && issueToLength > 0) {
+            if (boostUri && (issueToLength || 0) > 0) {
                 const uris = await Promise.all(
                     state?.issueTo.map(async issuee => {
                         // handle self boosting
                         if (issuee?.profileId === profile?.profileId) {
                             console.log('boostUri', boostUri);
-                            console.log('boost', await wallet.invoke.resolveFromLCN(boostUri));
+                            console.log(
+                                'boost',
+                                await (wallet?.invoke as any)?.resolveFromLCN(boostUri)
+                            );
                             // oxlint-disable-next-line no-unused-vars
-                            const { sentBoost, sentBoostUri } = await sendBoostCredential(
-                                wallet,
-                                profile?.profileId,
+                            const { sentBoost } = await sendBoostCredential(
+                                wallet as any,
+                                profile?.profileId as string,
                                 boostUri
                             );
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
-                            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                                sentBoost
-                            );
+                            const issuedVcUri = await (
+                                wallet?.store as any
+                            )?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
                             await addCredentialToWallet({ uri: issuedVcUri });
                             return issuedVcUri;
                         }
 
                         // handle boosting someone else
-                        const issuedVc = await addBoostSomeone(wallet, issuee?.profileId, boostUri);
+                        const issuedVc = await addBoostSomeone(
+                            wallet as any,
+                            issuee?.profileId as string,
+                            boostUri
+                        );
                         return issuedVc;
                     })
                 );
@@ -582,55 +564,80 @@ const BoostCMS: React.FC<{
         }
     };
 
-    const [presentModal, dismissModal] = useIonModal(BoostPreview, {
-        credential: getBoostCredentialPreview(state),
-        categoryType: state?.basicInfo?.type,
-        verificationItems: getBoostVerificationPreview(state),
-        handleCloseModal: () => dismissModal(),
-        customThumbComponent:
-            isID || isMembership ? (
-                <BoostCMSIDCard
-                    state={state}
-                    setState={setState}
-                    idClassName="p-0 m-0 mt-4 boost-id-preview-body min-h-[160px]"
-                    idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
-                    customIssuerThumbContainerClass="id-card-issuer-thumb-preview-container"
-                />
-            ) : (
-                <CredentialBadge
-                    achievementType={state?.basicInfo?.achievementType}
-                    boostType={state?.basicInfo?.type}
-                    badgeThumbnail={state?.appearance?.badgeThumbnail}
-                    badgeCircleCustomClass="w-[170px] h-[170px]"
-                    branding={BrandingEnum.scoutPass}
-                />
-            ),
-        customBodyCardComponent:
-            issueToLength > 0 ? (
-                <BoostPreviewBody
-                    recipients={state?.issueTo}
-                    customBoostPreviewContainerClass="bg-white"
-                    customBoostPreviewContainerRowClass="items-center"
-                />
-            ) : isMeritBadge ? undefined : (
-                <div />
-            ),
-        customFooterComponent: (
-            <BoostPreviewFooter
-                handleSaveAndQuit={handleSaveAndQuit}
-                isSaveLoading={isSaveLoading}
-                handleSubmit={handlePublishBoost}
-                isLoading={isLoading}
-                showIssueButton={currentStep === BoostCMSStepsEnum.publish}
-                showSaveAndQuitButton={currentStep !== BoostCMSStepsEnum.confirmation}
-                selectedVCType={state?.basicInfo?.type}
-            />
-        ),
-        boostPreviewWrapperCustomClass: issueToLength > 0 ? '' : 'boost-preview-wrapper',
-        issueeOverride: isMeritBadge ? 'Scout' : undefined,
-        issuerOverride: isMeritBadge ? currentUser?.name : undefined,
-        issuerImageComponent: isMeritBadge ? <ProfilePicture /> : undefined,
+    const { newModal: newPreviewModal, closeModal: closePreviewModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
+
+    const openPreview = async () => {
+        if (isID || isMeritBadge) {
+            setIonicModalBackground(state?.appearance?.backgroundImage);
+        }
+
+        newPreviewModal(
+            <BoostPreview
+                credential={getBoostCredentialPreview(state) as any}
+                categoryType={state?.basicInfo?.type as any}
+                verificationItems={getBoostVerificationPreview(state) as any}
+                handleCloseModal={closePreviewModal}
+                customThumbComponent={
+                    isID || isMembership ? (
+                        <BoostCMSIDCard
+                            state={state}
+                            setState={setState}
+                            idClassName="p-0 m-0 mt-4 boost-id-preview-body min-h-[160px]"
+                            idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
+                            customIssuerThumbContainerClass="id-card-issuer-thumb-preview-container"
+                        />
+                    ) : (
+                        <CredentialBadge
+                            achievementType={state?.basicInfo?.achievementType as any}
+                            boostType={state?.basicInfo?.type as any}
+                            badgeThumbnail={state?.appearance?.badgeThumbnail as string}
+                            badgeCircleCustomClass="w-[170px] h-[170px]"
+                            branding={BrandingEnum.scoutPass}
+                            showBackgroundImage={false}
+                            backgroundImage={state?.appearance?.backgroundImage ?? ''}
+                            backgroundColor={state?.appearance?.backgroundColor ?? ''}
+                            credential={getBoostCredentialPreview(state) as any}
+                        />
+                    )
+                }
+                customBodyCardComponent={
+                    issueToLength > 0 ? (
+                        <BoostPreviewBody
+                            recipients={state?.issueTo}
+                            customBoostPreviewContainerClass="bg-white"
+                            customBoostPreviewContainerRowClass="items-center"
+                        />
+                    ) : isMeritBadge ? undefined : (
+                        <div />
+                    )
+                }
+                customFooterComponent={
+                    <BoostPreviewFooter
+                        handleSaveAndQuit={handleSaveAndQuit}
+                        isSaveLoading={isSaveLoading}
+                        handleSubmit={handlePublishBoost}
+                        isLoading={isLoading}
+                        showIssueButton={currentStep === BoostCMSStepsEnum.publish}
+                        showSaveAndQuitButton={currentStep !== BoostCMSStepsEnum.confirmation}
+                        selectedVCType={state?.basicInfo?.type as any}
+                    />
+                }
+                boostPreviewWrapperCustomClass={issueToLength > 0 ? '' : 'boost-preview-wrapper'}
+                issueeOverride={isMeritBadge ? 'Scout' : undefined}
+                issuerOverride={isMeritBadge ? currentUser?.name : undefined}
+                issuerImageComponent={isMeritBadge ? <ProfilePicture /> : undefined}
+                customIssueHistoryComponent={undefined as any}
+            />,
+            {
+                onClose: () => {
+                    resetIonicModalBackground();
+                },
+            }
+        );
+    };
 
     const handleConfirmationModal = () => {
         const buttonText =
@@ -644,8 +651,7 @@ const BoostCMS: React.FC<{
                 isEditMode={false}
                 isSaveLoading={isSaveLoading}
             />,
-            { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
-            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+            { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText }
         );
     };
 
@@ -693,9 +699,6 @@ const BoostCMS: React.FC<{
                     />
                 )}
 
-                {/* Legacy skill selector (old - commented out)
-                <BoostCMSSkillsAttachmentForm state={state} setState={setState} />
-                */}
                 {!flags?.disableCmsCustomization && (
                     <BoostCMSMediaForm state={state} setState={setState} />
                 )}
@@ -709,13 +712,6 @@ const BoostCMS: React.FC<{
                 {/* Framework-based skill selector (new) */}
                 <BoostFrameworkSkillSelector state={state} setState={setState} />
 
-                {/* {isMembership && <BoostIDCardCMSMembersForm state={state} setState={setState} />} */}
-                {/* <BoostCMSAdvancedSettingsForm state={state} setState={setState} />
-                <BoostCMSAIMissionForm state={state} setState={setState} />
-                <BoostCMSAddChatForm state={state} setState={setState} />
-                <BoostCMSMemberPrivacyOptions state={state} setState={setState} />
-                <BoostCMSUserPermissions state={state} setState={setState} />
-                <BoostCMSAdminsForm state={state} setState={setState} /> */}
                 <BoostAddressBook
                     state={state}
                     setState={setState}

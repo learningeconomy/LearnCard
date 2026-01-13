@@ -1,8 +1,7 @@
 import { useEffect, useCallback, memo } from 'react';
 import { App } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { useLocation, useHistory } from 'react-router-dom';
-import { PluginListenerHandle } from '@capacitor/core';
 import queryString from 'query-string';
 
 import {
@@ -34,21 +33,23 @@ import {
     useWeb3Auth,
     LOGIN_REDIRECTS,
     lazyWithRetry,
+    useGetUnreadUserNotifications,
+    useIsCurrentUserLCNUser,
     Modals,
+    redirectStore,
+    BrandingEnum,
 } from 'learn-card-base';
-const Routes = lazyWithRetry(() => import('./Routes').then(module => ({ default: module.Routes })));
 import { tabRoutes } from './constants';
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import { WALLET_ADAPTERS } from '@web3auth/base';
 
 import { useFirebase } from './hooks/useFirebase';
 import { useJoinLCNetworkModal } from './components/network-prompts/hooks/useJoinLCNetworkModal';
 import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyIdentify';
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify, initSentry } from './constants/sentry';
-import { useGetUnreadUserNotifications, useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useSetFirebaseAnalyticsUserId } from './hooks/useSetFirebaseAnalyticsUserId';
-import { redirectStore } from 'learn-card-base/stores/redirectStore';
-import { WALLET_ADAPTERS } from '@web3auth/base';
+
+const Routes = lazyWithRetry(() => import('./Routes').then(module => ({ default: module.Routes })));
 
 interface NavbarGradientProps {
     path: string;
@@ -63,27 +64,9 @@ const getBackgroundGradientForNavbar = ({ path }: NavbarGradientProps): string =
     return gradientMap[path] || '';
 };
 
-const TabBarButton = memo(
-    ({
-        tab,
-        href,
-        className,
-        children,
-    }: {
-        tab: string;
-        href: string;
-        className: string;
-        children: React.ReactNode;
-    }) => (
-        <IonTabButton tab={tab} href={href} className={className}>
-            {children}
-        </IonTabButton>
-    )
-);
-
 const AppRouter: React.FC = () => {
     const { web3AuthInit } = useWeb3Auth();
-    const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();
+    const { verifySignInLinkAndLogin } = useFirebase();
     const history = useHistory();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
@@ -105,8 +88,6 @@ const AppRouter: React.FC = () => {
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const {
         data: notificationsData,
-        isLoading: notificationsLoading,
-        refetch: refetchNotifications,
     } = useGetUnreadUserNotifications();
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
@@ -155,7 +136,7 @@ const AppRouter: React.FC = () => {
         if (!currentLCNUserLoading && currentLCNUser === false) {
             handlePresentJoinNetworkModal();
         }
-    }, [currentLCNUser, currentLCNUserLoading]);
+    }, [currentLCNUser, currentLCNUserLoading, handlePresentJoinNetworkModal]);
 
     const handleAppUrlOpen = async (data: { url: string }) => {
         const parsedUrl = new URL(data.url);
@@ -193,7 +174,7 @@ const AppRouter: React.FC = () => {
         if (!Capacitor.isNativePlatform() && savedEmail) {
             verifySignInLinkAndLogin(savedEmail, window.location.href);
         }
-    }, [savedEmail]);
+    }, [savedEmail, verifySignInLinkAndLogin]);
 
     useEffect(() => {
         if (params?.verifyCode) {
@@ -202,7 +183,7 @@ const AppRouter: React.FC = () => {
 
             history.replace(`/login?verifyCode=true`);
         }
-    }, []);
+    }, [params, history]);
 
     const unreadCount = notificationsData?.notifications?.length || null;
 
@@ -246,10 +227,6 @@ const AppRouter: React.FC = () => {
                                         height: '70px',
                                     }}
                                 >
-                                    {/*
-                                tab prop is needed to prevent hard refresh...
-                                set href to # to prevent id undefined errors & rerouting
-                            */}
                                     <IonTabButton
                                         tab="/"
                                         href="#"

@@ -101,6 +101,11 @@ export const SKILLS_TO_SUBSKILLS: {
     ],
 };
 
+export type MemberTitleTypes = {
+    singular: string;
+    plural: string;
+};
+
 export type BoostCMSBasicInfo = {
     name: string;
     description: string;
@@ -109,6 +114,11 @@ export type BoostCMSBasicInfo = {
     achievementType: string | null; // sub category type
     credentialExpires: boolean;
     expirationDate?: string | null;
+
+    memberTitles: {
+        guardians: MemberTitleTypes;
+        dependents: MemberTitleTypes;
+    };
 
     // ID / Group fields
     location?: string;
@@ -148,6 +158,11 @@ export type BoostCMSAppearance = {
     dimIdBackgroundImage?: boolean;
     idIssuerThumbnail?: string;
     showIdIssuerImage?: boolean;
+
+    // Additional fields needed for BoostCMSState compatibility
+    displayType?: string;
+    previewType?: string;
+    repeatIdBackgroundImage?: boolean;
 };
 
 export type BoostCMSSkill = {
@@ -229,6 +244,10 @@ export const initialBoostCMSState: BoostCMSState = {
         achievementType: '', // sub category type
         credentialExpires: false,
         expirationDate: null,
+        memberTitles: {
+            guardians: { singular: 'Guardian', plural: 'Guardians' },
+            dependents: { singular: 'Dependent', plural: 'Dependents' },
+        },
 
         // ID / Group fields
         location: '',
@@ -248,6 +267,7 @@ export const initialBoostCMSState: BoostCMSState = {
         dimIdBackgroundImage: false,
         idIssuerThumbnail: '',
         showIdIssuerImage: false,
+        repeatIdBackgroundImage: false,
     },
     skills: [],
     alignments: [],
@@ -278,5 +298,4 @@ export const initialCustomBoostTypesState = {
     [BoostCategoryOptionsEnum.workHistory]: [],
     [BoostCategoryOptionsEnum.skill]: [],
     [BoostCategoryOptionsEnum.membership]: [],
-    [BoostCategoryOptionsEnum.meritBadge]: [],
 };

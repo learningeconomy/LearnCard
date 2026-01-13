@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import moment from 'moment';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { IonRow, IonCol, IonTextarea, IonToggle, IonDatetime, useIonModal } from '@ionic/react';
+import { IonRow, IonCol, IonTextarea, IonToggle, IonDatetime } from '@ionic/react';
 import Calendar from '../../../../svgs/Calendar';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import LocationIcon from 'learn-card-base/svgs/LocationIcon';
 import LocationSearch from '../../../../locationSearch/LocationSearch';
 
 import { BoostCMSState } from '../../../boost';
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base';
 import { AddressSpec } from '../../../../locationSearch/location.helpers';
 import { SetState } from 'packages/shared-types/dist';
 import { boostCategoryOptions } from '../../../boost-options/boostOptions';
@@ -50,39 +50,50 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
         });
     };
 
-    const [presentDatePicker, dismissDatePicker] = useIonModal(
-        <div className="w-full h-full transparent flex items-center justify-center">
-            <IonDatetime
-                onIonChange={e => {
-                    handleStateChange('expirationDate', moment(e.detail.value).toISOString());
-                }}
-                value={
-                    state?.basicInfo?.expirationDate
-                        ? moment(state?.basicInfo?.expirationDate).format('YYYY-MM-DD')
-                        : null
-                }
-                id="datetime"
-                presentation="date"
-                className="bg-white text-black rounded-[20px] shadow-3xl z-50"
-                showDefaultButtons
-                color="indigo-500"
-                max="2050-12-31"
-                disabled={disabled}
-                min={moment().format('YYYY-MM-DD')}
+    const { newModal: newDatePickerModal, closeModal: closeDatePickerModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
+    const { newModal: newLocationModal, closeModal: closeLocationModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.FullScreen,
+    });
+
+    const openDatePicker = () => {
+        newDatePickerModal(
+            <div className="w-full h-full transparent flex items-center justify-center">
+                <IonDatetime
+                    onIonChange={e => {
+                        handleStateChange('expirationDate', moment(e.detail.value as string).toISOString());
+                    }}
+                    value={
+                        state?.basicInfo?.expirationDate
+                            ? moment(state?.basicInfo?.expirationDate).format('YYYY-MM-DD')
+                            : null
+                    }
+                    id="datetime"
+                    presentation="date"
+                    className="bg-white text-black rounded-[20px] shadow-3xl z-50"
+                    showDefaultButtons
+                    color="indigo-500"
+                    max="2050-12-31"
+                    disabled={disabled}
+                    min={moment().format('YYYY-MM-DD')}
+                />
+            </div>
+        );
+    };
+
+    const openLocationModal = () => {
+        newLocationModal(
+            <LocationSearch
+                showCloseButton={true}
+                handleLocationStateChange={handleAddressStateChange}
+                handleCloseModal={closeLocationModal}
             />
-        </div>
-    );
-
-    const [presentCenterModal, dismissCenterModal] = useIonModal(LocationSearch, {
-        showCloseButton: true,
-        handleLocationStateChange: handleAddressStateChange,
-        handleCloseModal: () => dismissCenterModal(),
-    });
-
-    const [presentSheetModal, dismissSheetModal] = useIonModal(LocationSearch, {
-        handleLocationStateChange: handleAddressStateChange,
-        handleCloseModal: () => dismissSheetModal(),
-    });
+        );
+    };
 
     const isID = boostType === BoostCategoryOptionsEnum.id;
     const isMembership = boostType === BoostCategoryOptionsEnum.membership;
@@ -140,30 +151,8 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                     {(isID || isMembership) && (
                         <div className="flex items-center justify-between w-full mt-2 bg-grayscale-100 px-[16px] py-[8px] rounded-[15px]">
                             <button
-                                className="bg-grayscale-100 text-grayscale-600 rounded-[15px] font-medium text-base modal-btn-desktop w-full line-clamp-1"
-                                onClick={() =>
-                                    presentCenterModal({
-                                        cssClass: 'center-modal user-options-modal',
-                                        backdropDismiss: false,
-                                        showBackdrop: false,
-                                    })
-                                }
-                                disabled={disabled}
-                            >
-                                {state?.address.streetAddress
-                                    ? state?.address.streetAddress
-                                    : 'Location'}
-                            </button>
-                            <button
-                                className="bg-grayscale-100 text-grayscale-600 rounded-[15px] font-medium text-base modal-btn-mobile w-full line-clamp-1"
-                                onClick={() => {
-                                    presentSheetModal({
-                                        cssClass: 'mobile-modal user-options-modal',
-                                        initialBreakpoint: 0.8,
-                                        breakpoints: [0, 0.8, 0.9, 1],
-                                        handleBehavior: 'cycle',
-                                    });
-                                }}
+                                className="bg-grayscale-100 text-grayscale-600 rounded-[15px] font-medium text-base w-full line-clamp-1 text-left"
+                                onClick={() => openLocationModal()}
                                 disabled={disabled}
                             >
                                 {state?.address.streetAddress
@@ -201,11 +190,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                                         disabled={disabled}
                                         className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base"
                                         onClick={() => {
-                                            presentDatePicker({
-                                                backdropDismiss: true,
-                                                showBackdrop: false,
-                                                cssClass: 'flex items-center justify-center',
-                                            });
+                                            openDatePicker();
                                         }}
                                     >
                                         {basicInfo?.expirationDate

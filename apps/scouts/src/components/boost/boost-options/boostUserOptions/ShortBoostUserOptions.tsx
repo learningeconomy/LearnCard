@@ -7,13 +7,9 @@ import {
     IonGrid,
     IonToolbar,
     IonHeader,
-    useIonModal,
-    useIonAlert,
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
-import Plus from 'learn-card-base/svgs/Plus';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
-import BoostAddressBookContactItem from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactItem';
 import BoostSearch from '../../boost-search/BoostSearch';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 
@@ -23,7 +19,6 @@ import { ModalTypes, useModal, useScreenWidth } from 'learn-card-base';
 
 import { UnsignedVC, VC } from '@learncard/types';
 import { BoostCMSIssueTo, ShortBoostState } from '../../boost';
-import { BoostAddressBookEditMode } from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBook';
 import { closeAll } from '../../../../helpers/uiHelpers';
 import { BoostIssuanceLoading } from '../../boostLoader/BoostLoader';
 import BoostShareableCode from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableCode';
@@ -39,13 +34,14 @@ export enum ShortBoostStepsEnum {
 type ShortBoostUserOptionsProps = {
     handleCloseModal: () => void;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     boostCredential: VC | UnsignedVC;
     boost: any;
     boostUri: string;
     profileId: string;
     history: RouteComponentProps['history'];
 };
+
 const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
     handleCloseModal,
     showCloseButton = true,
@@ -58,8 +54,10 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
 }) => {
     const width = useScreenWidth(true);
 
-    const { newModal, closeModal } = useModal();
-    const [presentAlert] = useIonAlert();
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
 
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
@@ -67,7 +65,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
     const [issueLoading, setIssueLoading] = useState(false);
     const [state, setState] = useState<ShortBoostState>({ issueTo: [] as BoostCMSIssueTo[] });
 
-    const { handleSubmitExistingBoostOther, handleSubmitExistingBoostSelf, boostIssueLoading } =
+    const { handleSubmitExistingBoostOther, handleSubmitExistingBoostSelf } =
         useBoost(history);
 
     const presentBoostSomeoneModal = () => {
@@ -81,25 +79,20 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                 setState={setState}
                 history={history}
                 preserveStateIssueTo={false}
-            />,
-            {},
-            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+            />
         );
     };
 
-    const [presentBoostIssueLoadingModal, dismissBoostIssueLoadingModal] = useIonModal(
-        BoostIssuanceLoading,
-        {
-            loading: issueLoading,
-        }
-    );
+    const { newModal: newIssueLoadingModal, closeModal: closeIssueLoadingModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
 
     const handleBoostSelf = async () => {
         if (!profileId) return;
 
         setIssueLoading(true);
-
-        presentBoostIssueLoadingModal({ backdropDismiss: false });
+        newIssueLoadingModal(<BoostIssuanceLoading loading={issueLoading} />);
         await handleSubmitExistingBoostSelf(profileId, boostUri, boost?.status);
         logAnalyticsEvent('self_boost', {
             category: boost?.category,
@@ -108,14 +101,14 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
         });
         setIssueLoading(false);
         closeAll?.();
-        dismissBoostIssueLoadingModal();
+        closeIssueLoadingModal();
         handleCloseModal?.();
     };
 
     const handleBoostOther = async () => {
         if (!profileId) return;
         setIssueLoading(true);
-        presentBoostIssueLoadingModal({ backdropDismiss: false });
+        newIssueLoadingModal(<BoostIssuanceLoading loading={issueLoading} />);
         await handleSubmitExistingBoostOther(state.issueTo, boostUri, boost?.status);
         logAnalyticsEvent('send_boost', {
             category: boost?.category,
@@ -124,49 +117,12 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
         });
         setIssueLoading(false);
         closeAll?.();
-        dismissBoostIssueLoadingModal();
+        closeIssueLoadingModal();
         handleCloseModal?.();
     };
 
-    const selfBoostConfirmationAlert = () => {
-        presentAlert({
-            backdropDismiss: false,
-            cssClass: 'boost-confirmation-alert',
-            header: 'Are you sure you want to send this to yourself?',
-            buttons: [
-                {
-                    text: 'OK',
-                    role: 'confirm',
-                    handler: async () => {
-                        handleBoostSelf();
-                    },
-                },
-                {
-                    text: 'Cancel',
-                    role: 'cancel',
-                    handler: () => {
-                        console.log('Cancel clicked');
-                    },
-                },
-            ],
-        });
-    };
-
     const handleOpenBoostSomeoneModal = () => {
-        if (width <= 991) {
-            presentBoostSomeoneModal({
-                cssClass: 'mobile-modal user-options-modal safe-area-top-margin',
-                initialBreakpoint: 1,
-                breakpoints: [0, 0.95, 0.95, 1],
-                handleBehavior: 'cycle',
-            });
-        } else {
-            presentBoostSomeoneModal({
-                cssClass: 'center-modal user-qrcode-modal',
-                backdropDismiss: true,
-                showBackdrop: false,
-            });
-        }
+        presentBoostSomeoneModal();
     };
 
     const shareableCodeState = {
@@ -183,8 +139,8 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
     };
 
     if (boostCredential?.boostID) {
-        shareableCodeState.address = boostCredential?.address;
-        shareableCodeState.appearance = {
+        (shareableCodeState as any).address = boostCredential?.address;
+        (shareableCodeState as any).appearance = {
             ...shareableCodeState?.appearance,
             fontColor: boostCredential?.boostID?.fontColor,
             accentColor: boostCredential?.boostID?.accentColor,
@@ -193,7 +149,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
             idIssuerThumbnail: boostCredential?.boostID?.issuerThumbnail,
             showIdIssuerImage: boostCredential?.boostID?.showIssuerThumbnail,
         };
-        shareableCodeState.basicInfo = {
+        (shareableCodeState as any).basicInfo = {
             ...shareableCodeState?.basicInfo,
             issuerName: boostCredential?.boostID?.IDIssuerName,
         };
@@ -202,7 +158,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
     return (
         <section>
             <IonHeader className="ion-no-border bg-white pt-10">
-                <IonToolbar color="#fffff">
+                <IonToolbar color="white">
                     <IonRow className="w-full bg-white">
                         <IonCol className="w-full flex items-center justify-end">
                             {showCloseButton && (
@@ -221,7 +177,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                     <IonGrid className="ion-padding">
                         <IonCol className="w-full flex items-center justify-center mt-8">
                             <button
-                                onClick={selfBoostConfirmationAlert}
+                                onClick={handleBoostSelf}
                                 className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
                             >
                                 <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
@@ -274,7 +230,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                     handleOpenModal={handleOpenBoostSomeoneModal}
                     state={state}
                     setState={setState}
-                    shareableCodeState={shareableCodeState}
+                    shareableCodeState={shareableCodeState as any}
                     boostStatus={boost?.status}
                 />
             )}
@@ -283,14 +239,14 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                 <section>
                     <BoostShareableCode
                         boostUri={boostUri}
-                        state={shareableCodeState}
+                        state={shareableCodeState as any}
                         customClassName="bg-white justify-start items-start p-0 m-0"
                         defaultGenerateLinkToggleState
                     />
                     <div className="w-full flex items-center justify-center mt-8">
                         <button
                             onClick={() => handleCloseModal()}
-                            className="text-grayscale-900 text-center text-sm o"
+                            className="text-grayscale-900 text-center text-sm"
                         >
                             Cancel
                         </button>

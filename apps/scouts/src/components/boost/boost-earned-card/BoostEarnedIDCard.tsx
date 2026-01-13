@@ -28,7 +28,6 @@ import {
     categoryMetadata,
     CredentialCategoryEnum,
 } from 'learn-card-base';
-import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import IdDisplayContainer from '../../../pages/ids/IdDisplayContainer';
@@ -132,9 +131,9 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                                     badgeThumbnail={badgeThumbnail}
                                     badgeCircleCustomClass="w-[170px] h-[170px]"
                                     showBackgroundImage={false}
-                                    backgroundImage={cred?.display?.backgroundImage}
-                                    backgroundColor={cred?.display?.backgroundColor}
-                                    credential={credential as VC}
+                                    backgroundImage={cred?.display?.backgroundImage ?? ''}
+                                    backgroundColor={cred?.display?.backgroundColor ?? ''}
+                                    credential={credential as any}
                                 />
                             )
                         }
@@ -151,6 +150,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                 ) : (
                     <VCDisplayCardWrapper
                         credential={cred as any}
+                        handleCloseModal={closePreviewModal}
                         cr={undefined as any}
                         lc={undefined as any}
                     />
@@ -187,8 +187,8 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     const credImg = getUrlFromImage(getCredentialSubject(cred)?.image ?? '');
     const cardTitle = isBoost ? cred?.name : getCredentialName(cred);
 
-    const { network: networkData } = useGetTroopNetwork({ credential: cred });
-    const subtitle = networkData?.name;
+    const { network: networkData } = useGetTroopNetwork({ credential: cred as any });
+    const subtitle = (networkData as any)?.name;
 
     const mappedInputs = credential ? getIDCardDisplayInputsFromVC(credential) : {};
 
@@ -342,14 +342,14 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                             boostType={categoryType as any}
                             badgeThumbnail={badgeThumbnail}
                             showBackgroundImage
-                            backgroundImage={cred?.display?.backgroundImage}
-                            backgroundColor={cred?.display?.backgroundColor}
+                            backgroundImage={cred?.display?.backgroundImage ?? ''}
+                            backgroundColor={cred?.display?.backgroundColor ?? ''}
                             badgeContainerCustomClass="mt-[0px] mb-[8px]"
                             badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
                             badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                             badgeRibbonCustomClass="w-[26px]"
                             badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
-                            credential={credential as VC}
+                            credential={credential as any}
                         />
                     }
                     title={cardTitle}

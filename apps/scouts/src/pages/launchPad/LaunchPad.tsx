@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation, Link, useParams } from 'react-router-dom';
 import { BrandingEnum, CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
-import { IonContent, useIonModal, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -39,8 +39,10 @@ const LaunchPad: React.FC = () => {
         desktop: ModalTypes.FullScreen,
     });
 
-    const [updateVersion, setUpdateVersion] = useState('');
-    const [bundle, setBundle] = useState<CapacitorBundle | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_updateVersion, setUpdateVersion] = useState('');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_bundle, setBundle] = useState<CapacitorBundle | null>(null);
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { data: unreadNotifications } = useGetUnreadUserNotifications();
@@ -100,13 +102,9 @@ const LaunchPad: React.FC = () => {
 
     useEffect(() => {
         if (connectTo && challenge && !modalLoading) {
-            presentConnectAppModal({
-                cssClass: 'center-modal network-accept-modal',
-                showBackdrop: false,
-                onDidDismiss: ({ role }) => role === 'backdrop' && history.push('/launchpad'),
-            });
+            presentConnectAppModal();
         }
-    }, [connectTo, challenge, modalLoading, presentConnectAppModal, history]);
+    }, [connectTo, challenge, modalLoading, presentConnectAppModal]);
 
     const handleBoostClick = useCallback(
         (e: React.MouseEvent) => {
