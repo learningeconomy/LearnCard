@@ -464,7 +464,8 @@ const BuildCredentialStep: React.FC<{
     onBack: () => void;
     apiToken: string;
     onTokenChange: (token: string) => void;
-}> = ({ onComplete, onBack, apiToken, onTokenChange }) => {
+    integrationId?: string;
+}> = ({ onComplete, onBack, apiToken, onTokenChange, integrationId }) => {
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
     const [recipientEmail, setRecipientEmail] = useState('');
     const [userDid, setUserDid] = useState<string>('');
@@ -571,8 +572,26 @@ const BuildCredentialStep: React.FC<{
         count?: number;
         latestCredential?: string;
     } | null>(null);
-    const [initialCount, setInitialCount] = useState<number | null>(null);
-    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const initialTimestampRef = useRef<string | null>(null);
+
+    // Capture initial activity timestamp on mount (before user runs code)
+    useEffect(() => {
+        const captureInitialTimestamp = async () => {
+            try {
+                const wallet = await initWallet();
+                const activities = await wallet.invoke.getMyActivities?.({
+                    limit: 1,
+                    integrationId,
+                });
+                initialTimestampRef.current = activities?.records?.[0]?.timestamp || null;
+            } catch (err) {
+                console.error('Failed to capture initial timestamp:', err);
+            }
+        };
+
+        captureInitialTimestamp();
+    }, [initWallet, integrationId]);
 
     // Get the current network URL (check LCN_API_URL env var first, then store, then default)
     const networkUrl = LCN_API_URL || networkStore.get.networkUrl() || LEARNCARD_NETWORK_API_URL;
@@ -635,82 +654,79 @@ const BuildCredentialStep: React.FC<{
     const credentialJson = useMemo(() => JSON.stringify(credential, null, 4), [credential]);
     const credentialJsonIndented = credentialJson.split('\n').map((line, i) => i === 0 ? line : '    ' + line).join('\n');
 
-    // Poll for sent credentials
-    const checkSentCredentials = useCallback(async () => {
-        try {
-            const wallet = await initWallet();
-            const result = await wallet.invoke.getMySentInboxCredentials?.({ limit: 10 });
-
-            if (result?.records) {
-                const currentCount = result.records.length;
-
-                if (initialCount === null) {
-                    setInitialCount(currentCount);
-                    return null;
-                }
-
-                if (currentCount > initialCount) {
-                    const latestRecord = result.records[0];
-                    const latestCred = latestRecord?.credential;
-                    const latestName = typeof latestCred === 'object' && latestCred !== null 
-                        ? ((latestCred as Record<string, unknown>).name as string) || 'Credential'
-                        : 'Credential';
-                    return {
-                        success: true,
-                        count: currentCount - initialCount,
-                        latestCredential: latestName,
-                    };
-                }
-            }
-
-            return null;
-        } catch (err) {
-            console.error('Failed to check sent credentials:', err);
-            return null;
-        }
-    }, [initWallet, initialCount]);
-
+    // Poll for sent credentials using credential activity API
+    // Uses initialTimestampRef captured on mount to detect activity since page load
     const startPolling = useCallback(async () => {
         setIsPolling(true);
         setPollResult(null);
 
-        // Get initial count
-        const wallet = await initWallet();
-        const result = await wallet.invoke.getMySentInboxCredentials?.({ limit: 10 });
-        const count = result?.records?.length ?? 0;
-        setInitialCount(count);
+        try {
+            const wallet = await initWallet();
+            const initialTimestamp = initialTimestampRef.current;
 
-        // Start polling every 3 seconds
-        pollIntervalRef.current = setInterval(async () => {
-            const checkResult = await checkSentCredentials();
+            // Poll for 2 minutes (40 attempts at 3s intervals)
+            let attempts = 0;
+            const maxAttempts = 40;
 
-            if (checkResult?.success) {
-                setPollResult({
-                    success: true,
-                    message: `New credential sent! "${checkResult.latestCredential}"`,
-                    count: checkResult.count,
-                });
-                stopPolling();
-            }
-        }, 3000);
-
-        // Auto-stop after 2 minutes
-        setTimeout(() => {
-            if (pollIntervalRef.current) {
-                stopPolling();
-                if (!pollResult?.success) {
+            const poll = async () => {
+                if (attempts >= maxAttempts) {
+                    stopPolling();
                     setPollResult({
                         success: false,
-                        message: 'Polling timed out. Run your code and try again.',
+                        message: 'No new credentials detected. Make sure you ran your code.',
                     });
+                    return;
                 }
-            }
-        }, 120000);
-    }, [initWallet, checkSentCredentials, pollResult]);
+
+                attempts++;
+
+                // Check for new activity using integrationId filter
+                const currentActivities = await wallet.invoke.getMyActivities?.({
+                    limit: 1,
+                    integrationId,
+                });
+
+                const latestTimestamp = currentActivities?.records?.[0]?.timestamp;
+                const latestEvent = currentActivities?.records?.[0];
+
+                // Detect new activity by comparing timestamps (activity since page load)
+                if (latestTimestamp && latestTimestamp !== initialTimestamp) {
+                    stopPolling();
+
+                    const eventType = latestEvent?.eventType;
+                    const recipientType = latestEvent?.recipientType;
+
+                    if (eventType === 'FAILED') {
+                        const errorMsg = latestEvent?.metadata?.error || 'Unknown error';
+                        setPollResult({
+                            success: false,
+                            message: `Credential send failed: ${errorMsg}`,
+                        });
+                    } else {
+                        const message = recipientType === 'profile'
+                            ? 'Credential sent successfully to profile!'
+                            : 'Credential sent successfully to email/phone recipient!';
+                        setPollResult({ success: true, message });
+                    }
+                    return;
+                }
+
+                // Continue polling
+                pollIntervalRef.current = setTimeout(poll, 3000);
+            };
+
+            // Start first poll immediately (activity may already exist)
+            poll();
+        } catch (err) {
+            console.error('Polling error:', err);
+            stopPolling();
+            setPollResult({ success: false, message: 'Failed to check credentials. Please try again.' });
+        }
+    }, [initWallet, integrationId]);
 
     const stopPolling = useCallback(() => {
         if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
+            clearTimeout(pollIntervalRef.current);
             pollIntervalRef.current = null;
         }
         setIsPolling(false);
@@ -720,7 +736,7 @@ const BuildCredentialStep: React.FC<{
     useEffect(() => {
         return () => {
             if (pollIntervalRef.current) {
-                clearInterval(pollIntervalRef.current);
+                clearTimeout(pollIntervalRef.current);
             }
         };
     }, []);
@@ -1526,6 +1542,7 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
                         onBack={guideState.prevStep}
                         apiToken={apiToken}
                         onTokenChange={setApiToken}
+                        integrationId={selectedIntegration?.id}
                     />
                 );
 

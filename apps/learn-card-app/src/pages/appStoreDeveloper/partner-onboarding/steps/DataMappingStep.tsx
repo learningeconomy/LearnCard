@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import Papa from 'papaparse';
 import {
     GitMerge,
@@ -469,10 +469,31 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     });
     const [apiIsPolling, setApiIsPolling] = useState(false);
     const [apiPollResult, setApiPollResult] = useState<{ success: boolean; message: string } | null>(null);
+    const apiInitialTimestampRef = useRef<string | null>(null);
     const [apiCopied, setApiCopied] = useState(false);
     const [apiCopiedUri, setApiCopiedUri] = useState<string | null>(null);
     const [apiCopiedConfig, setApiCopiedConfig] = useState(false);
     const [apiViewMode, setApiViewMode] = useState<'reference' | 'example'>('reference');
+
+    // Capture initial activity timestamp on mount (before user runs code)
+    useEffect(() => {
+        const captureInitialTimestamp = async () => {
+            if (!integrationId) return;
+
+            try {
+                const wallet = await initWalletRef.current();
+                const activities = await wallet.invoke.getMyActivities?.({
+                    limit: 1,
+                    integrationId,
+                });
+                apiInitialTimestampRef.current = activities?.records?.[0]?.timestamp || null;
+            } catch (err) {
+                console.error('Failed to capture initial timestamp:', err);
+            }
+        };
+
+        captureInitialTimestamp();
+    }, [integrationId]);
 
     // Generate a config object mapping template names/IDs to their boost URIs
     const generateBoostConfig = useCallback(() => {
@@ -729,9 +750,8 @@ import { initLearnCard } from '@learncard/init';
 
 // Initialize with your API Token (get from "API Tokens" tab)
 const learnCard = await initLearnCard({
-    network: {
-        apiToken: process.env.LEARNCARD_API_TOKEN, // Your API Token
-    },
+    apiToken: process.env.LEARNCARD_API_TOKEN, // Your API Token    
+    network: true
 });
 
 // Send credential using unified send() API
@@ -835,23 +855,17 @@ curl -X POST "https://network.learncard.com/api/send" \\
         setTimeout(() => setApiCopied(false), 2000);
     };
 
+    // Poll for sent credentials using credential activity API
+    // Uses apiInitialTimestampRef captured on mount to detect activity since page load
     const handleApiStartPolling = async () => {
         setApiIsPolling(true);
         setApiPollResult(null);
 
-        const boostUri = selectedApiTemplate?.boostUri;
-
         try {
             const wallet = await initWalletRef.current();
+            const initialTimestamp = apiInitialTimestampRef.current;
 
-            // Get initial activity count using unified activity API
-            const initialActivities = await (wallet.invoke as any).getMyActivities?.({
-                limit: 1,
-                boostUri,
-            });
-            const initialTimestamp = initialActivities?.records?.[0]?.timestamp;
-
-            // Poll for 30 seconds
+            // Poll for 30 seconds (15 attempts at 2s intervals)
             let attempts = 0;
             const maxAttempts = 15;
 
@@ -864,32 +878,43 @@ curl -X POST "https://network.learncard.com/api/send" \\
 
                 attempts++;
 
-                // Check for new activity using unified activity API
-                const currentActivities = await (wallet.invoke as any).getMyActivities?.({
+                // Check for new activity using integrationId filter
+                const currentActivities = await wallet.invoke.getMyActivities?.({
                     limit: 1,
-                    boostUri,
+                    integrationId,
                 });
 
                 const latestTimestamp = currentActivities?.records?.[0]?.timestamp;
                 const latestEvent = currentActivities?.records?.[0];
 
-                // Detect new activity by comparing timestamps
+                // Detect new activity by comparing timestamps (activity since page load)
                 if (latestTimestamp && latestTimestamp !== initialTimestamp) {
                     setApiIsPolling(false);
 
+                    const eventType = latestEvent?.eventType;
                     const recipientType = latestEvent?.recipientType;
-                    const message = recipientType === 'profile'
-                        ? 'Credential sent successfully to profile!'
-                        : 'Credential sent successfully to email/phone recipient!';
 
-                    setApiPollResult({ success: true, message });
+                    // Handle FAILED events
+                    if (eventType === 'FAILED') {
+                        const errorMsg = (latestEvent?.metadata as Record<string, unknown>)?.error || 'Unknown error';
+                        setApiPollResult({
+                            success: false,
+                            message: `Credential send failed: ${errorMsg}`,
+                        });
+                    } else {
+                        const message = recipientType === 'profile'
+                            ? 'Credential sent successfully to profile!'
+                            : 'Credential sent successfully to email/phone recipient!';
+                        setApiPollResult({ success: true, message });
+                    }
                     return;
                 }
 
                 setTimeout(poll, 2000);
             };
 
-            setTimeout(poll, 2000);
+            // Start first poll immediately (activity may already exist)
+            poll();
         } catch (err) {
             console.error('Polling error:', err);
             setApiIsPolling(false);
