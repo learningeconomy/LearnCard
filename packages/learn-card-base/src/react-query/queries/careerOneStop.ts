@@ -178,9 +178,9 @@ export const useTrainingProgramsByKeyword = ({
             }
 
             // Step 1-2: Fetch occupation details for each keyword
-            const occupationPromises = keywords.map(keyword =>
-                fetchOccupationDetailsForKeyword(did, keyword)
-            );
+            const occupationPromises = keywords
+                .slice(0, 3)
+                .map(keyword => fetchOccupationDetailsForKeyword(did, keyword));
 
             const occupationResults = await Promise.all(occupationPromises);
 
@@ -229,7 +229,7 @@ export const useTrainingProgramsByKeyword = ({
                 .flat();
         },
         enabled: Boolean(keywords && keywords.length > 0),
-        // staleTime: 1000 * 60 * 10, // 10 minutes
-        // retry: 1,
+        staleTime: 1000 * 60 * 10, // 10 minutes
+        retry: 1,
     });
 };
