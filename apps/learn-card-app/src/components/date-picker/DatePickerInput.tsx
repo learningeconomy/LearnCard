@@ -22,8 +22,8 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
     error,
     isMobile,
     label = 'Date of Birth',
-    minDate = '1900-01-01',
-    maxDate,
+    minDate = new Date('1900-01-01T00:00:00'),
+    maxDate = new Date(),
 }) => {
     const { newModal, closeModal } = useModal();
 
@@ -108,7 +108,6 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                     {value ? moment(value).format('MMMM D, YYYY') : label}
                     <Calendar className="pointer-events-none text-grayscale-700 w-[24px]" />
                 </button>
-                {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
             </>
         );
     }
@@ -133,7 +132,6 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                 }`}
             />
             <Calendar className="pointer-events-none absolute right-[16px] top-[50%] -translate-y-1/2 text-grayscale-700 w-[24px]" />
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
         </div>
     );
 };
