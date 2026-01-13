@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
+import { useModal } from 'learn-card-base';
+import { useAlignmentModal } from '../../../../hooks/useAlignmentModal';
+import ViewAlignmentInfo from '../../../../pages/SkillFrameworks/ViewAlignmentInfo';
 import { IonContent, IonFooter, IonPage, IonRow, IonToolbar } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
@@ -37,6 +40,7 @@ type NonBoostPreviewProps = {
     titleOverride?: string;
     onDotsClick?: () => void;
     qrCodeOnClick?: () => void;
+    onAlignmentClick?: (alignment: any) => void;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -61,8 +65,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     titleOverride,
     onDotsClick,
     qrCodeOnClick,
+    onAlignmentClick: _onAlignmentClick,
 }) => {
     const { initWallet } = useWallet();
+    const { newModal } = useModal();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const [isFront, setIsFront] = useState(true);
 
@@ -80,6 +86,16 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
+
+    const { onAlignmentClick: defaultOnAlignmentClick } = useAlignmentModal();
+
+    const onAlignmentClick = (alignment: any) => {
+        if (_onAlignmentClick) {
+            _onAlignmentClick(alignment);
+        } else {
+            defaultOnAlignmentClick(alignment);
+        }
+    };
 
     const bgImage = credential?.display?.backgroundImager;
     const showBackground = bgImage && isCertificate;
@@ -120,6 +136,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             hideNavButtons
                             isFrontOverride={isFront}
                             setIsFrontOverride={setIsFront}
+                            onAlignmentClick={onAlignmentClick}
                         />
                     </section>
                 </IonRow>

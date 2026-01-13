@@ -24,7 +24,12 @@ import {
     ModalsProvider,
     useSQLiteInitWeb,
     lazyWithRetry,
+    setAlignmentModalComponent,
 } from 'learn-card-base';
+import ViewAlignmentInfo from './pages/SkillFrameworks/ViewAlignmentInfo';
+
+setAlignmentModalComponent(ViewAlignmentInfo as any);
+
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import useFeedbackWidget from './hooks/useFeedbackWidget';
 import PresentVcModalListener from './components/modalListener/ModalListener';

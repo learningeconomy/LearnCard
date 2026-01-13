@@ -40,6 +40,7 @@ type CertificateDisplayCardProps = {
     formattedDisplayType?: string;
     customLinkedCredentialsComponent?: React.ReactNode;
     customBodyContentSlot?: React.ReactNode;
+    onAlignmentClick?: (alignment: any) => void;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -70,6 +71,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     formattedDisplayType,
     customLinkedCredentialsComponent,
     customBodyContentSlot,
+    onAlignmentClick,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -110,6 +112,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         showBackButton={(showBackButton && !hideNavButtons) || showDetailsBtn}
                         handleViewFrontFace={() => setIsFront(!isFront)}
                         customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                        onAlignmentClick={onAlignmentClick}
                     />
                 )}
 

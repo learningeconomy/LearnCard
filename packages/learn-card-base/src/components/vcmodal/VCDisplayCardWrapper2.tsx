@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-
+import { useModal } from '../modals/useModal';
+import { getAlignmentModalComponent } from './alignmentModalRegistry';
 import IDDisplayCard from '../id/IDDisplayCard';
 import { VCDisplayCard2 } from '@learncard/react';
 import FamilyBoostPreview from './FamilyBoostPreview/FamilyBoostPreview';
@@ -55,6 +56,7 @@ type VCDisplayCardWrapper2Props = {
     customLinkedCredentialsComponent?: React.ReactNode;
     useCurrentUserName?: boolean;
     customBodyContentSlot?: React.ReactNode;
+    onAlignmentClick?: (alignment: any) => void;
 };
 
 export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
@@ -84,7 +86,9 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     customLinkedCredentialsComponent,
     useCurrentUserName,
     customBodyContentSlot,
+    onAlignmentClick,
 }) => {
+    const { newModal } = useModal();
     const currentUser = useCurrentUser();
 
     const credential = useMemo(() => unwrapBoostCredential(_credential), [_credential]);
@@ -149,6 +153,23 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             setVCVerification(verificationItems);
         });
     }, [credential]);
+
+    const handleAlignmentClick = (alignment: any) => {
+        if (onAlignmentClick) {
+            onAlignmentClick(alignment);
+        } else {
+            const AlignmentModal = getAlignmentModalComponent();
+            if (AlignmentModal) {
+                newModal(
+                    <AlignmentModal
+                        frameworkId={alignment.frameworkId}
+                        skillId={alignment.targetCode}
+                        alignment={alignment}
+                    />
+                );
+            }
+        }
+    };
 
     const isID = category === BoostCategoryOptionsEnum.id;
     const isMembership = category === BoostCategoryOptionsEnum.membership;
@@ -278,6 +299,10 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                         badgeThumbnail={overrideCardImageUrl || badgeThumbnail!}
                         badgeCircleCustomClass="w-[170px] h-[170px]"
                         branding={brandingEnum}
+                        credential={credential}
+                        showBackgroundImage={false}
+                        backgroundImage=""
+                        backgroundColor=""
                     />
                 )
             }
@@ -295,14 +320,12 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             isFrontOverride={isFrontOverride}
             setIsFrontOverride={setIsFrontOverride}
             hideNavButtons={hideNavButtons}
-            hideAwardedTo={hideAwardedTo}
             showDetailsBtn={showDetailsBtn}
             hideQRCode={hideQRCode}
-            onMediaClick={onMediaClick}
             enableLightbox={true}
-            bottomButton={bottomButton}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             customBodyContentSlot={customBodyContentSlot}
+            onAlignmentClick={handleAlignmentClick}
         />
     );
 };

@@ -28,6 +28,7 @@ type CertificateBackFaceProps = {
     showBackButton?: boolean;
     handleViewFrontFace?: () => void;
     customLinkedCredentialsComponent?: React.ReactNode;
+    onAlignmentClick?: (alignment: any) => void;
 };
 
 export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
@@ -43,6 +44,7 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
     showBackButton,
     handleViewFrontFace,
     customLinkedCredentialsComponent,
+    onAlignmentClick,
 }) => {
     const { createdAt, credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
@@ -115,7 +117,13 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
                 />
             )}
 
-            {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
+            {alignment && (
+                <AlignmentsBox
+                    alignment={alignment as any}
+                    style="Certificate"
+                    onAlignmentClick={onAlignmentClick}
+                />
+            )}
 
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />

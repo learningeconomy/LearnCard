@@ -42,6 +42,7 @@ type VC2BackFaceProps = {
     customIssueHistoryComponent?: React.ReactNode;
     enableLightbox?: boolean;
     customLinkedCredentialsComponent?: React.ReactNode;
+    onAlignmentClick?: (alignment: any) => void;
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
@@ -60,6 +61,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     customIssueHistoryComponent,
     enableLightbox,
     customLinkedCredentialsComponent,
+    onAlignmentClick,
 }) => {
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
@@ -164,7 +166,13 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
                 {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
 
-                {alignment && <AlignmentsBox alignment={alignment} style="boost" />}
+                {alignment && (
+                    <AlignmentsBox
+                        alignment={alignment as any}
+                        style="boost"
+                        onAlignmentClick={onAlignmentClick}
+                    />
+                )}
 
                 {verificationItems && verificationItems.length > 0 && (
                     <VerificationsBox verificationItems={verificationItems} />

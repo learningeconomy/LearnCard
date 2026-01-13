@@ -37,6 +37,7 @@ export type VCIDDisplayCardProps = {
     customIDDescription?: React.ReactNode;
     hideGradientBackground?: boolean;
     customLinkedCredentialsComponent?: React.ReactNode;
+    onAlignmentClick?: (alignment: any) => void;
 };
 
 export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
@@ -63,6 +64,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     customIDDescription,
     hideGradientBackground = false,
     customLinkedCredentialsComponent,
+    onAlignmentClick,
 }) => {
     const [_isFront, _setIsFront] = useState<boolean>(isFrontOverride ?? true);
     const isFront = isFrontOverride ?? _isFront;
@@ -128,6 +130,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                     customLinkedCredentialsComponent={
                                         customLinkedCredentialsComponent
                                     }
+                                    onAlignmentClick={onAlignmentClick}
                                 />
                             )}
                         </div>

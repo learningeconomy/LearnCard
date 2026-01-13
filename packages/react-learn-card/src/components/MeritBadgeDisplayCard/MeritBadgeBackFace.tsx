@@ -28,6 +28,7 @@ type MeritBadgeBackFaceProps = {
     showBackButton?: boolean;
     handleViewFrontFace?: () => void;
     customLinkedCredentialsComponent?: React.ReactNode;
+    onAlignmentClick?: (alignment: any) => void;
 };
 
 export const MeritBadgeBackFace: React.FC<MeritBadgeBackFaceProps> = ({
@@ -43,6 +44,7 @@ export const MeritBadgeBackFace: React.FC<MeritBadgeBackFaceProps> = ({
     showBackButton,
     handleViewFrontFace,
     customLinkedCredentialsComponent,
+    onAlignmentClick,
 }) => {
     const { createdAt, credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
@@ -115,7 +117,13 @@ export const MeritBadgeBackFace: React.FC<MeritBadgeBackFaceProps> = ({
                 />
             )}
 
-            {alignment && <AlignmentsBox alignment={alignment} style="MeritBadge" />}
+            {alignment && (
+                <AlignmentsBox
+                    alignment={alignment as any}
+                    style="MeritBadge"
+                    onAlignmentClick={onAlignmentClick}
+                />
+            )}
 
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />

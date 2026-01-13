@@ -3,19 +3,24 @@ import React, { useState } from 'react';
 import AlignmentRow from './AlignmentRow';
 import InfoIcon from '../svgs/InfoIcon';
 import InfoBox from './InfoBox';
+import { enrichAlignment } from '../../helpers/alignment.helpers';
 
 type Alignment = {
     targetUrl: string;
     targetName: string;
     targetFramework: string;
+    icon?: string;
+    targetDescription?: string;
+    targetCode?: string;
+    frameworkId?: string;
 };
 
 type AlignmentsBoxProps = {
     alignment: Alignment | Alignment[];
     style: 'Certificate' | 'boost';
+    onAlignmentClick?: (alignment: Alignment) => void;
 };
-
-const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
+const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style, onAlignmentClick }) => {
     const [showInfo, setShowInfo] = useState(false);
     const alignmentText = `
     Alignments in your Open Badge credential link your achievement to established frameworks, standards, or competencies. 
@@ -23,19 +28,26 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
     `;
 
     const alignments = Array.isArray(alignment)
-        ? alignment.map((object, index) => (
+        ? alignment.map(enrichAlignment).map((object, index) => (
               <AlignmentRow
                   key={index}
                   url={object.targetUrl}
                   name={object.targetName}
                   framework={object.targetFramework}
+                  icon={object.icon}
+                  description={object.targetDescription}
+                  onClick={onAlignmentClick ? () => onAlignmentClick(object) : undefined}
               />
           ))
         : alignment && (
               <AlignmentRow
+                  {...enrichAlignment(alignment)}
                   url={alignment.targetUrl}
                   name={alignment.targetName}
                   framework={alignment.targetFramework}
+                  icon={alignment.icon}
+                  description={alignment.targetDescription}
+                  onClick={onAlignmentClick ? () => onAlignmentClick(enrichAlignment(alignment)) : undefined}
               />
           );
 

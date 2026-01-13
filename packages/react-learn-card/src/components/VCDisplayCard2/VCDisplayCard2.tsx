@@ -78,6 +78,7 @@ export type VCDisplayCard2Props = {
     customLinkedCredentialsComponent?: React.ReactNode;
     customContentSlot?: React.ReactNode;
     customBodyContentSlot?: React.ReactNode;
+    onAlignmentClick?: (alignment: any) => void;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -108,6 +109,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     enableLightbox,
     customRibbonCategoryComponent,
     customFrontButton,
+    onAlignmentClick,
     knownDIDRegistry,
     hideIssueDate,
     onDotsClick,
@@ -216,6 +218,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 formattedDisplayType={formattedDisplayType}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
+                onAlignmentClick={onAlignmentClick}
             />
         );
     }
@@ -247,6 +250,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 formattedDisplayType={formattedDisplayType}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
+                onAlignmentClick={onAlignmentClick}
             />
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
@@ -276,6 +280,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     customIDDescription={customIDDescription}
                     hideGradientBackground={hideGradientBackground}
                     customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                    onAlignmentClick={onAlignmentClick}
                 />
             </div>
         );

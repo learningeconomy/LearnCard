@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
+import { useModal } from 'learn-card-base';
+import { useAlignmentModal } from '../../../../hooks/useAlignmentModal';
+import ViewAlignmentInfo from '../../../../pages/SkillFrameworks/ViewAlignmentInfo';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import { VCDisplayCard2 } from '@learncard/react';
 import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
@@ -39,6 +42,7 @@ type BoostPreviewProps = {
     qrCodeOnClick?: () => void;
     hideQRCode?: boolean;
     handleShareBoost?: () => void;
+    onAlignmentClick?: (alignment: any) => void;
 };
 enum BoostPreviewTypeEnum {
     managed,
@@ -70,8 +74,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     qrCodeOnClick,
     hideQRCode = false,
     handleShareBoost,
+    onAlignmentClick: _onAlignmentClick,
 }) => {
     const { initWallet } = useWallet();
+    const { newModal } = useModal();
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
@@ -118,6 +124,15 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         );
         _categoryType = BoostCategoryOptionsEnum.id;
     }
+    const { onAlignmentClick: defaultOnAlignmentClick } = useAlignmentModal();
+
+    const onAlignmentClick = (alignment: any) => {
+        if (_onAlignmentClick) {
+            _onAlignmentClick(alignment);
+        } else {
+            defaultOnAlignmentClick(alignment);
+        }
+    };
 
     let handleShare, handleDotMenu;
 
@@ -138,7 +153,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             issueeOverride={issueeOverride}
                             issuerOverride={issuerOverride}
                             issueHistory={issueHistory}
-                            categoryType={_categoryType}
+                            categoryType={_categoryType as any}
                             verificationItems={verifications}
                             customThumbComponent={customThumbComponent}
                             customBodyCardComponent={customBodyCardComponent}
@@ -160,6 +175,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             setIsFrontOverride={setIsFront}
                             qrCodeOnClick={qrCodeOnClick}
                             hideQRCode={hideQRCode}
+                            onAlignmentClick={onAlignmentClick}
                         />
                     </section>
                 </IonRow>

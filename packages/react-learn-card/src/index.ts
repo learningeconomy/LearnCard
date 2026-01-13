@@ -6,3 +6,4 @@ export * from './components/index';
 export * from './helpers/useHorizontalPages';
 export * from './helpers/useOnMomentumScrollEnd';
 export * from './helpers/useScrollBorders';
+export * from './helpers/alignment.helpers';
