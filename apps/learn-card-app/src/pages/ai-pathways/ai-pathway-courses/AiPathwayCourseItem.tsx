@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import startRatingIcon from '../../../assets/images/star-rating.icon.png';
 import timeMachineIcon from '../../../assets/images/time-machine.icon.png';
@@ -20,12 +20,14 @@ const AiPathwayCourseItem: React.FC<{ course: TrainingProgram }> = ({ course }) 
         });
     };
 
-    const careers = course?.Occupationslist?.length
-        ? [...course.Occupationslist]
-              .sort(() => Math.random() - 0.5)
-              .slice(0, 3)
-              .map(occupation => occupation.Value)
-        : [];
+    const careers = useMemo(() => {
+        return course?.Occupationslist?.length
+            ? [...course.Occupationslist]
+                  .sort(() => Math.random() - 0.5)
+                  .slice(0, 3)
+                  .map(occupation => occupation.Value)
+            : [];
+    }, [course?.Occupationslist]);
 
     return (
         <div
