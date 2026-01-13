@@ -103,7 +103,7 @@ export const useSalariesForKeyword = ({ keyword }: { keyword: string | null }) =
     });
 };
 
-const fetchTrainingProgramsByKeyword = async (did: string, keyword: string): Promise => {
+const fetchTrainingProgramsByKeyword = async (did: string, keyword: string): Promise<any> => {
     const res = await fetch(`http://localhost:3001/insights/training-programs?did=${did}`, {
         method: 'POST',
         headers: {
@@ -120,7 +120,47 @@ const fetchTrainingProgramsByKeyword = async (did: string, keyword: string): Pro
     return res.json();
 };
 
-export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] | null }) => {
+const fetchOpenSyllabusCoursesBySchool = async (did: string, schoolName: string): Promise<any> => {
+    const res = await fetch(`http://localhost:3001/insights/courses?did=${did}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ schoolName, limit: 100 }),
+    });
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to fetch training programs');
+    }
+
+    return res.json();
+};
+
+/**
+ * Hook for fetching and enriching training programs data
+ *
+ * Data Flow:
+ * 1. Takes an array of keywords and optional fieldOfStudy
+ * 2. Fetches occupation details for each keyword (Career One Stop API)
+ * 3. Extracts ONET titles from occupation results
+ * 4. Fetches training programs for first 3 ONET titles (Career One Stop API)
+ * 5. Extracts unique school names from training programs
+ * 6. Fetches syllabus courses for each unique school (Open Syllabus API)
+ * 7. Filters syllabus courses by fieldOfStudy
+ * 8. Combines training programs with filtered syllabus courses
+ *
+ * @param keywords - Array of keywords to search for
+ * @param fieldOfStudy - Optional field of study to filter syllabus courses
+ * @returns Enriched training programs with syllabus courses
+ */
+export const useTrainingProgramsByKeyword = ({
+    keywords,
+    fieldOfStudy,
+}: {
+    keywords: string[] | null;
+    fieldOfStudy?: string;
+}) => {
     const { initWallet } = useWallet();
 
     return useQuery({
@@ -137,20 +177,19 @@ export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] 
                 throw new Error('Wallet not initialized');
             }
 
-            // Fetch occupation details for first 3 keywords (randomized)
-            const keywordsToFetch = [...keywords].sort(() => Math.random() - 0.5).slice(0, 3);
-            const occupationPromises = keywordsToFetch.map(keyword =>
+            // Step 1-2: Fetch occupation details for each keyword
+            const occupationPromises = keywords.map(keyword =>
                 fetchOccupationDetailsForKeyword(did, keyword)
             );
 
             const occupationResults = await Promise.all(occupationPromises);
 
-            // Get all ONET titles from the results
+            // Step 3: Extract ONET titles from occupation results
             const allOnetTitles = occupationResults.flatMap(occupations =>
                 occupations.map(occupation => occupation.OnetTitle)
             );
 
-            // Fetch training programs for first 3 ONET titles
+            // Step 4: Fetch training programs for first 3 ONET titles
             const onetTitlesToFetch = allOnetTitles.slice(0, 3);
             const trainingPromises = onetTitlesToFetch.map(onetTitle =>
                 fetchTrainingProgramsByKeyword(did, onetTitle)
@@ -158,13 +197,36 @@ export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] 
 
             const trainingResults = await Promise.all(trainingPromises);
 
-            // Combine all training program results and include the keyword used
+            // Step 5: Combine training program results and include the keyword used
             const combinedResults = trainingResults.map((result: any, index: number) => ({
                 ...result,
                 keyword: onetTitlesToFetch[index],
             }));
 
-            return combinedResults.flat();
+            // Step 6: Extract unique school names from combined results
+            const uniqueSchoolNames = [
+                ...new Set(
+                    combinedResults.map((result: any) => result?.SchoolPrograms?.[0]?.SchoolName)
+                ),
+            ].filter(Boolean);
+
+            // Step 7: Fetch syllabus courses for each unique school
+            const syllabusPromises = uniqueSchoolNames.map(schoolName =>
+                fetchOpenSyllabusCoursesBySchool(did, schoolName)
+            );
+
+            const syllabusResults = await Promise.all(syllabusPromises);
+
+            // Step 8: Combine training programs with syllabus courses filtered by fieldOfStudy
+            return combinedResults
+                .map((result: any, index: number) => ({
+                    ...result,
+                    syllabusCourses:
+                        syllabusResults[index]?.syllabi.filter((syllabi: any) => {
+                            return syllabi?.field?.field === fieldOfStudy;
+                        }) || [],
+                }))
+                .flat();
         },
         enabled: Boolean(keywords && keywords.length > 0),
         // staleTime: 1000 * 60 * 10, // 10 minutes

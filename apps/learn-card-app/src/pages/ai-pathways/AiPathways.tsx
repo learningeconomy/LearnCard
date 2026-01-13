@@ -18,6 +18,7 @@ import { useGetCurrentLCNUser, useAiInsightCredential, useAiPathways } from 'lea
 import {
     getFirstAvailableKeywords,
     getAllKeywords,
+    getFirstAvailableFieldOfStudy,
 } from './ai-pathway-careers/ai-pathway-careers.helpers';
 
 export type PathwayStep = {
@@ -39,18 +40,23 @@ const AiPathways: React.FC = () => {
     const { backgroundSecondaryColor } = colors;
 
     const { data: aiInsightCredential } = useAiInsightCredential();
+
     const { data: learningPathwaysData, isLoading: fetchPathwaysLoading } = useAiPathways();
 
     const strongestAreaInterest = aiInsightCredential?.insights?.strongestArea;
 
     let careerKeywords = null;
+    let fieldOfStudy = strongestAreaInterest?.keywords?.fieldOfStudy;
     if (strongestAreaInterest?.keywords?.occupation?.length) {
         careerKeywords = strongestAreaInterest.keywords.occupation;
     } else if (strongestAreaInterest?.keywords?.jobs?.length) {
         careerKeywords = strongestAreaInterest.keywords.jobs;
     }
 
+    // if no keywords are found from the insights credentials, use the first available keywords from the pathways
     careerKeywords = careerKeywords || getFirstAvailableKeywords(learningPathwaysData || []);
+    fieldOfStudy = fieldOfStudy || getFirstAvailableFieldOfStudy(learningPathwaysData || []);
+
     const allKeywords = getAllKeywords(learningPathwaysData || []);
 
     return (
@@ -64,7 +70,7 @@ const AiPathways: React.FC = () => {
                         hidePlusBtn={true}
                     />
                     <div className="flex items-center justify-center flex-col relative w-full pb-[50px]">
-                        <AiPathwayCourses keywords={allKeywords} />
+                        <AiPathwayCourses keywords={allKeywords} fieldOfStudy={fieldOfStudy} />
                         <AiPathwaySessions />
                         <AiPathwayCareers careerKeywords={careerKeywords} />
                         <AiPathwayExploreContent />

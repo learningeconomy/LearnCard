@@ -223,8 +223,8 @@ export const getFirstAvailableKeywords = (
 ): string[] => {
     for (const pathway of pathways) {
         const keywords =
-            (pathway.keywords?.careers?.length && pathway.keywords.careers) ||
             (pathway.keywords?.occupation?.length && pathway.keywords.occupation) ||
+            (pathway.keywords?.careers?.length && pathway.keywords.careers) ||
             (pathway.keywords?.jobs?.length && pathway.keywords.jobs) ||
             [];
 
@@ -236,17 +236,29 @@ export const getFirstAvailableKeywords = (
     return [];
 };
 
+export const getFirstAvailableFieldOfStudy = (
+    pathways: { keywords?: { fieldOfStudy?: string } }[]
+): string => {
+    for (const pathway of pathways) {
+        const fos = pathway.keywords?.fieldOfStudy;
+
+        if (fos) return fos;
+    }
+
+    return '';
+};
+
 export const getAllKeywords = (
     pathways: { keywords?: { occupation?: string[]; jobs?: string[]; careers?: string[] } }[]
 ): string[] => {
     const allKeywords: string[] = [];
 
     for (const pathway of pathways) {
-        if (pathway.keywords?.careers?.length) {
-            allKeywords.push(...pathway.keywords.careers);
-        }
         if (pathway.keywords?.occupation?.length) {
             allKeywords.push(...pathway.keywords.occupation);
+        }
+        if (pathway.keywords?.careers?.length) {
+            allKeywords.push(...pathway.keywords.careers);
         }
         if (pathway.keywords?.jobs?.length) {
             allKeywords.push(...pathway.keywords.jobs);
