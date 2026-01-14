@@ -1351,6 +1351,183 @@ describe('Credential Activity Tracking', () => {
                 });
             });
 
+            describe('Auto-Delivery to Verified Users', () => {
+                test('send() to email auto-delivers and logs DELIVERED when user has verified email', async () => {
+                    // Create a new user and verify their email
+                    const userWithEmail = await getLearnCardForUser('d');
+                    await setupSigningAuthority(userWithEmail, 'auto-sa');
+
+                    const testEmail = 'auto-deliver-test@example.com';
+
+                    // Add and verify the contact method
+                    await userWithEmail.invoke.addContactMethod({ type: 'email', value: testEmail });
+                    const verificationDelivery = await (
+                        await fetch('http://localhost:4000/api/test/last-delivery')
+                    ).json();
+                    const verificationToken = verificationDelivery?.templateModel?.verificationToken;
+                    await userWithEmail.invoke.verifyContactMethod(verificationToken);
+
+                    // Verify contact method is now verified
+                    const contactMethods = await userWithEmail.invoke.getMyContactMethods();
+                    const verifiedEmail = contactMethods.find(
+                        (cm: { type: string; value: string; isVerified: boolean }) =>
+                            cm.type === 'email' && cm.value === testEmail && cm.isVerified
+                    );
+
+                    expect(verifiedEmail).toBeDefined();
+
+                    // Now user A sends to that verified email - should auto-deliver
+                    const boostCredential = a.invoke.getTestVc();
+                    const boostUri = await a.invoke.createBoost(boostCredential, {
+                        name: 'Auto-Delivery Test',
+                        category: 'Achievement',
+                    });
+
+                    const sendResult = await a.invoke.send({
+                        type: 'boost',
+                        recipient: testEmail,
+                        templateUri: boostUri,
+                    });
+
+                    expect(sendResult.activityId).toBeDefined();
+
+                    // Verify DELIVERED activity was logged (not CREATED, since it auto-delivered)
+                    const activities = await a.invoke.getMyActivities({ limit: 20 });
+                    const deliveredEvent = activities.records.find(
+                        (r: { activityId: string; eventType: string }) =>
+                            r.activityId === sendResult.activityId && r.eventType === 'DELIVERED'
+                    );
+
+                    expect(deliveredEvent).toBeDefined();
+                    expect(deliveredEvent?.recipientType).toBe('email');
+                    expect(deliveredEvent?.recipientIdentifier).toBe(testEmail);
+                    expect(deliveredEvent?.source).toBe('send');
+                });
+
+                test('auto-delivery chains activityId correctly', async () => {
+                    // Create a new user and verify their email
+                    const userWithEmail2 = await getLearnCardForUser('e');
+                    await setupSigningAuthority(userWithEmail2, 'auto-sa');
+
+                    const testEmail2 = 'auto-deliver-chain@example.com';
+
+                    // Add and verify the contact method
+                    await userWithEmail2.invoke.addContactMethod({ type: 'email', value: testEmail2 });
+                    const verificationDelivery2 = await (
+                        await fetch('http://localhost:4000/api/test/last-delivery')
+                    ).json();
+                    const verificationToken2 = verificationDelivery2?.templateModel?.verificationToken;
+                    await userWithEmail2.invoke.verifyContactMethod(verificationToken2);
+
+                    // User A sends to verified email
+                    const boostCredential = a.invoke.getTestVc();
+                    const boostUri = await a.invoke.createBoost(boostCredential, {
+                        name: 'Auto-Delivery Chain Test',
+                        category: 'Achievement',
+                    });
+
+                    const sendResult = await a.invoke.send({
+                        type: 'boost',
+                        recipient: testEmail2,
+                        templateUri: boostUri,
+                    });
+
+                    const activityId = sendResult.activityId;
+
+                    // Verify activity was logged with correct activityId
+                    const activityDetails = await a.invoke.getActivity({ activityId });
+
+                    expect(activityDetails).toBeDefined();
+                    expect(activityDetails?.activityId).toBe(activityId);
+                    expect(activityDetails?.eventType).toBe('DELIVERED');
+                });
+
+                test('auto-delivery with integrationId logs DELIVERED then CLAIMED on acceptCredential', async () => {
+                    // Create a new user and verify their email
+                    const userWithEmail3 = await getLearnCardForUser('f');
+                    await setupSigningAuthority(userWithEmail3, 'auto-sa');
+
+                    const testEmail3 = 'auto-deliver-integration@example.com';
+
+                    // Add and verify the contact method
+                    await userWithEmail3.invoke.addContactMethod({ type: 'email', value: testEmail3 });
+                    const verificationDelivery3 = await (
+                        await fetch('http://localhost:4000/api/test/last-delivery')
+                    ).json();
+                    const verificationToken3 = verificationDelivery3?.templateModel?.verificationToken;
+                    await userWithEmail3.invoke.verifyContactMethod(verificationToken3);
+
+                    // User A sends to verified email with integrationId
+                    const boostCredential = a.invoke.getTestVc();
+                    const boostUri = await a.invoke.createBoost(boostCredential, {
+                        name: 'Auto-Delivery Integration Test',
+                        category: 'Achievement',
+                    });
+
+                    const integrationId = 'test-integration-auto-deliver';
+
+                    const sendResult = await a.invoke.send({
+                        type: 'boost',
+                        recipient: testEmail3,
+                        templateUri: boostUri,
+                        integrationId,
+                    });
+
+                    const activityId = sendResult.activityId;
+
+                    expect(activityId).toBeDefined();
+
+                    // Verify DELIVERED activity was logged with integrationId
+                    let activities = await a.invoke.getMyActivities({ limit: 20 });
+                    const deliveredEvent = activities.records.find(
+                        (r: { activityId: string; eventType: string }) =>
+                            r.activityId === activityId && r.eventType === 'DELIVERED'
+                    );
+
+                    expect(deliveredEvent).toBeDefined();
+                    expect(deliveredEvent?.integrationId).toBe(integrationId);
+                    expect(deliveredEvent?.recipientType).toBe('email');
+
+                    // For auto-delivery, credential is already in user's pending credentials
+                    // Get the pending credential and accept it
+                    const pendingCredentials = await userWithEmail3.invoke.getIncomingCredentials();
+                    const pendingCred = pendingCredentials.find(
+                        (c: { uri: string }) => c.uri?.includes('credential')
+                    );
+
+                    expect(pendingCred).toBeDefined();
+
+                    // User accepts the credential
+                    await userWithEmail3.invoke.acceptCredential(pendingCred.uri);
+
+                    // Verify CLAIMED activity was logged with same activityId and integrationId
+                    activities = await a.invoke.getMyActivities({ limit: 30 });
+                    const claimedEvent = activities.records.find(
+                        (r: { activityId: string; eventType: string }) =>
+                            r.activityId === activityId && r.eventType === 'CLAIMED'
+                    );
+
+                    expect(claimedEvent).toBeDefined();
+                    expect(claimedEvent?.activityId).toBe(activityId);
+                    expect(claimedEvent?.integrationId).toBe(integrationId);
+                    expect(claimedEvent?.source).toBe('claim');
+
+                    // Verify all events exist under same activityId
+                    // 3 events: CREATED (initial send), DELIVERED (auto-delivery), CLAIMED (accept)
+                    const lifecycleEvents = activities.records.filter(
+                        (r: { activityId: string }) => r.activityId === activityId
+                    );
+
+                    expect(lifecycleEvents.length).toBe(3);
+
+                    // Verify proper timestamp ordering (DELIVERED before CLAIMED)
+                    const deliveredTime = new Date(deliveredEvent!.timestamp).getTime();
+                    const claimedTime = new Date(claimedEvent!.timestamp).getTime();
+
+                    expect(claimedTime).toBeGreaterThanOrEqual(deliveredTime);
+                });
+            });
+
             describe('Error Scenarios', () => {
                 test('send() to non-existent profile throws error without logging activity', async () => {
                     const boostCredential = a.invoke.getTestVc(b.id.did());

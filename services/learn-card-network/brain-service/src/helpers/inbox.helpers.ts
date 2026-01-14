@@ -20,6 +20,7 @@ import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority
 import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { logCredentialDelivered } from '@helpers/activity.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getPrimarySigningAuthorityForUser } from '@accesslayer/signing-authority/relationships/read';
 import { getRegistryService } from '@services/registry/registry.factory';
@@ -229,6 +230,7 @@ export const issueToInbox = async (
         });
 
         // Send credential using appropriate helper (sendBoost handles boost tracking)
+        // Pass activityId and integrationId so they're stored on the relationship for CLAIMED chaining
         if (boostUri) {
             const boost = await getBoostByUri(boostUri);
             if (boost) {
@@ -239,17 +241,35 @@ export const issueToInbox = async (
                     credential: finalCredential,
                     domain: ctx.domain,
                     skipCertification: true,
+                    activityId,
+                    integrationId,
                 });
             } else {
                 // Fallback to sendCredential if boost not found
-                await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain);
+                await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain, undefined, activityId, integrationId);
             }
         } else {
-            await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain);
+            await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain, undefined, activityId, integrationId);
         }
 
         // Mark as issued and create relationship
         await markInboxCredentialAsIssued(inboxCredential.id);
+
+        // Log credential activity for auto-delivery
+        if (activityId) {
+            await logCredentialDelivered({
+                activityId,
+                actorProfileId: issuerProfile.profileId,
+                recipientType: recipient.type as 'email' | 'phone',
+                recipientIdentifier: recipient.value,
+                recipientProfileId: existingProfile.profileId,
+                boostUri,
+                inboxCredentialId: inboxCredential.id,
+                integrationId,
+                source: 'send',
+            });
+        }
+
         await createDeliveredRelationship(
             issuerProfile.profileId,
             inboxCredential.id,
