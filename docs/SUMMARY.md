@@ -128,6 +128,7 @@
   * [Key Network Procedures](core-concepts/network-and-interactions/key-network-procedures.md)
   * [Core Interaction Workflows](core-concepts/network-and-interactions/core-interaction-workflows.md)
   * [Universal Inbox](core-concepts/network-and-interactions/universal-inbox.md)
+  * [Credential Activity Tracking](core-concepts/network-and-interactions/credential-activity.md)
 * [Architecture & Principles](core-concepts/architecture-and-principles/README.md)
   * [Control Planes](core-concepts/architecture-and-principles/control-planes.md)
   * [Plugin System](core-concepts/architecture-and-principles/plugins.md)

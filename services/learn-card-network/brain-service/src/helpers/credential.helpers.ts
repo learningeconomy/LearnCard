@@ -10,9 +10,11 @@ import {
 import {
     getCredentialSentToProfile,
     getCredentialReceivedByProfile,
+    getBoostIdForCredentialInstance,
 } from '@accesslayer/credential/relationships/read';
-import { constructUri, getUriParts } from './uri.helpers';
+import { constructUri, getDomainFromUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
+import { logCredentialClaimed } from './activity.helpers';
 import { ProfileType } from 'types/profile';
 import { processClaimHooks } from './claim-hooks.helpers';
 import { ensureConnectionsForCredentialAcceptance } from './connection.helpers';
@@ -25,11 +27,13 @@ export const sendCredential = async (
     to: ProfileType,
     credential: VC | UnsignedVC | JWE,
     domain: string,
-    metadata?: Record<string, unknown> | undefined
+    metadata?: Record<string, unknown> | undefined,
+    activityId?: string,
+    integrationId?: string
 ): Promise<string> => {
     const credentialInstance = await storeCredential(credential);
 
-    await createSentCredentialRelationship(from, to, credentialInstance, metadata);
+    await createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId);
 
     let uri = getCredentialUri(credentialInstance.id, domain);
 
@@ -118,6 +122,28 @@ export const acceptCredential = async (
             data: { vcUris: [uri], ...(options?.metadata ? { metadata: options.metadata } : {}) },
         });
     }
+
+    // Log credential activity for claim - chain to original activityId/integrationId if available
+    // activityId and integrationId are stored as separate fields on the relationship
+    const originalActivityId = pendingVc.relationship.activityId;
+    const integrationId = pendingVc.relationship.integrationId;
+
+    // Get boostUri if this credential is associated with a boost
+    const boostId = await getBoostIdForCredentialInstance(pendingVc.target);
+    const boostUri = boostId ? constructUri('boost', boostId, getDomainFromUri(uri)) : undefined;
+
+    await logCredentialClaimed({
+        activityId: originalActivityId,
+        actorProfileId: pendingVc.source.profileId,
+        recipientType: 'profile',
+        recipientIdentifier: profile.profileId,
+        recipientProfileId: profile.profileId,
+        credentialUri: uri,
+        boostUri,
+        integrationId,
+        source: 'claim',
+        metadata: options?.metadata,
+    });
 
     return true;
 };

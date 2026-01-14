@@ -29,8 +29,8 @@ export default BoostLoader;
 
 export const BoostIssuanceLoading: React.FC<{ text?: string }> = ({ text = 'Sending...' }) => {
     return (
-        <section className="boost-issue-loading-modal flex flex-col items-center justify-center h-full w-full boost-loading-wrapper">
-            <div className=" flex flex-col items-center justify-center rounded-[20px] max-w-[350px] max-h-[350px] w-full h-full bg-transparent">
+        <section className="flex flex-col items-center justify-center h-full w-full">
+            <div className="flex flex-col items-center justify-center bg-transparent">
                 <div className="max-w-[350px] m-auto mt-[5px]">
                     <Lottie
                         loop

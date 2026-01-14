@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { NativeSettings, IOSSettings, AndroidSettings } from 'capacitor-native-settings';
 
-import { IonRow, IonCol, useIonModal } from '@ionic/react';
+import { IonRow, IonCol } from '@ionic/react';
+// @ts-ignore
 import NotificationImage from '../../assets/images/notification-polygon.png';
 import PushNotificationsSettings from '../push-notification-settings/PushNotificationsSettings';
 
@@ -11,34 +12,43 @@ import {
     PushNotificationsSettingsState,
     PushNotificationSettingsEnum,
 } from '../push-notification-settings/pushNotifications.helpers';
-import { pushUtilities } from 'learn-card-base';
+import { pushUtilities, useModal, ModalTypes } from 'learn-card-base';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 import ModalLayout from '../../layout/ModalLayout';
 
 export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }> = ({
     handleCloseModal,
 }) => {
-
     const [settings, setSettings] = useState<PushNotificationsSettingsState>({
         connectionRequests: true,
         newBoosts: true,
     });
 
-    const [presentModal, dismissModal] = useIonModal(PushNotificationsSettings, {
-        handleCloseModal: () => dismissModal(),
-        settings: settings,
-        handleStateChange: (settingsType: PushNotificationSettingsEnum, settingState: boolean) =>
-            handleStateChange(settingsType, settingState),
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Cancel,
     });
 
     const handleStateChange = (
         settingsType: PushNotificationSettingsEnum,
         settingState: boolean
     ) => {
-        const _settings = settings;
+        const _settings = { ...settings };
 
         _settings[settingsType] = !settingState;
-        setSettings({ ..._settings });
+        setSettings(_settings);
+    };
+
+    const presentSettingsModal = () => {
+        newModal(
+            <PushNotificationsSettings
+                handleCloseModal={closeModal}
+                settings={settings}
+                handleStateChange={(settingsType: PushNotificationSettingsEnum, settingState: boolean) =>
+                    handleStateChange(settingsType, settingState)
+                }
+            />
+        );
     };
 
     return (
@@ -74,7 +84,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                     </p>
                     <br />
                     {/* <button
-                                onClick={() => presentModal()}
+                                onClick={() => presentSettingsModal()}
                                 className="text-indigo-500 font-bold"
                             >
                                 Settings

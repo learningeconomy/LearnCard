@@ -8,6 +8,7 @@ import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
+import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 
 type CategoryDescriptorModalProps = {
     handleCloseModal: () => void;
@@ -42,6 +43,10 @@ const CategoryDescriptorModal: React.FC<CategoryDescriptorModalProps> = ({
                 ImageComponent = PurpleMeritBadgesIcon;
                 category = BoostCategoryOptionsEnum.meritBadge;
                 break;
+            case 'Competencies Hub':
+                ImageComponent = SkillsIconWithShape;
+                category = BoostCategoryOptionsEnum.skill;
+                break;
 
             default:
                 throw new Error('Invalid title provided');
@@ -55,7 +60,7 @@ const CategoryDescriptorModal: React.FC<CategoryDescriptorModalProps> = ({
     return (
         <IonPage>
             <ModalLayout handleOnClick={handleCloseModal} buttonText="Got It">
-                <div className="p-[30px]">
+                <div className="w-full max-w-[400px] mx-auto p-[30px]">
                     <ImageComponent className="h-[100px] w-[100px] m-auto" />
                     <p className="text-center text-[22px] font-poppins font-normal leading-[130%] text-grayscale-900">
                         About {title}

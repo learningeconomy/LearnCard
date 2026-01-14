@@ -8,7 +8,6 @@ import {
     IonToolbar,
     IonHeader,
     IonPage,
-    useIonModal,
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
@@ -16,64 +15,48 @@ import BoostVCTypeOptions from '../boostVCTypeOptions/BoostVCTypeOptions';
 
 import { BoostUserTypeEnum } from '../boostOptions';
 
-import { useScreenWidth } from 'learn-card-base';
+import { useModal, ModalTypes, useScreenWidth } from 'learn-card-base';
 
 const BoostUserOptions: React.FC<{
     handleCloseModal: () => void;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     history: any;
     otherUserProfileId?: string;
 }> = ({ handleCloseModal, showCloseButton = true, title, history, otherUserProfileId }) => {
     const width = useScreenWidth(true);
 
-    const [presentBoostSomeoneModal, dismissBoostSomeoneModal] = useIonModal(BoostVCTypeOptions, {
-        boostUserType: BoostUserTypeEnum.someone,
-        handleCloseModal: () => dismissBoostSomeoneModal(),
-        handleCloseUserOptionsModal: () => handleCloseModal(),
-        history: history,
-        otherUserProfileId: otherUserProfileId,
+    const { newModal: newBoostSomeoneModal, closeModal: closeBoostSomeoneModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Cancel,
     });
 
-    const [presentBoostSelfModal, dismissBoostSelfModal] = useIonModal(BoostVCTypeOptions, {
-        boostUserType: BoostUserTypeEnum.self,
-        handleCloseModal: () => dismissBoostSelfModal(),
-        handleCloseUserOptionsModal: () => handleCloseModal(),
-        history: history,
+    const { newModal: newBoostSelfModal, closeModal: closeBoostSelfModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Cancel,
     });
 
     const handleBoostSelfModal = () => {
-        if (width <= 991) {
-            presentBoostSelfModal({
-                cssClass: 'mobile-modal user-options-modal',
-                initialBreakpoint: 0.95,
-                breakpoints: [0, 0.95, 0.95, 1],
-                handleBehavior: 'cycle',
-            });
-        } else {
-            presentBoostSelfModal({
-                cssClass: 'center-modal user-qrcode-modal',
-                backdropDismiss: true,
-                showBackdrop: false,
-            });
-        }
+        newBoostSelfModal(
+            <BoostVCTypeOptions
+                boostUserType={BoostUserTypeEnum.self}
+                handleCloseModal={() => closeBoostSelfModal()}
+                handleCloseUserOptionsModal={() => handleCloseModal()}
+                history={history}
+            />
+        );
     };
 
     const handleBoostSomeoneModal = () => {
-        if (width <= 991) {
-            presentBoostSomeoneModal({
-                cssClass: 'mobile-modal user-options-modal',
-                initialBreakpoint: 0.95,
-                breakpoints: [0, 0.95, 0.95, 1],
-                handleBehavior: 'cycle',
-            });
-        } else {
-            presentBoostSomeoneModal({
-                cssClass: 'center-modal user-qrcode-modal',
-                backdropDismiss: true,
-                showBackdrop: false,
-            });
-        }
+        newBoostSomeoneModal(
+            <BoostVCTypeOptions
+                boostUserType={BoostUserTypeEnum.someone}
+                handleCloseModal={() => closeBoostSomeoneModal()}
+                handleCloseUserOptionsModal={() => handleCloseModal()}
+                history={history}
+                otherUserProfileId={otherUserProfileId}
+            />
+        );
     };
 
     return (
@@ -88,7 +71,7 @@ const BoostUserOptions: React.FC<{
                         )}
                     </IonCol>
                 </IonRow>
-                {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
+                {title && <IonToolbar color="white">{title}</IonToolbar>}
             </IonHeader>
             <IonContent>
                 <IonGrid className="ion-padding">

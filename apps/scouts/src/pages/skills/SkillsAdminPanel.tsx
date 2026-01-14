@@ -56,7 +56,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
             {!isLoadingFrameworks && (
                 <>
                     <h2 className="text-left text-grayscale-900 text-[20px] font-poppins">
-                        {conditionalPluralize(frameworks?.length, 'Skill Framework')}
+                        {conditionalPluralize(frameworks?.length, 'Competency Framework')}
                     </h2>
 
                     <div className="flex flex-col gap-[10px]">
@@ -74,7 +74,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
                             >
                                 <Pencil className="w-[25px] h-[25px]" version={3} />
                                 {/* <PuzzlePiece version="with-plus" className="w-[25px] h-[25px]" /> */}
-                                Manage Skills
+                                Manage Competencies
                             </button>
                         )}
                     </div>

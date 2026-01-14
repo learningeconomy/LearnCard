@@ -1,5 +1,5 @@
 import React from 'react';
-import { IonCol, IonRow, useIonModal } from '@ionic/react';
+import { IonCol, IonRow } from '@ionic/react';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostCMSMediaOptions from './BoostCMSMediaOptions';
@@ -9,6 +9,7 @@ import BoostMediaCMSFormPhotoItem from './BoostMediaCMSFormPhotoItem';
 import BoostMediaCMSFormDocumentItem from './BoostMediaCMSFormDocumentItem';
 import BoostMediaCMSFormVideoItem from './BoostMediaCMSFormVideoItem';
 import BoostMediaCMSFormLinkItem from './BoostMediaCMSFormLinkItem';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 export type BoostMediaCMSFormItemProps = {
     index: number;
@@ -23,29 +24,47 @@ export const BoostCMSMediaForm: React.FC<{
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     disabled?: boolean;
 }> = ({ state, setState, disabled = false }) => {
-    const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSMediaOptions, {
-        state: state,
-        setState: setState,
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: true,
-        title: (
-            <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900 font-notoSans">
-                Media Attachment
-            </p>
-        ),
+    const { newModal: newCenterModal, closeModal: closeCenterModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(BoostCMSMediaOptions, {
-        state: state,
-        setState: setState,
-        handleCloseModal: () => dismissSheetModal(),
-        showCloseButton: false,
-        title: (
-            <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900 font-notoSans">
-                Media Attachment
-            </p>
-        ),
+    const { newModal: newSheetModal, closeModal: closeSheetModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
     });
+
+    const presentCenterModal = () => {
+        newCenterModal(
+            <BoostCMSMediaOptions
+                state={state}
+                setState={setState}
+                handleCloseModal={() => closeCenterModal()}
+                showCloseButton={true}
+                title={
+                    <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900 font-notoSans">
+                        Media Attachment
+                    </p>
+                }
+            />
+        );
+    };
+
+    const presentSheetModal = () => {
+        newSheetModal(
+            <BoostCMSMediaOptions
+                state={state}
+                setState={setState}
+                handleCloseModal={() => closeSheetModal()}
+                showCloseButton={false}
+                title={
+                    <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900 font-notoSans">
+                        Media Attachment
+                    </p>
+                }
+            />
+        );
+    };
 
     const getAttachments = (attachmentType: BoostMediaOptionsEnum): BoostCMSMediaAttachment[] => {
         const attachments =
@@ -78,11 +97,7 @@ export const BoostCMSMediaForm: React.FC<{
                         if (isMobile) {
                             presentSheetModal();
                         } else {
-                            presentCenterModal({
-                                cssClass: 'center-modal user-options-modal',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                            });
+                            presentCenterModal();
                         }
                     }}
                     disabled={disabled}
@@ -105,10 +120,10 @@ export const BoostCMSMediaForm: React.FC<{
                     <div className="pt-0 flex items-center justify-center flex-col flex-wrap w-full">
                         {photos.map((photo, index) => (
                             <BoostMediaCMSFormPhotoItem
+                                key={photo.url ?? `photo-${index}`}
                                 index={index}
                                 state={state}
                                 setState={setState}
-                                key={photo.url}
                                 media={photo}
                                 handleDelete={handleDeleteonClick}
                             />
@@ -118,10 +133,10 @@ export const BoostCMSMediaForm: React.FC<{
                     <div className="pt-0 flex items-center justify-center flex-col w-full">
                         {videos.map((video, index) => (
                             <BoostMediaCMSFormVideoItem
+                                key={video.url ?? `video-${index}`}
                                 index={index}
                                 state={state}
                                 setState={setState}
-                                key={video.url}
                                 media={video}
                                 handleDelete={handleDeleteonClick}
                             />
@@ -133,10 +148,10 @@ export const BoostCMSMediaForm: React.FC<{
                     >
                         {documents.map((document, index) => (
                             <BoostMediaCMSFormDocumentItem
+                                key={document.url ?? `document-${index}`}
                                 index={index}
                                 state={state}
                                 setState={setState}
-                                key={document.url}
                                 media={document}
                                 handleDelete={handleDeleteonClick}
                             />
@@ -146,10 +161,10 @@ export const BoostCMSMediaForm: React.FC<{
                     <div className="flex flex-wrap items-center justify-start w-full">
                         {links.map((link, index) => (
                             <BoostMediaCMSFormLinkItem
+                                key={link.url ?? `link-${index}`}
                                 index={index}
                                 state={state}
                                 setState={setState}
-                                key={link.url}
                                 media={link}
                                 handleDelete={handleDeleteonClick}
                             />
