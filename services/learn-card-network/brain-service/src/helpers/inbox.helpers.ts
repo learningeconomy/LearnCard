@@ -20,6 +20,7 @@ import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority
 import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { logCredentialDelivered } from '@helpers/activity.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getPrimarySigningAuthorityForUser } from '@accesslayer/signing-authority/relationships/read';
 import { getRegistryService } from '@services/registry/registry.factory';
@@ -250,6 +251,22 @@ export const issueToInbox = async (
 
         // Mark as issued and create relationship
         await markInboxCredentialAsIssued(inboxCredential.id);
+
+        // Log credential activity for auto-delivery
+        if (activityId) {
+            await logCredentialDelivered({
+                activityId,
+                actorProfileId: issuerProfile.profileId,
+                recipientType: recipient.type as 'email' | 'phone',
+                recipientIdentifier: recipient.value,
+                recipientProfileId: existingProfile.profileId,
+                boostUri,
+                inboxCredentialId: inboxCredential.id,
+                integrationId,
+                source: 'integration',
+            });
+        }
+
         await createDeliveredRelationship(
             issuerProfile.profileId,
             inboxCredential.id,
