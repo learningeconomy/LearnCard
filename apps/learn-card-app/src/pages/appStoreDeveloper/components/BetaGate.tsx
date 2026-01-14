@@ -16,10 +16,11 @@ import { Lock, Sparkles, Rocket, AlertTriangle, CheckCircle2 } from 'lucide-reac
 // All available guide IDs
 type GuideId = 'course-catalog' | 'issue-credentials' | 'verify-credentials' | 'consent-flow' | 'embed-claim' | 'embed-app' | 'server-webhooks';
 
-// Beta access secrets
+// Beta access codes - these are PUBLIC promotional codes, not secrets.
+// They are used for controlled rollout of features, not security.
 // BETA-2026 = full access to everything
 // GUIDE_* = access to specific guide only
-const BETA_SECRETS: Record<string, GuideId[] | 'full'> = {
+const BETA_ACCESS_CODES: Record<string, GuideId[] | 'full'> = {
     'BETA-2026': 'full',
     'GUIDE_COURSE': ['course-catalog'],
     'GUIDE_ISSUE': ['issue-credentials'],
@@ -71,15 +72,15 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
     const [error, setError] = useState('');
 
     // Derive access from stored secret
-    const accessConfig = storedSecret ? BETA_SECRETS[storedSecret] : null;
+    const accessConfig = storedSecret ? BETA_ACCESS_CODES[storedSecret] : null;
     const hasAccess = accessConfig !== null && accessConfig !== undefined;
 
     const unlockedGuides: string[] = React.useMemo(() => {
         if (!accessConfig) return [];
         if (accessConfig === 'full') {
-            return Object.keys(BETA_SECRETS)
+            return Object.keys(BETA_ACCESS_CODES)
                 .filter(k => k.startsWith('GUIDE_'))
-                .flatMap(k => BETA_SECRETS[k] as string[]);
+                .flatMap(k => BETA_ACCESS_CODES[k] as string[]);
         }
         return accessConfig;
     }, [accessConfig]);
@@ -95,7 +96,7 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
         const params = new URLSearchParams(location.search);
         const betaAccess = params.get('beta_access');
 
-        if (betaAccess && BETA_SECRETS[betaAccess]) {
+        if (betaAccess && BETA_ACCESS_CODES[betaAccess]) {
             // Valid secret in URL - store it
             localStorage.setItem(STORAGE_KEY, betaAccess);
             setStoredSecret(betaAccess);
@@ -112,7 +113,7 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
             if (localStorage.getItem(WELCOME_SHOWN_KEY) !== 'true') {
                 setShowWelcome(true);
             }
-        } else if (storedSecret && BETA_SECRETS[storedSecret]) {
+        } else if (storedSecret && BETA_ACCESS_CODES[storedSecret]) {
             // Has valid stored access
             if (!welcomeShown) {
                 setShowWelcome(true);
@@ -129,7 +130,7 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
 
         const trimmedPassword = password.trim().toUpperCase();
 
-        if (BETA_SECRETS[trimmedPassword]) {
+        if (BETA_ACCESS_CODES[trimmedPassword]) {
             localStorage.setItem(STORAGE_KEY, trimmedPassword);
             setStoredSecret(trimmedPassword);
             setShowPasswordEntry(false);

@@ -840,8 +840,13 @@ export { INTEGRATION_ID };`;
             // Use the user-entered value or smart default
             const value = apiTemplateData[varName] || getSmartDefault(varName);
 
-            // Escape single quotes in the value
-            const escapedValue = value.replace(/'/g, "\\'");
+            // Escape special characters in the value
+            const escapedValue = String(value)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+                .replace(/\t/g, '\\t');
 
             return `${indent}${varName}: '${escapedValue}',`;
         });

@@ -315,7 +315,10 @@ export { INTEGRATION_ID };`;
             const value = apiTemplateData[varName] || getSmartDefault(varName);
             const escapedValue = String(value)
                 .replace(/\\/g, '\\\\')
-                .replace(/'/g, "\\'");
+                .replace(/'/g, "\\'")
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+                .replace(/\t/g, '\\t');
             return `${indent}${varName}: '${escapedValue}',`;
         });
 
