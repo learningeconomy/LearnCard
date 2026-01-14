@@ -285,7 +285,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                 return {
                     ...prevState,
                     [_boostCategoryType]: [
-                        ...prevState?.[_boostCategoryType],
+                        ...(prevState?.[_boostCategoryType] || []),
                         {
                             title: customTypeTitle,
                             type: _boostSubCategoryType,
