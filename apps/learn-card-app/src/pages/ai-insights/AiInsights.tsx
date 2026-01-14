@@ -113,23 +113,23 @@ const AiInsights: React.FC = () => {
 
     const myInsights = (
         <>
-            {/* <div className="flex items-center justify-center w-full shadow-box-bottom rounded-[10px]">
-                                <ExperimentalFeatureBox />
-                            </div>
-                            <div className="flex items-center justify-center w-full mt-4">
-                                {flags?.showGenerateAiInsightsButton && (
-                                    <button
-                                        className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
-                                        type="button"
-                                        disabled={createAiInsightCredentialLoading}
-                                        onClick={() => createAiInsightCredential()}
-                                    >
-                                        {createAiInsightCredentialLoading
-                                            ? 'Generating...'
-                                            : 'Generate AI Insights'}
-                                    </button>
-                                )}
-                            </div> */}
+            <div className="flex items-center justify-center w-full shadow-box-bottom rounded-[10px]">
+                <ExperimentalFeatureBox />
+            </div>
+            <div className="flex items-center justify-center w-full mt-4">
+                {flags?.showGenerateAiInsightsButton && (
+                    <button
+                        className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
+                        type="button"
+                        disabled={createAiInsightCredentialLoading}
+                        onClick={() => createAiInsightCredential()}
+                    >
+                        {createAiInsightCredentialLoading
+                            ? 'Generating...'
+                            : 'Generate AI Insights'}
+                    </button>
+                )}
+            </div>
 
             {contractRequest}
             <ShareInsightsCard />

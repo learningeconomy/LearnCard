@@ -54,10 +54,15 @@ const AiPathways: React.FC = () => {
     }
 
     // if no keywords are found from the insights credentials, use the first available keywords from the pathways
-    careerKeywords = careerKeywords || getFirstAvailableKeywords(learningPathwaysData || []);
-    fieldOfStudy = fieldOfStudy || getFirstAvailableFieldOfStudy(learningPathwaysData || []);
+    if (learningPathwaysData && learningPathwaysData.length > 0) {
+        careerKeywords = careerKeywords || getFirstAvailableKeywords(learningPathwaysData || []);
+        fieldOfStudy = fieldOfStudy || getFirstAvailableFieldOfStudy(learningPathwaysData || []);
+    }
 
-    const allKeywords = getAllKeywords(learningPathwaysData || []);
+    const allKeywords =
+        getAllKeywords(learningPathwaysData || []).length > 0
+            ? getAllKeywords(learningPathwaysData || [])
+            : careerKeywords;
 
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
@@ -69,12 +74,12 @@ const AiPathways: React.FC = () => {
                         subheaderType={SubheaderTypeEnum.AiPathways}
                         hidePlusBtn={true}
                     />
-                    <div className="flex items-center justify-center flex-col relative w-full pb-[50px]">
+                    <div className="flex items-center justify-center flex-col relative w-full pb-[50px] gap-1">
                         <AiPathwayCourses keywords={allKeywords} fieldOfStudy={fieldOfStudy} />
                         <AiPathwaySessions />
                         <AiPathwayCareers careerKeywords={careerKeywords} />
                         <AiPathwayExploreContent careerKeywords={careerKeywords} />
-                        <ExploreAiInsightsButton className="mt-4" />
+                        <ExploreAiInsightsButton className="mt-3" />
                     </div>
                 </IonContent>
             </ErrorBoundary>
