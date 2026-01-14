@@ -313,4 +313,13 @@ export const initialCustomBoostTypesState = {
     [BoostCategoryOptionsEnum.workHistory]: [],
     [BoostCategoryOptionsEnum.skill]: [],
     [BoostCategoryOptionsEnum.membership]: [],
+    [BoostCategoryOptionsEnum.course]: [],
+    [BoostCategoryOptionsEnum.meritBadge]: [],
+    [BoostCategoryOptionsEnum.family]: [],
+    [BoostCategoryOptionsEnum.accomplishment]: [],
+    [BoostCategoryOptionsEnum.accommodation]: [],
+    [BoostCategoryOptionsEnum.globalAdminId]: [],
+    [BoostCategoryOptionsEnum.nationalNetworkAdminId]: [],
+    [BoostCategoryOptionsEnum.troopLeaderId]: [],
+    [BoostCategoryOptionsEnum.scoutId]: [],
 };
