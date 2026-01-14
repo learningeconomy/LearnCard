@@ -13,7 +13,8 @@ export type LearnCardAction =
     | 'ASK_CREDENTIAL_SPECIFIC'
     | 'ASK_CREDENTIAL_SEARCH'
     | 'LAUNCH_FEATURE'
-    | 'INITIATE_TEMPLATE_ISSUE';
+    | 'INITIATE_TEMPLATE_ISSUE'
+    | 'APP_EVENT';
 
 export type ResponseType = 'SUCCESS' | 'ERROR';
 
@@ -92,9 +93,21 @@ export interface LaunchFeaturePayload {
 }
 
 export interface InitiateTemplateIssuePayload {
-    templateId: string;  // The boost ID/template to issue
-    draftRecipients?: string[];  // Optional list of profile IDs/DIDs
+    templateId: string; // The boost ID/template to issue
+    draftRecipients?: string[]; // Optional list of profile IDs/DIDs
 }
+
+// App Event Types (discriminated union)
+export type SendCredentialEvent = {
+    type: 'send-credential';
+    boostId: string;
+    templateData?: Record<string, unknown>;
+};
+
+// Add new event types here as the union grows
+export type AppEvent = SendCredentialEvent;
+
+export type AppEventPayload = AppEvent;
 
 /**
  * Maps each action type to its expected payload type
@@ -107,6 +120,7 @@ export interface ActionPayloadMap {
     ASK_CREDENTIAL_SEARCH: AskCredentialSearchPayload;
     LAUNCH_FEATURE: LaunchFeaturePayload;
     INITIATE_TEMPLATE_ISSUE: InitiateTemplateIssuePayload;
+    APP_EVENT: AppEventPayload;
 }
 
 // ============================================================================
@@ -121,7 +135,9 @@ export interface ActionContext<T extends LearnCardAction = LearnCardAction> {
 
 export type ActionHandler<T extends LearnCardAction = LearnCardAction> = (
     context: ActionContext<T>
-) => Promise<{ success: true; data?: any } | { success: false; error: { code: ErrorCode; message: string } }>;
+) => Promise<
+    { success: true; data?: any } | { success: false; error: { code: ErrorCode; message: string } }
+>;
 
 export interface ActionHandlers {
     REQUEST_IDENTITY?: ActionHandler<'REQUEST_IDENTITY'>;
@@ -131,6 +147,7 @@ export interface ActionHandlers {
     ASK_CREDENTIAL_SEARCH?: ActionHandler<'ASK_CREDENTIAL_SEARCH'>;
     LAUNCH_FEATURE?: ActionHandler<'LAUNCH_FEATURE'>;
     INITIATE_TEMPLATE_ISSUE?: ActionHandler<'INITIATE_TEMPLATE_ISSUE'>;
+    APP_EVENT?: ActionHandler<'APP_EVENT'>;
 }
 
 // ============================================================================
@@ -245,7 +262,9 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
             const { action, requestId, payload } = event.data;
 
             if (debug) {
-                console.log(`[LearnCard PostMessage] Processing action: ${action}, requestId: ${requestId}`);
+                console.log(
+                    `[LearnCard PostMessage] Processing action: ${action}, requestId: ${requestId}`
+                );
             }
 
             // ================================================================
@@ -276,12 +295,18 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
 
                 if (result.success) {
                     if (debug) {
-                        console.log(`[LearnCard PostMessage] Action ${action} succeeded:`, result.data);
+                        console.log(
+                            `[LearnCard PostMessage] Action ${action} succeeded:`,
+                            result.data
+                        );
                     }
                     sendResponse(event.source!, event.origin, requestId, 'SUCCESS', result.data);
                 } else {
                     if (debug) {
-                        console.log(`[LearnCard PostMessage] Action ${action} failed:`, result.error);
+                        console.log(
+                            `[LearnCard PostMessage] Action ${action} failed:`,
+                            result.error
+                        );
                     }
                     sendResponse(
                         event.source!,

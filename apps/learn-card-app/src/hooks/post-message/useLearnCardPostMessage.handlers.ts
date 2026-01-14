@@ -1,5 +1,5 @@
-import { 
-    ActionHandler, 
+import {
+    ActionHandler,
     ActionHandlers,
     ActionContext,
     RequestIdentityPayload,
@@ -9,6 +9,7 @@ import {
     AskCredentialSearchPayload,
     VerifiablePresentationRequest,
     LaunchFeaturePayload,
+    AppEvent,
 } from './useLearnCardPostMessage';
 
 // Re-export types for convenience
@@ -29,7 +30,8 @@ export const createRequestIdentityHandler = (dependencies: {
     showLoginConsentModal: (origin: string, appName?: string) => Promise<boolean>;
 }): ActionHandler<'REQUEST_IDENTITY'> => {
     return async ({ payload, origin }) => {
-        const { isUserAuthenticated, mintDelegatedToken, getUserInfo, showLoginConsentModal } = dependencies;
+        const { isUserAuthenticated, mintDelegatedToken, getUserInfo, showLoginConsentModal } =
+            dependencies;
 
         console.log('🚀 isUserAuthenticated', isUserAuthenticated);
         // Check if user is logged in
@@ -244,7 +246,8 @@ export const createAskCredentialSpecificHandler = (dependencies: {
                 success: false,
                 error: {
                     code: 'UNKNOWN_ERROR',
-                    message: error instanceof Error ? error.message : 'Failed to retrieve credential',
+                    message:
+                        error instanceof Error ? error.message : 'Failed to retrieve credential',
                 },
             };
         }
@@ -273,7 +276,9 @@ export const createAskCredentialSearchHandler = (dependencies: {
 
         try {
             // Show VPR modal and let user select credentials
-            const verifiablePresentation = await showVprModal(payload.verifiablePresentationRequest);
+            const verifiablePresentation = await showVprModal(
+                payload.verifiablePresentationRequest
+            );
 
             if (!verifiablePresentation) {
                 return {
@@ -297,7 +302,10 @@ export const createAskCredentialSearchHandler = (dependencies: {
                 success: false,
                 error: {
                     code: 'UNKNOWN_ERROR',
-                    message: error instanceof Error ? error.message : 'Failed to process credential request',
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to process credential request',
                 },
             };
         }
@@ -370,7 +378,7 @@ export const createInitiateTemplateIssueHandler = (dependencies: {
         try {
             // Verify user is admin of this template
             const isAdmin = await isUserAdminOfTemplate(payload.templateId);
-            
+
             if (!isAdmin) {
                 return {
                     success: false,
@@ -398,7 +406,44 @@ export const createInitiateTemplateIssueHandler = (dependencies: {
                 success: false,
                 error: {
                     code: 'UNKNOWN_ERROR',
-                    message: error instanceof Error ? error.message : 'Failed to initiate template issue',
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : 'Failed to initiate template issue',
+                },
+            };
+        }
+    };
+};
+
+/**
+ * APP_EVENT Handler
+ * Generic event handler for backend-like operations from installed apps.
+ */
+export const createAppEventHandler = (dependencies: {
+    sendAppEvent: (listingId: string, event: AppEvent) => Promise<Record<string, unknown>>;
+    getAppListingId: () => string | undefined;
+}): ActionHandler<'APP_EVENT'> => {
+    return async ({ payload }) => {
+        const { sendAppEvent, getAppListingId } = dependencies;
+
+        const listingId = getAppListingId();
+        if (!listingId) {
+            return {
+                success: false,
+                error: { code: 'UNAUTHORIZED', message: 'App listing ID not available' },
+            };
+        }
+
+        try {
+            const result = await sendAppEvent(listingId, payload);
+            return { success: true, data: result };
+        } catch (error) {
+            return {
+                success: false,
+                error: {
+                    code: 'UNKNOWN_ERROR',
+                    message: error instanceof Error ? error.message : 'Failed to process app event',
                 },
             };
         }
@@ -433,8 +478,12 @@ export function createActionHandlers(dependencies: {
     // Boost template issuing
     showBoostIssueModal: (templateId: string, draftRecipients?: string[]) => Promise<boolean>;
     isUserAdminOfTemplate: (templateId: string) => Promise<boolean>;
+
+    // App events
+    sendAppEvent?: (listingId: string, event: AppEvent) => Promise<Record<string, unknown>>;
+    getAppListingId?: () => string | undefined;
 }): ActionHandlers {
-    return {
+    const handlers: ActionHandlers = {
         REQUEST_IDENTITY: createRequestIdentityHandler(dependencies),
         REQUEST_CONSENT: createRequestConsentHandler(dependencies),
         SEND_CREDENTIAL: createSendCredentialHandler(dependencies),
@@ -443,4 +492,16 @@ export function createActionHandlers(dependencies: {
         LAUNCH_FEATURE: createLaunchFeatureHandler(dependencies),
         INITIATE_TEMPLATE_ISSUE: createInitiateTemplateIssueHandler(dependencies),
     };
+
+    console.log('dependencies', dependencies);
+
+    // Add APP_EVENT handler if dependencies are provided
+    if (dependencies.sendAppEvent && dependencies.getAppListingId) {
+        handlers.APP_EVENT = createAppEventHandler({
+            sendAppEvent: dependencies.sendAppEvent,
+            getAppListingId: dependencies.getAppListingId,
+        });
+    }
+
+    return handlers;
 }

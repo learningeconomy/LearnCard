@@ -4,6 +4,7 @@ import { neogma } from '@instance';
 
 import { Integration, IntegrationInstance } from './Integration';
 import { Profile, ProfileInstance } from './Profile';
+import { Boost, BoostInstance } from './Boost';
 import {
     FlatAppStoreListingType,
     AppListingStatus,
@@ -19,6 +20,12 @@ export type AppStoreListingRelationships = {
         { listing_id: string; installed_at: string },
         { listing_id: string; installed_at: string }
     >;
+    hasBoost: ModelRelatedNodesI<
+        typeof Boost,
+        BoostInstance,
+        { boostId: string; createdAt: string },
+        { boostId: string; createdAt: string }
+    >;
 };
 
 export type AppStoreListingInstance = NeogmaInstance<
@@ -26,14 +33,12 @@ export type AppStoreListingInstance = NeogmaInstance<
     AppStoreListingRelationships
 >;
 
-export const AppStoreListing = ModelFactory<
-    FlatAppStoreListingType,
-    AppStoreListingRelationships
->(
+export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreListingRelationships>(
     {
         label: 'AppStoreListing',
         schema: {
             listing_id: { type: 'string', required: true, uniqueItems: true },
+            slug: { type: 'string', required: false },
             display_name: { type: 'string', required: true },
             tagline: { type: 'string', required: true },
             full_description: { type: 'string', required: true },
@@ -73,6 +78,21 @@ export const AppStoreListing = ModelFactory<
                     },
                     installed_at: {
                         property: 'installed_at',
+                        schema: { type: 'string', required: true },
+                    },
+                },
+            },
+            hasBoost: {
+                model: Boost,
+                direction: 'out',
+                name: 'HAS_BOOST',
+                properties: {
+                    boostId: {
+                        property: 'boostId',
+                        schema: { type: 'string', required: true },
+                    },
+                    createdAt: {
+                        property: 'createdAt',
                         schema: { type: 'string', required: true },
                     },
                 },

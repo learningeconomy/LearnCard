@@ -4,7 +4,7 @@ import { useIsLoggedIn, useWallet, useModal, ModalTypes } from 'learn-card-base'
 import { UnsignedVP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
-import { ActionHandlers } from './useLearnCardPostMessage';
+import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 
@@ -19,6 +19,8 @@ interface UseLearnCardMessageHandlersOptions {
     onNavigate?: () => void;
     launchConfig?: LaunchConfig;
     isInstalled?: boolean;
+    appId?: string;
+    onCredentialIssued?: (credentialUri: string, boostUri?: string) => void;
 }
 
 /**
@@ -30,6 +32,8 @@ export function useLearnCardMessageHandlers({
     onNavigate,
     launchConfig,
     isInstalled = false,
+    appId,
+    onCredentialIssued,
 }: UseLearnCardMessageHandlersOptions): ActionHandlers {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
@@ -40,68 +44,68 @@ export function useLearnCardMessageHandlers({
     /**
      * Imperative function to show consent flow and return result
      */
-    const showConsentFlow = useCallback(async (contractUri: string): Promise<boolean> => {
-        return new Promise(async (resolve) => {
-            try {
-                // Fetch the contract using LearnCard wallet
-                const wallet = await initWallet();
-                if (!wallet) {
-                    console.error('[PostMessage] Wallet not initialized');
-                    resolve(false);
-                    return;
-                }
+    const showConsentFlow = useCallback(
+        async (contractUri: string): Promise<boolean> => {
+            return new Promise(async resolve => {
+                try {
+                    // Fetch the contract using LearnCard wallet
+                    const wallet = await initWallet();
+                    if (!wallet) {
+                        console.error('[PostMessage] Wallet not initialized');
+                        resolve(false);
+                        return;
+                    }
 
-                const contract = await wallet.invoke.getContract(contractUri);
-                if (!contract) {
-                    console.error('[PostMessage] Contract not found:', contractUri);
-                    resolve(false);
-                    return;
-                }
+                    const contract = await wallet.invoke.getContract(contractUri);
+                    if (!contract) {
+                        console.error('[PostMessage] Contract not found:', contractUri);
+                        resolve(false);
+                        return;
+                    }
 
-                // Check if already consented
-                const consentedContract = consentedContracts?.find(
-                    c => c?.contract?.uri === contractUri && c?.status !== 'withdrawn'
-                );
-                
-                const successCallback = () => {
-                    console.log('[PostMessage] Consent flow completed');
-                    resolve(true);
-                    closeModal();
-                };
+                    // Check if already consented
+                    const consentedContract = consentedContracts?.find(
+                        c => c?.contract?.uri === contractUri && c?.status !== 'withdrawn'
+                    );
 
-                const handleCancel = () => {
-                    console.log('[PostMessage] Consent flow cancelled');
-                    resolve(false);
-                };
+                    const successCallback = () => {
+                        console.log('[PostMessage] Consent flow completed');
+                        resolve(true);
+                        closeModal();
+                    };
 
-                const isPostConsent = !!consentedContract;
-                if (isPostConsent) {
-                    resolve(true)
-                    return;
-                }
+                    const handleCancel = () => {
+                        console.log('[PostMessage] Consent flow cancelled');
+                        resolve(false);
+                    };
 
-                // Open the consent flow modal
-                const consentFlowElement = React.createElement(
-                    FullScreenConsentFlow,
-                    {
+                    const isPostConsent = !!consentedContract;
+                    if (isPostConsent) {
+                        resolve(true);
+                        return;
+                    }
+
+                    // Open the consent flow modal
+                    const consentFlowElement = React.createElement(FullScreenConsentFlow, {
                         contractDetails: contract,
                         isPostConsent,
                         hideProfileButton: true,
                         successCallback: successCallback,
-                    }
-                );
+                    });
 
-                newModal(
-                    consentFlowElement,
-                    { onClose: handleCancel },
-                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                );
-            } catch (error) {
-                console.error('[PostMessage] Failed to fetch consent contract:', error);
-                resolve(false);
-            }
-        });
-    }, [initWallet, newModal, closeModal, consentedContracts]);
+                    newModal(
+                        consentFlowElement,
+                        { onClose: handleCancel },
+                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    );
+                } catch (error) {
+                    console.error('[PostMessage] Failed to fetch consent contract:', error);
+                    resolve(false);
+                }
+            });
+        },
+        [initWallet, newModal, closeModal, consentedContracts]
+    );
 
     const handlers = useMemo(
         () =>
@@ -124,7 +128,7 @@ export function useLearnCardMessageHandlers({
                     };
                 },
                 showLoginConsentModal: async (origin: string, appName?: string) => {
-                    return new Promise(async (resolve) => {
+                    return new Promise(async resolve => {
                         try {
                             // Import trusted origins utilities
                             //const { isOriginTrusted, addTrustedOrigin } = await import('./trustedOrigins');
@@ -138,8 +142,13 @@ export function useLearnCardMessageHandlers({
 
                             // Skip consent if this is an installed app with request_identity permission
                             // The user has already consented by installing the app
-                            if (isInstalled && launchConfig?.permissions?.includes('request_identity')) {
-                                console.log('[PostMessage] Skipping consent for installed app with request_identity permission');
+                            if (
+                                isInstalled &&
+                                launchConfig?.permissions?.includes('request_identity')
+                            ) {
+                                console.log(
+                                    '[PostMessage] Skipping consent for installed app with request_identity permission'
+                                );
                                 // addTrustedOrigin(origin, appName);
                                 resolve(true);
                                 return;
@@ -184,7 +193,10 @@ export function useLearnCardMessageHandlers({
                                 }
                             );
                         } catch (error) {
-                            console.error('[PostMessage] Failed to show login consent modal:', error);
+                            console.error(
+                                '[PostMessage] Failed to show login consent modal:',
+                                error
+                            );
                             resolve(false);
                         }
                     });
@@ -217,7 +229,7 @@ export function useLearnCardMessageHandlers({
 
                 // Credential handlers
                 showCredentialAcceptanceModal: async (credential: any) => {
-                    return new Promise(async (resolve) => {
+                    return new Promise(async resolve => {
                         try {
                             console.log('[PostMessage] Credential offered:', credential);
 
@@ -236,16 +248,21 @@ export function useLearnCardMessageHandlers({
 
                                 // Save the credential to wallet
                                 try {
-                                    const credentialId = (await storeAndAddVCToWallet(
-                                        credential,
-                                        { title: credential.name || 'Credential' },
-                                        'LearnCloud',
-                                        true
-                                    ))?.credentialUri;
+                                    const credentialId = (
+                                        await storeAndAddVCToWallet(
+                                            credential,
+                                            { title: credential.name || 'Credential' },
+                                            'LearnCloud',
+                                            true
+                                        )
+                                    )?.credentialUri;
                                     closeModal();
                                     resolve(credentialId ?? true);
                                 } catch (error) {
-                                    console.error('[PostMessage] Failed to save credential:', error);
+                                    console.error(
+                                        '[PostMessage] Failed to save credential:',
+                                        error
+                                    );
                                     closeModal();
                                     resolve(false);
                                 }
@@ -273,7 +290,10 @@ export function useLearnCardMessageHandlers({
                                 }
                             );
                         } catch (error) {
-                            console.error('[PostMessage] Failed to show credential acceptance modal:', error);
+                            console.error(
+                                '[PostMessage] Failed to show credential acceptance modal:',
+                                error
+                            );
                             resolve(false);
                         }
                     });
@@ -281,7 +301,12 @@ export function useLearnCardMessageHandlers({
                 saveCredential: async (credential: any) => {
                     console.log('[PostMessage] Saving credential:', credential);
 
-                    const stored = await storeAndAddVCToWallet(credential, { title: credential.name || 'Credential' }, 'LearnCloud', true);
+                    const stored = await storeAndAddVCToWallet(
+                        credential,
+                        { title: credential.name || 'Credential' },
+                        'LearnCloud',
+                        true
+                    );
                     return stored.credentialUri;
                 },
                 getCredentialById: async (id: string) => {
@@ -289,11 +314,13 @@ export function useLearnCardMessageHandlers({
                     const learnCard = await initWallet();
 
                     if (!learnCard) {
-                        throw new Error('LearnCard wallet not initialized. Cannot fetch credential.');
+                        throw new Error(
+                            'LearnCard wallet not initialized. Cannot fetch credential.'
+                        );
                     }
 
                     const credential = await learnCard.read.get(id);
-                        
+
                     console.log('[PostMessage] Fetched credential:', credential);
                     return credential;
                 },
@@ -301,26 +328,32 @@ export function useLearnCardMessageHandlers({
                     const learnCard = await initWallet();
 
                     if (!learnCard) {
-                        throw new Error('LearnCard wallet not initialized. Cannot search credentials.');
+                        throw new Error(
+                            'LearnCard wallet not initialized. Cannot search credentials.'
+                        );
                     }
 
                     if (!learnCard.index.LearnCloud.getPage) {
-                        throw new Error('LearnCard wallet index not initialized. Cannot search credentials.');
+                        throw new Error(
+                            'LearnCard wallet index not initialized. Cannot search credentials.'
+                        );
                     }
 
                     const indexedCredentials = await learnCard.index.LearnCloud.getPage(query);
                     console.log('[PostMessage] Indexed credentials:', indexedCredentials);
 
-                    const resolvedCredentials = await Promise.all(indexedCredentials.records.map(async (credential) => {
-                        const resolvedVC = await learnCard.read.get(credential.uri);
-                        return { ...resolvedVC, uri: credential?.uri };
-                    }));
+                    const resolvedCredentials = await Promise.all(
+                        indexedCredentials.records.map(async credential => {
+                            const resolvedVC = await learnCard.read.get(credential.uri);
+                            return { ...resolvedVC, uri: credential?.uri };
+                        })
+                    );
 
                     console.log('[PostMessage] Resolved credentials:', resolvedCredentials);
                     return resolvedCredentials;
                 },
                 showShareCredentialModal: async (credential: any) => {
-                    return new Promise(async (resolve) => {
+                    return new Promise(async resolve => {
                         try {
                             console.log('[PostMessage] Share credential?', credential);
 
@@ -362,15 +395,21 @@ export function useLearnCardMessageHandlers({
                                 }
                             );
                         } catch (error) {
-                            console.error('[PostMessage] Failed to show share credential modal:', error);
+                            console.error(
+                                '[PostMessage] Failed to show share credential modal:',
+                                error
+                            );
                             resolve(false);
                         }
                     });
                 },
                 showVprModal: async (verifiablePresentationRequest: any) => {
-                    return new Promise(async (resolve) => {
+                    return new Promise(async resolve => {
                         try {
-                            console.log('[PostMessage] VPR request:', verifiablePresentationRequest);
+                            console.log(
+                                '[PostMessage] VPR request:',
+                                verifiablePresentationRequest
+                            );
 
                             // Dynamically import VprShareModal
                             const { default: VprShareModal } = await import(
@@ -383,7 +422,10 @@ export function useLearnCardMessageHandlers({
                                 if (sharing) return;
                                 sharing = true;
 
-                                console.log('[PostMessage] User selected credentials:', selectedCredentials);
+                                console.log(
+                                    '[PostMessage] User selected credentials:',
+                                    selectedCredentials
+                                );
 
                                 try {
                                     const learnCard = await initWallet();
@@ -401,8 +443,7 @@ export function useLearnCardMessageHandlers({
 
                                     // Create VP
                                     const vpToShare = {
-                                        '@context': [
-                                            'https://www.w3.org/ns/credentials/v2'],
+                                        '@context': ['https://www.w3.org/ns/credentials/v2'],
                                         type: ['VerifiablePresentation'],
                                         verifiableCredential: selectedCredentials,
                                         holder: learnCard.id.did(),
@@ -411,11 +452,14 @@ export function useLearnCardMessageHandlers({
                                     console.log('[PostMessage] Issuing VP:', vpToShare);
 
                                     // Sign VP
-                                    const signedVP = await learnCard.invoke.issuePresentation(vpToShare, {
-                                        challenge,
-                                        domain,
-                                        proofPurpose: 'authentication',
-                                    });
+                                    const signedVP = await learnCard.invoke.issuePresentation(
+                                        vpToShare,
+                                        {
+                                            challenge,
+                                            domain,
+                                            proofPurpose: 'authentication',
+                                        }
+                                    );
 
                                     console.log('[PostMessage] Signed VP:', signedVP);
 
@@ -456,7 +500,7 @@ export function useLearnCardMessageHandlers({
                     });
                 },
                 signCredential: async (credential: any) => {
-                    return new Promise(async (resolve) => {
+                    return new Promise(async resolve => {
                         try {
                             console.log('[PostMessage] Sign credential requested:', credential);
 
@@ -483,13 +527,21 @@ export function useLearnCardMessageHandlers({
                                         return;
                                     }
 
-                                    const signedCredential = await learnCard.invoke.issueCredential(credential);
+                                    const signedCredential = await learnCard.invoke.issueCredential(
+                                        credential
+                                    );
 
-                                    console.log('[PostMessage] Signed credential:', signedCredential);
+                                    console.log(
+                                        '[PostMessage] Signed credential:',
+                                        signedCredential
+                                    );
                                     closeModal();
                                     resolve(signedCredential);
                                 } catch (error) {
-                                    console.error('[PostMessage] Failed to sign credential:', error);
+                                    console.error(
+                                        '[PostMessage] Failed to sign credential:',
+                                        error
+                                    );
                                     closeModal();
                                     resolve(null);
                                 }
@@ -517,7 +569,10 @@ export function useLearnCardMessageHandlers({
                                 }
                             );
                         } catch (error) {
-                            console.error('[PostMessage] Failed to show sign credential modal:', error);
+                            console.error(
+                                '[PostMessage] Failed to show sign credential modal:',
+                                error
+                            );
                             resolve(null);
                         }
                     });
@@ -529,7 +584,9 @@ export function useLearnCardMessageHandlers({
                     const learnCard = await initWallet();
 
                     if (!learnCard) {
-                        throw new Error('LearnCard wallet not initialized. Cannot sign presentation.');
+                        throw new Error(
+                            'LearnCard wallet not initialized. Cannot sign presentation.'
+                        );
                     }
 
                     const vp: UnsignedVP = {
@@ -541,7 +598,7 @@ export function useLearnCardMessageHandlers({
 
                     try {
                         const signedPresentation = await learnCard.invoke.issuePresentation(vp, {
-                            domain: embedOrigin
+                            domain: embedOrigin,
                         });
 
                         console.log('[PostMessage] Signed presentation:', signedPresentation);
@@ -555,11 +612,9 @@ export function useLearnCardMessageHandlers({
                 // Navigation handler
                 navigate: (path: string, params?: Record<string, string>) => {
                     console.log('[PostMessage] Navigating to:', path, params);
-                    const queryParams = params
-                        ? '?' + new URLSearchParams(params).toString()
-                        : '';
+                    const queryParams = params ? '?' + new URLSearchParams(params).toString() : '';
                     history.push(path + queryParams);
-                    
+
                     // Call optional onNavigate callback (e.g., to close modal)
                     if (onNavigate) {
                         onNavigate();
@@ -568,7 +623,7 @@ export function useLearnCardMessageHandlers({
 
                 // Boost template issue handler
                 showBoostIssueModal: async (templateId: string, draftRecipients?: string[]) => {
-                    return new Promise(async (resolve) => {
+                    return new Promise(async resolve => {
                         try {
                             const learnCard = await initWallet();
                             if (!learnCard) {
@@ -587,7 +642,10 @@ export function useLearnCardMessageHandlers({
                             // Get boost data by templateId
                             const boost = await learnCard.invoke.getBoost(templateId);
                             if (!boost) {
-                                console.error('[PostMessage] Boost template not found:', templateId);
+                                console.error(
+                                    '[PostMessage] Boost template not found:',
+                                    templateId
+                                );
                                 resolve(false);
                                 return;
                             }
@@ -615,11 +673,11 @@ export function useLearnCardMessageHandlers({
                                 return parts[parts.length - 1];
                             };
 
-                            const boostCMSRecipients = draftRecipients?.map((recipient) => ({
-                                profileId: extractProfileIdFromDID(recipient),
-                                did: recipient,
-                            })) || [];
-
+                            const boostCMSRecipients =
+                                draftRecipients?.map(recipient => ({
+                                    profileId: extractProfileIdFromDID(recipient),
+                                    did: recipient,
+                                })) || [];
 
                             // Open the short boost modal
                             newModal(
@@ -632,12 +690,14 @@ export function useLearnCardMessageHandlers({
                                     history,
                                     handleEditOnClick: () => {
                                         // Edit functionality not needed for issued boosts
-                                        console.log('[PostMessage] Edit not available for issued templates');
+                                        console.log(
+                                            '[PostMessage] Edit not available for issued templates'
+                                        );
                                     },
                                     draftRecipients: boostCMSRecipients, // Pass draft recipients if provided
                                     onSuccess: () => handleSuccessModal(),
                                     overrideClosingAllModals: true,
-                                    showBoostContext: true
+                                    showBoostContext: true,
                                 }),
                                 {
                                     sectionClassName: '!max-w-[500px]',
@@ -666,7 +726,9 @@ export function useLearnCardMessageHandlers({
 
                         // Get boost data
                         const boost = await learnCard.invoke.getBoost(templateId);
-                        const admins = await learnCard.invoke.getBoostAdmins(templateId, { includeSelf: true });
+                        const admins = await learnCard.invoke.getBoostAdmins(templateId, {
+                            includeSelf: true,
+                        });
 
                         if (!boost) {
                             console.error('[PostMessage] Boost template not found:', templateId);
@@ -675,14 +737,61 @@ export function useLearnCardMessageHandlers({
 
                         // Check if boost.profileId matches current user
                         // profileId is typically the DID or profile identifier of the boost owner
-                        return admins?.records?.map(admin => admin?.profileId).includes(userProfileId);
+                        return admins?.records
+                            ?.map(admin => admin?.profileId)
+                            .includes(userProfileId);
                     } catch (error) {
                         console.error('[PostMessage] Failed to check admin status:', error);
                         return false;
                     }
                 },
+
+                // App events - only available when appId is provided
+                sendAppEvent: appId
+                    ? async (listingId: string, event: AppEvent) => {
+                          const learnCard = await initWallet();
+                          if (!learnCard) throw new Error('Wallet not initialized');
+
+                          // Use type assertion until types are rebuilt
+                          const invoke = learnCard.invoke as typeof learnCard.invoke & {
+                              sendAppEvent?: (
+                                  listingId: string,
+                                  event: AppEvent
+                              ) => Promise<Record<string, unknown>>;
+                          };
+
+                          if (!invoke.sendAppEvent) {
+                              throw new Error('sendAppEvent not available - rebuild types');
+                          }
+
+                          const result = await invoke.sendAppEvent(listingId, event);
+
+                          // If a credential was issued, notify the parent component
+                          if (result.credentialUri && onCredentialIssued) {
+                              onCredentialIssued(
+                                  result.credentialUri as string,
+                                  result.boostUri as string | undefined
+                              );
+                          }
+
+                          return result;
+                      }
+                    : undefined,
+                getAppListingId: appId ? () => appId : undefined,
             }),
-        [isLoggedIn, initWallet, storeAndAddVCToWallet, history, embedOrigin, onNavigate, showConsentFlow, newModal, closeModal]
+        [
+            isLoggedIn,
+            initWallet,
+            storeAndAddVCToWallet,
+            history,
+            embedOrigin,
+            onNavigate,
+            showConsentFlow,
+            newModal,
+            closeModal,
+            appId,
+            onCredentialIssued,
+        ]
     );
 
     return handlers;

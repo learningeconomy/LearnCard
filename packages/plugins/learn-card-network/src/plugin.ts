@@ -41,9 +41,7 @@ const escapeJsonStringValue = (value: unknown): string => {
 /**
  * Prepares templateData for safe JSON rendering by escaping string values.
  */
-const prepareTemplateData = (
-    templateData: Record<string, unknown>
-): Record<string, string> => {
+const prepareTemplateData = (templateData: Record<string, unknown>): Record<string, string> => {
     const prepared: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(templateData)) {
@@ -56,10 +54,7 @@ const prepareTemplateData = (
 /**
  * Renders a Mustache template with JSON-safe escaping.
  */
-const renderTemplateJson = (
-    jsonString: string,
-    templateData: Record<string, unknown>
-): string => {
+const renderTemplateJson = (jsonString: string, templateData: Record<string, unknown>): string => {
     const preparedData = prepareTemplateData(templateData);
     const unescapedTemplate = jsonString.replace(/\{\{([^{}]+)\}\}/g, '{{{$1}}}');
 
@@ -928,8 +923,10 @@ export async function getLearnCardNetworkPlugin(
                         boost = JSON.parse(rendered);
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
-                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                            `Template substitution failed: ${
+                                error instanceof Error ? error.message : 'Unknown error'
+                            }. ` +
+                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1044,10 +1041,7 @@ export async function getLearnCardNetworkPlugin(
                             let boost = data.data;
 
                             // Apply templateData if provided
-                            if (
-                                input.templateData &&
-                                Object.keys(input.templateData).length > 0
-                            ) {
+                            if (input.templateData && Object.keys(input.templateData).length > 0) {
                                 try {
                                     const boostString = JSON.stringify(boost);
                                     const rendered = renderTemplateJson(
@@ -1057,7 +1051,9 @@ export async function getLearnCardNetworkPlugin(
                                     boost = JSON.parse(rendered);
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'}`
+                                        `Failed to apply template data: ${
+                                            error instanceof Error ? error.message : 'Unknown error'
+                                        }`
                                     );
                                 }
                             }
@@ -1813,6 +1809,32 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.adminGetAllListings.query(options);
+            },
+
+            // App Store Boost Management
+            addBoostToApp: async (_learnCard, listingId, boostUri, boostId) => {
+                await ensureUser();
+
+                return client.appStore.addBoostToListing.mutate({ listingId, boostUri, boostId });
+            },
+
+            removeBoostFromApp: async (_learnCard, listingId, boostId) => {
+                await ensureUser();
+
+                return client.appStore.removeBoostFromListing.mutate({ listingId, boostId });
+            },
+
+            getAppBoosts: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.getBoostsForListing.query({ listingId });
+            },
+
+            // Generic App Event
+            sendAppEvent: async (_learnCard, listingId, event) => {
+                await ensureUser();
+
+                return client.appStore.appEvent.mutate({ listingId, event });
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

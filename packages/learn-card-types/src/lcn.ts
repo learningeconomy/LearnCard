@@ -1545,6 +1545,7 @@ export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
 
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
+    slug: z.string().optional(),
     display_name: z.string(),
     tagline: z.string(),
     full_description: z.string(),
@@ -1599,3 +1600,42 @@ export const PaginatedInstalledAppsValidator = PaginationResponseValidator.exten
 });
 
 export type PaginatedInstalledApps = z.infer<typeof PaginatedInstalledAppsValidator>;
+
+// App Store Boost Association
+export const AppBoostValidator = z.object({
+    boostId: z
+        .string()
+        .min(1)
+        .max(50)
+        .regex(/^[a-z0-9-]+$/),
+    boostUri: z.string(),
+});
+
+export type AppBoost = z.infer<typeof AppBoostValidator>;
+
+// App Event Types (discriminated union for type safety)
+export const SendCredentialEventValidator = z.object({
+    type: z.literal('send-credential'),
+    boostId: z.string(),
+    templateData: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type SendCredentialEvent = z.infer<typeof SendCredentialEventValidator>;
+
+// Add new event types here as the union grows
+export const AppEventValidator = z.discriminatedUnion('type', [SendCredentialEventValidator]);
+
+export type AppEvent = z.infer<typeof AppEventValidator>;
+
+// Full input including listingId (used by brain service)
+export const AppEventInputValidator = z.object({
+    listingId: z.string(),
+    event: AppEventValidator,
+});
+
+export type AppEventInput = z.infer<typeof AppEventInputValidator>;
+
+// Response is generic since different events may return different data
+export const AppEventResponseValidator = z.record(z.string(), z.unknown());
+
+export type AppEventResponse = z.infer<typeof AppEventResponseValidator>;

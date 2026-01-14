@@ -241,6 +241,9 @@ if (shouldCreateIndices)
             neogma.queryRunner.run(
                 'CREATE TEXT INDEX app_store_listing_name_text_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.display_name)'
             ),
+            neogma.queryRunner.run(
+                'CREATE INDEX app_store_listing_slug_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.slug)'
+            ),
 
             // Relationship property indexes for AppStoreListing
             neogma.queryRunner.run(

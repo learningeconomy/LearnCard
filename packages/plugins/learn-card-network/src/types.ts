@@ -94,6 +94,8 @@ import {
     PromotionLevel,
     PaginatedAppStoreListings,
     PaginatedInstalledApps,
+    AppEvent,
+    AppEventResponse,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -706,12 +708,23 @@ export type LearnCardNetworkPluginMethods = {
 
     isAppStoreAdmin: () => Promise<boolean>;
     adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
-    adminUpdatePromotionLevel: (listingId: string, promotionLevel: PromotionLevel) => Promise<boolean>;
+    adminUpdatePromotionLevel: (
+        listingId: string,
+        promotionLevel: PromotionLevel
+    ) => Promise<boolean>;
     adminGetAllListings: (options?: {
         limit?: number;
         cursor?: string;
         status?: AppListingStatus;
     }) => Promise<PaginatedAppStoreListings>;
+
+    // App Store Boost Management
+    addBoostToApp: (listingId: string, boostUri: string, boostId: string) => Promise<boolean>;
+    removeBoostFromApp: (listingId: string, boostId: string) => Promise<boolean>;
+    getAppBoosts: (listingId: string) => Promise<Array<{ boostId: string; boostUri: string }>>;
+
+    // App Events (discriminated union)
+    sendAppEvent: (listingId: string, event: AppEvent) => Promise<AppEventResponse>;
 
     resolveFromLCN: (
         uri: string

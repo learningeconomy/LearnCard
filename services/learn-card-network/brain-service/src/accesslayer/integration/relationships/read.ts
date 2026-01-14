@@ -28,9 +28,7 @@ export const isIntegrationUsingSigningAuthority = async (
     signingAuthorityEndpoint: string,
     name?: string
 ): Promise<boolean> => {
-    const qb = new QueryBuilder(
-        new BindParam({ integrationId, signingAuthorityEndpoint, name })
-    )
+    const qb = new QueryBuilder(new BindParam({ integrationId, signingAuthorityEndpoint, name }))
         .match({ model: Integration, identifier: 'integration' })
         .where('integration.id = $integrationId')
         .match({ model: SigningAuthority, identifier: 'signingAuthority' })
