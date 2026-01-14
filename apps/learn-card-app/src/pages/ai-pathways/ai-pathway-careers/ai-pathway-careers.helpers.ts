@@ -1,4 +1,4 @@
-import { WageItem } from 'learn-card-base/types/careerOneStop';
+import { WageItem, Wages } from 'learn-card-base/types/careerOneStop';
 
 export type AiPathwayCareer = {
     id: number;
@@ -89,4 +89,8 @@ export const getAllKeywords = (
 
     // Remove duplicates while preserving order
     return [...new Set(allKeywords)];
+};
+
+export const getYearlyWages = (wages: WageItem[]) => {
+    return wages.find(wage => wage.RateType === 'Annual');
 };

@@ -4,13 +4,13 @@ import AiPathwayAvgSalaryDisplay from './AiPathwayAvgSalaryDisplay';
 import AiPathwayCareerPipeChart from './AiPathwayCareerPipeChart';
 
 import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
+import { getYearlyWages } from './ai-pathway-careers.helpers';
 
 export const AiPathwayCareerSalaries: React.FC<{ occupation: OccupationDetailsResponse }> = ({
     occupation,
 }) => {
-    const wages = occupation?.Wages?.NationalWagesList;
-
-    const [rate, yearly] = wages;
+    const wages = occupation?.Wages;
+    const yearly = getYearlyWages(wages?.NationalWagesList || []);
 
     const minSalary = yearly?.Pct10;
     const medianSalary = yearly?.Median;
@@ -26,9 +26,9 @@ export const AiPathwayCareerSalaries: React.FC<{ occupation: OccupationDetailsRe
 
             {/* salary */}
             <AiPathwayAvgSalaryDisplay
-                medianSalary={medianSalary}
-                minSalary={minSalary}
-                maxSalary={maxSalary}
+                medianSalary={medianSalary || ''}
+                minSalary={minSalary || ''}
+                maxSalary={maxSalary || ''}
             />
 
             <AiPathwayCareerPipeChart wages={occupation.Wages} />

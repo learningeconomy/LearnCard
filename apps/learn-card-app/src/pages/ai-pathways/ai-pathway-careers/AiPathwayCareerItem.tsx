@@ -6,6 +6,7 @@ import AiPathwayCareerDetails from './AiPathwaysCareerDetails';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
+import { getYearlyWages } from './ai-pathway-careers.helpers';
 
 export const AiPathwayCareerItem: React.FC<{
     occupation: OccupationDetailsResponse;
@@ -19,10 +20,8 @@ export const AiPathwayCareerItem: React.FC<{
         });
     };
 
-    const wages = occupation?.Wages?.NationalWagesList;
-    const [rate, yearly] = wages;
-
-    const medianSalary = yearly?.Median;
+    const yearlyWages = getYearlyWages(occupation?.Wages?.NationalWagesList || []);
+    const medianSalary = yearlyWages?.Median;
 
     return (
         <div

@@ -7,6 +7,7 @@ import type {
     OccupationDetailsResponse,
     CareerOneStopLocationResult,
 } from 'learn-card-base/types/careerOneStop';
+import { getYearlyWages } from './ai-pathway-careers.helpers';
 
 export const AiPathwayTopPayLocations: React.FC<{ occupation: OccupationDetailsResponse }> = ({
     occupation,
@@ -14,10 +15,9 @@ export const AiPathwayTopPayLocations: React.FC<{ occupation: OccupationDetailsR
     const { data } = useSalariesForKeyword({
         keyword: occupation.OnetTitle,
     });
-
     const topPaidLocations: { location: string; salary: number }[] =
         data?.LocationsList?.map((l: CareerOneStopLocationResult) => {
-            const [rate, yearly] = l.OccupationList?.[0]?.WageInfo || [];
+            const yearly = getYearlyWages(l.OccupationList?.[0]?.WageInfo || []);
 
             return {
                 location: l.LocationName,
