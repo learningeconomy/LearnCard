@@ -4,6 +4,7 @@ import OnboardingRoles from './onboardingRoles/OnboardingRoles';
 import OnboardingFooter from './onboardingFooter/OnboardingFooter';
 import OnboardingHeader from './onboardingHeader/OnboardingHeader';
 import OnboardingNetworkForm from './onboardingNetworkForm/OnboardingNetworkForm';
+import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useModal } from 'learn-card-base';
 
 import { LearnCardRolesEnum, OnboardingStepsEnum } from './onboarding.helpers';
@@ -14,6 +15,20 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
 
     const [step, setStep] = useState<OnboardingStepsEnum>(OnboardingStepsEnum.selectRole);
 
+    const currentUser = useCurrentUser();
+    const [formData, setFormData] = useState({
+        name: currentUser?.name ?? '',
+        dob: '',
+        country: undefined as string | undefined,
+        photo: currentUser?.profileImage ?? '',
+        usMinorConsent: false,
+        profileId: '',
+    });
+
+    const updateFormData = (updates: Partial<typeof formData>) => {
+        setFormData(prev => ({ ...prev, ...updates }));
+    };
+
     if (step === OnboardingStepsEnum.joinNetwork) {
         return (
             <OnboardingNetworkForm
@@ -23,6 +38,8 @@ const OnboardingContainer: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }
                 role={role}
                 setStep={setStep}
                 onSuccess={onSuccess}
+                formData={formData}
+                updateFormData={updateFormData}
             />
         );
     }
