@@ -5,7 +5,7 @@ import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 export const normalizeSchoolPrograms = (trainingPrograms: TrainingProgram[]) => {
     const randomSchoolPrograms = _.shuffle([...trainingPrograms]);
 
-    const selectedSchoolPrograms = randomSchoolPrograms.slice(0, 3);
+    const selectedSchoolPrograms = randomSchoolPrograms;
 
     const schoolPrograms = selectedSchoolPrograms.map((program: any) => ({
         ...(program?.SchoolPrograms?.[0] || {}),

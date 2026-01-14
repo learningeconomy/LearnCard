@@ -39,7 +39,8 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
 
     if (!isLoading && (!keywords?.length || !trainingPrograms?.length)) return null;
 
-    const title = courses.length > 0 ? 'Explore Courses' : 'Explore Programs';
+    const showCourses = courses.length > 0;
+    const title = showCourses ? 'Explore Courses' : 'Explore Programs';
 
     return (
         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px]">
@@ -49,14 +50,14 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
                 </div>
 
                 <div className="w-full flex flex-col items-start justify-start mt-4 gap-4">
-                    {courses?.length < 0
+                    {showCourses
                         ? courses
-                              ?.slice(0, 5)
+                              .slice(0, 3)
                               .map((course: TrainingProgram, index: number) => (
                                   <AiPathwayCourseItem key={index} course={course} />
                               ))
                         : schoolPrograms
-                              ?.slice(0, 5)
+                              .slice(0, 3)
                               .map((program: TrainingProgram, index: number) => (
                                   <AiPathwaySchoolProgramItem key={index} program={program} />
                               ))}
