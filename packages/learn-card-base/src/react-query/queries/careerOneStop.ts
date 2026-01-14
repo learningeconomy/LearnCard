@@ -215,21 +215,22 @@ export const useTrainingProgramsByKeyword = ({
                 fetchOpenSyllabusCoursesBySchool(did, schoolName)
             );
 
-            const syllabusResults = await Promise.all(syllabusPromises);
+            // Add error handling for syllabus fetch
+            const syllabusResults = await Promise.allSettled(syllabusPromises);
 
             // Step 8: Combine training programs with syllabus courses filtered by fieldOfStudy
             return combinedResults
                 .map((result: any, index: number) => ({
                     ...result,
                     syllabusCourses:
-                        syllabusResults[index]?.syllabi.filter((syllabi: any) => {
-                            return syllabi?.field?.field === fieldOfStudy;
-                        }) || [],
+                        syllabusResults[index]?.status === 'fulfilled'
+                            ? syllabusResults[index]?.value?.syllabi
+                            : [], // Fallback to empty array if syllabus fetch failed
                 }))
                 .flat();
         },
         enabled: Boolean(keywords && keywords.length > 0),
-        staleTime: 1000 * 60 * 10, // 10 minutes
-        retry: 1,
+        // staleTime: 1000 * 60 * 10, // 10 minutes
+        // retry: 1,
     });
 };
