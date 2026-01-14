@@ -41,7 +41,8 @@ import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping,
 import { CodeBlock } from '../../components/CodeBlock';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
 import { 
-    extractDynamicVariables, 
+    extractDynamicVariables,
+    extractVariablesByType,
     OBv3CredentialTemplate,
     jsonToTemplate,
 } from '../components/CredentialBuilder';
@@ -116,7 +117,22 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 
     const integrationId = project?.id;
 
+    // Get master templates for special handling
+    const masterTemplates = useMemo(() => {
+        return templates.filter(t => t.isMasterTemplate && t.childTemplates?.length);
+    }, [templates]);
+
+    // Collect all child template IDs for filtering (computed before issuableTemplates)
+    const childTemplateIds = useMemo(() => {
+        const ids = new Set<string>();
+        for (const master of masterTemplates) {
+            master.childTemplates?.forEach(child => ids.add(child.id));
+        }
+        return ids;
+    }, [masterTemplates]);
+
     // Compute issuable templates (exclude master templates, include their children flattened)
+    // Also exclude standalone templates that are already children of a master
     const issuableTemplates = useMemo(() => {
         const result: CredentialTemplate[] = [];
 
@@ -126,18 +142,14 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                 if (template.childTemplates?.length) {
                     result.push(...template.childTemplates);
                 }
-            } else {
+            } else if (!childTemplateIds.has(template.id)) {
+                // Only include if not already a child of a master
                 result.push(template);
             }
         }
 
         return result;
-    }, [templates]);
-
-    // Get master templates for special handling
-    const masterTemplates = useMemo(() => {
-        return templates.filter(t => t.isMasterTemplate && t.childTemplates?.length);
-    }, [templates]);
+    }, [templates, childTemplateIds]);
 
     // Check if selected template belongs to a master template
     const selectedTemplateMaster = useMemo(() => {
@@ -497,7 +509,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 
     // Generate a config object mapping template names/IDs to their boost URIs
     const generateBoostConfig = useCallback(() => {
-        const config: Record<string, { uri: string; name: string; variables: string[] }> = {};
+        const config: Record<string, { uri: string; name: string; variables: string[]; systemVariables: string[] }> = {};
 
         const toKey = (name: string) => name
             .toLowerCase()
@@ -507,24 +519,28 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         issuableTemplates.forEach(template => {
             if (template.boostUri) {
                 const key = toKey(template.name);
-                let vars: string[] = [];
+                let dynamicVars: string[] = [];
+                let systemVars: string[] = [];
 
                 if (template.obv3Template) {
                     try {
-                        vars = extractDynamicVariables(template.obv3Template as OBv3CredentialTemplate);
+                        const extracted = extractVariablesByType(template.obv3Template as OBv3CredentialTemplate);
+                        dynamicVars = extracted.dynamic;
+                        systemVars = extracted.system;
                     } catch (e) {
                         // fallback to fields
                     }
                 }
 
-                if (vars.length === 0 && template.fields?.length) {
-                    vars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
+                if (dynamicVars.length === 0 && systemVars.length === 0 && template.fields?.length) {
+                    dynamicVars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
                 }
 
                 config[key] = {
                     uri: template.boostUri,
                     name: template.name,
-                    variables: vars,
+                    variables: dynamicVars,
+                    systemVariables: systemVars,
                 };
             }
         });
@@ -542,26 +558,43 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         const config = generateBoostConfig();
         const configCode = `// Boost Templates Configuration
 // Generated from LearnCard Partner Dashboard
+// Integration ID: ${integrationId || 'YOUR_INTEGRATION_ID'}
 
 const BOOST_TEMPLATES = ${JSON.stringify(config, null, 2)};
 
+// Your integration ID for tracking
+const INTEGRATION_ID = '${integrationId || 'YOUR_INTEGRATION_ID'}';
+
 // Usage example:
+// import { initLearnCard } from '@learncard/init';
+//
+// const learnCard = await initLearnCard({
+//     apiToken: process.env.LEARNCARD_API_TOKEN,
+//     network: true
+// });
+//
 // const template = BOOST_TEMPLATES['course_key'];
 // 
-// // Build templateData from the template's variables
+// // Build templateData from the template's variables (user-provided values)
 // const templateData = {};
 // for (const varName of template.variables) {
 //     templateData[varName] = yourData[varName]; // Map from your data source
 // }
+// // Note: template.systemVariables are auto-injected (issue_date, issuer_did, etc.)
 // 
-// await learnCard.invoke.send({
+// const result = await learnCard.invoke.send({
 //     type: 'boost',
-//     recipient: recipientProfileId,
+//     recipient: 'recipient-profile-id', // profile ID, DID, email, or phone
+//     integrationId: INTEGRATION_ID, // Track activity for this integration
 //     templateUri: template.uri,
 //     templateData,
 // });
+//
+// console.log('Credential URI:', result.credentialUri);
+// console.log('Activity ID:', result.activityId);
 
-export default BOOST_TEMPLATES;`;
+export default BOOST_TEMPLATES;
+export { INTEGRATION_ID };`;
 
         await Clipboard.write({ string: configCode });
         setApiCopiedConfig(true);
@@ -635,26 +668,35 @@ export default BOOST_TEMPLATES;`;
     };
 
     // Get dynamic variables for the selected API template (from issuable templates)
-    const apiTemplateVariables = useMemo(() => {
+    // Separated into user-provided (dynamic) and auto-injected (system) variables
+    const { apiTemplateVariables, apiSystemVariables } = useMemo(() => {
         const template = issuableTemplates.find(t => t.id === apiSelectedTemplate);
-        if (!template) return [];
+        if (!template) return { apiTemplateVariables: [], apiSystemVariables: [] };
 
-        let vars: string[] = [];
+        let dynamicVars: string[] = [];
+        let systemVars: string[] = [];
 
         if (template.obv3Template) {
             try {
                 const obv3 = template.obv3Template as OBv3CredentialTemplate;
-                vars = extractDynamicVariables(obv3);
+                const extracted = extractVariablesByType(obv3);
+                dynamicVars = extracted.dynamic;
+                systemVars = extracted.system;
             } catch (e) {
                 console.warn('Failed to extract OBv3 dynamic variables:', e);
             }
         }
 
-        if (vars.length === 0 && template.fields?.length) {
-            vars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
+        // Fallback to legacy fields array if no variables extracted
+        if (dynamicVars.length === 0 && systemVars.length === 0 && template.fields?.length) {
+            // Legacy fields don't distinguish - treat all as dynamic
+            dynamicVars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
         }
 
-        return vars;
+        return { 
+            apiTemplateVariables: dynamicVars, 
+            apiSystemVariables: systemVars,
+        };
     }, [issuableTemplates, apiSelectedTemplate]);
 
     // Initialize template data with smart defaults when template changes
@@ -1030,8 +1072,8 @@ curl -X POST "https://network.learncard.com/api/send" \\
                                 </div>
                             ))}
 
-                            {/* Standalone Templates */}
-                            {issuableTemplates.filter(t => !t.parentTemplateId).length > 0 && (
+                            {/* Standalone Templates (not masters, not children) */}
+                            {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).length > 0 && (
                                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                                     {masterTemplates.length > 0 && (
                                         <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
@@ -1041,7 +1083,7 @@ curl -X POST "https://network.learncard.com/api/send" \\
                                     )}
 
                                     <div className="divide-y divide-gray-100">
-                                        {issuableTemplates.filter(t => !t.parentTemplateId).map(template => (
+                                        {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).map(template => (
                                             <div key={template.id} className="p-3 hover:bg-gray-50">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="flex-1 min-w-0">
@@ -1163,13 +1205,13 @@ curl -X POST "https://network.learncard.com/api/send" \\
                                 ))}
 
                                 {/* Standalone Templates (not part of a master) */}
-                        {issuableTemplates.filter(t => !t.parentTemplateId).length > 0 && (
+                        {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).length > 0 && (
                             <div className="space-y-2">
                                 {masterTemplates.length > 0 && (
                                     <p className="text-xs text-gray-500 font-medium pt-2">Other Templates</p>
                                 )}
 
-                                {issuableTemplates.filter(t => !t.parentTemplateId).map(template => (
+                                {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).map(template => (
                                     <button
                                         key={template.id}
                                         onClick={() => setApiSelectedTemplate(template.id)}
@@ -1220,14 +1262,14 @@ curl -X POST "https://network.learncard.com/api/send" \\
                     </div>
                 )}
 
-                {/* Template Data Inputs */}
+                {/* Template Data Inputs - User-provided variables */}
                 {apiTemplateVariables.length > 0 && (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <label className="block text-sm font-medium text-gray-700">Template Data</label>
 
                             <span className="text-xs text-gray-500">
-                                {apiTemplateVariables.length} field{apiTemplateVariables.length !== 1 ? 's' : ''}
+                                {apiTemplateVariables.length} field{apiTemplateVariables.length !== 1 ? 's' : ''} to provide
                             </span>
                         </div>
 
@@ -1262,6 +1304,19 @@ curl -X POST "https://network.learncard.com/api/send" \\
                                     </div>
                                 );
                             })}
+                        </div>
+                    </div>
+                )}
+
+                {/* System Variables - Auto-injected at issuance */}
+                {apiSystemVariables.length > 0 && (
+                    <div className="flex items-start gap-3 p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
+                        <Zap className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm">
+                            <p className="font-medium text-cyan-800">Auto-injected at issuance</p>
+                            <p className="text-xs text-cyan-700 mt-0.5">
+                                {apiSystemVariables.map(v => `{{${v}}}`).join(', ')}
+                            </p>
                         </div>
                     </div>
                 )}

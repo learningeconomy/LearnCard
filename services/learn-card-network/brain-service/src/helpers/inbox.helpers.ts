@@ -26,7 +26,7 @@ import { getRegistryService } from '@services/registry/registry.factory';
 
 export const verifyCredentialCanBeSigned = async (credential: UnsignedVC): Promise<boolean> => {
     try {
-        const learnCard = await getLearnCard();
+        const learnCard = await getLearnCard(undefined, true);
         const testCredential = credential;
         testCredential.issuer = learnCard.id.did();
         await learnCard.invoke.issueCredential(testCredential);

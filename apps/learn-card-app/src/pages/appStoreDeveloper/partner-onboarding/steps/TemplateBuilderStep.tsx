@@ -1746,11 +1746,43 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 {expandedId === template.id && (
                                     <div className="p-4 bg-white border-t border-violet-200">
                                         {/* Master Template Info */}
-                                        <div className="mb-4 p-3 bg-violet-50 rounded-lg">
-                                            <p className="text-sm text-violet-800">
-                                                <strong>Dynamic variables at issuance:</strong>{' '}
-                                                {template.fields?.map(f => `{{${f.variableName}}}`).join(', ') || 'None'}
-                                            </p>
+                                        <div className="mb-4 p-3 bg-violet-50 rounded-lg space-y-2">
+                                            {(() => {
+                                                const issuanceFieldMap = ISSUANCE_FIELDS.reduce(
+                                                    (acc, f) => ({ ...acc, [f.id]: f }),
+                                                    {} as Record<string, typeof ISSUANCE_FIELDS[0]>
+                                                );
+
+                                                const dynamicVars = template.fields?.filter(
+                                                    f => issuanceFieldMap[f.id]?.type === 'dynamic'
+                                                ) || [];
+
+                                                const systemVars = template.fields?.filter(
+                                                    f => issuanceFieldMap[f.id]?.type === 'system'
+                                                ) || [];
+
+                                                return (
+                                                    <>
+                                                        {dynamicVars.length > 0 && (
+                                                            <p className="text-sm text-violet-800">
+                                                                <strong>User-provided at issuance:</strong>{' '}
+                                                                {dynamicVars.map(f => `{{${f.variableName}}}`).join(', ')}
+                                                            </p>
+                                                        )}
+
+                                                        {systemVars.length > 0 && (
+                                                            <p className="text-sm text-violet-600">
+                                                                <strong>Auto-injected:</strong>{' '}
+                                                                {systemVars.map(f => `{{${f.variableName}}}`).join(', ')}
+                                                            </p>
+                                                        )}
+
+                                                        {dynamicVars.length === 0 && systemVars.length === 0 && (
+                                                            <p className="text-sm text-violet-600">No dynamic variables</p>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
 
                                         {/* Child Templates List */}

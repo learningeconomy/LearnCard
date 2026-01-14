@@ -693,6 +693,13 @@ export const extractVariablesByType = (template: OBv3CredentialTemplate): Extrac
  * Extract all dynamic variables from a template (legacy - returns all variables)
  */
 export const extractDynamicVariables = (template: OBv3CredentialTemplate): string[] => {
+    // For non-OBv3 credentials with rawJson, extract from the raw JSON directly
+    if (template.rawJson && template.schemaType !== 'obv3') {
+        const extracted = extractVariablesFromRawJson(template.rawJson);
+        // Return combined system + dynamic variables for backwards compatibility
+        return [...extracted.system, ...extracted.dynamic].sort();
+    }
+
     const variables: Set<string> = new Set();
 
     const checkField = (field: TemplateFieldValue | undefined) => {
