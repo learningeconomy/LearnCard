@@ -101,6 +101,8 @@ export interface DataMappingConfig {
     boostSelectorField?: string;
     /** Match type for boost selector: 'id' for exact match, 'name' for name-based fallback */
     boostSelectorMatchType?: 'id' | 'name';
+    /** For CSV: source column that contains recipient (email, phone, profile ID, or DID) */
+    recipientField?: string;
 }
 
 export type IntegrationMethod = 'webhook' | 'api' | 'csv';

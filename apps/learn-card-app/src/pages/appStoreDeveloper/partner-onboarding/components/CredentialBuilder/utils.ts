@@ -582,6 +582,18 @@ export const extractVariablesByType = (template: OBv3CredentialTemplate): Extrac
                 dynamicVars.add(field.variableName);
             }
         }
+        // Also check the value for mustache patterns (in case isDynamic wasn't set)
+        if (field?.value && typeof field.value === 'string') {
+            const matches = field.value.matchAll(/\{\{(\w+)\}\}/g);
+            for (const m of matches) {
+                const varName = m[1];
+                if (SYSTEM_VARIABLES.includes(varName)) {
+                    systemVars.add(varName);
+                } else {
+                    dynamicVars.add(varName);
+                }
+            }
+        }
     };
 
     // Core fields
@@ -682,6 +694,27 @@ export const extractVariablesByType = (template: OBv3CredentialTemplate): Extrac
         checkField(f.key);
         checkField(f.value);
     });
+
+    // Comprehensive fallback: scan the entire template object for any mustache patterns
+    // This catches variables in any nested locations that explicit checks might miss
+    const scanObject = (obj: unknown): void => {
+        if (typeof obj === 'string') {
+            const matches = obj.matchAll(/\{\{(\w+)\}\}/g);
+            for (const m of matches) {
+                const varName = m[1];
+                if (SYSTEM_VARIABLES.includes(varName)) {
+                    systemVars.add(varName);
+                } else {
+                    dynamicVars.add(varName);
+                }
+            }
+        } else if (Array.isArray(obj)) {
+            obj.forEach(scanObject);
+        } else if (obj && typeof obj === 'object') {
+            Object.values(obj).forEach(scanObject);
+        }
+    };
+    scanObject(template);
 
     return {
         system: Array.from(systemVars).sort(),

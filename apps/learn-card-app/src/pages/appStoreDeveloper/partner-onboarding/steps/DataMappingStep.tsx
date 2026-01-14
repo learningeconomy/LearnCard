@@ -30,6 +30,7 @@ import {
     Code,
     FileStack,
     Layers,
+    Users,
 } from 'lucide-react';
 
 import { Clipboard } from '@capacitor/clipboard';
@@ -115,6 +116,9 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         dataMapping?.boostSelectorMatchType || 'id'
     );
 
+    // Recipient column selector for CSV (required - identifies who to send credentials to)
+    const [recipientField, setRecipientField] = useState<string>(dataMapping?.recipientField || '');
+
     const integrationId = project?.id;
 
     // Get master templates for special handling
@@ -188,19 +192,49 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         return extractPaths(samplePayload);
     }, [samplePayload, csvHeaders, integrationMethod]);
 
-    // Get target fields from selected template - prefer OBv3 dynamic variables
+    // Get target fields - for master templates, get SHARED dynamic variables across all children
+    // For single templates, get dynamic variables from that template
+    // System variables (issue_date, issuer_did, etc.) are auto-injected and shouldn't be mapped
     const targetFields = useMemo(() => {
+        // For master templates with children, find shared dynamic variables across all children
+        if (masterTemplates.length > 0) {
+            const allChildVars: Set<string>[] = [];
+            
+            for (const master of masterTemplates) {
+                for (const child of master.childTemplates || []) {
+                    if (child.obv3Template) {
+                        try {
+                            const obv3 = child.obv3Template as OBv3CredentialTemplate;
+                            const { dynamic } = extractVariablesByType(obv3);
+                            allChildVars.push(new Set(dynamic));
+                        } catch (e) {
+                            console.warn('Failed to extract child template variables:', e);
+                        }
+                    }
+                }
+            }
+            
+            // Find intersection of all child template variables (shared across all)
+            if (allChildVars.length > 0) {
+                const sharedVars = [...allChildVars[0]].filter(v => 
+                    allChildVars.every(varSet => varSet.has(v))
+                );
+                return sharedVars.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+            }
+        }
+        
+        // Fallback: use selected template
         const template = templates.find(t => t.id === selectedTemplate);
         if (!template) return [];
 
-        // If template has OBv3 data, extract dynamic variables from it
+        // If template has OBv3 data, extract only dynamic variables (not system)
         if (template.obv3Template) {
             try {
                 const obv3 = template.obv3Template as OBv3CredentialTemplate;
-                const dynamicVars = extractDynamicVariables(obv3);
+                const { dynamic } = extractVariablesByType(obv3);
                 
                 // Return variable names formatted nicely
-                return dynamicVars.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+                return dynamic.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
             } catch (e) {
                 console.warn('Failed to extract OBv3 dynamic variables:', e);
             }
@@ -208,18 +242,46 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 
         // Fallback to legacy fields
         return template.fields?.map(f => f.name) || [];
-    }, [templates, selectedTemplate]);
+    }, [templates, selectedTemplate, masterTemplates]);
 
     // Get the raw variable names for templateData generation
+    // For master templates, get shared variables across all children
     const targetVariableNames = useMemo(() => {
+        // For master templates with children, find shared dynamic variables across all children
+        if (masterTemplates.length > 0) {
+            const allChildVars: Set<string>[] = [];
+            
+            for (const master of masterTemplates) {
+                for (const child of master.childTemplates || []) {
+                    if (child.obv3Template) {
+                        try {
+                            const obv3 = child.obv3Template as OBv3CredentialTemplate;
+                            const { dynamic } = extractVariablesByType(obv3);
+                            allChildVars.push(new Set(dynamic));
+                        } catch (e) {
+                            console.warn('Failed to extract child template variables:', e);
+                        }
+                    }
+                }
+            }
+            
+            // Find intersection of all child template variables (shared across all)
+            if (allChildVars.length > 0) {
+                return [...allChildVars[0]].filter(v => 
+                    allChildVars.every(varSet => varSet.has(v))
+                );
+            }
+        }
+        
         const template = templates.find(t => t.id === selectedTemplate);
         if (!template) return [];
 
-        // If template has OBv3 data, extract dynamic variables from it
+        // If template has OBv3 data, extract only dynamic variables
         if (template.obv3Template) {
             try {
                 const obv3 = template.obv3Template as OBv3CredentialTemplate;
-                return extractDynamicVariables(obv3);
+                const { dynamic } = extractVariablesByType(obv3);
+                return dynamic;
             } catch (e) {
                 console.warn('Failed to extract OBv3 dynamic variables:', e);
             }
@@ -227,7 +289,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 
         // Fallback to legacy fields
         return template.fields?.map(f => f.variableName || fieldNameToVariable(f.name)) || [];
-    }, [templates, selectedTemplate]);
+    }, [templates, selectedTemplate, masterTemplates]);
 
     const handleCopyUrl = async () => {
         await Clipboard.write({ string: webhookUrl });
@@ -272,37 +334,79 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         });
     };
 
-    // Generate CSV template for download - uses OBv3 dynamic variables if available
+    // Generate CSV template for download
+    // Includes: recipient column, boost selector (if master templates), shared dynamic variables,
+    // and example rows for each template with template IDs
     const handleDownloadTemplate = () => {
-        const template = templates.find(t => t.id === selectedTemplate);
-        if (!template) return;
-
-        // Get headers from OBv3 template or fallback to legacy fields
-        let headers: string[] = [];
-
-        if (template.obv3Template) {
-            try {
-                const obv3 = template.obv3Template as OBv3CredentialTemplate;
-                const dynamicVars = extractDynamicVariables(obv3);
-                // Format variable names as headers
-                headers = dynamicVars.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
-            } catch (e) {
-                console.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
+        // Build headers starting with recipient
+        const headers: string[] = ['Recipient (email/phone/profileId)'];
+        const rows: string[][] = [];
+        
+        // For master templates, add boost selector column and use shared variables
+        if (masterTemplates.length > 0) {
+            headers.push('Course ID'); // Boost selector column
+            
+            // Add shared dynamic variables (already computed in targetFields)
+            headers.push(...targetFields);
+            
+            // Add example rows for each child template
+            for (const master of masterTemplates) {
+                for (const child of master.childTemplates || []) {
+                    const row: string[] = [
+                        'example@email.com', // Placeholder recipient
+                        child.name, // Course ID - use template name for matching
+                    ];
+                    // Add placeholder values for each dynamic variable
+                    for (const field of targetFields) {
+                        row.push(`[${field}]`);
+                    }
+                    rows.push(row);
+                }
             }
+        } else {
+            // Single template mode - use that template's variables
+            const template = templates.find(t => t.id === selectedTemplate);
+            let dynamicVars: string[] = [];
+            
+            if (template?.obv3Template) {
+                try {
+                    const obv3 = template.obv3Template as OBv3CredentialTemplate;
+                    const { dynamic } = extractVariablesByType(obv3);
+                    dynamicVars = dynamic;
+                    headers.push(...dynamic.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())));
+                } catch (e) {
+                    console.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
+                }
+            } else if (template?.fields?.length) {
+                dynamicVars = template.fields.map(f => f.name);
+                headers.push(...dynamicVars);
+            }
+            
+            // Add one example row
+            const row: string[] = ['example@email.com'];
+            for (const field of dynamicVars) {
+                row.push(`[${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}]`);
+            }
+            rows.push(row);
         }
 
-        // Fallback to legacy fields
-        if (headers.length === 0) {
-            headers = template.fields?.map(f => f.name) || [];
+        // Build CSV content with headers and example rows
+        const csvLines = [headers.join(',')];
+        for (const row of rows) {
+            // Escape values that contain commas
+            csvLines.push(row.map(v => v.includes(',') ? `"${v}"` : v).join(','));
         }
-
-        const csvContent = headers.join(',') + '\n' + headers.map(() => '').join(',');
+        const csvContent = csvLines.join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${template.name.toLowerCase().replace(/\s+/g, '-')}-template.csv`;
+        
+        const filename = masterTemplates.length > 0 
+            ? 'batch-issuance-template.csv'
+            : `${(templates.find(t => t.id === selectedTemplate)?.name || 'template').toLowerCase().replace(/\s+/g, '-')}-template.csv`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -452,6 +556,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                     mappings,
                     boostSelectorField: masterTemplates.length > 0 ? boostSelectorField : undefined,
                     boostSelectorMatchType: masterTemplates.length > 0 ? boostSelectorMatchType : undefined,
+                    recipientField: integrationMethod === 'csv' ? recipientField : undefined,
                 },
                 updatedTemplates
             );
@@ -464,7 +569,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     };
 
     const canProceed = integrationMethod === 'api' || 
-        (integrationMethod === 'csv' && csvHeaders.length > 0 && mappings.length > 0) ||
+        (integrationMethod === 'csv' && csvHeaders.length > 0 && mappings.length > 0 && recipientField) ||
         (integrationMethod === 'webhook' && samplePayload && mappings.length > 0);
 
     // API Integration state - use issuable templates (excludes master templates)
@@ -1563,389 +1668,124 @@ curl -X POST "https://network.learncard.com/api/send" \\
     }
 
     if (integrationMethod === 'csv') {
+        // Simplified CSV flow: just download template and continue
+        // Column selection happens in CsvUploadTab when actually uploading
+        const totalChildTemplates = masterTemplates.reduce((sum, m) => sum + (m.childTemplates?.length || 0), 0);
+        const hasMasterTemplates = masterTemplates.length > 0;
+
         return (
             <div className="space-y-6">
+                {/* Header */}
                 <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                     <FileSpreadsheet className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
                     <div className="text-sm text-amber-800">
-                        <p className="font-medium mb-1">CSV Upload Integration</p>
+                        <p className="font-medium mb-1">CSV Batch Upload</p>
                         <p>
-                            Upload a sample CSV file to map your columns to credential fields.
-                            You can use your own data format or download a template.
+                            Issue credentials in bulk by uploading a CSV spreadsheet. 
+                            Download the template below to get started with the correct format.
                         </p>
                     </div>
                 </div>
 
-                {/* Template selector if multiple templates */}
-                {templates.length > 1 && (
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Select Template</label>
-                        <select
-                            value={selectedTemplate}
-                            onChange={(e) => {
-                                setSelectedTemplate(e.target.value);
-                                setMappings([]);
-                            }}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg"
-                        >
-                            {templates.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-
-                {/* Upload or Download section */}
+                {/* Template Info */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                            <Upload className="w-5 h-5 text-amber-600" />
+                        <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
+                            <Download className="w-5 h-5 text-cyan-600" />
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">Upload Sample CSV</h3>
-                            <p className="text-sm text-gray-500">Upload a CSV with your column headers</p>
-                        </div>
-                    </div>
-
-                    <input
-                        ref={csvInputRef}
-                        type="file"
-                        accept=".csv"
-                        onChange={handleCsvUpload}
-                        className="hidden"
-                    />
-
-                    {!csvFileName ? (
-                        <div className="space-y-3">
-                            <div
-                                onClick={() => csvInputRef.current?.click()}
-                                className="p-6 border-2 border-dashed border-amber-300 rounded-xl text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-colors"
-                            >
-                                <Upload className="w-8 h-8 text-amber-400 mx-auto mb-2" />
-                                <p className="text-sm text-gray-600 mb-1">
-                                    Click to upload a CSV file
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                    We'll extract column headers for mapping
-                                </p>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="flex-1 h-px bg-gray-200" />
-                                <span className="text-xs text-gray-400">or</span>
-                                <div className="flex-1 h-px bg-gray-200" />
-                            </div>
-
-                            <button 
-                                onClick={handleDownloadTemplate}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                            >
-                                <Download className="w-4 h-4" />
-                                Download CSV Template
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {/* File uploaded indicator */}
-                            <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                <Check className="w-5 h-5 text-emerald-600" />
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-emerald-800">{csvFileName}</p>
-                                    <p className="text-xs text-emerald-600">{csvHeaders.length} columns detected</p>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setCsvFileName(null);
-                                        setCsvHeaders([]);
-                                        setCsvPreviewRows([]);
-                                        setMappings([]);
-                                        if (csvInputRef.current) csvInputRef.current.value = '';
-                                    }}
-                                    className="p-1 text-gray-400 hover:text-red-500 rounded"
-                                >
-                                    ×
-                                </button>
-                            </div>
-
-                            {/* CSV Preview */}
-                            {csvPreviewRows.length > 0 && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <Table className="w-4 h-4 text-gray-500" />
-                                        <span className="text-sm font-medium text-gray-700">Data Preview</span>
-                                    </div>
-                                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                                        <table className="min-w-full text-xs">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    {csvHeaders.slice(0, 5).map(header => (
-                                                        <th key={header} className="px-3 py-2 text-left font-medium text-gray-600 border-b">
-                                                            {header}
-                                                        </th>
-                                                    ))}
-                                                    {csvHeaders.length > 5 && (
-                                                        <th className="px-3 py-2 text-left font-medium text-gray-400 border-b">
-                                                            +{csvHeaders.length - 5} more
-                                                        </th>
-                                                    )}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {csvPreviewRows.slice(0, 3).map((row, idx) => (
-                                                    <tr key={idx} className="border-b border-gray-100 last:border-0">
-                                                        {csvHeaders.slice(0, 5).map(header => (
-                                                            <td key={header} className="px-3 py-2 text-gray-700 truncate max-w-32">
-                                                                {row[header] || '-'}
-                                                            </td>
-                                                        ))}
-                                                        {csvHeaders.length > 5 && (
-                                                            <td className="px-3 py-2 text-gray-400">...</td>
-                                                        )}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Boost Selector for Master Templates (CSV) */}
-                {csvHeaders.length > 0 && masterTemplates.length > 0 && (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
-                                <FileStack className="w-5 h-5 text-violet-600" />
-                            </div>
-
-                            <div>
-                                <h3 className="font-semibold text-gray-800">Course Boost Selection</h3>
-                                <p className="text-sm text-gray-500">
-                                    You have {masterTemplates.reduce((sum, m) => sum + (m.childTemplates?.length || 0), 0)} course boosts. 
-                                    Specify which column identifies the course.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-violet-800 mb-2">
-                                    Which column identifies the course?
-                                </label>
-
-                                <select
-                                    value={boostSelectorField}
-                                    onChange={(e) => setBoostSelectorField(e.target.value)}
-                                    className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                                >
-                                    <option value="">Select a column...</option>
-                                    {csvHeaders.map(header => (
-                                        <option key={header} value={header}>{header}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-violet-800 mb-2">
-                                    How should we match courses?
-                                </label>
-
-                                <div className="space-y-2">
-                                    <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-violet-200 cursor-pointer hover:border-violet-400">
-                                        <input
-                                            type="radio"
-                                            name="csvMatchType"
-                                            value="id"
-                                            checked={boostSelectorMatchType === 'id'}
-                                            onChange={() => setBoostSelectorMatchType('id')}
-                                            className="mt-0.5"
-                                        />
-                                        <div>
-                                            <p className="font-medium text-gray-800">Match by Course ID</p>
-                                            <p className="text-xs text-gray-500">
-                                                Match exactly against boost metadata (recommended)
-                                            </p>
-                                        </div>
-                                    </label>
-
-                                    <label className="flex items-start gap-3 p-3 bg-white rounded-lg border border-violet-200 cursor-pointer hover:border-violet-400">
-                                        <input
-                                            type="radio"
-                                            name="csvMatchType"
-                                            value="name"
-                                            checked={boostSelectorMatchType === 'name'}
-                                            onChange={() => setBoostSelectorMatchType('name')}
-                                            className="mt-0.5"
-                                        />
-                                        <div>
-                                            <p className="font-medium text-gray-800">Match by Course Name</p>
-                                            <p className="text-xs text-gray-500">
-                                                Find boost where name contains the course title
-                                            </p>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            {boostSelectorField && (
-                                <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                    <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                                    <p className="text-xs text-emerald-800">
-                                        Will use <code className="bg-emerald-100 px-1 rounded">{boostSelectorField}</code> column to 
-                                        find the right course boost by {boostSelectorMatchType === 'id' ? 'exact ID match' : 'name matching'}.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Field Mapping - reuse same UI as webhook */}
-                {csvHeaders.length > 0 && (
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
-                                <GitMerge className="w-5 h-5 text-cyan-600" />
-                            </div>
-
-                            <div>
-                                <h3 className="font-semibold text-gray-800">
-                                    {masterTemplates.length > 0 ? 'Map Issuance Columns' : 'Map Columns'}
-                                </h3>
-                                <p className="text-sm text-gray-500">
-                                    {masterTemplates.length > 0 
-                                        ? 'Map recipient data columns (course data is already baked in)'
-                                        : 'Connect CSV columns to credential fields'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Current Mappings */}
-                        {mappings.length > 0 && (
-                            <div className="space-y-2">
-                                {mappings.map((mapping, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="flex items-center gap-2 p-3 bg-emerald-50 rounded-lg"
-                                    >
-                                        <code className="text-sm text-gray-700">{mapping.sourceField}</code>
-
-                                        <ChevronRight className="w-4 h-4 text-gray-400" />
-
-                                        <code className="text-sm text-emerald-700 font-medium">{mapping.targetField}</code>
-
-                                        <button
-                                            onClick={() => handleRemoveMapping(idx)}
-                                            className="ml-auto p-1 text-gray-400 hover:text-red-500 rounded"
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Instructions */}
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                            <p className="text-xs text-blue-800">
-                                <strong>How to map:</strong> Click a CSV column on the left, then click a credential field on the right to connect them.
+                            <h3 className="font-semibold text-gray-800">CSV Template</h3>
+                            <p className="text-sm text-gray-500">
+                                Download a pre-formatted template with the correct columns
                             </p>
                         </div>
+                    </div>
 
-                        {/* Two-column selection UI */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-2">
-                                    CSV Columns
-                                    {selectedSource && <span className="ml-2 text-cyan-600">→ Select target</span>}
-                                </label>
+                    {/* Template columns preview */}
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+                        <p className="text-xs font-medium text-gray-600">Template columns:</p>
+                        <div className="flex flex-wrap gap-2">
+                            <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+                                Recipient *
+                            </span>
+                            {hasMasterTemplates && (
+                                <span className="px-2 py-1 bg-violet-100 text-violet-700 rounded text-xs font-medium">
+                                    Course ID *
+                                </span>
+                            )}
+                            {targetFields.map(v => (
+                                <span key={v} className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs">
+                                    {v}
+                                </span>
+                            ))}
+                        </div>
 
-                                <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
-                                    {sourceFields
-                                        .filter(f => !mappings.some(m => m.sourceField === f))
-                                        .map(field => {
-                                            const isSelected = selectedSource === field;
-                                            return (
-                                                <button
-                                                    key={field}
-                                                    onClick={() => handleSelectSource(field)}
-                                                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-all ${
-                                                        isSelected
-                                                            ? 'bg-cyan-500 text-white shadow-md'
-                                                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                                                    }`}
-                                                >
-                                                    <code className={isSelected ? 'text-white' : 'text-gray-700'}>{field}</code>
-                                                </button>
-                                            );
-                                        })}
+                        {hasMasterTemplates && (
+                            <p className="text-xs text-gray-500">
+                                You have {totalChildTemplates} course templates. 
+                                The CSV can include rows for different courses.
+                            </p>
+                        )}
+                    </div>
 
-                                    {sourceFields.filter(f => !mappings.some(m => m.sourceField === f)).length === 0 && (
-                                        <p className="text-xs text-gray-400 text-center py-2">All columns mapped</p>
-                                    )}
-                                </div>
+                    <button 
+                        onClick={handleDownloadTemplate}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
+                    >
+                        <Download className="w-4 h-4" />
+                        Download CSV Template
+                    </button>
+                </div>
+
+                {/* How it works */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <FileStack className="w-5 h-5 text-blue-600" />
+                        </div>
+
+                        <div>
+                            <h3 className="font-semibold text-gray-800">How It Works</h3>
+                            <p className="text-sm text-gray-500">Simple 3-step process</p>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-3">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-bold text-cyan-700">1</span>
                             </div>
-
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-2">
-                                    Credential Fields
-                                    {selectedTarget && <span className="ml-2 text-cyan-600">← Select source</span>}
-                                </label>
-
-                                <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
-                                    {targetFields
-                                        .filter(f => !mappings.some(m => m.targetField === f))
-                                        .map(field => {
-                                            const isSelected = selectedTarget === field;
-                                            return (
-                                                <button
-                                                    key={field}
-                                                    onClick={() => handleSelectTarget(field)}
-                                                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-all ${
-                                                        isSelected
-                                                            ? 'bg-emerald-500 text-white shadow-md'
-                                                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
-                                                    }`}
-                                                >
-                                                    <code className={isSelected ? 'text-white' : 'text-emerald-700'}>{field}</code>
-                                                </button>
-                                            );
-                                        })}
-
-                                    {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length === 0 && (
-                                        <p className="text-xs text-gray-400 text-center py-2">All fields mapped</p>
-                                    )}
-                                </div>
+                                <p className="text-sm font-medium text-gray-800">Download Template</p>
+                                <p className="text-xs text-gray-500">Get the CSV with the correct column headers</p>
                             </div>
                         </div>
 
-                        {/* Selection hint */}
-                        {(selectedSource || selectedTarget) && (
-                            <div className="flex items-center justify-center gap-2 p-2 bg-cyan-50 rounded-lg text-sm text-cyan-700">
-                                {selectedSource && <code className="bg-cyan-500 text-white px-2 py-0.5 rounded">{selectedSource}</code>}
-                                {selectedSource && selectedTarget && <ChevronRight className="w-4 h-4" />}
-                                {selectedTarget && <code className="bg-emerald-500 text-white px-2 py-0.5 rounded">{selectedTarget}</code>}
-                                {(selectedSource && !selectedTarget) && <span>Now select a credential field →</span>}
-                                {(selectedTarget && !selectedSource) && <span>← Now select a CSV column</span>}
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-bold text-cyan-700">2</span>
                             </div>
-                        )}
+                            <div>
+                                <p className="text-sm font-medium text-gray-800">Fill In Your Data</p>
+                                <p className="text-xs text-gray-500">Add recipient info and credential data for each row</p>
+                            </div>
+                        </div>
 
-                        {/* Unmapped warning */}
-                        {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length > 0 && mappings.length > 0 && (
-                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-amber-800">
-                                    {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length} credential field(s) still need to be mapped.
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-bold text-cyan-700">3</span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-800">Upload & Send</p>
+                                <p className="text-xs text-gray-500">
+                                    Go to the CSV Upload tab in your dashboard to upload and process
                                 </p>
                             </div>
-                        )}
+                        </div>
                     </div>
-                )}
+                </div>
 
                 {/* Navigation */}
                 <div className="flex gap-3 pt-4 border-t border-gray-100">
@@ -1958,22 +1798,11 @@ curl -X POST "https://network.learncard.com/api/send" \\
                     </button>
 
                     <button
-                        onClick={handleSaveAndContinue}
-                        disabled={!canProceed || isSaving}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        onClick={() => onComplete({ mappings: [] }, templates)}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                     >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Saving...
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-4 h-4" />
-                                Save & Continue
-                                <ArrowRight className="w-4 h-4" />
-                            </>
-                        )}
+                        Continue to Testing
+                        <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
             </div>

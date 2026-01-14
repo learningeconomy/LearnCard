@@ -60,7 +60,6 @@ const METHODS: MethodOption[] = [
         features: [
             'No technical integration needed',
             'Great for initial migration',
-            'Scheduled uploads supported',
             'Template download available',
         ],
     },

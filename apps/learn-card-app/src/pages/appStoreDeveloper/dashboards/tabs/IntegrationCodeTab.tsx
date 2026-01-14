@@ -468,23 +468,28 @@ curl -X POST "https://network.learncard.com/api/send" \\
     };
 
     // Download CSV template for selected template
+    // Includes 'recipient' as required first column, then dynamic variables only
     const handleDownloadCsvTemplate = () => {
         if (!selectedTemplate) return;
 
-        let headers: string[] = [];
+        let variableHeaders: string[] = [];
 
         if (selectedTemplate.obv3Template) {
             try {
-                const dynamicVars = extractDynamicVariables(selectedTemplate.obv3Template as OBv3CredentialTemplate);
-                headers = dynamicVars.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()));
+                // Only include dynamic (user-provided) variables, not system variables
+                const { dynamic } = extractVariablesByType(selectedTemplate.obv3Template as OBv3CredentialTemplate);
+                variableHeaders = dynamic.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()));
             } catch (e) {
                 console.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
             }
         }
 
-        if (headers.length === 0) {
-            headers = selectedTemplate.fields?.map(f => f.name || f.label || f.key || '').filter(Boolean) as string[] || [];
+        if (variableHeaders.length === 0) {
+            variableHeaders = selectedTemplate.fields?.map(f => f.name || f.label || f.key || '').filter(Boolean) as string[] || [];
         }
+
+        // Recipient is always the first required column
+        const headers = ['Recipient (email/phone/profileId)', ...variableHeaders];
 
         const csvContent = headers.join(',') + '\n' + headers.map(() => '').join(',');
 

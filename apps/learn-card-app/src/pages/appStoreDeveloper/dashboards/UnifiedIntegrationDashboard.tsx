@@ -18,6 +18,7 @@ import {
     Layout,
     Link as LinkIcon,
     Settings,
+    FileSpreadsheet,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
@@ -40,6 +41,7 @@ import {
     AppListingsTab,
     PartnerConnectTab,
     AppConfigTab,
+    CsvUploadTab,
 } from './tabs';
 import {
     DashboardConfig,
@@ -98,9 +100,10 @@ function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
         tabs.push({ id: 'app-config', label: 'App Config', icon: Settings });
     }
 
-    // course-catalog specific tabs (API code + testing)
+    // course-catalog specific tabs (API code + CSV upload + testing)
     if (config.showTemplates && !config.showAppListings) {
         tabs.push({ id: 'code', label: 'Code', icon: FileCode });
+        tabs.push({ id: 'csv-upload', label: 'CSV Upload', icon: FileSpreadsheet });
         tabs.push({ id: 'testing', label: 'Testing', icon: TestTube2 });
     }
 
@@ -464,6 +467,13 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
             {activeTab === 'code' && (
                 <IntegrationCodeTab
+                    integration={integration}
+                    templates={templates}
+                />
+            )}
+
+            {activeTab === 'csv-upload' && (
+                <CsvUploadTab
                     integration={integration}
                     templates={templates}
                 />
