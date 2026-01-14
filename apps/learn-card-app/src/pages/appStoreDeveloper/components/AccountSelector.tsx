@@ -680,7 +680,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                 setOrgName(e.target.value);
                                 setNameError('');
                             }}
-                            placeholder="e.g., MindEdge Learning"
+                            placeholder="e.g., Ascend Learning"
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-sm text-gray-800"
                         />
 
