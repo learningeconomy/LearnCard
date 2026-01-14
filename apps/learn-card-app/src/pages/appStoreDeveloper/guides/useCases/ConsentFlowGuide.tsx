@@ -472,7 +472,8 @@ const SendCredentialsStep: React.FC<{
     onComplete: () => void;
     contractUri: string;
     apiToken?: string;
-}> = ({ onBack, onComplete, contractUri, apiToken }) => {
+    integrationId?: string;
+}> = ({ onBack, onComplete, contractUri, apiToken, integrationId }) => {
     const [showCredentialBuilder, setShowCredentialBuilder] = useState(false);
     const [builtCredential, setBuiltCredential] = useState<Record<string, unknown> | null>(null);
 
@@ -492,6 +493,7 @@ await learnCard.invoke.send({
     type: 'boost',
     recipient: userDID,
     contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
+    integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',
     template: {
         credential: ${credJson},
         name: 'Course Completion',
@@ -508,6 +510,7 @@ await learnCard.invoke.send({
     type: 'boost',
     recipient: userDID,
     contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
+    integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',
     template: {
         credential: {
             // Open Badges 3.0 credential
@@ -724,6 +727,7 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
                         onComplete={() => handleStepComplete('send-credentials')}
                         contractUri={contractUri}
                         apiToken={apiToken}
+                        integrationId={selectedIntegration?.id}
                     />
                 );
 

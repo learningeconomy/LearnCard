@@ -795,7 +795,7 @@ const result = await learnCard.invoke.send({
         name: credential.name || 'Credential',
         category: 'Achievement',
     },
-    // integrationId: 'your-integration-id', // Optional: track activity per integration${optionsCode}
+    integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',${optionsCode}
 });` : `
 // const result = await learnCard.invoke.send({
 //     type: 'boost',
@@ -805,7 +805,7 @@ const result = await learnCard.invoke.send({
 //         name: credential.name || 'Credential',
 //         category: 'Achievement',
 //     },
-//     // integrationId: 'your-integration-id', // Optional: track activity per integration${optionsCode ? optionsCode.split('\n').map(l => '// ' + l.slice(1)).join('\n') : ''}
+//     integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',${optionsCode ? optionsCode.split('\n').map(l => '// ' + l.slice(1)).join('\n') : ''}
 // });`}
 ${advancedOptions.suppressDelivery ? `
 // Since delivery is suppressed, get the claim URL from the response:
@@ -859,7 +859,7 @@ import json
 API_TOKEN = "${apiToken || 'YOUR_API_TOKEN'}"
 
 # API endpoint for unified send
-API_URL = "${networkUrl}/trpc/profile.send"
+API_URL = "${networkUrl}/send"
 
 # Your credential (built with Credential Builder)
 credential = ${credentialJsonIndented.replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}
@@ -872,7 +872,8 @@ payload = {
         "credential": credential,
         "name": credential.get("name", "Credential"),
         "category": "Achievement"
-    },${pythonOptionsCode}
+    },
+    "integrationId": "${integrationId || 'YOUR_INTEGRATION_ID'}",${pythonOptionsCode}
 }
 
 # Send credential using unified send API
@@ -928,10 +929,11 @@ else:
             name: (credential as Record<string, unknown>).name || 'Credential',
             category: 'Achievement',
         },
+        integrationId: integrationId || 'YOUR_INTEGRATION_ID',
         ...(curlOptions && { options: curlOptions }),
     };
 
-    const curlSnippet = `curl -X POST ${networkUrl}/trpc/profile.send \\
+    const curlSnippet = `curl -X POST ${networkUrl}/send \\
   -H "Authorization: Bearer ${apiToken || 'YOUR_API_TOKEN'}" \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(curlPayload, null, 2).split('\n').map((line, i) => i === 0 ? line : '  ' + line).join('\n')}'`;
