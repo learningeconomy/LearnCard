@@ -5,8 +5,10 @@ import { ErrorBoundary } from 'react-error-boundary';
 import MainHeader from '../../components/main-header/MainHeader';
 import AiPathwayCareers from './ai-pathway-careers/AiPathwayCareers';
 import AiPathwayCourses from './ai-pathway-courses/AiPathwayCourses';
+import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import AiPathwaySessions from './ai-pathway-sessions/AiPathwaySessions';
 import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
+import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import ErrorBoundaryFallback from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from './ai-pathway-explore-content/AiPathwayExploreContent';
 
@@ -18,7 +20,7 @@ import {
     useOccupationDetailsForKeyword,
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
-import { useGetCurrentLCNUser, useAiInsightCredential, useAiPathways } from 'learn-card-base';
+import { useAiInsightCredential, useAiPathways } from 'learn-card-base';
 
 import {
     getFirstAvailableKeywords,
@@ -32,7 +34,6 @@ import {
 
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
-    const { currentLCNUser } = useGetCurrentLCNUser();
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
@@ -85,6 +86,12 @@ const AiPathways: React.FC = () => {
         fetchTrainingProgramsLoading ||
         fetchOccupationsLoading;
 
+    const emptyPathways =
+        !occupations &&
+        courses?.length === 0 &&
+        schoolPrograms.length === 0 &&
+        learningPathwaysData?.length === 0;
+
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
@@ -96,24 +103,39 @@ const AiPathways: React.FC = () => {
                         hidePlusBtn={true}
                     />
                     <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                        <AiPathwayCourses
-                            courses={courses}
-                            schoolPrograms={schoolPrograms}
-                            keywords={allKeywords}
-                            fieldOfStudy={fieldOfStudy}
-                            isLoading={isLoading}
-                        />
-                        <AiPathwaySessions
-                            learningPathwaysData={learningPathwaysData}
-                            isLoading={isLoading}
-                        />
-                        <AiPathwayCareers
-                            careerKeywords={careerKeywords}
-                            occupations={occupations}
-                            isLoading={isLoading}
-                        />
-                        <AiPathwayExploreContent occupations={occupations} isLoading={isLoading} />
-                        <ExploreAiInsightsButton />
+                        <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
+                            <ExperimentalFeatureBox />
+                        </div>
+
+                        {emptyPathways ? (
+                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
+                                <AiPathwaysEmptyPlaceholder />
+                            </div>
+                        ) : (
+                            <>
+                                <AiPathwayCourses
+                                    courses={courses}
+                                    schoolPrograms={schoolPrograms}
+                                    keywords={allKeywords}
+                                    fieldOfStudy={fieldOfStudy}
+                                    isLoading={isLoading}
+                                />
+                                <AiPathwaySessions
+                                    learningPathwaysData={learningPathwaysData}
+                                    isLoading={isLoading}
+                                />
+                                <AiPathwayCareers
+                                    careerKeywords={careerKeywords}
+                                    occupations={occupations}
+                                    isLoading={isLoading}
+                                />
+                                <AiPathwayExploreContent
+                                    occupations={occupations}
+                                    isLoading={isLoading}
+                                />
+                                <ExploreAiInsightsButton />
+                            </>
+                        )}
                     </div>
                 </IonContent>
             </ErrorBoundary>

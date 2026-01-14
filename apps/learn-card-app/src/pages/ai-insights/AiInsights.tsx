@@ -116,7 +116,7 @@ const AiInsights: React.FC = () => {
             <div className="flex items-center justify-center w-full shadow-box-bottom rounded-[10px]">
                 <ExperimentalFeatureBox />
             </div>
-            <div className="flex items-center justify-center w-full mt-4">
+            <div className="flex items-center justify-center w-full my-4">
                 {flags?.showGenerateAiInsightsButton && (
                     <button
                         className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
