@@ -184,7 +184,7 @@ export const useTrainingProgramsByKeyword = ({
 
             const occupationResults = await Promise.all(occupationPromises);
 
-            // Step 3: Extract ONET titles from occupation results
+            // Step 3: Extract ONET titles from the results
             const allOnetTitles = occupationResults.flatMap(occupations =>
                 occupations.map(occupation => occupation.OnetTitle)
             );
@@ -197,10 +197,11 @@ export const useTrainingProgramsByKeyword = ({
 
             const trainingResults = await Promise.all(trainingPromises);
 
-            // Step 5: Combine training program results and include the keyword used
+            // Step 5: Combine training program results with occupation details and keyword used
             const combinedResults = trainingResults.map((result: any, index: number) => ({
                 ...result,
                 keyword: onetTitlesToFetch[index],
+                occupationDetails: occupationResults[index] || null, // Keep occupation details for keyword context
             }));
 
             // Step 6: Extract unique school names from combined results
@@ -230,7 +231,7 @@ export const useTrainingProgramsByKeyword = ({
                 .flat();
         },
         enabled: Boolean(keywords && keywords.length > 0),
-        // staleTime: 1000 * 60 * 10, // 10 minutes
-        // retry: 1,
+        staleTime: 1000 * 60 * 10, // 10 minutes
+        retry: 1,
     });
 };

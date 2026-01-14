@@ -11,14 +11,23 @@ export const normalizeSchoolPrograms = (trainingPrograms: TrainingProgram[]) => 
         ...(program?.SchoolPrograms?.[0] || {}),
         keyword: program?.keyword,
         courses: program?.syllabusCourses,
+        occupationDetails: program?.occupationDetails,
         school: program?.syllabusCourses?.[0]?.institution,
     }));
 
     return schoolPrograms;
 };
 
-export const filterCoursesByFieldOfStudy = (courses: any[], fieldOfStudy: string) => {
-    return courses.filter((course: any) => {
+export const filterCoursesByFieldOfStudy = (
+    trainingPrograms: TrainingProgram[],
+    fieldOfStudy: string
+) => {
+    const allCourses = trainingPrograms?.flatMap((program: any) => program?.courses || []);
+
+    const filteredCourses = allCourses.filter((course: any) => {
         return course?.field?.field === fieldOfStudy;
     });
+
+    // Randomize the filtered courses before returning
+    return _.sortBy(filteredCourses, () => Math.random() - 0.5);
 };
