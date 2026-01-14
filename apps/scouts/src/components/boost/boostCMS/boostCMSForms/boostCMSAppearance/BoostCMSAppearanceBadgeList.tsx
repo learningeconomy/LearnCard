@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { useFilestack, UploadRes, LCAStylesPackRegistryEntry } from 'learn-card-base';
+import { useFilestack, UploadRes, LCAStylesPackRegistryEntry, useModal, ModalTypes } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -26,6 +26,7 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from '@learncard/helpers';
 import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
+import { StylePackCategoryModal } from './StylePackCategoryModal';
 
 export enum StylePackCategories {
     all = 'All',
@@ -64,9 +65,6 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     handleCloseModal: () => void;
     disabled?: boolean;
     boostUserType: BoostUserTypeEnum;
-
-    showStylePackCategoryList: boolean;
-    setShowStylePackCategoryList: SetState<boolean>;
     setActiveForm: SetState<BoostCMSActiveAppearanceForm>;
 }> = ({
     state,
@@ -74,10 +72,9 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     handleCloseModal,
     disabled = false,
     boostUserType,
-    showStylePackCategoryList,
-    setShowStylePackCategoryList,
     setActiveForm,
 }) => {
+    const { newModal } = useModal();
     const flags = useFlags();
     const { credentials } = useHighlightedCredentials();
 
@@ -144,187 +141,46 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         );
     }
 
-    let activeStep = null;
-    if (showStylePackCategoryList) {
-        let boostOptions = boostVCTypeOptions[boostUserType];
-        // Allow admins to bypass CMS customization restrictions
-        if (flags?.disableCmsCustomization && !isAdmin) {
-            boostOptions = boostVCTypeOptions?.[boostUserType].filter(
-                item => item.title === targetType
-            );
-        }
+    const handleOpenCategoryModal = () => {
+        newModal(
+            <StylePackCategoryModal
+                activeStylePackCategory={activeStylePackCategory}
+                setActiveStylePackCategory={setActiveStylePackCategory}
+                boostUserType={boostUserType}
+                targetType={targetType}
+            />,
+            {},
+            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+        );
+    };
 
-        activeStep = (
-            <IonGrid>
-                <IonRow className="w-full flex items-center justify-center pb-6 mt-4">
-                    <IonCol className="w-full flex flex-col items-center justify-center">
-                        <button
-                            onClick={() => {
-                                setActiveStylePackCategory(StylePackCategories.all);
-                                setShowStylePackCategoryList(false);
-                            }}
-                            className="relative flex items-center justify-center bg-white text-black rounded-full px-[18px] py-[6px] font-mouse text-3xl text-center w-full shadow-lg uppercase tracking-wide max-w-[90%] mb-4"
-                        >
-                            <div
-                                className={`flex items-center justify-center absolute h-[40px] w-[40px] left-1 rounded-full`}
-                            ></div>
-                            All
-                            {activeStylePackCategory === StylePackCategories.all && (
-                                <div
-                                    className={`flex items-center justify-center absolute h-[40px] w-[40px] right-1 rounded-full`}
-                                >
-                                    <Checkmark
-                                        className={`h-[30px] w-[30px] text-emerald-600`}
-                                        strokeWidth="4"
-                                    />
-                                </div>
-                            )}
-                        </button>
-                        {boostOptions?.map(
-                            ({
-                                id,
-                                IconComponent,
-                                iconCircleClass,
-                                iconClassName,
-                                title,
-                                type,
-                            }) => {
-                                const isActive = (activeStylePackCategory as string) === type;
-
-                                return (
-                                    <BoostVCTypeOptionButton
-                                        key={id}
-                                        IconComponent={IconComponent}
-                                        iconCircleClass={iconCircleClass}
-                                        iconClassName={iconClassName}
-                                        title={title}
-                                        categoryType={type}
-                                        setSelectedCategoryType={() => {
-                                            setActiveStylePackCategory(type);
-                                            setShowStylePackCategoryList(false);
-                                        }}
-                                        isActive={isActive}
-                                    />
-                                );
-                            }
-                        )}
-                    </IonCol>
-                    <div className="w-full flex items-center justify-center mt-4">
-                        <button
-                            onClick={() => setShowStylePackCategoryList(false)}
-                            className="text-grayscale-900 text-center text-sm"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </IonRow>
-            </IonGrid>
+    let categoryButton = null;
+    if (activeStylePackCategory === StylePackCategories.all) {
+        categoryButton = (
+            <button
+                onClick={handleOpenCategoryModal}
+                className="rounded-full ion-no-padding p-0 shadow-3xl text-base font-semibold bg-white text-grayscale-800 px-[12px] py-[8px] flex items-center justify-around"
+            >
+                All{' '}
+                <CaretLeft
+                    className={`h-auto w-[5px] text-grayscale-800 rotate-[-90deg] ml-[5px]`}
+                />
+            </button>
         );
     } else {
-        let categoryButton = null;
-        if (activeStylePackCategory === StylePackCategories.all) {
-            categoryButton = (
-                <button
-                    onClick={() => setShowStylePackCategoryList(true)}
-                    className="rounded-full ion-no-padding p-0 shadow-3xl text-base font-semibold bg-white text-grayscale-800 px-[12px] py-[8px] flex items-center justify-around"
-                >
-                    All{' '}
-                    <CaretLeft
-                        className={`h-auto w-[5px] text-grayscale-800 rotate-[-90deg] ml-[5px]`}
-                    />
-                </button>
-            );
-        } else {
-            const { IconComponent, title, color } = boostCategoryOptions[activeStylePackCategory];
+        const { IconComponent, title, color } = boostCategoryOptions[activeStylePackCategory];
 
-            categoryButton = (
-                <button
-                    onClick={() => setShowStylePackCategoryList(true)}
-                    className="rounded-full ion-no-padding p-0 shadow-3xl text-base font-semibold bg-white text-grayscale-800 px-[12px] py-[8px] flex items-center justify-around"
-                >
-                    <IconComponent className={`h-[20px] text-${color} mr-[5px]`} />
-                    {title}{' '}
-                    <CaretLeft
-                        className={`h-auto w-[5px] text-grayscale-800 rotate-[-90deg] ml-[5px]`}
-                    />
-                </button>
-            );
-        }
-
-        activeStep = (
-            <>
-                <div className="w-full flex items-center justify-between bg-white ion-padding max-w-[90%]">
-                    <p className="text-grayscale-900 font-semibold text-base">Style Pack</p>
-                    {categoryButton}
-                </div>
-                {/* Allow admins to upload custom images even when CMS customization is disabled */}
-                {(!flags?.disableCmsCustomization || isAdmin) && (
-                    <button onClick={handleImageSelect} className="boost-cms-badge">
-                        <Camera className="boost-cms-camera-icon text-white" />
-                        <span className="upload-text">Upload</span>
-                    </button>
-                )}
-                {photo && !isDefaultImage && (
-                    <div className="boost-cms-badge">
-                        <img
-                            className="absolute left-0 top-0 w-full h-full object-cover z-50"
-                            src={photo}
-                            alt="badge"
-                        />
-                        <img
-                            className="absolute left-0 top-0 w-full h-full"
-                            src={TransparentGrid}
-                            alt="transparent grid"
-                        />
-                        {imageUploadLoading && (
-                            <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
-                            </div>
-                        )}
-                        <button onClick={handleDeleteImageUploaded} className="trash-button">
-                            <TrashBin className="trash-icon" />
-                        </button>
-                    </div>
-                )}
-                {!photo && imageUploadLoading && (
-                    <div
-                        className={`text-white overflow-hidden bg-grayscale-900 relative flex flex-col items-center justify-center text-center w-[28%] h-[122px] boost-cms-badge m-2 rounded-[20px] px-2 shadow-3xl`}
-                    >
-                        <img
-                            className="absolute left-0 top-0 w-full h-full"
-                            src={TransparentGrid}
-                            alt="transparent grid"
-                        />
-                        <div className="absolute flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                            <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
-                        </div>
-                    </div>
-                )}
-                {_boostAppearanceBadgeList?.map(({ url }, index) => {
-                    return (
-                        <button
-                            onClick={() => {
-                                handleStateChange('badgeThumbnail', url);
-                                setActiveForm(BoostCMSActiveAppearanceForm.appearanceForm);
-                                // handleCloseModal();
-                            }}
-                            key={index}
-                            className={`overflow-hidden relative flex flex-col items-center justify-center text-center w-[28%] h-[122px] boost-cms-badge m-2 rounded-[20px] shadow-3xl`}
-                        >
-                            <img
-                                className="absolute left-0 top-0 w-full h-full"
-                                src={TransparentGrid}
-                                alt="transparent grid"
-                            />
-                            <img
-                                className="text-white z-50 w-full h-full object-cover"
-                                src={url}
-                                alt="badge"
-                            />
-                        </button>
-                    );
-                })}
-            </>
+        categoryButton = (
+            <button
+                onClick={handleOpenCategoryModal}
+                className="rounded-full ion-no-padding p-0 shadow-3xl text-base font-semibold bg-white text-grayscale-800 px-[12px] py-[8px] flex items-center justify-around"
+            >
+                <IconComponent className={`h-[20px] text-${color} mr-[5px]`} />
+                {title}{' '}
+                <CaretLeft
+                    className={`h-auto w-[5px] text-grayscale-800 rotate-[-90deg] ml-[5px]`}
+                />
+            </button>
         );
     }
 
@@ -344,7 +200,79 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                         <p className="mt-2 font-mouse text-3xl">Loading...</p>
                     </div>
                 ) : (
-                    activeStep
+                    <>
+                        <div className="w-full flex items-center justify-between bg-white ion-padding max-w-[90%]">
+                            <p className="text-grayscale-900 font-semibold text-base">Style Pack</p>
+                            {categoryButton}
+                        </div>
+                        {/* Allow admins to upload custom images even when CMS customization is disabled */}
+                        {(!flags?.disableCmsCustomization || isAdmin) && (
+                            <button onClick={handleImageSelect} className="boost-cms-badge">
+                                <Camera className="boost-cms-camera-icon text-white" />
+                                <span className="upload-text">Upload</span>
+                            </button>
+                        )}
+                        {photo && !isDefaultImage && (
+                            <div className="boost-cms-badge">
+                                <img
+                                    className="absolute left-0 top-0 w-full h-full object-cover z-50"
+                                    src={photo}
+                                    alt="badge"
+                                />
+                                <img
+                                    className="absolute left-0 top-0 w-full h-full"
+                                    src={TransparentGrid}
+                                    alt="transparent grid"
+                                />
+                                {imageUploadLoading && (
+                                    <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
+                                        <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                                    </div>
+                                )}
+                                <button onClick={handleDeleteImageUploaded} className="trash-button">
+                                    <TrashBin className="trash-icon" />
+                                </button>
+                            </div>
+                        )}
+                        {!photo && imageUploadLoading && (
+                            <div
+                                className={`text-white overflow-hidden bg-grayscale-900 relative flex flex-col items-center justify-center text-center w-[28%] h-[122px] boost-cms-badge m-2 rounded-[20px] px-2 shadow-3xl`}
+                            >
+                                <img
+                                    className="absolute left-0 top-0 w-full h-full"
+                                    src={TransparentGrid}
+                                    alt="transparent grid"
+                                />
+                                <div className="absolute flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
+                                    <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                                </div>
+                            </div>
+                        )}
+                        {_boostAppearanceBadgeList?.map(({ url }, index) => {
+                            return (
+                                <button
+                                    onClick={() => {
+                                        handleStateChange('badgeThumbnail', url);
+                                        setActiveForm(BoostCMSActiveAppearanceForm.appearanceForm);
+                                        // handleCloseModal();
+                                    }}
+                                    key={index}
+                                    className={`overflow-hidden relative flex flex-col items-center justify-center text-center w-[28%] h-[122px] boost-cms-badge m-2 rounded-[20px] shadow-3xl`}
+                                >
+                                    <img
+                                        className="absolute left-0 top-0 w-full h-full"
+                                        src={TransparentGrid}
+                                        alt="transparent grid"
+                                    />
+                                    <img
+                                        className="text-white z-50 w-full h-full object-cover"
+                                        src={url}
+                                        alt="badge"
+                                    />
+                                </button>
+                            );
+                        })}
+                    </>
                 )}
             </IonCol>
         </IonRow>
