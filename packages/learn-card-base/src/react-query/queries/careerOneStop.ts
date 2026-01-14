@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import _ from 'lodash';
 
 import type { OccupationDetailsResponse } from '../../types/careerOneStop';
 import { useWallet } from 'learn-card-base';
@@ -207,7 +208,10 @@ export const useTrainingProgramsByKeyword = ({
             // Step 6: Extract unique school names from combined results
             const uniqueSchoolNames = [
                 ...new Set(
-                    combinedResults.map((result: any) => result?.SchoolPrograms?.[0]?.SchoolName)
+                    combinedResults.map(
+                        // shuffle to get different schools each time
+                        (result: any) => _.shuffle(result?.SchoolPrograms)?.[0]?.SchoolName
+                    )
                 ),
             ].filter(Boolean);
 

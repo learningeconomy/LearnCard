@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 
 export const normalizeSchoolPrograms = (trainingPrograms: TrainingProgram[]) => {
-    const randomSchoolPrograms = _.sortBy([...trainingPrograms], () => Math.random() - 0.5);
+    const randomSchoolPrograms = _.shuffle([...trainingPrograms]);
 
     const selectedSchoolPrograms = randomSchoolPrograms.slice(0, 3);
 
@@ -37,7 +37,7 @@ export const filterCoursesByFieldOfStudy = (
     });
 
     // Randomize the filtered courses before returning
-    return _.sortBy(filteredCourses, () => Math.random() - 0.5);
+    return _.shuffle(filteredCourses);
 };
 
 export const getOccupationTags = (occupationDetails: any) => {

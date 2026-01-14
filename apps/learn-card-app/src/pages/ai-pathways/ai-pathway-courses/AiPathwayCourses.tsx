@@ -6,6 +6,7 @@ import AiPathwayCourseDetails from './AiPathwayCourseDetails';
 import AiPathwaySchoolProgramItem from './AiPathwaySchoolProgramItem';
 
 import { useTrainingProgramsByKeyword } from 'learn-card-base/react-query/queries/careerOneStop';
+
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 import { normalizeSchoolPrograms, filterCoursesByFieldOfStudy } from './ai-pathway-courses.helpers';
 
@@ -48,7 +49,7 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
                 </div>
 
                 <div className="w-full flex flex-col items-start justify-start mt-4 gap-4">
-                    {courses?.length > 0
+                    {courses?.length < 0
                         ? courses
                               ?.slice(0, 5)
                               .map((course: TrainingProgram, index: number) => (
