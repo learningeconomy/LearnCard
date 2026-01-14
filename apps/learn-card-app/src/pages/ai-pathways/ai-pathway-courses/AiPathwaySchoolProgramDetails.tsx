@@ -83,7 +83,7 @@ const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({
                         {/* description */}
                         <div className="flex flex-col gap-[10px] items-start justify-start p-[20px]">
                             <p className="text-grayscale-600 font-poppins text-base tracking-[-0.25px]">
-                                {program?.occupationDetails?.[0]?.OnetDescription || ''}
+                                {program?.occupationDetails?.OnetDescription || ''}
                             </p>
                         </div>
                     </section>

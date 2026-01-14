@@ -20,10 +20,7 @@ const AiPathwaySchoolProgramItem: React.FC<{ program: TrainingProgram }> = ({ pr
         });
     };
 
-    const occupationTags = useMemo(() => {
-        const tags = getOccupationTags(program?.occupationDetails);
-        return tags;
-    }, [program?.occupationDetails]);
+    const occupationTags = getOccupationTags(program?.occupationDetails);
 
     const schoolImage = program?.school?.image_url;
     const logo = schoolImage ? schoolImage : careerOneStopLogo;

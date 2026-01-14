@@ -38,8 +38,6 @@ export const useOccupationDetailsForKeyword = (keyword: string | null) => {
             return fetchOccupationDetailsForKeyword(did, keyword);
         },
         enabled: Boolean(keyword),
-        staleTime: 1000 * 60 * 10, // 10 minutes
-        retry: 1,
     });
 };
 
@@ -99,8 +97,6 @@ export const useSalariesForKeyword = ({ keyword }: { keyword: string | null }) =
             });
         },
         enabled: Boolean(keyword),
-        staleTime: 1000 * 60 * 10, // 10 minutes
-        retry: 1,
     });
 };
 
@@ -202,7 +198,7 @@ export const useTrainingProgramsByKeyword = ({
             const combinedResults = trainingResults.map((result: any, index: number) => ({
                 ...result,
                 keyword: onetTitlesToFetch[index],
-                occupationDetails: occupationResults[index] || null, // Keep occupation details for keyword context
+                occupationDetails: occupationResults?.[0]?.[index] || null, // Keep occupation details for keyword context
             }));
 
             // Step 6: Extract unique school names from combined results
@@ -235,7 +231,5 @@ export const useTrainingProgramsByKeyword = ({
                 .flat();
         },
         enabled: Boolean(keywords && keywords.length > 0),
-        staleTime: 1000 * 60 * 10, // 10 minutes
-        retry: 1,
     });
 };

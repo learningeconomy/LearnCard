@@ -18,10 +18,7 @@ const AiPathwayCourseItem: React.FC<{ course: any }> = ({ course }) => {
         });
     };
 
-    const occupationTags = useMemo(() => {
-        const tags = getOccupationTags(course?.occupationDetails);
-        return tags;
-    }, [course?.occupationDetails]);
+    const occupationTags = getOccupationTags(course?.occupationDetails);
 
     const schoolImage = course?.institution?.image_url;
     const logo = schoolImage ? schoolImage : openSyllabusLogo;
