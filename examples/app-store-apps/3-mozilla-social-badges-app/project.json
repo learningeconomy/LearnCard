@@ -5,21 +5,21 @@
   "sourceRoot": "examples/app-store-apps/3-mozilla-social-badges-app/src",
   "targets": {
     "build": {
-      "executor": "@nx/run-commands:run-commands",
+      "executor": "nx:run-commands",
       "options": {
         "command": "pnpm run build",
         "cwd": "examples/app-store-apps/3-mozilla-social-badges-app"
       }
     },
     "dev": {
-      "executor": "@nx/run-commands:run-commands",
+      "executor": "nx:run-commands",
       "options": {
         "command": "pnpm run dev",
         "cwd": "examples/app-store-apps/3-mozilla-social-badges-app"
       }
     },
     "preview": {
-      "executor": "@nx/run-commands:run-commands",
+      "executor": "nx:run-commands",
       "options": {
         "command": "pnpm run preview",
         "cwd": "examples/app-store-apps/3-mozilla-social-badges-app"

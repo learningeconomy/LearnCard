@@ -17,7 +17,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
-import { IonCol, useIonModal, IonLoading } from '@ionic/react';
+import { IonCol, IonLoading } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 
 import LinkChain from 'learn-card-base/svgs/LinkChain';
@@ -37,7 +37,6 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import ShareModal from '../share/ShareModal';
 import ScannerPermissionsPrompt from '../scanner-permissions-prompt/ScannerPermissionsPrompt';
-import ModalLayout from '../../layout/ModalLayout';
 import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
 
 const QrCodeUserCard: React.FC<{
@@ -47,16 +46,15 @@ const QrCodeUserCard: React.FC<{
     qrOnly?: boolean;
 }> = ({ handleQRCodeCardModal, branding, history, qrOnly = false }) => {
     const { initWallet } = useWallet();
-    const { newModal, closeModal } = useModal();
     const firebaseAuth = auth();
     const currentUser = useCurrentUser();
     const { logout } = useWeb3AuthSFA();
     const { clearDB } = useSQLiteStorage();
     const { presentToast } = useToast();
     const queryClient = useQueryClient();
-    const { data: isCurrentUserLCNUser, isLoading: isCurrentLCNUserLoading } =
+    const { data: isCurrentUserLCNUser } =
         useIsCurrentUserLCNUser();
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useGetProfile();
+    const { data: currentLCNUser } = useGetProfile();
     const checkIfUserInNetwork = useCheckIfUserInNetwork();
 
     const [photo, setPhoto] = useState<string | undefined>(currentUser?.profileImage);
@@ -64,20 +62,39 @@ const QrCodeUserCard: React.FC<{
     const [connections, setConnections] = useState<AddressBookContact[]>([]);
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
+
+    const { newModal: newEditModal, closeModal: closeEditModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
+
+    const { newModal: newScannerPromptModal, closeModal: closeScannerPromptModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
     useEffect(() => {
         if (currentLCNUser && currentLCNUser?.image) {
             setPhoto(currentLCNUser?.image);
         }
-    }, []);
+    }, [currentLCNUser]);
 
-    const [presentEditAccountModal, dismissEditAccountModal] = useIonModal(UserProfileSetup, {
-        title: 'My Account',
-        handleCloseModal: () => dismissEditAccountModal(),
-        showCloseButton: true,
-        handleLogout: () => handleLogout(),
-        showNetworkSettings: true,
-        showNotificationsModal: false,
-    });
+    const presentEditAccountModal = () => {
+        newEditModal(
+            <UserProfileSetup
+                title="My Account"
+                handleCloseModal={() => closeEditModal()}
+                showCloseButton={true}
+                handleLogout={() => handleLogout()}
+                showNetworkSettings={true}
+                showNotificationsModal={false}
+            />
+        );
+    };
 
     const handleShare = () => {
         newModal(
@@ -87,18 +104,19 @@ const QrCodeUserCard: React.FC<{
         );
     };
 
-    const showScanner = () => {
+    const showScannerOverlay = () => {
         handleQRCodeCardModal();
         QRCodeScannerStore.set.showScanner(true);
     };
 
-    const [presentScannerPromptModal, dismissScannerPromptModal] = useIonModal(
-        ScannerPermissionsPrompt,
-        {
-            handleCloseModal: () => dismissScannerPromptModal(),
-            showScanner: showScanner,
-        }
-    );
+    const presentScannerPromptModal = () => {
+        newScannerPromptModal(
+            <ScannerPermissionsPrompt
+                handleCloseModal={() => closeScannerPromptModal()}
+                showScanner={showScannerOverlay}
+            />
+        );
+    };
 
     const [walletDid, setWalletDid] = useState<string>('');
 
@@ -155,7 +173,7 @@ const QrCodeUserCard: React.FC<{
                 }
 
                 await firebaseAuth.signOut(); // sign out of web layer
-                if (nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
+                if (nativeSocialLogins.includes(typeOfLogin as any) && Capacitor.isNativePlatform()) {
                     try {
                         await FirebaseAuthentication?.signOut?.();
                     } catch (e) {
@@ -183,50 +201,27 @@ const QrCodeUserCard: React.FC<{
         }, 1000);
     };
 
-    const copyToClipBoard = async () => {
-        try {
-            await Clipboard.write({
-                string: currentLCNUser?.profileId,
-            });
-            presentToast('DID copied to clipboard', {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
-        } catch (err) {
-            presentToast('Unable to copy DID to clipboard', {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
-        }
-    };
-
     const handleScan = async () => {
         const scannerPermissions = await BarcodeScanner.checkPermissions();
 
         if (scannerPermissions.camera === 'granted') {
-            showScanner();
+            showScannerOverlay();
             return;
         } else if (
             scannerPermissions.camera === 'denied' ||
             scannerPermissions.camera === 'prompt'
         ) {
-            presentScannerPromptModal({
-                cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                backdropDismiss: false,
-                showBackdrop: false,
-            });
+            presentScannerPromptModal();
             return;
         } else {
             const reqScannerPermissions = await BarcodeScanner.requestPermissions();
 
             if (reqScannerPermissions.camera === 'granted') {
-                showScanner();
+                showScannerOverlay();
             }
         }
     };
 
-    const connectionsCount = connections?.length ?? 0;
-    // const connectionsTitle = connectionsCount === 1 ? 'Contact' : 'Contacts';
     const connectionsTitle = 'Contacts';
 
     return (
@@ -237,7 +232,7 @@ const QrCodeUserCard: React.FC<{
                     customContainerClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-4xl min-w-[80px] min-h-[80px]"
                     customImageClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[80px] min-h-[80px]"
                     customSize={500}
-                    overrideSrc={photo?.length > 0}
+                    overrideSrc={(photo?.length || 0) > 0}
                     overrideSrcURL={photo}
                 />
                 <p
@@ -250,13 +245,7 @@ const QrCodeUserCard: React.FC<{
                 {!qrOnly && (
                     <div className="flex items-center justify-center w-full mb-2">
                         <button
-                            onClick={() =>
-                                presentEditAccountModal({
-                                    showBackdrop: false,
-                                    cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                    backdropDismiss: true,
-                                })
-                            }
+                            onClick={() => presentEditAccountModal()}
                             className="mr-1 text-indigo-500 font-semibold text-lg text-center"
                         >
                             Edit Info <span className="text-indigo-500">•</span>
@@ -296,18 +285,6 @@ const QrCodeUserCard: React.FC<{
                 </div>
                 <p className="font-rubik text-lg text-gray-800 mt-4">Scan to connect</p>
             </div>
-
-            {/* {currentLCNUser?.profileId && (
-                <div className="flex items-center justify-center w-full px-[28px]">
-                    <IonCol className="w-full flex items-center justify-between px-4 rounded-2xl">
-                        <div className="w-[80%] flex flex-col justify-center items-start text-left">
-                            <p className="w-full text-grayscale-900 line-clamp-1 font-semibold">
-                                @{currentLCNUser?.profileId}
-                            </p>
-                        </div>
-                    </IonCol>
-                </div>
-            )} */}
 
             <div className="w-full flex items-center justify-center">
                 <div className="flex justify-center items-center w-full max-w-[400px] px-4">

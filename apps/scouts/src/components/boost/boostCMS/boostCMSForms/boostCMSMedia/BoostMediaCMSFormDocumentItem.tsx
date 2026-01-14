@@ -1,11 +1,11 @@
 import React from 'react';
-import { useIonModal } from '@ionic/react';
-import { BoostMediaOptionsEnum, BoostCMSMediaAttachment } from '../../../boost';
+import { BoostMediaOptionsEnum } from '../../../boost';
 import Pencil from '../../../../svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
 import { CreateMediaAttachmentFormModal } from './CreateMediaAttachmentForm';
 import { BoostMediaCMSFormItemProps } from './BoostCMSMediaForm';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
     index,
@@ -14,55 +14,29 @@ const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
     state,
     setState,
 }) => {
-    const [presentEditSheetModal, dismissEditSheetModal] = useIonModal(
-        CreateMediaAttachmentFormModal,
-        {
-            initialState: state,
-            initialMedia: media,
-            initialIndex: index,
-            setParentState: setState,
-            initialActiveMediaType: BoostMediaOptionsEnum.document,
-            handleCloseModal: () => dismissEditSheetModal(),
-            showCloseButton: false,
-            hideBackButton: true,
-            title: (
-                <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                    Media Attachment
-                </p>
-            ),
-        }
-    );
-
-    const [presentCenterModal, dismissCenterModal] = useIonModal(CreateMediaAttachmentFormModal, {
-        initialState: state,
-        initialMedia: media,
-        initialIndex: index,
-        setParentState: setState,
-        hideBackButton: true,
-        initialActiveMediaType: BoostMediaOptionsEnum.document,
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: false,
-        title: (
-            <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                Media Attachment
-            </p>
-        ),
+    const { newModal: newEditModal, closeModal: closeEditModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Cancel,
     });
 
-    const handleEditMobile = () => {
-        presentEditSheetModal({
-            cssClass: 'mobile-modal user-options-modal',
-            initialBreakpoint: 0.9,
-            handleBehavior: 'none',
-        });
-    };
-
-    const handleEditDesktop = () => {
-        presentCenterModal({
-            cssClass: 'center-modal user-options-modal',
-            backdropDismiss: false,
-            showBackdrop: false,
-        });
+    const handleEdit = () => {
+        newEditModal(
+            <CreateMediaAttachmentFormModal
+                initialState={state}
+                initialMedia={media}
+                initialIndex={index}
+                setParentState={setState}
+                hideBackButton={true}
+                initialActiveMediaType={BoostMediaOptionsEnum.document}
+                handleCloseModal={() => closeEditModal()}
+                showCloseButton={false}
+                title={
+                    <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
+                        Media Attachment
+                    </p>
+                }
+            />
+        );
     };
 
     return (
@@ -91,16 +65,9 @@ const BoostMediaCMSFormDocumentItem: React.FC<BoostMediaCMSFormItemProps> = ({
             </a>
             <div className="absolute right-1 bottom-1 z-30 cursor-pointer flex flex-col justify-between h-full pt-[10px]">
                 <button
-                    onClick={() => handleEditDesktop()}
+                    onClick={() => handleEdit()}
                     type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-desktop"
-                >
-                    <Pencil className="h-[60%]" />
-                </button>
-                <button
-                    onClick={() => handleEditMobile()}
-                    type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-mobile"
+                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
                 >
                     <Pencil className="h-[60%]" />
                 </button>

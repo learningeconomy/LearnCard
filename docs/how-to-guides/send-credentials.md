@@ -12,6 +12,12 @@ This guide provides practical, step-by-step recipes for sending credentials. We'
 
 The `send` method is the simplest and most ergonomic way to send credentials to recipients. It handles credential issuance, signing, and delivery in a single call.
 
+**The `send` method automatically detects your recipient type:**
+- **Profile ID** → Direct delivery to their LearnCard
+- **DID** → Direct delivery via DID resolution  
+- **Email** → Routes through Universal Inbox (sends claim email)
+- **Phone** → Routes through Universal Inbox (sends claim SMS)
+
 ### Prerequisites
 
 * LearnCard SDK initialized with `network: true`
@@ -20,17 +26,55 @@ The `send` method is the simplest and most ergonomic way to send credentials to 
 ### Basic Usage
 
 {% tabs %}
-{% tab title="Using an Existing Boost Template" %}
+{% tab title="Send to Profile ID or DID" %}
 ```typescript
-// Send a credential using an existing boost template
+// Send to an existing LearnCard user
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: 'recipient-profile-id', // or DID
+    recipient: 'recipient-profile-id', // or 'did:key:z6Mk...'
     templateUri: 'urn:lc:boost:abc123',
 });
 
 console.log(result.credentialUri); // URI of the sent credential
 console.log(result.uri);           // URI of the boost template used
+```
+{% endtab %}
+
+{% tab title="Send to Email" %}
+```typescript
+// Send to someone via email (they'll get a claim link)
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'student@example.com', // Auto-detected as email
+    templateUri: 'urn:lc:boost:abc123',
+    options: {
+        branding: {
+            issuerName: 'My Organization',
+            issuerLogoUrl: 'https://example.com/logo.png',
+            recipientName: 'John Doe',
+        },
+        webhookUrl: 'https://api.example.com/webhooks/claimed',
+    },
+});
+
+console.log(result.inbox?.claimUrl);   // Claim URL (if suppressDelivery=true)
+console.log(result.inbox?.issuanceId); // Issuance tracking ID
+```
+{% endtab %}
+
+{% tab title="Send to Phone" %}
+```typescript
+// Send to someone via SMS
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: '+15551234567', // Auto-detected as phone
+    templateUri: 'urn:lc:boost:abc123',
+    options: {
+        suppressDelivery: true, // Don't send SMS, just get claimUrl
+    },
+});
+
+// Use result.inbox.claimUrl in your own notification
 ```
 {% endtab %}
 
@@ -83,10 +127,12 @@ const result = await learnCard.invoke.send({
 
 ### How It Works
 
-1. **Resolves the recipient** - Looks up the profile by ID or uses a DID directly
-2. **Prepares the credential** - Uses your template or creates a new boost on-the-fly
-3. **Signs the credential** - Uses client-side signing if available, otherwise falls back to your registered signing authority
-4. **Delivers the credential** - Sends via the LearnCard Network with optional consent flow routing
+1. **Detects recipient type** - Automatically determines if recipient is email, phone, DID, or profile ID
+2. **Routes appropriately** - Uses direct send for profiles/DIDs, Universal Inbox for email/phone
+3. **Prepares the credential** - Uses your template or creates a new boost on-the-fly
+4. **Signs the credential** - Uses client-side signing if available, otherwise falls back to your registered signing authority
+5. **Delivers the credential** - Direct delivery or sends claim email/SMS based on recipient type
+6. **Auto-delivery for verified users** - If the email/phone is already verified and linked to a LearnCard profile, the credential is delivered directly to their wallet without requiring them to click a claim link
 
 ### Response
 
@@ -95,6 +141,38 @@ interface SendResponse {
     type: 'boost';
     credentialUri: string; // URI of the issued credential
     uri: string;           // URI of the boost template
+    
+    // Only present when sent to email/phone recipients
+    inbox?: {
+        issuanceId: string;  // Tracking ID for this issuance
+        status: 
+            | 'PENDING'      // Waiting to be claimed
+            | 'ISSUED'       // Auto-delivered to verified user
+            | 'CLAIMED';     // Claimed via claim link
+        claimUrl?: string;   // Present when suppressDelivery=true
+        recipientDid?: string; // DID of recipient (present when ISSUED)
+    };
+}
+```
+
+{% hint style="success" %}
+**Auto-Delivery**: When `status` is `ISSUED`, the credential was automatically delivered to the recipient's wallet because their email/phone was already verified. No claim link was needed!
+{% endhint %}
+
+### Options (for Email/Phone Recipients)
+
+When sending to email or phone recipients, you can provide additional options:
+
+```typescript
+options: {
+    webhookUrl?: string;       // URL to receive claim notifications
+    suppressDelivery?: boolean; // If true, returns claimUrl without sending email/SMS
+    branding?: {
+        issuerName?: string;    // Your organization name
+        issuerLogoUrl?: string; // Your logo URL
+        credentialName?: string; // Display name for the credential
+        recipientName?: string;  // Recipient's name for personalization
+    };
 }
 ```
 
@@ -104,6 +182,35 @@ interface SendResponse {
 - Routes the credential through the consent flow if terms exist
 - Creates a `RELATED_TO` relationship between new boosts and the contract
 {% endhint %}
+
+{% hint style="info" %}
+**Email Verification**: When a recipient claims a credential via an email claim link, their email address becomes a **verified contact method** linked to their LearnCard profile. This means:
+- Future credentials sent to that email will be **auto-delivered** directly to their wallet
+- No claim link is needed for subsequent issuances
+- The issuer receives `status: 'ISSUED'` instead of `status: 'PENDING'`
+{% endhint %}
+
+---
+
+## Tracking Boost Recipients
+
+You can track which users have received credentials from a specific boost template using `getBoostRecipients`:
+
+```typescript
+// Get all recipients of a boost
+const recipients = await learnCard.invoke.getBoostRecipients(boostUri);
+
+console.log(recipients);
+// [
+//   { to: { profileId: 'alice-123', did: 'did:key:z6Mk...' }, sent: '2025-01-09T...' },
+//   { to: { profileId: 'bob-456', did: 'did:key:z6Mk...' }, sent: '2025-01-08T...' },
+// ]
+```
+
+This is useful for:
+- **Auditing**: See who has received a specific credential
+- **Preventing duplicates**: Check if a user already received a boost before sending
+- **Analytics**: Track issuance metrics for your credentials
 
 ---
 
@@ -197,20 +304,11 @@ For more details, see [Dynamic Templates with Mustache](../core-concepts/credent
 
 ## Alternative: Universal Inbox API
 
-Use the Universal Inbox API when you need to send credentials to **users who don't have a LearnCard profile yet**. This allows you to reach recipients via email or phone number, and they'll be guided through creating an account when they claim their credential.
+For advanced use cases requiring full control over the inbox issuance process, you can use the `sendCredentialViaInbox` method directly. This is useful when you need:
 
-This is ideal for:
-
-- **Onboarding new users** - Send to an email or phone number, not a profile ID
-- **Custom email templates and branding** - White-label the claim experience
-- **Webhook notifications** - Get notified when credentials are claimed
-- **Suppressing automatic delivery** - Handle notification yourself and just get a claim URL
-
-{% hint style="info" %}
-**When to use which:**
-- **`send` method** → Recipient already has a LearnCard profile (you have their profile ID or DID)
-- **Universal Inbox API** → Recipient may not have LearnCard yet (you have their email or phone)
-{% endhint %}
+- Full configuration control (signing authority, expiration, etc.)
+- To send raw credentials (not boost templates)
+- Custom template IDs for email/SMS
 
 This approach assumes you are familiar with the core concepts of the [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) and have [a valid API token](../sdks/learncard-network/authentication.md#id-2.-using-a-scoped-api-token) & [signing authority](create-signing-authority.md) set up.
 

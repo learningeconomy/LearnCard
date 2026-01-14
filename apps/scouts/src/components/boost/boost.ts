@@ -6,8 +6,23 @@ import Document from 'learn-card-base/svgs/Document';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { AddressSpec } from '../locationSearch/location.helpers';
 
+/**
+ * Status states for Boosts that control what actions can be performed.
+ *
+ * | Status | Can Edit All Fields | Can Send/Issue | Use Case |
+ * |--------|---------------------|----------------|----------|
+ * | DRAFT | ✅ Yes | ❌ No | Work in progress |
+ * | PROVISIONAL | ✅ Yes | ✅ Yes | Active but iterating |
+ * | LIVE | ❌ Only meta | ✅ Yes | Official/finalized |
+ */
 export enum LCNBoostStatusEnum {
+    /** Work in progress. Can edit all fields, but cannot send or generate claim links. */
     draft = 'DRAFT',
+
+    /** Active but iterating. Can both edit all fields AND send/issue credentials. Ideal for testing in production or soft launches. */
+    provisional = 'PROVISIONAL',
+
+    /** Official/finalized. Can only edit meta and defaultPermissions. Core properties are locked for consistency. */
     live = 'LIVE',
 }
 
@@ -101,6 +116,11 @@ export const SKILLS_TO_SUBSKILLS: {
     ],
 };
 
+export type MemberTitleTypes = {
+    singular: string;
+    plural: string;
+};
+
 export type BoostCMSBasicInfo = {
     name: string;
     description: string;
@@ -109,6 +129,11 @@ export type BoostCMSBasicInfo = {
     achievementType: string | null; // sub category type
     credentialExpires: boolean;
     expirationDate?: string | null;
+
+    memberTitles: {
+        guardians: MemberTitleTypes;
+        dependents: MemberTitleTypes;
+    };
 
     // ID / Group fields
     location?: string;
@@ -148,6 +173,11 @@ export type BoostCMSAppearance = {
     dimIdBackgroundImage?: boolean;
     idIssuerThumbnail?: string;
     showIdIssuerImage?: boolean;
+
+    // Additional fields needed for BoostCMSState compatibility
+    displayType?: string;
+    previewType?: string;
+    repeatIdBackgroundImage?: boolean;
 };
 
 export type BoostCMSSkill = {
@@ -229,6 +259,10 @@ export const initialBoostCMSState: BoostCMSState = {
         achievementType: '', // sub category type
         credentialExpires: false,
         expirationDate: null,
+        memberTitles: {
+            guardians: { singular: 'Guardian', plural: 'Guardians' },
+            dependents: { singular: 'Dependent', plural: 'Dependents' },
+        },
 
         // ID / Group fields
         location: '',
@@ -248,6 +282,7 @@ export const initialBoostCMSState: BoostCMSState = {
         dimIdBackgroundImage: false,
         idIssuerThumbnail: '',
         showIdIssuerImage: false,
+        repeatIdBackgroundImage: false,
     },
     skills: [],
     alignments: [],
@@ -278,5 +313,4 @@ export const initialCustomBoostTypesState = {
     [BoostCategoryOptionsEnum.workHistory]: [],
     [BoostCategoryOptionsEnum.skill]: [],
     [BoostCategoryOptionsEnum.membership]: [],
-    [BoostCategoryOptionsEnum.meritBadge]: [],
 };

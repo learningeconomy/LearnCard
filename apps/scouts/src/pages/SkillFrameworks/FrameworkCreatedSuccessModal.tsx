@@ -49,7 +49,7 @@ const FrameworkCreatedSuccessModal: React.FC<FrameworkCreatedSuccessModalProps> 
 
                 {!isUpdate && (
                     <p className="text-grayscale-900 text-center font-poppins text-[22px]">
-                        Would you like to add skills now?
+                        Would you like to add competencies now?
                     </p>
                 )}
             </div>
@@ -68,7 +68,7 @@ const FrameworkCreatedSuccessModal: React.FC<FrameworkCreatedSuccessModalProps> 
                     className="bg-indigo-500 text-white py-[10px] px-[20px] rounded-[30px] flex gap-[10px] items-center justify-center font-[600] text-[17px] font-notoSans leading-[24px] tracking-[0.25px]"
                 >
                     <PuzzlePiece version="with-plus" className="w-[25px] h-[25px]" />
-                    Add Skills
+                    Add Competencies
                 </button>
             )}
             <button

@@ -15,6 +15,8 @@ type CredentialRelationshipProps = {
     to: string;
     date: string;
     metadata?: Record<string, unknown>;
+    activityId?: string;
+    integrationId?: string;
 } & Record<string, unknown>;
 
 export type ProfileRelationships = {

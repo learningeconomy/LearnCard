@@ -45,4 +45,15 @@ export const CATEGORY_DESCRIPTIONS: {
         scouting journey.`,
         type: BoostCategoryOptionsEnum.id,
     },
+    [BoostCategoryOptionsEnum.skill]: {
+        id: 9,
+        text: `Competencies represent the knowledge, skills, and 
+        abilities you develop through your scouting journey. These
+        are the practical capabilities and expertise you gain in
+        various areas, from outdoor survival and first aid to leadership
+        and teamwork. As you earn competencies, you're not just collecting
+        achievements—you're building a foundation of valuable, real-world
+        skills that will serve you throughout your life. Each competency is a stepping stone in your personal growth and development as a scout.`,
+        type: BoostCategoryOptionsEnum.skill,
+    },
 };

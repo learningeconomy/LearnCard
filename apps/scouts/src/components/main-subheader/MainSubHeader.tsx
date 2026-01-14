@@ -5,7 +5,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import useBoostModal from '../boost/hooks/useBoostModal';
 import modalStateStore from 'learn-card-base/stores/modalStateStore';
 
-import { IonRow, IonCol, IonModal, useIonModal, IonSpinner } from '@ionic/react';
+import { IonRow, IonCol, IonModal, IonSpinner } from '@ionic/react';
 import Plus from 'learn-card-base/svgs/Plus';
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
@@ -16,11 +16,10 @@ import ShareCredentialsModal from '../../../../../packages/learn-card-base/src/c
 import PlusButtonModalContent from '../../../../../packages/learn-card-base/src/components/plusButton/PlusButtonModalContent';
 import SubheaderPlusActionButton from './SubheaderPlusActionButton';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
-import CenteredSubHeader from '../../pages/skills/CenteredSubHeader';
 
 import { ACHIEVEMENT_CATEGORIES } from '../../../../../packages/learn-card-base/src/components/IssueVC/constants';
 import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 
 const formatCount = (count: number | string): string => {
@@ -77,16 +76,13 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const { title, IconComponent, iconColor, textColor, helperText, helperTextClickable } =
         SubheaderContentType[subheaderType];
 
-    // const hideSelfIssueBtn =
-    //     subheaderType === SubheaderTypeEnum.Currency ||
-    //     subheaderType !== SubheaderTypeEnum.SocialBadge;
     const hideSelfIssueBtn = true;
 
     const _hidePlusBtn =
         hidePlusBtn || (location.pathname === '/troops' && flags.disableTroopCreation);
 
     const pathName = location?.pathname?.replace('/', '');
-    const PATH_TO_CATEGORY = {
+    const PATH_TO_CATEGORY: Record<string, any> = {
         learninghistory: ACHIEVEMENT_CATEGORIES.LearningHistory,
         workhistory: ACHIEVEMENT_CATEGORIES.WorkHistory,
         ids: ACHIEVEMENT_CATEGORIES.ID,
@@ -96,9 +92,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     };
 
     const achievementCategory = PATH_TO_CATEGORY[pathName];
-    // todo - maybe rethink how some of these modals that can be triggered anywhere in the app work,
-    // like since there is a global modal store maybe have a root component in app that just listens to the store and renders the modal based on the store state
-    // (this already exists for issueVCmodal it seems...)
+
     const handleClickModal = () => {
         modalStateStore.set.issueVcModal({ open: true, name: pathName });
         setIsOpen(true);
@@ -146,13 +140,19 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
         }
     }
 
-    const [presentCategoryDescriptorModal, dismissCategoryDescriptorModal] = useIonModal(
-        CategoryDescriptorModal,
-        {
-            handleCloseModal: () => dismissCategoryDescriptorModal(),
-            title,
-        }
-    );
+    const { newModal: newDescriptorModal, closeModal: closeDescriptorModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
+    const presentCategoryDescriptorModal = () => {
+        newDescriptorModal(
+            <CategoryDescriptorModal
+                handleCloseModal={closeDescriptorModal}
+                title={title}
+            />
+        );
+    };
 
     return (
         <IonRow className="max-w-[700px] mx-auto p-0">
@@ -191,11 +191,10 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                 size={plusButtonOverride ? '3' : '2'}
                 className="flex items-center justify-end p-0 ml-auto"
             >
-                {/* learncard + button */}
                 {!hideSelfIssueBtn && (
                     <SubheaderPlusActionButton
                         iconColor={iconColor}
-                        location={location}
+                        location={location as any}
                         handleSelfIssue={handleClickModal}
                         handleShareCreds={handleShareModal}
                         subheaderType={subheaderType}
