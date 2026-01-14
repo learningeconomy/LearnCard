@@ -152,22 +152,47 @@ const PartnerOnboardingWizard: React.FC = () => {
                     query: { meta: { integrationId } },
                 });
 
-                const templates: CredentialTemplate[] = boostsResult?.records?.map((boost: any) => {
-                    const meta = boost.boost?.meta as any;
-                    const credential = boost.boost?.credential;
+                // Helper to convert a boost record to a CredentialTemplate
+                // API returns: { uri, name, type, category, meta, status, ... } (credential is NOT included)
+                const boostToTemplate = (boost: any): CredentialTemplate => {
+                    const meta = boost.meta as any;
 
                     return {
-                        id: boost.uri || boost.boost?.id || crypto.randomUUID(),
-                        name: boost.boost?.name || credential?.name || 'Untitled Template',
-                        description: credential?.credentialSubject?.achievement?.description || '',
-                        achievementType: meta?.templateConfig?.achievementType || boost.boost?.type || 'Achievement',
+                        id: boost.uri || crypto.randomUUID(),
+                        name: boost.name || 'Untitled Template',
+                        description: boost.description || '',
+                        achievementType: meta?.templateConfig?.achievementType || boost.type || 'Achievement',
                         fields: meta?.templateConfig?.fields || [],
-                        imageUrl: boost.boost?.image || credential?.credentialSubject?.achievement?.image?.id,
+                        imageUrl: boost.image,
                         boostUri: boost.uri,
                         isNew: false,
                         isDirty: false,
+                        isMasterTemplate: meta?.isMasterTemplate,
                     };
-                }) || [];
+                };
+
+                // First pass: convert all boosts to templates
+                const allTemplates: CredentialTemplate[] = boostsResult?.records?.map(boostToTemplate) || [];
+
+                // Second pass: load children for master templates and reconstruct hierarchy
+                const templates = await Promise.all(
+                    allTemplates.map(async (template) => {
+                        if (template.isMasterTemplate && template.boostUri) {
+                            try {
+                                const childBoosts = await wallet.invoke.getChildrenBoosts(template.boostUri);
+                                if (childBoosts?.length) {
+                                    template.childTemplates = childBoosts.map((child: any) => ({
+                                        ...boostToTemplate(child),
+                                        parentTemplateId: template.id,
+                                    }));
+                                }
+                            } catch (err) {
+                                console.warn('Failed to load children for template:', template.boostUri, err);
+                            }
+                        }
+                        return template;
+                    })
+                );
 
                 // Load profile for branding
                 let branding: BrandingConfig | null = null;
