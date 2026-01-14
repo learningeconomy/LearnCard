@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 
+import careerOneStopLogo from '../../../assets/images/career-one-stop-logo.png';
 import timeMachineIcon from '../../../assets/images/time-machine.icon.png';
 import AiPathwaySchoolProgramDetails from './AiPathwaySchoolProgramDetails';
-import edxLogo from '../../../assets/images/edx-logo.png';
 
 import { useModal } from 'learn-card-base';
 
@@ -27,6 +27,10 @@ const AiPathwaySchoolProgramItem: React.FC<{ program: TrainingProgram }> = ({ pr
                   .map(occupation => occupation.Value)
             : [];
     }, [program?.Occupationslist]);
+
+    const schoolImage = program?.school?.image_url;
+
+    const logo = schoolImage ? schoolImage : careerOneStopLogo;
 
     return (
         <div
@@ -60,7 +64,7 @@ const AiPathwaySchoolProgramItem: React.FC<{ program: TrainingProgram }> = ({ pr
                     </div>
                 </div>
                 <div className="flex items-center justify-end gap-1">
-                    <img src={edxLogo} alt="Edx Logo" className="w-12 h-12 object-contain" />
+                    <img src={logo} alt="Edx Logo" className="w-12 h-12 object-contain" />
                 </div>
             </div>
         </div>
