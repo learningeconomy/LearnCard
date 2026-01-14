@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.9
+
+### Patch Changes
+
+-   [#925](https://github.com/learningeconomy/LearnCard/pull/925) [`1a466303cf8fec9a138146b8ecdd30a17b8ff473`](https://github.com/learningeconomy/LearnCard/commit/1a466303cf8fec9a138146b8ecdd30a17b8ff473) Thanks [@Custard7](https://github.com/Custard7)! - fix: Optimize Guide Loading
+
 ## 1.94.8
 
 ### Patch Changes

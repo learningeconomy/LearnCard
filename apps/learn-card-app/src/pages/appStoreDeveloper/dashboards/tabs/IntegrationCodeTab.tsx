@@ -34,6 +34,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { useToast } from 'learn-card-base/hooks/useToast';
 
 import type { CredentialTemplate } from '../types';
+import { useTemplateDetails } from '../hooks/useTemplateDetails';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
 import { 
     extractDynamicVariables,
@@ -56,9 +57,12 @@ type ExtendedTemplate = CredentialTemplate & {
 
 export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
     integration,
-    templates,
+    templates: basicTemplates,
 }) => {
     const { presentToast } = useToast();
+
+    // Load full template details on-demand (not loaded by dashboard for performance)
+    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(integration.id, basicTemplates);
 
     const [viewMode, setViewMode] = useState<'reference' | 'example'>('reference');
     const [copiedUri, setCopiedUri] = useState<string | null>(null);
@@ -519,6 +523,15 @@ curl -X POST "https://network.learncard.com/api/send" \\
                 <FileStack className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p className="text-gray-500 font-medium">No templates yet</p>
                 <p className="text-sm text-gray-400 mt-1">Create templates first to get integration code</p>
+            </div>
+        );
+    }
+
+    // Show loading state while fetching full template details
+    if (isLoadingTemplates) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <Code className="w-8 h-8 animate-pulse text-cyan-500" />
             </div>
         );
     }
