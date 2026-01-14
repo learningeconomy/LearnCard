@@ -66,8 +66,8 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
     const isMeritBadge = state?.basicInfo?.type === BoostCategoryOptionsEnum.meritBadge;
 
     const { newModal, closeModal } = useModal({
-        desktop: ModalTypes.Center,
-        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
     });
 
     const presentAppearanceModal = () => {
