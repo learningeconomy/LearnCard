@@ -1,22 +1,24 @@
-import { OccupationDetailsOptions } from 'learn-card-base/types/careerOneStop';
-import Megaphone from '../../../assets/images/course.megaphone.icon.png';
+import _ from 'lodash';
 
-export type AiPathwayCourse = {
-    id: number;
-    title: string;
-    description: string;
-    provider: string;
-    durationAvg: string;
-    durationTotal: string;
-    topics: string[];
-    rating: number;
-    source: string;
-    image: string;
+import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
+
+export const normalizeSchoolPrograms = (trainingPrograms: TrainingProgram[]) => {
+    const randomSchoolPrograms = _.sortBy([...trainingPrograms], () => Math.random() - 0.5);
+
+    const selectedSchoolPrograms = randomSchoolPrograms.slice(0, 3);
+
+    const schoolPrograms = selectedSchoolPrograms.map((program: any) => ({
+        ...(program?.SchoolPrograms?.[0] || {}),
+        keyword: program?.keyword,
+        courses: program?.syllabusCourses,
+        school: program?.syllabusCourses?.[0]?.institution,
+    }));
+
+    return schoolPrograms;
 };
 
-export const getCoursesFromTrainingPrograms = (trainingPrograms: any[]) => {
-    const courses = trainingPrograms.flatMap(trainingProgram => {
-        return trainingProgram?.syllabusCourses;
+export const filterCoursesByFieldOfStudy = (courses: any[], fieldOfStudy: string) => {
+    return courses.filter((course: any) => {
+        return course?.field?.field === fieldOfStudy;
     });
-    return courses;
 };

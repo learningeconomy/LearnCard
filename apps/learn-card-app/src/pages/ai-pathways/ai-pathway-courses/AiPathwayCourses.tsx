@@ -5,27 +5,39 @@ import AiPathwayCourseItem from './AiPathwayCourseItem';
 
 import { useTrainingProgramsByKeyword } from 'learn-card-base/react-query/queries/careerOneStop';
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
-import { getCoursesFromTrainingPrograms } from './ai-pathway-courses.helpers';
+import { normalizeSchoolPrograms, filterCoursesByFieldOfStudy } from './ai-pathway-courses.helpers';
 
 const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }> = ({
     keywords = [],
     fieldOfStudy = '',
 }) => {
+    console.log('fieldOfStudy', fieldOfStudy);
+
     const { data: trainingPrograms, isLoading } = useTrainingProgramsByKeyword({
         keywords,
         fieldOfStudy,
     });
 
-    const _trainingPrograms = useMemo(() => {
+    console.log('trainingPrograms', trainingPrograms);
+
+    const schoolPrograms = useMemo(() => {
+        return trainingPrograms?.length ? normalizeSchoolPrograms(trainingPrograms) : [];
+    }, [trainingPrograms]);
+
+    const courses = useMemo(() => {
         return trainingPrograms?.length
-            ? _.sortBy([...trainingPrograms], () => Math.random() - 0.5).map((program: any) => ({
-                  ...(program?.SchoolPrograms?.[0] || {}),
-                  keyword: program?.keyword,
-              }))
+            ? filterCoursesByFieldOfStudy(trainingPrograms, fieldOfStudy)
             : [];
     }, [trainingPrograms]);
 
-    const courses = getCoursesFromTrainingPrograms(trainingPrograms ?? []);
+    console.log('courses', courses);
+    console.log('schoolPrograms', schoolPrograms);
+
+    // normalize training programs
+    // normalize courses
+    // if courses.length > 3, show courses
+    // if trainingPrograms.length > 3, show training programs
+    // get school data from openSyllabus
 
     if (!isLoading && (!keywords?.length || !trainingPrograms?.length)) return null;
 
@@ -37,7 +49,7 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
                 </div>
 
                 <div className="w-full flex flex-col items-start justify-start mt-4 gap-4">
-                    {_trainingPrograms?.map((course: TrainingProgram, index: number) => (
+                    {schoolPrograms?.map((course: TrainingProgram, index: number) => (
                         <AiPathwayCourseItem key={index} course={course} />
                     ))}
                 </div>
