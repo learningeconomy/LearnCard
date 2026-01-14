@@ -83,6 +83,7 @@ The `source` field indicates how the credential was issued:
 | `claim` | Profile-to-profile credential acceptance |
 | `claimLink` | Claimed via a claim link (combined send+claim) |
 | `contract` | Issued via ConsentFlow contract |
+| `acceptCredential` | Credential accepted by recipient |
 
 ## API Endpoints
 
@@ -161,6 +162,38 @@ Retrieve details of a specific activity by its activity ID.
 ```http
 GET /activity/credentials/{activityId}
 ```
+
+### Get Activity Chain
+
+Retrieve all events in an activity chain by `activityId`. Returns events ordered chronologically (oldest first) to show the full lifecycle of a credential issuance.
+
+```http
+GET /activity/credentials/{activityId}/chain
+```
+
+**Response:**
+```json
+[
+    {
+        "id": "event-1",
+        "activityId": "xyz789",
+        "eventType": "DELIVERED",
+        "timestamp": "2024-01-15T10:30:00Z",
+        "source": "send",
+        ...
+    },
+    {
+        "id": "event-2",
+        "activityId": "xyz789",
+        "eventType": "CLAIMED",
+        "timestamp": "2024-01-15T11:45:00Z",
+        "source": "acceptCredential",
+        ...
+    }
+]
+```
+
+This is useful for tracking the complete lifecycle of a single credential issuance from delivery through claim.
 
 ## Usage Examples
 

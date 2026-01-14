@@ -12,15 +12,6 @@ export const logCredentialActivity = async (
     try {
         const activityId = await createCredentialActivity(params);
 
-        if (process.env.NODE_ENV !== 'test') {
-            console.log('📝 Credential Activity Logged', JSON.stringify({
-                activityId,
-                eventType: params.eventType,
-                source: params.source,
-                recipientType: params.recipientType,
-            }));
-        }
-
         return activityId;
     } catch (error) {
         console.error('Failed to log credential activity:', error);

@@ -495,7 +495,6 @@ export const getDefaultCategoryForCredential = (
     ) {
         return 'Learning History';
     }
-    console.log(_credential, verificationResult);
 
     // Not OBv3 credential, default category to achievement
     if (!verificationResult.success) return 'Achievement';
