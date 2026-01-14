@@ -92,7 +92,11 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
         if (!profileId) return;
 
         setIssueLoading(true);
-        newIssueLoadingModal(<BoostIssuanceLoading loading={issueLoading} />);
+        newIssueLoadingModal(<BoostIssuanceLoading />, {
+            className: 'dark-modal-overlay',
+            sectionClassName: 'transparent-modal',
+            disableCloseHandlers: true,
+        });
         await handleSubmitExistingBoostSelf(profileId, boostUri, boost?.status);
         logAnalyticsEvent('self_boost', {
             category: boost?.category,
@@ -108,7 +112,11 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
     const handleBoostOther = async () => {
         if (!profileId) return;
         setIssueLoading(true);
-        newIssueLoadingModal(<BoostIssuanceLoading loading={issueLoading} />);
+        newIssueLoadingModal(<BoostIssuanceLoading />, {
+            className: 'dark-modal-overlay',
+            sectionClassName: 'transparent-modal',
+            disableCloseHandlers: true,
+        });
         await handleSubmitExistingBoostOther(state.issueTo, boostUri, boost?.status);
         logAnalyticsEvent('send_boost', {
             category: boost?.category,
