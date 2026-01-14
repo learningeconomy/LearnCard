@@ -21,7 +21,8 @@ export type CredentialActivitySourceType =
     | 'contract'
     | 'claim'
     | 'inbox'
-    | 'claimLink';
+    | 'claimLink'
+    | 'acceptCredential';
 
 export type CredentialActivityType = {
     id: string;

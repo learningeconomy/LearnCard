@@ -1708,6 +1708,7 @@ export const CredentialActivitySourceTypeValidator = z.enum([
     'claim',
     'inbox',
     'claimLink',
+    'acceptCredential',
 ]);
 export type CredentialActivitySourceType = z.infer<typeof CredentialActivitySourceTypeValidator>;
 
