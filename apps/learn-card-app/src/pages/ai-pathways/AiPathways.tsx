@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -14,23 +14,21 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
+import {
+    useOccupationDetailsForKeyword,
+    useTrainingProgramsByKeyword,
+} from 'learn-card-base/react-query/queries/careerOneStop';
 import { useGetCurrentLCNUser, useAiInsightCredential, useAiPathways } from 'learn-card-base';
+
 import {
     getFirstAvailableKeywords,
     getAllKeywords,
     getFirstAvailableFieldOfStudy,
 } from './ai-pathway-careers/ai-pathway-careers.helpers';
-
-export type PathwayStep = {
-    title?: string;
-    description?: string;
-    skills?: Array<{ title: string; description?: string }>;
-};
-
-export type PathwayItem = PathwayStep & {
-    pathwayUri?: string; // pathway boost uri
-    topicUri?: string; // topic boost uri
-};
+import {
+    filterCoursesByFieldOfStudy,
+    normalizeSchoolPrograms,
+} from './ai-pathway-courses/ai-pathway-courses.helpers';
 
 const AiPathways: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
@@ -39,7 +37,8 @@ const AiPathways: React.FC = () => {
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiPathway);
     const { backgroundSecondaryColor } = colors;
 
-    const { data: aiInsightCredential } = useAiInsightCredential();
+    const { data: aiInsightCredential, isLoading: fetchAiInsightCredentialLoading } =
+        useAiInsightCredential();
     const { data: learningPathwaysData, isLoading: fetchPathwaysLoading } = useAiPathways();
 
     const strongestAreaInterest = aiInsightCredential?.insights?.strongestArea;
@@ -61,6 +60,31 @@ const AiPathways: React.FC = () => {
             ? getAllKeywords(learningPathwaysData || [])
             : careerKeywords;
 
+    const { data: trainingPrograms, isLoading: fetchTrainingProgramsLoading } =
+        useTrainingProgramsByKeyword({
+            keywords: allKeywords as string[],
+            fieldOfStudy,
+        });
+
+    const schoolPrograms = useMemo(() => {
+        return trainingPrograms?.length ? normalizeSchoolPrograms(trainingPrograms) : [];
+    }, [trainingPrograms]);
+
+    const courses = useMemo(() => {
+        return schoolPrograms?.length
+            ? filterCoursesByFieldOfStudy(schoolPrograms, fieldOfStudy)
+            : [];
+    }, [schoolPrograms]);
+
+    const { data: occupations, isLoading: fetchOccupationsLoading } =
+        useOccupationDetailsForKeyword(careerKeywords?.[0] || '');
+
+    const isLoading =
+        fetchAiInsightCredentialLoading ||
+        fetchPathwaysLoading ||
+        fetchTrainingProgramsLoading ||
+        fetchOccupationsLoading;
+
     return (
         <IonPage className={`bg-${backgroundSecondaryColor}`}>
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
@@ -71,12 +95,25 @@ const AiPathways: React.FC = () => {
                         subheaderType={SubheaderTypeEnum.AiPathways}
                         hidePlusBtn={true}
                     />
-                    <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-1">
-                        <AiPathwayCourses keywords={allKeywords} fieldOfStudy={fieldOfStudy} />
-                        <AiPathwaySessions />
-                        <AiPathwayCareers careerKeywords={careerKeywords} />
-                        <AiPathwayExploreContent careerKeywords={careerKeywords} />
-                        <ExploreAiInsightsButton className="mt-3" />
+                    <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
+                        <AiPathwayCourses
+                            courses={courses}
+                            schoolPrograms={schoolPrograms}
+                            keywords={allKeywords}
+                            fieldOfStudy={fieldOfStudy}
+                            isLoading={isLoading}
+                        />
+                        <AiPathwaySessions
+                            learningPathwaysData={learningPathwaysData}
+                            isLoading={isLoading}
+                        />
+                        <AiPathwayCareers
+                            careerKeywords={careerKeywords}
+                            occupations={occupations}
+                            isLoading={isLoading}
+                        />
+                        <AiPathwayExploreContent occupations={occupations} isLoading={isLoading} />
+                        <ExploreAiInsightsButton />
                     </div>
                 </IonContent>
             </ErrorBoundary>

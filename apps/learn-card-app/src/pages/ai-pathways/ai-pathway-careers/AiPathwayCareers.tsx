@@ -3,13 +3,11 @@ import React from 'react';
 import AiPathwayCareerItem from './AiPathwayCareerItem';
 import AiPathwayCareerItemSkeletonLoader from './AiPathwayCareerItemSkeletonLoader';
 
-import { useOccupationDetailsForKeyword } from 'learn-card-base/react-query/queries/careerOneStop';
-
-const AiPathwayCareers: React.FC<{ careerKeywords?: string[] }> = ({ careerKeywords = [] }) => {
-    const { data: occupations, isLoading } = useOccupationDetailsForKeyword(
-        careerKeywords?.[0] || ''
-    );
-
+const AiPathwayCareers: React.FC<{
+    careerKeywords?: string[];
+    occupations?: any[];
+    isLoading?: boolean;
+}> = ({ careerKeywords = [], occupations = [], isLoading = false }) => {
     const titleEl = (
         <div className="w-full flex items-center justify-start">
             <h2 className="text-xl text-grayscale-800 font-notoSans">Explore Careers</h2>

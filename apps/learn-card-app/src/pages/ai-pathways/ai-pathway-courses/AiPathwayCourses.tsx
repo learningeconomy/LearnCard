@@ -1,14 +1,11 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import _ from 'lodash';
 
 import AiPathwayCourseItem from './AiPathwayCourseItem';
 import AiPathwaySchoolProgramItem from './AiPathwaySchoolProgramItem';
 import AiPathwayCourseItemSkeletonLoader from './AiPathwayCourseItemSkeletonLoader';
 
-import { useTrainingProgramsByKeyword } from 'learn-card-base/react-query/queries/careerOneStop';
-
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
-import { normalizeSchoolPrograms, filterCoursesByFieldOfStudy } from './ai-pathway-courses.helpers';
 
 // ! Insufficient data to show the following for careers
 // work life balance metrics
@@ -18,25 +15,13 @@ import { normalizeSchoolPrograms, filterCoursesByFieldOfStudy } from './ai-pathw
 // rating
 // course duration
 
-const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }> = ({
-    keywords = [],
-    fieldOfStudy = '',
-}) => {
-    const { data: trainingPrograms, isLoading } = useTrainingProgramsByKeyword({
-        keywords,
-        fieldOfStudy,
-    });
-
-    const schoolPrograms = useMemo(() => {
-        return trainingPrograms?.length ? normalizeSchoolPrograms(trainingPrograms) : [];
-    }, [trainingPrograms]);
-
-    const courses = useMemo(() => {
-        return schoolPrograms?.length
-            ? filterCoursesByFieldOfStudy(schoolPrograms, fieldOfStudy)
-            : [];
-    }, [schoolPrograms]);
-
+const AiPathwayCourses: React.FC<{
+    keywords?: string[];
+    fieldOfStudy?: string;
+    courses: any;
+    schoolPrograms: any;
+    isLoading: boolean;
+}> = ({ keywords = [], courses, schoolPrograms, isLoading }) => {
     const showCourses = courses.length >= 3;
     const title = showCourses ? 'Explore Courses' : 'Explore Programs';
     const titleEl = (
@@ -47,7 +32,7 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
 
     if (isLoading)
         return (
-            <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding">
+            <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center px-4">
                 <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                     {titleEl}
 
@@ -58,10 +43,12 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
             </div>
         );
 
+    const trainingPrograms = [...(schoolPrograms || []), ...(courses || [])];
+
     if (!isLoading && (!keywords?.length || !trainingPrograms?.length)) return null;
 
     return (
-        <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding">
+        <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center px-4">
             <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px]">
                 {titleEl}
 
