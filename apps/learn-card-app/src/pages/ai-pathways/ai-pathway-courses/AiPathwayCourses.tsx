@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import _ from 'lodash';
 
 import AiPathwayCourseItem from './AiPathwayCourseItem';
+import AiPathwaySchoolProgramItem from './AiPathwaySchoolProgramItem';
 
 import { useTrainingProgramsByKeyword } from 'learn-card-base/react-query/queries/careerOneStop';
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
@@ -11,14 +12,10 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
     keywords = [],
     fieldOfStudy = '',
 }) => {
-    console.log('fieldOfStudy', fieldOfStudy);
-
     const { data: trainingPrograms, isLoading } = useTrainingProgramsByKeyword({
         keywords,
         fieldOfStudy,
     });
-
-    console.log('trainingPrograms', trainingPrograms);
 
     const schoolPrograms = useMemo(() => {
         return trainingPrograms?.length ? normalizeSchoolPrograms(trainingPrograms) : [];
@@ -26,18 +23,9 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
 
     const courses = useMemo(() => {
         return trainingPrograms?.length
-            ? filterCoursesByFieldOfStudy(trainingPrograms, fieldOfStudy)
+            ? filterCoursesByFieldOfStudy(schoolPrograms, fieldOfStudy)
             : [];
     }, [trainingPrograms]);
-
-    console.log('courses', courses);
-    console.log('schoolPrograms', schoolPrograms);
-
-    // normalize training programs
-    // normalize courses
-    // if courses.length > 3, show courses
-    // if trainingPrograms.length > 3, show training programs
-    // get school data from openSyllabus
 
     if (!isLoading && (!keywords?.length || !trainingPrograms?.length)) return null;
 
@@ -49,8 +37,8 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
                 </div>
 
                 <div className="w-full flex flex-col items-start justify-start mt-4 gap-4">
-                    {schoolPrograms?.map((course: TrainingProgram, index: number) => (
-                        <AiPathwayCourseItem key={index} course={course} />
+                    {schoolPrograms?.map((program: TrainingProgram, index: number) => (
+                        <AiPathwaySchoolProgramItem key={index} program={program} />
                     ))}
                 </div>
             </div>
