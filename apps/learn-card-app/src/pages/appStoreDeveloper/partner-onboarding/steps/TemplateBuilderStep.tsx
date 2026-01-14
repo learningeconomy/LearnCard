@@ -531,17 +531,24 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             // PARALLEL: Save all master templates (each saves its children in parallel internally)
             // and all standalone templates at the same time
+            // Track original indices for reliable reconstruction after parallel saves
+            const masterIndices = masterTemplates.map(t => localTemplates.indexOf(t));
+            const standaloneIndices = standaloneTemplates.map(t => localTemplates.indexOf(t));
+
             const [savedMasters, savedStandalones] = await Promise.all([
                 Promise.all(masterTemplates.map(saveMasterWithChildren)),
                 Promise.all(standaloneTemplates.map(saveStandalone)),
             ]);
 
-            // Reconstruct the saved templates in original order
-            const savedTemplates = localTemplates.map(template => {
-                if (template.isMasterTemplate && template.childTemplates?.length) {
-                    return savedMasters.find(m => m.id === template.id || m.boostUri === template.boostUri) || template;
-                }
-                return savedStandalones.find(s => s.id === template.id || s.boostUri === template.boostUri) || template;
+            // Reconstruct the saved templates in original order using indices
+            const savedTemplates = [...localTemplates] as ExtendedTemplate[];
+
+            masterIndices.forEach((originalIdx, i) => {
+                savedTemplates[originalIdx] = savedMasters[i]!;
+            });
+
+            standaloneIndices.forEach((originalIdx, i) => {
+                savedTemplates[originalIdx] = savedStandalones[i]!;
             });
 
             setLocalTemplates(savedTemplates as ExtendedTemplate[]);
