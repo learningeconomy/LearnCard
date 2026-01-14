@@ -41,11 +41,11 @@ export const buildSalaryPipeData = (wages: WageItem) => {
 };
 
 export const getFirstAvailableKeywords = (
-    pathways: { keywords?: { occupation?: string[]; jobs?: string[]; careers?: string[] } }[]
+    pathways: { keywords?: { occupations?: string[]; jobs?: string[]; careers?: string[] } }[]
 ): string[] => {
     for (const pathway of pathways) {
         const keywords =
-            (pathway.keywords?.occupation?.length && pathway.keywords.occupation) ||
+            (pathway.keywords?.occupations?.length && pathway.keywords.occupations) ||
             (pathway.keywords?.careers?.length && pathway.keywords.careers) ||
             (pathway.keywords?.jobs?.length && pathway.keywords.jobs) ||
             [];
@@ -71,13 +71,13 @@ export const getFirstAvailableFieldOfStudy = (
 };
 
 export const getAllKeywords = (
-    pathways: { keywords?: { occupation?: string[]; jobs?: string[]; careers?: string[] } }[]
+    pathways: { keywords?: { occupations?: string[]; jobs?: string[]; careers?: string[] } }[]
 ): string[] => {
     const allKeywords: string[] = [];
 
     for (const pathway of pathways) {
-        if (pathway.keywords?.occupation?.length) {
-            allKeywords.push(...pathway.keywords.occupation);
+        if (pathway.keywords?.occupations?.length) {
+            allKeywords.push(...pathway.keywords.occupations);
         }
         if (pathway.keywords?.careers?.length) {
             allKeywords.push(...pathway.keywords.careers);

@@ -47,10 +47,8 @@ const AiPathways: React.FC = () => {
 
     let careerKeywords = null;
     let fieldOfStudy = strongestAreaInterest?.keywords?.fieldOfStudy;
-    if (strongestAreaInterest?.keywords?.occupation?.length) {
-        careerKeywords = strongestAreaInterest.keywords.occupation;
-    } else if (strongestAreaInterest?.keywords?.jobs?.length) {
-        careerKeywords = strongestAreaInterest.keywords.jobs;
+    if (strongestAreaInterest?.keywords?.occupations?.length) {
+        careerKeywords = strongestAreaInterest.keywords.occupations;
     }
 
     // if no keywords are found from the insights credentials, use the first available keywords from the pathways
