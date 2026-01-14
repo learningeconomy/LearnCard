@@ -230,6 +230,7 @@ export const issueToInbox = async (
         });
 
         // Send credential using appropriate helper (sendBoost handles boost tracking)
+        // Pass activityId and integrationId so they're stored on the relationship for CLAIMED chaining
         if (boostUri) {
             const boost = await getBoostByUri(boostUri);
             if (boost) {
@@ -240,13 +241,15 @@ export const issueToInbox = async (
                     credential: finalCredential,
                     domain: ctx.domain,
                     skipCertification: true,
+                    activityId,
+                    integrationId,
                 });
             } else {
                 // Fallback to sendCredential if boost not found
-                await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain);
+                await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain, undefined, activityId, integrationId);
             }
         } else {
-            await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain);
+            await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain, undefined, activityId, integrationId);
         }
 
         // Mark as issued and create relationship
@@ -263,7 +266,7 @@ export const issueToInbox = async (
                 boostUri,
                 inboxCredentialId: inboxCredential.id,
                 integrationId,
-                source: 'integration',
+                source: 'send',
             });
         }
 

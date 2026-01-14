@@ -1355,7 +1355,7 @@ describe('Credential Activity Tracking', () => {
                 test('send() to email auto-delivers and logs DELIVERED when user has verified email', async () => {
                     // Create a new user and verify their email
                     const userWithEmail = await getLearnCardForUser('d');
-                    await setupSigningAuthority(userWithEmail, 'auto-deliver-sa');
+                    await setupSigningAuthority(userWithEmail, 'auto-sa');
 
                     const testEmail = 'auto-deliver-test@example.com';
 
@@ -1407,7 +1407,7 @@ describe('Credential Activity Tracking', () => {
                 test('auto-delivery chains activityId correctly', async () => {
                     // Create a new user and verify their email
                     const userWithEmail2 = await getLearnCardForUser('e');
-                    await setupSigningAuthority(userWithEmail2, 'auto-deliver-chain-sa');
+                    await setupSigningAuthority(userWithEmail2, 'auto-sa');
 
                     const testEmail2 = 'auto-deliver-chain@example.com';
 
@@ -1445,7 +1445,7 @@ describe('Credential Activity Tracking', () => {
                 test('auto-delivery with integrationId logs DELIVERED then CLAIMED on acceptCredential', async () => {
                     // Create a new user and verify their email
                     const userWithEmail3 = await getLearnCardForUser('f');
-                    await setupSigningAuthority(userWithEmail3, 'auto-deliver-integration-sa');
+                    await setupSigningAuthority(userWithEmail3, 'auto-sa');
 
                     const testEmail3 = 'auto-deliver-integration@example.com';
 
@@ -1488,8 +1488,17 @@ describe('Credential Activity Tracking', () => {
                     expect(deliveredEvent?.integrationId).toBe(integrationId);
                     expect(deliveredEvent?.recipientType).toBe('email');
 
+                    // For auto-delivery, credential is already in user's pending credentials
+                    // Get the pending credential and accept it
+                    const pendingCredentials = await userWithEmail3.invoke.getIncomingCredentials();
+                    const pendingCred = pendingCredentials.find(
+                        (c: { uri: string }) => c.uri?.includes('credential')
+                    );
+
+                    expect(pendingCred).toBeDefined();
+
                     // User accepts the credential
-                    await userWithEmail3.invoke.acceptCredential(sendResult.credentialUri);
+                    await userWithEmail3.invoke.acceptCredential(pendingCred.uri);
 
                     // Verify CLAIMED activity was logged with same activityId and integrationId
                     activities = await a.invoke.getMyActivities({ limit: 30 });
@@ -1503,12 +1512,13 @@ describe('Credential Activity Tracking', () => {
                     expect(claimedEvent?.integrationId).toBe(integrationId);
                     expect(claimedEvent?.source).toBe('claim');
 
-                    // Verify both events exist under same activityId
+                    // Verify all events exist under same activityId
+                    // 3 events: CREATED (initial send), DELIVERED (auto-delivery), CLAIMED (accept)
                     const lifecycleEvents = activities.records.filter(
                         (r: { activityId: string }) => r.activityId === activityId
                     );
 
-                    expect(lifecycleEvents.length).toBe(2);
+                    expect(lifecycleEvents.length).toBe(3);
 
                     // Verify proper timestamp ordering (DELIVERED before CLAIMED)
                     const deliveredTime = new Date(deliveredEvent!.timestamp).getTime();
