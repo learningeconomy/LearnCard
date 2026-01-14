@@ -369,9 +369,8 @@ import { initLearnCard } from '@learncard/init';
 
 // Initialize with your API Token (get from "API Tokens" tab)
 const learnCard = await initLearnCard({
-    network: {
-        apiToken: process.env.LEARNCARD_API_TOKEN, // Your API Token
-    },
+    apiToken: process.env.LEARNCARD_API_TOKEN, // Your API Token
+    network: true
 });
 
 // Send credential using unified send() API
