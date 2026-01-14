@@ -2,9 +2,15 @@ import React from 'react';
 
 import AiPathwayContentList from './AiPathwayContentList';
 
-import { AI_PATHWAY_CONTENT } from './ai-pathway-content.helpers';
+import { useOccupationDetailsForKeyword } from 'learn-card-base/react-query/queries/careerOneStop';
 
-const AiPathwayExploreContent: React.FC = () => {
+const AiPathwayExploreContent: React.FC<{ careerKeywords?: string[] }> = ({
+    careerKeywords = [],
+}) => {
+    const { data: occupations, isLoading } = useOccupationDetailsForKeyword(
+        careerKeywords?.[0] || ''
+    );
+
     return (
         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center px-4">
             <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
@@ -13,7 +19,7 @@ const AiPathwayExploreContent: React.FC = () => {
                 </div>
 
                 <div className="w-full flex flex-col items-start justify-start mt-4 gap-4">
-                    <AiPathwayContentList content={AI_PATHWAY_CONTENT} />
+                    <AiPathwayContentList occupations={occupations} />
                 </div>
             </div>
         </div>

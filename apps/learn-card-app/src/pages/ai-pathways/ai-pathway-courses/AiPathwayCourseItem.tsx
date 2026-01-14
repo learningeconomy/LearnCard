@@ -35,7 +35,7 @@ const AiPathwayCourseItem: React.FC<{ course: any }> = ({ course }) => {
                 {occupationTags}
             </p>
             <div className="w-full flex items-center justify-between">
-                <h2 className="text-lg text-left font-semibold text-grayscale-800 line-clamp-2 w-[70%]">
+                <h2 className="text-lg text-left font-semibold text-grayscale-800 line-clamp-2 w-[80%]">
                     {course?.title}
                 </h2>
 

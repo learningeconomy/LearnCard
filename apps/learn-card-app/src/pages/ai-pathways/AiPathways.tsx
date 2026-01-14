@@ -73,7 +73,7 @@ const AiPathways: React.FC = () => {
                         <AiPathwayCourses keywords={allKeywords} fieldOfStudy={fieldOfStudy} />
                         <AiPathwaySessions />
                         <AiPathwayCareers careerKeywords={careerKeywords} />
-                        <AiPathwayExploreContent />
+                        <AiPathwayExploreContent careerKeywords={careerKeywords} />
                         <ExploreAiInsightsButton className="mt-4" />
                     </div>
                 </IonContent>
