@@ -444,6 +444,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     };
 
     // Save all templates
+    // OPTIMIZED: Uses parallel API calls for much faster saving (especially for CSV imports)
     const handleSaveAll = async () => {
         if (!integrationId) {
             presentToast('No project selected', { type: ToastTypeEnum.Error, hasDismissButton: true });
@@ -453,80 +454,95 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         setIsSaving(true);
 
         try {
-            // Delete pending deletes
-            for (const uri of pendingDeletes) {
-                await deleteBoost(uri);
+            // PARALLEL: Delete all pending deletes at once
+            if (pendingDeletes.length > 0) {
+                await Promise.all(pendingDeletes.map(uri => deleteBoost(uri).catch(e => {
+                    console.warn('Failed to delete boost:', uri, e);
+                })));
+                setPendingDeletes([]);
             }
 
-            setPendingDeletes([]);
+            // Separate templates into categories for optimal parallel processing
+            const masterTemplates = localTemplates.filter(t => t.isMasterTemplate && t.childTemplates?.length);
+            const standaloneTemplates = localTemplates.filter(t => !t.isMasterTemplate || !t.childTemplates?.length);
 
-            // Save all templates that are new or dirty
-            const savedTemplates: CredentialTemplate[] = [];
-
-            for (const template of localTemplates) {
-                // Check if any children need saving (for master templates)
-                const hasChildUpdates = template.isMasterTemplate && 
-                    template.childTemplates?.some(c => c.isNew || c.isDirty || !c.boostUri);
-
-                if (template.isNew || template.isDirty || !template.boostUri || hasChildUpdates) {
-                    // Handle master templates with children
-                    if (template.isMasterTemplate && template.childTemplates?.length) {
-                        // First, save the master template
-                        const parentBoostUri = await saveTemplateAsBoost(template);
-
-                        if (parentBoostUri) {
-                            // Save each child that needs saving
-                            const savedChildren: ExtendedTemplate[] = [];
-
-                            for (const child of template.childTemplates) {
-                                // Only save children that are new, dirty, or don't have a boostUri
-                                if (child.isNew || child.isDirty || !child.boostUri) {
-                                    try {
-                                        const childBoostUri = await saveChildTemplateAsBoost(child, parentBoostUri);
-
-                                        savedChildren.push({
-                                            ...child,
-                                            id: childBoostUri || child.id,
-                                            boostUri: childBoostUri || undefined,
-                                            isNew: false,
-                                            isDirty: false,
-                                        });
-                                    } catch (e) {
-                                        console.error('Failed to save child boost:', e);
-                                        // Keep the original child on error
-                                        savedChildren.push(child);
-                                    }
-                                } else {
-                                    // Child doesn't need saving, keep as-is
-                                    savedChildren.push(child);
-                                }
-                            }
-
-                            savedTemplates.push({
-                                ...template,
-                                id: parentBoostUri,
-                                boostUri: parentBoostUri,
-                                isNew: false,
-                                isDirty: false,
-                                childTemplates: savedChildren,
-                            } as ExtendedTemplate);
-                        }
-                    } else {
-                        // Regular template - save as standalone boost
-                        const boostUri = await saveTemplateAsBoost(template);
-
-                        savedTemplates.push({
-                            ...template,
-                            id: boostUri || template.id,
-                            boostUri: boostUri || undefined,
+            // Helper to save a single child template
+            const saveChild = async (child: ExtendedTemplate, parentBoostUri: string): Promise<ExtendedTemplate> => {
+                if (child.isNew || child.isDirty || !child.boostUri) {
+                    try {
+                        const childBoostUri = await saveChildTemplateAsBoost(child, parentBoostUri);
+                        return {
+                            ...child,
+                            id: childBoostUri || child.id,
+                            boostUri: childBoostUri || undefined,
                             isNew: false,
                             isDirty: false,
-                        });
+                        };
+                    } catch (e) {
+                        console.error('Failed to save child boost:', e);
+                        return child;
                     }
-                } else {
-                    savedTemplates.push(template);
                 }
-            }
+                return child;
+            };
+
+            // Helper to save a master template and all its children
+            const saveMasterWithChildren = async (template: ExtendedTemplate): Promise<ExtendedTemplate> => {
+                const hasChildUpdates = template.childTemplates?.some(c => c.isNew || c.isDirty || !c.boostUri);
+
+                if (template.isNew || template.isDirty || !template.boostUri || hasChildUpdates) {
+                    // First, save the master template (must complete before children)
+                    const parentBoostUri = await saveTemplateAsBoost(template);
+
+                    if (parentBoostUri) {
+                        // PARALLEL: Save all children at once
+                        const savedChildren = await Promise.all(
+                            (template.childTemplates || []).map(child => saveChild(child, parentBoostUri))
+                        );
+
+                        return {
+                            ...template,
+                            id: parentBoostUri,
+                            boostUri: parentBoostUri,
+                            isNew: false,
+                            isDirty: false,
+                            childTemplates: savedChildren,
+                        } as ExtendedTemplate;
+                    }
+                }
+
+                return template;
+            };
+
+            // Helper to save a standalone template
+            const saveStandalone = async (template: ExtendedTemplate): Promise<ExtendedTemplate> => {
+                if (template.isNew || template.isDirty || !template.boostUri) {
+                    const boostUri = await saveTemplateAsBoost(template);
+                    return {
+                        ...template,
+                        id: boostUri || template.id,
+                        boostUri: boostUri || undefined,
+                        isNew: false,
+                        isDirty: false,
+                    };
+                }
+                return template;
+            };
+
+            // PARALLEL: Save all master templates (each saves its children in parallel internally)
+            // and all standalone templates at the same time
+            const [savedMasters, savedStandalones] = await Promise.all([
+                Promise.all(masterTemplates.map(saveMasterWithChildren)),
+                Promise.all(standaloneTemplates.map(saveStandalone)),
+            ]);
+
+            // Reconstruct the saved templates in original order
+            const savedTemplates = localTemplates.map(template => {
+                if (template.isMasterTemplate && template.childTemplates?.length) {
+                    return savedMasters.find(m => m.id === template.id || m.boostUri === template.boostUri) || template;
+                }
+                return savedStandalones.find(s => s.id === template.id || s.boostUri === template.boostUri) || template;
+            });
 
             setLocalTemplates(savedTemplates as ExtendedTemplate[]);
             presentToast('Templates saved successfully!', { type: ToastTypeEnum.Success, hasDismissButton: true });
