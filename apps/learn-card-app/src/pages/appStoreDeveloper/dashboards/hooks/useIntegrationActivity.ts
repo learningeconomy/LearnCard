@@ -47,16 +47,38 @@ export type CredentialEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED
 
 /**
  * Get display label for event type
- * CREATED and DELIVERED both display as "Sent" in the UI
  */
 export function getEventTypeLabel(eventType: CredentialEventType): string {
     switch (eventType) {
         case 'CREATED': return 'Sent';
-        case 'DELIVERED': return 'Sent';
+        case 'DELIVERED': return 'Delivered';
         case 'CLAIMED': return 'Claimed';
         case 'EXPIRED': return 'Expired';
         case 'FAILED': return 'Failed';
     }
+}
+
+/**
+ * Get detailed label for activity record, distinguishing auto-delivery
+ * - CREATED: Initial send to inbox/email
+ * - DELIVERED with recipientProfileId: Auto-delivered to verified user
+ * - DELIVERED without recipientProfileId: Direct send to profile
+ */
+export function getActivityLabel(record: CredentialActivityRecord): string {
+    if (record.eventType === 'DELIVERED' && record.recipientProfileId && isInboxActivity(record)) {
+        return 'Auto-Delivered';
+    }
+
+    return getEventTypeLabel(record.eventType);
+}
+
+/**
+ * Check if this is an auto-delivery event (DELIVERED to inbox with recipientProfileId)
+ */
+export function isAutoDelivery(record: CredentialActivityRecord): boolean {
+    return record.eventType === 'DELIVERED' && 
+           !!record.recipientProfileId && 
+           isInboxActivity(record);
 }
 
 /**

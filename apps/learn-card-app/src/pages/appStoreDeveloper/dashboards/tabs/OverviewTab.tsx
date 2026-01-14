@@ -30,7 +30,9 @@ import {
     CredentialActivityRecord,
     CredentialEventType,
     getEventTypeLabel,
+    getActivityLabel,
     isInboxActivity,
+    isAutoDelivery,
     getRecipientDisplayName,
     getActivityName,
     getActivityError,
@@ -239,7 +241,16 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
                                         <p className="text-sm text-gray-400">Loading timeline...</p>
                                     ) : (
                                         activityChain.map((event, index) => {
-                                            const { color, bg, Icon } = getEventStyling(event.eventType);
+                                            const isAutoDeliver = isAutoDelivery(event);
+                                            let { color, bg, Icon } = getEventStyling(event.eventType);
+
+                                            // Override styling for auto-delivery
+                                            if (isAutoDeliver) {
+                                                color = 'text-emerald-600';
+                                                bg = 'bg-emerald-100';
+                                                Icon = User;
+                                            }
+
                                             const eventTime = new Date(event.timestamp);
 
                                             return (
@@ -250,7 +261,7 @@ const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({ item }) => {
 
                                                     <div className="flex-1 min-w-0">
                                                         <span className={`text-sm font-medium ${color}`}>
-                                                            {getEventTypeLabel(event.eventType)}
+                                                            {getActivityLabel(event)}
                                                         </span>
                                                     </div>
 
@@ -496,9 +507,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         {activity.map(item => {
                             const { eventType } = item;
                             const isInbox = isInboxActivity(item);
+                            const isAutoDeliver = isAutoDelivery(item);
                             const templateName = getActivityName(item);
                             const recipientName = getRecipientDisplayName(item);
-                            const statusLabel = getEventTypeLabel(eventType);
+                            const statusLabel = getActivityLabel(item);
 
                             // Determine icon and colors based on event type
                             let bgColor = 'bg-cyan-100';
@@ -525,11 +537,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                                 badgeBg = 'bg-gray-100';
                                 badgeText = 'text-gray-600';
                                 Icon = Clock;
+                            } else if (isAutoDeliver) {
+                                // Auto-delivered to verified user - use User icon, emerald color
+                                bgColor = 'bg-emerald-50';
+                                textColor = 'text-emerald-600';
+                                badgeBg = 'bg-emerald-100';
+                                badgeText = 'text-emerald-700';
+                                Icon = User;
                             } else if (isInbox) {
-                                // CREATED or DELIVERED to inbox - use Mail icon, cyan color
+                                // CREATED to inbox - use Mail icon, cyan color
                                 Icon = Mail;
                             }
-                            // CREATED and DELIVERED both use cyan (default) - "Sent" status
+                            // Regular DELIVERED to profile uses cyan (default)
 
                             return (
                                 <button
