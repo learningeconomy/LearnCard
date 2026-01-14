@@ -177,120 +177,27 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 }
             }
 
-            // Fetch templates (boosts) for this integration
-            // OPTIMIZED: Uses parallel API calls instead of sequential for much faster loading
-            const integrationBoostUris = new Set<string>();
+            // Fetch templates (boosts) for this integration - LIGHTWEIGHT
+            // Only get basic info from paginated response for dashboard overview
+            // Full template details are loaded on-demand by individual tabs (TemplatesTab, TestingTab, etc.)
             const boostsResult = await wallet.invoke.getPaginatedBoosts({
                 limit: 50,
                 query: { meta: { integrationId: integration.id } },
             });
 
-            if (boostsResult?.records) {
-                const boostUris = boostsResult.records.map((boost: any) => boost.uri).filter(Boolean) as string[];
-                boostUris.forEach(uri => integrationBoostUris.add(uri));
+            // Extract basic template info from paginated response (no additional API calls needed)
+            const basicTemplates: CredentialTemplate[] = (boostsResult?.records || []).map((boost: any) => ({
+                id: boost.uri,
+                boostUri: boost.uri,
+                name: boost.name || 'Untitled Template',
+                description: '',
+                achievementType: boost.type || 'Achievement',
+                fields: [],
+                isNew: false,
+                isDirty: false,
+            }));
 
-                // PARALLEL: Fetch all boost details at once instead of sequentially
-                const boostPromises = boostUris.map(async (boostUri) => {
-                    try {
-                        const fullBoost = await wallet.invoke.getBoost(boostUri);
-                        const meta = fullBoost?.meta as Record<string, unknown> | undefined;
-                        const templateConfig = meta?.templateConfig as Record<string, unknown> | undefined;
-                        const credential = fullBoost?.boost as Record<string, unknown> | undefined;
-
-                        return {
-                            id: boostUri,
-                            name: fullBoost?.name || (credential?.name as string) || 'Untitled Template',
-                            description: (credential?.description as string) || '',
-                            achievementType: (templateConfig?.achievementType as string) || fullBoost?.type || 'Achievement',
-                            fields: (templateConfig?.fields as CredentialTemplate['fields']) || [],
-                            imageUrl: (fullBoost as Record<string, unknown>)?.image as string | undefined,
-                            boostUri,
-                            isNew: false,
-                            isDirty: false,
-                            obv3Template: credential,
-                            isMasterTemplate: meta?.isMasterTemplate as boolean | undefined,
-                        } as CredentialTemplate;
-                    } catch (e) {
-                        console.warn('Failed to fetch boost:', boostUri, e);
-                        return null;
-                    }
-                });
-
-                const allTemplatesWithNulls = await Promise.all(boostPromises);
-                const allTemplates = allTemplatesWithNulls.filter((t): t is CredentialTemplate => t !== null);
-
-                // Identify master templates and fetch their children in parallel
-                const masterTemplates = allTemplates.filter(t => t.isMasterTemplate && t.boostUri);
-
-                // PARALLEL: Fetch all children for all master templates at once
-                const childrenPromises = masterTemplates.map(async (master) => {
-                    try {
-                        const childrenResult = await wallet.invoke.getBoostChildren(master.boostUri!, { limit: 100 });
-                        const childRecords = childrenResult?.records || [];
-
-                        // PARALLEL: Fetch all child boost details at once
-                        const childPromises = childRecords.map(async (childRecord) => {
-                            const childUri = (childRecord as Record<string, unknown>).uri as string;
-                            if (!childUri) return null;
-
-                            integrationBoostUris.add(childUri);
-
-                            try {
-                                const fullChild = await wallet.invoke.getBoost(childUri);
-                                const childMeta = fullChild?.meta as Record<string, unknown> | undefined;
-                                const childConfig = childMeta?.templateConfig as Record<string, unknown> | undefined;
-                                const childCredential = fullChild?.boost as Record<string, unknown> | undefined;
-
-                                return {
-                                    id: childUri,
-                                    name: fullChild?.name || (childCredential?.name as string) || 'Untitled Template',
-                                    description: (childCredential?.description as string) || '',
-                                    achievementType: (childConfig?.achievementType as string) || 'Course Completion',
-                                    fields: (childConfig?.fields as CredentialTemplate['fields']) || [],
-                                    imageUrl: (fullChild as Record<string, unknown>)?.image as string | undefined,
-                                    boostUri: childUri,
-                                    isNew: false,
-                                    isDirty: false,
-                                    obv3Template: childCredential,
-                                    parentTemplateId: master.boostUri,
-                                } as CredentialTemplate;
-                            } catch (e) {
-                                console.warn('Failed to fetch child boost:', childUri, e);
-                                return null;
-                            }
-                        });
-
-                        const childrenWithNulls = await Promise.all(childPromises);
-                        const children = childrenWithNulls.filter((c): c is CredentialTemplate => c !== null);
-
-                        return { masterId: master.id, children };
-                    } catch (e) {
-                        console.warn('Failed to fetch boost children:', master.boostUri, e);
-                        return { masterId: master.id, children: [] };
-                    }
-                });
-
-                const childrenResults = await Promise.all(childrenPromises);
-
-                // Build a map of master -> children
-                const masterChildrenMap = new Map<string, CredentialTemplate[]>();
-                for (const result of childrenResults) {
-                    masterChildrenMap.set(result.masterId, result.children);
-                }
-
-                // Attach children to master templates
-                const loadedTemplates = allTemplates.map(template => {
-                    if (template.isMasterTemplate) {
-                        return {
-                            ...template,
-                            childTemplates: masterChildrenMap.get(template.id) || [],
-                        };
-                    }
-                    return template;
-                });
-
-                setTemplates(loadedTemplates);
-            }
+            setTemplates(basicTemplates);
 
             // Fetch consent contracts if needed
             let activeContractsCount = 0;

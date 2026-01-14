@@ -26,6 +26,7 @@ import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import type { CredentialTemplate, BrandingConfig } from '../types';
+import { useTemplateDetails } from '../hooks/useTemplateDetails';
 import { 
     extractDynamicVariables, 
     OBv3CredentialTemplate,
@@ -77,11 +78,14 @@ const getSampleValue = (varName: string): string => {
 
 export const TestingTab: React.FC<TestingTabProps> = ({
     integration,
-    templates,
+    templates: basicTemplates,
     branding,
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+
+    // Load full template details on-demand (not loaded by dashboard for performance)
+    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(integration.id, basicTemplates);
 
     const [testEmail, setTestEmail] = useState('');
     const [testStatus, setTestStatus] = useState<TestStatus>('idle');
@@ -195,6 +199,15 @@ export const TestingTab: React.FC<TestingTabProps> = ({
     // Check if we can test
     const canTest = issuableTemplates.length > 0 && issuableTemplates.some(t => t.boostUri);
     const hasUnsavedTemplates = issuableTemplates.some(t => !t.boostUri);
+
+    // Show loading state while fetching full template details
+    if (isLoadingTemplates) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
+            </div>
+        );
+    }
 
     if (issuableTemplates.length === 0) {
         return (
