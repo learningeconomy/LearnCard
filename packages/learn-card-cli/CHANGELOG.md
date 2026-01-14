@@ -1,5 +1,19 @@
 # @learncard/cli
 
+## 3.3.155
+
+### Patch Changes
+
+-   Updated dependencies [[`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f)]:
+    -   @learncard/types@5.11.2
+    -   @learncard/core@9.4.3
+    -   @learncard/init@2.2.5
+    -   @learncard/didkit-plugin@1.6.3
+    -   @learncard/learn-cloud-plugin@2.3.5
+    -   @learncard/linked-claims-plugin@0.2.3
+    -   @learncard/open-badge-v2-plugin@1.1.3
+    -   @learncard/simple-signing-plugin@1.1.3
+
 ## 3.3.154
 
 ### Patch Changes
