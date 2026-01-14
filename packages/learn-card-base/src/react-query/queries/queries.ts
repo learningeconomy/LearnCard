@@ -917,7 +917,7 @@ export const useGetSkill = (frameworkId: string, skillId: string) => {
         queryKey: ['getSkill', frameworkId, skillId],
         queryFn: async () => {
             const wallet = await initWallet();
-            return wallet.invoke.getSkill(frameworkId, skillId);
+            return wallet.invoke.getSkill({ frameworkId, skillId });
         },
         enabled: !!frameworkId && !!skillId,
     });

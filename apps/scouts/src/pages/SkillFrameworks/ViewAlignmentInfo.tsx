@@ -42,32 +42,64 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
     const { closeModal } = useModal();
 
-    const { data: alignmentData } = useGetSkill(_frameworkId ?? '', _skillId ?? '');
+    const {
+        data: alignmentData,
+        isLoading: alignmentLoading,
+        isError: alignmentError,
+    } = useGetSkill(_frameworkId ?? '', _skillId ?? '');
 
-    const alignment =
-        _alignment && _alignment.targetName
-            ? _alignment
-            : alignmentData
+    const alignment = React.useMemo(() => {
+        const fetched = alignmentData
             ? convertApiSkillNodeToSkillTreeNode(alignmentData as ApiSkillNode)
-            : _alignment;
+            : undefined;
+
+        const merged = { ...(_alignment ?? {}), ...(fetched ?? {}) } as SkillFrameworkNode;
+
+        // Fallbacks for display
+        if (!merged.targetName) {
+            merged.targetName = (alignmentData as any)?.statement || _alignment?.targetName || '';
+        }
+        if (!merged.targetDescription) {
+            merged.targetDescription =
+                (alignmentData as any)?.description || _alignment?.targetDescription || '';
+        }
+        if (!merged.icon) {
+            merged.icon = (alignmentData as any)?.icon || _alignment?.icon || '';
+        }
+
+        return merged;
+    }, [_alignment, alignmentData]);
 
     const frameworkId = _frameworkId ?? alignment?.targetFramework ?? '';
     const skillId = _skillId ?? alignment?.id ?? '';
 
     const { data: frameworkData } = useGetSkillFrameworkById(frameworkId);
-    const { data: pathData, isLoading: pathLoading } = useGetSkillPath(frameworkId, skillId);
+    const {
+        data: pathData,
+        isLoading: pathLoading,
+        isError: pathError,
+    } = useGetSkillPath(frameworkId, skillId);
 
-    let path;
-    if (selectedPath) {
-        path = selectedPath;
-    } else if (pathData?.path) {
-        path = [...pathData.path].reverse();
+    let _path = selectedPath;
+    if (!_path && pathData?.path) {
+        _path = (pathData.path as any[]).map(node =>
+            node.targetName ? node : convertApiSkillNodeToSkillTreeNode(node)
+        );
+        _path = [..._path].reverse();
     }
 
     const frameworkName = framework?.name ?? frameworkData?.framework?.name;
     const frameworkImage = framework?.image ?? frameworkData?.framework?.image;
 
     const isTier = alignment?.role === FrameworkNodeRole.tier;
+
+    if (alignmentLoading && !alignment.targetName && !alignmentError) {
+        return (
+            <div className="h-full w-full flex items-center justify-center p-[40px] bg-white rounded-[24px]">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sp-purple-base"></div>
+            </div>
+        );
+    }
 
     const content = (
         <div
@@ -97,11 +129,15 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                     iconSizeClassName="w-[24px] h-[24px]"
                                 />
                                 <h5 className="text-[14px] text-grayscale-900 font-poppins font-[600] line-clamp-2">
-                                    {frameworkName}
+                                    {frameworkName || 'Loading framework...'}
                                 </h5>
                             </div>
 
-                            <SkillBreadcrumbText frameworkId={frameworkId} skillId={skillId} />
+                            <SkillBreadcrumbText
+                                frameworkId={frameworkId}
+                                skillId={skillId}
+                                path={_path}
+                            />
                         </div>
 
                         <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
@@ -112,13 +148,13 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                         : ''
                                 }`}
                             >
-                                <span className="text-[60px] h-[80px] w-[80px] leading-[80px] font-fluentEmoji cursor-none pointer-events-none select-none">
-                                    {alignment?.icon}
+                                <span className="text-[60px] h-[80px] w-[80px] leading-[80px] font-fluentEmoji cursor-none pointer-events-none select-none flex items-center justify-center">
+                                    {alignment?.icon || (isTier ? '📂' : '🧩')}
                                 </span>
                             </div>
 
-                            <h2 className="text-[20px] text-grayscale-900 font-poppins">
-                                {alignment?.targetName}
+                            <h2 className="text-[20px] text-grayscale-900 font-poppins text-center">
+                                {alignment?.targetName || 'Untitled Skill'}
                             </h2>
 
                             <div
@@ -153,7 +189,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
 
                         {(alignment?.targetDescription || (!isTier && alignment?.targetCode)) && (
                             <div className="flex flex-col gap-[15px] p-[20px]">
-                                {!isTier && (
+                                {!isTier && alignment?.targetCode && (
                                     <div className="flex flex-col gap-[5px] w-full">
                                         <span className="text-grayscale-600 font-poppins text-[12px] font-[600]">
                                             Code

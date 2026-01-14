@@ -23,11 +23,21 @@ const SkillBreadcrumbText: React.FC<SkillBreadcrumbTextProps> = ({
     path: _path,
     includeSkill = false,
 }) => {
-    const { data: pathData, isLoading: pathLoading } = useGetSkillPath(frameworkId, skillId);
+    const {
+        data: pathData,
+        isLoading: pathLoading,
+        isError: pathError,
+    } = useGetSkillPath(frameworkId ?? '', skillId ?? '');
+
+    if (pathLoading && !_path) {
+        return <p className="text-grayscale-400 font-poppins text-[12px] font-[600]">loading...</p>;
+    }
 
     const pathToUse =
-        _path?.map(node => convertSkillToBackendFormat(node)) ??
-        [...(pathData?.path ?? [])].reverse();
+        _path?.map(node =>
+            node.targetName || (node as any).statement ? node : convertSkillToBackendFormat(node)
+        ) ?? [...(pathData?.path ?? [])].reverse();
+
     const path = [...(pathToUse ?? [])].filter(node => includeSkill || node.id !== skillId);
 
     return (
