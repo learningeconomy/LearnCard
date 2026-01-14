@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { VC } from '@learncard/types';
-import { IonCol, useIonModal } from '@ionic/react';
+import { IonCol } from '@ionic/react';
 import {
     BoostPageViewMode,
     BoostPageViewModeType,
@@ -16,6 +16,9 @@ import {
     useModal,
     useGetVCInfo,
     categoryMetadata,
+    BoostCategoryOptionsEnum,
+    ModalTypes,
+    useGetBoostParents,
 } from 'learn-card-base';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
@@ -29,7 +32,6 @@ import {
     getImageUrlFromCredential,
     getCredentialName,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { ModalTypes, useGetBoostParents } from 'learn-card-base';
 import {
     unwrapBoostCredential,
     isBoostCredential,
@@ -86,10 +88,6 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     // Get boostId from resolved credential
     const {
         data: parentBoosts,
-        isLoading: managedBoostsLoading,
-        isFetching: managedBoostsFetching,
-        refetch: managedBoostsRefetch,
-        error: managedBoostsError,
     } = useGetBoostParents(resolvedCredential?.boostId, 1);
 
     const parentSourceTitle =
@@ -130,7 +128,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 if (isCertificate || isID || isMeritBadge) {
                     setIonicModalBackground(cred?.display?.backgroundImage);
                 }
-                presentModal({ onDidDismiss: () => resetIonicModalBackground() });
+                presentModal();
             }
         } else if (click === 'onCheckClick') {
             hasBeenClicked = true;
@@ -140,57 +138,65 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     const presentModal = () => {
         const earnedBoostModalProps = {
-            credential: cred,
-            categoryType: categoryType,
+            credential: cred as any,
+            categoryType: categoryType as unknown as BoostCategoryOptionsEnum,
             issuerOverride: issuerName,
             issueeOverride: issueeName,
-            verificationItems: isBoost ? undefined : [],
-            handleShareBoost: () => presentShareBoostLink(),
+            verificationItems: isBoost ? (undefined as any) : [],
+            handleShareBoost: () => openShareBoostLink(),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
             onDotsClick: () => {
-                // closeModal();
                 handleOptionsMenu();
             },
             customThumbComponent: (
                 <CredentialBadge
                     achievementType={cred?.credentialSubject?.achievement?.achievementType}
                     fallbackCircleText={cardTitle}
-                    boostType={categoryType}
+                    boostType={categoryType as any}
                     badgeThumbnail={badgeThumbnail}
                     badgeCircleCustomClass="w-[170px] h-[170px]"
-                    credential={cred}
+                    credential={cred as any}
                     branding={branding}
+                    showBackgroundImage={false}
+                    backgroundImage={cred?.display?.backgroundImage ?? ''}
+                    backgroundColor={cred?.display?.backgroundColor ?? ''}
                 />
             ),
+            customBodyCardComponent: undefined as any,
+            customFooterComponent: undefined as any,
+            customIssueHistoryComponent: undefined as any,
         };
 
         const backgroundImage = isCertificate || isID ? cred?.display?.backgroundImage : undefined;
 
         if (isBoost) {
-            newModal(<BoostPreview {...earnedBoostModalProps} />, { backgroundImage });
+            newModal(<BoostPreview {...(earnedBoostModalProps as any)} />, { backgroundImage });
         } else {
-            newModal(<NonBoostPreview {...earnedBoostModalProps} />, { backgroundImage });
+            newModal(<NonBoostPreview {...(earnedBoostModalProps as any)} />, { backgroundImage });
         }
     };
 
-    const { handlePresentBoostMenuModal, handleShareBoost } = useBoostMenu(
-        credential,
-        uri,
-        credential,
-        categoryType,
+    const { handlePresentBoostMenuModal } = useBoostMenu(
+        credential as any,
+        (uri || '') as string,
+        credential as any,
+        categoryType as any,
         BoostMenuType.earned,
         closeModal
     );
 
-    const [presentShareBoostLink, dismissShareBoostLink] = useIonModal(ShareBoostLink, {
-        handleClose: () => dismissShareBoostLink(),
-        boost: credential,
-        boostUri: uri,
-        handleShareBoost,
-        categoryType,
-    });
+    const openShareBoostLink = () => {
+        newModal(
+            <ShareBoostLink
+                handleClose={closeModal}
+                boost={credential as any}
+                boostUri={uri || ''}
+                categoryType={categoryType as any}
+            />
+        );
+    };
 
     const handleOptionsMenu = async () => {
         handlePresentBoostMenuModal();
@@ -210,7 +216,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                   if (isCertificate || isID || isMeritBadge) {
                                       setIonicModalBackground(cred?.display?.backgroundImage);
                                   }
-                                  presentModal({ onDidDismiss: () => resetIonicModalBackground() });
+                                  presentModal();
                               }
                             : undefined
                     }
@@ -227,26 +233,26 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         <CredentialBadge
                             achievementType={cred?.credentialSubject?.achievement?.achievementType}
                             fallbackCircleText={cardTitle}
-                            boostType={categoryType}
+                            boostType={categoryType as any}
                             badgeThumbnail={badgeThumbnail}
                             showBackgroundImage
-                            backgroundImage={cred?.display?.backgroundImage}
-                            backgroundColor={cred?.display?.backgroundColor}
+                            backgroundImage={cred?.display?.backgroundImage ?? ''}
+                            backgroundColor={cred?.display?.backgroundColor ?? ''}
                             badgeContainerCustomClass="mt-[0px] mb-[8px]"
                             badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
                             badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                             badgeRibbonCustomClass="w-[26px]"
                             badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
                             displayType={cred?.display?.displayType}
-                            credential={cred}
+                            credential={cred as any}
                             branding={branding}
                         />
                     }
                     title={cardTitle}
-                    type={type}
-                    categoryType={categoryType}
+                    type={categoryType as any}
+                    categoryType={categoryType as any}
                     boostPageViewMode={boostPageViewMode}
-                    credential={cred}
+                    credential={cred as any}
                     branding={branding}
                 />
             </ErrorBoundary>
@@ -281,27 +287,27 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                     achievementType={
                                         cred?.credentialSubject?.achievement?.achievementType
                                     }
-                                    boostType={categoryType}
+                                    boostType={categoryType as any}
                                     badgeThumbnail={badgeThumbnail}
                                     showBackgroundImage
-                                    backgroundImage={cred?.display?.backgroundImage}
-                                    backgroundColor={cred?.display?.backgroundColor}
+                                    backgroundImage={cred?.display?.backgroundImage ?? ''}
+                                    backgroundColor={cred?.display?.backgroundColor ?? ''}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                     badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                                     badgeRibbonCustomClass="w-[26px]"
                                     badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
                                     displayType={cred?.display?.displayType}
-                                    credential={cred}
+                                    credential={cred as any}
                                     branding={branding}
                                 />
                             </>
                         }
                         title={cardTitle}
-                        type={type}
-                        categoryType={categoryType}
+                        type={categoryType as any}
+                        categoryType={categoryType as any}
                         boostPageViewMode={boostPageViewMode}
-                        credential={cred}
+                        credential={cred as any}
                         branding={branding}
                     />
                 </IonCol>
@@ -359,7 +365,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                   if (isCertificate || isID || isMeritBadge) {
                                       setIonicModalBackground(cred?.display?.backgroundImage);
                                   }
-                                  presentModal({ onDidDismiss: () => resetIonicModalBackground() });
+                                  presentModal();
                               }
                             : undefined
                     }
@@ -405,11 +411,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                     cred?.credentialSubject?.achievement?.achievementType
                                 }
                                 fallbackCircleText={cardTitle}
-                                boostType={categoryType}
+                                boostType={categoryType as any}
                                 badgeThumbnail={badgeThumbnail}
                                 showBackgroundImage
-                                backgroundImage={cred?.display?.backgroundImage}
-                                backgroundColor={cred?.display?.backgroundColor}
+                                backgroundImage={cred?.display?.backgroundImage ?? ''}
+                                backgroundColor={cred?.display?.backgroundColor ?? ''}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                 badgeCircleCustomClass={`mt-1 ${
                                     isMeritBadge
@@ -420,17 +426,17 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 badgeRibbonCustomClass="w-[26px]"
                                 badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
                                 displayType={cred?.display?.displayType}
-                                credential={cred}
+                                credential={cred as any}
                                 branding={branding}
                             />
                         )
                     }
                     title={cardTitle}
                     customTitle={customTitle}
-                    type={categoryType}
-                    categoryType={categoryType}
+                    type={categoryType as any}
+                    categoryType={categoryType as any}
                     boostPageViewMode={boostPageViewMode}
-                    credential={cred}
+                    credential={cred as any}
                     branding={branding}
                     loading={showSkeleton}
                 />

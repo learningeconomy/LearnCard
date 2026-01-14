@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
-import { useIonModal } from '@ionic/react';
-import { conditionalPluralize, useGetSearchProfiles } from 'learn-card-base';
+import { IonContent } from '@ionic/react';
+import { conditionalPluralize, useGetSearchProfiles, useModal, ModalTypes } from 'learn-card-base';
 
 import Pencil from '../../svgs/Pencil';
 import ScoutDiamond from '../../svgs/ScoutDiamond';
@@ -78,29 +78,51 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
         title = 'National Admin ID';
     }
 
-    const [presentTroopsCMS, dismissTroopsCMS] = useIonModal(TroopsIDCMSWrapper, {
-        handleCloseModal: () => dismissTroopsCMS(),
-        rootViewMode: viewMode,
-        viewMode: viewModeSubtype,
-        state: state,
-        setState: setState,
+    const { newModal: newTroopsCMSModal, closeModal: closeTroopsCMSModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
-    const [presentAddressBook, dismissAddressBook] = useIonModal(BoostAddressBook, {
-        state: state,
-        setState: setState,
-        viewMode: BoostAddressBookViewMode.full,
-        mode: BoostAddressBookEditMode.edit,
-        handleCloseModal: () => dismissAddressBook(),
-        _issueTo: isInLeaderViewMode ? admins : members,
-        _setIssueTo: isInLeaderViewMode ? setAdmins : setMembers,
-
-        search,
-        setSearch,
-        searchResults,
-        isLoading: loading,
-        collectionPropName: viewModeSubtype === TroopsCMSViewModeEnum.member ? 'issueTo' : 'admins',
+    const { newModal: newAddressBookModal, closeModal: closeAddressBookModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
+
+    const openTroopsCMS = () => {
+        newTroopsCMSModal(
+            <TroopsIDCMSWrapper
+                handleCloseModal={closeTroopsCMSModal}
+                rootViewMode={viewMode}
+                viewMode={viewModeSubtype as TroopsCMSViewModeEnum}
+                state={state}
+                setState={setState}
+            />
+        );
+    };
+
+    const openAddressBook = () => {
+        newAddressBookModal(
+            <BoostAddressBook
+                state={state as any}
+                setState={setState as any}
+                viewMode={BoostAddressBookViewMode.full}
+                mode={BoostAddressBookEditMode.edit}
+                handleCloseModal={() => closeAddressBookModal()}
+                _issueTo={isInLeaderViewMode ? admins : members}
+                _setIssueTo={isInLeaderViewMode ? setAdmins : setMembers}
+                search={search}
+                setSearch={setSearch}
+                searchResults={searchResults as any}
+                isLoading={loading}
+                collectionPropName={
+                    viewModeSubtype === TroopsCMSViewModeEnum.member ? 'issueTo' : 'admins'
+                }
+                boostUri={state.parentID?.boostUri ?? ''}
+                recipients={[]}
+                recipientsLoading={false}
+            />
+        );
+    };
 
     const adminThumbnail = state?.appearance?.idThumbnail;
     const scoutThumbnail = state?.memberID?.appearance?.idThumbnail;
@@ -133,7 +155,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                     <div className="flex items-center justify-center">
                         <div className="flex items-center justify-center rounded-full bg-grayscale-100 mr-2 h-[40px] w-[40px] min-h-[40px] min-w-[40px]  overflow-hidden">
                             <button
-                                onClick={() => presentTroopsCMS()}
+                                onClick={() => openTroopsCMS()}
                                 className="overflow-hidden flex items-center justify-center p-[8px]"
                             >
                                 <Pencil className="text-blue-950 h-[30px] w-[30px]" version={2} />
@@ -141,7 +163,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                         </div>
                         <div className="flex items-center justify-center rounded-full bg-sp-green-forest mr-2 h-[40px] w-[40px] min-h-[40px] min-w-[40px]  overflow-hidden">
                             <button
-                                onClick={() => presentAddressBook()}
+                                onClick={() => openAddressBook()}
                                 className="overflow-hidden flex items-center justify-center p-[8px]"
                             >
                                 <TroopUserIcon className="h-[30px] w-[30px]" />
@@ -177,7 +199,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                     <div className="flex items-center justify-center">
                         <div className="flex items-center justify-center rounded-full bg-grayscale-100 mr-2 h-[40px] w-[40px] min-h-[40px] min-w-[40px]  overflow-hidden">
                             <button
-                                onClick={() => presentTroopsCMS()}
+                                onClick={() => openTroopsCMS()}
                                 className="overflow-hidden flex items-center justify-center p-[8px]"
                             >
                                 <Pencil className="text-blue-950 h-[30px] w-[30px]" version={2} />
@@ -185,7 +207,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                         </div>
                         <div className="flex items-center justify-center rounded-full bg-sp-green-forest mr-2 h-[40px] w-[40px] min-h-[40px] min-w-[40px]  overflow-hidden">
                             <button
-                                onClick={() => presentAddressBook()}
+                                onClick={() => openAddressBook()}
                                 className="overflow-hidden flex items-center justify-center p-[8px]"
                             >
                                 <TroopUserIcon className="h-[30px] w-[30px]" />
@@ -223,7 +245,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
             <div className="flex items-center justify-center">
                 <div className="flex items-center justify-center rounded-full bg-grayscale-100 mr-2 h-[40px] w-[40px] min-h-[40px] min-w-[40px]  overflow-hidden">
                     <button
-                        onClick={() => presentTroopsCMS()}
+                        onClick={() => openTroopsCMS()}
                         className="overflow-hidden flex items-center justify-center p-[8px]"
                     >
                         <Pencil className="text-blue-950 h-[30px] w-[30px]" version={2} />
@@ -231,7 +253,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                 </div>
                 <div className="flex items-center justify-center rounded-full bg-sp-green-forest mr-2 h-[40px] w-[40px] min-h-[40px] min-w-[40px]  overflow-hidden">
                     <button
-                        onClick={() => presentAddressBook()}
+                        onClick={() => openAddressBook()}
                         className="overflow-hidden flex items-center justify-center p-[8px]"
                     >
                         <TroopUserIcon className="h-[30px] w-[30px]" />

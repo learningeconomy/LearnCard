@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
-import { IonFooter, IonToolbar, IonGrid, IonRow, IonCol, useIonModal } from '@ionic/react';
+import { IonFooter, IonToolbar, IonGrid, IonRow, IonCol } from '@ionic/react';
 
 import User from '../../../components/svgs/User';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
@@ -11,7 +11,12 @@ import AddressBookContactOptions from '../addressBook-contact-options/AddressBoo
 import BoostSelectMenu from '../../../components/boost/boost-select-menu/BoostSelectMenu';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 
-import { BoostCategoryOptionsEnum, useIsCurrentUserLCNUser } from 'learn-card-base';
+import {
+    BoostCategoryOptionsEnum,
+    useIsCurrentUserLCNUser,
+    useModal,
+    ModalTypes,
+} from 'learn-card-base';
 import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import useBoostModal from '../../../components/boost/hooks/useBoostModal';
 
@@ -39,42 +44,41 @@ export const AddressBookFooter: React.FC<{
         }
     });
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookContactOptions, {
-        handleCloseModal: () => dismissCenterModal(),
-        showSearch,
-        handleShowSearch,
+    const { newModal: newContactOptionsModal, closeModal: closeContactOptionsModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
 
-    const [presentBoostOptionsCenterModal, dismissBoostOptionsCenterModal] = useIonModal(
-        BoostSelectMenu,
-        {
-            handleCloseModal: () => dismissBoostOptionsCenterModal(),
-            showCloseButton: true,
-            title: (
-                <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
-                    Who do you want to send to?
-                </p>
-            ),
-            history: history,
-        }
-    );
+    const { newModal: newBoostOptionsModal, closeModal: closeBoostOptionsModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
+    });
 
-    const [presentBoostOptionsSheetModal, dismissBoostOptionsSheetModal] = useIonModal(
-        BoostSelectMenu,
-        {
-            handleCloseModal: () => dismissBoostOptionsSheetModal(),
-            showCloseButton: false,
-            title: (
-                <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
-                    Who do you want to send to?
-                </p>
-            ),
-            history: history,
-        }
-    );
+    const openContactOptions = () => {
+        newContactOptionsModal(
+            <AddressBookContactOptions
+                handleCloseModal={() => closeContactOptionsModal()}
+                showSearch={showSearch}
+                handleShowSearch={handleShowSearch}
+            />
+        );
+    };
+
+    const openBoostOptions = (isSheet: boolean) => {
+        newBoostOptionsModal(
+            <BoostSelectMenu
+                handleCloseModal={() => closeBoostOptionsModal()}
+                showCloseButton={!isSheet}
+                history={history as any}
+                boostCredential={{} as any}
+                boostUri=""
+                profileId=""
+            />
+        );
+    };
 
     return (
-        <IonFooter className="learn-card-header ion-no-border" ref={bottomBarRef}>
+        <IonFooter className="learn-card-header ion-no-border" ref={bottomBarRef as any}>
             <IonToolbar className="ion-no-border" color="light">
                 <IonGrid className="bg-white">
                     <IonRow className="w-full mt-4 flex items-center justify-center">
@@ -84,12 +88,7 @@ export const AddressBookFooter: React.FC<{
                                     if (!checkIfUserInNetwork()) return;
 
                                     if (currentLCNUser) {
-                                        presentCenterModal({
-                                            cssClass:
-                                                'generic-modal show-modal ion-disable-focus-trap',
-                                            backdropDismiss: true,
-                                            showBackdrop: false,
-                                        });
+                                        openContactOptions();
                                     }
                                 }}
                                 className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-1/2 shadow-lg font-medium"

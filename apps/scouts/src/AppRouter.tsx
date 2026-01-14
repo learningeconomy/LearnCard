@@ -1,8 +1,7 @@
 import { useEffect, useCallback, memo } from 'react';
 import { App } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { useLocation, useHistory } from 'react-router-dom';
-import { PluginListenerHandle } from '@capacitor/core';
 import queryString from 'query-string';
 
 import {
@@ -11,7 +10,6 @@ import {
     IonTabButton,
     IonTabs,
     IonSplitPane,
-    useIonModal,
     IonMenuToggle,
 } from '@ionic/react';
 import Burger from './components/svgs/Burger';
@@ -27,27 +25,31 @@ import {
     useIsLoggedIn,
     QRCodeScannerStore,
     usePrefetchCredentials,
-    useIsCollapsed,
     usePrefetchBoosts,
+    useModal,
+    ModalTypes,
+    useSyncConsentFlow,
+    useIsCollapsed,
     useWeb3Auth,
     LOGIN_REDIRECTS,
-    Modals,
-    useSyncConsentFlow,
     lazyWithRetry,
+    useGetUnreadUserNotifications,
+    useIsCurrentUserLCNUser,
+    Modals,
+    redirectStore,
+    BrandingEnum,
 } from 'learn-card-base';
-const Routes = lazyWithRetry(() => import('./Routes').then(module => ({ default: module.Routes })));
 import { tabRoutes } from './constants';
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import { WALLET_ADAPTERS } from '@web3auth/base';
 
 import { useFirebase } from './hooks/useFirebase';
 import { useJoinLCNetworkModal } from './components/network-prompts/hooks/useJoinLCNetworkModal';
 import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyIdentify';
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify, initSentry } from './constants/sentry';
-import { useGetUnreadUserNotifications, useIsCurrentUserLCNUser } from 'learn-card-base';
 import { useSetFirebaseAnalyticsUserId } from './hooks/useSetFirebaseAnalyticsUserId';
-import { redirectStore } from 'learn-card-base/stores/redirectStore';
-import { WALLET_ADAPTERS } from '@web3auth/base';
+
+const Routes = lazyWithRetry(() => import('./Routes').then(module => ({ default: module.Routes })));
 
 interface NavbarGradientProps {
     path: string;
@@ -62,27 +64,9 @@ const getBackgroundGradientForNavbar = ({ path }: NavbarGradientProps): string =
     return gradientMap[path] || '';
 };
 
-const TabBarButton = memo(
-    ({
-        tab,
-        href,
-        className,
-        children,
-    }: {
-        tab: string;
-        href: string;
-        className: string;
-        children: React.ReactNode;
-    }) => (
-        <IonTabButton tab={tab} href={href} className={className}>
-            {children}
-        </IonTabButton>
-    )
-);
-
 const AppRouter: React.FC = () => {
     const { web3AuthInit } = useWeb3Auth();
-    const { verifySignInLinkAndLogin, verifyAppleLogin } = useFirebase();
+    const { verifySignInLinkAndLogin } = useFirebase();
     const history = useHistory();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
@@ -104,8 +88,6 @@ const AppRouter: React.FC = () => {
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const {
         data: notificationsData,
-        isLoading: notificationsLoading,
-        refetch: refetchNotifications,
     } = useGetUnreadUserNotifications();
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
@@ -119,17 +101,24 @@ const AppRouter: React.FC = () => {
     useSetFirebaseAnalyticsUserId({ debug: false });
     useSyncConsentFlow(enablePrefetch);
 
-    const [presentBoostSelectModal, dismissBoosSelectModal] = useIonModal(BoostSelectMenu, {
-        handleCloseModal: () => dismissBoosSelectModal(),
-        showCloseButton: false,
-        showNewBoost: true,
-        title: (
-            <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                Who do you want to send to?
-            </p>
-        ),
-        history,
+    const { newModal: newBoostSelectModal, closeModal: closeBoostSelectModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
+
+    const openBoostSelectModal = () => {
+        newBoostSelectModal(
+            <BoostSelectMenu
+                handleCloseModal={closeBoostSelectModal}
+                showCloseButton={false}
+                showNewBoost={true}
+                history={history as any}
+                boostCredential={{} as any}
+                boostUri=""
+                profileId=""
+            />
+        );
+    };
 
     const handleLoginAsync = useCallback(async () => {
         const web3Auth = await web3AuthInit({
@@ -140,14 +129,14 @@ const AppRouter: React.FC = () => {
             branding: BrandingEnum.scoutPass,
             showLoading: false,
         });
-        await web3Auth?.connectTo(WALLET_ADAPTERS.OPENLOGIN);
+        await (web3Auth as any)?.connectTo((WALLET_ADAPTERS as any).OPENLOGIN);
     }, [web3AuthInit]);
 
     useEffect(() => {
         if (!currentLCNUserLoading && currentLCNUser === false) {
             handlePresentJoinNetworkModal();
         }
-    }, [currentLCNUser, currentLCNUserLoading]);
+    }, [currentLCNUser, currentLCNUserLoading, handlePresentJoinNetworkModal]);
 
     const handleAppUrlOpen = async (data: { url: string }) => {
         const parsedUrl = new URL(data.url);
@@ -185,7 +174,7 @@ const AppRouter: React.FC = () => {
         if (!Capacitor.isNativePlatform() && savedEmail) {
             verifySignInLinkAndLogin(savedEmail, window.location.href);
         }
-    }, [savedEmail]);
+    }, [savedEmail, verifySignInLinkAndLogin]);
 
     useEffect(() => {
         if (params?.verifyCode) {
@@ -194,7 +183,7 @@ const AppRouter: React.FC = () => {
 
             history.replace(`/login?verifyCode=true`);
         }
-    }, []);
+    }, [params, history]);
 
     const unreadCount = notificationsData?.notifications?.length || null;
 
@@ -224,7 +213,9 @@ const AppRouter: React.FC = () => {
                             </IonRouterOutlet>
                             <div
                                 className={`background-gradient-navbar ${getBackgroundGradientForNavbar(
-                                    location.pathname
+                                    {
+                                        path: location.pathname,
+                                    }
                                 )}`}
                             ></div>
                             {isLoggedIn && showNavBar(location.pathname) ? (
@@ -236,10 +227,6 @@ const AppRouter: React.FC = () => {
                                         height: '70px',
                                     }}
                                 >
-                                    {/*
-                                tab prop is needed to prevent hard refresh...
-                                set href to # to prevent id undefined errors & rerouting
-                            */}
                                     <IonTabButton
                                         tab="/"
                                         href="#"

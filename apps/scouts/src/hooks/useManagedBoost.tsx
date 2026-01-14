@@ -24,7 +24,7 @@ import {
     resetIonicModalBackground,
 } from 'learn-card-base';
 
-import { IonItem, IonList, useIonModal } from '@ionic/react';
+import { IonItem, IonList } from '@ionic/react';
 import BoostPreview from '../components/boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../components/boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../components/boost/boostCMS/BoostPreview/BoostPreviewFooter';
@@ -56,7 +56,7 @@ export const useManagedBoost = (
     const history = useHistory();
     const currentUser = useCurrentUser();
 
-    const { newModal, closeModal, closeAllModals } = useModal({
+    const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
@@ -85,7 +85,7 @@ export const useManagedBoost = (
     const cred = unwrapBoostCredential(boostVC);
     const credImg = cred?.credentialSubject?.image;
     const thumbImage = (cred && getImageUrlFromCredential(cred)) || defaultImg;
-    const badgeThumbnail = credImg && credImg?.trim() !== '' ? credImg : thumbImage;
+    const badgeThumbnail = credImg && credImg?.trim() !== '' ? credImg : (thumbImage as string);
 
     const isMeritBadge = categoryType === CredentialCategoryEnum.meritBadge;
     const isID = boostVC?.display?.displayType === 'id' || categoryType === 'ID';
@@ -115,10 +115,10 @@ export const useManagedBoost = (
             ) {
                 issueHistory.push({
                     id: index,
-                    name: recipient?.to?.displayName,
-                    thumb: recipient?.to?.image,
-                    date: recipient?.received,
-                    profileId: recipient?.to?.profileId,
+                    name: recipient?.to?.displayName as string,
+                    thumb: recipient?.to?.image as string,
+                    date: recipient?.received as string,
+                    profileId: recipient?.to?.profileId as string,
                 });
             }
         });
@@ -127,9 +127,9 @@ export const useManagedBoost = (
     const { data: myProfile, isLoading: myProfileLoading } = useGetProfile();
 
     const { handlePresentBoostMenuModal } = useBoostMenu(
-        boostVC,
+        boostVC as any,
         boost.uri,
-        boost,
+        boost as any,
         categoryType,
         BoostMenuType.managed,
         closeAll
@@ -141,10 +141,10 @@ export const useManagedBoost = (
 
     const { handlePresentShortBoostModal } = useShortBoost(
         history,
-        boostVC,
+        boostVC as any,
         boost?.uri,
-        myProfile?.profileId,
-        boost
+        myProfile?.profileId as string,
+        boost as any
     );
 
     const showSkeleton = loading || resolvedBoostLoading || recipientsLoading || myProfileLoading;
@@ -156,7 +156,7 @@ export const useManagedBoost = (
         if (useCmsModal) {
             presentBoostCMSModal();
         } else {
-            dissmissManagedBoostPreview();
+            closeModal();
             history.push(`${link}${linkQueryParams}`);
         }
     };
@@ -179,94 +179,106 @@ export const useManagedBoost = (
     };
 
     const handleIssueOnClick = () => {
-        dissmissManagedBoostPreview();
+        closeModal();
         history.push(`${link}${linkQueryParams}&issue=true`);
     };
 
-    const [presentManagedBoostPreview, dissmissManagedBoostPreview] = useIonModal(BoostPreview, {
-        credential: boostVC,
-        categoryType: categoryType,
-        showVerifications: false,
-        issueHistory: issueHistory,
-        onDotsClick: isDraft && !showSkeleton ? handleOptionsMenu : undefined,
-        issueeOverride: isMeritBadge ? 'Scout' : undefined,
-        issuerOverride: isMeritBadge ? currentUser?.name : undefined,
-        issuerImageComponent: isMeritBadge ? <ProfilePicture /> : undefined,
-        handleCloseModal: () => dissmissManagedBoostPreview(),
-        customBodyCardComponent: (
-            <BoostPreviewBody
-                recipients={recipients ?? []}
-                recipientCountOverride={recipientCount}
-                canEdit={boost?.status === 'DRAFT'}
-                handleEditOnClick={handleEditOnClick}
-                customBoostPreviewContainerClass="bg-white"
-                customBoostPreviewContainerRowClass="items-center"
-            />
-        ),
-        customThumbComponent: (
-            <CredentialBadge
-                achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
-                boostType={categoryType}
-                badgeThumbnail={badgeThumbnail}
-                badgeCircleCustomClass="w-[170px] h-[170px]"
-                displayType={cred?.display?.displayType}
-                credential={boostVC}
-                branding={branding}
-            />
-        ),
-        customFooterComponent: (
-            <BoostPreviewFooter
-                showSaveAndQuitButton={false}
-                handleSubmit={handleIssueOnClick}
-                selectedVCType={categoryType}
-            />
-        ),
-        customIssueHistoryComponent: (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
-                {recipients?.map((recipient, index) => {
-                    return (
-                        <IonItem
-                            key={index}
-                            lines="none"
-                            className="w-full max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2 last:border-b-0"
-                        >
-                            <div className="flex items-center justify-start w-full">
-                                <div className="flex items-center justify-start">
-                                    <UserProfilePicture
-                                        customContainerClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden text-white font-medium text-4xl mr-3"
-                                        customImageClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden object-cover"
-                                        customSize={120}
-                                        user={recipient?.to}
-                                    />
-                                </div>
-                                <div className="flex flex-col items-start justify-center pt-1 pr-1 pb-1 text-sm">
-                                    <p className="text-grayscale-900 font-semibold capitalize">
-                                        {recipient?.to?.displayName || recipient?.to?.profileId}
-                                    </p>
-                                    <p className="text-grayscale-600 font-normal text-sm">
-                                        {moment(
-                                            recipient?.received ?? resolvedBoost?.issuanceDate
-                                        ).format('DD MMMM YYYY')}{' '}
-                                        &bull;{' '}
-                                        {moment(
-                                            recipient?.received ?? resolvedBoost?.issuanceDate
-                                        ).format('h:mm A')}
-                                    </p>
-                                </div>
-                            </div>
-                        </IonItem>
-                    );
-                })}
-            </IonList>
-        ),
-    });
+    const presentManagedBoostPreview = () => {
+        newModal(
+            <BoostPreview
+                credential={boostVC as any}
+                categoryType={categoryType as any}
+                showVerifications={false}
+                onDotsClick={isDraft && !showSkeleton ? handleOptionsMenu : undefined}
+                issueeOverride={isMeritBadge ? 'Scout' : undefined}
+                issuerOverride={isMeritBadge ? currentUser?.name : undefined}
+                issuerImageComponent={isMeritBadge ? <ProfilePicture /> : undefined}
+                handleCloseModal={() => closeModal()}
+                customBodyCardComponent={
+                    <BoostPreviewBody
+                        recipients={recipients ?? []}
+                        recipientCountOverride={recipientCount}
+                        canEdit={boost?.status === 'DRAFT'}
+                        handleEditOnClick={handleEditOnClick}
+                        customBoostPreviewContainerClass="bg-white"
+                        customBoostPreviewContainerRowClass="items-center"
+                    />
+                }
+                customThumbComponent={
+                    <CredentialBadge
+                        achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
+                        boostType={categoryType as any}
+                        badgeThumbnail={badgeThumbnail}
+                        badgeCircleCustomClass="w-[170px] h-[170px]"
+                        displayType={cred?.display?.displayType}
+                        credential={boostVC as any}
+                        branding={branding}
+                        showBackgroundImage={false}
+                        backgroundImage={boostVC?.display?.backgroundImage ?? ''}
+                        backgroundColor={boostVC?.display?.backgroundColor ?? ''}
+                    />
+                }
+                customFooterComponent={
+                    <BoostPreviewFooter
+                        showSaveAndQuitButton={false}
+                        handleSubmit={handleIssueOnClick}
+                        selectedVCType={categoryType as any}
+                    />
+                }
+                customIssueHistoryComponent={
+                    <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+                        {recipients?.map((recipient, index) => {
+                            return (
+                                <IonItem
+                                    key={index}
+                                    lines="none"
+                                    className="w-full max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px] border-b-2 last:border-b-0"
+                                >
+                                    <div className="flex items-center justify-start w-full">
+                                        <div className="flex items-center justify-start">
+                                            <UserProfilePicture
+                                                customContainerClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden text-white font-medium text-4xl mr-3"
+                                                customImageClass="flex justify-center items-center w-12 h-12 rounded-full overflow-hidden object-cover"
+                                                customSize={120}
+                                                user={recipient?.to}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col items-start justify-center pt-1 pr-1 pb-1 text-sm">
+                                            <p className="text-grayscale-900 font-semibold capitalize">
+                                                {recipient?.to?.displayName || recipient?.to?.profileId}
+                                            </p>
+                                            <p className="text-grayscale-600 font-normal text-sm">
+                                                {moment(
+                                                    recipient?.received ?? resolvedBoost?.issuanceDate
+                                                ).format('DD MMMM YYYY')}{' '}
+                                                &bull;{' '}
+                                                {moment(
+                                                    recipient?.received ?? resolvedBoost?.issuanceDate
+                                                ).format('h:mm A')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </IonItem>
+                            );
+                        })}
+                    </IonList>
+                }
+                verificationItems={[]}
+            />,
+            {
+                onClose: () => {
+                    resetIonicModalBackground();
+                },
+            }
+        );
+    };
 
     const presentManagedBoostModal = () => {
         if (showSkeleton) return;
         if (isID || isMeritBadge) {
             setIonicModalBackground(cred?.display?.backgroundImage);
         }
-        presentManagedBoostPreview({ onDidDismiss: () => resetIonicModalBackground() });
+        presentManagedBoostPreview();
     };
 
     return {

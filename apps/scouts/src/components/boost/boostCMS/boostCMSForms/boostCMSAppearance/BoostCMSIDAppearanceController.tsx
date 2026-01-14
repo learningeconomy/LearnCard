@@ -1,13 +1,11 @@
 import React from 'react';
 
-import { useIonModal } from '@ionic/react';
-
 import Pencil from '../../../../svgs/Pencil';
 import BoostCMSAppearanceFormModal from './BoostCMSAppearanceFormModal';
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
 
 import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
 import { SetState } from 'packages/shared-types/dist';
 
@@ -36,28 +34,46 @@ const BoostCMSIDAppearanceController: React.FC<{
     showEditButton = true,
     showEditAppearanceText = true,
 }) => {
-    const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSAppearanceFormModal, {
-        state: state,
-        setState: setState,
-        handleCloseModal: () => dismissCenterModal(),
-        boostUserType: boostUserType,
-        customTypes: customTypes,
-        setCustomTypes: setCustomTypes,
-        showCloseButton: true,
-        disabled: disabled,
-        handleCategoryAndTypeChange: handleCategoryAndTypeChange,
+    const { newModal: newCenterModal, closeModal: closeCenterModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(BoostCMSAppearanceFormModal, {
-        state: state,
-        setState: setState,
-        handleCloseModal: () => dismissSheetModal(),
-        boostUserType: boostUserType,
-        customTypes: customTypes,
-        setCustomTypes: setCustomTypes,
-        disabled: disabled,
-        handleCategoryAndTypeChange: handleCategoryAndTypeChange,
+    const { newModal: newSheetModal, closeModal: closeSheetModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
     });
+
+    const presentCenterModal = () => {
+        newCenterModal(
+            <BoostCMSAppearanceFormModal
+                state={state}
+                setState={setState as any}
+                handleCloseModal={() => closeCenterModal()}
+                boostUserType={boostUserType}
+                customTypes={customTypes}
+                setCustomTypes={setCustomTypes as any}
+                showCloseButton={true}
+                disabled={disabled}
+                handleCategoryAndTypeChange={handleCategoryAndTypeChange}
+            />
+        );
+    };
+
+    const presentSheetModal = () => {
+        newSheetModal(
+            <BoostCMSAppearanceFormModal
+                state={state}
+                setState={setState as any}
+                handleCloseModal={() => closeSheetModal()}
+                boostUserType={boostUserType}
+                customTypes={customTypes}
+                setCustomTypes={setCustomTypes as any}
+                disabled={disabled}
+                handleCategoryAndTypeChange={handleCategoryAndTypeChange}
+            />
+        );
+    };
 
     return (
         <div className="flex items-center justify-center w-full mt-12 mb-8 relative">
@@ -67,13 +83,7 @@ const BoostCMSIDAppearanceController: React.FC<{
                 )}
                 {showEditButton && (
                     <button
-                        onClick={() =>
-                            presentCenterModal({
-                                cssClass: 'center-modal boost-cms-appearance-modal',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                            })
-                        }
+                        onClick={() => presentCenterModal()}
                         className="absolute bg-white h-[65px] w-12 z-15 right-[4px] top-[-40px] pt-[5px] rounded-tr-full rounded-tl-full flex items-start justify-center modal-btn-desktop z-10"
                     >
                         <Pencil className="text-grayscale-800 w-[30px]" />
@@ -89,7 +99,7 @@ const BoostCMSIDAppearanceController: React.FC<{
                         <Pencil className="text-grayscale-800 w-[30px]" />
                     </button>
                 )}
-                <BoostCMSIDCard state={state} setState={setState} />
+                <BoostCMSIDCard state={state} setState={setState as any} />
             </div>
         </div>
     );
