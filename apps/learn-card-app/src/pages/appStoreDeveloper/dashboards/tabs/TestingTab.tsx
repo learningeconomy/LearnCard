@@ -162,6 +162,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 recipient: testEmail,
                 templateUri: selectedTemplate.boostUri,
                 templateData,
+                integrationId: integration.id,
                 options: {
                     branding: {
                         issuerName: branding?.displayName || integration.name,

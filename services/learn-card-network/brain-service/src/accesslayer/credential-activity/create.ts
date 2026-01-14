@@ -5,6 +5,11 @@ import { CredentialActivity, Profile, Boost } from '@models';
 import { LogCredentialActivityParams } from 'types/activity';
 import { getIdFromUri } from '@helpers/uri.helpers';
 
+/**
+ * Creates a credential activity record with relationships.
+ * Relationships are created sequentially (not in parallel) to prevent deadlocks
+ * that can occur when multiple concurrent transactions try to lock the same nodes.
+ */
 export const createCredentialActivity = async (
     params: LogCredentialActivityParams
 ): Promise<string> => {
@@ -30,18 +35,18 @@ export const createCredentialActivity = async (
 
     await CredentialActivity.createOne(activityData);
 
-    const relationshipPromises: Promise<void>[] = [];
+    // Create relationships SEQUENTIALLY to prevent deadlocks
+    // (Parallel execution with Promise.all can cause deadlocks when multiple
+    // transactions try to acquire locks on the same Profile/Boost nodes)
 
-    relationshipPromises.push(
-        createPerformedByRelationship(params.actorProfileId, id)
-    );
+    await createPerformedByRelationship(params.actorProfileId, id);
 
     if (params.boostUri) {
         try {
             const boostId = getIdFromUri(params.boostUri);
 
             if (boostId) {
-                relationshipPromises.push(createForBoostRelationship(id, boostId));
+                await createForBoostRelationship(id, boostId);
             }
         } catch {
             // Invalid URI format, skip boost relationship
@@ -49,12 +54,8 @@ export const createCredentialActivity = async (
     }
 
     if (params.recipientType === 'profile' && params.recipientProfileId) {
-        relationshipPromises.push(
-            createToRecipientRelationship(id, params.recipientProfileId)
-        );
+        await createToRecipientRelationship(id, params.recipientProfileId);
     }
-
-    await Promise.all(relationshipPromises);
 
     return activityId;
 };
@@ -76,7 +77,7 @@ const createPerformedByRelationship = async (
         })
         .create('(profile)-[:PERFORMED]->(activity)')
         .run();
-}
+};
 
 const createForBoostRelationship = async (
     activityId: string,
