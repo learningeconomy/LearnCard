@@ -66,7 +66,7 @@ const BoostCMSAppearanceFormModal: React.FC<{
     let formBackgroundColor: string = '';
 
     if (activeForm === BoostCMSActiveAppearanceForm.badgeForm) {
-        formBackgroundColor = '#ffffff';
+        formBackgroundColor = '#F3F4F6'; // grayscale-100/light gray
 
         activeFormEl = (
             <IonGrid

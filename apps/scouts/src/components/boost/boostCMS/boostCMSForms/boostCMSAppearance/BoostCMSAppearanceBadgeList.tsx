@@ -159,11 +159,11 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         categoryButton = (
             <button
                 onClick={handleOpenCategoryModal}
-                className="rounded-full ion-no-padding p-0 shadow-3xl text-base font-semibold bg-white text-grayscale-800 px-[12px] py-[8px] flex items-center justify-around"
+                className="rounded-full p-0 text-base font-semibold bg-white text-grayscale-800 px-3 py-2 flex items-center justify-center border border-gray-300 w-[180px] relative"
             >
-                All{' '}
+                <span>All</span>
                 <CaretLeft
-                    className={`h-auto w-[5px] text-grayscale-800 rotate-[-90deg] ml-[5px]`}
+                    className="h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3"
                 />
             </button>
         );
@@ -173,12 +173,14 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         categoryButton = (
             <button
                 onClick={handleOpenCategoryModal}
-                className="rounded-full ion-no-padding p-0 shadow-3xl text-base font-semibold bg-white text-grayscale-800 px-[12px] py-[8px] flex items-center justify-around"
+                className="rounded-full p-0 text-base font-semibold bg-white text-grayscale-800 px-3 py-2 flex items-center justify-center border border-gray-300 w-[180px] relative"
             >
-                <IconComponent className={`h-[20px] text-${color} mr-[5px]`} />
-                {title}{' '}
+                <div className="flex items-center gap-1">
+                    <IconComponent className={`h-[20px] w-[20px] text-${color}`} />
+                    <span>{title}</span>
+                </div>
                 <CaretLeft
-                    className={`h-auto w-[5px] text-grayscale-800 rotate-[-90deg] ml-[5px]`}
+                    className="h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3"
                 />
             </button>
         );
@@ -200,9 +202,9 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                         <p className="mt-2 font-mouse text-3xl">Loading...</p>
                     </div>
                 ) : (
-                    <>
-                        <div className="w-full flex items-center justify-between bg-white ion-padding max-w-[90%]">
-                            <p className="text-grayscale-900 font-semibold text-base">Style Pack</p>
+                    <div className="w-full max-w-3xl mx-auto px-4 flex flex-wrap items-start justify-center">
+                        <div className="w-full flex items-center justify-between bg-white px-4 py-3 mb-4 rounded-lg shadow-sm">
+                            <p className="text-grayscale-900 font-semibold text-base whitespace-nowrap mr-2">Style Pack</p>
                             {categoryButton}
                         </div>
                         {/* Allow admins to upload custom images even when CMS customization is disabled */}
@@ -272,7 +274,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                 </button>
                             );
                         })}
-                    </>
+                    </div>
                 )}
             </IonCol>
         </IonRow>
