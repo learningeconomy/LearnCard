@@ -151,7 +151,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                 setActiveStylePackCategory(StylePackCategories.all);
                                 setShowStylePackCategoryList(false);
                             }}
-                            className="relative flex items-center justify-center bg-white text-black rounded-full px-[18px] py-[6px] font-mouse text-3xl text-center w-full shadow-lg uppercase tracking-wide max-w-[90%] mb-4"
+                            className="relative flex items-center justify-center bg-white text-grayscale-900 rounded-full px-[18px] py-[6px] font-mouse text-2xl text-center w-full shadow-lg max-w-[90%] mb-4"
                         >
                             <div
                                 className={`flex items-center justify-center absolute h-[40px] w-[40px] left-1 rounded-full`}
