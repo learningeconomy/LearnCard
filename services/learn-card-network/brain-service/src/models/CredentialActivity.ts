@@ -79,7 +79,7 @@ export const CredentialActivity = ModelFactory<
             source: {
                 type: 'string',
                 required: true,
-                enum: ['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink'],
+                enum: ['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential'],
             },
             metadata: { type: 'string', required: false },
         },
