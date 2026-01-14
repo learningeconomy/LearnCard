@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.94.8
+
+### Patch Changes
+
+-   [#882](https://github.com/learningeconomy/LearnCard/pull/882) [`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f) Thanks [@Custard7](https://github.com/Custard7)! - feat: [LC-1520] Integration Builder
+
+-   [#922](https://github.com/learningeconomy/LearnCard/pull/922) [`95f6d91929e38231c7e616e4a6720c5c157861e2`](https://github.com/learningeconomy/LearnCard/commit/95f6d91929e38231c7e616e4a6720c5c157861e2) Thanks [@Custard7](https://github.com/Custard7)! - fix: Prevent CredentialActivity Deadlocking
+
+-   [#923](https://github.com/learningeconomy/LearnCard/pull/923) [`5eb024296c3b3155f7ec6062189876c05fb8ca37`](https://github.com/learningeconomy/LearnCard/commit/5eb024296c3b3155f7ec6062189876c05fb8ca37) Thanks [@Custard7](https://github.com/Custard7)! - fix: Apply locking fix to Inbox Credential
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.3
+    -   @learncard/lca-api-plugin@1.1.5
+    -   @learncard/open-badge-v2-plugin@1.1.3
+    -   @learncard/react@2.9.5
+
 ## 1.94.7
 
 ### Patch Changes
