@@ -24,7 +24,8 @@ import {
 import BoostVCTypeOptionButton from '../../../boost-options/boostVCTypeOptions/BoostVCTypeOptionButton';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
-import { SetState } from 'packages/shared-types/dist';
+import { SetState } from '@learncard/helpers';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
 
 export enum StylePackCategories {
     all = 'All',
@@ -78,10 +79,20 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     setActiveForm,
 }) => {
     const flags = useFlags();
+    const { credentials } = useHighlightedCredentials();
+
+    // Check if user is Global Admin or National Admin
+    const isAdmin = credentials.some(cred =>
+        ['ext:GlobalID', 'ext:NetworkID'].includes(
+            cred?.credentialSubject?.achievement?.achievementType
+        )
+    );
+
     const { data: boostAppearanceBadgeList, isLoading } = useScoutPassStylesPackRegistry();
 
-    const { CategoryImage } =
+    const categoryMetadata =
         boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
+    const { CategoryImage } = categoryMetadata || {};
     const isDefaultImage = state?.appearance?.badgeThumbnail === CategoryImage;
     const type = state?.basicInfo?.type;
     const targetType = type === 'Social Badge' ? 'Boost' : type;
@@ -136,7 +147,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     let activeStep = null;
     if (showStylePackCategoryList) {
         let boostOptions = boostVCTypeOptions[boostUserType];
-        if (flags?.disableCmsCustomization) {
+        // Allow admins to bypass CMS customization restrictions
+        if (flags?.disableCmsCustomization && !isAdmin) {
             boostOptions = boostVCTypeOptions?.[boostUserType].filter(
                 item => item.title === targetType
             );
@@ -245,7 +257,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                     <p className="text-grayscale-900 font-semibold text-base">Style Pack</p>
                     {categoryButton}
                 </div>
-                {!flags?.disableCmsCustomization && (
+                {/* Allow admins to upload custom images even when CMS customization is disabled */}
+                {(!flags?.disableCmsCustomization || isAdmin) && (
                     <button onClick={handleImageSelect} className="boost-cms-badge">
                         <Camera className="boost-cms-camera-icon text-white" />
                         <span className="upload-text">Upload</span>
