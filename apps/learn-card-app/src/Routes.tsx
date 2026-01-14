@@ -98,6 +98,18 @@ const DeveloperPortalRoutes = lazyWithRetry(
 const AppStoreAdminDashboard = lazyWithRetry(
     () => import('./pages/appStoreAdmin/AdminDashboard')
 );
+const DeveloperPortalProvider = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/DeveloperPortalContext').then(m => ({ default: m.DeveloperPortalProvider }))
+);
+
+// Wrapper to provide DeveloperPortalContext for admin dashboard
+const AppStoreAdminWithProvider: React.FC = () => (
+    <Suspense fallback={<LoadingPageDumb />}>
+        <DeveloperPortalProvider>
+            <AppStoreAdminDashboard />
+        </DeveloperPortalProvider>
+    </Suspense>
+);
 // import ExternalConsentFlowDoor from './pages/consentFlow/ExternalConsentFlowDoor';
 // import CustomWallet from './pages/hidden/CustomWallet';
 // import ClaimFromDashboard from './pages/claim-from-dashboard/ClaimFromDashboard';
@@ -172,7 +184,7 @@ export const Routes: React.FC = () => {
                         {/* App Store Developer Portal - all routes wrapped in context provider */}
                         <PrivateRoute path="/app-store/developer" component={DeveloperPortalRoutes} />
                         
-                        <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminDashboard} />
+                        <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminWithProvider} />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         <PrivateRoute exact path="/contacts" component={AddressBook} />
