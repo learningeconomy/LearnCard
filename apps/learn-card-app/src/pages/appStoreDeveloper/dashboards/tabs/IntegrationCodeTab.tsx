@@ -313,7 +313,9 @@ export { INTEGRATION_ID };`;
 
         const lines = templateVariables.map(varName => {
             const value = apiTemplateData[varName] || getSmartDefault(varName);
-            const escapedValue = value.replace(/'/g, "\\'");
+            const escapedValue = String(value)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'");
             return `${indent}${varName}: '${escapedValue}',`;
         });
 
