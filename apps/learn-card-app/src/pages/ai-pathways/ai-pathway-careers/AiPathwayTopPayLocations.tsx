@@ -45,9 +45,9 @@ export const AiPathwayTopPayLocations: React.FC<{ occupation: OccupationDetailsR
                 })}
             </div>
 
-            <div className="w-full flex items-center justify-center">
+            {/* <div className="w-full flex items-center justify-center">
                 <button className="text-grayscale-900 font-semibold">See All Locations</button>
-            </div>
+            </div> */}
         </div>
     );
 };

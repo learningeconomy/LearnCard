@@ -9,6 +9,14 @@ import { useTrainingProgramsByKeyword } from 'learn-card-base/react-query/querie
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
 import { normalizeSchoolPrograms, filterCoursesByFieldOfStudy } from './ai-pathway-courses.helpers';
 
+// ! Insufficient data to show the following for careers
+// work life balance metrics
+// job stability metrics
+
+// ! Insufficient data to show the following for programs
+// rating
+// course duration
+
 const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }> = ({
     keywords = [],
     fieldOfStudy = '',
