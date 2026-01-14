@@ -358,7 +358,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             <ErrorBoundary fallback={<div>Something went wrong</div>}>
                 <BoostGenericCardWrapper
                     innerOnClick={
-                        cred && !showChecked && !showSkeleton
+                        cred && !showSkeleton
                             ? () => {
                                   resetIonicModalBackground();
                                   presentModal();

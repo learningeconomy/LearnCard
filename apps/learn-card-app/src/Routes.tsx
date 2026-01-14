@@ -92,11 +92,8 @@ const PostConsentFlowDataFeed = lazyWithRetry(
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 
 // App Store Developer Portal
-const DeveloperPortal = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/DeveloperPortal')
-);
-const SubmissionForm = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/SubmissionForm')
+const DeveloperPortalRoutes = lazyWithRetry(
+    () => import('./pages/appStoreDeveloper/DeveloperPortalRoutes')
 );
 const AppStoreAdminDashboard = lazyWithRetry(
     () => import('./pages/appStoreAdmin/AdminDashboard')
@@ -172,14 +169,9 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
 
-                        {/* App Store Developer Portal */}
-                        <PrivateRoute exact path="/app-store/developer" component={DeveloperPortal} />
-                        <PrivateRoute exact path="/app-store/developer/new" component={SubmissionForm} />
-                        <PrivateRoute
-                            exact
-                            path="/app-store/developer/edit/:listingId"
-                            component={SubmissionForm}
-                        />
+                        {/* App Store Developer Portal - all routes wrapped in context provider */}
+                        <PrivateRoute path="/app-store/developer" component={DeveloperPortalRoutes} />
+                        
                         <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminDashboard} />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />

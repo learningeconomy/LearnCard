@@ -223,7 +223,22 @@ export const PaginatedClaimHooksValidator = PaginationResponseValidator.extend({
 });
 export type PaginatedClaimHooksType = z.infer<typeof PaginatedClaimHooksValidator>;
 
-export const LCNBoostStatus = z.enum(['DRAFT', 'LIVE']);
+/**
+ * Status states for Boosts that control what actions can be performed.
+ *
+ * - **DRAFT**: Work in progress. Can edit all fields, but cannot send or generate claim links.
+ * - **PROVISIONAL**: Active but iterating. Can both edit all fields AND send/issue credentials. Ideal for testing in production or soft launches.
+ * - **LIVE**: Official/finalized. Can only edit meta and defaultPermissions. Core properties are locked for consistency.
+ *
+ * @example
+ * ```typescript
+ * // Create a provisional boost for testing
+ * const boostUri = await learnCard.invoke.createBoost(credential, {
+ *   status: 'PROVISIONAL',
+ * });
+ * ```
+ */
+export const LCNBoostStatus = z.enum(['DRAFT', 'PROVISIONAL', 'LIVE']);
 export type LCNBoostStatusEnum = z.infer<typeof LCNBoostStatus>;
 
 export const BoostValidator = z.object({
@@ -350,16 +365,35 @@ const SendBoostTemplateValidator = BoostValidator.partial()
             .optional(),
     });
 
+// Branding options for email/SMS delivery (used when recipient is email/phone)
+export const SendBrandingOptionsValidator = z.object({
+    issuerName: z.string().optional().describe('Name of the issuing organization'),
+    issuerLogoUrl: z.string().url().optional().describe('Logo URL of the issuing organization'),
+    credentialName: z.string().optional().describe('Display name for the credential'),
+    recipientName: z.string().optional().describe('Name of the recipient for personalization'),
+});
+export type SendBrandingOptions = z.infer<typeof SendBrandingOptionsValidator>;
+
+// Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
+export const SendOptionsValidator = z.object({
+    webhookUrl: z.string().url().optional().describe('Webhook URL to receive claim notifications'),
+    suppressDelivery: z.boolean().optional().describe('If true, returns claimUrl without sending email/SMS'),
+    branding: SendBrandingOptionsValidator.optional().describe('Branding for email/SMS delivery'),
+});
+export type SendOptions = z.infer<typeof SendOptionsValidator>;
+
 // Route-level validator (TRPC requires ZodObject, not discriminatedUnion)
 export const SendBoostInputValidator = z
     .object({
         type: z.literal('boost'),
-        recipient: z.string(),
+        recipient: z.string().describe('Profile ID, DID, email, or phone number (auto-detected)'),
         contractUri: z.string().optional(),
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
+        options: SendOptionsValidator.optional().describe('Options for email/phone recipients (Universal Inbox)'),
         templateData: z.record(z.string(), z.unknown()).optional(),
+        integrationId: z.string().optional().describe('Integration ID for activity tracking'),
     })
     .refine(data => data.templateUri || data.template, {
         message: 'Either templateUri or template creation data must be provided.',
@@ -367,10 +401,20 @@ export const SendBoostInputValidator = z
     });
 export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;
 
+// Inbox-specific response fields (only present when sent via email/phone)
+export const SendInboxResponseValidator = z.object({
+    issuanceId: z.string(),
+    status: z.enum(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']),
+    claimUrl: z.string().url().optional().describe('Present when suppressDelivery=true'),
+});
+export type SendInboxResponse = z.infer<typeof SendInboxResponseValidator>;
+
 export const SendBoostResponseValidator = z.object({
     type: z.literal('boost'),
     credentialUri: z.string(),
     uri: z.string(),
+    activityId: z.string().describe('Links to the activity lifecycle for this issuance'),
+    inbox: SendInboxResponseValidator.optional().describe('Present when sent via email/phone (Universal Inbox)'),
 });
 export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
@@ -931,6 +975,8 @@ export const InboxCredentialValidator = z.object({
     createdAt: z.string(),
     issuerDid: z.string(),
     webhookUrl: z.string().optional(),
+    boostUri: z.string().optional(),
+    activityId: z.string().optional(),
     signingAuthority: z
         .object({
             endpoint: z.string().optional(),
@@ -956,6 +1002,7 @@ export const InboxCredentialQueryValidator = z
         isSigned: z.boolean(),
         isAccepted: z.boolean().optional(),
         issuerDid: z.string(),
+        boostUri: z.string(),
     })
     .partial();
 
@@ -968,23 +1015,33 @@ export const IssueInboxSigningAuthorityValidator = z.object({
 
 export type IssueInboxSigningAuthority = z.infer<typeof IssueInboxSigningAuthorityValidator>;
 
-export const IssueInboxCredentialValidator = z.object({
-    // === CORE DATA (Required) ===
-    // WHAT is being sent and WHO is it for?
-    recipient: ContactMethodQueryValidator.describe('The recipient of the credential'),
-    credential: VCValidator.or(VPValidator)
-        .or(UnsignedVCValidator)
-        .describe(
-            'The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'
-        ),
+export const IssueInboxCredentialValidator = z
+    .object({
+        // === CORE DATA (Required) ===
+        // WHAT is being sent and WHO is it for?
+        recipient: ContactMethodQueryValidator.describe('The recipient of the credential'),
 
-    // === OPTIONAL FEATURES ===
-    // Add major, distinct features at the top level.
-    //consentRequest: ConsentRequestValidator.optional(),
+        // Either credential OR templateUri must be provided
+        credential: VCValidator.or(VPValidator)
+            .or(UnsignedVCValidator)
+            .optional()
+            .describe(
+                'The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'
+            ),
+        templateUri: z
+            .string()
+            .optional()
+            .describe(
+                'URI of a boost template to use for issuance. The boost credential will be resolved and used. Mutually exclusive with credential field.'
+            ),
 
-    // === PROCESS CONFIGURATION (Optional) ===
-    // HOW should this issuance be handled?
-    configuration: z
+        // === OPTIONAL FEATURES ===
+        // Add major, distinct features at the top level.
+        //consentRequest: ConsentRequestValidator.optional(),
+
+        // === PROCESS CONFIGURATION (Optional) ===
+        // HOW should this issuance be handled?
+        configuration: z
         .object({
             signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
                 'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
@@ -1000,6 +1057,12 @@ export const IssueInboxCredentialValidator = z.object({
                 .max(365)
                 .optional()
                 .describe('The number of days the credential will be valid for.'),
+            templateData: z
+                .record(z.string(), z.unknown())
+                .optional()
+                .describe(
+                    'Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided.'
+                ),
             // --- For User-Facing Delivery (Email/SMS) ---
             delivery: z
                 .object({
@@ -1080,7 +1143,11 @@ export const IssueInboxCredentialValidator = z.object({
         .describe(
             'Configuration for the credential issuance. If not provided, the default configuration will be used.'
         ),
-});
+    })
+    .refine(data => data.credential || data.templateUri, {
+        message: 'Either credential or templateUri must be provided.',
+        path: ['credential'],
+    });
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;
 
@@ -1129,12 +1196,24 @@ export const LCNDomainOrOriginValidator = z.union([
         ),
 ]);
 
+export const LCNIntegrationStatusEnum = z.enum(['setup', 'active', 'paused']);
+export type LCNIntegrationStatus = z.infer<typeof LCNIntegrationStatusEnum>;
+
 export const LCNIntegrationValidator = z.object({
     id: z.string(),
     name: z.string(),
     description: z.string().optional(),
     publishableKey: z.string(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+
+    // Setup/onboarding status
+    status: LCNIntegrationStatusEnum.default('setup'),
+    guideType: z.string().optional(),
+    guideState: z.record(z.string(), z.any()).optional(),
+
+    // Timestamps
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
 });
 
 export type LCNIntegration = z.infer<typeof LCNIntegrationValidator>;
@@ -1143,6 +1222,7 @@ export const LCNIntegrationCreateValidator = z.object({
     name: z.string(),
     description: z.string().optional(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+    guideType: z.string().optional(),
 });
 
 export type LCNIntegrationCreateType = z.infer<typeof LCNIntegrationCreateValidator>;
@@ -1152,6 +1232,11 @@ export const LCNIntegrationUpdateValidator = z.object({
     description: z.string().optional(),
     whitelistedDomains: z.array(LCNDomainOrOriginValidator).optional(),
     rotatePublishableKey: z.boolean().optional(),
+
+    // Setup/onboarding updates
+    status: LCNIntegrationStatusEnum.optional(),
+    guideType: z.string().optional(),
+    guideState: z.record(z.string(), z.any()).optional(),
 });
 
 export type LCNIntegrationUpdateType = z.infer<typeof LCNIntegrationUpdateValidator>;
@@ -1161,6 +1246,8 @@ export const LCNIntegrationQueryValidator = z
         id: StringQuery,
         name: StringQuery,
         description: StringQuery,
+        status: StringQuery,
+        guideType: StringQuery,
     })
     .partial();
 
@@ -1599,3 +1686,74 @@ export const PaginatedInstalledAppsValidator = PaginationResponseValidator.exten
 });
 
 export type PaginatedInstalledApps = z.infer<typeof PaginatedInstalledAppsValidator>;
+
+// Credential Activity
+export const CredentialActivityEventTypeValidator = z.enum([
+    'CREATED',
+    'DELIVERED',
+    'CLAIMED',
+    'EXPIRED',
+    'FAILED',
+]);
+export type CredentialActivityEventType = z.infer<typeof CredentialActivityEventTypeValidator>;
+
+export const CredentialActivityRecipientTypeValidator = z.enum(['profile', 'email', 'phone']);
+export type CredentialActivityRecipientType = z.infer<typeof CredentialActivityRecipientTypeValidator>;
+
+export const CredentialActivitySourceTypeValidator = z.enum([
+    'send',
+    'sendBoost',
+    'sendCredential',
+    'contract',
+    'claim',
+    'inbox',
+    'claimLink',
+    'acceptCredential',
+]);
+export type CredentialActivitySourceType = z.infer<typeof CredentialActivitySourceTypeValidator>;
+
+export const CredentialActivityValidator = z.object({
+    id: z.string(),
+    activityId: z.string(),
+    eventType: CredentialActivityEventTypeValidator,
+    timestamp: z.string(),
+    actorProfileId: z.string(),
+    recipientType: CredentialActivityRecipientTypeValidator,
+    recipientIdentifier: z.string(),
+    boostUri: z.string().optional(),
+    credentialUri: z.string().optional(),
+    inboxCredentialId: z.string().optional(),
+    integrationId: z.string().optional(),
+    source: CredentialActivitySourceTypeValidator,
+    metadata: z.record(z.string(), z.unknown()).optional(),
+});
+export type CredentialActivityRecord = z.infer<typeof CredentialActivityValidator>;
+
+export const CredentialActivityWithDetailsValidator = CredentialActivityValidator.extend({
+    boost: z.object({
+        id: z.string(),
+        name: z.string().optional(),
+        category: z.string().optional(),
+    }).optional(),
+    recipientProfile: z.object({
+        profileId: z.string(),
+        displayName: z.string().optional(),
+    }).optional(),
+});
+export type CredentialActivityWithDetails = z.infer<typeof CredentialActivityWithDetailsValidator>;
+
+export const PaginatedCredentialActivitiesValidator = PaginationResponseValidator.extend({
+    records: CredentialActivityWithDetailsValidator.array(),
+});
+export type PaginatedCredentialActivities = z.infer<typeof PaginatedCredentialActivitiesValidator>;
+
+export const CredentialActivityStatsValidator = z.object({
+    total: z.number(),
+    created: z.number(),
+    delivered: z.number(),
+    claimed: z.number(),
+    expired: z.number(),
+    failed: z.number(),
+    claimRate: z.number(),
+});
+export type CredentialActivityStats = z.infer<typeof CredentialActivityStatsValidator>;

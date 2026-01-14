@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Plus, Loader2, Check } from 'lucide-react';
+import { useHistory, useLocation } from 'react-router-dom';
+import { ChevronDown, Plus, Loader2, Check, Settings, LayoutDashboard } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
-import { useDeveloperPortal } from '../useDeveloperPortal';
+import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 
 interface HeaderIntegrationSelectorProps {
     integrations: LCNIntegration[];
@@ -18,6 +19,8 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     onSelect,
     isLoading,
 }) => {
+    const history = useHistory();
+    const location = useLocation();
     const [isOpen, setIsOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
@@ -26,8 +29,10 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const { useCreateIntegration } = useDeveloperPortal();
-    const createMutation = useCreateIntegration();
+    const { createIntegration, isCreatingIntegration } = useDeveloperPortalContext();
+
+    // Detect if we're on Apps side (has /apps in path) vs Build side
+    const isOnAppsPage = location.pathname.includes('/apps');
 
     const selectedIntegration = integrations.find(i => i.id === selectedId);
 
@@ -67,12 +72,24 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
         }
     }, [isCreating]);
 
+    const handleSelectIntegration = (integration: LCNIntegration) => {
+        setIsOpen(false);
+        
+        // Navigate based on current context (Apps vs Build)
+        if (isOnAppsPage) {
+            // On Apps side - navigate to that integration's apps page
+            history.push(`/app-store/developer/integrations/${integration.id}/apps`);
+        } else {
+            // On Build side - use the existing onSelect which handles navigation
+            onSelect(integration.id);
+        }
+    };
+
     const handleCreate = async () => {
         if (!newName.trim()) return;
 
         try {
-            const id = await createMutation.mutateAsync(newName.trim());
-            onSelect(id);
+            await createIntegration(newName.trim());
             setNewName('');
             setIsCreating(false);
             setIsOpen(false);
@@ -98,26 +115,35 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
         >
             {integrations.length > 0 && (
                 <div className="max-h-48 overflow-y-auto">
-                    {integrations.map(integration => (
-                        <button
-                            key={integration.id}
-                            onClick={() => {
-                                onSelect(integration.id);
-                                setIsOpen(false);
-                            }}
-                            className={`w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
-                                selectedId === integration.id ? 'bg-cyan-50' : ''
-                            }`}
-                        >
-                            <span className={`text-sm truncate ${selectedId === integration.id ? 'text-cyan-700 font-medium' : 'text-gray-700'}`}>
-                                {integration.name}
-                            </span>
+                    {integrations.map(integration => {
+                        const isSetup = integration.status === 'setup' || !integration.status;
 
-                            {selectedId === integration.id && (
-                                <Check className="w-4 h-4 text-cyan-500 flex-shrink-0" />
-                            )}
-                        </button>
-                    ))}
+                        return (
+                            <button
+                                key={integration.id}
+                                onClick={() => handleSelectIntegration(integration)}
+                                className={`w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                                    selectedId === integration.id ? 'bg-cyan-50' : ''
+                                }`}
+                            >
+                                <div className="flex items-center gap-2 min-w-0">
+                                    {isSetup ? (
+                                        <Settings className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                                    ) : (
+                                        <LayoutDashboard className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                                    )}
+
+                                    <span className={`text-sm truncate ${selectedId === integration.id ? 'text-cyan-700 font-medium' : 'text-gray-700'}`}>
+                                        {integration.name}
+                                    </span>
+                                </div>
+
+                                {selectedId === integration.id && (
+                                    <Check className="w-4 h-4 text-cyan-500 flex-shrink-0" />
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
 
@@ -143,10 +169,10 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
 
                             <button
                                 onClick={handleCreate}
-                                disabled={!newName.trim() || createMutation.isPending}
+                                disabled={!newName.trim() || isCreatingIntegration}
                                 className="px-3 py-1.5 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                {createMutation.isPending ? (
+                                {isCreatingIntegration ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
                                     'Add'
