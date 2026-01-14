@@ -45,8 +45,6 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
         </div>
     );
 
-    console.log('courses', courses);
-
     if (isLoading)
         return (
             <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding">
@@ -64,7 +62,7 @@ const AiPathwayCourses: React.FC<{ keywords?: string[]; fieldOfStudy?: string }>
 
     return (
         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding">
-            <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
+            <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px]">
                 {titleEl}
 
                 <div className="w-full flex flex-col items-start justify-start mt-4 gap-4">

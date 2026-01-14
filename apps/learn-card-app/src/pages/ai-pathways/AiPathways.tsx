@@ -40,7 +40,6 @@ const AiPathways: React.FC = () => {
     const { backgroundSecondaryColor } = colors;
 
     const { data: aiInsightCredential } = useAiInsightCredential();
-
     const { data: learningPathwaysData, isLoading: fetchPathwaysLoading } = useAiPathways();
 
     const strongestAreaInterest = aiInsightCredential?.insights?.strongestArea;
@@ -72,7 +71,7 @@ const AiPathways: React.FC = () => {
                         subheaderType={SubheaderTypeEnum.AiPathways}
                         hidePlusBtn={true}
                     />
-                    <div className="flex items-center justify-center flex-col relative w-full pb-[50px] gap-1">
+                    <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-1">
                         <AiPathwayCourses keywords={allKeywords} fieldOfStudy={fieldOfStudy} />
                         <AiPathwaySessions />
                         <AiPathwayCareers careerKeywords={careerKeywords} />
