@@ -16,6 +16,7 @@ import {
     VideoMetadata,
 } from '../../types';
 import LeftArrow from '../svgs/LeftArrow';
+import { enrichAlignment } from '../../helpers/alignment.helpers';
 
 /*
 const defaultTagsToSkills = (tags: string[]) => {
@@ -77,7 +78,11 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             : undefined;
     const criteria = achievement?.criteria?.narrative;
     const description = achievement?.description;
-    const alignment = achievement?.alignment;
+    const alignment = Array.isArray(achievement?.alignment)
+        ? achievement?.alignment.map(enrichAlignment)
+        : achievement?.alignment
+        ? enrichAlignment(achievement?.alignment)
+        : undefined;
 
     /* 
     const tags = credential.credentialSubject.achievement?.tag;

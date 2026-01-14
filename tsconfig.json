@@ -4,7 +4,9 @@
         "resolveJsonModule": true,
         "paths": {
             "learn-card-base": ["packages/learn-card-base/src/index.ts"],
-            "learn-card-base/*": ["packages/learn-card-base/src/*"]
+            "learn-card-base/*": ["packages/learn-card-base/src/*"],
+            "@learncard/react": ["packages/react-learn-card/src/index.ts"],
+            "@learncard/react/*": ["packages/react-learn-card/src/*"]
         }
     }
 }

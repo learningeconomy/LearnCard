@@ -20,7 +20,13 @@ export const parseAlignmentUrl = (url?: string): { frameworkId?: string; skillId
  * Enriches an alignment object with frameworkId and targetCode if they can be parsed from the targetUrl.
  */
 export const enrichAlignment = <
-    T extends { targetUrl?: string; frameworkId?: string; targetCode?: string }
+    T extends {
+        targetUrl?: string;
+        frameworkId?: string;
+        targetCode?: string;
+        parsedFrameworkId?: string;
+        parsedSkillId?: string;
+    }
 >(
     alignment: T
 ): T => {
@@ -28,6 +34,8 @@ export const enrichAlignment = <
 
     return {
         ...alignment,
+        parsedFrameworkId: frameworkId,
+        parsedSkillId: skillId,
         frameworkId: alignment.frameworkId || frameworkId,
         targetCode: alignment.targetCode || skillId,
     };

@@ -68,6 +68,19 @@ export default defineConfig(async ({ mode }) => {
                         path.resolve(__dirname, '../../packages/learn-card-base/src') + '/$1',
                 },
                 {
+                    find: /^@learncard\/react\/dist\/main\.css$/,
+                    replacement: path.resolve(__dirname, '../../packages/react-learn-card/dist/main.css'),
+                },
+                {
+                    find: /^@learncard\/react$/,
+                    replacement: path.resolve(__dirname, '../../packages/react-learn-card/src'),
+                },
+                {
+                    find: /^@learncard\/react\/(.*)$/,
+                    replacement:
+                        path.resolve(__dirname, '../../packages/react-learn-card/src') + '/$1',
+                },
+                {
                     find: '@web3auth/openlogin-adapter',
                     replacement: '@web3auth/openlogin-adapter/dist/openloginAdapter.umd.min.js',
                 },

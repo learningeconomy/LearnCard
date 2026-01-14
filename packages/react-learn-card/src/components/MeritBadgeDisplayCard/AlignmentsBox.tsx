@@ -36,20 +36,26 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style, onAlign
                   framework={object.targetFramework}
                   icon={object.icon}
                   description={object.targetDescription}
+                  frameworkId={object.frameworkId}
+                  targetCode={object.targetCode}
                   onClick={onAlignmentClick ? () => onAlignmentClick(object) : undefined}
               />
           ))
-        : alignment && (
-              <AlignmentRow
-                  {...enrichAlignment(alignment)}
-                  url={alignment.targetUrl}
-                  name={alignment.targetName}
-                  framework={alignment.targetFramework}
-                  icon={alignment.icon}
-                  description={alignment.targetDescription}
-                  onClick={onAlignmentClick ? () => onAlignmentClick(enrichAlignment(alignment)) : undefined}
-              />
-          );
+        : alignment && (() => {
+              const enriched = enrichAlignment(alignment);
+              return (
+                  <AlignmentRow
+                      url={enriched.targetUrl}
+                      name={enriched.targetName}
+                      framework={enriched.targetFramework}
+                      icon={enriched.icon}
+                      description={enriched.targetDescription}
+                      frameworkId={enriched.frameworkId}
+                      targetCode={enriched.targetCode}
+                      onClick={onAlignmentClick ? () => onAlignmentClick(enriched) : undefined}
+                  />
+              );
+          })();
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom p-[15px] w-full">

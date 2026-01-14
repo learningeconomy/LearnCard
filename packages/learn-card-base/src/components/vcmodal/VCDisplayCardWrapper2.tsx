@@ -162,8 +162,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             if (AlignmentModal) {
                 newModal(
                     <AlignmentModal
-                        frameworkId={alignment.frameworkId}
-                        skillId={alignment.targetCode}
+                        frameworkId={alignment.parsedFrameworkId || alignment.frameworkId}
+                        skillId={alignment.parsedSkillId || alignment.targetCode}
                         alignment={alignment}
                     />
                 );

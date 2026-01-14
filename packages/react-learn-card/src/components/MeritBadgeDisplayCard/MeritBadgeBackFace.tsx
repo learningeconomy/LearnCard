@@ -13,6 +13,7 @@ import TruncateTextBox from './TruncateTextBox';
 import MediaAttachmentsBox from './MediaAttachmentsBox';
 import SkillsBox from '../VCDisplayCard2/SkillsBox';
 import LeftArrow from '../svgs/LeftArrow';
+import { enrichAlignment } from '../../helpers/alignment.helpers';
 
 type MeritBadgeBackFaceProps = {
     isFront?: boolean;
@@ -52,7 +53,11 @@ export const MeritBadgeBackFace: React.FC<MeritBadgeBackFaceProps> = ({
 
     const { description } = credentialSubject?.achievement ?? {};
     const criteria = credentialSubject?.achievement?.criteria?.narrative;
-    const alignment = credentialSubject?.achievement?.alignment;
+    const alignment = Array.isArray(credentialSubject?.achievement?.alignment)
+        ? credentialSubject?.achievement?.alignment.map(enrichAlignment)
+        : credentialSubject?.achievement?.alignment
+        ? enrichAlignment(credentialSubject?.achievement?.alignment)
+        : undefined;
 
     const credentialDarkColor = getCategoryDarkColor(categoryType);
 

@@ -45,10 +45,11 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
     const { data: alignmentData } = useGetSkill(_frameworkId ?? '', _skillId ?? '');
 
     const alignment =
-        _alignment ??
-        (alignmentData
+        _alignment && _alignment.targetName
+            ? _alignment
+            : alignmentData
             ? convertApiSkillNodeToSkillTreeNode(alignmentData as ApiSkillNode)
-            : undefined);
+            : _alignment;
 
     const frameworkId = _frameworkId ?? alignment?.targetFramework ?? '';
     const skillId = _skillId ?? alignment?.id ?? '';
