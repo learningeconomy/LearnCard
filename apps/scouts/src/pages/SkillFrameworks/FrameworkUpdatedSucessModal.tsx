@@ -58,7 +58,9 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                             {skillsCreated > 0 && (
                                 <>
                                     <strong className="font-[600] font-poppins">
-                                        {conditionalPluralize(skillsCreated, 'skill')}
+                                        {skillsCreated === 1
+                                            ? '1 competency'
+                                            : `${skillsCreated} competencies`}
                                     </strong>
                                     {tiersCreated > 0 && ' and '}
                                 </>
@@ -76,7 +78,9 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                             {skillsUpdated > 0 && (
                                 <>
                                     <strong className="font-[600] font-poppins">
-                                        {conditionalPluralize(skillsUpdated, 'skill')}
+                                        {skillsUpdated === 1
+                                            ? '1 competency'
+                                            : `${skillsUpdated} competencies`}
                                     </strong>
                                     {tiersUpdated > 0 && ' and '}
                                 </>
@@ -94,7 +98,9 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                             {skillsDeleted > 0 && (
                                 <>
                                     <strong className="font-[600] font-poppins">
-                                        {conditionalPluralize(skillsDeleted, 'skill')}
+                                        {skillsDeleted === 1
+                                            ? '1 competency'
+                                            : `${skillsDeleted} competencies`}
                                     </strong>
                                     {tiersDeleted > 0 && ' and '}
                                 </>

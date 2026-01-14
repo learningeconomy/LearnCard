@@ -13,18 +13,21 @@ import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { sendCredential } from '@helpers/credential.helpers';
+import { sendBoost } from '@helpers/boost.helpers';
+import { getBoostByUri } from '@accesslayer/boost/read';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { logCredentialDelivered } from '@helpers/activity.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getPrimarySigningAuthorityForUser } from '@accesslayer/signing-authority/relationships/read';
 import { getRegistryService } from '@services/registry/registry.factory';
 
 export const verifyCredentialCanBeSigned = async (credential: UnsignedVC): Promise<boolean> => {
     try {
-        const learnCard = await getLearnCard();
+        const learnCard = await getLearnCard(undefined, true);
         const testCredential = credential;
         testCredential.issuer = learnCard.id.did();
         await learnCard.invoke.issueCredential(testCredential);
@@ -120,7 +123,7 @@ export const issueToInbox = async (
     issuerProfile: ProfileType,
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP, 
-    configuration: IssueInboxCredentialType['configuration'] = {},
+    configuration: IssueInboxCredentialType['configuration'] & { boostUri?: string; activityId?: string; integrationId?: string } = {},
     ctx: Context
 ): Promise<{ 
     status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
@@ -128,7 +131,7 @@ export const issueToInbox = async (
     claimUrl?: string;
     recipientDid?: string;
 }> => {
-    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery } = configuration;
+    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery, boostUri, activityId, integrationId } = configuration;
     
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
@@ -220,20 +223,53 @@ export const issueToInbox = async (
             recipient,
             issuerProfile,
             webhookUrl,
+            boostUri,
+            activityId,
+            integrationId,
             expiresInDays,
         });
 
-        // Send credential directly
-        await sendCredential(
-            issuerProfile,
-            existingProfile,
-            finalCredential,
-            ctx.domain // domain
-        );
-
+        // Send credential using appropriate helper (sendBoost handles boost tracking)
+        // Pass activityId and integrationId so they're stored on the relationship for CLAIMED chaining
+        if (boostUri) {
+            const boost = await getBoostByUri(boostUri);
+            if (boost) {
+                await sendBoost({
+                    from: issuerProfile,
+                    to: existingProfile,
+                    boost,
+                    credential: finalCredential,
+                    domain: ctx.domain,
+                    skipCertification: true,
+                    activityId,
+                    integrationId,
+                });
+            } else {
+                // Fallback to sendCredential if boost not found
+                await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain, undefined, activityId, integrationId);
+            }
+        } else {
+            await sendCredential(issuerProfile, existingProfile, finalCredential, ctx.domain, undefined, activityId, integrationId);
+        }
 
         // Mark as issued and create relationship
         await markInboxCredentialAsIssued(inboxCredential.id);
+
+        // Log credential activity for auto-delivery
+        if (activityId) {
+            await logCredentialDelivered({
+                activityId,
+                actorProfileId: issuerProfile.profileId,
+                recipientType: recipient.type as 'email' | 'phone',
+                recipientIdentifier: recipient.value,
+                recipientProfileId: existingProfile.profileId,
+                boostUri,
+                inboxCredentialId: inboxCredential.id,
+                integrationId,
+                source: 'send',
+            });
+        }
+
         await createDeliveredRelationship(
             issuerProfile.profileId,
             inboxCredential.id,
@@ -280,6 +316,9 @@ export const issueToInbox = async (
             recipient,
             issuerProfile,
             webhookUrl,
+            boostUri,
+            activityId,
+            integrationId,
             signingAuthority,
             expiresInDays,
         });

@@ -158,19 +158,78 @@ sequenceDiagram
 
 ### Publishing and Updating <a href="#publishing-and-updating" id="publishing-and-updating"></a>
 
-Boosts have two status states:
+Boosts have three status states that control what actions can be performed:
 
-* **DRAFT**: Can be edited freely
-* **LIVE**: Only metadata can be updated
+| Status | Can Edit All Fields | Can Send/Issue | Use Case |
+| ------ | ------------------- | -------------- | -------- |
+| **DRAFT** | ✅ Yes | ❌ No | Work in progress, not ready for issuance |
+| **PROVISIONAL** | ✅ Yes | ✅ Yes | Active but iterating—test and refine while issuing |
+| **LIVE** | ❌ Only meta | ✅ Yes | Official/finalized—locked for consistency |
 
-When a Boost is published (status changed to LIVE), its core properties are finalized and cannot be changed. This ensures that issued credentials based on this Boost maintain their integrity.
+#### DRAFT Status
+
+A Boost in `DRAFT` status is a work in progress. All properties can be freely edited, including:
+- Name, category, and type
+- Credential template
+- Permissions and metadata
+
+However, DRAFT Boosts **cannot be sent to recipients** or have claim links generated. This prevents incomplete or untested credentials from being issued.
+
+#### PROVISIONAL Status
+
+`PROVISIONAL` is a hybrid status that allows you to **both issue credentials AND continue editing** the Boost template. This is ideal for:
+
+- **Testing in production**: Send real credentials to QA while iterating on the template
+- **Soft launches**: Issue to early adopters before finalizing
+- **Internal credentials**: Organization credentials that may need ongoing updates
+- **Iterative development**: Refine the credential based on real-world feedback
+
+```typescript
+// Create a provisional boost for testing
+const boostUri = await learnCard.invoke.createBoost(credential, {
+  name: 'Course Certificate',
+  status: 'PROVISIONAL',  // Can edit AND send
+});
+
+// Send to test recipients while still iterating
+await learnCard.invoke.send({
+  type: 'boost',
+  recipient: 'qa-tester@example.com',
+  templateUri: boostUri,
+});
+
+// Later, update the template based on feedback
+await learnCard.invoke.updateBoost(boostUri, {
+  credential: updatedCredential,  // Still allowed!
+});
+
+// When finalized, promote to LIVE
+await learnCard.invoke.updateBoost(boostUri, {
+  status: 'LIVE',
+});
+```
+
+#### LIVE Status
+
+When a Boost is set to `LIVE` status, its core properties are **finalized and locked**. Only the following can be updated:
+- `meta` (arbitrary metadata)
+- `defaultPermissions`
+
+This ensures that all credentials issued from a LIVE Boost maintain consistency and integrity. Recipients can trust that the credential template hasn't changed after issuance.
+
+{% hint style="info" %}
+**Choosing the Right Status**:
+- Use `DRAFT` while building and testing locally
+- Use `PROVISIONAL` when you need to issue real credentials but may still iterate
+- Use `LIVE` when the credential template is finalized and should never change
+{% endhint %}
 
 ### Sending to Recipients <a href="#sending-to-recipients" id="sending-to-recipients"></a>
 
 Boosts can be sent to recipients, which creates a credential instance for that recipient. This requires:
 
 1. The sender to have permission to issue the Boost
-2. The Boost to be in LIVE status (not DRAFT)
+2. The Boost to be in `PROVISIONAL` or `LIVE` status (not `DRAFT`)
 
 The system checks permissions, creates a credential, sends it to the recipient, and optionally notifies them.
 

@@ -28,6 +28,15 @@ export const Integration = ModelFactory<FlatIntegrationType, IntegrationRelation
             description: { type: 'string', required: false },
             publishableKey: { type: 'string', required: true },
             whitelistedDomains: { type: 'string[]', required: false },
+
+            // Setup/onboarding status
+            status: { type: 'string', required: false },
+            guideType: { type: 'string', required: false },
+            guideState: { type: 'string', required: false }, // JSON stringified
+
+            // Timestamps
+            createdAt: { type: 'string', required: false },
+            updatedAt: { type: 'string', required: false },
         } as any,
         relationships: {
             createdBy: { model: Profile, direction: 'out', name: 'CREATED_BY' },

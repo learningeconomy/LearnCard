@@ -37,8 +37,10 @@ const FrameworkSkillsCount: React.FC<FrameworkSkillsCountProps> = ({
             {includeSkillWord ? (
                 <span className={`${textClassName} font-poppins font-[600]`}>
                     {countToUse !== undefined
-                        ? conditionalPluralize(countToUse, 'skill')
-                        : '... skills'}
+                        ? countToUse === 1
+                            ? '1 competency'
+                            : `${countToUse} competencies`
+                        : '... competencies'}
                 </span>
             ) : (
                 <span className="font-poppins font-[600]">{countToUse ?? '...'}</span>

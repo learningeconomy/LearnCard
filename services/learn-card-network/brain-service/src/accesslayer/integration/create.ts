@@ -14,6 +14,13 @@ export const createIntegration = async (
         description: input.description,
         publishableKey: 'pk_' + uuid(),
         whitelistedDomains: input.whitelistedDomains ?? [],
+
+        // Setup/onboarding defaults
+        status: 'setup',
+        guideType: input.guideType,
+
+        // Timestamps
+        createdAt: new Date().toISOString(),
     });
 
     const result = await new QueryBuilder(new BindParam({ params }))
