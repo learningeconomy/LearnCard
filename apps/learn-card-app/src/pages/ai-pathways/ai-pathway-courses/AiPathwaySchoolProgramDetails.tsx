@@ -61,11 +61,7 @@ const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({
                             </div>
 
                             <div className="flex items-center justify-between">
-                                <img
-                                    src={logo}
-                                    alt="Edx Logo"
-                                    className="w-12 h-12 object-contain"
-                                />
+                                <img src={logo} alt="Logo" className="w-12 h-12 object-contain" />
                             </div>
                         </div>
                         <div className="flex flex-col gap-[10px] items-start justify-start p-[20px]">

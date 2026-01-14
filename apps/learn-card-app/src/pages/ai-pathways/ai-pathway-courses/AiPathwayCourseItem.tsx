@@ -1,16 +1,14 @@
 import React, { useMemo } from 'react';
 
-import startRatingIcon from '../../../assets/images/star-rating.icon.png';
-import timeMachineIcon from '../../../assets/images/time-machine.icon.png';
+// import startRatingIcon from '../../../assets/images/star-rating.icon.png';
+import openSyllabusLogo from '../../../assets/images/open-syllabus-logo.webp';
+// import timeMachineIcon from '../../../assets/images/time-machine.icon.png';
 import AiPathwayCourseDetails from './AiPathwayCourseDetails';
-import edxLogo from '../../../assets/images/edx-logo.png';
 
-import { useModal } from 'learn-card-base';
+import { useModal, ModalTypes } from 'learn-card-base';
+import { getOccupationTags } from './ai-pathway-courses.helpers';
 
-import { ModalTypes } from 'learn-card-base';
-import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
-
-const AiPathwayCourseItem: React.FC<{ course: TrainingProgram }> = ({ course }) => {
+const AiPathwayCourseItem: React.FC<{ course: any }> = ({ course }) => {
     const { newModal } = useModal();
 
     const openCourseDetailsModal = () => {
@@ -20,14 +18,13 @@ const AiPathwayCourseItem: React.FC<{ course: TrainingProgram }> = ({ course }) 
         });
     };
 
-    const careers = useMemo(() => {
-        return course?.Occupationslist?.length
-            ? [...course.Occupationslist]
-                  .sort(() => Math.random() - 0.5)
-                  .slice(0, 3)
-                  .map(occupation => occupation.Value)
-            : [];
-    }, [course?.Occupationslist]);
+    const occupationTags = useMemo(() => {
+        const tags = getOccupationTags(course?.occupationDetails);
+        return tags;
+    }, [course?.occupationDetails]);
+
+    const schoolImage = course?.institution?.image_url;
+    const logo = schoolImage ? schoolImage : openSyllabusLogo;
 
     return (
         <div
@@ -35,11 +32,11 @@ const AiPathwayCourseItem: React.FC<{ course: TrainingProgram }> = ({ course }) 
             className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border-[1px] border-grayscale-200 rounded-xl"
         >
             <p className="text-indigo-500 font-normal text-sm line-clamp-1 font-notoSans uppercase text-left">
-                {careers.join(', ')}
+                {occupationTags}
             </p>
             <div className="w-full flex items-center justify-between">
                 <h2 className="text-lg text-left font-semibold text-grayscale-800 line-clamp-2 w-[70%]">
-                    {course?.ProgramName}
+                    {course?.title}
                 </h2>
 
                 {/* <div className="flex flex-col items-center gap-1">
@@ -55,10 +52,12 @@ const AiPathwayCourseItem: React.FC<{ course: TrainingProgram }> = ({ course }) 
                 </div> */}
             </div>
 
-            <p className="text-sm text-grayscale-600 font-notoSans">{course?.SchoolName}</p>
+            <p className="text-sm text-grayscale-600 font-notoSans">
+                {course?.institution?.institution}
+            </p>
 
-            <div className="w-full flex justify-between items-center">
-                <div className="flex items-center gap-2">
+            <div className="w-full flex justify-end items-center">
+                {/* <div className="flex items-center gap-2">
                     <div className="h-full flex items-start justify-start">
                         <img
                             src={timeMachineIcon}
@@ -67,16 +66,16 @@ const AiPathwayCourseItem: React.FC<{ course: TrainingProgram }> = ({ course }) 
                         />
                     </div>
                     <div className="flex flex-col items-start justify-end">
-                        {/* <p className="text-sm text-grayscale-800 font-semibold text-right">
+                        <p className="text-sm text-grayscale-800 font-semibold text-right">
                             {course?.DurationAvg}
-                        </p> */}
+                        </p> 
                         <span className="text-xs text-grayscale-700 font-medium text-left max-w-[90%]">
                             Total: {course?.ProgramLength?.[0]?.Value} to complete
                         </span>
                     </div>
-                </div>
+                </div> */}
                 <div className="flex items-center justify-end gap-1">
-                    <img src={edxLogo} alt="Edx Logo" className="w-12 h-12 object-contain" />
+                    <img src={logo} alt="Edx Logo" className="w-12 h-12 object-contain" />
                 </div>
             </div>
         </div>

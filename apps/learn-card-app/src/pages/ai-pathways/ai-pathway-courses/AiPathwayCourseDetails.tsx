@@ -1,15 +1,32 @@
 import React from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 import { IonFooter } from '@ionic/react';
-import Star from 'learn-card-base/svgs/shapes/Star';
-import TimeCircle from 'learn-card-base/svgs/TimeCircle';
+// import Star from 'learn-card-base/svgs/shapes/Star';
+// import TimeCircle from 'learn-card-base/svgs/TimeCircle';
+import CareerLaptopIcon from '../../../assets/images/career.laptop.icon.png';
+import openSyllabusLogo from '../../../assets/images/open-syllabus-logo.webp';
 
 import { useModal } from 'learn-card-base';
 
-import type { AiPathwayCourse } from './ai-pathway-courses.helpers';
-
-const AiPathwayCourseDetails: React.FC<{ course: AiPathwayCourse }> = ({ course }) => {
+const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {
     const { closeModal } = useModal();
+
+    const school = course?.institution;
+
+    const schoolUrl = school?.url;
+    const schoolImage = school?.image_url;
+    const logo = schoolImage ? schoolImage : openSyllabusLogo;
+
+    const handleExploreSchool = async () => {
+        if (!schoolUrl) return;
+        if (Capacitor?.isNativePlatform()) {
+            await Browser.open({ url: schoolUrl });
+        } else {
+            window.open(schoolUrl, '_blank');
+        }
+    };
 
     return (
         <div
@@ -22,12 +39,12 @@ const AiPathwayCourseDetails: React.FC<{ course: AiPathwayCourse }> = ({ course 
                         {/* header */}
                         <div className="flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
                             <img
-                                src={course.image}
-                                alt={course.title}
+                                src={CareerLaptopIcon}
+                                alt="career icon"
                                 className="w-[80px] h-[80px]"
                             />
 
-                            <h2 className="text-[20px] text-grayscale-900 font-poppins">
+                            <h2 className="text-[20px] text-grayscale-900 font-poppins text-center">
                                 {course.title}
                             </h2>
                         </div>
@@ -40,19 +57,17 @@ const AiPathwayCourseDetails: React.FC<{ course: AiPathwayCourse }> = ({ course 
                                 </p>
 
                                 <p className="text-grayscale-900 font-poppins text-base tracking-[-0.25px]">
-                                    {course.provider}
+                                    {school.institution}
                                 </p>
                             </div>
 
                             <div className="flex items-center justify-between">
-                                <p className="text-blue-600 font-poppins font-semibold text-sm tracking-[-0.25px]">
-                                    {course.source}
-                                </p>
+                                <img src={logo} alt="Logo" className="w-12 h-12 object-contain" />
                             </div>
                         </div>
-                        <div className="flex flex-col gap-[10px] items-start justify-start px-[20px]">
+                        {/* <div className="flex flex-col gap-[10px] items-start justify-start px-[20px]">
                             <p className="text-grayscale-600 font-poppins font-semibold text-sm tracking-[-0.25px]">
-                                Provided by
+                                Rated
                             </p>
                             <div className="flex items-center gap-1">
                                 <Star className="w-6 h-6 text-yellow-500" />
@@ -75,7 +90,7 @@ const AiPathwayCourseDetails: React.FC<{ course: AiPathwayCourse }> = ({ course 
                                     • {course.durationTotal}
                                 </p>
                             </div>
-                        </div>
+                        </div> */}
 
                         <div className="flex flex-col gap-[10px] items-start justify-start px-[20px] pb-1">
                             <div className="w-full border-b-[1px] border-grayscale-200 border-solid" />
@@ -100,8 +115,11 @@ const AiPathwayCourseDetails: React.FC<{ course: AiPathwayCourse }> = ({ course 
                         >
                             Close
                         </button>
-                        <button className="p-[11px] bg-emerald-700 rounded-full text-white shadow-button-bottom flex-1 font-poppins text-[17px] font-semibold">
-                            Start
+                        <button
+                            onClick={handleExploreSchool}
+                            className="p-[11px] bg-emerald-700 rounded-full text-white shadow-button-bottom flex-1 font-poppins text-[17px] font-semibold"
+                        >
+                            Explore
                         </button>
                     </div>
                 </IonFooter>

@@ -8,6 +8,7 @@ import { useModal } from 'learn-card-base';
 
 import { ModalTypes } from 'learn-card-base';
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
+import { getOccupationTags } from './ai-pathway-courses.helpers';
 
 const AiPathwaySchoolProgramItem: React.FC<{ program: TrainingProgram }> = ({ program }) => {
     const { newModal } = useModal();
@@ -20,16 +21,11 @@ const AiPathwaySchoolProgramItem: React.FC<{ program: TrainingProgram }> = ({ pr
     };
 
     const occupationTags = useMemo(() => {
-        return program?.Occupationslist?.length
-            ? [...program.Occupationslist]
-                  .sort(() => Math.random() - 0.5)
-                  .slice(0, 3)
-                  .map(occupation => occupation.Value)
-            : [];
-    }, [program?.Occupationslist]);
+        const tags = getOccupationTags(program?.occupationDetails);
+        return tags;
+    }, [program?.occupationDetails]);
 
     const schoolImage = program?.school?.image_url;
-
     const logo = schoolImage ? schoolImage : careerOneStopLogo;
 
     return (
@@ -38,7 +34,7 @@ const AiPathwaySchoolProgramItem: React.FC<{ program: TrainingProgram }> = ({ pr
             className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border-[1px] border-grayscale-200 rounded-xl"
         >
             <p className="text-indigo-500 font-normal text-sm line-clamp-1 font-notoSans uppercase text-left">
-                {occupationTags.join(', ')}
+                {occupationTags}
             </p>
             <div className="w-full flex items-center justify-between">
                 <h2 className="text-lg text-left font-semibold text-grayscale-800 line-clamp-2 w-[70%]">
