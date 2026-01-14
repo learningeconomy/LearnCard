@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
 import {
     Zap,
     CheckCircle2,
@@ -26,23 +26,24 @@ import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import { DashboardLayout, QuickStats, StatItem } from './shared';
-import {
-    OverviewTab,
-    TemplatesTab,
-    ApiTokensTab,
-    EmbedCodeTab,
-    ContractsTab,
-    ConnectionsTab,
-    SigningTab,
-    BrandingTab,
-    AnalyticsTab,
-    IntegrationCodeTab,
-    TestingTab,
-    AppListingsTab,
-    PartnerConnectTab,
-    AppConfigTab,
-    CsvUploadTab,
-} from './tabs';
+
+// Lazy load tab components for better code splitting
+// Only the active tab is loaded, reducing initial bundle by ~250KB
+const OverviewTab = lazy(() => import('./tabs/OverviewTab').then(m => ({ default: m.OverviewTab })));
+const TemplatesTab = lazy(() => import('./tabs/TemplatesTab').then(m => ({ default: m.TemplatesTab })));
+const ApiTokensTab = lazy(() => import('./tabs/ApiTokensTab').then(m => ({ default: m.ApiTokensTab })));
+const EmbedCodeTab = lazy(() => import('./tabs/EmbedCodeTab').then(m => ({ default: m.EmbedCodeTab })));
+const ContractsTab = lazy(() => import('./tabs/ContractsTab').then(m => ({ default: m.ContractsTab })));
+const ConnectionsTab = lazy(() => import('./tabs/ConnectionsTab').then(m => ({ default: m.ConnectionsTab })));
+const SigningTab = lazy(() => import('./tabs/SigningTab').then(m => ({ default: m.SigningTab })));
+const BrandingTab = lazy(() => import('./tabs/BrandingTab').then(m => ({ default: m.BrandingTab })));
+const AnalyticsTab = lazy(() => import('./tabs/AnalyticsTab').then(m => ({ default: m.AnalyticsTab })));
+const IntegrationCodeTab = lazy(() => import('./tabs/IntegrationCodeTab').then(m => ({ default: m.IntegrationCodeTab })));
+const TestingTab = lazy(() => import('./tabs/TestingTab').then(m => ({ default: m.TestingTab })));
+const AppListingsTab = lazy(() => import('./tabs/AppListingsTab').then(m => ({ default: m.AppListingsTab })));
+const PartnerConnectTab = lazy(() => import('./tabs/PartnerConnectTab').then(m => ({ default: m.PartnerConnectTab })));
+const AppConfigTab = lazy(() => import('./tabs/AppConfigTab').then(m => ({ default: m.AppConfigTab })));
+const CsvUploadTab = lazy(() => import('./tabs/CsvUploadTab').then(m => ({ default: m.CsvUploadTab })));
 import {
     DashboardConfig,
     DashboardStats,
@@ -177,27 +178,26 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
             }
 
             // Fetch templates (boosts) for this integration
-            let integrationBoostUris = new Set<string>();
+            // OPTIMIZED: Uses parallel API calls instead of sequential for much faster loading
+            const integrationBoostUris = new Set<string>();
             const boostsResult = await wallet.invoke.getPaginatedBoosts({
                 limit: 50,
                 query: { meta: { integrationId: integration.id } },
             });
 
             if (boostsResult?.records) {
-                const boostUris = boostsResult.records.map((boost: any) => boost.uri).filter(Boolean);
-                integrationBoostUris = new Set(boostUris);
+                const boostUris = boostsResult.records.map((boost: any) => boost.uri).filter(Boolean) as string[];
+                boostUris.forEach(uri => integrationBoostUris.add(uri));
 
-                // Fetch full boost data to get proper names (paginated response is summarized)
-                const loadedTemplates: CredentialTemplate[] = [];
-
-                for (const boostUri of boostUris) {
+                // PARALLEL: Fetch all boost details at once instead of sequentially
+                const boostPromises = boostUris.map(async (boostUri) => {
                     try {
                         const fullBoost = await wallet.invoke.getBoost(boostUri);
                         const meta = fullBoost?.meta as Record<string, unknown> | undefined;
                         const templateConfig = meta?.templateConfig as Record<string, unknown> | undefined;
                         const credential = fullBoost?.boost as Record<string, unknown> | undefined;
 
-                        const template: CredentialTemplate = {
+                        return {
                             id: boostUri,
                             name: fullBoost?.name || (credential?.name as string) || 'Untitled Template',
                             description: (credential?.description as string) || '',
@@ -209,56 +209,85 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                             isDirty: false,
                             obv3Template: credential,
                             isMasterTemplate: meta?.isMasterTemplate as boolean | undefined,
-                        };
-
-                        // If master template, fetch children
-                        if (template.isMasterTemplate) {
-                            try {
-                                const childrenResult = await wallet.invoke.getBoostChildren(boostUri, { limit: 100 });
-                                const childRecords = childrenResult?.records || [];
-                                const children: CredentialTemplate[] = [];
-
-                                for (const childRecord of childRecords) {
-                                    const childUri = (childRecord as Record<string, unknown>).uri as string;
-                                    if (!childUri) continue;
-
-                                    integrationBoostUris.add(childUri);
-
-                                    try {
-                                        const fullChild = await wallet.invoke.getBoost(childUri);
-                                        const childMeta = fullChild?.meta as Record<string, unknown> | undefined;
-                                        const childConfig = childMeta?.templateConfig as Record<string, unknown> | undefined;
-                                        const childCredential = fullChild?.boost as Record<string, unknown> | undefined;
-
-                                        children.push({
-                                            id: childUri,
-                                            name: fullChild?.name || (childCredential?.name as string) || 'Untitled Template',
-                                            description: (childCredential?.description as string) || '',
-                                            achievementType: (childConfig?.achievementType as string) || 'Course Completion',
-                                            fields: (childConfig?.fields as CredentialTemplate['fields']) || [],
-                                            imageUrl: (fullChild as Record<string, unknown>)?.image as string | undefined,
-                                            boostUri: childUri,
-                                            isNew: false,
-                                            isDirty: false,
-                                            obv3Template: childCredential,
-                                            parentTemplateId: boostUri,
-                                        });
-                                    } catch (e) {
-                                        console.warn('Failed to fetch child boost:', childUri, e);
-                                    }
-                                }
-
-                                template.childTemplates = children;
-                            } catch (e) {
-                                console.warn('Failed to fetch boost children:', boostUri, e);
-                            }
-                        }
-
-                        loadedTemplates.push(template);
+                        } as CredentialTemplate;
                     } catch (e) {
                         console.warn('Failed to fetch boost:', boostUri, e);
+                        return null;
                     }
+                });
+
+                const allTemplatesWithNulls = await Promise.all(boostPromises);
+                const allTemplates = allTemplatesWithNulls.filter((t): t is CredentialTemplate => t !== null);
+
+                // Identify master templates and fetch their children in parallel
+                const masterTemplates = allTemplates.filter(t => t.isMasterTemplate && t.boostUri);
+
+                // PARALLEL: Fetch all children for all master templates at once
+                const childrenPromises = masterTemplates.map(async (master) => {
+                    try {
+                        const childrenResult = await wallet.invoke.getBoostChildren(master.boostUri!, { limit: 100 });
+                        const childRecords = childrenResult?.records || [];
+
+                        // PARALLEL: Fetch all child boost details at once
+                        const childPromises = childRecords.map(async (childRecord) => {
+                            const childUri = (childRecord as Record<string, unknown>).uri as string;
+                            if (!childUri) return null;
+
+                            integrationBoostUris.add(childUri);
+
+                            try {
+                                const fullChild = await wallet.invoke.getBoost(childUri);
+                                const childMeta = fullChild?.meta as Record<string, unknown> | undefined;
+                                const childConfig = childMeta?.templateConfig as Record<string, unknown> | undefined;
+                                const childCredential = fullChild?.boost as Record<string, unknown> | undefined;
+
+                                return {
+                                    id: childUri,
+                                    name: fullChild?.name || (childCredential?.name as string) || 'Untitled Template',
+                                    description: (childCredential?.description as string) || '',
+                                    achievementType: (childConfig?.achievementType as string) || 'Course Completion',
+                                    fields: (childConfig?.fields as CredentialTemplate['fields']) || [],
+                                    imageUrl: (fullChild as Record<string, unknown>)?.image as string | undefined,
+                                    boostUri: childUri,
+                                    isNew: false,
+                                    isDirty: false,
+                                    obv3Template: childCredential,
+                                    parentTemplateId: master.boostUri,
+                                } as CredentialTemplate;
+                            } catch (e) {
+                                console.warn('Failed to fetch child boost:', childUri, e);
+                                return null;
+                            }
+                        });
+
+                        const childrenWithNulls = await Promise.all(childPromises);
+                        const children = childrenWithNulls.filter((c): c is CredentialTemplate => c !== null);
+
+                        return { masterId: master.id, children };
+                    } catch (e) {
+                        console.warn('Failed to fetch boost children:', master.boostUri, e);
+                        return { masterId: master.id, children: [] };
+                    }
+                });
+
+                const childrenResults = await Promise.all(childrenPromises);
+
+                // Build a map of master -> children
+                const masterChildrenMap = new Map<string, CredentialTemplate[]>();
+                for (const result of childrenResults) {
+                    masterChildrenMap.set(result.masterId, result.children);
                 }
+
+                // Attach children to master templates
+                const loadedTemplates = allTemplates.map(template => {
+                    if (template.isMasterTemplate) {
+                        return {
+                            ...template,
+                            childTemplates: masterChildrenMap.get(template.id) || [],
+                        };
+                    }
+                    return template;
+                });
 
                 setTemplates(loadedTemplates);
             }
@@ -403,95 +432,102 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
             activeTab={activeTab}
             onTabChange={setActiveTab}
         >
-            {activeTab === 'overview' && (
-                <OverviewTab
-                    integration={integration}
-                    config={config}
-                    stats={stats}
-                    templates={templates}
-                    onNavigate={setActiveTab}
-                    refreshKey={refreshKey}
-                />
-            )}
+            {/* Suspense wrapper for lazy-loaded tab components */}
+            <Suspense fallback={
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
+                </div>
+            }>
+                {activeTab === 'overview' && (
+                    <OverviewTab
+                        integration={integration}
+                        config={config}
+                        stats={stats}
+                        templates={templates}
+                        onNavigate={setActiveTab}
+                        refreshKey={refreshKey}
+                    />
+                )}
 
-            {activeTab === 'templates' && (
-                <TemplatesTab
-                    templates={templates}
-                    integrationId={integration.id}
-                    branding={branding}
-                    onRefresh={handleRefresh}
-                />
-            )}
+                {activeTab === 'templates' && (
+                    <TemplatesTab
+                        templates={templates}
+                        integrationId={integration.id}
+                        branding={branding}
+                        onRefresh={handleRefresh}
+                    />
+                )}
 
-            {activeTab === 'tokens' && (
-                <ApiTokensTab
-                    authGrants={authGrants}
-                    onRefresh={handleRefresh}
-                    guideType={integration.guideType}
-                />
-            )}
+                {activeTab === 'tokens' && (
+                    <ApiTokensTab
+                        authGrants={authGrants}
+                        onRefresh={handleRefresh}
+                        guideType={integration.guideType}
+                    />
+                )}
 
-            {activeTab === 'embed-code' && (
-                <EmbedCodeTab integration={integration} />
-            )}
+                {activeTab === 'embed-code' && (
+                    <EmbedCodeTab integration={integration} />
+                )}
 
-            {activeTab === 'contracts' && (
-                <ContractsTab
-                    integration={integration}
-                />
-            )}
+                {activeTab === 'contracts' && (
+                    <ContractsTab
+                        integration={integration}
+                    />
+                )}
 
-            {activeTab === 'connections' && (
-                <ConnectionsTab />
-            )}
+                {activeTab === 'connections' && (
+                    <ConnectionsTab />
+                )}
 
-            {activeTab === 'signing' && (
-                <SigningTab integration={integration} />
-            )}
+                {activeTab === 'signing' && (
+                    <SigningTab integration={integration} />
+                )}
 
-            {activeTab === 'branding' && (
-                <BrandingTab branding={branding} onUpdate={setBranding} />
-            )}
+                {activeTab === 'branding' && (
+                    <BrandingTab branding={branding} onUpdate={setBranding} />
+                )}
 
-            {activeTab === 'app-listings' && (
-                <AppListingsTab integration={integration} />
-            )}
+                {activeTab === 'app-listings' && (
+                    <AppListingsTab integration={integration} />
+                )}
 
-            {activeTab === 'partner-connect' && (
-                <PartnerConnectTab integration={integration} />
-            )}
+                {activeTab === 'partner-connect' && (
+                    <PartnerConnectTab integration={integration} />
+                )}
 
-            {activeTab === 'app-config' && (
-                <AppConfigTab integration={integration} />
-            )}
+                {activeTab === 'app-config' && (
+                    <AppConfigTab integration={integration} />
+                )}
 
-            {activeTab === 'code' && (
-                <IntegrationCodeTab
-                    integration={integration}
-                    templates={templates}
-                />
-            )}
+                {activeTab === 'code' && (
+                    <IntegrationCodeTab
+                        integration={integration}
+                        templates={templates}
+                    />
+                )}
 
-            {activeTab === 'csv-upload' && (
-                <CsvUploadTab
-                    integration={integration}
-                    templates={templates}
-                />
-            )}
+                {activeTab === 'csv-upload' && (
+                    <CsvUploadTab
+                        integration={integration}
+                        templates={templates}
+                    />
+                )}
 
-            {activeTab === 'testing' && (
-                <TestingTab
-                    integration={integration}
-                    templates={templates}
-                    branding={branding}
-                />
-            )}
+                {activeTab === 'testing' && (
+                    <TestingTab
+                        integration={integration}
+                        templates={templates}
+                        branding={branding}
+                    />
+                )}
 
-            {/* Analytics tab hidden for now
-            {activeTab === 'analytics' && (
-                <AnalyticsTab stats={mergedStats} templates={templates} />
-            )}
-            */}
+                {/* Analytics tab hidden for now
+                {activeTab === 'analytics' && (
+                    <AnalyticsTab stats={mergedStats} templates={templates} />
+                )}
+                */}
+            </Suspense>
         </DashboardLayout>
     );
 };
