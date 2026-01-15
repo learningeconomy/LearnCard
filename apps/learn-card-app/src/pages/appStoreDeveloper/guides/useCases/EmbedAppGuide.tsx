@@ -5326,9 +5326,7 @@ function findTemplate(query: string) {
  */
 async function sendPeerBadge(templateUri: string) {
     try {
-        await learnCard.initiateTemplateIssuance({
-            boostUri: templateUri,
-        });
+        await learnCard.initiateTemplateIssuance(templateUri);
         
         console.log('Peer badge flow initiated with template:', templateUri);
     } catch (error) {

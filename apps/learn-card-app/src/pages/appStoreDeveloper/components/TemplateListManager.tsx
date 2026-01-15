@@ -99,8 +99,13 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     React.useEffect(() => {
         onTemplateChange?.(templates);
 
-        if (templates.length > 0 && !selectedTemplateForCode) {
-            setSelectedTemplateForCode(templates[0]);
+        // Auto-select first template if none selected, or clear if selected template is not in current list
+        if (templates.length > 0) {
+            if (!selectedTemplateForCode || !templates.some(t => t.boostUri === selectedTemplateForCode.boostUri)) {
+                setSelectedTemplateForCode(templates[0]);
+            }
+        } else if (selectedTemplateForCode) {
+            setSelectedTemplateForCode(null);
         }
     }, [templates, onTemplateChange, selectedTemplateForCode]);
 
