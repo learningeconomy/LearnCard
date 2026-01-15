@@ -52,7 +52,7 @@ import {
 
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
-import { StepProgress, CodeOutputPanel, GoLiveStep } from '../shared';
+import { StepProgress, CodeOutputPanel, GoLiveStep, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useWallet, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
@@ -341,6 +341,7 @@ const FEATURES: Feature[] = [
 
 const STEPS = [
     { id: 'getting-started', title: 'Getting Started' },
+    { id: 'signing-authority', title: 'Set Up Signing' },
     { id: 'choose-features', title: 'Choose Features' },
     { id: 'feature-setup', title: 'Feature Setup' },
     { id: 'your-app', title: 'Your App' },
@@ -658,7 +659,152 @@ console.log('User:', identity.profile.displayName);`;
     );
 };
 
-// Step 1: Choose Features (the hub)
+// Step 1: Signing Authority
+const SigningAuthorityStep: React.FC<{
+    onComplete: () => void;
+    onBack: () => void;
+}> = ({ onComplete, onBack }) => {
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+
+    const [loading, setLoading] = useState(true);
+    const [creating, setCreating] = useState(false);
+    const [primarySA, setPrimarySA] = useState<{ name: string; endpoint: string } | null>(null);
+
+    const fetchSigningAuthority = useCallback(async () => {
+        try {
+            setLoading(true);
+            const wallet = await initWallet();
+            const primary = await wallet.invoke.getPrimaryRegisteredSigningAuthority();
+
+            if (primary?.relationship) {
+                setPrimarySA({
+                    name: primary.relationship.name,
+                    endpoint: primary.signingAuthority?.endpoint ?? '',
+                });
+            } else {
+                setPrimarySA(null);
+            }
+        } catch (err) {
+            console.error('Failed to fetch signing authority:', err);
+            setPrimarySA(null);
+        } finally {
+            setLoading(false);
+        }
+    }, [initWallet]);
+
+    useEffect(() => {
+        fetchSigningAuthority();
+    }, []);
+
+    const createSigningAuthority = async () => {
+        try {
+            setCreating(true);
+            const wallet = await initWallet();
+
+            const authority = await wallet.invoke.createSigningAuthority('default-sa');
+
+            if (!authority) {
+                throw new Error('Failed to create signing authority');
+            }
+
+            await wallet.invoke.registerSigningAuthority(
+                authority.endpoint!,
+                authority.name,
+                authority.did!
+            );
+
+            await wallet.invoke.setPrimaryRegisteredSigningAuthority(
+                authority.endpoint!,
+                authority.name
+            );
+
+            presentToast('Signing authority created!', { hasDismissButton: true });
+            fetchSigningAuthority();
+        } catch (err) {
+            console.error('Failed to create signing authority:', err);
+            presentToast('Failed to create signing authority', { type: ToastTypeEnum.Error, hasDismissButton: true });
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const hasSigningAuthority = primarySA !== null;
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Signing Authority</h3>
+
+                <p className="text-gray-600">
+                    A signing authority cryptographically signs your credentials, making them verifiable. 
+                    This proves the credentials actually came from you.
+                </p>
+            </div>
+
+            {/* Status */}
+            <StatusIndicator
+                status={loading ? 'loading' : hasSigningAuthority ? 'ready' : 'warning'}
+                label={loading ? 'Checking...' : hasSigningAuthority ? 'Signing authority configured' : 'No signing authority found'}
+                description={hasSigningAuthority ? `Using: ${primarySA?.name}` : 'Create one to sign credentials'}
+            />
+
+            {/* Create button if needed */}
+            {!loading && !hasSigningAuthority && (
+                <button
+                    onClick={createSigningAuthority}
+                    disabled={creating}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                >
+                    {creating ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Creating...
+                        </>
+                    ) : (
+                        <>
+                            <Shield className="w-4 h-4" />
+                            Create Signing Authority
+                        </>
+                    )}
+                </button>
+            )}
+
+            {/* Info about what it does */}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <h4 className="font-medium text-blue-800 mb-2">What does this do?</h4>
+
+                <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Creates a cryptographic key pair for signing</li>
+                    <li>• Registers the key with LearnCard's verification network</li>
+                    <li>• Allows anyone to verify credentials you issue</li>
+                </ul>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    disabled={!hasSigningAuthority}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    Continue
+                    <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Step 2: Choose Features (the hub)
 const ChooseFeaturesStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
@@ -5982,7 +6128,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
             // Skip feature setup, go directly to your app
             guideState.markStepComplete('choose-features');
             guideState.markStepComplete('feature-setup');
-            guideState.goToStep(3);
+            guideState.goToStep(4);
         } else {
             handleStepComplete('choose-features');
         }
@@ -6002,6 +6148,14 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
 
             case 1:
                 return (
+                    <SigningAuthorityStep
+                        onComplete={() => handleStepComplete('signing-authority')}
+                        onBack={guideState.prevStep}
+                    />
+                );
+
+            case 2:
+                return (
                     <ChooseFeaturesStep
                         onComplete={handleChooseFeaturesComplete}
                         onBack={guideState.prevStep}
@@ -6010,13 +6164,13 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                     />
                 );
 
-            case 2:
-                // If no features need setup, skip to step 3
+            case 3:
+                // If no features need setup, skip to step 4
                 if (featuresNeedingSetup.length === 0) {
                     // Auto-advance to next step
                     setTimeout(() => {
                         guideState.markStepComplete('feature-setup');
-                        guideState.goToStep(3);
+                        guideState.goToStep(4);
                     }, 0);
                     return null;
                 }
@@ -6035,7 +6189,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                     />
                 );
 
-            case 3:
+            case 4:
                 return (
                     <YourAppStep
                         onBack={guideState.prevStep}
@@ -6047,7 +6201,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                     />
                 );
 
-            case 4:
+            case 5:
                 return (
                     <GoLiveStep
                         integration={selectedIntegration}
@@ -6055,6 +6209,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                         onBack={guideState.prevStep}
                         completedItems={[
                             'SDK installed and configured',
+                            'Signing authority configured',
                             'App listing created',
                             `${selectedFeatures.length} feature${selectedFeatures.length !== 1 ? 's' : ''} configured`,
                             'Integration code generated',
