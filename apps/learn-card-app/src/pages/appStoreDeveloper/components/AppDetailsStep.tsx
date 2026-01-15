@@ -95,7 +95,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 </div>
             </div>
 
-            {/* Slug */}
+            {/* Slug - disabled until fully implemented (needs uniqueness validation, backend persistence, etc.)
             <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                     App Slug
@@ -125,6 +125,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
                 {errors.slug && <p className="text-sm text-red-500 mt-1">{errors.slug}</p>}
             </div>
+            */}
 
             {/* Tagline */}
             <div>
