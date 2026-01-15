@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { X, Check, Loader2 } from 'lucide-react';
 
-import { useWallet, LEARNCARD_NETWORK_API_URL, useToast, ToastTypeEnum } from 'learn-card-base';
-import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
+import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode, BoostCategoryOptionsEnum } from 'learn-card-base';
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
-import { VC } from '@learncard/types';
+import { VC, VP } from '@learncard/types';
+
+import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
 
 interface CredentialClaimModalProps {
     credentialUri: string;
@@ -211,14 +213,16 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 {/* Credential Preview */}
                 <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                     <div className="flex justify-center">
-                        <VCDisplayCardWrapper2
-                            useCurrentUserName
-                            credential={credential}
-                            customFooterComponent={<div />}
-                            checkProof={false}
-                            hideNavButtons
-                            hideFrontFaceDetails={false}
-                        />
+                        <div className="w-[180px]">
+                            <BoostEarnedCard
+                                credential={credential as VC}
+                                categoryType={getDefaultCategoryForCredential(credential as VC) || BoostCategoryOptionsEnum.achievement}
+                                boostPageViewMode={BoostPageViewMode.Card}
+                                useWrapper={false}
+                                verifierState={false}
+                                className="shadow-lg"
+                            />
+                        </div>
                     </div>
                 </div>
 
