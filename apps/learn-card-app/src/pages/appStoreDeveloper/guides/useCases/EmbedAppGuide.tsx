@@ -60,6 +60,7 @@ import {
     CredentialBuilder,
     getBlankTemplate,
     templateToJson,
+    jsonToTemplate,
     type OBv3CredentialTemplate,
 } from '../../partner-onboarding/components/CredentialBuilder';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
@@ -2999,18 +3000,20 @@ const IssueCredentialsSetup: React.FC<{
                 const templates: ManagedTemplate[] = await Promise.all(
                     boostLinks.map(async ({ templateAlias, boostUri }) => {
                         try {
-                            const boost = await wallet.invoke.getBoost(boostUri);
-                            const credential = boost?.boost?.credential || {};
+                            const fullBoost = await wallet.invoke.getBoost(boostUri);
+                            // The credential is stored in fullBoost.boost (the boost object IS the credential)
+                            const credential = (fullBoost?.boost as Record<string, unknown>) || {};
+                            const credentialName = credential?.name as string | undefined;
 
                             return {
                                 boostUri,
-                                name: boost?.boost?.name || 'Untitled',
+                                name: fullBoost?.name || credentialName || 'Untitled',
                                 templateAlias,
                                 aliasEdited: true,
-                                variables: extractTemplateVariables(credential as Record<string, unknown>),
+                                variables: extractTemplateVariables(credential),
                                 isAddedToListing: true,
-                                credential: credential as Record<string, unknown>,
-                                image: boost?.boost?.image,
+                                credential,
+                                image: credential?.image as string | undefined,
                             };
                         } catch (err) {
                             console.error(`Failed to fetch boost ${boostUri}:`, err);
@@ -3264,6 +3267,98 @@ const IssueCredentialsSetup: React.FC<{
         } catch (err) {
             console.error('Failed to remove template:', err);
             presentToast('Failed to remove template', { type: ToastTypeEnum.Error });
+        }
+    };
+
+    // Start editing an existing template
+    const handleStartEditTemplate = (template: ManagedTemplate) => {
+        try {
+            // Convert the credential JSON back to an editable OBv3CredentialTemplate
+            const obv3Template = jsonToTemplate(template.credential);
+            setCurrentBuildingTemplate(obv3Template);
+            setEditingTemplate(template);
+            setShowTemplateBuilder(true);
+        } catch (err) {
+            console.error('Failed to load template for editing:', err);
+            presentToast('Failed to load template for editing', { type: ToastTypeEnum.Error });
+        }
+    };
+
+    // Save changes to an existing template
+    const handleUpdateTemplate = async () => {
+        if (!editingTemplate || !selectedListing) return;
+
+        setIsCreatingTemplate(true);
+
+        try {
+            const wallet = await initWallet();
+            const credentialData = templateToJson(currentBuildingTemplate);
+            const name = (credentialData.name as string) || 'Untitled Template';
+
+            // Replace system placeholders with actual values before updating
+            const issuerDid = wallet.id.did();
+            const preparedCredential = {
+                ...credentialData,
+                issuer: credentialData.issuer === '{{issuer_did}}' ? issuerDid : credentialData.issuer,
+                validFrom: credentialData.validFrom === '{{issue_date}}' ? new Date().toISOString() : credentialData.validFrom,
+            };
+
+            // Issue the credential to create the updated VC
+            const vc = await wallet.invoke.issueCredential(preparedCredential as Parameters<typeof wallet.invoke.issueCredential>[0]);
+
+            // Update the boost with the new credential
+            const boostMetadata = {
+                name,
+                type: ((credentialData.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
+                category: 'achievement',
+                meta: { appListingId: selectedListing.listing_id, integrationId },
+            };
+
+            await wallet.invoke.updateBoost(
+                editingTemplate.boostUri,
+                boostMetadata as unknown as Parameters<typeof wallet.invoke.updateBoost>[1],
+                vc as Parameters<typeof wallet.invoke.updateBoost>[2]
+            );
+
+            // Extract template variables
+            const variables = extractTemplateVariables(credentialData);
+
+            // Update in managed templates
+            const updatedTemplate: ManagedTemplate = {
+                ...editingTemplate,
+                name,
+                variables,
+                credential: credentialData,
+                image: (credentialData.image as Record<string, unknown>)?.id as string,
+            };
+
+            setManagedTemplates(prev => prev.map(t =>
+                t.boostUri === editingTemplate.boostUri ? updatedTemplate : t
+            ));
+
+            if (selectedTemplateForCode?.boostUri === editingTemplate.boostUri) {
+                setSelectedTemplateForCode(updatedTemplate);
+            }
+
+            setShowTemplateBuilder(false);
+            setEditingTemplate(null);
+            setCurrentBuildingTemplate(getBlankTemplate());
+
+            presentToast('Template updated!', { type: ToastTypeEnum.Success });
+        } catch (err) {
+            console.error('Failed to update template:', err);
+            presentToast('Failed to update template', { type: ToastTypeEnum.Error });
+        } finally {
+            setIsCreatingTemplate(false);
+        }
+    };
+
+    // Handle save from builder - create new or update existing
+    const handleSaveFromBuilder = async () => {
+        if (editingTemplate) {
+            await handleUpdateTemplate();
+        } else {
+            await handleSaveTemplateFromBuilder();
         }
     };
 
@@ -3568,6 +3663,14 @@ console.log('Credential synced:', result);`;
                                                         {/* Actions */}
                                                         <div className="flex items-center gap-1 flex-shrink-0">
                                                             <button
+                                                                onClick={() => handleStartEditTemplate(template)}
+                                                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                title="Edit template"
+                                                            >
+                                                                <Edit3 className="w-4 h-4" />
+                                                            </button>
+
+                                                            <button
                                                                 onClick={() => setSelectedTemplateForCode(template)}
                                                                 className={`p-2 rounded-lg transition-colors ${
                                                                     selectedTemplateForCode?.boostUri === template.boostUri
@@ -3595,19 +3698,29 @@ console.log('Credential synced:', result);`;
 
                                     {/* Template Builder or Add Button */}
                                     {!templatesLoading && showTemplateBuilder ? (
-                                        <div className="border border-emerald-200 rounded-xl overflow-hidden">
-                                            <div className="p-3 bg-emerald-50 border-b border-emerald-200 flex items-center justify-between">
-                                                <h5 className="font-medium text-emerald-800 flex items-center gap-2">
-                                                    <Sparkles className="w-4 h-4" />
-                                                    Design Your Credential Template
+                                        <div className={`border rounded-xl overflow-hidden ${editingTemplate ? 'border-blue-200' : 'border-emerald-200'}`}>
+                                            <div className={`p-3 border-b flex items-center justify-between ${editingTemplate ? 'bg-blue-50 border-blue-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                                                <h5 className={`font-medium flex items-center gap-2 ${editingTemplate ? 'text-blue-800' : 'text-emerald-800'}`}>
+                                                    {editingTemplate ? (
+                                                        <>
+                                                            <Edit3 className="w-4 h-4" />
+                                                            Editing: {editingTemplate.name}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Sparkles className="w-4 h-4" />
+                                                            Design Your Credential Template
+                                                        </>
+                                                    )}
                                                 </h5>
 
                                                 <button
                                                     onClick={() => {
                                                         setShowTemplateBuilder(false);
+                                                        setEditingTemplate(null);
                                                         setCurrentBuildingTemplate(getBlankTemplate());
                                                     }}
-                                                    className="text-emerald-600 hover:text-emerald-800 text-sm"
+                                                    className={`text-sm ${editingTemplate ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}
                                                 >
                                                     Cancel
                                                 </button>
@@ -3624,6 +3737,7 @@ console.log('Credential synced:', result);`;
                                                 <button
                                                     onClick={() => {
                                                         setShowTemplateBuilder(false);
+                                                        setEditingTemplate(null);
                                                         setCurrentBuildingTemplate(getBlankTemplate());
                                                     }}
                                                     className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
@@ -3632,14 +3746,23 @@ console.log('Credential synced:', result);`;
                                                 </button>
 
                                                 <button
-                                                    onClick={handleSaveTemplateFromBuilder}
+                                                    onClick={handleSaveFromBuilder}
                                                     disabled={isCreatingTemplate}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                                                    className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors ${
+                                                        editingTemplate
+                                                            ? 'bg-blue-500 hover:bg-blue-600'
+                                                            : 'bg-emerald-500 hover:bg-emerald-600'
+                                                    }`}
                                                 >
                                                     {isCreatingTemplate ? (
                                                         <>
                                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                                            Creating...
+                                                            {editingTemplate ? 'Saving...' : 'Creating...'}
+                                                        </>
+                                                    ) : editingTemplate ? (
+                                                        <>
+                                                            <Check className="w-4 h-4" />
+                                                            Save Changes
                                                         </>
                                                     ) : (
                                                         <>
