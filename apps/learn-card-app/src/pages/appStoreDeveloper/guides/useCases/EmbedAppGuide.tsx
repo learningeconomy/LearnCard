@@ -56,6 +56,12 @@ import { StepProgress, CodeOutputPanel, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useWallet, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
+import {
+    CredentialBuilder,
+    getBlankTemplate,
+    templateToJson,
+    type OBv3CredentialTemplate,
+} from '../../partner-onboarding/components/CredentialBuilder';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
 import { ConsentFlowContractSelector } from '../../components/ConsentFlowContractSelector';
 import { CodeBlock } from '../../components/CodeBlock';
@@ -1334,6 +1340,37 @@ interface BoostTemplate {
     image?: string;
     createdAt?: string;
 }
+
+// Managed Template type for prompt-claim-template mode
+interface ManagedTemplate {
+    boostUri: string;
+    name: string;
+    templateAlias: string;
+    aliasEdited: boolean;
+    variables: string[];
+    isAddedToListing: boolean;
+    credential: Record<string, unknown>;
+    image?: string;
+}
+
+// Helper: Generate templateAlias from name
+const generateTemplateAlias = (name: string): string => {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 50)
+        .replace(/^-|-$/g, '');
+};
+
+// Helper: Extract template variables ({{varName}}) from credential
+const extractTemplateVariables = (credential: Record<string, unknown>): string[] => {
+    const jsonStr = JSON.stringify(credential);
+    const matches = jsonStr.match(/\{\{([^}]+)\}\}/g) || [];
+    const uniqueVars = [...new Set(matches.map(m => m.replace(/[{}]/g, '')))];
+    return uniqueVars;
+};
 
 // Template Manager Component - supports both initiateTemplateIssue and send() styles
 type TemplateCodeStyle = 'initiateTemplateIssue' | 'send';
@@ -2880,8 +2917,8 @@ const FeatureSetupStep: React.FC<{
     );
 };
 
-// Issue Credentials Setup - Two modes: Prompt to Claim vs Sync to Wallet
-type IssueMode = 'prompt-claim' | 'sync-wallet';
+// Issue Credentials Setup - Three modes
+type IssueMode = 'prompt-claim' | 'prompt-claim-template' | 'sync-wallet';
 
 const IssueCredentialsSetup: React.FC<{
     onComplete: () => void;
@@ -2895,9 +2932,9 @@ const IssueCredentialsSetup: React.FC<{
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
-    // Get saved mode from feature state or default
+    // Get saved mode from feature state or default to 'prompt-claim-template' (recommended)
     const savedState = featureSetupState['issue-credentials'] || {};
-    const [mode, setMode] = useState<IssueMode>((savedState.mode as IssueMode) || 'prompt-claim');
+    const [mode, setMode] = useState<IssueMode>((savedState.mode as IssueMode) || 'prompt-claim-template');
 
     // Prompt to Claim state
     const [showCredentialBuilder, setShowCredentialBuilder] = useState(false);
@@ -2905,6 +2942,18 @@ const IssueCredentialsSetup: React.FC<{
         (savedState.credential as Record<string, unknown>) || null
     );
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+    // Prompt to Claim Template state (new recommended mode)
+    const [managedTemplates, setManagedTemplates] = useState<ManagedTemplate[]>(
+        (savedState.managedTemplates as ManagedTemplate[]) || []
+    );
+    const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
+    const [currentBuildingTemplate, setCurrentBuildingTemplate] = useState<OBv3CredentialTemplate>(() => getBlankTemplate());
+    const [editingTemplate, setEditingTemplate] = useState<ManagedTemplate | null>(null);
+    const [editingAlias, setEditingAlias] = useState<string | null>(null);
+    const [tempAliasValue, setTempAliasValue] = useState('');
+    const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+    const [selectedTemplateForCode, setSelectedTemplateForCode] = useState<ManagedTemplate | null>(null);
 
     // Sync to Wallet state
     const [signingAuthorityLoading, setSigningAuthorityLoading] = useState(false);
@@ -2921,9 +2970,78 @@ const IssueCredentialsSetup: React.FC<{
                 mode,
                 credential,
                 contractUri,
+                managedTemplates,
             },
         });
-    }, [mode, credential, contractUri]);
+    }, [mode, credential, contractUri, managedTemplates]);
+
+    // Fetch existing templates linked to the app listing
+    const [templatesLoading, setTemplatesLoading] = useState(false);
+    const [templatesFetched, setTemplatesFetched] = useState(false);
+
+    useEffect(() => {
+        if (!selectedListing) return;
+        if (templatesFetched) return;
+
+        const loadExistingTemplates = async () => {
+            setTemplatesLoading(true);
+
+            try {
+                const wallet = await initWallet();
+                const boostLinks = await wallet.invoke.getAppBoosts(selectedListing.listing_id);
+
+                if (!boostLinks || boostLinks.length === 0) {
+                    setTemplatesLoading(false);
+                    setTemplatesFetched(true);
+                    return;
+                }
+
+                const templates: ManagedTemplate[] = await Promise.all(
+                    boostLinks.map(async ({ templateAlias, boostUri }) => {
+                        try {
+                            const boost = await wallet.invoke.getBoost(boostUri);
+                            const credential = boost?.boost?.credential || {};
+
+                            return {
+                                boostUri,
+                                name: boost?.boost?.name || 'Untitled',
+                                templateAlias,
+                                aliasEdited: true,
+                                variables: extractTemplateVariables(credential as Record<string, unknown>),
+                                isAddedToListing: true,
+                                credential: credential as Record<string, unknown>,
+                                image: boost?.boost?.image,
+                            };
+                        } catch (err) {
+                            console.error(`Failed to fetch boost ${boostUri}:`, err);
+                            return {
+                                boostUri,
+                                name: 'Unknown Template',
+                                templateAlias,
+                                aliasEdited: true,
+                                variables: [],
+                                isAddedToListing: true,
+                                credential: {},
+                            };
+                        }
+                    })
+                );
+
+                setManagedTemplates(templates);
+
+                if (templates.length > 0) {
+                    setSelectedTemplateForCode(templates[0]);
+                }
+            } catch (err) {
+                console.error('Failed to load existing templates:', err);
+            } finally {
+                setTemplatesLoading(false);
+                setTemplatesFetched(true);
+            }
+        };
+
+        loadExistingTemplates();
+    }, [selectedListing?.listing_id, templatesFetched, initWallet]);
 
     // Fetch signing authority when switching to sync-wallet mode
     useEffect(() => {
@@ -3004,6 +3122,175 @@ const IssueCredentialsSetup: React.FC<{
         presentToast('Credential template saved!', { hasDismissButton: true });
     };
 
+    // Handlers for prompt-claim-template mode
+    const handleSaveTemplateFromBuilder = async () => {
+        // Convert the OBv3CredentialTemplate to JSON credential
+        const credentialData = templateToJson(currentBuildingTemplate);
+        await handleCreateManagedTemplate(credentialData);
+        // Reset the builder to blank for next template
+        setCurrentBuildingTemplate(getBlankTemplate());
+    };
+
+    const handleCreateManagedTemplate = async (credentialData: Record<string, unknown>) => {
+        if (!selectedListing) {
+            presentToast('Please select an app listing first', { type: ToastTypeEnum.Error });
+            return;
+        }
+
+        setIsCreatingTemplate(true);
+
+        try {
+            const wallet = await initWallet();
+            const name = (credentialData.name as string) || 'Untitled Template';
+            const templateAlias = generateTemplateAlias(name);
+
+            // Check for duplicate alias
+            const existingAliases = managedTemplates.map(t => t.templateAlias);
+            let finalAlias = templateAlias;
+            let counter = 1;
+            while (existingAliases.includes(finalAlias)) {
+                finalAlias = `${templateAlias}-${counter}`;
+                counter++;
+            }
+
+            // Replace system placeholders with actual values before issuing
+            const issuerDid = wallet.id.did();
+            const preparedCredential = {
+                ...credentialData,
+                issuer: credentialData.issuer === '{{issuer_did}}' ? issuerDid : credentialData.issuer,
+                validFrom: credentialData.validFrom === '{{issue_date}}' ? new Date().toISOString() : credentialData.validFrom,
+            };
+
+            // Issue the credential to create the VC
+            const vc = await wallet.invoke.issueCredential(preparedCredential as Parameters<typeof wallet.invoke.issueCredential>[0]);
+
+            // Create the boost
+            const boostMetadata = {
+                name,
+                type: ((credentialData.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
+                category: 'achievement',
+                meta: { appListingId: selectedListing.listing_id, integrationId },
+            };
+            const boostUri = await wallet.invoke.createBoost(vc, boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]);
+
+            // Add boost to app listing with the templateAlias
+            await wallet.invoke.addBoostToApp(selectedListing.listing_id, boostUri, finalAlias);
+
+            // Extract template variables
+            const variables = extractTemplateVariables(credentialData);
+
+            // Add to managed templates
+            const newTemplate: ManagedTemplate = {
+                boostUri,
+                name,
+                templateAlias: finalAlias,
+                aliasEdited: false,
+                variables,
+                isAddedToListing: true,
+                credential: credentialData,
+                image: (credentialData.image as Record<string, unknown>)?.id as string,
+            };
+
+            setManagedTemplates(prev => [...prev, newTemplate]);
+            setSelectedTemplateForCode(newTemplate);
+            setShowTemplateBuilder(false);
+            setEditingTemplate(null);
+
+            presentToast('Template created and added to app!', { type: ToastTypeEnum.Success });
+        } catch (err) {
+            console.error('Failed to create template:', err);
+            presentToast('Failed to create template', { type: ToastTypeEnum.Error });
+        } finally {
+            setIsCreatingTemplate(false);
+        }
+    };
+
+    const handleUpdateAlias = async (boostUri: string, newAlias: string) => {
+        if (!selectedListing) return;
+
+        const sanitizedAlias = newAlias.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        if (!sanitizedAlias) return;
+
+        // Check for duplicates
+        const otherAliases = managedTemplates.filter(t => t.boostUri !== boostUri).map(t => t.templateAlias);
+        if (otherAliases.includes(sanitizedAlias)) {
+            presentToast('This alias is already in use', { type: ToastTypeEnum.Error });
+            return;
+        }
+
+        try {
+            const wallet = await initWallet();
+            const template = managedTemplates.find(t => t.boostUri === boostUri);
+            if (!template) return;
+
+            // Remove old alias and add new one
+            await wallet.invoke.removeBoostFromApp(selectedListing.listing_id, template.templateAlias);
+            await wallet.invoke.addBoostToApp(selectedListing.listing_id, boostUri, sanitizedAlias);
+
+            // Update local state
+            setManagedTemplates(prev => prev.map(t =>
+                t.boostUri === boostUri
+                    ? { ...t, templateAlias: sanitizedAlias, aliasEdited: true }
+                    : t
+            ));
+
+            setEditingAlias(null);
+            presentToast('Alias updated!', { type: ToastTypeEnum.Success });
+        } catch (err) {
+            console.error('Failed to update alias:', err);
+            presentToast('Failed to update alias', { type: ToastTypeEnum.Error });
+        }
+    };
+
+    const handleRemoveTemplate = async (boostUri: string) => {
+        if (!selectedListing) return;
+
+        try {
+            const wallet = await initWallet();
+            const template = managedTemplates.find(t => t.boostUri === boostUri);
+            if (!template) return;
+
+            // Remove from app listing
+            await wallet.invoke.removeBoostFromApp(selectedListing.listing_id, template.templateAlias);
+
+            // Update local state
+            setManagedTemplates(prev => prev.filter(t => t.boostUri !== boostUri));
+
+            if (selectedTemplateForCode?.boostUri === boostUri) {
+                setSelectedTemplateForCode(null);
+            }
+
+            presentToast('Template removed from app', { type: ToastTypeEnum.Success });
+        } catch (err) {
+            console.error('Failed to remove template:', err);
+            presentToast('Failed to remove template', { type: ToastTypeEnum.Error });
+        }
+    };
+
+    // Generate code snippet for prompt-claim-template mode
+    const getTemplateCodeSnippet = (template: ManagedTemplate | null) => {
+        if (!template) {
+            return `// Select a template above to see the integration code`;
+        }
+
+        const templateDataLines = template.variables.length > 0
+            ? template.variables.map(v => `        ${v}: 'value', // Replace with actual value`).join('\n')
+            : `        // No template variables - credential will be issued as-is`;
+
+        return `// Issue "${template.name}" credential to user
+const result = await learnCard.sendCredential({
+    templateAlias: '${template.templateAlias}',
+    templateData: {
+${templateDataLines}
+    }
+});
+
+if (result.credentialUri) {
+    console.log('Credential issued:', result.credentialUri);
+    // The user will be prompted to claim the credential
+}`;
+    };
+
     // Code snippets
     const promptClaimCode = `// 1. Get the user's identity
 const identity = await learnCard.requestIdentity();
@@ -3080,7 +3367,31 @@ console.log('Credential synced:', result);`;
             </div>
 
             {/* Mode Toggle */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+                <button
+                    onClick={() => setMode('prompt-claim-template')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all relative ${
+                        mode === 'prompt-claim-template'
+                            ? 'border-emerald-500 bg-emerald-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                    <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-emerald-500 text-white text-xs font-medium rounded-full">
+                        Recommended
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-5 h-5 text-emerald-600" />
+                        <span className="font-semibold text-gray-800">Use Templates</span>
+                    </div>
+
+                    <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• Easiest to set up</li>
+                        <li>• Simple SDK integration</li>
+                        <li>• Auto-generated aliases</li>
+                    </ul>
+                </button>
+
                 <button
                     onClick={() => setMode('prompt-claim')}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
@@ -3091,13 +3402,13 @@ console.log('Credential synced:', result);`;
                 >
                     <div className="flex items-center gap-2 mb-2">
                         <Send className="w-5 h-5 text-cyan-600" />
-                        <span className="font-semibold text-gray-800">Prompt User to Claim</span>
+                        <span className="font-semibold text-gray-800">Manual Build</span>
                     </div>
 
                     <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• Good for issuing a few credentials</li>
-                        <li>• User accepts each one individually</li>
-                        <li>• Limited built-in tracking</li>
+                        <li>• Full control over VC</li>
+                        <li>• Build credentials in code</li>
+                        <li>• More complex setup</li>
                     </ul>
                 </button>
 
@@ -3115,12 +3426,286 @@ console.log('Credential synced:', result);`;
                     </div>
 
                     <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• Good for any number of credentials</li>
-                        <li>• Seamless sync after consent</li>
-                        <li>• Full tracking and analytics</li>
+                        <li>• Consent flow required</li>
+                        <li>• Seamless sync</li>
+                        <li>• Full analytics</li>
                     </ul>
                 </button>
             </div>
+
+            {/* Prompt to Claim Template Mode (Recommended) */}
+            {mode === 'prompt-claim-template' && (
+                <div className="space-y-6">
+                    {/* Info Banner */}
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex gap-3">
+                        <Info className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+
+                        <div className="text-sm text-emerald-700">
+                            <p className="font-medium mb-1">How Template-Based Issuance Works</p>
+
+                            <p>
+                                Create credential templates here, and we&apos;ll automatically generate a <code className="px-1 py-0.5 bg-emerald-100 rounded text-xs">templateAlias</code> for each one.
+                                Then use <code className="px-1 py-0.5 bg-emerald-100 rounded text-xs">sendCredential({"{"} templateAlias {"}"})</code> in your app to issue credentials.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* App Listing Check */}
+                    {!selectedListing ? (
+                        <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+
+                                <div>
+                                    <h4 className="font-medium text-amber-800 mb-1">App Listing Required</h4>
+
+                                    <p className="text-sm text-amber-700">
+                                        Please select an app listing in Step 1 (Getting Started) before creating templates.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Step 1: Create Templates */}
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-7 h-7 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                        1
+                                    </div>
+
+                                    <h4 className="font-semibold text-gray-800">Create Credential Templates</h4>
+                                </div>
+
+                                <div className="ml-10 space-y-3">
+                                    {/* Loading State */}
+                                    {templatesLoading && (
+                                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-3">
+                                            <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                                            <span className="text-gray-600">Loading existing templates...</span>
+                                        </div>
+                                    )}
+
+                                    {/* Template List */}
+                                    {!templatesLoading && managedTemplates.length > 0 && (
+                                        <div className="space-y-2">
+                                            {managedTemplates.map(template => (
+                                                <div
+                                                    key={template.boostUri}
+                                                    className={`p-4 rounded-xl border transition-colors ${
+                                                        selectedTemplateForCode?.boostUri === template.boostUri
+                                                            ? 'border-emerald-300 bg-emerald-50'
+                                                            : 'border-gray-200 bg-white hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        {/* Template Icon */}
+                                                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                                            {template.image ? (
+                                                                <img src={template.image} alt={template.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <Award className="w-5 h-5 text-emerald-600" />
+                                                            )}
+                                                        </div>
+
+                                                        {/* Template Info */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <h5 className="font-medium text-gray-800 truncate">{template.name}</h5>
+
+                                                            {/* Alias Display/Edit */}
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <span className="text-xs text-gray-500">Alias:</span>
+
+                                                                {editingAlias === template.boostUri ? (
+                                                                    <div className="flex items-center gap-1">
+                                                                        <input
+                                                                            type="text"
+                                                                            value={tempAliasValue}
+                                                                            onChange={(e) => setTempAliasValue(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                                                            className="px-2 py-0.5 text-xs border border-emerald-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 w-32"
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === 'Enter') handleUpdateAlias(template.boostUri, tempAliasValue);
+                                                                                if (e.key === 'Escape') setEditingAlias(null);
+                                                                            }}
+                                                                            autoFocus
+                                                                        />
+
+                                                                        <button
+                                                                            onClick={() => handleUpdateAlias(template.boostUri, tempAliasValue)}
+                                                                            className="p-1 text-emerald-600 hover:text-emerald-700"
+                                                                        >
+                                                                            <Check className="w-3 h-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingAlias(template.boostUri);
+                                                                            setTempAliasValue(template.templateAlias);
+                                                                        }}
+                                                                        className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-xs font-mono text-gray-700 transition-colors"
+                                                                    >
+                                                                        {template.templateAlias}
+                                                                        <Edit3 className="w-3 h-3 text-gray-400" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Variables */}
+                                                            {template.variables.length > 0 && (
+                                                                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                                                    <span className="text-xs text-gray-400">Variables:</span>
+
+                                                                    {template.variables.map(v => (
+                                                                        <span key={v} className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-mono">
+                                                                            {`{{${v}}}`}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Actions */}
+                                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                                            <button
+                                                                onClick={() => setSelectedTemplateForCode(template)}
+                                                                className={`p-2 rounded-lg transition-colors ${
+                                                                    selectedTemplateForCode?.boostUri === template.boostUri
+                                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                                                }`}
+                                                                title="View code"
+                                                            >
+                                                                <Code className="w-4 h-4" />
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => handleRemoveTemplate(template.boostUri)}
+                                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Remove"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Template Builder or Add Button */}
+                                    {!templatesLoading && showTemplateBuilder ? (
+                                        <div className="border border-emerald-200 rounded-xl overflow-hidden">
+                                            <div className="p-3 bg-emerald-50 border-b border-emerald-200 flex items-center justify-between">
+                                                <h5 className="font-medium text-emerald-800 flex items-center gap-2">
+                                                    <Sparkles className="w-4 h-4" />
+                                                    Design Your Credential Template
+                                                </h5>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setShowTemplateBuilder(false);
+                                                        setCurrentBuildingTemplate(getBlankTemplate());
+                                                    }}
+                                                    className="text-emerald-600 hover:text-emerald-800 text-sm"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+
+                                            <div className="p-4">
+                                                <CredentialBuilder
+                                                    template={currentBuildingTemplate}
+                                                    onChange={setCurrentBuildingTemplate}
+                                                />
+                                            </div>
+
+                                            <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setShowTemplateBuilder(false);
+                                                        setCurrentBuildingTemplate(getBlankTemplate());
+                                                    }}
+                                                    className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
+                                                >
+                                                    Cancel
+                                                </button>
+
+                                                <button
+                                                    onClick={handleSaveTemplateFromBuilder}
+                                                    disabled={isCreatingTemplate}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                                                >
+                                                    {isCreatingTemplate ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            Creating...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Plus className="w-4 h-4" />
+                                                            Create Template
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : !templatesLoading ? (
+                                        <button
+                                            onClick={() => setShowTemplateBuilder(true)}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-emerald-300 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-colors"
+                                        >
+                                            <Plus className="w-5 h-5" />
+                                            {managedTemplates.length === 0 ? 'Create Your First Template' : 'Add Another Template'}
+                                        </button>
+                                    ) : null}
+                                </div>
+                            </div>
+
+                            {/* Step 2: Integration Code */}
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-7 h-7 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                                        2
+                                    </div>
+
+                                    <h4 className="font-semibold text-gray-800">Integration Code</h4>
+                                </div>
+
+                                <div className="ml-10 space-y-3">
+                                    {managedTemplates.length > 1 && (
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-sm text-gray-500">Select template:</span>
+
+                                            {managedTemplates.map(t => (
+                                                <button
+                                                    key={t.boostUri}
+                                                    onClick={() => setSelectedTemplateForCode(t)}
+                                                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                                                        selectedTemplateForCode?.boostUri === t.boostUri
+                                                            ? 'bg-emerald-500 text-white'
+                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
+                                                >
+                                                    {t.templateAlias}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <CodeBlock code={getTemplateCodeSnippet(selectedTemplateForCode)} />
+
+                                    {managedTemplates.length === 0 && (
+                                        <p className="text-sm text-gray-500 text-center py-2">
+                                            Create a template above to see the integration code.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
 
             {/* Prompt to Claim Mode */}
             {mode === 'prompt-claim' && (
@@ -3338,7 +3923,7 @@ console.log('Credential synced:', result);`;
                 </button>
             </div>
 
-            {/* Credential Builder Modal */}
+            {/* Credential Builder Modal (for prompt-claim mode) */}
             <OBv3CredentialBuilder
                 isOpen={showCredentialBuilder}
                 onClose={() => setShowCredentialBuilder(false)}
