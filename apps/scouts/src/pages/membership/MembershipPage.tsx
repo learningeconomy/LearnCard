@@ -10,6 +10,8 @@ import MainHeader from '../../components/main-header/MainHeader';
 import BoostEarnedIDListAlternative from '../../components/boost/boost-earned-card/BoostEarnedIDListAlternative';
 import EmptyTroopIcon from '../../assets/images/emptyTroop.svg';
 import TroopIDTypeSelectorModal from '../../components/troopsCMS/TroopsIDTypeSelector/TroopIDTypeSelectorModal';
+import TroopsCMSWrapper from '../../components/troopsCMS/TroopsCMSWrapper';
+import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
 import Plus from '../../components/svgs/Plus';
 import {
     useGetCredentialList,
@@ -58,7 +60,7 @@ export const SignUpForWaitList: React.FC = () => {
 const MembershipPage: React.FC = () => {
     useSyncMembershipHighlights(true);
     const flags = useFlags();
-    const { newModal } = useModal({
+    const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
@@ -75,7 +77,7 @@ const MembershipPage: React.FC = () => {
     } = useGetCredentialList(CredentialCategoryEnum.membership);
 
     // logic to show the plus button
-    const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
+    const canCreateGlobalIDs = true;
     const { data: earnedBoostIDs, isLoading: earnedBoostIDsLoading } = useGetIDs();
     // oxlint-disable-next-line no-unused-vars
     const { data: troopIds, isLoading: troopIdsLoading } = useGetCurrentUserTroopIds();
@@ -91,15 +93,33 @@ const MembershipPage: React.FC = () => {
         newModal(<TroopsModalWrapper boostUri={boostUri} />);
     };
 
-    const showTroopIDSelector = () =>
-        newCancelModal(
-            <TroopIDTypeSelectorModal
-                handleCloseModal={closeCancelModal}
-                earnedBoostIDs={earnedBoostIDs ?? []}
-                isLoading={earnedBoostIDsLoading}
-                onSuccess={(boostUri?: string) => boostUri && handleShowTroops(boostUri)}
-            />
-        );
+    const showTroopIDSelector = () => {
+        if (canCreateGlobalIDs && !hasGlobalAdminID) {
+            newModal(
+                <TroopsCMSWrapper
+                    viewMode={TroopsCMSViewModeEnum.global}
+                    handleCloseModal={closeModal}
+                />
+            );
+        } else if (hasGlobalAdminID && !hasNationalAdminID) {
+            newModal(
+                <TroopsCMSWrapper
+                    viewMode={TroopsCMSViewModeEnum.network}
+                    handleCloseModal={closeModal}
+                    parentUri={troopIds?.globalAdmin?.[0]?.boostId as string}
+                />
+            );
+        } else {
+            newCancelModal(
+                <TroopIDTypeSelectorModal
+                    handleCloseModal={closeCancelModal}
+                    earnedBoostIDs={(earnedBoostIDs as any) ?? []}
+                    isLoading={earnedBoostIDsLoading}
+                    onSuccess={(boostUri?: string) => boostUri && handleShowTroops(boostUri)}
+                />
+            );
+        }
+    };
 
     const imgSrc = EmptyTroopIcon;
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.Membership];
