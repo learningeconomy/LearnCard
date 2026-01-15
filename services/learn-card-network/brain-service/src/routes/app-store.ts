@@ -1171,10 +1171,11 @@ export const appStoreRouter = t.router({
             if (!isInstalled) {
                 // Check if user owns the integration - allows testing without installation
                 const integration = await getIntegrationForListing(listingId);
+                console.log('integration', integration);
                 const isOwner = integration
                     ? await isIntegrationAssociatedWithProfile(integration.id, profile.profileId)
                     : false;
-
+                console.log('isOwner', isOwner);
                 if (!isOwner) {
                     throw new TRPCError({ code: 'FORBIDDEN', message: 'App not installed' });
                 }

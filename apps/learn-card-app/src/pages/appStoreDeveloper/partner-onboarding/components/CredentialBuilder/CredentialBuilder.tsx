@@ -253,6 +253,8 @@ interface CredentialBuilderProps {
     onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
     onValidationChange?: (status: ValidationStatus, error?: string) => void;
     initialValidationStatus?: ValidationStatus;
+    /** When true, hides the "Dynamic" field mode option (useful for peer-to-peer badges) */
+    disableDynamicFields?: boolean;
 }
 
 export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
@@ -263,6 +265,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     issuerImage,
     onValidationChange,
     initialValidationStatus = 'unknown',
+    disableDynamicFields = false,
 }) => {
     const { initWallet } = useWallet();
     const [userDid, setUserDid] = useState<string>('did:web:preview');
@@ -774,6 +777,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onChange={onChange}
                             isExpanded={expandedSections.has('credential')}
                             onToggle={() => toggleSection('credential')}
+                            disableDynamicFields={disableDynamicFields}
                         />
 
                         <IssuerSection
@@ -786,6 +790,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onChange={onChange}
                             isExpanded={expandedSections.has('recipient')}
                             onToggle={() => toggleSection('recipient')}
+                            disableDynamicFields={disableDynamicFields}
                         />
 
                         <AchievementSection
@@ -793,6 +798,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onChange={onChange}
                             isExpanded={expandedSections.has('achievement')}
                             onToggle={() => toggleSection('achievement')}
+                            disableDynamicFields={disableDynamicFields}
                         />
 
                         <EvidenceSection
@@ -800,6 +806,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onChange={onChange}
                             isExpanded={expandedSections.has('evidence')}
                             onToggle={() => toggleSection('evidence')}
+                            disableDynamicFields={disableDynamicFields}
                         />
 
                         <DatesSection
@@ -807,6 +814,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onChange={onChange}
                             isExpanded={expandedSections.has('dates')}
                             onToggle={() => toggleSection('dates')}
+                            disableDynamicFields={disableDynamicFields}
                         />
 
                     </div>

@@ -110,7 +110,7 @@
         <div class="card">
             <h3>Send Credential</h3>
             <label>Boost ID</label>
-            <input type="text" id="boostId" placeholder="e.g., test-badge" value="test-badge" />
+            <input type="text" id="templateAlias" placeholder="e.g., test-badge" value="test-badge" />
 
             <label>Template Data (JSON, optional)</label>
             <textarea id="templateData" rows="3" placeholder='{"name": "John Doe"}'></textarea>
@@ -245,11 +245,11 @@
             };
 
             window.sendCredential = async function () {
-                const boostId = document.getElementById('boostId').value.trim();
+                const templateAlias = document.getElementById('templateAlias').value.trim();
                 const templateDataStr = document.getElementById('templateData').value.trim();
 
-                if (!boostId) {
-                    log('Boost ID is required', 'error');
+                if (!templateAlias) {
+                    log('Template Alias is required', 'error');
                     return;
                 }
 
@@ -264,10 +264,10 @@
                 }
 
                 try {
-                    log(`Sending credential with boostId: ${boostId}`, 'info');
+                    log(`Sending credential with templateAlias: ${templateAlias}`, 'info');
                     const event = {
                         type: 'send-credential',
-                        boostId,
+                        templateAlias,
                         ...(templateData && { templateData }),
                     };
 

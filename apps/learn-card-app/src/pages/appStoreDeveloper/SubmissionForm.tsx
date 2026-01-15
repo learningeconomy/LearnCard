@@ -209,7 +209,7 @@ const SubmissionForm: React.FC = () => {
 
     const createMockListingForPreview = (): ExtendedAppStoreListing =>
         ({
-            listing_id: 'preview',
+            listing_id: existingListing?.listing_id || existingListing?.slug || 'preview',
             display_name: formData.display_name || 'Preview App',
             tagline: formData.tagline || '',
             full_description: formData.full_description || '',

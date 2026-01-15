@@ -381,6 +381,7 @@ if (result.credentialUri) {
                                 <CredentialBuilder
                                     template={currentBuildingTemplate}
                                     onChange={setCurrentBuildingTemplate}
+                                    disableDynamicFields={featureType === 'peer-badges'}
                                 />
                             </div>
 
