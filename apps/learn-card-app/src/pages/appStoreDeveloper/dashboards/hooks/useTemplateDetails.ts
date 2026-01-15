@@ -355,10 +355,11 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
         );
 
         // Create the boost with featureType in metadata
+        // Use PROVISIONAL status so the template can be edited later
         const boostMetadata = {
             name,
             type: ((credential.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
-            category: 'achievement',
+            status: 'PROVISIONAL',
             meta: { appListingId: listingId, integrationId, featureType },
             ...(options?.defaultPermissions && { defaultPermissions: options.defaultPermissions }),
         };
@@ -428,8 +429,16 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
         const template = templates.find(t => t.boostUri === boostUri);
         
         if (template?.templateAlias) {
-            // Remove from app listing
+            // For issue-credentials: Remove from app listing
             await wallet.invoke.removeBoostFromApp(listingId, template.templateAlias);
+        }
+
+        // Delete the boost itself
+        try {
+            await wallet.invoke.deleteBoost(boostUri);
+        } catch (err) {
+            // Boost deletion may fail if it's LIVE status - that's okay, we've removed the association
+            console.warn('Could not delete boost (may be LIVE status):', err);
         }
 
         // Refetch to update local state
