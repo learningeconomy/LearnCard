@@ -123,6 +123,7 @@ const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
 import AiSessionTopicsContainer from './components/ai-sessions/AiSessionTopicsContainer';
 import AiSessionsContainer from './components/ai-sessions/AiSessionsContainer';
 import UserVerifyEmail from './components/user-profile/UserContact/UserVerifyEmail';
+import AiPathwaysDiscovery from './pages/ai-pathways/ai-pathways-discovery/AiPathwaysDiscovery';
 const LearnCardAiChatBot = lazyWithRetry(
     () => import('./components/new-ai-session/LearnCardAiChatBot/LearnCardAiChatBot')
 );
@@ -210,6 +211,11 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
                         <PrivateRoute exact path="/ai/pathways" component={AiPathways} />
+                        <Route
+                            exact
+                            path="/ai/pathways/discovery"
+                            component={AiPathwaysDiscovery}
+                        />
                         <PrivateRoute
                             exact
                             path="/learninghistory"
