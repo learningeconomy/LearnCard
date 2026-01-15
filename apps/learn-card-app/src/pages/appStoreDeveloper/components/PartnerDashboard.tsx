@@ -23,7 +23,6 @@ import { useModal, ModalTypes } from 'learn-card-base';
 import type { ExtendedAppStoreListing, AppListingStatus } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { AppPreviewModal } from './AppPreviewModal';
-import { ListingBoostsManager } from './ListingBoostsManager';
 
 type Tab = 'DRAFT' | 'PENDING_REVIEW' | 'LISTED' | 'ARCHIVED';
 
@@ -439,11 +438,6 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 </p>
                             </div>
                         </div>
-
-                        {/* Boost Management */}
-                        {/* <div className="py-4 border-t border-gray-100">
-                            <ListingBoostsManager listingId={selectedListing.listing_id} />
-                        </div> */}
 
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">

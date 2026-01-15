@@ -11,7 +11,6 @@ import { AppDetailsStep } from './components/AppDetailsStep';
 import { LaunchTypeStep } from './components/LaunchTypeStep';
 import { LaunchConfigStep } from './components/LaunchConfigStep';
 import { ReviewStep } from './components/ReviewStep';
-// CredentialsStep removed - templates managed in dashboard
 import { AppStoreHeader } from './components/AppStoreHeader';
 import { ExitConfirmDialog } from './components/ExitConfirmDialog';
 import { PreviewConfirmDialog } from './components/PreviewConfirmDialog';
