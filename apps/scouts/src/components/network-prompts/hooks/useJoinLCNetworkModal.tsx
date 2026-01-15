@@ -1,7 +1,6 @@
 import ModalLayout from '../../../layout/ModalLayout';
 import JoinNetworkPrompt from '../JoinNetworkPrompt';
 import NewJoinNetworkPrompt from '../NewJoinNetworkPrompt';
-import { useIonModal } from '@ionic/react';
 import { useIsCurrentUserLCNUser, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
 
@@ -28,29 +27,22 @@ export const useJoinLCNetworkModal = (
     const { data, isLoading } = useIsCurrentUserLCNUser();
 
     const isLoggedIn = useIsLoggedIn();
-    // const { newModal, closeModal } = useModal({
-    //     desktop: ModalTypes.Cancel,
-    //     mobile: ModalTypes.Cancel,
-    // });
-
-    const [presentNetworkModal, dismissNetworkModal] = useIonModal(NewJoinNetworkPrompt, {
-        handleCloseModal: () => {
-            dismissNetworkModal();
-            //Sometiems it doesn't close it completely, leaves backdrop for some reason...
-            closeAll?.();
-        },
-        showNotificationsModal: showNotificationsModal,
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
     });
 
-    // const presentNetworkModal = () => {
-    // newModal(<NewJoinNetworkPrompt handleCloseModal={closeModal} />, {
-    //     sectionClassName: '!max-w-[400px]',
-    //     cancelButtonTextOverride: 'Skip for Now',
-    //     onClose: () => {
-    //         onDismiss?.();
-    //     },
-    // });
-    // };
+    const openNetworkModal = () => {
+        newModal(
+            <NewJoinNetworkPrompt
+                handleCloseModal={() => {
+                    closeModal();
+                    closeAll?.();
+                }}
+                showNotificationsModal={showNotificationsModal}
+            />
+        );
+    };
 
     const handlePresentJoinNetworkModal = async () => {
         const deletingAccount = deletingAccountStore.get.deletingAccount();
@@ -58,7 +50,7 @@ export const useJoinLCNetworkModal = (
             return { prompted: false };
         }
         if (!isLoading && !data && isLoggedIn) {
-            presentNetworkModal();
+            openNetworkModal();
             return { prompted: true };
         }
         return { prompted: false };
@@ -66,7 +58,7 @@ export const useJoinLCNetworkModal = (
 
     return {
         handlePresentJoinNetworkModal,
-        dismissNetworkModal,
+        dismissNetworkModal: closeModal,
     };
 };
 

@@ -5,7 +5,6 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 
 import {
-    useIonModal,
     useIonAlert,
     IonContent,
     IonPage,
@@ -16,6 +15,7 @@ import {
 } from '@ionic/react';
 
 import Lottie from 'react-lottie-player';
+// @ts-ignore
 import HourGlass from '../../assets/lotties/hourglass.json';
 import MainHeader from '../main-header/MainHeader';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
@@ -33,7 +33,7 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getBespokeLearnCard, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { getWallpaperBackgroundStyles, isTroopCredential } from '../../helpers/troop.helpers';
-import { BrandingEnum, useGetProfile, useIsLoggedIn } from 'learn-card-base';
+import { BrandingEnum, useGetProfile, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
 import { VC, VerificationItem, VP } from '@learncard/types';
 
 const websiteLink = 'https://pass.scout.org/login';
@@ -52,14 +52,30 @@ const ViewSharedBoost: React.FC = () => {
 
     const [presentAlert] = useIonAlert();
 
-    const [boost, setBoost] = useState<VC[] | undefined>();
+    const [boost, setBoost] = useState<VC | undefined>();
     const [category, setCategory] = useState<string>('');
     const [wallet, setWallet] = useState<any>();
 
-    const isTroopId = isTroopCredential(boost);
-    const issueeDid = boost?.credentialSubject?.id;
+    const isTroopId = isTroopCredential(boost as any);
+    const issueeDid = (boost as any)?.credentialSubject?.id;
     const issueeProfileId = getUserHandleFromDid(issueeDid ?? '');
     const { data: issueeProfile } = useGetProfile(issueeProfileId);
+
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
+    const presentVerificationModal = () => {
+        newModal(
+            <SharedBoostVerificationBlock
+                handleCloseModal={() => closeModal()}
+                mode={SharedBoostVerificationBlockViewMode.modal}
+                verificationItems={verificationItems}
+                boost={boost as any}
+            />
+        );
+    };
 
     // Get credential from ceramic
     const fetchCredential = async (uri: string) => {
@@ -73,7 +89,7 @@ const ViewSharedBoost: React.FC = () => {
             const resolvedVc = await wallet.read.get(uri);
 
             const verifications = await wallet?.invoke?.verifyCredential(
-                resolvedVc?.verifiableCredential,
+                resolvedVc?.verifiableCredential as any,
                 {},
                 true
             );
@@ -85,10 +101,10 @@ const ViewSharedBoost: React.FC = () => {
             setVC(resolvedVc);
             if (resolvedVc?.verifiableCredential) {
                 // From array of credentials, sort them by type
-                const unwrappedVc = unwrapBoostCredential(resolvedVc.verifiableCredential);
-                const category = getDefaultCategoryForCredential(unwrappedVc);
+                const unwrappedVc = unwrapBoostCredential(resolvedVc.verifiableCredential as any);
+                const category = getDefaultCategoryForCredential(unwrappedVc as any);
 
-                setBoost(unwrappedVc);
+                setBoost(unwrappedVc as any);
                 setCategory(category);
             }
             setLoading(false);
@@ -125,16 +141,9 @@ const ViewSharedBoost: React.FC = () => {
 
     useEffect(() => {
         if (pin && uri) {
-            fetchCredential(uri);
+            fetchCredential(uri as string);
         }
     }, [pin, tryRefetch]);
-
-    const [presentModal, dismissModal] = useIonModal(SharedBoostVerificationBlock, {
-        handleCloseModal: () => dismissModal(),
-        mode: SharedBoostVerificationBlockViewMode.modal,
-        verificationItems: verificationItems,
-        boost: boost,
-    });
 
     const openWebsite = async () => {
         if (Capacitor.isNativePlatform()) {
@@ -146,19 +155,19 @@ const ViewSharedBoost: React.FC = () => {
 
     const redirectHome = () => history.push('/');
 
-    const troopBackgroundStyles = getWallpaperBackgroundStyles(undefined, boost);
+    const troopBackgroundStyles = getWallpaperBackgroundStyles(undefined, boost as any);
     const troopIdComponent = isFront ? (
         <ViewTroopIdTemplate
             idMainText={issueeProfile?.displayName}
             idThumb={issueeProfile?.image}
-            credential={boost}
+            credential={boost as any}
         />
     ) : (
         <div className="w-full max-w-[335px] mx-auto pt-[80px] pb-[120px]">
             <TroopIdDetails
-                credential={boost}
+                credential={boost as any}
                 verificationItems={verificationItems}
-                boostUri={boost?.boostId}
+                boostUri={(boost as any)?.boostId}
             //profileId={current user profile id?}
             />
         </div>
@@ -203,7 +212,7 @@ const ViewSharedBoost: React.FC = () => {
                 {boost && wallet && !loading && (
                     <SharedBoostVerificationBlock
                         verificationItems={verificationItems}
-                        boost={boost}
+                        boost={boost as any}
                     />
                 )}
 
@@ -231,15 +240,15 @@ const ViewSharedBoost: React.FC = () => {
                         <SharedBoostVerificationBlock
                             mode={SharedBoostVerificationBlockViewMode.mini}
                             verificationItems={verificationItems}
-                            boost={boost}
-                            handleOnClick={presentModal}
+                            boost={boost as any}
+                            handleOnClick={presentVerificationModal}
                         />
 
                         {isTroopId ? (
                             troopIdComponent
                         ) : (
                             <VCDisplayCardWrapper2
-                                credential={boost}
+                                credential={boost as any}
                                 lc={wallet}
                                 hideNavButtons
                                 hideQRCode

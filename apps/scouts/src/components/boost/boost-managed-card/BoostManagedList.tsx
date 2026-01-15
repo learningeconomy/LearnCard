@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 
 import { useHistory } from 'react-router-dom';
 import { useLoadingLine } from '../../../stores/loadingStore';
@@ -6,9 +6,10 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import useBoostModal from '../hooks/useBoostModal';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { IonRow, IonCol, IonGrid, IonSpinner, useIonModal } from '@ionic/react';
+import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
 import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
+// @ts-ignore
 import HourGlass from '../../../assets/lotties/hourglass.json';
 import {
     CredentialCategoryEnum,
@@ -44,11 +45,13 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     viewMode,
     bgFillerColor,
     defaultImg,
-    title,
     enableCreateButton = false,
 }) => {
     const history = useHistory();
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
     /*
         * start **
         Managed boosts query + pagination 
@@ -76,9 +79,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
 
     const presentNewBoostSelector = () => {
         newModal(
-            <NewBoostSelectMenu handleCloseModal={() => closeModal()} category={category} />,
-            undefined,
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            <NewBoostSelectMenu handleCloseModal={() => closeModal()} category={category} />
         );
     };
 
@@ -106,24 +107,27 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
 
     const boostError = managedBoostsError ? true : false;
 
-    const managedBoostsList =
-        managedBoosts?.pages?.flatMap(page =>
-            page?.records
-                ?.filter?.(record => searchResults.find(cred => cred.uri === record?.uri))
-                ?.map((record, index) => {
-                    return (
-                        <BoostManagedCard
-                            key={record?.uri || index}
-                            boost={record}
-                            defaultImg={defaultImg}
-                            categoryType={category}
-                            boostPageViewMode={viewMode}
-                            loading={managedBoostsLoading}
-                            branding={BrandingEnum.scoutPass}
-                        />
-                    );
-                })
-        ) ?? [];
+    const managedBoostsList = useMemo(
+        () =>
+            managedBoosts?.pages?.flatMap(page =>
+                page?.records
+                    ?.filter?.(record => searchResults.find(cred => cred.uri === record?.uri))
+                    ?.map((record, index) => {
+                        return (
+                            <BoostManagedCard
+                                key={record?.uri || index}
+                                boost={record}
+                                defaultImg={defaultImg}
+                                categoryType={category}
+                                boostPageViewMode={viewMode}
+                                loading={managedBoostsLoading}
+                                branding={BrandingEnum.scoutPass}
+                            />
+                        );
+                    })
+            ) ?? [],
+        [managedBoosts, searchResults, category, viewMode, managedBoostsLoading, defaultImg]
+    );
 
     const handleRefetch = async () => {
         try {

@@ -143,8 +143,12 @@ const UpdateBoostCMS: React.FC = () => {
             const allboosts = await wallet?.invoke?.getBoosts();
             const boostWrapper = allboosts.find(b => b.uri === _boostUri);
             // disable editing boost based on boost status
-            if (boostWrapper?.status === LCNBoostStatusEnum.draft) setIsEditDisabled(false);
-            else if (boostWrapper?.status === LCNBoostStatusEnum.live) setIsEditDisabled(true);
+            // DRAFT and PROVISIONAL boosts are editable, LIVE boosts are not
+            if (boostWrapper?.status === LCNBoostStatusEnum.draft || boostWrapper?.status === LCNBoostStatusEnum.provisional) {
+                setIsEditDisabled(false);
+            } else if (boostWrapper?.status === LCNBoostStatusEnum.live) {
+                setIsEditDisabled(true);
+            }
 
             const existingAttachmentsOrEvidence = getExistingAttachmentsOrEvidence(
                 _boostVC?.attachments,

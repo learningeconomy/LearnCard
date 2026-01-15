@@ -23,6 +23,7 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getCredentialOwner } from '@accesslayer/credential/relationships/read';
 import { deleteCredential } from '@accesslayer/credential/delete';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
+import { logCredentialSent } from '@helpers/activity.helpers';
 
 export const credentialsRouter = t.router({
     sendCredential: profileRoute
@@ -59,7 +60,19 @@ export const credentialsRouter = t.router({
                 });
             }
 
-            return sendCredential(profile, targetProfile, credential, ctx.domain, metadata);
+            // Log credential activity FIRST to get activityId
+            const activityId = await logCredentialSent({
+                actorProfileId: profile.profileId,
+                recipientType: 'profile',
+                recipientIdentifier: targetProfile.profileId,
+                recipientProfileId: targetProfile.profileId,
+                source: 'sendCredential',
+                metadata,
+            });
+
+            const credentialUri = await sendCredential(profile, targetProfile, credential, ctx.domain, metadata, activityId);
+
+            return credentialUri;
         }),
 
     acceptCredential: profileRoute

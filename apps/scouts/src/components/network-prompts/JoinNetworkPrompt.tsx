@@ -12,6 +12,8 @@ import {
     currentUserStore,
     useIsCurrentUserLCNUser,
     getNotificationsEndpoint,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 import {
@@ -19,7 +21,6 @@ import {
     IonContent,
     IonRow,
     IonCol,
-    useIonModal,
     IonGrid,
     IonPage,
     IonToolbar,
@@ -70,26 +71,38 @@ export const JoinNetworkPrompt: React.FC<{
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [loading, setLoading] = useState<boolean>(false);
 
-    const [presentModal, dismissModal] = useIonModal(NetworkSettings, {
-        handleCloseModal: () => dismissModal(),
-        settings: settings,
-        handleStateChange: (settingsType: NetworkSettingsEnum, settingState: boolean) =>
-            handleStateChange(settingsType, settingState),
+    const { newModal: newSettingsModal, closeModal: closeSettingsModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
 
-    const [presentRejectModal, dismissRejectModal] = useIonModal(RejectNetworkPrompt, {
-        handleCloseModal: () => dismissRejectModal(),
+    const { newModal: newRejectModal, closeModal: closeRejectModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
 
-    const [presentNotificationPromptModal, dismissNotificationPromptModal] = useIonModal(
-        PushNotificationsPrompt,
-        {
-            handleCloseModal: () => dismissNotificationPromptModal(),
-            settings: settings,
-            handleStateChange: (settingsType: NetworkSettingsEnum, settingState: boolean) =>
-                handleStateChange(settingsType, settingState),
-        }
-    );
+    const { newModal: newNotificationModal, closeModal: closeNotificationModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
+    });
+
+    const openSettingsModal = () => {
+        newSettingsModal(
+            <NetworkSettings
+                handleCloseModal={closeSettingsModal}
+                settings={settings as any}
+                handleStateChange={handleStateChange as any}
+            />
+        );
+    };
+
+    const openRejectModal = () => {
+        newRejectModal(<RejectNetworkPrompt handleCloseModal={closeRejectModal} />);
+    };
+
+    const openNotificationPromptModal = () => {
+        newNotificationModal(<PushNotificationsPrompt handleCloseModal={closeNotificationModal} />);
+    };
 
     const handleStateChange = (settingsType: NetworkSettingsEnum, settingState: boolean) => {
         const _settings = settings;
@@ -121,10 +134,10 @@ export const JoinNetworkPrompt: React.FC<{
             try {
                 setLoading(true);
                 const wallet = await initWallet();
-                const didWeb = await wallet.invoke.createProfile({
+                const didWeb = await (wallet.invoke.createProfile as any)({
                     did: wallet.id.did(),
-                    profileId: profileId,
-                    displayName: currentUser?.name,
+                    profileId: profileId || '',
+                    displayName: currentUser?.name || '',
                     image: currentUser?.profileImage,
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
@@ -145,14 +158,10 @@ export const JoinNetworkPrompt: React.FC<{
                     if (showNotificationsModal && Capacitor.isNativePlatform() && isPlatformIOS()) {
                         // ! push notification permission prompting is restricted to IOS
                         // ! push notifications are enabled on android by default, no prompting is required
-                        presentNotificationPromptModal({
-                            cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                            backdropDismiss: false,
-                            showBackdrop: false,
-                        });
+                        openNotificationPromptModal();
                     }
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.log('createProfile::error', err);
                 setError(err?.message);
                 setLoading(false);
@@ -210,8 +219,9 @@ export const JoinNetworkPrompt: React.FC<{
                             <div className="flex flex-col items-center justify-center max-w-[375px] w-full mb-4">
                                 <IonInput
                                     autocapitalize="on"
-                                    className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base text-left ${error || errors?.profileId ? 'login-input-email-error' : ''
-                                        }`}
+                                    className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base text-left ${
+                                        error || errors?.profileId ? 'login-input-email-error' : ''
+                                    }`}
                                     onIonInput={e => setProfileId(e.detail.value)}
                                     value={profileId}
                                     placeholder="User ID"
@@ -264,11 +274,7 @@ export const JoinNetworkPrompt: React.FC<{
                             onClick={() => {
                                 handleCloseModal();
                                 if (showRejectModal) {
-                                    presentRejectModal({
-                                        cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                        backdropDismiss: false,
-                                        showBackdrop: false,
-                                    });
+                                    openRejectModal();
                                 }
                             }}
                             className="text-grayscale-900 text-center text-base w-full font-medium"

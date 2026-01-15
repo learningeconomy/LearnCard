@@ -2,9 +2,10 @@ import React, { useEffect } from 'react';
 import { useRouteMatch, useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { IonSpinner, useIonModal } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
+// @ts-ignore
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import Pulpo from '../../../assets/lotties/cuteopulpo.json';
 import Lottie from 'react-lottie-player';
@@ -15,6 +16,8 @@ import {
     usePathQuery,
     useToast,
     ToastTypeEnum,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import ConnectModal from '../../connectPage/ConnectModal';
@@ -49,7 +52,7 @@ const AddressBookConnectionRequests: React.FC<{
                     async onSuccess(data, { profileId }, context) {
                         refetch();
                     },
-                    onError(error, variables, context) {
+                    onError(error: any, variables, context) {
                         refetch();
                         presentToast(error?.message || 'An error occurred, unable to block user', {
                             type: ToastTypeEnum.Error,
@@ -58,7 +61,7 @@ const AddressBookConnectionRequests: React.FC<{
                     },
                 }
             );
-        } catch (err) {
+        } catch (err: any) {
             console.log('blockProfile::error', err);
             presentToast(err?.message || 'An error occurred, unable to block user', {
                 type: ToastTypeEnum.Error,
@@ -67,36 +70,45 @@ const AddressBookConnectionRequests: React.FC<{
         }
     };
 
+    const { newModal, closeModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
+    });
+
+    const openConnectModal = () => {
+        newModal(
+            <ConnectModal
+                profileId={_profileId}
+                handleCancel={() => closeModal()}
+                updateCacheOnSuccessCallback={updateCacheOnSuccessCallback}
+            />
+        );
+    };
+
     const updateCacheOnSuccessCallback = async (userId: string) => {
         await queryClient.cancelQueries({
             queryKey: ['getConnectionRequests'],
         });
 
-        queryClient.setQueryData(['getConnectionRequests'], prevPendingRequest => {
-            const updatedPendingRequests = prevPendingRequest?.filter(
-                connectionReq => connectionReq?.profileId !== userId
-            );
-            setConnectionCount(updatedPendingRequests?.length);
-            return updatedPendingRequests;
-        });
+        queryClient.setQueryData(
+            ['getConnectionRequests'],
+            (prevPendingRequest: any[] | undefined) => {
+                const updatedPendingRequests = prevPendingRequest?.filter(
+                    connectionReq => connectionReq?.profileId !== userId
+                );
+                // setConnectionCount is not defined in this component, but setRequestCount is passed as prop.
+                // However, the original code had setConnectionCount. Let's fix it to setRequestCount.
+                setRequestCount(updatedPendingRequests?.length || 0);
+                return updatedPendingRequests;
+            }
+        );
 
-        dismissModal?.();
+        closeModal();
     };
-
-    const [presentModal, dismissModal] = useIonModal(ConnectModal, {
-        profileId: _profileId,
-        handleCancel: () => dismissModal(),
-        updateCacheOnSuccessCallback: updateCacheOnSuccessCallback,
-    });
 
     useEffect(() => {
         if (_profileId && _connect) {
-            presentModal({
-                cssClass: 'center-modal add-contact-modal',
-                backdropDismiss: false,
-                showBackdrop: false,
-                onDidDismiss: () => history.push('/contacts'),
-            });
+            openConnectModal();
         }
     }, []);
 
@@ -112,10 +124,12 @@ const AddressBookConnectionRequests: React.FC<{
                 <AddressBookContactList
                     showBoostButton
                     showAcceptButton
-                    contacts={data}
+                    contacts={data || []}
                     showBlockButton
                     handleBlockUser={handleBlockUser}
                     setConnectionCount={setRequestCount}
+                    showUnblockButton={false}
+                    search=""
                 />
             )}
             {!isLoading && (data?.length === 0 || error) && (

@@ -5,6 +5,7 @@ import type {
     AppStoreListingCreateType,
     AppStoreListingUpdateType,
     LCNIntegration,
+    LCNIntegrationUpdateType,
     AppListingStatus,
     PromotionLevel,
 } from '@learncard/types';
@@ -40,6 +41,46 @@ export const useDeveloperPortal = () => {
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
             },
+        });
+    };
+
+    // Mutation for updating an integration
+    const useUpdateIntegration = () => {
+        return useMutation({
+            mutationFn: async ({
+                id,
+                updates,
+            }: {
+                id: string;
+                updates: LCNIntegrationUpdateType;
+            }): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.updateIntegration(id, updates);
+            },
+            onSuccess: (_data, variables) => {
+                // Invalidate both the list and the specific integration query
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'integration', variables.id] });
+            },
+        });
+    };
+
+    // Query for a single integration
+    const useIntegration = (integrationId: string | null) => {
+        return useQuery({
+            queryKey: ['developer', 'integration', integrationId],
+            queryFn: async (): Promise<LCNIntegration | null> => {
+                if (!integrationId) return null;
+
+                const wallet = await initWallet();
+
+                const integration = await wallet.invoke.getIntegration(integrationId);
+
+                return integration ?? null;
+            },
+            enabled: !!integrationId,
+            staleTime: 1000 * 60 * 2,
         });
     };
 
@@ -332,7 +373,9 @@ export const useDeveloperPortal = () => {
     return {
         // Integration hooks
         useIntegrations,
+        useIntegration,
         useCreateIntegration,
+        useUpdateIntegration,
 
         // Listing hooks
         useListingsForIntegration,

@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.11.2
+
+### Patch Changes
+
+-   [#882](https://github.com/learningeconomy/LearnCard/pull/882) [`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f) Thanks [@Custard7](https://github.com/Custard7)! - feat: Unified Send
+
 ## 5.11.1
 
 ### Patch Changes

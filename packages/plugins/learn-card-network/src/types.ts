@@ -96,6 +96,11 @@ import {
     PaginatedInstalledApps,
     AppEvent,
     AppEventResponse,
+    // Activity
+    CredentialActivityEventType,
+    CredentialActivityRecord,
+    PaginatedCredentialActivities,
+    CredentialActivityStats,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -731,6 +736,24 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
 
     getLCNClient: () => LCNClient;
+
+    // Activity
+    getMyActivities: (options?: {
+        limit?: number;
+        cursor?: string;
+        boostUri?: string;
+        eventType?: CredentialActivityEventType;
+        integrationId?: string;
+    }) => Promise<PaginatedCredentialActivities>;
+
+    getActivityStats: (options?: {
+        boostUris?: string[];
+        integrationId?: string;
+    }) => Promise<CredentialActivityStats>;
+
+    getActivity: (options: { activityId: string }) => Promise<CredentialActivityRecord | null>;
+
+    getActivityChain: (options: { activityId: string }) => Promise<CredentialActivityRecord[]>;
 };
 
 /** @group LearnCardNetwork Plugin */

@@ -20,7 +20,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, useIonModal, IonInput, IonSpinner } from '@ionic/react';
+import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
 import CopyStack from '../svgs/CopyStack';
 import InfoIcon from '../svgs/InfoIcon';
 import TrashBin from '../svgs/TrashBin';
@@ -62,7 +62,6 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     title,
     handleCloseModal,
     handleLogout,
-    showCancelButton = true,
     showDeleteAccountButton = true,
     showNetworkModal = false,
     showNotificationsModal = true,
@@ -106,7 +105,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         if (lcNetworkProfile && lcNetworkProfile?.image) {
             setPhoto(lcNetworkProfile?.image);
         }
-    }, []);
+    }, [lcNetworkProfile]);
 
     const onUpload = (data: UploadRes) => {
         setPhoto(data?.url);
@@ -119,15 +118,23 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(DeleteUserConfirmationPrompt, {
-        handleCloseModal: () => dismissCenterModal(),
-        handleLogout: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onLogout(e),
-    });
+    const presentDeleteUserModal = () => {
+        newModal(
+            <DeleteUserConfirmationPrompt
+                handleCloseModal={closeModal}
+                handleLogout={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => onLogout(e)}
+            />
+        );
+    };
 
-    const [presentNetworkModal, dismissNetworkModal] = useIonModal(JoinNetworkModalWrapper, {
-        handleCloseModal: () => dismissNetworkModal(),
-        showNotificationsModal: showNotificationsModal,
-    });
+    const presentNetworkModal = () => {
+        newModal(
+            <JoinNetworkModalWrapper
+                handleCloseModal={closeModal}
+                showNotificationsModal={showNotificationsModal}
+            />
+        );
+    };
 
     const validate = () => {
         const parsedData = StateValidator.safeParse({
@@ -157,7 +164,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     };
 
     const handleStorageUpdate = async () => {
-        await updateCurrentUser(currentUser?.privateKey, {
+        await updateCurrentUser(currentUser?.privateKey as string, {
             name: name ?? currentUser?.name ?? '',
             profileImage: photo ?? currentUser?.profileImage ?? '',
         });
@@ -165,7 +172,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             ...currentUser,
             name: name ?? currentUser?.name ?? '',
             profileImage: photo ?? currentUser?.profileImage ?? '',
-        });
+        } as any);
     };
 
     const handleLCNetworkProfileUpdate = async () => {
@@ -173,8 +180,8 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
         if (lcNetworkProfile && lcNetworkProfile?.profileId) {
             await wallet?.invoke?.updateProfile({
-                displayName: name,
-                image: photo,
+                displayName: name as string,
+                image: photo as string,
                 notificationsWebhook: getNotificationsEndpoint(),
             });
         }
@@ -186,7 +193,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser, {
+            await updateProfile(auth()?.currentUser as any, {
                 displayName: name ?? '',
                 photoURL: photo ?? '',
             });
@@ -208,7 +215,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             ...currentUser,
                             name: name ?? currentUser?.name ?? '',
                             profileImage: photo ?? currentUser?.profileImage ?? '',
-                        });
+                        } as any);
 
                         // update LC network profile
                         await handleLCNetworkProfileUpdate();
@@ -216,19 +223,14 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         setIsLoading(false);
                         handleCloseModal();
                         if (showNetworkModal) {
-                            presentNetworkModal({
-                                cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                            });
+                            presentNetworkModal();
                         }
                     } else {
                         // update firebase profile
-                        await updateProfile(auth()?.currentUser, {
-                            displayName: name,
-                            photoURL: photo,
+                        await updateProfile(auth()?.currentUser as any, {
+                            displayName: name as string,
+                            photoURL: photo as string,
                         });
-                        // }
 
                         // update LC network profile
                         await handleLCNetworkProfileUpdate();
@@ -239,11 +241,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         setIsLoading(false);
                         handleCloseModal();
                         if (showNetworkModal) {
-                            presentNetworkModal({
-                                cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                            });
+                            presentNetworkModal();
                         }
                     }
                 } catch (error) {
@@ -273,7 +271,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
     return (
         <>
-            <IonRow class="w-full">
+            <IonRow className="w-full">
                 <IonCol>
                     <p className="text-grayscale-900 font-notoSans m-0 flex h-full w-full items-center justify-center text-center text-xl font-bold">
                         {title}
@@ -285,10 +283,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px]"
                             customImageClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[70px] min-h-[70px]"
                             customSize={500}
-                            overrideSrc={photo?.length > 0}
-                            overrideSrcURL={photo}
+                            overrideSrc={(photo?.length || 0) > 0}
+                            overrideSrcURL={photo as string}
                         >
-                            {imageUploadLoading && (
+                            {(imageUploadLoading || uploadProgress !== false) && (
                                 <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-3xl font-medium text-white">
                                     <IonSpinner
                                         name="crescent"
@@ -359,7 +357,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                 errors.name ? 'login-input-email-error' : ''
                             }`}
                             onIonInput={e => setName(e.detail.value)}
-                            value={name}
+                            value={name as string}
                             placeholder="Full Name"
                             type="text"
                         />
@@ -395,7 +393,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             autocapitalize="on"
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                             onIonInput={e => setEmail(e.detail.value)}
-                            value={email}
+                            value={email as string}
                             placeholder="Email address"
                             type="email"
                             disabled={true}
@@ -406,7 +404,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             autocapitalize="on"
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                             onIonInput={e => setPhone(e.detail.value)}
-                            value={phone}
+                            value={phone as string}
                             placeholder="Phone Number"
                             type="tel"
                             disabled={true}
@@ -420,14 +418,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             onClick={e => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                newModal(
-                                    <DeleteUserConfirmationPrompt
-                                        handleCloseModal={() => closeModal()}
-                                        handleLogout={(
-                                            e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-                                        ) => onLogout(e)}
-                                    />
-                                );
+                                presentDeleteUserModal();
                             }}
                             className="flex items-center justify-center bg-white rounded-full px-[18px] py-[12px] text-grayscale-900 text-2xl w-full shadow-lg"
                         >

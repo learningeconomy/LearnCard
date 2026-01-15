@@ -20,12 +20,16 @@ export const createSentCredentialRelationship = async (
     from: ProfileType,
     to: ProfileType,
     credential: CredentialInstance,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    activityId?: string,
+    integrationId?: string
 ): Promise<void> => {
     const properties = flattenObject({
         to: to.profileId,
         date: new Date().toISOString(),
         ...(metadata ? { metadata } : {}),
+        ...(activityId ? { activityId } : {}),
+        ...(integrationId ? { integrationId } : {}),
     });
 
     await new QueryBuilder(new BindParam({ params: properties }))

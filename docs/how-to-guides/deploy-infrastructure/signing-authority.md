@@ -272,7 +272,7 @@ async function createOwnerBoost(ownerInstance: any) {
     };
 
     try {
-        const unsignedTemplateVc = await ownerInstance.invoke.newCredential(boostTemplateContent);
+        const unsignedTemplateVc = ownerInstance.invoke.newCredential(boostTemplateContent);
         const signedTemplateVc = await ownerInstance.invoke.issueCredential(unsignedTemplateVc);
 
         exampleBoostUri = await ownerInstance.invoke.createBoost(signedTemplateVc, boostMetadata);

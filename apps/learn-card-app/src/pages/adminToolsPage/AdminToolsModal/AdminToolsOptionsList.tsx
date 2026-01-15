@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { useModal } from 'learn-card-base';
+import { useModal, useGetProfile } from 'learn-card-base';
 
 import AdminToolOptionsListItem from './AdminToolsOptionsListItem';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
@@ -10,12 +10,18 @@ import {
     developerToolOptions,
     AdminToolOptionsEnum,
 } from './admin-tools.helpers';
+import { LearnCardRolesEnum } from '../../../components/onboarding/onboarding.helpers';
 
 export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOptionsEnum }> = ({
     shortCircuitDevTool,
 }) => {
     const history = useHistory();
     const { closeAllModals } = useModal();
+    const { data: lcNetworkProfile } = useGetProfile();
+
+    const userRole = lcNetworkProfile?.role as LearnCardRolesEnum | undefined;
+    const canAccessDevTools =
+        userRole === LearnCardRolesEnum.developer || userRole === LearnCardRolesEnum.admin;
 
     return (
         <>
@@ -66,17 +72,35 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
                         Developer Tools
                     </h4>
                 </div>
-                <div className="w-full flex items-center justify-start">
-                    <ul className="w-full">
-                        {developerToolOptions.map(option => (
-                            <AdminToolOptionsListItem
-                                shortCircuitDevTool={shortCircuitDevTool}
-                                option={option}
-                                key={option.id}
-                            />
-                        ))}
-                    </ul>
-                </div>
+                {canAccessDevTools ? (
+                    <div className="w-full flex items-center justify-start">
+                        <ul className="w-full">
+                            {developerToolOptions.map(option => (
+                                <AdminToolOptionsListItem
+                                    shortCircuitDevTool={shortCircuitDevTool}
+                                    option={option}
+                                    key={option.id}
+                                />
+                            ))}
+                        </ul>
+                    </div>
+                ) : (
+                    <div className="w-full py-4 px-2">
+                        <div className="flex items-start gap-3 p-4 bg-grayscale-50 rounded-lg border border-grayscale-200">
+                            <span className="text-xl">🔒</span>
+
+                            <div>
+                                <p className="text-grayscale-700 text-[14px] font-notoSans font-[500] leading-[21px]">
+                                    Developer tools are limited to users with a Developer or Admin role.
+                                </p>
+
+                                <p className="text-grayscale-500 text-[12px] font-notoSans font-[400] leading-[18px] mt-1">
+                                    You can update your role in your account settings.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );

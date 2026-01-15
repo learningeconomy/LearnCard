@@ -1,5 +1,21 @@
 # learn-card-base
 
+## 0.1.6
+
+### Patch Changes
+
+-   [#920](https://github.com/learningeconomy/LearnCard/pull/920) [`49abe4ecae0e9eaa446668dbb23abc6ff64793e5`](https://github.com/learningeconomy/LearnCard/commit/49abe4ecae0e9eaa446668dbb23abc6ff64793e5) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1505] Change skills to competencies for ScoutPass
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.3
+    -   @learncard/lca-api-plugin@1.1.5
+
+## 0.1.5
+
+### Patch Changes
+
+-   [#912](https://github.com/learningeconomy/LearnCard/pull/912) [`e61da3230f946b3d7238588baad502b16cee3ea1`](https://github.com/learningeconomy/LearnCard/commit/e61da3230f946b3d7238588baad502b16cee3ea1) Thanks [@Custard7](https://github.com/Custard7)! - feat: In-App CLI
+
 ## 0.1.4
 
 ### Patch Changes

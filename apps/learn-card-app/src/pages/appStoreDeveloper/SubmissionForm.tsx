@@ -30,13 +30,17 @@ interface LocationState {
     listing?: ExtendedAppStoreListing;
 }
 
+/**
+ * SubmissionForm - Create or edit an app listing
+ * Routes:
+ *   - /app-store/developer/integrations/:integrationId/apps/new (create)
+ *   - /app-store/developer/integrations/:integrationId/apps/:listingId (edit)
+ */
 const SubmissionForm: React.FC = () => {
     const history = useHistory();
     const location = useLocation<LocationState>();
-    const { listingId } = useParams<{ listingId?: string }>();
+    const { integrationId, listingId } = useParams<{ integrationId: string; listingId?: string }>();
 
-    const searchParams = new URLSearchParams(location.search);
-    const integrationId = searchParams.get('integrationId');
     const isEditMode = !!listingId;
 
     // Get listing from route state (passed from DeveloperPortal) or fetch if not available
@@ -152,7 +156,7 @@ const SubmissionForm: React.FC = () => {
         if (validateStep(currentStep)) setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
     };
     const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 1));
-    const navigateToDashboard = () => history.push('/app-store/developer');
+    const navigateToDashboard = () => history.push(`/app-store/developer/integrations/${integrationId}/apps`);
 
     // Check if form has any changes from initial state
     const hasUnsavedChanges = useCallback(() => {

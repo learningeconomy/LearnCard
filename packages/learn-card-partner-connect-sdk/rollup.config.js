@@ -1,9 +1,12 @@
+import { createRequire } from 'module';
+
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import esbuild from 'rollup-plugin-esbuild';
 import dts from 'rollup-plugin-dts';
 
-import pkg from './package.json' assert { type: 'json' };
+const require = createRequire(import.meta.url);
+const pkg = require('./package.json');
 
 export default [
   {

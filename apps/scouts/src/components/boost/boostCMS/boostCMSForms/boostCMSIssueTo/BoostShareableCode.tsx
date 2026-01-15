@@ -5,7 +5,6 @@ import moment from 'moment';
 import {
     IonRow,
     IonCol,
-    useIonModal,
     IonGrid,
     IonSpinner,
     IonToggle,
@@ -13,13 +12,14 @@ import {
     IonInput,
 } from '@ionic/react';
 
-import { useWallet, walletStore, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useWallet, walletStore, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
 
 import CopyStack from '../../../../svgs/CopyStack';
 import Calendar from '../../../../svgs/Calendar';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import BoostShareableQRCode from './BoostShareableQRCode';
+// @ts-ignore
 import InfinityIcon from 'learn-card-base/svgs/Infinity';
 import useDebounce from '../../../../../hooks/useDebounce';
 import useFirebaseAnalytics from '../../../../../hooks/useFirebaseAnalytics';
@@ -45,32 +45,48 @@ export const BoostShareableCode: React.FC<{
 
     const { presentToast } = useToast();
 
-    const [presentDatePicker] = useIonModal(
-        <div className="w-full h-full transparent flex items-center justify-center">
-            <IonDatetime
-                onIonChange={e => {
-                    clearBoostLink();
-                    setExpirationDate(moment(e.detail.value).toISOString());
-                }}
-                value={expirationDate ? moment(expirationDate).format('YYYY-MM-DD') : null}
-                id="datetime"
-                presentation="date-time"
-                className="bg-white text-black rounded-[20px] shadow-3xl z-50"
-                showDefaultButtons
-                showDefaultTimeLabel
-                color="indigo-500"
-                max="2050-12-31"
-                min={moment().format('YYYY-MM-DD')}
-            />
-        </div>
-    );
-
-    const [presentBoostCode, dismisspresentBoostCode] = useIonModal(BoostShareableQRCode, {
-        state: state,
-        showEditButton: true,
-        handleCloseModal: () => dismisspresentBoostCode(),
-        boostClaimLink: boostClaimLink,
+    const { newModal: newDatePickerModal, closeModal: closeDatePickerModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
     });
+
+    const { newModal: newQRCodeModal, closeModal: closeQRCodeModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
+    const openDatePicker = () => {
+        newDatePickerModal(
+            <div className="w-full h-full transparent flex items-center justify-center">
+                <IonDatetime
+                    onIonChange={e => {
+                        clearBoostLink();
+                        setExpirationDate(moment(e.detail.value as string).toISOString());
+                    }}
+                    value={expirationDate ? moment(expirationDate).format('YYYY-MM-DD') : null}
+                    id="datetime"
+                    presentation="date-time"
+                    className="bg-white text-black rounded-[20px] shadow-3xl z-50"
+                    showDefaultButtons
+                    showDefaultTimeLabel
+                    color="indigo-500"
+                    max="2050-12-31"
+                    min={moment().format('YYYY-MM-DD')}
+                />
+            </div>
+        );
+    };
+
+    const presentBoostCode = () => {
+        newQRCodeModal(
+            <BoostShareableQRCode
+                state={state}
+                showEditButton={true}
+                handleCloseModal={() => closeQRCodeModal()}
+                boostClaimLink={boostClaimLink}
+            />
+        );
+    };
 
     const getExpirationInSeconds = () => {
         const today = moment(); // now
@@ -109,7 +125,7 @@ export const BoostShareableCode: React.FC<{
                         {
                             ttlSeconds: _ttlSeconds,
                             totalUses:
-                                claimLimit !== undefined && claimLimit > 0
+                                claimLimit !== undefined && (claimLimit as number) > 0
                                     ? Math.floor(Number(claimLimit))
                                     : undefined,
                         }
@@ -126,11 +142,11 @@ export const BoostShareableCode: React.FC<{
                     setIsLinkLoading(false);
                 }
             } else {
-                const signingAuthorities = await wallet.invoke.getSigningAuthorities();
+                const signingAuthorities = await wallet?.invoke.getSigningAuthorities();
 
                 // find existing signing authority
-                let sa = signingAuthorities.find(
-                    signingAuthority => signingAuthority?.name === 'lca-sa'
+                let sa = signingAuthorities?.find(
+                    (signingAuthority: any) => signingAuthority?.name === 'lca-sa'
                 );
 
                 if (!sa) {
@@ -160,7 +176,7 @@ export const BoostShareableCode: React.FC<{
                             {
                                 ttlSeconds: _ttlSeconds,
                                 totalUses:
-                                    claimLimit !== undefined && claimLimit > 0
+                                    claimLimit !== undefined && (claimLimit as number) > 0
                                         ? Math.floor(Number(claimLimit))
                                         : undefined,
                             }
@@ -234,11 +250,7 @@ export const BoostShareableCode: React.FC<{
                             <button
                                 className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base"
                                 onClick={() => {
-                                    presentDatePicker({
-                                        backdropDismiss: true,
-                                        showBackdrop: false,
-                                        cssClass: 'flex items-center justify-center',
-                                    });
+                                    openDatePicker();
                                 }}
                             >
                                 {expirationDate
@@ -275,7 +287,7 @@ export const BoostShareableCode: React.FC<{
                                         value={claimLimit}
                                         onIonInput={e => {
                                             clearBoostLink();
-                                            setClaimLimit(e.detail.value);
+                                            setClaimLimit(Number(e.detail.value));
                                         }}
                                         onKeyDown={e => {
                                             // Allow only numbers
@@ -291,11 +303,11 @@ export const BoostShareableCode: React.FC<{
                                             e.preventDefault();
                                             // Get the pasted text and remove any non-numeric characters
                                             const pastedText = (
-                                                e.clipboardData || window.Clipboard
+                                                e.clipboardData || (window as any).Clipboard
                                             ).getData('text');
                                             const numericText = pastedText.replace(/\D/g, '');
                                             if (numericText) {
-                                                setClaimLimit(numericText);
+                                                setClaimLimit(Number(numericText));
                                             }
                                         }}
                                     />
