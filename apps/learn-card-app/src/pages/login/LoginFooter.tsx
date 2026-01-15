@@ -76,7 +76,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                     <button
                         onClick={e => {
                             e.preventDefault();
-                            history.push('/ai-pathways');
+                            history.push('/ai/pathways/discovery');
                         }}
                         className="flex items-center text-emerald-100 font-bold text-xs hover:underline"
                     >

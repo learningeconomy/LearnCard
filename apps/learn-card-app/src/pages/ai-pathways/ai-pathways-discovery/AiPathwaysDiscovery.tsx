@@ -74,7 +74,16 @@ const AiPathwaysDiscovery: React.FC = () => {
                         />
 
                         {emptyPathways ? (
-                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
+                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px] flex-col gap-4">
+                                {searchKeyword && (
+                                    <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">
+                                        <div className="w-full flex-col flex items-center justify-center gap-4">
+                                            <p className="text-center text-lg font-semibold text-gray-600">
+                                                No results found for "{searchKeyword}"
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                                 <AiPathwaysEmptyPlaceholder />
                             </div>
                         ) : (
@@ -95,7 +104,6 @@ const AiPathwaysDiscovery: React.FC = () => {
                                     occupations={occupations}
                                     isLoading={isLoading}
                                 />
-                                <ExploreAiInsightsButton />
                             </>
                         )}
                     </div>

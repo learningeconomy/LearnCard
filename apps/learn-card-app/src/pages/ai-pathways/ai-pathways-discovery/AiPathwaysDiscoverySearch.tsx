@@ -13,12 +13,6 @@ const AiPathwaysDiscoverySearch: React.FC<{
         }
     };
 
-    const handleKeyPress = (e: any) => {
-        if (e.key === 'Enter') {
-            handleSearch();
-        }
-    };
-
     const clearSearch = () => {
         setSearchKeyword('');
         setKeywordInput('');
