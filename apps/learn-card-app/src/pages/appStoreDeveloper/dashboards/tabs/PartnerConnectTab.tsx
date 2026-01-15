@@ -418,10 +418,12 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
     }, [appListings, localSelectedListing, externalSelectedListing]);
 
     const [selectedMethodId, setSelectedMethodId] = useState('requestIdentity');
-    const [showInstall, setShowInstall] = useState(false);
-    const [showApiReference, setShowApiReference] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
     const [templates, setTemplates] = useState<BoostTemplate[]>([]);
+
+    // Tab navigation state
+    const [activeTab, setActiveTab] = useState<'templates' | 'code' | 'setup'>('templates');
+    const [templateType, setTemplateType] = useState<'issue-credentials' | 'peer-badges'>('issue-credentials');
 
     // ============================================================
     // EXTRACT SAVED CONFIG FROM GUIDE STATE
@@ -874,41 +876,27 @@ const identity = await learnCard.requestIdentity();
 console.log('User:', identity.profile.displayName);`;
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h2 className="text-lg font-semibold text-gray-800">Partner Connect SDK</h2>
-                <p className="text-sm text-gray-500">
-                    {hasConfig 
-                        ? `Your personalized integration code for ${selectedListing?.display_name || 'your app'}`
-                        : 'Complete the setup wizard to generate personalized code'
-                    }
-                </p>
-            </div>
+        <div className="space-y-4">
+            {/* Header with App Selector */}
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                    <h2 className="text-lg font-semibold text-gray-800">Partner Connect SDK</h2>
+                    <p className="text-sm text-gray-500">
+                        Manage templates and generate integration code
+                    </p>
+                </div>
 
-            {/* App Listing Selector */}
-            {appListings && appListings.length > 0 && (
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-violet-100 rounded-lg">
-                                <Layout className="w-5 h-5 text-violet-600" />
-                            </div>
-                            <div>
-                                <h3 className="font-medium text-gray-800">App Listing</h3>
-                                <p className="text-xs text-gray-500">
-                                    Select which app to manage templates for
-                                </p>
-                            </div>
-                        </div>
-
+                {/* App Listing Selector - Compact */}
+                {appListings && appListings.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <Layout className="w-4 h-4 text-gray-400" />
                         <select
                             value={selectedListing?.listing_id || ''}
                             onChange={(e) => {
                                 const listing = appListings.find(l => l.listing_id === e.target.value);
                                 setLocalSelectedListing(listing || null);
                             }}
-                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 min-w-[200px]"
+                            className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         >
                             {appListings.map(listing => (
                                 <option key={listing.listing_id} value={listing.listing_id}>
@@ -917,12 +905,12 @@ console.log('User:', identity.profile.displayName);`;
                             ))}
                         </select>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
             {listingsLoading && (
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-3">
-                    <Loader2 className="w-5 h-5 text-violet-500 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
                     <span className="text-gray-600">Loading app listings...</span>
                 </div>
             )}
@@ -941,388 +929,408 @@ console.log('User:', identity.profile.displayName);`;
                 </div>
             )}
 
-            {/* ============================================================ */}
-            {/* YOUR INTEGRATION - Personalized Code Section */}
-            {/* ============================================================ */}
-            <div className="border-2 border-cyan-200 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-50 to-white">
-                <div className="p-4 border-b border-cyan-200 bg-cyan-50/50">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-cyan-100 rounded-lg">
-                                <Code className="w-5 h-5 text-cyan-600" />
-                            </div>
-
-                            <div>
-                                <h3 className="font-semibold text-gray-800">
-                                    {hasConfig ? 'Your Integration Code' : 'Integration Code'}
-                                </h3>
-                                <p className="text-xs text-gray-500">
-                                    {hasConfig 
-                                        ? `${selectedFeatures.length} feature${selectedFeatures.length !== 1 ? 's' : ''} configured • ${templates.length} template${templates.length !== 1 ? 's' : ''} available`
-                                        : 'Run the setup wizard to configure features'
-                                    }
-                                </p>
-                            </div>
-                        </div>
+            {/* Tab Navigation */}
+            {selectedListing && (
+                <>
+                    <div className="flex border-b border-gray-200">
+                        <button
+                            onClick={() => setActiveTab('templates')}
+                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === 'templates'
+                                    ? 'border-cyan-500 text-cyan-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            <Award className="w-4 h-4" />
+                            Templates
+                        </button>
 
                         <button
-                            onClick={() => handleCopy(generatePersonalizedCode, 'personalized')}
-                            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition-colors"
+                            onClick={() => setActiveTab('code')}
+                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === 'code'
+                                    ? 'border-cyan-500 text-cyan-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
                         >
-                            {copied === 'personalized' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                            {copied === 'personalized' ? 'Copied!' : 'Copy All'}
+                            <Code className="w-4 h-4" />
+                            Code
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('setup')}
+                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === 'setup'
+                                    ? 'border-cyan-500 text-cyan-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            <Package className="w-4 h-4" />
+                            Setup
                         </button>
                     </div>
 
-                    {/* Selected Features Summary */}
-                    {hasConfig && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            {selectedFeatures.map(featureId => {
-                                const feature = FEATURES.find(f => f.id === featureId);
-                                return feature ? (
-                                    <div
-                                        key={featureId}
-                                        className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-cyan-200 rounded-full text-xs font-medium text-cyan-700"
-                                    >
-                                        {feature.icon}
-                                        {feature.title}
-                                    </div>
-                                ) : null;
-                            })}
+                    {/* ============================================================ */}
+                    {/* TEMPLATES TAB */}
+                    {/* ============================================================ */}
+                    {activeTab === 'templates' && (
+                        <div className="space-y-4">
+                            {/* Template Type Toggle */}
+                            <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg w-fit">
+                                <button
+                                    onClick={() => setTemplateType('issue-credentials')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                        templateType === 'issue-credentials'
+                                            ? 'bg-white text-gray-800 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <Award className="w-4 h-4" />
+                                    Issue Credentials
+                                </button>
+
+                                <button
+                                    onClick={() => setTemplateType('peer-badges')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                        templateType === 'peer-badges'
+                                            ? 'bg-white text-gray-800 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <Send className="w-4 h-4" />
+                                    Peer Badges
+                                </button>
+                            </div>
+
+                            {/* Template Type Description */}
+                            <div className={`p-3 rounded-lg text-sm ${
+                                templateType === 'issue-credentials'
+                                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                                    : 'bg-violet-50 border border-violet-200 text-violet-800'
+                            }`}>
+                                {templateType === 'issue-credentials' ? (
+                                    <>
+                                        <strong>Issue Credentials:</strong> Templates for credentials your app issues to users via <code className="bg-emerald-100 px-1 rounded">sendCredential()</code>
+                                    </>
+                                ) : (
+                                    <>
+                                        <strong>Peer Badges:</strong> Templates users can send to each other via <code className="bg-violet-100 px-1 rounded">initiateTemplateIssuance()</code>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Template List Manager */}
+                            <TemplateListManager
+                                listingId={selectedListing.listing_id}
+                                integrationId={integration?.id}
+                                featureType={templateType}
+                                showCodeSnippets={true}
+                                editable={true}
+                            />
                         </div>
                     )}
-                </div>
 
-                <div className="p-4">
-                    <CodeBlock code={generatePersonalizedCode} maxHeight="max-h-[500px]" />
-
-                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                        <p className="text-sm text-amber-800">
-                            <strong>💡 LLM-Ready:</strong> Copy this code and paste it into an AI assistant (like ChatGPT or Claude) along with your requirements. The <code className="bg-amber-100 px-1 rounded">@llm-config</code> section contains all your template URIs and settings.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Issue Credentials - Template Management Section */}
-            {selectedListing && (
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
-                    <div className="p-4 bg-gray-50 border-b border-gray-200">
-                        <div className="flex items-center gap-3">
-                            <Award className="w-5 h-5 text-emerald-600" />
-                            <div>
-                                <h3 className="font-medium text-gray-800">Issue Credentials Templates</h3>
-                                <p className="text-xs text-gray-500">
-                                    Templates for issuing credentials to users via <code className="bg-gray-100 px-1 rounded text-xs">sendCredential()</code>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-4">
-                        <TemplateListManager
-                            listingId={selectedListing.listing_id}
-                            integrationId={integration?.id}
-                            featureType="issue-credentials"
-                            showCodeSnippets={true}
-                            editable={true}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Peer-to-Peer Badges - Template Management Section */}
-            {selectedListing && (
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
-                    <div className="p-4 bg-gray-50 border-b border-gray-200">
-                        <div className="flex items-center gap-3">
-                            <Send className="w-5 h-5 text-violet-600" />
-                            <div>
-                                <h3 className="font-medium text-gray-800">Peer-to-Peer Badge Templates</h3>
-                                <p className="text-xs text-gray-500">
-                                    Templates for badges users can send to each other via <code className="bg-gray-100 px-1 rounded text-xs">initiateTemplateIssuance()</code>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-4">
-                        <TemplateListManager
-                            listingId={selectedListing.listing_id}
-                            integrationId={integration?.id}
-                            featureType="peer-badges"
-                            showCodeSnippets={true}
-                            editable={true}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Installation Section */}
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <button
-                    onClick={() => setShowInstall(!showInstall)}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                    <div className="flex items-center gap-3">
-                        <Package className="w-5 h-5 text-cyan-600" />
-                        <div className="text-left">
-                            <h3 className="font-medium text-gray-800">Installation & Setup</h3>
-                            <p className="text-xs text-gray-500">Install the SDK and initialize it in your app</p>
-                        </div>
-                    </div>
-
-                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showInstall ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showInstall && (
-                    <div className="p-4 border-t border-gray-200 space-y-4">
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-gray-700">1. Install the SDK</span>
-                                <button
-                                    onClick={() => handleCopy(installCode, 'install')}
-                                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                                >
-                                    {copied === 'install' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                    {copied === 'install' ? 'Copied!' : 'Copy'}
-                                </button>
-                            </div>
-                            <CodeBlock code={installCode} />
-                            <p className="text-xs text-gray-500 mt-1">
-                                Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code> or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
-                            </p>
-                        </div>
-
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-gray-700">2. Initialize</span>
-                                <button
-                                    onClick={() => handleCopy(initCode, 'init')}
-                                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                                >
-                                    {copied === 'init' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                    {copied === 'init' ? 'Copied!' : 'Copy'}
-                                </button>
-                            </div>
-                            <CodeBlock code={initCode} />
-                        </div>
-
-                        <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
-                            <p className="text-sm text-cyan-800">
-                                <strong>That's it!</strong> Users are already logged in when inside the wallet, so <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code> returns instantly with their profile.
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* API Reference - Collapsible */}
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <button
-                    onClick={() => setShowApiReference(!showApiReference)}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                    <div className="flex items-center gap-3">
-                        <Code className="w-5 h-5 text-gray-600" />
-                        <div className="text-left">
-                            <h3 className="font-medium text-gray-800">API Reference</h3>
-                            <p className="text-xs text-gray-500">Explore all available SDK methods</p>
-                        </div>
-                    </div>
-
-                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showApiReference ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showApiReference && (
-                <div className="p-4 border-t border-gray-200">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                    {/* Method Navigation */}
-                    <div className="lg:col-span-4 space-y-3">
-                        {CATEGORIES.map(category => {
-                            const categoryMethods = METHODS.filter(m => m.category === category.id);
-
-                            return (
-                                <div key={category.id}>
-                                    <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        {category.icon}
-                                        {category.name}
+                    {/* ============================================================ */}
+                    {/* CODE TAB */}
+                    {/* ============================================================ */}
+                    {activeTab === 'code' && (
+                        <div className="space-y-4">
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-cyan-100 rounded-lg">
+                                            <Code className="w-5 h-5 text-cyan-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-medium text-gray-800">Your Integration Code</h3>
+                                            <p className="text-xs text-gray-500">
+                                                {templates.length} template{templates.length !== 1 ? 's' : ''} configured
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-1">
-                                        {categoryMethods.map(method => (
-                                            <button
-                                                key={method.id}
-                                                onClick={() => setSelectedMethodId(method.id)}
-                                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
-                                                    selectedMethodId === method.id
-                                                        ? 'bg-cyan-50 border border-cyan-200 text-cyan-700'
-                                                        : 'hover:bg-gray-50 text-gray-700'
-                                                }`}
-                                            >
-                                                <span className={`p-1.5 rounded-md ${getCategoryColor(method.category)}`}>
-                                                    {method.icon}
-                                                </span>
+                                    <button
+                                        onClick={() => handleCopy(generatePersonalizedCode, 'personalized')}
+                                        className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition-colors"
+                                    >
+                                        {copied === 'personalized' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                        {copied === 'personalized' ? 'Copied!' : 'Copy All'}
+                                    </button>
+                                </div>
 
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="font-mono text-sm font-medium truncate">
-                                                        {method.name}()
+                                <div className="p-4">
+                                    <CodeBlock code={generatePersonalizedCode} maxHeight="max-h-[500px]" />
+
+                                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                        <p className="text-sm text-amber-800">
+                                            <strong>💡 LLM-Ready:</strong> Copy this code and paste it into an AI assistant (like ChatGPT or Claude) along with your requirements. The <code className="bg-amber-100 px-1 rounded">@llm-config</code> section contains all your template URIs and settings.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ============================================================ */}
+                    {/* SETUP TAB */}
+                    {/* ============================================================ */}
+                    {activeTab === 'setup' && (
+                        <div className="space-y-4">
+                            {/* Installation */}
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div className="p-4 bg-gray-50 border-b border-gray-200">
+                                    <div className="flex items-center gap-3">
+                                        <Package className="w-5 h-5 text-cyan-600" />
+                                        <div>
+                                            <h3 className="font-medium text-gray-800">Installation & Setup</h3>
+                                            <p className="text-xs text-gray-500">Install the SDK and initialize it in your app</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 space-y-4">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium text-gray-700">1. Install the SDK</span>
+                                            <button
+                                                onClick={() => handleCopy(installCode, 'install')}
+                                                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                                            >
+                                                {copied === 'install' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                {copied === 'install' ? 'Copied!' : 'Copy'}
+                                            </button>
+                                        </div>
+                                        <CodeBlock code={installCode} />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code> or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium text-gray-700">2. Initialize</span>
+                                            <button
+                                                onClick={() => handleCopy(initCode, 'init')}
+                                                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                                            >
+                                                {copied === 'init' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                {copied === 'init' ? 'Copied!' : 'Copy'}
+                                            </button>
+                                        </div>
+                                        <CodeBlock code={initCode} />
+                                    </div>
+
+                                    <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
+                                        <p className="text-sm text-cyan-800">
+                                            <strong>That's it!</strong> Users are already logged in when inside the wallet, so <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code> returns instantly with their profile.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* API Reference */}
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div className="p-4 bg-gray-50 border-b border-gray-200">
+                                    <div className="flex items-center gap-3">
+                                        <Code className="w-5 h-5 text-gray-600" />
+                                        <div>
+                                            <h3 className="font-medium text-gray-800">API Reference</h3>
+                                            <p className="text-xs text-gray-500">Explore all available SDK methods</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4">
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                        {/* Method Navigation */}
+                                        <div className="lg:col-span-4 space-y-3">
+                                            {CATEGORIES.map(category => {
+                                                const categoryMethods = METHODS.filter(m => m.category === category.id);
+
+                                                return (
+                                                    <div key={category.id}>
+                                                        <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                            {category.icon}
+                                                            {category.name}
+                                                        </div>
+
+                                                        <div className="space-y-1">
+                                                            {categoryMethods.map(method => (
+                                                                <button
+                                                                    key={method.id}
+                                                                    onClick={() => setSelectedMethodId(method.id)}
+                                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                                                                        selectedMethodId === method.id
+                                                                            ? 'bg-cyan-50 border border-cyan-200 text-cyan-700'
+                                                                            : 'hover:bg-gray-50 text-gray-700'
+                                                                    }`}
+                                                                >
+                                                                    <span className={`p-1.5 rounded-md ${getCategoryColor(method.category)}`}>
+                                                                        {method.icon}
+                                                                    </span>
+
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="font-mono text-sm font-medium truncate">
+                                                                            {method.name}()
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-500 truncate">
+                                                                            {method.shortDescription}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {selectedMethodId === method.id && (
+                                                                        <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0" />
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-xs text-gray-500 truncate">
-                                                        {method.shortDescription}
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Method Details */}
+                                        <div className="lg:col-span-8 space-y-4">
+                                            {/* Method Header */}
+                                            <div className="p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl">
+                                                <div className="flex items-start gap-4">
+                                                    <div className={`p-3 rounded-xl ${getCategoryColor(selectedMethod.category)}`}>
+                                                        {selectedMethod.icon}
+                                                    </div>
+
+                                                    <div className="flex-1">
+                                                        <h4 className="text-lg font-mono font-semibold text-gray-800">
+                                                            learnCard.{selectedMethod.name}()
+                                                        </h4>
+                                                        <p className="mt-2 text-gray-600 text-sm leading-relaxed">
+                                                            {selectedMethod.description}
+                                                        </p>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                {selectedMethodId === method.id && (
-                                                    <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0" />
-                                                )}
-                                            </button>
-                                        ))}
+                                            {/* Parameters */}
+                                            {selectedMethod.parameters.length > 0 && (
+                                                <div>
+                                                    <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                                        <Code className="w-4 h-4 text-gray-500" />
+                                                        Parameters
+                                                    </h5>
+
+                                                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                                        {selectedMethod.parameters.map((param, idx) => (
+                                                            <div
+                                                                key={param.name}
+                                                                className={`p-3 ${idx > 0 ? 'border-t border-gray-200' : ''}`}
+                                                            >
+                                                                <div className="flex items-start gap-2 flex-wrap">
+                                                                    <code className="px-2 py-0.5 bg-gray-100 rounded text-sm font-mono text-gray-800">
+                                                                        {param.name}
+                                                                    </code>
+                                                                    <code className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+                                                                        {param.type}
+                                                                    </code>
+                                                                    {param.required && (
+                                                                        <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
+                                                                            required
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="mt-1 text-sm text-gray-600">{param.description}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Returns */}
+                                            <div>
+                                                <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                                                    Returns
+                                                </h5>
+
+                                                <div className="p-3 border border-gray-200 rounded-xl">
+                                                    <code className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-sm">
+                                                        {selectedMethod.returns.type}
+                                                    </code>
+                                                    <p className="mt-1 text-sm text-gray-600">{selectedMethod.returns.description}</p>
+
+                                                    <div className="mt-2">
+                                                        <CodeBlock code={selectedMethod.returns.example} maxHeight="max-h-32" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Code Example */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h5 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                                        <Terminal className="w-4 h-4 text-gray-500" />
+                                                        Example
+                                                    </h5>
+                                                    <button
+                                                        onClick={() => handleCopy(selectedMethod.code, 'example')}
+                                                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                                                    >
+                                                        {copied === 'example' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                        {copied === 'example' ? 'Copied!' : 'Copy'}
+                                                    </button>
+                                                </div>
+
+                                                <CodeBlock code={selectedMethod.code} maxHeight="max-h-72" />
+                                            </div>
+
+                                            {/* Tips */}
+                                            {selectedMethod.tips && selectedMethod.tips.length > 0 && (
+                                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                                    <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                                        <Zap className="w-4 h-4" />
+                                                        Pro Tips
+                                                    </h5>
+                                                    <ul className="space-y-1">
+                                                        {selectedMethod.tips.map((tip, idx) => (
+                                                            <li key={idx} className="flex items-start gap-2 text-sm text-amber-700">
+                                                                <ChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                                {tip}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Method Details */}
-                    <div className="lg:col-span-8 space-y-4">
-                        {/* Method Header */}
-                        <div className="p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl">
-                            <div className="flex items-start gap-4">
-                                <div className={`p-3 rounded-xl ${getCategoryColor(selectedMethod.category)}`}>
-                                    {selectedMethod.icon}
-                                </div>
-
-                                <div className="flex-1">
-                                    <h4 className="text-lg font-mono font-semibold text-gray-800">
-                                        learnCard.{selectedMethod.name}()
-                                    </h4>
-                                    <p className="mt-2 text-gray-600 text-sm leading-relaxed">
-                                        {selectedMethod.description}
-                                    </p>
-                                </div>
                             </div>
-                        </div>
 
-                        {/* Parameters */}
-                        {selectedMethod.parameters.length > 0 && (
-                            <div>
-                                <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                                    <Code className="w-4 h-4 text-gray-500" />
-                                    Parameters
-                                </h5>
-
-                                <div className="border border-gray-200 rounded-xl overflow-hidden">
-                                    {selectedMethod.parameters.map((param, idx) => (
-                                        <div
-                                            key={param.name}
-                                            className={`p-3 ${idx > 0 ? 'border-t border-gray-200' : ''}`}
-                                        >
-                                            <div className="flex items-start gap-2 flex-wrap">
-                                                <code className="px-2 py-0.5 bg-gray-100 rounded text-sm font-mono text-gray-800">
-                                                    {param.name}
-                                                </code>
-                                                <code className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
-                                                    {param.type}
-                                                </code>
-                                                {param.required && (
-                                                    <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
-                                                        required
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="mt-1 text-sm text-gray-600">{param.description}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Returns */}
-                        <div>
-                            <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                                <ChevronRight className="w-4 h-4 text-gray-500" />
-                                Returns
-                            </h5>
-
-                            <div className="p-3 border border-gray-200 rounded-xl">
-                                <code className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-sm">
-                                    {selectedMethod.returns.type}
-                                </code>
-                                <p className="mt-1 text-sm text-gray-600">{selectedMethod.returns.description}</p>
-
-                                <div className="mt-2">
-                                    <CodeBlock code={selectedMethod.returns.example} maxHeight="max-h-32" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Code Example */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <h5 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                                    <Terminal className="w-4 h-4 text-gray-500" />
-                                    Example
-                                </h5>
-                                <button
-                                    onClick={() => handleCopy(selectedMethod.code, 'example')}
-                                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                            {/* Resources */}
+                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                                <a
+                                    href="https://docs.learncard.com/sdks/partner-connect"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                 >
-                                    {copied === 'example' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                    {copied === 'example' ? 'Copied!' : 'Copy'}
-                                </button>
-                            </div>
+                                    <FileText className="w-4 h-4" />
+                                    SDK Documentation
+                                    <ExternalLink className="w-3 h-3" />
+                                </a>
 
-                            <CodeBlock code={selectedMethod.code} maxHeight="max-h-72" />
+                                <a
+                                    href="https://github.com/learningeconomy/LearnCard"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                                >
+                                    <Code className="w-4 h-4" />
+                                    GitHub Examples
+                                    <ExternalLink className="w-3 h-3" />
+                                </a>
+                            </div>
                         </div>
-
-                        {/* Tips */}
-                        {selectedMethod.tips && selectedMethod.tips.length > 0 && (
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
-                                    <Zap className="w-4 h-4" />
-                                    Pro Tips
-                                </h5>
-                                <ul className="space-y-1">
-                                    {selectedMethod.tips.map((tip, idx) => (
-                                        <li key={idx} className="flex items-start gap-2 text-sm text-amber-700">
-                                            <ChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                            {tip}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                </div>
-                )}
-            </div>
-
-            {/* Resources */}
-            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                <a
-                    href="https://docs.learncard.com/sdks/partner-connect"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-                >
-                    <FileText className="w-4 h-4" />
-                    SDK Documentation
-                    <ExternalLink className="w-3 h-3" />
-                </a>
-
-                <a
-                    href="https://github.com/learningeconomy/LearnCard"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-                >
-                    <Code className="w-4 h-4" />
-                    GitHub Examples
-                    <ExternalLink className="w-3 h-3" />
-                </a>
-            </div>
+                    )}
+                </>
+            )}
         </div>
     );
 };

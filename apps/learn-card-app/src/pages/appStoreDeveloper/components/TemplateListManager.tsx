@@ -72,7 +72,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
         deleteTemplate,
         updateAlias,
         refetch,
-    } = useTemplateManager({ listingId, integrationId });
+    } = useTemplateManager({ listingId, integrationId, featureType });
 
     // Local UI state
     const [showBuilder, setShowBuilder] = useState(false);
@@ -244,51 +244,53 @@ if (result.credentialUri) {
                                 <div className="flex-1 min-w-0">
                                     <h5 className="font-medium text-gray-900 truncate">{template.name}</h5>
 
-                                    {/* Alias */}
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs text-gray-500">Alias:</span>
+                                    {/* Alias - only for issue-credentials templates */}
+                                    {featureType === 'issue-credentials' && (
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-xs text-gray-500">Alias:</span>
 
-                                        {editingAlias === template.boostUri ? (
-                                            <div className="flex items-center gap-1">
-                                                <input
-                                                    type="text"
-                                                    value={tempAliasValue}
-                                                    onChange={e => setTempAliasValue(e.target.value)}
-                                                    className="px-2 py-0.5 text-xs border border-emerald-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                                    autoFocus
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter') handleSaveAlias(template.boostUri!);
-                                                        if (e.key === 'Escape') setEditingAlias(null);
+                                            {editingAlias === template.boostUri ? (
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="text"
+                                                        value={tempAliasValue}
+                                                        onChange={e => setTempAliasValue(e.target.value)}
+                                                        className="px-2 py-0.5 text-xs border border-emerald-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                                        autoFocus
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') handleSaveAlias(template.boostUri!);
+                                                            if (e.key === 'Escape') setEditingAlias(null);
+                                                        }}
+                                                    />
+
+                                                    <button
+                                                        onClick={() => handleSaveAlias(template.boostUri!)}
+                                                        className="p-1 text-emerald-600 hover:text-emerald-800"
+                                                    >
+                                                        <Check className="w-3 h-3" />
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => setEditingAlias(null)}
+                                                        className="p-1 text-gray-400 hover:text-gray-600"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingAlias(template.boostUri!);
+                                                        setTempAliasValue(template.templateAlias || '');
                                                     }}
-                                                />
-
-                                                <button
-                                                    onClick={() => handleSaveAlias(template.boostUri!)}
-                                                    className="p-1 text-emerald-600 hover:text-emerald-800"
+                                                    className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700 hover:bg-gray-200 transition-colors"
                                                 >
-                                                    <Check className="w-3 h-3" />
+                                                    <code>{template.templateAlias || 'No alias'}</code>
+                                                    {editable && <Pencil className="w-3 h-3 text-gray-400" />}
                                                 </button>
-
-                                                <button
-                                                    onClick={() => setEditingAlias(null)}
-                                                    className="p-1 text-gray-400 hover:text-gray-600"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={() => {
-                                                    setEditingAlias(template.boostUri!);
-                                                    setTempAliasValue(template.templateAlias || '');
-                                                }}
-                                                className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700 hover:bg-gray-200 transition-colors"
-                                            >
-                                                <code>{template.templateAlias || 'No alias'}</code>
-                                                {editable && <Pencil className="w-3 h-3 text-gray-400" />}
-                                            </button>
-                                        )}
-                                    </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Variables */}
                                     {template.variables && template.variables.length > 0 && !compact && (

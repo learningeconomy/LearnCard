@@ -23,9 +23,12 @@ export interface ManagedTemplate extends CredentialTemplate {
     isAddedToListing?: boolean;
 }
 
+export type TemplateFeatureType = 'issue-credentials' | 'peer-badges';
+
 export interface TemplateManagerOptions {
     integrationId?: string;
     listingId?: string;
+    featureType?: TemplateFeatureType;
 }
 
 export interface TemplateManagerResult {
@@ -114,7 +117,7 @@ function extractTemplateVariables(credential: Record<string, unknown>): string[]
  * @param options - Filter options (integrationId, listingId)
  */
 export function useTemplateManager(options: TemplateManagerOptions): TemplateManagerResult {
-    const { integrationId, listingId } = options;
+    const { integrationId, listingId, featureType } = options;
 
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
@@ -133,45 +136,35 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                 setIsLoading(true);
                 const wallet = await initWalletRef.current();
 
-                // Fetch templates - by listingId (preferred) or integrationId
-                let boostLinks: Array<{ templateAlias: string; boostUri: string }> = [];
+                // Fetch templates based on featureType
+                let allBoostInfos: Array<{ boostUri: string; templateAlias?: string }> = [];
                 
-                if (listingId) {
-                    // Fetch boosts linked to the app listing (includes templateAlias)
-                    boostLinks = await wallet.invoke.getAppBoosts(listingId) || [];
-                }
-                
-                // Also fetch by integrationId if provided
-                let integrationBoostUris: string[] = [];
-                if (integrationId) {
-                    const boostsResult = await wallet.invoke.getPaginatedBoosts({
-                        limit: 50,
-                        query: { meta: { integrationId } },
-                    });
-                    integrationBoostUris = (boostsResult?.records || [])
-                        .map((boost: Record<string, unknown>) => boost.uri as string)
-                        .filter(Boolean);
+                if (featureType === 'peer-badges') {
+                    // For peer-badges: fetch by featureType metadata
+                    if (listingId) {
+                        const boostsResult = await wallet.invoke.getPaginatedBoosts({
+                            limit: 50,
+                            query: { meta: { appListingId: listingId, featureType: 'peer-badges' } },
+                        });
+                        allBoostInfos = (boostsResult?.records || [])
+                            .map((boost: Record<string, unknown>) => ({
+                                boostUri: boost.uri as string,
+                                templateAlias: undefined,
+                            }))
+                            .filter(info => info.boostUri);
+                    }
+                } else {
+                    // For issue-credentials (default): fetch from getAppBoosts (has templateAlias)
+                    if (listingId) {
+                        const boostLinks = await wallet.invoke.getAppBoosts(listingId) || [];
+                        allBoostInfos = boostLinks.map(link => ({
+                            boostUri: link.boostUri,
+                            templateAlias: link.templateAlias,
+                        }));
+                    }
                 }
 
                 if (cancelled) return;
-
-                // Combine URIs from both sources, deduplicating
-                const seenUris = new Set<string>();
-                const allBoostInfos: Array<{ boostUri: string; templateAlias?: string }> = [];
-                
-                for (const link of boostLinks) {
-                    if (!seenUris.has(link.boostUri)) {
-                        seenUris.add(link.boostUri);
-                        allBoostInfos.push({ boostUri: link.boostUri, templateAlias: link.templateAlias });
-                    }
-                }
-                
-                for (const uri of integrationBoostUris) {
-                    if (!seenUris.has(uri)) {
-                        seenUris.add(uri);
-                        allBoostInfos.push({ boostUri: uri });
-                    }
-                }
 
                 if (allBoostInfos.length === 0) {
                     setTemplates([]);
@@ -304,7 +297,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
         return () => {
             cancelled = true;
         };
-    }, [integrationId, listingId, fetchKey]);
+    }, [integrationId, listingId, featureType, fetchKey]);
 
     const refetch = useCallback(() => {
         setFetchKey(k => k + 1);
@@ -361,12 +354,12 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
             preparedCredential as Parameters<typeof wallet.invoke.issueCredential>[0]
         );
 
-        // Create the boost
+        // Create the boost with featureType in metadata
         const boostMetadata = {
             name,
             type: ((credential.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
             category: 'achievement',
-            meta: { appListingId: listingId, integrationId },
+            meta: { appListingId: listingId, integrationId, featureType },
             ...(options?.defaultPermissions && { defaultPermissions: options.defaultPermissions }),
         };
         
@@ -375,14 +368,17 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
             boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
         );
 
-        // Add to app listing
-        await wallet.invoke.addBoostToApp(listingId, boostUri, templateAlias);
+        // For issue-credentials: add to app listing (gives it a templateAlias)
+        // For peer-badges: don't add to app listing (they're queried by featureType metadata)
+        if (featureType !== 'peer-badges') {
+            await wallet.invoke.addBoostToApp(listingId, boostUri, templateAlias);
+        }
 
         // Refetch to update local state
         refetch();
 
         return { boostUri, templateAlias };
-    }, [listingId, integrationId, templates, refetch]);
+    }, [listingId, integrationId, featureType, templates, refetch]);
 
     const updateTemplate = useCallback(async (
         boostUri: string,
