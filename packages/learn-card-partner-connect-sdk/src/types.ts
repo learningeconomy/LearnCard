@@ -205,7 +205,7 @@ export interface PostMessageResponse {
  * Pending request tracking structure
  */
 export interface PendingRequest {
-    resolve: (value: unknown) => void;
-    reject: (error: LearnCardError) => void;
-    timeoutId: number;
+  resolve: (value: unknown) => void;
+  reject: (error: LearnCardError) => void;
+  timeoutId: ReturnType<typeof setTimeout>;
 }
