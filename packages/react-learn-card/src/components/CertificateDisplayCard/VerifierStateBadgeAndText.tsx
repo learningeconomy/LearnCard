@@ -12,14 +12,16 @@ export const VERIFIER_STATES = {
 } as const;
 export type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
 
-type VerifierStateBadgeAndTextProps = {
+export type VerifierStateBadgeAndTextProps = {
     verifierState: VerifierState;
     className?: string;
+    unknownVerifierTitle?: string;
 };
 
 export const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps> = ({
     verifierState,
     className = '',
+    unknownVerifierTitle,
 }) => {
     return (
         <div className={`flex justify-center ${className}`}>
@@ -38,7 +40,7 @@ export const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps>
             {verifierState === VERIFIER_STATES.unknownVerifier && (
                 <span className="uppercase font-poppins text-[12px] font-[500] text-orange-500 flex gap-[3px] items-center">
                     <UnknownVerifierBadge />
-                    Unknown Issuer
+                    {unknownVerifierTitle ?? VERIFIER_STATES.unknownVerifier}
                 </span>
             )}
             {verifierState === VERIFIER_STATES.untrustedVerifier && (

@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
+import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import { IonContent, IonFooter, IonPage, IonRow, IonToolbar } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
+import { useHighlightedCredentials } from '../../../../hooks/useHighlightedCredentials';
+import { getRoleFromCred, getScoutsNounForRole } from '../../../../helpers/troop.helpers';
 import X from 'learn-card-base/svgs/X';
 import FatArrow from 'learn-card-base/svgs/FatArrow';
 
@@ -37,6 +40,7 @@ type NonBoostPreviewProps = {
     titleOverride?: string;
     onDotsClick?: () => void;
     qrCodeOnClick?: () => void;
+    hideQRCode?: boolean;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -61,10 +65,21 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     titleOverride,
     onDotsClick,
     qrCodeOnClick,
+    hideQRCode,
 }) => {
     const { initWallet } = useWallet();
+    const profileID =
+        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const [isFront, setIsFront] = useState(true);
+    const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
+
+    const unknownVerifierTitle = useMemo(() => {
+        if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
+
+        const role = getRoleFromCred(highlightedCreds[0]);
+        return `Verified ${getScoutsNounForRole(role)}`;
+    }, [highlightedCreds]);
 
     useEffect(() => {
         const verify = async () => {
@@ -120,6 +135,9 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             hideNavButtons
                             isFrontOverride={isFront}
                             setIsFrontOverride={setIsFront}
+                            qrCodeOnClick={qrCodeOnClick}
+                            hideQRCode={hideQRCode}
+                            unknownVerifierTitle={unknownVerifierTitle}
                         />
                     </section>
                 </IonRow>

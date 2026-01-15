@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import { VCDisplayCard2 } from '@learncard/react';
@@ -6,6 +6,8 @@ import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
+import { useHighlightedCredentials } from '../../../../hooks/useHighlightedCredentials';
+import { getRoleFromCred, getScoutsNounForRole } from '../../../../helpers/troop.helpers';
 
 type IssueHistory = {
     id?: string | number;
@@ -75,8 +77,16 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
+    const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const [isFront, setIsFront] = useState(true);
+
+    const unknownVerifierTitle = useMemo(() => {
+        if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
+
+        const role = getRoleFromCred(highlightedCreds[0]);
+        return `Verified ${getScoutsNounForRole(role)}`;
+    }, [highlightedCreds]);
 
     useEffect(() => {
         const verify = async () => {
@@ -160,6 +170,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             setIsFrontOverride={setIsFront}
                             qrCodeOnClick={qrCodeOnClick}
                             hideQRCode={hideQRCode}
+                            unknownVerifierTitle={unknownVerifierTitle}
                         />
                     </section>
                 </IonRow>

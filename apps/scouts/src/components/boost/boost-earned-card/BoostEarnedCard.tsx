@@ -39,6 +39,9 @@ import {
 
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
+import { VCInfoLine } from './VCInfoLine';
+import { useHighlightedCredentials } from '../../../hooks/useHighlightedCredentials';
+import { getRoleFromCred, getScoutsNounForRole } from '../../../helpers/troop.helpers';
 
 type BoostEarnedCardProps = {
     credential?: VC;
@@ -95,6 +98,16 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     const credential = resolvedCredential || _credential;
     const isBoost = credential && isBoostCredential(credential);
+    const profileID =
+        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
+    const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
+
+    const unknownVerifierTitle = React.useMemo(() => {
+        if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
+
+        const role = getRoleFromCred(highlightedCreds[0]);
+        return `Verified ${getScoutsNounForRole(role)}`;
+    }, [highlightedCreds]);
     const cred = credential && unwrapBoostCredential(credential);
     const credImg = getUrlFromImage(getCredentialSubject(cred)?.image ?? '');
     const cardTitle = isBoost ? cred?.name : getCredentialName(cred);

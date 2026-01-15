@@ -44,6 +44,7 @@ type CredentialVerificationDisplayProps = {
     iconClassName?: string;
     showText?: boolean;
     managedBoost?: boolean;
+    unknownVerifierTitle?: string;
 };
 
 export const CredentialVerificationDisplay: React.FC<CredentialVerificationDisplayProps> = ({
@@ -52,6 +53,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     iconClassName = '',
     showText = false,
     managedBoost = false,
+    unknownVerifierTitle,
 }) => {
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
@@ -131,7 +133,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
                     className={`text-orange-500 flex items-center font-poppins font-[500] text-base uppercase ${className}`}
                 >
                     <UnknownCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} />{' '}
-                    Unknown Issuer
+                    {unknownVerifierTitle ?? VERIFIER_STATES.unknownVerifier}
                 </p>
             );
         }
