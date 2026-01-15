@@ -84,6 +84,17 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     const [tempAliasValue, setTempAliasValue] = useState('');
     const [selectedTemplateForCode, setSelectedTemplateForCode] = useState<ManagedTemplate | null>(null);
 
+    // Reset local state when context changes (listingId, featureType)
+    React.useEffect(() => {
+        setShowBuilder(false);
+        setEditingTemplate(null);
+        setCurrentBuildingTemplate(getBlankTemplate());
+        setIsSaving(false);
+        setEditingAlias(null);
+        setTempAliasValue('');
+        setSelectedTemplateForCode(null);
+    }, [listingId, featureType]);
+
     // Notify parent when templates change
     React.useEffect(() => {
         onTemplateChange?.(templates);
