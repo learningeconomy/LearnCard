@@ -37,7 +37,18 @@ export interface TemplateManagerResult {
     // CRUD operations
     createTemplate: (
         credential: Record<string, unknown>,
-        options?: { alias?: string; name?: string }
+        options?: {
+            alias?: string;
+            name?: string;
+            defaultPermissions?: {
+                canIssue?: boolean;
+                canRevoke?: boolean;
+                canManagePermissions?: boolean;
+                canViewAnalytics?: boolean;
+                canEdit?: boolean;
+                canDelete?: boolean;
+            };
+        }
     ) => Promise<{ boostUri: string; templateAlias: string }>;
 
     updateTemplate: (
@@ -305,7 +316,18 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
 
     const createTemplate = useCallback(async (
         credential: Record<string, unknown>,
-        options?: { alias?: string; name?: string }
+        options?: {
+            alias?: string;
+            name?: string;
+            defaultPermissions?: {
+                canIssue?: boolean;
+                canRevoke?: boolean;
+                canManagePermissions?: boolean;
+                canViewAnalytics?: boolean;
+                canEdit?: boolean;
+                canDelete?: boolean;
+            };
+        }
     ): Promise<{ boostUri: string; templateAlias: string }> => {
         if (!listingId) {
             throw new Error('listingId is required to create templates');
@@ -345,6 +367,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
             type: ((credential.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
             category: 'achievement',
             meta: { appListingId: listingId, integrationId },
+            ...(options?.defaultPermissions && { defaultPermissions: options.defaultPermissions }),
         };
         
         const boostUri = await wallet.invoke.createBoost(

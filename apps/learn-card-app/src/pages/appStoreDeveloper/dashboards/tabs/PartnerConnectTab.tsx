@@ -1004,16 +1004,16 @@ console.log('User:', identity.profile.displayName);`;
                 </div>
             </div>
 
-            {/* Template Management Section */}
+            {/* Issue Credentials - Template Management Section */}
             {selectedListing && (
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                     <div className="p-4 bg-gray-50 border-b border-gray-200">
                         <div className="flex items-center gap-3">
                             <Award className="w-5 h-5 text-emerald-600" />
                             <div>
-                                <h3 className="font-medium text-gray-800">Credential Templates</h3>
+                                <h3 className="font-medium text-gray-800">Issue Credentials Templates</h3>
                                 <p className="text-xs text-gray-500">
-                                    Manage templates for {selectedListing.display_name}
+                                    Templates for issuing credentials to users via <code className="bg-gray-100 px-1 rounded text-xs">sendCredential()</code>
                                 </p>
                             </div>
                         </div>
@@ -1023,6 +1023,34 @@ console.log('User:', identity.profile.displayName);`;
                         <TemplateListManager
                             listingId={selectedListing.listing_id}
                             integrationId={integration?.id}
+                            featureType="issue-credentials"
+                            showCodeSnippets={true}
+                            editable={true}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Peer-to-Peer Badges - Template Management Section */}
+            {selectedListing && (
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="p-4 bg-gray-50 border-b border-gray-200">
+                        <div className="flex items-center gap-3">
+                            <Send className="w-5 h-5 text-violet-600" />
+                            <div>
+                                <h3 className="font-medium text-gray-800">Peer-to-Peer Badge Templates</h3>
+                                <p className="text-xs text-gray-500">
+                                    Templates for badges users can send to each other via <code className="bg-gray-100 px-1 rounded text-xs">initiateTemplateIssuance()</code>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-4">
+                        <TemplateListManager
+                            listingId={selectedListing.listing_id}
+                            integrationId={integration?.id}
+                            featureType="peer-badges"
                             showCodeSnippets={true}
                             editable={true}
                         />

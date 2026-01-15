@@ -118,8 +118,13 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
                 await updateTemplate(editingTemplate.boostUri!, credentialData, { name });
                 presentToast('Template updated!', { type: ToastTypeEnum.Success });
             } else {
-                // Create new
-                await createTemplate(credentialData, { name });
+                // Create new - for peer-badges, add canIssue: true so anyone can issue
+                await createTemplate(credentialData, {
+                    name,
+                    defaultPermissions: featureType === 'peer-badges'
+                        ? { canIssue: true }
+                        : undefined,
+                });
                 presentToast('Template created!', { type: ToastTypeEnum.Success });
             }
 
@@ -132,7 +137,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
         } finally {
             setIsSaving(false);
         }
-    }, [currentBuildingTemplate, editingTemplate, createTemplate, updateTemplate, presentToast]);
+    }, [currentBuildingTemplate, editingTemplate, createTemplate, updateTemplate, presentToast, featureType]);
 
     // Handle delete
     const handleDelete = useCallback(async (boostUri: string) => {
