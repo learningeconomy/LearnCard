@@ -87,6 +87,7 @@ const AiPathways: React.FC = () => {
         fetchOccupationsLoading;
 
     const emptyPathways =
+        !isLoading &&
         !occupations &&
         courses?.length === 0 &&
         schoolPrograms.length === 0 &&
