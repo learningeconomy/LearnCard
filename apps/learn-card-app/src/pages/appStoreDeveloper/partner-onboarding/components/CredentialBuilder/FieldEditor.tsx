@@ -2,7 +2,7 @@
  * FieldEditor - Editable field with dynamic variable toggle
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Zap, ZapOff, ChevronDown, ChevronUp, HelpCircle, Upload, Loader2, Settings, Lock } from 'lucide-react';
 
 import { useFilestack } from 'learn-card-base';
@@ -40,6 +40,21 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
     const [showHelp, setShowHelp] = useState(false);
     const [customVarName, setCustomVarName] = useState(false);
 
+    // Use refs to avoid stale closures in async callbacks (like file upload)
+    const fieldRef = useRef(field);
+    const onChangeRef = useRef(onChange);
+    fieldRef.current = field;
+    onChangeRef.current = onChange;
+
+    const handleValueChange = useCallback((value: string) => {
+        const currentField = fieldRef.current;
+        onChangeRef.current({
+            ...currentField,
+            value,
+            variableName: currentField.variableName || labelToVariableName(label),
+        });
+    }, [label]);
+
     const { handleFileSelect, isLoading: isUploading } = useFilestack({
         onUpload: (url: string) => {
             handleValueChange(url);
@@ -47,14 +62,6 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
         fileType: 'image/*',
         resizeBeforeUploading: true,
     });
-
-    const handleValueChange = useCallback((value: string) => {
-        onChange({
-            ...field,
-            value,
-            variableName: field.variableName || labelToVariableName(label),
-        });
-    }, [field, onChange, label]);
 
     const handleToggleDynamic = useCallback(() => {
         if (field.isDynamic) {
