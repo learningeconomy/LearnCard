@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { createContext } from '../../helpers/context.helpers';
 
 import { useFreezelessImmer } from 'learn-card-base/hooks/useFreezelessImmer';
@@ -44,39 +44,44 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         });
     }, [modals.length]);
 
-    const newModal = (component: ModalComponent, type: ModalType, options?: ModalOptions) => {
-        setModals(_modals => {
-            // Keep the id numbers under control
-            if (_modals.length === 0) currentId.current = 0;
+    const newModal = useCallback(
+        (component: ModalComponent, type: ModalType, options?: ModalOptions) => {
+            setModals(oldModals => {
+                // Keep the id numbers under control
+                if (oldModals.length === 0) currentId.current = 0;
 
-            // For some reason duplicate ids are periodically given out, this check prevents that from
-            // happening
-            if (_modals.length > 0 && currentId.current === _modals[_modals.length - 1].id) {
+                // For some reason duplicate ids are periodically given out, this check prevents that from
+                // happening
+                if (
+                    oldModals.length > 0 &&
+                    currentId.current <= oldModals[oldModals.length - 1].id
+                ) {
+                    currentId.current = oldModals[oldModals.length - 1].id + 1;
+                }
+
+                oldModals.push({ component, type, options, open: true, id: currentId.current });
+
                 currentId.current += 1;
-            }
+            });
+        },
+        [setModals]
+    );
 
-            setTimeout(() => {
-                setModals(oldModals => {
-                    oldModals.push({ component, type, options, open: true, id: currentId.current });
-                });
-            }, 10);
+    const replaceModal = useCallback(
+        (component: ModalComponent, options?: ModalOptions) => {
+            setModals(oldModals => {
+                const currentModal = oldModals[oldModals.length - 1];
 
-            currentId.current += 1;
+                if (currentModal) {
+                    currentModal.component = component;
+                    currentModal.options = options;
+                }
+            });
+        },
+        [setModals]
+    );
 
-            return _modals;
-        });
-    };
-
-    const replaceModal = (component: ModalComponent, options?: ModalOptions) => {
-        setModals(oldModals => {
-            const currentModal = oldModals[oldModals.length - 1];
-
-            currentModal.component = component;
-            currentModal.options = options;
-        });
-    };
-
-    const closeModal = () => {
+    const closeModal = useCallback(() => {
         setModals(_modals => {
             if (_modals.length === 0) return;
 
@@ -98,12 +103,12 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 300
             );
         });
-    };
+    }, [setModals]);
 
-    const closeAllModals = () => {
+    const closeAllModals = useCallback(() => {
         setModals(oldModals => oldModals.map(modal => ({ ...modal, open: false })));
         setTimeout(() => setModals([]), 300);
-    };
+    }, [setModals]);
 
     return (
         <ModalsContextProvider value={{ modals }}>

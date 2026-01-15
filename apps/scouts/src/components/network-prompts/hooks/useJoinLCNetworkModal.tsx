@@ -1,3 +1,4 @@
+import React, { useCallback } from 'react';
 import ModalLayout from '../../../layout/ModalLayout';
 import JoinNetworkPrompt from '../JoinNetworkPrompt';
 import NewJoinNetworkPrompt from '../NewJoinNetworkPrompt';
@@ -32,7 +33,7 @@ export const useJoinLCNetworkModal = (
         mobile: ModalTypes.Cancel,
     });
 
-    const openNetworkModal = () => {
+    const openNetworkModal = useCallback(() => {
         newModal(
             <NewJoinNetworkPrompt
                 handleCloseModal={() => {
@@ -40,11 +41,13 @@ export const useJoinLCNetworkModal = (
                     closeAll?.();
                 }}
                 showNotificationsModal={showNotificationsModal}
-            />
+            />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
-    };
+    }, [newModal, closeModal, showNotificationsModal]);
 
-    const handlePresentJoinNetworkModal = async () => {
+    const handlePresentJoinNetworkModal = useCallback(async () => {
         const deletingAccount = deletingAccountStore.get.deletingAccount();
         if (deletingAccount) {
             return { prompted: false };
@@ -54,12 +57,13 @@ export const useJoinLCNetworkModal = (
             return { prompted: true };
         }
         return { prompted: false };
-    };
+    }, [isLoading, data, isLoggedIn, openNetworkModal]);
 
     return {
         handlePresentJoinNetworkModal,
         dismissNetworkModal: closeModal,
     };
 };
+
 
 export default useJoinLCNetworkModal;
