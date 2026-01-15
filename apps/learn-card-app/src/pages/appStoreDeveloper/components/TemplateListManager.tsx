@@ -22,6 +22,7 @@ import {
     X,
     Sparkles,
     Pencil,
+    Send,
 } from 'lucide-react';
 
 import { useToast, ToastTypeEnum } from 'learn-card-base';
@@ -179,26 +180,32 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
             return `// Select a template above to see the integration code`;
         }
 
-        const templateDataLines = template.variables && template.variables.length > 0
-            ? template.variables.map(v => `        ${v}: 'value', // Replace with actual value`).join('\n')
-            : `        // No template variables - credential will be issued as-is`;
+        const hasVariables = template.variables && template.variables.length > 0;
 
         if (featureType === 'peer-badges') {
             return `// Issue "${template.name}" peer badge
-const result = await learnCard.initiateTemplateIssue({
-    templateUri: '${template.boostUri}',
-    templateData: {
-${templateDataLines}
-    }
-});`;
+const result = await learnCard.initiateTemplateIssuance('${template.boostUri}');`;
         }
 
-        return `// Issue "${template.name}" credential to user
+        if (hasVariables) {
+            const templateDataLines = template.variables!.map(v => `        ${v}: 'value', // Replace with actual value`).join('\n');
+
+            return `// Issue "${template.name}" credential to user
 const result = await learnCard.sendCredential({
     templateAlias: '${template.templateAlias}',
     templateData: {
 ${templateDataLines}
     }
+});
+
+if (result.credentialUri) {
+    console.log('Credential issued:', result.credentialUri);
+}`;
+        }
+
+        return `// Issue "${template.name}" credential to user
+const result = await learnCard.sendCredential({
+    templateAlias: '${template.templateAlias}'
 });
 
 if (result.credentialUri) {
@@ -232,9 +239,17 @@ if (result.credentialUri) {
                         >
                             <div className="flex items-start gap-3">
                                 {/* Template Icon */}
-                                <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                                    template.imageUrl 
+                                        ? '' 
+                                        : featureType === 'peer-badges'
+                                            ? 'bg-gradient-to-br from-violet-100 to-purple-100'
+                                            : 'bg-gradient-to-br from-emerald-100 to-cyan-100'
+                                }`}>
                                     {template.imageUrl ? (
                                         <img src={template.imageUrl} alt={template.name} className="w-full h-full object-cover" />
+                                    ) : featureType === 'peer-badges' ? (
+                                        <Send className="w-5 h-5 text-violet-600" />
                                     ) : (
                                         <Award className="w-5 h-5 text-emerald-600" />
                                     )}
