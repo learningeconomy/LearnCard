@@ -76,11 +76,11 @@ describe('App Store Credential Issuance E2E Tests', () => {
 
             const boosts = await appOwner.invoke.getAppBoosts(listingId);
             expect(boosts).toHaveLength(1);
-            expect(boosts[0].boostId).toBe('test-badge');
+            expect(boosts[0].templateAlias).toBe('test-badge');
             expect(boosts[0].boostUri).toBe(boostUri);
         });
 
-        it('should reject duplicate boostId for same listing', async () => {
+        it('should reject duplicate templateAlias for same listing', async () => {
             await appOwner.invoke.addBoostToApp(listingId, boostUri, 'duplicate-badge');
 
             await expect(
@@ -88,7 +88,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
             ).rejects.toThrow();
         });
 
-        it('should reject invalid boostId format', async () => {
+        it('should reject invalid templateAlias format', async () => {
             await expect(
                 appOwner.invoke.addBoostToApp(listingId, boostUri, 'Invalid_Badge!')
             ).rejects.toThrow();
@@ -119,7 +119,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
         it('should issue credential to installed user', async () => {
             const result = await appUser.invoke.sendAppEvent(listingId, {
                 type: 'send-credential',
-                boostId: 'achievement',
+                templateAlias: 'achievement',
             });
 
             expect(result.credentialUri).toBeDefined();
@@ -137,16 +137,16 @@ describe('App Store Credential Issuance E2E Tests', () => {
             await expect(
                 uninstalledUser.invoke.sendAppEvent(listingId, {
                     type: 'send-credential',
-                    boostId: 'achievement',
+                    templateAlias: 'achievement',
                 })
             ).rejects.toThrow('App not installed');
         });
 
-        it('should reject if boostId not found', async () => {
+        it('should reject if templateAlias not found', async () => {
             await expect(
                 appUser.invoke.sendAppEvent(listingId, {
                     type: 'send-credential',
-                    boostId: 'nonexistent-badge',
+                    templateAlias: 'nonexistent-badge',
                 })
             ).rejects.toThrow('Boost not found');
         });
@@ -177,7 +177,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
 
             const result = await appUser.invoke.sendAppEvent(listingId, {
                 type: 'send-credential',
-                boostId: 'template-badge',
+                templateAlias: 'template-badge',
                 templateData: {
                     achievementName: 'Top Scorer',
                     achievementDescription: 'Achieved the highest score',
@@ -199,7 +199,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
             await expect(
                 appUser.invoke.sendAppEvent(listingId, {
                     type: 'send-credential',
-                    boostId: 'secure-badge',
+                    templateAlias: 'secure-badge',
                 })
             ).rejects.toThrow('App not installed');
         });
@@ -224,7 +224,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
             await expect(
                 appUser.invoke.sendAppEvent(noSaListingId, {
                     type: 'send-credential',
-                    boostId: 'no-sa-badge',
+                    templateAlias: 'no-sa-badge',
                 })
             ).rejects.toThrow('No signing authority configured');
         });

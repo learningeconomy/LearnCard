@@ -22,6 +22,8 @@ import type {
     PartnerConnectOptions,
     IdentityResponse,
     SendCredentialResponse,
+    TemplateCredentialInput,
+    TemplateCredentialResponse,
     VerifiablePresentationRequest,
     CredentialSearchResponse,
     CredentialSpecificResponse,
@@ -265,10 +267,14 @@ export class PartnerConnect {
     /**
      * Send a credential to the user's LearnCard wallet
      *
-     * @param credential - The verifiable credential to send
-     * @returns Promise resolving to credential ID
+     * Supports two modes:
+     * 1. **Raw credential**: Pass a full verifiable credential object
+     * 2. **Template-based**: Pass `{ templateAlias, templateData }` to issue from a pre-configured boost template
      *
-     * @example
+     * @param input - Either a verifiable credential or a template-based input
+     * @returns Promise resolving to credential response
+     *
+     * @example Raw credential
      * ```typescript
      * const response = await learnCard.sendCredential({
      *   '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -277,9 +283,35 @@ export class PartnerConnect {
      * });
      * console.log('Credential ID:', response.credentialId);
      * ```
+     *
+     * @example Template-based (for App Store apps)
+     * ```typescript
+     * const response = await learnCard.sendCredential({
+     *   templateAlias: 'achievement-badge',
+     *   templateData: { score: '95', courseName: 'Web Dev 101' }
+     * });
+     * console.log('Credential URI:', response.credentialUri);
+     * ```
      */
-    public sendCredential(credential: unknown): Promise<SendCredentialResponse> {
-        return this.sendMessage<SendCredentialResponse>('SEND_CREDENTIAL', { credential });
+    public sendCredential(
+        input: unknown | TemplateCredentialInput
+    ): Promise<SendCredentialResponse | TemplateCredentialResponse> {
+        if (
+            input &&
+            typeof input === 'object' &&
+            'templateAlias' in input &&
+            typeof (input as TemplateCredentialInput).templateAlias === 'string'
+        ) {
+            const templateInput = input as TemplateCredentialInput;
+
+            return this.sendAppEvent({
+                type: 'send-credential',
+                templateAlias: templateInput.templateAlias,
+                templateData: templateInput.templateData,
+            }) as Promise<TemplateCredentialResponse>;
+        }
+
+        return this.sendMessage<SendCredentialResponse>('SEND_CREDENTIAL', { credential: input });
     }
 
     /**
@@ -412,7 +444,7 @@ export class PartnerConnect {
      * // Issue a credential to the current user
      * const response = await learnCard.sendAppEvent({
      *   type: 'send-credential',
-     *   boostId: 'achievement-badge',
+     *   templateAlias: 'achievement-badge',
      *   templateData: { score: '95' }
      * });
      *

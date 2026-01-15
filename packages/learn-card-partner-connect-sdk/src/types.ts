@@ -76,10 +76,35 @@ export interface IdentityResponse {
 }
 
 /**
- * Response from SEND_CREDENTIAL action
+ * Response from SEND_CREDENTIAL action (raw credential)
  */
 export interface SendCredentialResponse {
     credentialId: string;
+    [key: string]: unknown;
+}
+
+/**
+ * Template-based credential input for sendCredential
+ * Uses a pre-configured boost template to issue a credential
+ */
+export interface TemplateCredentialInput {
+    /** Alias of the boost template configured for this app */
+    templateAlias: string;
+
+    /** Optional template data for Mustache-style variable substitution */
+    templateData?: Record<string, unknown>;
+}
+
+/**
+ * Response from template-based credential issuance
+ */
+export interface TemplateCredentialResponse {
+    /** URI of the issued credential */
+    credentialUri: string;
+
+    /** URI of the boost template used */
+    boostUri: string;
+
     [key: string]: unknown;
 }
 
@@ -146,7 +171,7 @@ export interface TemplateIssueResponse {
  */
 export type SendCredentialEvent = {
     type: 'send-credential';
-    boostId: string;
+    templateAlias: string;
     templateData?: Record<string, unknown>;
 };
 

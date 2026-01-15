@@ -69,22 +69,22 @@ export const hasProfileInstalledApp = async (
     return result.records[0]?.get('installed') ?? false;
 };
 
-export const getBoostForListingByBoostId = async (
+export const getBoostForListingByTemplateAlias = async (
     listingId: string,
-    boostId: string,
+    templateAlias: string,
     domain: string
-): Promise<{ boost: BoostInstance; boostId: string; boostUri: string } | null> => {
+): Promise<{ boost: BoostInstance; templateAlias: string; boostUri: string } | null> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST {boostId: $boostId}]->(b:Boost)
-         RETURN b.id AS id, r.boostId AS boostId`,
-        { listingId, boostId }
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST {templateAlias: $templateAlias}]->(b:Boost)
+         RETURN b.id AS id, r.templateAlias AS templateAlias`,
+        { listingId, templateAlias }
     );
 
     const record = result.records[0];
     if (!record) return null;
 
     const id = record.get('id') as string;
-    const returnedBoostId = record.get('boostId') as string;
+    const returnedTemplateAlias = record.get('templateAlias') as string;
 
     // Get proper BoostInstance via Neogma to ensure dataValues is populated
     const boost = await Boost.findOne({ where: { id } });
@@ -92,7 +92,7 @@ export const getBoostForListingByBoostId = async (
 
     return {
         boost,
-        boostId: returnedBoostId,
+        templateAlias: returnedTemplateAlias,
         boostUri: getBoostUri(id, domain),
     };
 };
@@ -100,28 +100,28 @@ export const getBoostForListingByBoostId = async (
 export const getBoostsForListing = async (
     listingId: string,
     domain: string
-): Promise<Array<{ boostId: string; boostUri: string }>> => {
+): Promise<Array<{ templateAlias: string; boostUri: string }>> => {
     const result = await neogma.queryRunner.run(
         `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST]->(b:Boost)
-         RETURN b.id AS id, r.boostId AS boostId
+         RETURN b.id AS id, r.templateAlias AS templateAlias
          ORDER BY r.createdAt DESC`,
         { listingId }
     );
 
     return result.records.map(record => ({
-        boostId: record.get('boostId') as string,
+        templateAlias: record.get('templateAlias') as string,
         boostUri: getBoostUri(record.get('id') as string, domain),
     }));
 };
 
-export const hasBoostIdForListing = async (
+export const hasTemplateAliasForListing = async (
     listingId: string,
-    boostId: string
+    templateAlias: string
 ): Promise<boolean> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST {boostId: $boostId}]->(b:Boost)
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST {templateAlias: $templateAlias}]->(b:Boost)
          RETURN COUNT(r) > 0 AS exists`,
-        { listingId, boostId }
+        { listingId, templateAlias }
     );
 
     return result.records[0]?.get('exists') ?? false;

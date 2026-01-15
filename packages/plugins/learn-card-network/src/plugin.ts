@@ -1821,16 +1821,16 @@ export async function getLearnCardNetworkPlugin(
             },
 
             // App Store Boost Management
-            addBoostToApp: async (_learnCard, listingId, boostUri, boostId) => {
+            addBoostToApp: async (_learnCard, listingId, boostUri, templateAlias) => {
                 await ensureUser();
 
-                return client.appStore.addBoostToListing.mutate({ listingId, boostUri, boostId });
+                return client.appStore.addBoostToListing.mutate({ listingId, boostUri, templateAlias });
             },
 
-            removeBoostFromApp: async (_learnCard, listingId, boostId) => {
+            removeBoostFromApp: async (_learnCard, listingId, templateAlias) => {
                 await ensureUser();
 
-                return client.appStore.removeBoostFromListing.mutate({ listingId, boostId });
+                return client.appStore.removeBoostFromListing.mutate({ listingId, templateAlias });
             },
 
             getAppBoosts: async (_learnCard, listingId) => {

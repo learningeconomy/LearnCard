@@ -24,13 +24,13 @@ export const uninstallAppForProfile = async (
 
 export const removeBoostFromListing = async (
     listingId: string,
-    boostId: string
+    templateAlias: string
 ): Promise<boolean> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST {boostId: $boostId}]->(b:Boost)
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[r:HAS_BOOST {templateAlias: $templateAlias}]->(b:Boost)
          DELETE r
          RETURN COUNT(r) > 0 AS deleted`,
-        { listingId, boostId }
+        { listingId, templateAlias }
     );
 
     return result.records[0]?.get('deleted') ?? false;

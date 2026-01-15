@@ -39,7 +39,7 @@ export const installAppForProfile = async (
 export const associateBoostWithListing = async (
     listingId: string,
     boostUri: string,
-    boostId: string
+    templateAlias: string
 ): Promise<boolean> => {
     const id = getIdFromUri(boostUri);
 
@@ -50,7 +50,7 @@ export const associateBoostWithListing = async (
             target: { id },
         },
         properties: {
-            boostId,
+            templateAlias,
             createdAt: new Date().toISOString(),
         },
     });

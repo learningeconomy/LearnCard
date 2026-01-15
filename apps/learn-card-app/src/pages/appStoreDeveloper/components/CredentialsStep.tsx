@@ -7,7 +7,7 @@ import useDeveloperPortal from '../useDeveloperPortal';
 
 interface BoostEntry {
     boostUri: string;
-    boostId: string;
+    templateAlias: string;
 }
 
 interface CredentialsStepProps {
@@ -30,28 +30,28 @@ export const CredentialsStep: React.FC<CredentialsStepProps> = ({
 
     const [showAddForm, setShowAddForm] = useState(false);
     const [boostUri, setBoostUri] = useState('');
-    const [boostId, setBoostId] = useState('');
+    const [templateAlias, setTemplateAlias] = useState('');
     const [error, setError] = useState('');
 
     const handleAddBoost = async () => {
-        if (!boostUri.trim() || !boostId.trim()) {
-            setError('Both Boost URI and Boost ID are required');
+        if (!boostUri.trim() || !templateAlias.trim()) {
+            setError('Both Boost URI and Template Alias are required');
             return;
         }
 
-        if (!/^[a-z0-9-]+$/.test(boostId)) {
-            setError('Boost ID must be lowercase alphanumeric with hyphens only');
+        if (!/^[a-z0-9-]+$/.test(templateAlias)) {
+            setError('Template Alias must be lowercase alphanumeric with hyphens only');
             return;
         }
 
         // Check for duplicates
-        const allBoostIds = [
-            ...(existingBoosts?.map(b => b.boostId) || []),
-            ...pendingBoosts.map(b => b.boostId),
+        const allAliases = [
+            ...(existingBoosts?.map(b => b.templateAlias) || []),
+            ...pendingBoosts.map(b => b.templateAlias),
         ];
 
-        if (allBoostIds.includes(boostId.trim())) {
-            setError('A boost with this ID already exists');
+        if (allAliases.includes(templateAlias.trim())) {
+            setError('A boost with this alias already exists');
             return;
         }
 
@@ -61,11 +61,11 @@ export const CredentialsStep: React.FC<CredentialsStepProps> = ({
                 await addBoostMutation.mutateAsync({
                     listingId,
                     boostUri: boostUri.trim(),
-                    boostId: boostId.trim(),
+                    templateAlias: templateAlias.trim(),
                 });
 
                 setBoostUri('');
-                setBoostId('');
+                setTemplateAlias('');
                 setShowAddForm(false);
                 setError('');
             } catch (e) {
@@ -75,22 +75,22 @@ export const CredentialsStep: React.FC<CredentialsStepProps> = ({
             // No listing yet - add to pending
             onPendingBoostsChange([
                 ...pendingBoosts,
-                { boostUri: boostUri.trim(), boostId: boostId.trim() },
+                { boostUri: boostUri.trim(), templateAlias: templateAlias.trim() },
             ]);
 
             setBoostUri('');
-            setBoostId('');
+            setTemplateAlias('');
             setShowAddForm(false);
             setError('');
         }
     };
 
-    const handleRemoveBoost = async (boostIdToRemove: string, isPending: boolean) => {
+    const handleRemoveBoost = async (aliasToRemove: string, isPending: boolean) => {
         if (isPending) {
-            onPendingBoostsChange(pendingBoosts.filter(b => b.boostId !== boostIdToRemove));
+            onPendingBoostsChange(pendingBoosts.filter(b => b.templateAlias !== aliasToRemove));
         } else if (listingId) {
             try {
-                await removeBoostMutation.mutateAsync({ listingId, boostId: boostIdToRemove });
+                await removeBoostMutation.mutateAsync({ listingId, templateAlias: aliasToRemove });
             } catch (e) {
                 setError(e instanceof Error ? e.message : 'Failed to remove boost');
             }
@@ -158,7 +158,7 @@ export const CredentialsStep: React.FC<CredentialsStepProps> = ({
                         <div className="space-y-3">
                             {allBoosts.map(boost => (
                                 <div
-                                    key={boost.boostId}
+                                    key={boost.templateAlias}
                                     className={`flex items-center justify-between p-4 rounded-xl border ${
                                         boost.isPending
                                             ? 'bg-amber-50 border-amber-200'
@@ -172,7 +172,7 @@ export const CredentialsStep: React.FC<CredentialsStepProps> = ({
 
                                         <div>
                                             <p className="font-medium text-gray-900">
-                                                {boost.boostId}
+                                                {boost.templateAlias}
                                             </p>
 
                                             <p className="text-xs text-gray-500 flex items-center gap-1">
@@ -192,7 +192,7 @@ export const CredentialsStep: React.FC<CredentialsStepProps> = ({
 
                                     <button
                                         onClick={() =>
-                                            handleRemoveBoost(boost.boostId, boost.isPending)
+                                            handleRemoveBoost(boost.templateAlias, boost.isPending)
                                         }
                                         disabled={removeBoostMutation.isPending}
                                         className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -236,14 +236,14 @@ export const CredentialsStep: React.FC<CredentialsStepProps> = ({
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Boost ID
+                                    Template Alias
                                 </label>
 
                                 <input
                                     type="text"
-                                    value={boostId}
+                                    value={templateAlias}
                                     onChange={e =>
-                                        setBoostId(
+                                        setTemplateAlias(
                                             e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
                                         )
                                     }
@@ -252,7 +252,7 @@ export const CredentialsStep: React.FC<CredentialsStepProps> = ({
                                 />
 
                                 <p className="text-xs text-gray-400 mt-1">
-                                    A unique identifier for this boost (lowercase, alphanumeric,
+                                    A unique alias for this template (lowercase, alphanumeric,
                                     hyphens)
                                 </p>
                             </div>
@@ -262,7 +262,7 @@ export const CredentialsStep: React.FC<CredentialsStepProps> = ({
                                     onClick={() => {
                                         setShowAddForm(false);
                                         setBoostUri('');
-                                        setBoostId('');
+                                        setTemplateAlias('');
                                         setError('');
                                     }}
                                     className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"

@@ -23,8 +23,8 @@ export type AppStoreListingRelationships = {
     hasBoost: ModelRelatedNodesI<
         typeof Boost,
         BoostInstance,
-        { boostId: string; createdAt: string },
-        { boostId: string; createdAt: string }
+        { templateAlias: string; createdAt: string },
+        { templateAlias: string; createdAt: string }
     >;
 };
 
@@ -87,8 +87,8 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
                 direction: 'out',
                 name: 'HAS_BOOST',
                 properties: {
-                    boostId: {
-                        property: 'boostId',
+                    templateAlias: {
+                        property: 'templateAlias',
                         schema: { type: 'string', required: true },
                     },
                     createdAt: {

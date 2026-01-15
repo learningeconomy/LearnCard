@@ -1690,7 +1690,7 @@ export type PaginatedInstalledApps = z.infer<typeof PaginatedInstalledAppsValida
 
 // App Store Boost Association
 export const AppBoostValidator = z.object({
-    boostId: z
+    templateAlias: z
         .string()
         .min(1)
         .max(50)
@@ -1703,7 +1703,7 @@ export type AppBoost = z.infer<typeof AppBoostValidator>;
 // App Event Types (discriminated union for type safety)
 export const SendCredentialEventValidator = z.object({
     type: z.literal('send-credential'),
-    boostId: z.string(),
+    templateAlias: z.string(),
     templateData: z.record(z.string(), z.unknown()).optional(),
 });
 

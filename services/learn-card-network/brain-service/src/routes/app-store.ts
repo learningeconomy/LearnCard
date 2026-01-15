@@ -34,9 +34,9 @@ import {
     getIntegrationForListing,
     countProfilesInstalledApp,
     hasProfileInstalledApp,
-    getBoostForListingByBoostId,
+    getBoostForListingByTemplateAlias,
     getBoostsForListing,
-    hasBoostIdForListing,
+    hasTemplateAliasForListing,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { readIntegrationById } from '@accesslayer/integration/read';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
@@ -417,15 +417,15 @@ const handleSendCredentialEvent = async (
     listingId: string,
     event: Record<string, unknown>
 ): Promise<Record<string, unknown>> => {
-    const boostId = event.boostId as string | undefined;
+    const templateAlias = event.templateAlias as string | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
 
-    if (!boostId) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'boostId required' });
+    if (!templateAlias) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
     }
 
-    // Get the boost associated with this app
-    const boostResult = await getBoostForListingByBoostId(listingId, boostId, ctx.domain);
+    // Get the boost associated with this app (templateAlias maps to internal boost)
+    const boostResult = await getBoostForListingByTemplateAlias(listingId, templateAlias, ctx.domain);
     if (!boostResult) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
     }
@@ -1030,12 +1030,12 @@ export const appStoreRouter = t.router({
             z.object({
                 listingId: z.string(),
                 boostUri: z.string(),
-                boostId: z
+                templateAlias: z
                     .string()
                     .min(1)
                     .max(50)
                     .regex(/^[a-z0-9-]+$/, {
-                        message: 'boostId must be lowercase alphanumeric with hyphens only',
+                        message: 'templateAlias must be lowercase alphanumeric with hyphens only',
                     }),
             })
         )
@@ -1051,11 +1051,11 @@ export const appStoreRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
             }
 
-            const exists = await hasBoostIdForListing(input.listingId, input.boostId);
+            const exists = await hasTemplateAliasForListing(input.listingId, input.templateAlias);
             if (exists) {
                 throw new TRPCError({
                     code: 'CONFLICT',
-                    message: 'A boost with this boostId already exists for this listing',
+                    message: 'A boost with this templateAlias already exists for this listing',
                 });
             }
 
@@ -1077,7 +1077,7 @@ export const appStoreRouter = t.router({
                 }
             }
 
-            return associateBoostWithListing(input.listingId, input.boostUri, input.boostId);
+            return associateBoostWithListing(input.listingId, input.boostUri, input.templateAlias);
         }),
 
     removeBoostFromListing: profileRoute
@@ -1095,14 +1095,14 @@ export const appStoreRouter = t.router({
         .input(
             z.object({
                 listingId: z.string(),
-                boostId: z.string(),
+                templateAlias: z.string(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             await verifyListingOwnership(input.listingId, ctx.user.profile.profileId);
 
-            const exists = await hasBoostIdForListing(input.listingId, input.boostId);
+            const exists = await hasTemplateAliasForListing(input.listingId, input.templateAlias);
             if (!exists) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -1110,7 +1110,7 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            return removeBoostFromListing(input.listingId, input.boostId);
+            return removeBoostFromListing(input.listingId, input.templateAlias);
         }),
 
     getBoostsForListing: profileRoute
@@ -1129,7 +1129,7 @@ export const appStoreRouter = t.router({
         .output(
             z.array(
                 z.object({
-                    boostId: z.string(),
+                    templateAlias: z.string(),
                     boostUri: z.string(),
                 })
             )

@@ -724,9 +724,9 @@ export type LearnCardNetworkPluginMethods = {
     }) => Promise<PaginatedAppStoreListings>;
 
     // App Store Boost Management
-    addBoostToApp: (listingId: string, boostUri: string, boostId: string) => Promise<boolean>;
-    removeBoostFromApp: (listingId: string, boostId: string) => Promise<boolean>;
-    getAppBoosts: (listingId: string) => Promise<Array<{ boostId: string; boostUri: string }>>;
+    addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;
+    removeBoostFromApp: (listingId: string, templateAlias: string) => Promise<boolean>;
+    getAppBoosts: (listingId: string) => Promise<Array<{ templateAlias: string; boostUri: string }>>;
 
     // App Events (discriminated union)
     sendAppEvent: (listingId: string, event: AppEvent) => Promise<AppEventResponse>;
