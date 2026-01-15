@@ -132,7 +132,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             <JoinNetworkModalWrapper
                 handleCloseModal={closeModal}
                 showNotificationsModal={showNotificationsModal}
-            />
+            />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
     };
 
