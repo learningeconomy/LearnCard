@@ -5,10 +5,9 @@ import type { OccupationDetailsResponse } from '../../types/careerOneStop';
 import { useWallet } from 'learn-card-base';
 
 const fetchOccupationDetailsForKeyword = async (
-    did: string,
     keyword: string
 ): Promise<OccupationDetailsResponse[]> => {
-    const res = await fetch(`http://localhost:3001/insights/occupations?did=${did}`, {
+    const res = await fetch(`http://localhost:3001/insights/occupations`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -24,33 +23,24 @@ const fetchOccupationDetailsForKeyword = async (
     return res.json();
 };
 
-export const useOccupationDetailsForKeyword = (keyword: string | null) => {
-    const { initWallet } = useWallet();
-
+export const useOccupationDetailsForKeyword = (keyword: string) => {
     return useQuery({
         queryKey: ['occupation-details', keyword],
         queryFn: async () => {
-            const wallet = await initWallet();
-            const did = wallet?.id?.did();
-            if (!keyword) {
-                throw new Error('Keyword is required');
-            }
-            return fetchOccupationDetailsForKeyword(did, keyword);
+            return fetchOccupationDetailsForKeyword(keyword);
         },
         enabled: Boolean(keyword),
     });
 };
 
 const fetchSalariesForKeyword = async ({
-    did,
     keyword,
     locations,
 }: {
-    did: string;
     keyword: string;
     locations: string[];
 }) => {
-    const res = await fetch(`http://localhost:3001/insights/salaries?did=${did}`, {
+    const res = await fetch(`http://localhost:3001/insights/salaries`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -84,14 +74,8 @@ export const useSalariesForKeyword = ({ keyword }: { keyword: string | null }) =
             const locations = ['CA', 'NY', 'WA', 'MA', 'NJ', 'FL', 'TX'];
 
             const wallet = await initWallet();
-            const did = wallet?.id?.did();
-
-            if (!did) {
-                throw new Error('Wallet not initialized');
-            }
 
             return fetchSalariesForKeyword({
-                did,
                 keyword,
                 locations,
             });
@@ -100,8 +84,8 @@ export const useSalariesForKeyword = ({ keyword }: { keyword: string | null }) =
     });
 };
 
-const fetchTrainingProgramsByKeyword = async (did: string, keyword: string): Promise<any> => {
-    const res = await fetch(`http://localhost:3001/insights/training-programs?did=${did}`, {
+const fetchTrainingProgramsByKeyword = async (keyword: string): Promise<any> => {
+    const res = await fetch(`http://localhost:3001/insights/training-programs`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -117,8 +101,8 @@ const fetchTrainingProgramsByKeyword = async (did: string, keyword: string): Pro
     return res.json();
 };
 
-const fetchOpenSyllabusCoursesBySchool = async (did: string, schoolName: string): Promise<any> => {
-    const res = await fetch(`http://localhost:3001/insights/courses?did=${did}`, {
+const fetchOpenSyllabusCoursesBySchool = async (schoolName: string): Promise<any> => {
+    const res = await fetch(`http://localhost:3001/insights/courses`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -151,15 +135,7 @@ const fetchOpenSyllabusCoursesBySchool = async (did: string, schoolName: string)
  * @param fieldOfStudy - Optional field of study to filter syllabus courses
  * @returns Enriched training programs with syllabus courses
  */
-export const useTrainingProgramsByKeyword = ({
-    keywords,
-    fieldOfStudy,
-}: {
-    keywords: string[] | null;
-    fieldOfStudy?: string;
-}) => {
-    const { initWallet } = useWallet();
-
+export const useTrainingProgramsByKeyword = ({ keywords }: { keywords: string[] | null }) => {
     return useQuery({
         queryKey: ['training-programs', keywords],
         queryFn: async () => {
@@ -167,17 +143,10 @@ export const useTrainingProgramsByKeyword = ({
                 throw new Error('Keywords are required');
             }
 
-            const wallet = await initWallet();
-            const did = wallet?.id?.did();
-
-            if (!did) {
-                throw new Error('Wallet not initialized');
-            }
-
             // Step 1-2: Fetch occupation details for each keyword
             const occupationPromises = keywords
                 .slice(0, 3)
-                .map(keyword => fetchOccupationDetailsForKeyword(did, keyword));
+                .map(keyword => fetchOccupationDetailsForKeyword(keyword));
 
             const occupationResults = await Promise.all(occupationPromises);
 
@@ -189,7 +158,7 @@ export const useTrainingProgramsByKeyword = ({
             // Step 4: Fetch training programs for first 3 ONET titles
             const onetTitlesToFetch = allOnetTitles.slice(0, 3);
             const trainingPromises = onetTitlesToFetch.map(onetTitle =>
-                fetchTrainingProgramsByKeyword(did, onetTitle)
+                fetchTrainingProgramsByKeyword(onetTitle)
             );
 
             const trainingResults = await Promise.all(trainingPromises);
@@ -213,7 +182,7 @@ export const useTrainingProgramsByKeyword = ({
 
             // Step 7: Fetch syllabus courses for each unique school
             const syllabusPromises = uniqueSchoolNames.map(schoolName =>
-                fetchOpenSyllabusCoursesBySchool(did, schoolName)
+                fetchOpenSyllabusCoursesBySchool(schoolName)
             );
 
             // Add error handling for syllabus fetch
