@@ -39,7 +39,6 @@ import {
 
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
-import { VCInfoLine } from './VCInfoLine';
 import { useHighlightedCredentials } from '../../../hooks/useHighlightedCredentials';
 import { getRoleFromCred, getScoutsNounForRole } from '../../../helpers/troop.helpers';
 

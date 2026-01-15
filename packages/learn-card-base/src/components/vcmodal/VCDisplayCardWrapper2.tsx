@@ -70,6 +70,7 @@ type VCDisplayCardWrapper2Props = {
     enableLightbox?: boolean;
     titleOverride?: string;
     qrCodeOnClick?: () => void;
+    onDotsClick?: () => void;
 };
 
 export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
@@ -114,6 +115,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     enableLightbox,
     titleOverride,
     qrCodeOnClick,
+    onDotsClick,
 }) => {
     const currentUser = useCurrentUser();
 
@@ -333,6 +335,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             bottomButton={bottomButton}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             customBodyContentSlot={customBodyContentSlot}
+            onDotsClick={onDotsClick}
             unknownVerifierTitle={unknownVerifierTitle}
         />
     );
