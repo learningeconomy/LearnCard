@@ -44,14 +44,8 @@ const SubmissionForm: React.FC = () => {
     // Get listing from route state (passed from DeveloperPortal) or fetch if not available
     const listingFromState = location.state?.listing;
 
-    const {
-        useListing,
-        useCreateListing,
-        useUpdateListing,
-        useSubmitForReview,
-        useAddBoostToListing,
-    } = useDeveloperPortal();
-    const addBoostMutation = useAddBoostToListing();
+    const { useListing, useCreateListing, useUpdateListing, useSubmitForReview } =
+        useDeveloperPortal();
     const { data: fetchedListing, isLoading: isLoadingListing } = useListing(
         listingFromState ? null : listingId || null // Only fetch if not passed via state
     );

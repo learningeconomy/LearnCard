@@ -38,7 +38,7 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
         label: 'AppStoreListing',
         schema: {
             listing_id: { type: 'string', required: true, uniqueItems: true },
-            slug: { type: 'string', required: false },
+            slug: { type: 'string', required: false, uniqueItems: true },
             display_name: { type: 'string', required: true },
             tagline: { type: 'string', required: true },
             full_description: { type: 'string', required: true },

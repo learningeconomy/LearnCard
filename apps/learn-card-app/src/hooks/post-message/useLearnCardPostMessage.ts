@@ -100,7 +100,7 @@ export interface InitiateTemplateIssuePayload {
 // App Event Types (discriminated union)
 export type SendCredentialEvent = {
     type: 'send-credential';
-    boostId: string;
+    templateAlias: string;
     templateData?: Record<string, unknown>;
 };
 

@@ -278,98 +278,6 @@ export const useDeveloperPortal = () => {
         });
     };
 
-    // ========== Boost Management Hooks ==========
-
-    // Query for boosts attached to a listing
-    const useListingBoosts = (listingId: string | null) => {
-        return useQuery({
-            queryKey: ['developer', 'listing', listingId, 'boosts'],
-            queryFn: async (): Promise<Array<{ boostId: string; boostUri: string }>> => {
-                if (!listingId) return [];
-
-                const wallet = await initWallet();
-
-                // Use type assertion until types are rebuilt
-                const invoke = wallet.invoke as typeof wallet.invoke & {
-                    getAppBoosts?: (
-                        listingId: string
-                    ) => Promise<Array<{ boostId: string; boostUri: string }>>;
-                };
-
-                if (!invoke.getAppBoosts) return [];
-
-                return invoke.getAppBoosts(listingId);
-            },
-            enabled: !!listingId,
-        });
-    };
-
-    // Mutation for adding a boost to a listing
-    const useAddBoostToListing = () => {
-        return useMutation({
-            mutationFn: async ({
-                listingId,
-                boostUri,
-                boostId,
-            }: {
-                listingId: string;
-                boostUri: string;
-                boostId: string;
-            }): Promise<boolean> => {
-                const wallet = await initWallet();
-
-                // Use type assertion until types are rebuilt
-                const invoke = wallet.invoke as typeof wallet.invoke & {
-                    addBoostToApp?: (
-                        listingId: string,
-                        boostUri: string,
-                        boostId: string
-                    ) => Promise<boolean>;
-                };
-
-                if (!invoke.addBoostToApp)
-                    throw new Error('addBoostToApp not available - rebuild types');
-
-                return invoke.addBoostToApp(listingId, boostUri, boostId);
-            },
-            onSuccess: (_, { listingId }) => {
-                queryClient.invalidateQueries({
-                    queryKey: ['developer', 'listing', listingId, 'boosts'],
-                });
-            },
-        });
-    };
-
-    // Mutation for removing a boost from a listing
-    const useRemoveBoostFromListing = () => {
-        return useMutation({
-            mutationFn: async ({
-                listingId,
-                boostId,
-            }: {
-                listingId: string;
-                boostId: string;
-            }): Promise<boolean> => {
-                const wallet = await initWallet();
-
-                // Use type assertion until types are rebuilt
-                const invoke = wallet.invoke as typeof wallet.invoke & {
-                    removeBoostFromApp?: (listingId: string, boostId: string) => Promise<boolean>;
-                };
-
-                if (!invoke.removeBoostFromApp)
-                    throw new Error('removeBoostFromApp not available - rebuild types');
-
-                return invoke.removeBoostFromApp(listingId, boostId);
-            },
-            onSuccess: (_, { listingId }) => {
-                queryClient.invalidateQueries({
-                    queryKey: ['developer', 'listing', listingId, 'boosts'],
-                });
-            },
-        });
-    };
-
     return {
         // Integration hooks
         useIntegrations,
@@ -390,11 +298,6 @@ export const useDeveloperPortal = () => {
         useAdminListings,
         useAdminUpdateStatus,
         useAdminUpdatePromotion,
-
-        // Boost management hooks
-        useListingBoosts,
-        useAddBoostToListing,
-        useRemoveBoostFromListing,
     };
 };
 

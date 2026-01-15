@@ -33,7 +33,6 @@ export const createRequestIdentityHandler = (dependencies: {
         const { isUserAuthenticated, mintDelegatedToken, getUserInfo, showLoginConsentModal } =
             dependencies;
 
-        console.log('🚀 isUserAuthenticated', isUserAuthenticated);
         // Check if user is logged in
         if (!isUserAuthenticated()) {
             return {
@@ -59,7 +58,6 @@ export const createRequestIdentityHandler = (dependencies: {
                 };
             }
 
-            console.log('🚀 mintDelegatedToken', mintDelegatedToken);
             // Mint a short-lived JWT token
             const token = await mintDelegatedToken(payload.challenge);
             const user = await getUserInfo();
@@ -73,7 +71,6 @@ export const createRequestIdentityHandler = (dependencies: {
                 },
             };
         } catch (error) {
-            console.log('🚀 error', error);
             return {
                 success: false,
                 error: {
