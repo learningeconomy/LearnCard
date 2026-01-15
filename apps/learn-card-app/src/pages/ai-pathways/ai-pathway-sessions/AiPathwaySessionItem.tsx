@@ -4,8 +4,6 @@ import { useHistory } from 'react-router-dom';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import LockSimple from 'learn-card-base/svgs/LockSimple';
 
-import { PathwayItem } from './AiPathwaySessions';
-
 import 'swiper/css';
 
 export const AiPathwaySessionsItem: React.FC<{
@@ -17,7 +15,7 @@ export const AiPathwaySessionsItem: React.FC<{
 }> = ({ title, description, skills, topicUri, pathwayUri }) => {
     const history = useHistory();
 
-    const handleStart = (item: PathwayItem) => {
+    const handleStart = (item: any) => {
         if (!item?.topicUri || !item?.pathwayUri) return;
 
         history.push(
