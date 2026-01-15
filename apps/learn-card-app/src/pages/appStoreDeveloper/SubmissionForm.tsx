@@ -11,7 +11,7 @@ import { AppDetailsStep } from './components/AppDetailsStep';
 import { LaunchTypeStep } from './components/LaunchTypeStep';
 import { LaunchConfigStep } from './components/LaunchConfigStep';
 import { ReviewStep } from './components/ReviewStep';
-import { CredentialsStep } from './components/CredentialsStep';
+// CredentialsStep removed - templates managed in dashboard
 import { AppStoreHeader } from './components/AppStoreHeader';
 import { ExitConfirmDialog } from './components/ExitConfirmDialog';
 import { PreviewConfirmDialog } from './components/PreviewConfirmDialog';
@@ -22,8 +22,7 @@ const STEPS = [
     { id: 1, title: 'App Details', description: 'Basic information about your app' },
     { id: 2, title: 'Launch Type', description: 'How your app integrates' },
     { id: 3, title: 'Configuration', description: 'Technical settings' },
-    { id: 4, title: 'Credentials', description: 'Configure credential boosts' },
-    { id: 5, title: 'Review', description: 'Submit for approval' },
+    { id: 4, title: 'Review', description: 'Submit for approval' },
 ];
 
 interface LocationState {
@@ -100,9 +99,7 @@ const SubmissionForm: React.FC = () => {
     const [formData, setFormData] = useState<Partial<AppStoreListingCreate>>(initialFormData);
     const [showExitDialog, setShowExitDialog] = useState(false);
     const [showPreviewDialog, setShowPreviewDialog] = useState(false);
-    const [pendingBoosts, setPendingBoosts] = useState<
-        Array<{ boostUri: string; boostId: string }>
-    >([]);
+    // pendingBoosts removed - templates managed in dashboard after listing creation
 
     useEffect(() => {
         setFormData(initialFormData);
@@ -294,16 +291,6 @@ const SubmissionForm: React.FC = () => {
                 throw new Error('No integration selected');
             }
 
-            // Add any pending boosts to the listing
-            for (const boost of pendingBoosts) {
-                await addBoostMutation.mutateAsync({
-                    listingId: savedListingId,
-                    boostUri: boost.boostUri,
-                    boostId: boost.boostId,
-                });
-            }
-
-            setPendingBoosts([]);
             setIsSavingDraft(false);
             setIsDraftSaved(true);
             return true;
@@ -355,19 +342,9 @@ const SubmissionForm: React.FC = () => {
                 });
             } else throw new Error('No integration selected');
 
-            // Add any pending boosts to the listing
-            for (const boost of pendingBoosts) {
-                await addBoostMutation.mutateAsync({
-                    listingId: newListingId,
-                    boostUri: boost.boostUri,
-                    boostId: boost.boostId,
-                });
-            }
-
             await submitMutation.mutateAsync(newListingId);
             setIsSubmitting(false);
             setIsSubmitted(true);
-            setPendingBoosts([]);
         } catch (error) {
             setSubmitError(error instanceof Error ? error.message : 'Failed to submit listing');
             setIsSubmitting(false);
@@ -506,14 +483,7 @@ const SubmissionForm: React.FC = () => {
                                 onPreview={handlePreviewClick}
                             />
                         )}
-                        {currentStep === 4 && (
-                            <CredentialsStep
-                                listingId={isEditMode ? listingId || null : null}
-                                pendingBoosts={pendingBoosts}
-                                onPendingBoostsChange={setPendingBoosts}
-                            />
-                        )}
-                        {currentStep === 5 && <ReviewStep data={formData} />}
+                        {currentStep === 4 && <ReviewStep data={formData} />}
                     </div>
                     <div className="flex justify-between mt-6">
                         <button
