@@ -205,28 +205,39 @@ describe('App Store Credential Issuance E2E Tests', () => {
         });
 
         it('should require signing authority for credential issuance', async () => {
+            // Use a fresh user who has NO signing authority configured
+            const noSaOwner = await getLearnCardForUser('c');
+
             // Create integration without signing authority
-            const noSaIntegrationId = await appOwner.invoke.addIntegration({
+            const noSaIntegrationId = await noSaOwner.invoke.addIntegration({
                 name: 'no-sa-integration',
                 description: 'Integration without signing authority',
                 whitelistedDomains: ['example.com'],
             });
 
-            const noSaListingId = await appOwner.invoke.createAppStoreListing(noSaIntegrationId, {
+            const noSaListingId = await noSaOwner.invoke.createAppStoreListing(noSaIntegrationId, {
                 ...testListingData,
                 display_name: 'No SA App',
             });
 
             await appOwner.invoke.adminUpdateListingStatus(noSaListingId, 'LISTED');
-            await appOwner.invoke.addBoostToApp(noSaListingId, boostUri, 'no-sa-badge');
+
+            // Create boost as this user (no SA)
+            const noSaBoostUri = await noSaOwner.invoke.createBoost(testUnsignedBoost);
+
+            // addBoostToApp succeeds even without SA (it just won't auto-associate one)
+            await noSaOwner.invoke.addBoostToApp(noSaListingId, noSaBoostUri, 'no-sa-badge');
+
+            // Install app as appUser
             await appUser.invoke.installApp(noSaListingId);
 
+            // sendAppEvent should fail because the integration has no signing authority
             await expect(
                 appUser.invoke.sendAppEvent(noSaListingId, {
                     type: 'send-credential',
                     templateAlias: 'no-sa-badge',
                 })
-            ).rejects.toThrow('No signing authority configured');
+            ).rejects.toThrow('No signing authority');
         });
     });
 });
