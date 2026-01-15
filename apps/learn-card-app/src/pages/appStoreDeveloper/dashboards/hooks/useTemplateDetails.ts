@@ -1,8 +1,10 @@
 /**
- * useTemplateDetails - On-demand full template data loading
+ * useTemplateManager - Full template CRUD operations
  * 
  * Used by tabs that need full credential template details (obv3Template, children, etc.)
- * Loads data only when the tab is accessed, not on initial dashboard load.
+ * and CRUD operations for managing templates linked to app listings.
+ * 
+ * Supports filtering by integrationId and/or listingId.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -11,6 +13,45 @@ import { useWallet } from 'learn-card-base';
 
 import type { CredentialTemplate } from '../types';
 
+/**
+ * Extended template with app listing integration
+ */
+export interface ManagedTemplate extends CredentialTemplate {
+    templateAlias?: string;
+    credential?: Record<string, unknown>;
+    variables?: string[];
+    isAddedToListing?: boolean;
+}
+
+export interface TemplateManagerOptions {
+    integrationId?: string;
+    listingId?: string;
+}
+
+export interface TemplateManagerResult {
+    templates: ManagedTemplate[];
+    isLoading: boolean;
+    error: Error | null;
+    refetch: () => void;
+
+    // CRUD operations
+    createTemplate: (
+        credential: Record<string, unknown>,
+        options?: { alias?: string; name?: string }
+    ) => Promise<{ boostUri: string; templateAlias: string }>;
+
+    updateTemplate: (
+        boostUri: string,
+        credential: Record<string, unknown>,
+        options?: { name?: string }
+    ) => Promise<void>;
+
+    deleteTemplate: (boostUri: string) => Promise<void>;
+
+    updateAlias: (boostUri: string, newAlias: string) => Promise<void>;
+}
+
+// Kept for backward compatibility
 export interface TemplateDetailsResult {
     templates: CredentialTemplate[];
     isLoading: boolean;
@@ -19,20 +60,56 @@ export interface TemplateDetailsResult {
 }
 
 /**
- * Hook to fetch full template details on-demand
- * 
- * @param integrationId - Integration ID to filter templates by
- * @param basicTemplates - Basic template info from dashboard (used for initial state)
+ * Generate a template alias from a name
  */
-export function useTemplateDetails(
-    integrationId: string,
-    basicTemplates: CredentialTemplate[] = []
-): TemplateDetailsResult {
+function generateTemplateAlias(name: string): string {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .substring(0, 50);
+}
+
+/**
+ * Extract template variables ({{variable}}) from a credential
+ */
+function extractTemplateVariables(credential: Record<string, unknown>): string[] {
+    const variables: string[] = [];
+    const pattern = /\{\{(\w+)\}\}/g;
+
+    const extractFromValue = (value: unknown) => {
+        if (typeof value === 'string') {
+            let match;
+            while ((match = pattern.exec(value)) !== null) {
+                if (!variables.includes(match[1])) {
+                    variables.push(match[1]);
+                }
+            }
+        } else if (Array.isArray(value)) {
+            value.forEach(extractFromValue);
+        } else if (value && typeof value === 'object') {
+            Object.values(value).forEach(extractFromValue);
+        }
+    };
+
+    extractFromValue(credential);
+    return variables;
+}
+
+/**
+ * Hook to fetch and manage templates with full CRUD operations
+ * 
+ * @param options - Filter options (integrationId, listingId)
+ */
+export function useTemplateManager(options: TemplateManagerOptions): TemplateManagerResult {
+    const { integrationId, listingId } = options;
+
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
-    const [templates, setTemplates] = useState<CredentialTemplate[]>(basicTemplates);
+    const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
     const [fetchKey, setFetchKey] = useState(0);
@@ -45,31 +122,59 @@ export function useTemplateDetails(
                 setIsLoading(true);
                 const wallet = await initWalletRef.current();
 
-                // Fetch paginated boosts for this integration
-                const boostsResult = await wallet.invoke.getPaginatedBoosts({
-                    limit: 50,
-                    query: { meta: { integrationId } },
-                });
+                // Fetch templates - by listingId (preferred) or integrationId
+                let boostLinks: Array<{ templateAlias: string; boostUri: string }> = [];
+                
+                if (listingId) {
+                    // Fetch boosts linked to the app listing (includes templateAlias)
+                    boostLinks = await wallet.invoke.getAppBoosts(listingId) || [];
+                }
+                
+                // Also fetch by integrationId if provided
+                let integrationBoostUris: string[] = [];
+                if (integrationId) {
+                    const boostsResult = await wallet.invoke.getPaginatedBoosts({
+                        limit: 50,
+                        query: { meta: { integrationId } },
+                    });
+                    integrationBoostUris = (boostsResult?.records || [])
+                        .map((boost: Record<string, unknown>) => boost.uri as string)
+                        .filter(Boolean);
+                }
 
                 if (cancelled) return;
 
-                const boostUris = (boostsResult?.records || [])
-                    .map((boost: any) => boost.uri)
-                    .filter(Boolean) as string[];
+                // Combine URIs from both sources, deduplicating
+                const seenUris = new Set<string>();
+                const allBoostInfos: Array<{ boostUri: string; templateAlias?: string }> = [];
+                
+                for (const link of boostLinks) {
+                    if (!seenUris.has(link.boostUri)) {
+                        seenUris.add(link.boostUri);
+                        allBoostInfos.push({ boostUri: link.boostUri, templateAlias: link.templateAlias });
+                    }
+                }
+                
+                for (const uri of integrationBoostUris) {
+                    if (!seenUris.has(uri)) {
+                        seenUris.add(uri);
+                        allBoostInfos.push({ boostUri: uri });
+                    }
+                }
 
-                if (boostUris.length === 0) {
+                if (allBoostInfos.length === 0) {
                     setTemplates([]);
                     setIsLoading(false);
                     return;
                 }
 
                 // PARALLEL: Fetch all boost details at once
-                const boostPromises = boostUris.map(async (boostUri) => {
+                const boostPromises = allBoostInfos.map(async ({ boostUri, templateAlias }) => {
                     try {
                         const fullBoost = await wallet.invoke.getBoost(boostUri);
                         const meta = fullBoost?.meta as Record<string, unknown> | undefined;
                         const templateConfig = meta?.templateConfig as Record<string, unknown> | undefined;
-                        const credential = fullBoost?.boost as Record<string, unknown> | undefined;
+                        const credential = (fullBoost?.boost as Record<string, unknown>) || {};
 
                         return {
                             id: boostUri,
@@ -77,13 +182,18 @@ export function useTemplateDetails(
                             description: (credential?.description as string) || '',
                             achievementType: (templateConfig?.achievementType as string) || fullBoost?.type || 'Achievement',
                             fields: (templateConfig?.fields as CredentialTemplate['fields']) || [],
-                            imageUrl: (fullBoost as Record<string, unknown>)?.image as string | undefined,
+                            imageUrl: credential?.image as string | undefined,
                             boostUri,
                             isNew: false,
                             isDirty: false,
                             obv3Template: credential,
                             isMasterTemplate: meta?.isMasterTemplate as boolean | undefined,
-                        } as CredentialTemplate;
+                            // ManagedTemplate extensions
+                            templateAlias,
+                            credential,
+                            variables: extractTemplateVariables(credential),
+                            isAddedToListing: !!templateAlias,
+                        } as ManagedTemplate;
                     } catch (e) {
                         console.warn('Failed to fetch boost:', boostUri, e);
                         return null;
@@ -91,7 +201,7 @@ export function useTemplateDetails(
                 });
 
                 const allTemplatesWithNulls = await Promise.all(boostPromises);
-                const allTemplates = allTemplatesWithNulls.filter((t): t is CredentialTemplate => t !== null);
+                const allTemplates = allTemplatesWithNulls.filter((t): t is ManagedTemplate => t !== null);
 
                 if (cancelled) return;
 
@@ -183,11 +293,192 @@ export function useTemplateDetails(
         return () => {
             cancelled = true;
         };
-    }, [integrationId, fetchKey]);
+    }, [integrationId, listingId, fetchKey]);
 
     const refetch = useCallback(() => {
         setFetchKey(k => k + 1);
     }, []);
 
-    return { templates, isLoading, error, refetch };
+    // ================================================================
+    // CRUD OPERATIONS
+    // ================================================================
+
+    const createTemplate = useCallback(async (
+        credential: Record<string, unknown>,
+        options?: { alias?: string; name?: string }
+    ): Promise<{ boostUri: string; templateAlias: string }> => {
+        if (!listingId) {
+            throw new Error('listingId is required to create templates');
+        }
+
+        const wallet = await initWalletRef.current();
+        const name = options?.name || (credential.name as string) || 'Untitled Template';
+        
+        // Generate or use provided alias
+        let templateAlias = options?.alias || generateTemplateAlias(name);
+        
+        // Check for duplicate alias
+        const existingAliases = templates.map(t => t.templateAlias).filter(Boolean);
+        let counter = 1;
+        const baseAlias = templateAlias;
+        while (existingAliases.includes(templateAlias)) {
+            templateAlias = `${baseAlias}-${counter}`;
+            counter++;
+        }
+
+        // Replace system placeholders
+        const issuerDid = wallet.id.did();
+        const preparedCredential = {
+            ...credential,
+            issuer: credential.issuer === '{{issuer_did}}' ? issuerDid : credential.issuer,
+            validFrom: credential.validFrom === '{{issue_date}}' ? new Date().toISOString() : credential.validFrom,
+        };
+
+        // Issue the credential
+        const vc = await wallet.invoke.issueCredential(
+            preparedCredential as Parameters<typeof wallet.invoke.issueCredential>[0]
+        );
+
+        // Create the boost
+        const boostMetadata = {
+            name,
+            type: ((credential.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
+            category: 'achievement',
+            meta: { appListingId: listingId, integrationId },
+        };
+        
+        const boostUri = await wallet.invoke.createBoost(
+            vc,
+            boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
+        );
+
+        // Add to app listing
+        await wallet.invoke.addBoostToApp(listingId, boostUri, templateAlias);
+
+        // Refetch to update local state
+        refetch();
+
+        return { boostUri, templateAlias };
+    }, [listingId, integrationId, templates, refetch]);
+
+    const updateTemplate = useCallback(async (
+        boostUri: string,
+        credential: Record<string, unknown>,
+        options?: { name?: string }
+    ): Promise<void> => {
+        const wallet = await initWalletRef.current();
+        const name = options?.name || (credential.name as string) || 'Untitled Template';
+
+        // Replace system placeholders
+        const issuerDid = wallet.id.did();
+        const preparedCredential = {
+            ...credential,
+            issuer: credential.issuer === '{{issuer_did}}' ? issuerDid : credential.issuer,
+            validFrom: credential.validFrom === '{{issue_date}}' ? new Date().toISOString() : credential.validFrom,
+        };
+
+        // Issue the updated credential
+        const vc = await wallet.invoke.issueCredential(
+            preparedCredential as Parameters<typeof wallet.invoke.issueCredential>[0]
+        );
+
+        // Update the boost
+        const boostMetadata = {
+            name,
+            type: ((credential.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
+            category: 'achievement',
+            meta: { appListingId: listingId, integrationId },
+        };
+
+        await wallet.invoke.updateBoost(
+            boostUri,
+            boostMetadata as unknown as Parameters<typeof wallet.invoke.updateBoost>[1],
+            vc as Parameters<typeof wallet.invoke.updateBoost>[2]
+        );
+
+        // Refetch to update local state
+        refetch();
+    }, [listingId, integrationId, refetch]);
+
+    const deleteTemplate = useCallback(async (boostUri: string): Promise<void> => {
+        if (!listingId) {
+            throw new Error('listingId is required to delete templates');
+        }
+
+        const wallet = await initWalletRef.current();
+        const template = templates.find(t => t.boostUri === boostUri);
+        
+        if (template?.templateAlias) {
+            // Remove from app listing
+            await wallet.invoke.removeBoostFromApp(listingId, template.templateAlias);
+        }
+
+        // Refetch to update local state
+        refetch();
+    }, [listingId, templates, refetch]);
+
+    const updateAlias = useCallback(async (
+        boostUri: string,
+        newAlias: string
+    ): Promise<void> => {
+        if (!listingId) {
+            throw new Error('listingId is required to update alias');
+        }
+
+        const wallet = await initWalletRef.current();
+        const template = templates.find(t => t.boostUri === boostUri);
+        if (!template?.templateAlias) {
+            throw new Error('Template not found or has no alias');
+        }
+
+        const sanitizedAlias = newAlias.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        if (!sanitizedAlias) {
+            throw new Error('Invalid alias');
+        }
+
+        // Check for duplicates
+        const otherAliases = templates
+            .filter(t => t.boostUri !== boostUri)
+            .map(t => t.templateAlias)
+            .filter(Boolean);
+        
+        if (otherAliases.includes(sanitizedAlias)) {
+            throw new Error('Alias already in use');
+        }
+
+        // Remove old alias and add new one
+        await wallet.invoke.removeBoostFromApp(listingId, template.templateAlias);
+        await wallet.invoke.addBoostToApp(listingId, boostUri, sanitizedAlias);
+
+        // Refetch to update local state
+        refetch();
+    }, [listingId, templates, refetch]);
+
+    return {
+        templates,
+        isLoading,
+        error,
+        refetch,
+        createTemplate,
+        updateTemplate,
+        deleteTemplate,
+        updateAlias,
+    };
+}
+
+/**
+ * Backward-compatible wrapper for existing usages
+ * @deprecated Use useTemplateManager instead
+ */
+export function useTemplateDetails(
+    integrationId: string,
+    _basicTemplates: CredentialTemplate[] = []
+): TemplateDetailsResult {
+    const result = useTemplateManager({ integrationId });
+    return {
+        templates: result.templates,
+        isLoading: result.isLoading,
+        error: result.error,
+        refetch: result.refetch,
+    };
 }

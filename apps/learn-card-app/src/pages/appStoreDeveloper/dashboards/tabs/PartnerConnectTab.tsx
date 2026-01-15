@@ -27,14 +27,18 @@ import {
     ExternalLink,
     Info,
     ChevronDown,
+    Layout,
+    Loader2,
 } from 'lucide-react';
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import { useToast, ToastTypeEnum, useWallet } from 'learn-card-base';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
 import type { EmbedAppGuideConfig, LLMIntegrationMetadata, TemplateMetadata, GuideState } from '../../guides/types';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { CodeBlock } from '../../components/CodeBlock';
+import { TemplateListManager } from '../../components/TemplateListManager';
 
 interface ApiMethod {
     id: string;
@@ -391,10 +395,28 @@ const CATEGORIES = [
 
 export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
     integration,
-    selectedListing,
+    selectedListing: externalSelectedListing,
 }) => {
     const { presentToast } = useToast();
     const { initWallet } = useWallet();
+    const { useListingsForIntegration } = useDeveloperPortal();
+
+    // Fetch app listings for this integration
+    const { data: appListings, isLoading: listingsLoading } = useListingsForIntegration(integration.id);
+
+    // Local selected listing state (can be overridden by external prop)
+    const [localSelectedListing, setLocalSelectedListing] = useState<AppStoreListing | null>(externalSelectedListing || null);
+
+    // Use external selection if provided, otherwise use local
+    const selectedListing = externalSelectedListing || localSelectedListing;
+
+    // Auto-select first listing when listings load
+    useEffect(() => {
+        if (appListings && appListings.length > 0 && !localSelectedListing && !externalSelectedListing) {
+            setLocalSelectedListing(appListings[0]);
+        }
+    }, [appListings, localSelectedListing, externalSelectedListing]);
+
     const [selectedMethodId, setSelectedMethodId] = useState('requestIdentity');
     const [showInstall, setShowInstall] = useState(false);
     const [showApiReference, setShowApiReference] = useState(false);
@@ -864,6 +886,61 @@ console.log('User:', identity.profile.displayName);`;
                 </p>
             </div>
 
+            {/* App Listing Selector */}
+            {appListings && appListings.length > 0 && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-violet-100 rounded-lg">
+                                <Layout className="w-5 h-5 text-violet-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-gray-800">App Listing</h3>
+                                <p className="text-xs text-gray-500">
+                                    Select which app to manage templates for
+                                </p>
+                            </div>
+                        </div>
+
+                        <select
+                            value={selectedListing?.listing_id || ''}
+                            onChange={(e) => {
+                                const listing = appListings.find(l => l.listing_id === e.target.value);
+                                setLocalSelectedListing(listing || null);
+                            }}
+                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 min-w-[200px]"
+                        >
+                            {appListings.map(listing => (
+                                <option key={listing.listing_id} value={listing.listing_id}>
+                                    {listing.display_name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            )}
+
+            {listingsLoading && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 text-violet-500 animate-spin" />
+                    <span className="text-gray-600">Loading app listings...</span>
+                </div>
+            )}
+
+            {!listingsLoading && (!appListings || appListings.length === 0) && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div className="flex items-center gap-3">
+                        <Info className="w-5 h-5 text-amber-600" />
+                        <div>
+                            <p className="text-sm text-amber-800 font-medium">No app listings found</p>
+                            <p className="text-xs text-amber-700">
+                                Create an app listing in the &quot;App Listings&quot; tab first.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ============================================================ */}
             {/* YOUR INTEGRATION - Personalized Code Section */}
             {/* ============================================================ */}
@@ -926,6 +1003,32 @@ console.log('User:', identity.profile.displayName);`;
                     </div>
                 </div>
             </div>
+
+            {/* Template Management Section */}
+            {selectedListing && (
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="p-4 bg-gray-50 border-b border-gray-200">
+                        <div className="flex items-center gap-3">
+                            <Award className="w-5 h-5 text-emerald-600" />
+                            <div>
+                                <h3 className="font-medium text-gray-800">Credential Templates</h3>
+                                <p className="text-xs text-gray-500">
+                                    Manage templates for {selectedListing.display_name}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-4">
+                        <TemplateListManager
+                            listingId={selectedListing.listing_id}
+                            integrationId={integration?.id}
+                            showCodeSnippets={true}
+                            editable={true}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Installation Section */}
             <div className="border border-gray-200 rounded-xl overflow-hidden">
