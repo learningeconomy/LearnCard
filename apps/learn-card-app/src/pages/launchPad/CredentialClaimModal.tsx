@@ -24,7 +24,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [isClaiming, setIsClaiming] = useState(false);
     const [claimed, setClaimed] = useState(false);
-    const [credential, setCredential] = useState<VC | null>(null);
+    const [credential, setCredential] = useState<VC | VP | undefined | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     // Resolve the credential URI on mount
@@ -33,16 +33,11 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             try {
                 setIsLoading(true);
                 setError(null);
+                const wallet = await initWallet();
+                const vc = await wallet.read.get(credentialUri);
 
-                const result = await fetch(
-                    `${LEARNCARD_NETWORK_API_URL}/storage/resolve?uri=${encodeURIComponent(
-                        credentialUri
-                    )}`
-                );
+                if (!vc) throw new Error('Error resolving credential');
 
-                if (result.status !== 200) throw new Error('Error resolving credential');
-
-                const vc: VC = await result.json();
                 setCredential(vc);
             } catch (err) {
                 console.error('Failed to resolve credential:', err);
