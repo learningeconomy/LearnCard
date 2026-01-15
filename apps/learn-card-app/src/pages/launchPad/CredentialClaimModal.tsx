@@ -59,11 +59,12 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 
         try {
             await addVCtoWallet({ uri: credentialUri });
-
+            
             // Find and update the notification for this credential
             try {
                 const wallet = await initWallet();
                 if (wallet) {
+                    await wallet.invoke.acceptCredential(credentialUri);
                     // Get recent notifications to find the one for this credential
                     const result = await wallet.invoke.getNotifications(
                         { limit: 50, sort: 'REVERSE_CHRONOLOGICAL' },

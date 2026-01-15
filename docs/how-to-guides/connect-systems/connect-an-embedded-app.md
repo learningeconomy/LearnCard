@@ -246,9 +246,7 @@ Here's a full example of a simple embedded app:
         <script type="module">
             import { createPartnerConnect } from '@learncard/partner-connect';
 
-            const learnCard = createPartnerConnect({
-                hostOrigin: 'https://learncard.app',
-            });
+            const learnCard = createPartnerConnect();
 
             // Get user identity for personalization
             async function init() {

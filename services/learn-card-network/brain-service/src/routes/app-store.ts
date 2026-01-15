@@ -6,6 +6,7 @@ import { isVC2Format } from '@learncard/helpers';
 import { t, openRoute, profileRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { logCredentialSent } from '@helpers/activity.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
@@ -533,6 +534,18 @@ const handleSendCredentialEvent = async (
         });
     }
 
+    // Log credential activity FIRST to get activityId for chaining
+    const activityId = await logCredentialSent({
+        actorProfileId: integrationOwner.profileId,
+        recipientType: 'profile',
+        recipientIdentifier: targetProfile[0]!.profileId,
+        recipientProfileId: targetProfile[0]!.profileId,
+        boostUri,
+        integrationId: integration.id,
+        source: 'sendBoost',
+        metadata: { listingId, templateAlias },
+    });
+
     // Send to user's wallet
     const credentialUri = await sendBoost({
         from: integrationOwner,
@@ -541,6 +554,8 @@ const handleSendCredentialEvent = async (
         credential,
         domain: ctx.domain,
         skipNotification: false,
+        activityId,
+        integrationId: integration.id,
     });
 
     return {
