@@ -441,9 +441,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         </div>
 
                         {/* Boost Management */}
-                        <div className="py-4 border-t border-gray-100">
+                        {/* <div className="py-4 border-t border-gray-100">
                             <ListingBoostsManager listingId={selectedListing.listing_id} />
-                        </div>
+                        </div> */}
 
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">

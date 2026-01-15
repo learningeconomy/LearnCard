@@ -410,9 +410,7 @@ const GettingStartedStep: React.FC<{
 
     const initCode = `import { createPartnerConnect } from '@learncard/partner-connect';
 
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Get user identity (SSO - no login needed!)
 const identity = await learnCard.requestIdentity();
@@ -1415,9 +1413,7 @@ const InitializeStep: React.FC<{
     const initCode = `import { createPartnerConnect } from '@learncard/partner-connect';
 
 // Initialize the SDK
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Request user identity (like SSO)
 const identity = await learnCard.requestIdentity();
@@ -1487,6 +1483,8 @@ interface BoostTemplate {
     category?: string;
     image?: string;
     createdAt?: string;
+    templateAlias?: string;
+    variables?: string[];
 }
 
 // Managed Template type for prompt-claim-template mode
@@ -2126,9 +2124,7 @@ const UseApiStep: React.FC<{
             },
             code: `import { createPartnerConnect } from '@learncard/partner-connect';
 
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Get the authenticated user's identity
 const identity = await learnCard.requestIdentity();
@@ -4688,52 +4684,75 @@ const YourAppStep: React.FC<{
         const fetchAllTemplates = async () => {
             try {
                 const wallet = await initWallet();
-                const allTemplates: BoostTemplate[] = [];
-                const seenUris = new Set<string>();
+                const issueTemplates: BoostTemplate[] = [];
+                const peerTemplates: BoostTemplate[] = [];
 
-                // Helper to add templates without duplicates
-                const addTemplates = (records: Record<string, unknown>[]) => {
-                    for (const boost of records) {
-                        const uri = boost.uri as string;
-
-                        if (!seenUris.has(uri)) {
-                            seenUris.add(uri);
-                            allTemplates.push({
-                                uri,
-                                name: boost.name as string || 'Untitled Template',
-                                description: boost.description as string,
-                                type: boost.type as string,
-                                category: boost.category as string,
-                                image: boost.image as string,
-                                createdAt: boost.createdAt as string,
-                            });
-                        }
-                    }
+                // Helper to extract variables from credential JSON
+                const extractVariables = (credential: Record<string, unknown>): string[] => {
+                    const jsonStr = JSON.stringify(credential);
+                    const matches = jsonStr.match(/\{\{(\w+)\}\}/g) || [];
+                    return [...new Set(matches.map(m => m.replace(/\{\{|\}\}/g, '')))];
                 };
 
-                // Fetch by appListingId
+                // Fetch issue-credentials templates via getAppBoosts (has templateAlias)
                 if (selectedListing?.listing_id) {
-                    const byListing = await wallet.invoke.getPaginatedBoosts({
-                        limit: 100,
-                        query: { meta: { appListingId: selectedListing.listing_id } }
-                    });
-                    addTemplates(byListing?.records || []);
-                }
+                    try {
+                        const appBoosts = await wallet.invoke.getAppBoosts(selectedListing.listing_id);
 
-                // Fetch by integrationId
-                if (integrationId) {
-                    const byIntegration = await wallet.invoke.getPaginatedBoosts({
-                        limit: 100,
-                        query: { meta: { integrationId } }
-                    });
-                    addTemplates(byIntegration?.records || []);
+                        for (const link of (appBoosts || [])) {
+                            try {
+                                const fullBoost = await wallet.invoke.getBoost(link.boostUri);
+                                const credential = (fullBoost?.boost as Record<string, unknown>) || {};
+
+                                issueTemplates.push({
+                                    uri: link.boostUri,
+                                    name: fullBoost?.name || (credential?.name as string) || 'Untitled Template',
+                                    description: (credential?.description as string) || '',
+                                    type: fullBoost?.type as string,
+                                    category: fullBoost?.category as string,
+                                    templateAlias: link.templateAlias,
+                                    variables: extractVariables(credential),
+                                });
+                            } catch (e) {
+                                console.warn('Failed to fetch boost:', link.boostUri, e);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Failed to fetch app boosts:', e);
+                    }
+
+                    // Fetch peer-badges templates via featureType metadata
+                    try {
+                        const peerBoostsResult = await wallet.invoke.getPaginatedBoosts({
+                            limit: 50,
+                            query: { meta: { appListingId: selectedListing.listing_id, featureType: 'peer-badges' } },
+                        });
+
+                        for (const boost of (peerBoostsResult?.records || [])) {
+                            try {
+                                const uri = boost.uri as string;
+                                const fullBoost = await wallet.invoke.getBoost(uri);
+                                const credential = (fullBoost?.boost as Record<string, unknown>) || {};
+
+                                peerTemplates.push({
+                                    uri,
+                                    name: fullBoost?.name || (boost.name as string) || 'Untitled Template',
+                                    description: (credential?.description as string) || '',
+                                    type: fullBoost?.type as string,
+                                    category: fullBoost?.category as string,
+                                });
+                            } catch (e) {
+                                console.warn('Failed to fetch peer boost:', boost.uri, e);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Failed to fetch peer badges:', e);
+                    }
                 }
 
                 if (!cancelled) {
-                    // All templates can be used for peer badges
-                    setPeerBadgeTemplates(allTemplates);
-                    // All templates can also be used for issue-credentials sync mode
-                    setIssueCredentialTemplates(allTemplates);
+                    setPeerBadgeTemplates(peerTemplates);
+                    setIssueCredentialTemplates(issueTemplates);
                 }
             } catch (err) {
                 console.error('Failed to fetch templates:', err);
@@ -5009,6 +5028,8 @@ const YourAppStep: React.FC<{
                 issueCredentials: issueCredentialTemplates.map(t => ({
                     uri: t.uri,
                     name: t.name,
+                    templateAlias: t.templateAlias,
+                    variables: t.variables,
                     description: t.description,
                     type: t.type,
                 })),
@@ -5078,9 +5099,7 @@ import { createPartnerConnect } from '@learncard/partner-connect';`);
 // SDK INITIALIZATION
 // ============================================================
 // Create the partner connection to communicate with LearnCard
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app', // LearnCard app origin
-});`);
+const learnCard = createPartnerConnect();`);
 
         // ===================
         // USER IDENTITY
@@ -5175,89 +5194,85 @@ async function issueCredentialToUser() {
     }
 }`);
             } else {
-                // sync-wallet mode - use actual template URIs if available
-                const firstTemplate = issueCredentialTemplates[0];
-                const templateUri = firstTemplate?.uri || 'urn:lc:boost:YOUR_TEMPLATE_URI';
-                const templateNote = firstTemplate 
-                    ? `Using template: "${firstTemplate.name}" (${templateUri})`
-                    : 'No templates configured - create one in the setup step';
+                // sync-wallet mode - use templates with aliases
+                const contractUri = issueCredentialsState.contractUri as string || '';
 
-                // Generate template list for server-side code
-                const templateListJson = issueCredentialTemplates.length > 0
-                    ? JSON.stringify(issueCredentialTemplates.map(t => ({
-                        uri: t.uri,
-                        name: t.name,
-                        description: t.description || '',
-                    })), null, 4)
-                    : '[]';
+                // Generate template config with aliases and variables
+                const templateConfigJson = JSON.stringify(issueCredentialTemplates.map(t => ({
+                    templateAlias: t.templateAlias,
+                    uri: t.uri,
+                    name: t.name,
+                    description: t.description || '',
+                    variables: t.variables || [],
+                })), null, 4);
 
-                sections.push(`
-// ============================================================
-// ISSUE CREDENTIALS - Sync to Wallet (Server-Side)
-// ============================================================
-// Mode: Silently sync credentials to user's wallet via consent
-// 
-// How it works:
-//   1. User grants consent via ConsentFlow contract
-//   2. Your SERVER issues credentials using your signing authority
-//   3. Credentials appear in user's wallet automatically
-//
-// Contract URI: ${contractUri || 'NOT_CONFIGURED'}
-// ${templateNote}
-//
-// IMPORTANT: This requires server-side code with your signing authority
+                // Generate example functions for each template
+                const templateFunctions = issueCredentialTemplates.map(t => {
+                    const hasVars = t.variables && t.variables.length > 0;
+                    const templateDataParam = hasVars
+                        ? `{\n${t.variables!.map(v => `        ${v}: 'value', // Replace with actual value`).join('\n')}\n    }`
+                        : '// No template variables needed';
 
-// Available credential templates for issuance:
-const CREDENTIAL_TEMPLATES = ${templateListJson};
-
-// --- CLIENT-SIDE: Request consent from user ---
-async function requestUserConsent() {
-    const result = await learnCard.requestConsent({
-        contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}',
+                    if (hasVars) {
+                        return `
+// Issue "${t.name}" credential
+async function issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.toUpperCase()) || 'Credential'}(templateData: Record<string, string>) {
+    const result = await learnCard.sendCredential({
+        templateAlias: '${t.templateAlias}',
+        templateData,
     });
     
-    if (result.granted) {
-        // Notify your server that consent was granted
-        await fetch('/api/consent-granted', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: result.userId,
-                contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}'
-            })
-        });
-        return true;
+    if (result.credentialUri) {
+        console.log('Credential issued:', result.credentialUri);
     }
-    return false;
-}
-
-// --- SERVER-SIDE CODE (Node.js) ---
-// This code runs on YOUR server, not in the embedded app
-/*
-import { initLearnCard } from '@learncard/init';
-
-// Initialize LearnCard with your signing authority
-const learnCard = await initLearnCard({
-    network: true,
-    seed: process.env.LEARNCARD_SEED, // Your secure seed phrase
-});
-
-// Issue credential to user via consent contract
-async function issueCredentialViaConsent(recipientProfileId: string, templateUri?: string) {
-    const result = await learnCard.invoke.send({
-        type: 'boost',
-        recipient: recipientProfileId,
-        templateUri: templateUri || '${templateUri}',
-        contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}',
-    });
-    
-    console.log('Credential issued:', result);
     return result;
 }
 
-// Example: Issue credential using first available template
-// await issueCredentialViaConsent('user-profile-id', CREDENTIAL_TEMPLATES[0]?.uri);
-*/`);
+// Example usage:
+// await issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.toUpperCase()) || 'Credential'}(${templateDataParam});`;
+                    } else {
+                        return `
+// Issue "${t.name}" credential (no template variables)
+async function issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.toUpperCase()) || 'Credential'}() {
+    const result = await learnCard.sendCredential({
+        templateAlias: '${t.templateAlias}',
+    });
+    
+    if (result.credentialUri) {
+        console.log('Credential issued:', result.credentialUri);
+    }
+    return result;
+}`;
+                    }
+                }).join('\n');
+
+                sections.push(`
+// ============================================================
+// ISSUE CREDENTIALS - Using Templates
+// ============================================================
+// Contract URI: ${contractUri || 'NOT_CONFIGURED'}
+// Templates configured: ${issueCredentialTemplates.length}
+
+const CREDENTIAL_TEMPLATES = ${templateConfigJson};
+${templateFunctions}
+
+// Generic function to issue any template by alias
+async function issueCredentialByAlias(templateAlias: string, templateData?: Record<string, string>) {
+    const template = CREDENTIAL_TEMPLATES.find(t => t.templateAlias === templateAlias);
+    if (!template) {
+        throw new Error(\`Template not found: \${templateAlias}. Available: \${CREDENTIAL_TEMPLATES.map(t => t.templateAlias).join(', ')}\`);
+    }
+    
+    const result = await learnCard.sendCredential({
+        templateAlias,
+        ...(templateData && { templateData }),
+    });
+    
+    if (result.credentialUri) {
+        console.log('Credential issued:', result.credentialUri);
+    }
+    return result;
+}`);
             }
         }
 
@@ -5301,7 +5316,7 @@ async function issueCredentialViaConsent(recipientProfileId: string, templateUri
 const PEER_BADGE_TEMPLATES = ${templateConfigJson};
 
 // Helper to find a template by name or type
-function findTemplate(query: string) {
+function findPeerBadgeTemplate(query: string) {
     const q = query.toLowerCase();
     return PEER_BADGE_TEMPLATES.find(t => 
         t.name.toLowerCase().includes(q) || 
@@ -5340,7 +5355,7 @@ async function sendPeerBadge(templateUri: string) {
  * @param searchQuery - Search term to find a matching template (e.g., "thank you", "great job")
  */
 async function sendPeerBadgeByName(searchQuery: string) {
-    const template = findTemplate(searchQuery);
+    const template = findPeerBadgeTemplate(searchQuery);
     
     if (!template) {
         throw new Error(\`No template found matching: \${searchQuery}. Available: \${PEER_BADGE_TEMPLATES.map(t => t.name).join(', ')}\`);

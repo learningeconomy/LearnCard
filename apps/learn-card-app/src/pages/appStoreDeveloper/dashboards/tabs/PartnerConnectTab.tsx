@@ -111,9 +111,7 @@ const METHODS: ApiMethod[] = [
         },
         code: `import { createPartnerConnect } from '@learncard/partner-connect';
 
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Get the authenticated user's identity
 const identity = await learnCard.requestIdentity();
@@ -666,9 +664,7 @@ import { createPartnerConnect } from '@learncard/partner-connect';`);
 // ============================================================
 // SDK INITIALIZATION
 // ============================================================
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app',
-});`);
+const learnCard = createPartnerConnect();`);
 
         // USER IDENTITY
         sections.push(`
@@ -982,9 +978,7 @@ async function launchWalletFeature(path: string, description?: string) {
 
     const initCode = `import { createPartnerConnect } from '@learncard/partner-connect';
 
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Get user identity (SSO - no login needed!)
 const identity = await learnCard.requestIdentity();
