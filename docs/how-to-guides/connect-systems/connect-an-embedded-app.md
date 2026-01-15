@@ -30,8 +30,8 @@ This is ideal for:
 │  │              Your Embedded App                 │  │
 │  │                                               │  │
 │  │   1. User completes action                    │  │
-│  │   2. App calls sendAppEvent('send-credential')│  │
-│  │   3. LearnCard issues from your boost template│  │
+│  │   2. App calls sendCredential(templateAlias)  │  │
+│  │   3. LearnCard issues from your template      │  │
 │  │   4. User sees claim modal                    │  │
 │  │   5. Credential stored in wallet              │  │
 │  │                                               │  │
@@ -81,18 +81,15 @@ yarn add @learncard/partner-connect
 import { createPartnerConnect } from '@learncard/partner-connect';
 
 // Initialize the SDK
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app',
-});
+const learnCard = createPartnerConnect();
 
 // When user completes an achievement, send a credential
 async function awardBadge() {
     try {
-        const result = await learnCard.sendAppEvent({
-            type: 'send-credential',
-            boostId: 'course-completion', // Your boost ID from the App Store
+        const result = await learnCard.sendCredential({
+            templateAlias: 'course-completion', // Your template alias from the App Store
             templateData: {
-                // Optional: customize the credential
+                // Optional: fill in template variables
                 courseName: 'JavaScript 101',
                 completionDate: new Date().toISOString(),
             },
@@ -117,50 +114,47 @@ In the LearnCard Developer Portal, create a new app listing with:
 -   **Launch URL** - Where your embedded app is hosted
 -   **Permissions** - Request `credentials:write` to issue credentials
 
-### 2. Create Boost Templates
+### 2. Create Credential Templates
 
-Boosts are credential templates that define what badges your app can issue. For each type of credential:
+Templates define what credentials your app can issue. For each type of credential:
 
-1. Go to your app listing's **Credentials** tab
-2. Click **Add Credential Template**
+1. Go to your app listing's **Templates** tab
+2. Click **Add Template**
 3. Design your credential (name, description, image, achievement type)
-4. Assign a **Boost ID** (e.g., `course-completion`, `level-up`, `certification`)
+4. Note the **Template Alias** (auto-generated from name, e.g., `course-completion`)
 
-The Boost ID is what you'll reference when issuing credentials from your app.
+The Template Alias is what you'll reference when issuing credentials from your app.
 
 ### 3. Configure Signing Authority
 
-When you add a boost to your listing, LearnCard automatically configures a signing authority. This allows credentials to be issued on behalf of your app with proper cryptographic signatures.
+When you add a template to your listing, LearnCard automatically configures a signing authority. This allows credentials to be issued on behalf of your app with proper cryptographic signatures.
 
 ## API Reference
 
-### `sendAppEvent({ type: 'send-credential', ... })`
+### `sendCredential({ templateAlias, templateData? })`
 
 Issue a credential to the current user.
 
 **Parameters:**
 
-| Parameter      | Type                | Required | Description                                 |
-| -------------- | ------------------- | -------- | ------------------------------------------- |
-| `type`         | `'send-credential'` | Yes      | Event type for credential issuance          |
-| `boostId`      | `string`            | Yes      | The Boost ID configured in your app listing |
-| `templateData` | `object`            | No       | Dynamic data to inject into the credential  |
+| Parameter       | Type     | Required | Description                                      |
+| --------------- | -------- | -------- | ------------------------------------------------ |
+| `templateAlias` | `string` | Yes      | The template alias configured in your app listing |
+| `templateData`  | `object` | No       | Values for template variables (e.g., `{{name}}`) |
 
 **Returns:** `Promise<SendCredentialResponse>`
 
 ```typescript
 interface SendCredentialResponse {
     credentialUri: string; // URI of the issued credential
-    boostUri: string; // URI of the boost template used
 }
 ```
 
 **Example with Template Data:**
 
 ```typescript
-const result = await learnCard.sendAppEvent({
-    type: 'send-credential',
-    boostId: 'quiz-master',
+const result = await learnCard.sendCredential({
+    templateAlias: 'quiz-master',
     templateData: {
         score: 95,
         quizName: 'Advanced TypeScript',
@@ -173,9 +167,8 @@ const result = await learnCard.sendAppEvent({
 
 ```typescript
 try {
-    const result = await learnCard.sendAppEvent({
-        type: 'send-credential',
-        boostId: 'my-badge',
+    const result = await learnCard.sendCredential({
+        templateAlias: 'my-badge',
     });
 } catch (error) {
     switch (error.code) {
@@ -183,9 +176,9 @@ try {
             // User not logged in
             showLoginPrompt();
             break;
-        case 'BOOST_NOT_FOUND':
-            // boostId doesn't exist for this app
-            console.error('Invalid boost ID');
+        case 'NOT_FOUND':
+            // templateAlias doesn't exist for this app
+            console.error('Invalid template alias');
             break;
         case 'UNAUTHORIZED':
             // App doesn't have permission
@@ -263,9 +256,8 @@ Here's a full example of a simple embedded app:
             // Award badge when quiz is completed
             document.getElementById('complete').addEventListener('click', async () => {
                 try {
-                    const result = await learnCard.sendAppEvent({
-                        type: 'send-credential',
-                        boostId: 'quiz-completion',
+                    const result = await learnCard.sendCredential({
+                        templateAlias: 'quiz-completion',
                         templateData: {
                             quizName: 'JavaScript Fundamentals',
                             score: 92,
@@ -323,16 +315,7 @@ Here's a full example of a simple embedded app:
 
 ### Local Development
 
-For local development, you can use the `lc_host_override` query parameter:
-
-```typescript
-const learnCard = createPartnerConnect({
-    hostOrigin: [
-        'https://learncard.app',
-        'http://localhost:3000', // For local testing
-    ],
-});
-```
+For local development, use the Developer Portal's **Preview App** feature which provides a test iframe environment. Your app will be loaded within LearnCard and credentials will be issued to your test wallet.
 
 ## Related Documentation
 

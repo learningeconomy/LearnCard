@@ -493,8 +493,6 @@ export function createActionHandlers(dependencies: {
         INITIATE_TEMPLATE_ISSUE: createInitiateTemplateIssueHandler(dependencies),
     };
 
-    console.log('dependencies', dependencies);
-
     // Add APP_EVENT handler if dependencies are provided
     if (dependencies.sendAppEvent && dependencies.getAppListingId) {
         handlers.APP_EVENT = createAppEventHandler({

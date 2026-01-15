@@ -152,8 +152,6 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
         return wrapped;
     }, [baseHandlers, addDiagnosticEvent, updateDiagnosticEvent]);
 
-    console.log('wrappedHandlers', wrappedHandlers);
-    console.log('baseHandlers', baseHandlers);
 
     // Initialize the PostMessage listener
     useLearnCardPostMessage({
