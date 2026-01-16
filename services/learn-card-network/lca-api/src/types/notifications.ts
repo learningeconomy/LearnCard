@@ -60,5 +60,5 @@ export const NotificationQueryInputValidator = z
         archived: z.boolean().optional(),
         actionStatus: NotificationActionStatusEnumValidator.optional(),
     })
-    .passthrough(); // Allow additional query fields
+    .strict();
 export type NotificationQueryInputType = z.infer<typeof NotificationQueryInputValidator>;

@@ -175,7 +175,7 @@ export const NotificationQueryInputValidator = z
         archived: z.boolean().optional(),
         actionStatus: NotificationActionStatusEnumValidator.optional(),
     })
-    .passthrough();
+    .strict();
 
 /** @group LCA API Plugin */
 export type NotificationQueryInputType = z.infer<typeof NotificationQueryInputValidator>;
