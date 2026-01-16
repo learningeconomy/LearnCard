@@ -98,11 +98,11 @@ export const getEmojiFromDidString = (did: string) => {
 // get user ID / handle from user did
 export const getUserHandleFromDid = (userDid: string) => {
     // ie: did:web:network.learncard.com:users:kent
-    const regex = /users:(.*)/;
+    const regex = /(users:|:p:)(.*)/;
 
     const match = userDid.match(regex);
 
-    return match?.[1]; // returns kent
+    return match?.[2]; // returns kent
 };
 
 // checks if a users did -> is an LCnetwork did
