@@ -13,8 +13,8 @@ def capacitor_pods
   pod 'CapacitorCordova', :path => '../../../../node_modules/.pnpm/@capacitor+ios@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/ios'
   pod 'CapacitorCommunityMedia', :path => '../../../../node_modules/.pnpm/@capacitor-community+media@9.0.0_@capacitor+core@8.0.1/node_modules/@capacitor-community/media'
   pod 'CapacitorCommunitySqlite', :path => '../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor-community/sqlite'
-  pod 'CapacitorFirebaseAnalytics', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/analytics'
-  pod 'CapacitorFirebaseAuthentication', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.4.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/authentication'
+  pod 'CapacitorFirebaseAnalytics', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+analytics@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/analytics'
+  pod 'CapacitorFirebaseAuthentication', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+authentication@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/authentication'
   pod 'CapacitorMlkitBarcodeScanning', :path => '../../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@8.0.1/node_modules/@capacitor-mlkit/barcode-scanning'
   pod 'CapacitorApp', :path => '../../../../node_modules/.pnpm/@capacitor+app@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/app'
   pod 'CapacitorBrowser', :path => '../../../../node_modules/.pnpm/@capacitor+browser@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/browser'
@@ -39,8 +39,8 @@ end
 target 'App' do
   capacitor_pods
   # Add your Pods here
-  pod 'CapacitorFirebaseAuthentication/Google', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.4.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/authentication'
-  pod 'CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/analytics'
+  pod 'CapacitorFirebaseAuthentication/Google', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+authentication@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/authentication'
+  pod 'CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+analytics@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/analytics'
   pod 'Firebase/Messaging' # FCM push notifications
 end
  
