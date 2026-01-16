@@ -68,8 +68,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     hideQRCode,
 }) => {
     const { initWallet } = useWallet();
-    const profileID =
-        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
+    const boostIssuer = (credential as any)?.boostCredential?.issuer;
+    const boostIssuerDid =
+        typeof boostIssuer === 'string' ? boostIssuer : boostIssuer?.id;
+    // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
+    const profileID = boostIssuerDid?.split(':').pop();
+
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const [isFront, setIsFront] = useState(true);
     const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);

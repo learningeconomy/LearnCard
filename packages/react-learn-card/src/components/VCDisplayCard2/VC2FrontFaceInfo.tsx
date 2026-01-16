@@ -31,6 +31,7 @@ type VC2FrontFaceInfoProps = {
     customThumbComponent?: React.ReactNode;
     knownDIDRegistry?: KnownDIDRegistryType;
     customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
 };
 
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
@@ -46,6 +47,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     customThumbComponent,
     knownDIDRegistry,
     customBodyContentSlot,
+    unknownVerifierTitle,
 }) => {
     const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 20);
     const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
@@ -93,6 +95,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
+    } else if (unknownVerifierTitle) {
+        verifierState = VERIFIER_STATES.trustedVerifier;
     } else {
         if (knownDIDRegistry?.source === 'trusted') {
             verifierState = VERIFIER_STATES.trustedVerifier;
@@ -146,7 +150,10 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                         by <strong className="font-[700]">{issuerName}</strong>
                                     </span>
                                 </div>
-                                <VerifierStateBadgeAndText verifierState={verifierState} />
+                                <VerifierStateBadgeAndText
+                                    verifierState={verifierState}
+                                    unknownVerifierTitle={unknownVerifierTitle}
+                                />
                             </div>
                         </>
                     )}

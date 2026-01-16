@@ -290,6 +290,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     customIDDescription={customIDDescription}
                     hideGradientBackground={hideGradientBackground}
                     customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                    unknownVerifierTitle={unknownVerifierTitle}
                 />
             </div>
         );
@@ -398,6 +399,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     imageUrl={imageUrl}
                                     knownDIDRegistry={knownDIDRegistry}
                                     customBodyContentSlot={customBodyContentSlot}
+                                    unknownVerifierTitle={unknownVerifierTitle}
                                 />
                             )}
                             {!isFront && (
