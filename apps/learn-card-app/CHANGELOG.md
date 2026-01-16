@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.12
+
+### Patch Changes
+
+-   [#941](https://github.com/learningeconomy/LearnCard/pull/941) [`c52711a4d531a87f19a122f15235a320ba82e6c4`](https://github.com/learningeconomy/LearnCard/commit/c52711a4d531a87f19a122f15235a320ba82e6c4) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add Custom Category to CredentialBuilder
+
 ## 1.94.11
 
 ### Patch Changes
