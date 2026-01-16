@@ -65,7 +65,7 @@ PODS:
     - Capacitor
   - CapacitorPluginSafeArea (4.0.3):
     - Capacitor
-  - CapacitorPushNotifications (7.0.3):
+  - CapacitorPushNotifications (8.0.0):
     - Capacitor
   - CapacitorShare (7.0.2):
     - Capacitor
@@ -242,7 +242,7 @@ DEPENDENCIES:
   - "CapacitorNativeSettings (from `../../../../node_modules/.pnpm/capacitor-native-settings@7.0.2_@capacitor+core@8.0.1/node_modules/capacitor-native-settings`)"
   - "CapacitorNetwork (from `../../../../node_modules/.pnpm/@capacitor+network@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/network`)"
   - "CapacitorPluginSafeArea (from `../../../../node_modules/.pnpm/capacitor-plugin-safe-area@4.0.3_@capacitor+core@8.0.1/node_modules/capacitor-plugin-safe-area`)"
-  - "CapacitorPushNotifications (from `../../../../node_modules/.pnpm/@capacitor+push-notifications@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications`)"
+  - "CapacitorPushNotifications (from `../../../../node_modules/.pnpm/@capacitor+push-notifications@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications`)"
   - "CapacitorShare (from `../../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/share`)"
   - "CapacitorSplashScreen (from `../../../../node_modules/.pnpm/@capacitor+splash-screen@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/splash-screen`)"
   - "CapacitorStatusBar (from `../../../../node_modules/.pnpm/@capacitor+status-bar@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/status-bar`)"
@@ -328,7 +328,7 @@ EXTERNAL SOURCES:
   CapacitorPluginSafeArea:
     :path: "../../../../node_modules/.pnpm/capacitor-plugin-safe-area@4.0.3_@capacitor+core@8.0.1/node_modules/capacitor-plugin-safe-area"
   CapacitorPushNotifications:
-    :path: "../../../../node_modules/.pnpm/@capacitor+push-notifications@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications"
+    :path: "../../../../node_modules/.pnpm/@capacitor+push-notifications@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications"
   CapacitorShare:
     :path: "../../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/share"
   CapacitorSplashScreen:
@@ -363,7 +363,7 @@ SPEC CHECKSUMS:
   CapacitorNativeSettings: 3cd2e2ef431fe471674f381609cfb29154ddfcfa
   CapacitorNetwork: 156f8096cbbce5337eb1769fcc0d6adc4b85d3f3
   CapacitorPluginSafeArea: 1abd81c6facac9eae0c6ae3cb0b3b53ccc135522
-  CapacitorPushNotifications: bdd621fbd562be34a41f4a7b1750efa000447d5a
+  CapacitorPushNotifications: 722c1528eabbefd355f47e373a4c6235d01e85e9
   CapacitorShare: be166411fa995ead2d39b104aa0aae56d8615c66
   CapacitorSplashScreen: e388b8e0ed0e982a9d3a40417f478e7a018a8763
   CapacitorStatusBar: 0659ddc7b1713764a05831463d215b177a15d054
@@ -402,6 +402,6 @@ SPEC CHECKSUMS:
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: 8cb0b649644eef3ed0c107f4c373e37fdf246ab4
+PODFILE CHECKSUM: 49bbe85f1b74ce842f1f57105890df09f04d0ff5
 
 COCOAPODS: 1.16.2

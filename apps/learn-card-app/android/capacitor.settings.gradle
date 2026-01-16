@@ -48,7 +48,7 @@ include ':capacitor-network'
 project(':capacitor-network').projectDir = new File('../../../node_modules/.pnpm/@capacitor+network@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/network/android')
 
 include ':capacitor-push-notifications'
-project(':capacitor-push-notifications').projectDir = new File('../../../node_modules/.pnpm/@capacitor+push-notifications@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications/android')
+project(':capacitor-push-notifications').projectDir = new File('../../../node_modules/.pnpm/@capacitor+push-notifications@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications/android')
 
 include ':capacitor-share'
 project(':capacitor-share').projectDir = new File('../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/share/android')
