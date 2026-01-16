@@ -1,5 +1,19 @@
 # @welibraryos/lca-api-client
 
+## 1.1.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-service@1.1.5
+
+## 1.1.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-service@1.1.4
+
 ## 1.1.3
 
 ### Patch Changes

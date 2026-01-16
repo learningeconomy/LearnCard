@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import moment from 'moment';
+import DatePickerInput from '../date-picker/DatePickerInput';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
@@ -26,7 +27,6 @@ import {
 
 import { IonCol, IonRow, useIonModal, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
 import Pencil from '../svgs/Pencil';
-import Calendar from '../svgs/Calendar';
 import TrashBin from '../svgs/TrashBin';
 import InfoIcon from '../svgs/InfoIcon';
 import CopyStack from '../svgs/CopyStack';
@@ -101,7 +101,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const { presentToast } = useToast();
     const sectionPortal = document.getElementById('section-cancel-portal');
     const safeArea = useSafeArea();
-    const { isMobile } = useDeviceTypeByWidth();
+    const { isDesktop, isMobile } = useDeviceTypeByWidth();
 
     const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
@@ -510,55 +510,16 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     {lcNetworkProfile && (
                         <>
                             <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
-                                <button
-                                    type="button"
-                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
-                                        errors?.dob ? 'login-input-email-error' : ''
-                                    }`}
-                                    onClick={e => {
-                                        e.preventDefault();
-                                        newModal(
-                                            <div className="w-full h-full transparent flex items-center justify-center">
-                                                <IonDatetime
-                                                    onIonChange={e => {
-                                                        setErrors({});
-                                                        setDob(
-                                                            moment(e.detail.value).format(
-                                                                'YYYY-MM-DD'
-                                                            )
-                                                        );
-                                                        closeModal();
-                                                    }}
-                                                    value={
-                                                        dob
-                                                            ? moment(dob).format('YYYY-MM-DD')
-                                                            : null
-                                                    }
-                                                    id="datetime"
-                                                    presentation="date"
-                                                    className="bg-white text-black rounded-[20px] w-full shadow-3xl z-50 font-notoSans"
-                                                    showDefaultButtons
-                                                    color="indigo-500"
-                                                    max={moment().format('YYYY-MM-DD')}
-                                                    min="1900-01-01"
-                                                    onIonCancel={closeModal}
-                                                />
-                                            </div>,
-                                            {
-                                                disableCloseHandlers: true,
-                                                sectionClassName:
-                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
-                                            },
-                                            {
-                                                desktop: ModalTypes.Center,
-                                                mobile: ModalTypes.Center,
-                                            }
-                                        );
+                                <DatePickerInput
+                                    value={dob || ''}
+                                    onChange={(newDob: string) => {
+                                        setErrors(prev => ({ ...prev, dob: undefined }));
+                                        setDob(newDob);
                                     }}
-                                >
-                                    {dob ? moment(dob).format('MMMM Do, YYYY') : 'Date of Birth'}
-                                    <Calendar className="w-[30px] text-grayscale-700" />
-                                </button>
+                                    error={errors?.dob?.[0]}
+                                    isMobile={!isDesktop}
+                                    label="Date of Birth"
+                                />
 
                                 {dob && !Number.isNaN(calculateAge(dob)) && (
                                     <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">

@@ -29,6 +29,8 @@ import {
     SendBoostResponseValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
+import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import { logCredentialSent, logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 
 import { t, profileRoute } from '@routes';
 
@@ -77,7 +79,10 @@ import {
     sendBoost,
     issueClaimLinkBoost,
     isDraftBoost,
+    isEditableBoost,
     convertCredentialToBoostTemplateJSON,
+    isInboxRecipient,
+    prepareCredentialFromBoost,
 } from '@helpers/boost.helpers';
 import {
     BoostValidator,
@@ -141,6 +146,58 @@ import {
 import { updateDefaultPermissionsForBoost } from '@accesslayer/role/relationships/update';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { removeConnectionsForBoost } from '@helpers/connection.helpers';
+import { issueToInbox } from '@helpers/inbox.helpers';
+import { SendOptions } from '@learncard/types';
+
+/**
+ * Builds inbox configuration from SendOptions for the issueToInbox helper.
+ */
+const buildInboxConfig = (
+    options: SendOptions | undefined,
+    boostUri: string
+): {
+    webhookUrl?: string;
+    boostUri?: string;
+    delivery?: {
+        suppress: boolean;
+        template?: {
+            model: {
+                issuer?: { name?: string; logoUrl?: string };
+                credential?: { name?: string };
+                recipient?: { name?: string };
+            };
+        };
+    };
+} => {
+    const config: ReturnType<typeof buildInboxConfig> = {
+        webhookUrl: options?.webhookUrl,
+        boostUri,
+    };
+
+    if (options?.suppressDelivery || options?.branding) {
+        config.delivery = {
+            suppress: options?.suppressDelivery ?? false,
+            template: options?.branding
+                ? {
+                      model: {
+                          issuer: {
+                              name: options.branding.issuerName,
+                              logoUrl: options.branding.issuerLogoUrl,
+                          },
+                          credential: {
+                              name: options.branding.credentialName,
+                          },
+                          recipient: {
+                              name: options.branding.recipientName,
+                          },
+                      },
+                  }
+                : undefined,
+        };
+    }
+
+    return config;
+};
 
 export const boostsRouter = t.router({
     getBoostAlignments: profileRoute
@@ -158,8 +215,7 @@ export const boostsRouter = t.router({
         })
         .input(z.object({ uri: z.string() }))
         .output(
-            z
-                .object({
+            z.object({
                     targetCode: z.string().optional(),
                     targetName: z.string().optional(),
                     targetDescription: z.string().optional(),
@@ -500,14 +556,27 @@ export const boostsRouter = t.router({
             let skipNotification = profile.profileId === targetProfile.profileId;
             if (options?.skipNotification) skipNotification = options?.skipNotification;
 
-            return sendBoost({
+            // Log credential activity FIRST to get activityId for chaining
+            const activityId = await logCredentialSent({
+                actorProfileId: profile.profileId,
+                recipientType: 'profile',
+                recipientIdentifier: targetProfile.profileId,
+                recipientProfileId: targetProfile.profileId,
+                boostUri: uri,
+                source: 'sendBoost',
+            });
+
+            const credentialUri = await sendBoost({
                 from: profile,
                 to: targetProfile,
                 boost,
                 credential,
                 domain: ctx.domain,
                 skipNotification,
+                activityId,
             });
+
+            return credentialUri;
         }),
 
     send: profileRoute
@@ -530,27 +599,10 @@ export const boostsRouter = t.router({
             const { contractUri } = input;
             const { domain } = ctx;
 
-            const recipientProfileId = await getProfileIdFromString(input.recipient, domain);
+            // Check if recipient is email/phone (routes to Universal Inbox)
+            const inboxRecipient = isInboxRecipient(input.recipient);
 
-            const targetProfile = recipientProfileId
-                ? await getProfileByProfileId(recipientProfileId)
-                : null;
-
-            if (!targetProfile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
-
-            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
-            if (isBlocked) {
-                throw new TRPCError({
-                    code: 'FORBIDDEN',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
-
+            // Resolve boost first (needed for both flows)
             let boost = null as BoostInstance | null;
             let boostUri = '';
             let boostCreated = false;
@@ -600,6 +652,101 @@ export const boostsRouter = t.router({
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            // Route to Universal Inbox for email/phone recipients
+            if (inboxRecipient) {
+                // Prepare the credential - use signedCredential if provided, otherwise from boost template
+                let credential: VC | UnsignedVC;
+
+                if (input.signedCredential) {
+                    credential = input.signedCredential;
+                } else {
+                    try {
+                        credential = await prepareCredentialFromBoost(boost, boostUri, domain, {
+                            templateData: input.templateData as Record<string, unknown>,
+                        });
+                    } catch (e) {
+                        console.error('Failed to prepare boost credential for inbox', e);
+                        throw new TRPCError({
+                            code: 'INTERNAL_SERVER_ERROR',
+                            message: 'Failed to prepare boost credential',
+                        });
+                    }
+                }
+
+                // Build inbox configuration from SendOptions
+                // Log credential activity FIRST to get activityId for chaining
+                const activityId = await logCredentialSent({
+                    actorProfileId: profile.profileId,
+                    recipientType: inboxRecipient.type,
+                    recipientIdentifier: inboxRecipient.value,
+                    boostUri,
+                    source: 'send',
+                    integrationId: input.integrationId,
+                    metadata: { templateData: input.templateData },
+                });
+
+                const inboxConfig = buildInboxConfig(input.options, boostUri);
+
+                try {
+                    const inboxResult = await issueToInbox(
+                        profile,
+                        inboxRecipient,
+                        credential,
+                        { ...inboxConfig, activityId, integrationId: input.integrationId },
+                        ctx
+                    );
+
+                    return {
+                        type: 'boost' as const,
+                        credentialUri: '',
+                        uri: boostUri,
+                        activityId,
+                        inbox: {
+                            issuanceId: inboxResult.inboxCredential.id,
+                            status: inboxResult.status,
+                            claimUrl: inboxResult.claimUrl,
+                        },
+                    };
+                } catch (error) {
+                    // Log FAILED activity when issueToInbox fails
+                    await logCredentialFailed({
+                        activityId,
+                        actorProfileId: profile.profileId,
+                        recipientType: inboxRecipient.type,
+                        recipientIdentifier: inboxRecipient.value,
+                        boostUri,
+                        integrationId: input.integrationId,
+                        source: 'send',
+                        metadata: {
+                            error: error instanceof Error ? error.message : 'Unknown error',
+                        },
+                    });
+                    throw error;
+                }
+            }
+
+            // Existing flow for DID/profileId recipients
+            const recipientProfileId = await getProfileIdFromString(input.recipient, domain);
+
+            const targetProfile = recipientProfileId
+                ? await getProfileByProfileId(recipientProfileId)
+                : null;
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+            if (isBlocked) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile not found. Are you sure this person exists?',
                 });
             }
 
@@ -656,35 +803,11 @@ export const boostsRouter = t.router({
                 let unsignedVc: UnsignedVC;
 
                 try {
-                    unsignedVc = JSON.parse(boost.dataValues.boost);
-
-                    const now = new Date().toISOString();
-                    if (isVC2Format(unsignedVc)) {
-                        unsignedVc.validFrom = now;
-                    } else {
-                        unsignedVc.issuanceDate = now;
-                    }
-
-                    unsignedVc.issuer = signingAuthority.relationship.did;
-
-                    if (Array.isArray(unsignedVc.credentialSubject)) {
-                        unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(
-                            subject => ({
-                                ...subject,
-                                id: getDidWeb(domain, targetProfile.profileId),
-                            })
-                        );
-                    } else {
-                        unsignedVc.credentialSubject = {
-                            ...(unsignedVc.credentialSubject || {}),
-                            id: getDidWeb(domain, targetProfile.profileId),
-                        };
-                    }
-
-                    if (unsignedVc?.type?.includes('BoostCredential'))
-                        unsignedVc.boostId = boostUri;
-
-                    await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost, domain);
+                    unsignedVc = await prepareCredentialFromBoost(boost, boostUri, domain, {
+                        templateData: input.templateData as Record<string, unknown>,
+                        issuerDid: signingAuthority.relationship.did,
+                        recipientDid: getDidWeb(domain, targetProfile.profileId),
+                    });
                 } catch (e) {
                     console.error('Failed to prepare boost credential', e);
                     throw new TRPCError({
@@ -704,17 +827,49 @@ export const boostsRouter = t.router({
 
             let skipNotification = profile.profileId === targetProfile.profileId;
 
-            const credentialUri = await sendBoost({
-                from: profile,
-                to: targetProfile,
-                boost,
-                credential: signedVc,
-                domain,
-                skipNotification,
-                contractTerms: contractTerms ?? undefined,
+            // Log credential activity FIRST to get activityId for chaining
+            const activityId = await logCredentialSent({
+                actorProfileId: profile.profileId,
+                recipientType: 'profile',
+                recipientIdentifier: targetProfile.profileId,
+                recipientProfileId: targetProfile.profileId,
+                boostUri,
+                source: 'send',
+                integrationId: input.integrationId,
+                metadata: { templateData: input.templateData },
             });
 
-            return { type: 'boost' as const, credentialUri, uri: boostUri };
+            try {
+                const credentialUri = await sendBoost({
+                    from: profile,
+                    to: targetProfile,
+                    boost,
+                    credential: signedVc,
+                    domain,
+                    skipNotification,
+                    contractTerms: contractTerms ?? undefined,
+                    activityId,
+                    integrationId: input.integrationId,
+                });
+
+                return { type: 'boost' as const, credentialUri, uri: boostUri, activityId };
+            } catch (error) {
+                // Log FAILED activity when sendBoost fails
+                await logCredentialFailed({
+                    activityId,
+                    actorProfileId: profile.profileId,
+                    recipientType: 'profile',
+                    recipientIdentifier: targetProfile.profileId,
+                    recipientProfileId: targetProfile.profileId,
+                    boostUri,
+                    integrationId: input.integrationId,
+                    source: 'send',
+                    metadata: {
+                        error: error instanceof Error ? error.message : 'Unknown error',
+                    },
+                });
+                throw error;
+            }
         }),
 
     createBoost: profileRoute
@@ -1782,7 +1937,7 @@ export const boostsRouter = t.router({
 
             if (meta) actualUpdates.meta = meta;
 
-            if (isDraftBoost(boost)) {
+            if (isEditableBoost(boost)) {
                 if (name) actualUpdates.name = name;
                 if (category) actualUpdates.category = category;
                 if (type) actualUpdates.type = type;
@@ -1803,7 +1958,7 @@ export const boostsRouter = t.router({
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'Published Boosts can only have their meta or defaultPermissions updated. Draft Boosts can update any field.',
+                        'LIVE Boosts can only have their meta or defaultPermissions updated. DRAFT and PROVISIONAL Boosts can update any field.',
                 });
             }
 
@@ -2386,6 +2541,16 @@ export const boostsRouter = t.router({
                 });
             }
 
+            // Log DELIVERED activity first to get activityId for chaining (outside try for catch access)
+            const activityId = await logCredentialSent({
+                actorProfileId: boostOwner.profileId,
+                recipientType: 'profile',
+                recipientIdentifier: profile.profileId,
+                recipientProfileId: profile.profileId,
+                boostUri,
+                source: 'claimLink',
+            });
+
             try {
                 const sentBoostUri = await issueClaimLinkBoost(
                     boost,
@@ -2394,15 +2559,47 @@ export const boostsRouter = t.router({
                     profile,
                     signingAuthority
                 );
+
+                // Log CLAIMED immediately since autoAcceptCredential: true in issueClaimLinkBoost
+                await logCredentialClaimed({
+                    activityId,
+                    actorProfileId: boostOwner.profileId,
+                    recipientType: 'profile',
+                    recipientIdentifier: profile.profileId,
+                    recipientProfileId: profile.profileId,
+                    boostUri,
+                    credentialUri: sentBoostUri,
+                    source: 'claimLink',
+                });
+
                 try {
                     await useClaimLinkForBoost(boostUri, challenge);
                 } catch (e) {
                     console.error('Problem using useClaimLinkForBoost', e);
                 }
+
                 return sentBoostUri;
-                // oxlint-disable-next-line no-unused-vars
             } catch (e) {
-                console.error('Unable to issueClaimLinkBoost');
+                console.error('Unable to issueClaimLinkBoost', e);
+
+                // Log FAILED activity - the activityId was already generated above
+                try {
+                    await logCredentialFailed({
+                        activityId,
+                        actorProfileId: boostOwner.profileId,
+                        recipientType: 'profile',
+                        recipientIdentifier: profile.profileId,
+                        recipientProfileId: profile.profileId,
+                        boostUri,
+                        source: 'claimLink',
+                        metadata: {
+                            error: e instanceof Error ? e.message : 'Unknown error',
+                        },
+                    });
+                } catch (logError) {
+                    console.error('Failed to log credential failed activity:', logError);
+                }
+
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Could not issue boost with claim link.',
@@ -2544,6 +2741,7 @@ export const boostsRouter = t.router({
                     name: z.string(),
                     endpoint: z.string(),
                 }),
+                templateData: z.record(z.string(), z.unknown()).optional(),
                 options: z
                     .object({
                         skipNotification: z.boolean().default(false).optional(),
@@ -2587,7 +2785,16 @@ export const boostsRouter = t.router({
             let unsignedVc: UnsignedVC;
 
             try {
-                unsignedVc = JSON.parse(boost.dataValues.boost);
+                let boostJsonString = boost.dataValues.boost;
+
+                if (input.templateData && Object.keys(input.templateData).length > 0) {
+                    boostJsonString = renderBoostTemplate(
+                        boostJsonString,
+                        input.templateData as Record<string, unknown>
+                    );
+                }
+
+                unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
 
                 if (isVC2Format(unsignedVc)) {
                     unsignedVc.validFrom = new Date().toISOString();

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import { useModal, useGetPaginatedBoostChildren, ModalTypes } from 'learn-card-base';
+import { useModal, useGetPaginatedBoostChildren, ModalTypes, pluralize } from 'learn-card-base';
 
 import X from '../../components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -9,9 +9,8 @@ import TroopsCMSWrapper from '../../components/troopsCMS/TroopsCMSWrapper';
 import TroopListItemCard from './TroopListItemCard';
 
 import { OrangeScoutsNetworkTent } from 'learn-card-base/svgs/ScoutsNetworkTent';
-import { IonRow, IonCol, IonInput, useIonModal, IonSpinner } from '@ionic/react';
+import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 
-import { pluralize } from 'learn-card-base';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
 
@@ -94,14 +93,14 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
             <section className="flex flex-col h-full w-full bg-white items-center shadow-bottom-1-4 ">
                 <section className="bg-grayscale-100 grow w-full flex flex-col items-center">
                     <div className="flex items-center justify-between w-full max-w-[600px] px-[15px]">
-                        <IonRow class="w-full max-w-[600px] mt-6 ion-no-padding">
+                        <IonRow className="w-full max-w-[600px] mt-6 ion-no-padding">
                             <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
                                 <IonInput
                                     autocapitalize="on"
                                     placeholder="Search network titles..."
                                     value={search}
                                     className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
-                                    onIonInput={e => setSearch(e?.detail?.value)}
+                                    onIonInput={e => setSearch(e?.detail?.value as string)}
                                     type="text"
                                     clearInput
                                 />
@@ -122,8 +121,6 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
         </>
     );
 };
-
-export default NetworkListDisplay;
 
 type TroopListProps = {
     uri: string;
@@ -169,7 +166,7 @@ const NetworkList: React.FC<TroopListProps> = ({
         if (hasNextPage && onScreen) {
             fetchNextPage();
         }
-    }, [fetchNextPage, hasNextPage, onScreen, managedBoostInfiniteScrollRef]);
+    }, [fetchNextPage, hasNextPage, onScreen]);
 
     if (!boostChildren && boostChildrenLoading) {
         return (
@@ -195,3 +192,5 @@ const NetworkList: React.FC<TroopListProps> = ({
         </div>
     );
 };
+
+export default NetworkListDisplay;

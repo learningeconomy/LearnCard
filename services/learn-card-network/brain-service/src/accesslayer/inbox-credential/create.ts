@@ -16,6 +16,9 @@ export const createInboxCredential = async (input: {
     recipient: ContactMethodQueryType;
     issuerProfile: ProfileType;
     webhookUrl?: string;
+    boostUri?: string;
+    activityId?: string;
+    integrationId?: string;
     signingAuthority?: { endpoint: string; name: string };
     expiresInDays?: number;
 }): Promise<InboxCredentialInstance> => {
@@ -34,6 +37,9 @@ export const createInboxCredential = async (input: {
         createdAt: new Date().toISOString(),
         issuerDid: input.issuerProfile.did,
         webhookUrl: input.webhookUrl,
+        boostUri: input.boostUri,
+        activityId: input.activityId,
+        integrationId: input.integrationId,
         ...(input.signingAuthority ? {
             'signingAuthority.endpoint': input.signingAuthority.endpoint,
             'signingAuthority.name': input.signingAuthority.name,
@@ -63,18 +69,20 @@ export const createInboxCredential = async (input: {
 
     const inboxCredential = (await getInboxCredentialById(id))!;
 
-    await Promise.all([
-        inboxCredential.relateTo({
-            alias: 'createdBy',
-            properties: { timestamp: new Date().toISOString() },
-            where: { profileId: input.issuerProfile.profileId },
-        }),
-        inboxCredential.relateTo({
-            alias: 'addressedTo',
-            properties: { timestamp: new Date().toISOString() },
-            where: { type: input.recipient.type, value: input.recipient.value },
-        }),
-    ]);
+    // Create relationships SEQUENTIALLY to prevent deadlocks
+    // (Parallel execution can cause deadlocks when multiple transactions
+    // try to acquire locks on the same Profile node)
+    await inboxCredential.relateTo({
+        alias: 'createdBy',
+        properties: { timestamp: new Date().toISOString() },
+        where: { profileId: input.issuerProfile.profileId },
+    });
+
+    await inboxCredential.relateTo({
+        alias: 'addressedTo',
+        properties: { timestamp: new Date().toISOString() },
+        where: { type: input.recipient.type, value: input.recipient.value },
+    });
 
     return inboxCredential;
 };

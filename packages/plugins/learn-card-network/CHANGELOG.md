@@ -1,5 +1,27 @@
 # learn-card-core
 
+## 2.9.3
+
+### Patch Changes
+
+-   [#882](https://github.com/learningeconomy/LearnCard/pull/882) [`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f) Thanks [@Custard7](https://github.com/Custard7)! - feat: Unified Send
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.5
+    -   @learncard/core@9.4.3
+    -   @learncard/helpers@1.2.3
+
+## 2.9.2
+
+### Patch Changes
+
+-   [#905](https://github.com/learningeconomy/LearnCard/pull/905) [`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d) Thanks [@Custard7](https://github.com/Custard7)! - feat: [LC-1103] Dynamic Boost Templates
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.2
+    -   @learncard/helpers@1.2.2
+    -   @learncard/network-brain-client@2.5.4
+
 ## 2.9.1
 
 ### Patch Changes

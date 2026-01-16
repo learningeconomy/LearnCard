@@ -1,5 +1,49 @@
 # Changelog
 
+## 1.94.9
+
+### Patch Changes
+
+-   [#925](https://github.com/learningeconomy/LearnCard/pull/925) [`1a466303cf8fec9a138146b8ecdd30a17b8ff473`](https://github.com/learningeconomy/LearnCard/commit/1a466303cf8fec9a138146b8ecdd30a17b8ff473) Thanks [@Custard7](https://github.com/Custard7)! - fix: Optimize Guide Loading
+
+## 1.94.8
+
+### Patch Changes
+
+-   [#882](https://github.com/learningeconomy/LearnCard/pull/882) [`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f) Thanks [@Custard7](https://github.com/Custard7)! - feat: [LC-1520] Integration Builder
+
+-   [#922](https://github.com/learningeconomy/LearnCard/pull/922) [`95f6d91929e38231c7e616e4a6720c5c157861e2`](https://github.com/learningeconomy/LearnCard/commit/95f6d91929e38231c7e616e4a6720c5c157861e2) Thanks [@Custard7](https://github.com/Custard7)! - fix: Prevent CredentialActivity Deadlocking
+
+-   [#923](https://github.com/learningeconomy/LearnCard/pull/923) [`5eb024296c3b3155f7ec6062189876c05fb8ca37`](https://github.com/learningeconomy/LearnCard/commit/5eb024296c3b3155f7ec6062189876c05fb8ca37) Thanks [@Custard7](https://github.com/Custard7)! - fix: Apply locking fix to Inbox Credential
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.3
+    -   @learncard/lca-api-plugin@1.1.5
+    -   @learncard/open-badge-v2-plugin@1.1.3
+    -   @learncard/react@2.9.5
+
+## 1.94.7
+
+### Patch Changes
+
+-   [#915](https://github.com/learningeconomy/LearnCard/pull/915) [`b7026a050057612469121715d85f1d6c2443b34a`](https://github.com/learningeconomy/LearnCard/commit/b7026a050057612469121715d85f1d6c2443b34a) Thanks [@Custard7](https://github.com/Custard7)! - fix: CLI offscreen
+
+## 1.94.6
+
+### Patch Changes
+
+-   [#912](https://github.com/learningeconomy/LearnCard/pull/912) [`e61da3230f946b3d7238588baad502b16cee3ea1`](https://github.com/learningeconomy/LearnCard/commit/e61da3230f946b3d7238588baad502b16cee3ea1) Thanks [@Custard7](https://github.com/Custard7)! - feat: In-App CLI
+
+## 1.94.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.2
+    -   @learncard/open-badge-v2-plugin@1.1.2
+    -   @learncard/react@2.9.4
+    -   @learncard/lca-api-plugin@1.1.4
+
 ## 1.94.4
 
 ### Patch Changes

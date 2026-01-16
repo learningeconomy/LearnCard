@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import { useHistory } from 'react-router';
 
-import { IonContent, IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
+import { IonContent, IonPage, IonSpinner, useIonAlert, IonRow } from '@ionic/react';
 // import MainHeader from '../../components/main-header/MainHeader';
 import X from 'learn-card-base/svgs/X';
+// @ts-ignore
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import ViewTroopIdModal from '../troop/ViewTroopIdModal';
@@ -45,7 +46,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
-    const profileId = getUserHandleFromDid(boostVC?.issuer);
+    const profileId = getUserHandleFromDid(boostVC?.issuer as any);
     const { data } = useGetProfile(profileId);
 
     const issueDate = moment(boostVC?.issuanceDate).format('MMM DD, YYYY');
@@ -133,16 +134,32 @@ export const ClaimBoostModal: React.FC<{
         const redirectTo = `/claim/boost?boostUri=${boostUri}&challenge=${challenge}`;
         redirectStore.set.lcnRedirect(redirectTo);
         dismissClaimModal?.();
-        dismissModal();
+        closeLoggedOutModal();
         handleCancel();
     };
 
-    const [presentModal, dismissModal] = useIonModal(ClaimBoostLoggedOutPrompt, {
-        handleCloseModal: () => dismissModal(),
-        handleRedirectTo: handleRedirectTo,
+    const { newModal: newLoggedOutModal, closeModal: closeLoggedOutModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
 
-    const [showLoader, dismissLoader] = useIonModal(ClaimBoostLoading);
+    const { newModal: newLoaderModal, closeModal: closeLoaderModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
+    });
+
+    const openLoggedOutModal = () => {
+        newLoggedOutModal(
+            <ClaimBoostLoggedOutPrompt
+                handleCloseModal={closeLoggedOutModal}
+                handleRedirectTo={handleRedirectTo}
+            />
+        );
+    };
+
+    const openLoaderModal = () => {
+        newLoaderModal(<ClaimBoostLoading />);
+    };
 
     const getBoost = async () => {
         try {
@@ -179,18 +196,17 @@ export const ClaimBoostModal: React.FC<{
             setIsClaimLoading(true);
 
             if (!isTroopIdClaim) {
-                showLoader({
-                    cssClass: 'center-modal user-options-modal claim-loader p-[20px]',
-                    backdropDismiss: false,
-                    showBackdrop: false,
-                });
+                openLoaderModal();
             }
 
-            const claimedBoostUri = await wallet?.invoke?.claimBoostWithLink(boostUri, challenge);
+            const claimedBoostUri = await wallet?.invoke?.claimBoostWithLink(
+                boostUri || '',
+                challenge || ''
+            );
             await addCredentialToWallet({ uri: claimedBoostUri });
 
-            const category = getDefaultCategoryForCredential(boost);
-            const achievementType = getAchievementType(boost);
+            const category = getDefaultCategoryForCredential((boost || {}) as any);
+            const achievementType = getAchievementType((boost || {}) as any);
 
             if (boost) {
                 logAnalyticsEvent('claim_boost', {
@@ -204,7 +220,7 @@ export const ClaimBoostModal: React.FC<{
             setIsClaimLoading(false);
 
             if (!isTroopIdClaim) {
-                dismissLoader();
+                closeLoaderModal();
             }
             dismissClaimModal?.();
 
@@ -216,7 +232,7 @@ export const ClaimBoostModal: React.FC<{
             });
         } catch (e) {
             setIsClaimLoading(false);
-            dismissLoader();
+            closeLoaderModal();
 
             presentToast(`Unable to claim Credential`, {
                 type: ToastTypeEnum.Error,
@@ -247,18 +263,14 @@ export const ClaimBoostModal: React.FC<{
         getBoost();
     }, []);
 
-    const credentialBodyOverride = <ClaimBoostBodyPreviewOverride boostVC={boost} />;
+    const credentialBodyOverride = <ClaimBoostBodyPreviewOverride boostVC={(boost || {}) as any} />;
 
     const handleClaimBoostAction = async () => {
         if (isLoggedIn && !loading) {
             handleClaimBoost();
         }
         if (!isLoggedIn && !loading) {
-            presentModal({
-                cssClass: 'center-modal boost-logged-out-confirmation-prompt',
-                backdropDismiss: true,
-                showBackdrop: false,
-            });
+            openLoggedOutModal();
         }
     };
     let actionButtonText = 'Accept';
@@ -310,7 +322,7 @@ export const ClaimBoostModal: React.FC<{
                         <>
                             {!isTroopIdClaim ? (
                                 <VCDisplayCardWrapper2
-                                    credential={boost}
+                                    credential={(boost || {}) as any}
                                     customBodyCardComponent={credentialBodyOverride}
                                     customFooterComponent={<div />}
                                     checkProof={false}
@@ -321,9 +333,9 @@ export const ClaimBoostModal: React.FC<{
                                 />
                             ) : (
                                 <ViewTroopIdModal
-                                    credential={boost}
-                                    boostUri={boostUri}
-                                    claimCredentialUri={boostUri}
+                                    credential={(boost || {}) as any}
+                                    boostUri={boostUri || ''}
+                                    claimCredentialUri={boostUri || ''}
                                     useCurrentUserInfo
                                     isClaimMode
                                     isAlreadyClaimed={isClaimed} // TODO

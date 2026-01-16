@@ -1,15 +1,6 @@
 import React from 'react';
 
-import {
-    IonRow,
-    IonCol,
-    useIonModal,
-    IonPage,
-    IonHeader,
-    IonContent,
-    IonGrid,
-    IonToolbar,
-} from '@ionic/react';
+import { IonRow, IonCol, IonPage, IonHeader, IonContent, IonGrid, IonToolbar } from '@ionic/react';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import X from 'learn-card-base/svgs/X';
@@ -22,6 +13,7 @@ import {
     boostCMSSkills,
 } from '../../../boost';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 const BoostCMSPrimarySkillButton: React.FC<{
     skill: BoostCMSSkillsEnum | string;
@@ -203,11 +195,11 @@ export const BoostCMSSkillsForm: React.FC<{
     state: BoostCMSState;
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
 }> = ({ state, setState }) => {
-    const handleAddSkill = (skill: { skill: BoostCMSSkill | string; subskills: string[] }) => {
+    const handleAddSkill = (skill: { skill: string; subskills: string[] }) => {
         setState(prevState => {
             return {
                 ...prevState,
-                skills: [...prevState.skills, skill],
+                skills: [...prevState.skills, { ...skill, category: '' } as any],
             };
         });
     };
@@ -259,44 +251,30 @@ export const BoostCMSSkillsForm: React.FC<{
         });
     };
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSSkillOptions, {
-        state: state,
-        setState: setState,
-        title: (
-            <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                Select Skills
-            </p>
-        ),
-        showCloseButton: true,
-        handleAddSkill: (skill: { skill: BoostCMSSkill | string; subskills: string[] }) =>
-            handleAddSkill(skill),
-        handleRemoveSkill: (skill: BoostCMSSkill | string) => handleRemoveSkill(skill),
-        handleAddSubSkill: (skill: BoostCMSSkill | string, subskill: string) =>
-            handleAddSubSkill(skill, subskill),
-        handleRemoveSubSkill: (skill: BoostCMSSkill | string, subskill: string) =>
-            handleRemoveSubSkill(skill, subskill),
-        handleCloseModal: () => dismissCenterModal(),
+    const { newModal, closeModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(BoostCMSSkillOptions, {
-        state: state,
-        setState: setState,
-        title: (
-            <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                Select Skills
-            </p>
-        ),
-        showCloseButton: false,
-        handleAddSkill: (skill: { skill: BoostCMSSkill | string; subskills: string[] }) =>
-            handleAddSkill(skill),
-        handleRemoveSkill: (skill: BoostCMSSkill | string) => handleRemoveSkill(skill),
-        handleAddSubSkill: (skill: BoostCMSSkill | string, subskill: string) =>
-            handleAddSubSkill(skill, subskill),
-        handleRemoveSubSkill: (skill: BoostCMSSkill | string, subskill: string) =>
-            handleRemoveSubSkill(skill, subskill),
-        handleCloseModal: () => dismissSheetModal(),
-        customHeaderClass: '!pt-10',
-    });
+    const openSkillsModal = () => {
+        newModal(
+            <BoostCMSSkillOptions
+                state={state}
+                setState={setState}
+                title={
+                    <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
+                        Select Skills
+                    </p>
+                }
+                showCloseButton={true}
+                handleAddSkill={handleAddSkill}
+                handleRemoveSkill={handleRemoveSkill}
+                handleAddSubSkill={handleAddSubSkill}
+                handleRemoveSubSkill={handleRemoveSubSkill}
+                handleCloseModal={closeModal}
+            />
+        );
+    };
 
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
@@ -308,27 +286,14 @@ export const BoostCMSSkillsForm: React.FC<{
                     <h1 className="font-mouse text-black text-3xl p-0 m-0">Skills</h1>
 
                     <button
-                        onClick={() =>
-                            presentCenterModal({
-                                cssClass: 'center-modal user-options-modal',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                            })
-                        }
+                        onClick={() => openSkillsModal()}
                         className="flex items-center justify-center text-grayscale-800 rounded-full bg-white w-12 h-12 shadow-3xl modal-btn-desktop"
                     >
                         <Plus className="w-8 h-auto" />
                     </button>
 
                     <button
-                        onClick={() => {
-                            presentSheetModal({
-                                cssClass: 'mobile-modal user-options-modal',
-                                initialBreakpoint: 1,
-                                breakpoints: [0, 1],
-                                handleBehavior: 'cycle',
-                            });
-                        }}
+                        onClick={() => openSkillsModal()}
                         className="flex items-center justify-center text-grayscale-800 rounded-full bg-white w-12 h-12 shadow-3xl modal-btn-mobile"
                     >
                         <Plus className="w-8 h-auto" />

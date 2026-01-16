@@ -143,7 +143,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                             version="filled"
                                         />
                                         <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                            Skill
+                                            Competency
                                         </p>
                                     </>
                                 )}

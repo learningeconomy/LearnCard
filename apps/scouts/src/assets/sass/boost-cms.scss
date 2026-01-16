@@ -424,3 +424,7 @@ ion-segment-button {
     line-clamp: 2;
     -webkit-line-clamp: 2;
 }
+
+.dark-modal-overlay {
+    background-color: rgba(0, 0, 0, 0.45) !important;
+}

@@ -64,6 +64,7 @@ import {
     homeOutline,
     refreshOutline,
 } from 'ionicons/icons';
+import { AlertCircle, RefreshCw, Home, HelpCircle, MessageCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
@@ -234,83 +235,175 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     );
 };
 
+// Map technical error messages to user-friendly explanations
+const getFriendlyErrorInfo = (errorMessage: string): { title: string; description: string; suggestion: string } => {
+    const lowerMessage = errorMessage.toLowerCase();
+
+    // Credential/Boost not found errors
+    if (lowerMessage.includes('not found') || lowerMessage.includes('could not find boost')) {
+        return {
+            title: 'Credential Not Found',
+            description: 'The credential you\'re trying to claim doesn\'t exist or is no longer available.',
+            suggestion: 'The link may have expired or the credential may have been removed. Contact the issuer for a new link.',
+        };
+    }
+
+    // Expired or invalid claim token
+    if (lowerMessage.includes('expired') || lowerMessage.includes('invalid claim token')) {
+        return {
+            title: 'Link Expired',
+            description: 'This claim link has expired or is no longer valid.',
+            suggestion: 'Request a new claim link from the issuer.',
+        };
+    }
+
+    // Draft boost error
+    if (lowerMessage.includes('draft')) {
+        return {
+            title: 'Credential Not Ready',
+            description: 'This credential is still being prepared and isn\'t ready to claim yet.',
+            suggestion: 'Check back later or contact the issuer.',
+        };
+    }
+
+    // Challenge/verification errors
+    if (lowerMessage.includes('challenge') || lowerMessage.includes('verification failed')) {
+        return {
+            title: 'Verification Failed',
+            description: 'We couldn\'t verify your identity for this claim.',
+            suggestion: 'Try again. If the problem persists, you may need to request a new claim link.',
+        };
+    }
+
+    // No pending credentials
+    if (lowerMessage.includes('no pending credentials')) {
+        return {
+            title: 'Nothing to Claim',
+            description: 'There are no pending credentials waiting for you with this link.',
+            suggestion: 'You may have already claimed this credential, or it was sent to a different account.',
+        };
+    }
+
+    // Invalid exchange ID
+    if (lowerMessage.includes('invalid exchange')) {
+        return {
+            title: 'Invalid Link',
+            description: 'This claim link appears to be malformed or corrupted.',
+            suggestion: 'Check that you copied the full link, or request a new one from the issuer.',
+        };
+    }
+
+    // Server/issuing errors
+    if (lowerMessage.includes('failed to issue') || lowerMessage.includes('internal')) {
+        return {
+            title: 'Server Error',
+            description: 'Something went wrong on our end while processing your claim.',
+            suggestion: 'This is usually temporary. Wait a moment and try again.',
+        };
+    }
+
+    // Signing authority errors
+    if (lowerMessage.includes('signing authority')) {
+        return {
+            title: 'Issuer Configuration Error',
+            description: 'The issuer\'s signing setup isn\'t configured correctly for this credential.',
+            suggestion: 'Contact the issuer to resolve this issue.',
+        };
+    }
+
+    // Default fallback
+    return {
+        title: 'Something Went Wrong',
+        description: 'We encountered an unexpected error while processing your request.',
+        suggestion: 'Try again, or contact support if the problem persists.',
+    };
+};
+
 const ExchangeErrorDisplay: React.FC<{
     errorData: any;
     onRetry: () => void;
     onCancel: () => void;
 }> = ({ errorData, onRetry, onCancel }) => {
-    const errorMessage =
+    const rawErrorMessage =
         typeof errorData === 'string'
             ? errorData
             : errorData?.message || 'An unexpected error occurred.';
 
+    const friendlyError = getFriendlyErrorInfo(rawErrorMessage);
+
     return (
-        <IonGrid
-            className="ion-padding ion-text-center w-full flex flex-col items-center"
-            style={{ paddingTop: '2rem', paddingBottom: '2rem' }}
-        >
-            <IonRow className="ion-justify-content-center w-full">
-                <IonCol size="12" size-md="8" size-lg="6">
-                    <IonIcon
-                        icon={closeCircleOutline}
-                        color="danger"
-                        style={{ fontSize: '64px', marginBottom: '1rem' }}
-                    />
+        <div className="min-h-full bg-gradient-to-br from-rose-50 via-white to-orange-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden">
+                {/* Header with icon */}
+                <div className="bg-gradient-to-r from-rose-500 to-orange-500 px-6 py-8 text-center">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-10 h-10 text-white" />
+                    </div>
 
-                    <IonText color="danger">
-                        <h2
-                            style={{
-                                marginTop: '0.5rem',
-                                marginBottom: '1rem',
-                                fontSize: '1.5rem',
-                                fontWeight: 'bold',
-                            }}
-                        >
-                            Oops! Something Went Wrong
-                        </h2>
-                    </IonText>
+                    <h1 className="text-2xl font-bold text-white mb-2">
+                        {friendlyError.title}
+                    </h1>
 
-                    <IonText color="medium" style={{ display: 'block', marginBottom: '1.5rem' }}>
-                        <p>We encountered an issue while processing your request.</p>
-                        {errorData && (
-                            <p style={{ marginTop: '0.5rem' }}>
-                                <strong>Details:</strong> {errorMessage}
-                            </p>
-                        )}
-                        <p style={{ marginTop: '0.5rem' }}>
-                            Please try again, or you can return to the home page.
+                    <p className="text-rose-100 text-sm">
+                        We couldn't complete your request
+                    </p>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                    <div className="space-y-4 mb-6">
+                        <p className="text-gray-600 text-center text-sm">
+                            {friendlyError.description}
                         </p>
-                    </IonText>
-                </IonCol>
-            </IonRow>
 
-            <IonRow
-                className="ion-justify-content-center ion-align-items-center w-full"
-                style={{ marginTop: '1rem' }}
-            >
-                <IonCol size="12" size-sm="auto" className="ion-padding-bottom-half">
-                    <IonButton
-                        onClick={() => onRetry()}
-                        expand="block"
-                        style={{ minWidth: '150px' }}
-                    >
-                        <IonIcon slot="start" icon={refreshOutline} />
-                        Retry
-                    </IonButton>
-                </IonCol>
-                <IonCol size="12" size-sm="auto">
-                    <IonButton
-                        onClick={onCancel}
-                        color="light"
-                        expand="block"
-                        style={{ minWidth: '150px' }}
-                    >
-                        <IonIcon slot="start" icon={homeOutline} />
-                        Go Home
-                    </IonButton>
-                </IonCol>
-            </IonRow>
-        </IonGrid>
+                        {/* Suggestion box */}
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                            <p className="text-xs font-medium text-amber-600 uppercase tracking-wide mb-2">
+                                What to do
+                            </p>
+
+                            <p className="text-sm text-amber-800">
+                                {friendlyError.suggestion}
+                            </p>
+                        </div>
+
+                        {/* Technical details (collapsed by default feeling) */}
+                        {errorData && rawErrorMessage !== friendlyError.description && (
+                            <details className="group">
+                                <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
+                                    Show technical details
+                                </summary>
+
+                                <div className="mt-2 bg-gray-100 rounded-lg p-3">
+                                    <p className="text-xs text-gray-600 font-mono break-words">
+                                        {rawErrorMessage}
+                                    </p>
+                                </div>
+                            </details>
+                        )}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="space-y-3">
+                        <button
+                            onClick={() => onRetry()}
+                            className="w-full py-4 px-6 bg-gradient-to-r from-rose-500 to-orange-500 text-white font-semibold rounded-xl hover:from-rose-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-500/25"
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                            Try Again
+                        </button>
+
+                        <button
+                            onClick={onCancel}
+                            className="w-full py-3 px-6 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Home className="w-4 h-4" />
+                            Go Back Home
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
