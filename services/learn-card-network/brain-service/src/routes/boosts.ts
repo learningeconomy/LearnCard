@@ -331,7 +331,15 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 boostUri: z.string(),
-                skills: z.array(z.object({ frameworkId: z.string(), id: z.string() })).min(1),
+                skills: z
+                    .array(
+                        z.object({
+                            frameworkId: z.string(),
+                            id: z.string(),
+                            proficiencyLevel: z.number().optional(),
+                        })
+                    )
+                    .min(1),
             })
         )
         .output(z.boolean())
@@ -892,7 +900,13 @@ export const boostsRouter = t.router({
                     claimPermissions: BoostPermissionsValidator.partial().optional(),
                     defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     skills: z
-                        .array(z.object({ frameworkId: z.string(), id: z.string() }))
+                        .array(
+                            z.object({
+                                frameworkId: z.string(),
+                                id: z.string(),
+                                proficiencyLevel: z.number().optional(),
+                            })
+                        )
                         .min(1)
                         .optional(),
                 })
@@ -948,7 +962,13 @@ export const boostsRouter = t.router({
                         defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
                 skills: z
-                    .array(z.object({ frameworkId: z.string(), id: z.string() }))
+                    .array(
+                        z.object({
+                            frameworkId: z.string(),
+                            id: z.string(),
+                            proficiencyLevel: z.number().optional(),
+                        })
+                    )
                     .min(1)
                     .optional(),
             })

@@ -71,7 +71,7 @@ export const setBoostUsesFramework = async (
 // Align one or more Skills to a Boost via ALIGNED_TO (framework-scoped)
 export const addAlignedSkillsToBoost = async (
     boost: BoostInstance,
-    skillRefs: { frameworkId: string; id: string }[]
+    skillRefs: { frameworkId: string; id: string; proficiencyLevel?: number }[]
 ): Promise<void> => {
     if (skillRefs.length === 0) return;
 
@@ -79,7 +79,8 @@ export const addAlignedSkillsToBoost = async (
         `UNWIND $skillRefs AS sr
          MATCH (b:Boost { id: $boostId })
          MATCH (f:SkillFramework { id: sr.frameworkId })-[:CONTAINS]->(s:Skill { id: sr.id })
-         MERGE (b)-[:ALIGNED_TO]->(s)`,
+         MERGE (b)-[:ALIGNED_TO]->(s)
+         SET s.proficiencyLevel = sr.proficiencyLevel`,
         { boostId: boost.id, skillRefs }
     );
 };
@@ -88,5 +89,8 @@ export const createAutoConnectRecipientRelationship = async (
     boost: BoostInstance,
     recipient: ProfileType
 ): Promise<void> => {
-    await boost.relateTo({ alias: 'autoConnectRecipient', where: { profileId: recipient.profileId } });
+    await boost.relateTo({
+        alias: 'autoConnectRecipient',
+        where: { profileId: recipient.profileId },
+    });
 };

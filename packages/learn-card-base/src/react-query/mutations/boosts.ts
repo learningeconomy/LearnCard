@@ -151,7 +151,7 @@ export const useCreateBoost = () => {
             state: BoostCMSState;
             status: LCNBoostStatusEnum;
             defaultClaimPermissions?: BoostPermissions;
-            skillIds?: { frameworkId: string; id: string }[]; // Framework skill references for automatic alignment
+            skillIds?: { frameworkId: string; id: string; proficiencyLevel?: number }[]; // Framework skill references for automatic alignment
             meta?: Record<string, unknown>;
             autoConnectRecipients?: boolean;
         }) => {

@@ -225,15 +225,18 @@ export type LearnCardNetworkPluginMethods = {
     createBoost: (
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>> & {
-            skills?: { frameworkId: string; id: string }[];
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }
     ) => Promise<string>;
     createChildBoost: (
         parentUri: string,
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>> & {
-            skills?: { frameworkId: string; id: string }[];
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }
+    ) => Promise<string>;
+    createOrUpdateSelfAssignedSkills: (
+        skills: { frameworkId: string; id: string; proficiencyLevel?: number }[]
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
     getBoostFrameworks: (
@@ -358,7 +361,7 @@ export type LearnCardNetworkPluginMethods = {
     detachFrameworkFromBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
     alignBoostSkills: (
         boostUri: string,
-        skills: { frameworkId: string; id: string }[]
+        skills: { frameworkId: string; id: string; proficiencyLevel?: number }[]
     ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (
@@ -711,7 +714,10 @@ export type LearnCardNetworkPluginMethods = {
 
     isAppStoreAdmin: () => Promise<boolean>;
     adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
-    adminUpdatePromotionLevel: (listingId: string, promotionLevel: PromotionLevel) => Promise<boolean>;
+    adminUpdatePromotionLevel: (
+        listingId: string,
+        promotionLevel: PromotionLevel
+    ) => Promise<boolean>;
     adminGetAllListings: (options?: {
         limit?: number;
         cursor?: string;
