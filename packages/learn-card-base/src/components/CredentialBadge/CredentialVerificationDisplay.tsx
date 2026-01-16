@@ -55,8 +55,6 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     managedBoost = false,
     unknownVerifierTitle,
 }) => {
-
-    console.log('//CredentialVerficationDisplay', unknownVerifierTitle);
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
