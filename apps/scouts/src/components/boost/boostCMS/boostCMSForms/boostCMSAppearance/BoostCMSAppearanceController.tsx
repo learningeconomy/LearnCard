@@ -1,6 +1,5 @@
 import React from 'react';
 
-import { useIonModal } from '@ionic/react';
 import {
     BoostUserTypeEnum,
     CATEGORY_TO_SUBCATEGORY_LIST,
@@ -19,6 +18,8 @@ import {
     isCustomBoostType,
     replaceUnderscoresWithWhiteSpace,
     BoostCategoryOptionsEnum,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 type BoostCMSActiveAppearanceControllerProps = {
@@ -57,35 +58,33 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
         );
     } else {
         badgeCircleText =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type].find(
-                options => options?.type === state?.basicInfo?.achievementType
+            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type as any]?.find(
+                (options: any) => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }
 
     const isMeritBadge = state?.basicInfo?.type === BoostCategoryOptionsEnum.meritBadge;
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSAppearanceFormModal, {
-        state: state,
-        setState: setState,
-        handleCloseModal: () => dismissCenterModal(),
-        boostUserType: boostUserType,
-        customTypes: customTypes,
-        setCustomTypes: setCustomTypes,
-        showCloseButton: true,
-        disabled: disabled,
-        handleCategoryAndTypeChange: handleCategoryAndTypeChange,
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
     });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(BoostCMSAppearanceFormModal, {
-        state: state,
-        setState: setState,
-        handleCloseModal: () => dismissSheetModal(),
-        boostUserType: boostUserType,
-        customTypes: customTypes,
-        setCustomTypes: setCustomTypes,
-        disabled: disabled,
-        handleCategoryAndTypeChange: handleCategoryAndTypeChange,
-    });
+    const presentAppearanceModal = () => {
+        newModal(
+            <BoostCMSAppearanceFormModal
+                state={state}
+                setState={setState}
+                handleCloseModal={() => closeModal()}
+                boostUserType={boostUserType}
+                customTypes={customTypes}
+                setCustomTypes={setCustomTypes}
+                showCloseButton={true}
+                disabled={disabled}
+                handleCategoryAndTypeChange={handleCategoryAndTypeChange}
+            />
+        );
+    };
 
     return (
         <div className="flex items-center justify-center w-full mt-8 mb-8 relative">
@@ -103,28 +102,10 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
             <div className="relative flex items-center justify-center w-[170px] h-[170px] z-50">
                 {showEditButton && (
                     <button
-                        onClick={() =>
-                            presentCenterModal({
-                                cssClass: 'center-modal boost-cms-appearance-modal',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                            })
-                        }
+                        onClick={() => presentAppearanceModal()}
                         className={`absolute bg-white h-12 w-12 z-10 ${
                             isMeritBadge ? 'right-[-32px]' : 'right-[-38px]'
-                        } rounded-tr-full rounded-br-full flex items-center justify-center modal-btn-desktop`}
-                    >
-                        <Pencil className="text-grayscale-800 w-[30px]" />
-                    </button>
-                )}
-                {showEditButton && (
-                    <button
-                        onClick={() => {
-                            presentSheetModal();
-                        }}
-                        className={`absolute bg-white h-12 w-12 z-10 ${
-                            isMeritBadge ? 'right-[-32px]' : 'right-[-38px]'
-                        } rounded-tr-full rounded-br-full flex items-center justify-center modal-btn-mobile`}
+                        } rounded-tr-full rounded-br-full flex items-center justify-center`}
                     >
                         <Pencil className="text-grayscale-800 w-[30px]" />
                     </button>

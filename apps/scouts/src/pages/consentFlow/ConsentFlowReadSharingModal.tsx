@@ -10,7 +10,6 @@ import {
     IonDatetime,
     IonGrid,
     IonHeader,
-    useIonModal,
     IonPage,
     IonRow,
     IonToggle,
@@ -23,6 +22,7 @@ import {
     CredentialCategory,
     useModal,
     categoryMetadata,
+    ModalTypes,
 } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import Calendar from '../../components/svgs/Calendar';
@@ -42,38 +42,43 @@ type ConsentFlowReadSharingModalProps = {
 };
 
 const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = ({
-    term: initialTerm,
-    setTerm: saveTerm,
+    initialTerm,
+    saveTerm,
     category,
-    required,
     contractOwnerDid,
-}) => {
+}: any) => {
     const { newModal, closeModal } = useModal();
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
     const [term, setTerm] = useState(initialTerm);
-    const [onContinue, setOnContinue] = useState(() => () => {});
     const [formerSharedUris, setFormerSharedUris] = useState<string[]>();
 
     const { IconComponent, plural } = getInfoFromContractKey(category);
 
-    const [presentDatePicker] = useIonModal(
-        <div className="w-full h-full transparent flex items-center justify-center">
-            <IonDatetime
-                onIonChange={e => {
-                    setTerm({ ...term, shareUntil: moment(e.detail.value).toISOString() });
-                }}
-                value={term?.shareUntil ? moment(term?.shareUntil).format('YYYY-MM-DD') : null}
-                id="datetime"
-                presentation="date"
-                className="bg-white text-black rounded-[20px] shadow-3xl z-50"
-                showDefaultButtons
-                color="indigo-500"
-                max="2050-12-31"
-                min={moment().format('YYYY-MM-DD')}
-            />
-        </div>
-    );
+    const { newModal: newDatePickerModal, closeModal: closeDatePickerModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
+    const openDatePicker = () => {
+        newDatePickerModal(
+            <div className="w-full h-full transparent flex items-center justify-center">
+                <IonDatetime
+                    onIonChange={e => {
+                        setTerm({ ...term, shareUntil: moment(e.detail.value as string).toISOString() });
+                    }}
+                    value={term?.shareUntil ? moment(term?.shareUntil).format('YYYY-MM-DD') : null}
+                    id="datetime"
+                    presentation="date"
+                    className="bg-white text-black rounded-[20px] shadow-3xl z-50"
+                    showDefaultButtons
+                    color="indigo-500"
+                    max="2050-12-31"
+                    min={moment().format('YYYY-MM-DD')}
+                />
+            </div>
+        );
+    };
 
     const { data: count } = useGetCredentialCount(category as CredentialCategory);
 
@@ -108,7 +113,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
     const getIsSelected = (credential: CredentialRecord<CredentialMetadata>) => {
         const alreadySharedUri = getAlreadySharedUri(credential);
         return term.shared?.some(
-            termUri => credential.uri === termUri || alreadySharedUri === termUri
+            (termUri: string) => credential.uri === termUri || alreadySharedUri === termUri
         );
     };
 
@@ -130,9 +135,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                     }}
                 />,
                 {
-                    sectionClassName: '!max-w-[350px] !shadow-none !bg-transparent',
+                    sectionClassName: '!max-w-[355px] !shadow-none !bg-transparent',
                     hideButton: true,
-                }
+                },
+                { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
             );
             return;
         }
@@ -141,7 +147,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             ...term,
             shareAll: false,
             shared: isSelected
-                ? term?.shared?.filter(uri => uri !== credential.uri && uri !== alreadySharedUri)
+                ? term?.shared?.filter((uri: string) => uri !== credential.uri && uri !== alreadySharedUri)
                 : [...(term.shared ?? []), alreadySharedUri || credential.uri],
         });
     };
@@ -162,7 +168,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             })
             .filter(c => !!c);
 
-        setTerm({ ...term, shared: allSharedUris, shareAll: true, sharing: true });
+        setTerm({ ...term, shared: allSharedUris as string[], shareAll: true, sharing: true });
     };
 
     const handleSelectiveSharing = () => {
@@ -278,11 +284,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         disabled={!term.shareAll}
                                         className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base"
                                         onClick={() => {
-                                            presentDatePicker({
-                                                backdropDismiss: true,
-                                                showBackdrop: false,
-                                                cssClass: 'flex items-center justify-center',
-                                            });
+                                            openDatePicker();
                                         }}
                                     >
                                         {moment(term.shareUntil).format('MMMM Do, YYYY')}
@@ -377,9 +379,9 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                                     <BoostEarnedCard
                                                         className="[&>button>.check-btn-overlay]:right-[5px] [&>button>.check-btn-overlay]:left-[unset]"
                                                         key={record.uri}
-                                                        record={record}
+                                                        credential={record as any}
                                                         defaultImg={categoryImgUrl}
-                                                        categoryType={record.category}
+                                                        categoryType={record.category as any}
                                                         verifierState
                                                         onCheckMarkClick={() => {
                                                             toggleCredentialSelected(record);

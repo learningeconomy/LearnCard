@@ -3,226 +3,84 @@
  * 
  * Uses the CredentialBuilder component for a full-featured, schema-driven
  * credential template editor with live JSON preview and bidirectional editing.
+ * 
+ * Performance optimizations:
+ * - Constants and utils extracted to separate files for better code splitting
+ * - API calls parallelized for faster loading
+ * - Modals lazy loaded to reduce initial bundle size
+ * - Expensive computations memoized
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense, lazy } from 'react';
 import Papa from 'papaparse';
 import {
     FileStack,
+    FileSpreadsheet,
     Plus,
     Trash2,
     ArrowRight,
     ArrowLeft,
+    ArrowDown,
     Award,
     ChevronDown,
-    ChevronUp,
     Loader2,
     Save,
     AlertCircle,
-    Zap,
     Upload,
-    X,
-    FileSpreadsheet,
     Check,
     CheckCircle,
     CheckCircle2,
     XCircle,
-    ArrowDown,
     Pencil,
+    X,
+    Image as ImageIcon,
 } from 'lucide-react';
 
 import { useWallet, useFilestack } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
-import { ImageIcon } from 'lucide-react';
 
 import { CredentialTemplate, BrandingConfig, TemplateBoostMeta, PartnerProject } from '../types';
 import { 
-    CredentialBuilder, 
+    CredentialBuilder,
     OBv3CredentialTemplate, 
     templateToJson, 
     jsonToTemplate,
     extractDynamicVariables,
-    getBlankTemplate,
-    TEMPLATE_PRESETS,
-    staticField,
-    dynamicField,
-    systemField,
 } from '../components/CredentialBuilder';
 
-const TEMPLATE_META_VERSION = '2.0.0';
+// Extracted constants and utilities for better code splitting
+import { 
+    DEFAULT_FIELDS, 
+    ISSUANCE_FIELDS, 
+    ISSUANCE_FIELD_MAP,
+    FIELD_GROUPS,
+    CATALOG_FIELD_OPTIONS,
+    suggestCatalogFieldMapping,
+    TEMPLATE_META_VERSION,
+} from './templateBuilderConstants';
+import { 
+    ExtendedTemplate, 
+    ValidationStatus,
+    legacyToOBv3, 
+    obv3ToLegacy,
+    generateMasterTemplate,
+    generateChildBoostForCourse,
+    createBoostMeta,
+} from './templateBuilderUtils';
+import { TemplateEditor } from './TemplateEditor';
 
-// Default fields for new templates
-const DEFAULT_FIELDS = [
-    { id: 'recipient_name', name: 'Recipient Name', type: 'text' as const, required: true, variableName: 'recipient_name' },
-    { id: 'issue_date', name: 'Issue Date', type: 'date' as const, required: true, variableName: 'issue_date' },
-];
+// Lazy load heavy modal components
+const CsvImportModal = lazy(() => import('./CsvImportModal'));
+const ChildEditModal = lazy(() => import('./ChildEditModal'));
 
-// Comprehensive OBv3 field options for mapping CSV columns
-// Based on Open Badges v3 JSON-LD context: https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json
-const CATALOG_FIELD_OPTIONS = [
-    // Skip option
-    { id: 'skip', label: '— Skip this column —', description: 'Do not include in credential', group: 'skip' },
-
-    // Credential-level fields
-    { id: 'credential.name', label: 'Credential Name', description: 'Display name of the credential', group: 'credential', required: true },
-    { id: 'credential.description', label: 'Credential Description', description: 'Description of the credential', group: 'credential' },
-    { id: 'credential.image', label: 'Credential Image', description: 'URL to credential image', group: 'credential' },
-    { id: 'credential.inLanguage', label: 'Language', description: 'Language of the credential (e.g., en, es)', group: 'credential' },
-
-    // Achievement fields
-    { id: 'achievement.name', label: 'Name', description: 'Name of the achievement', group: 'achievement', required: true },
-    { id: 'achievement.description', label: 'Description', description: 'Description of the achievement', group: 'achievement' },
-    { id: 'achievement.image', label: 'Image', description: 'URL to achievement badge image', group: 'achievement' },
-    { id: 'achievement.achievementType', label: 'Type', description: 'Type: Course, Badge, Certificate, etc.', group: 'achievement' },
-    { id: 'achievement.id', label: 'ID/URL', description: 'Unique identifier/URL for the achievement', group: 'achievement' },
-    { id: 'achievement.humanCode', label: 'Human Code', description: 'Human-readable code (e.g., CS101)', group: 'achievement' },
-    { id: 'achievement.fieldOfStudy', label: 'Field of Study', description: 'Field of study or discipline', group: 'achievement' },
-    { id: 'achievement.specialization', label: 'Specialization', description: 'Area of specialization', group: 'achievement' },
-    { id: 'achievement.creditsAvailable', label: 'Credits Available', description: 'Number of credits available', group: 'achievement' },
-    { id: 'achievement.tag', label: 'Tags/Keywords', description: 'Keywords or tags for the achievement', group: 'achievement' },
-    { id: 'achievement.version', label: 'Version', description: 'Version of the achievement', group: 'achievement' },
-    { id: 'achievement.inLanguage', label: 'Language', description: 'Language of the achievement', group: 'achievement' },
-    { id: 'achievement.criteria.narrative', label: 'Criteria (Narrative)', description: 'Criteria for earning this achievement', group: 'achievement' },
-
-    // Achievement Subject fields (recipient-related but can be static)
-    { id: 'subject.creditsEarned', label: 'Credits Earned', description: 'Number of credits earned by recipient', group: 'subject' },
-    { id: 'subject.activityStartDate', label: 'Activity Start Date', description: 'When the activity started', group: 'subject' },
-    { id: 'subject.activityEndDate', label: 'Activity End Date', description: 'When the activity ended', group: 'subject' },
-    { id: 'subject.licenseNumber', label: 'License Number', description: 'License or certificate number', group: 'subject' },
-    { id: 'subject.role', label: 'Role', description: 'Role of the recipient in the activity', group: 'subject' },
-    { id: 'subject.term', label: 'Term', description: 'Academic term (e.g., Fall 2024)', group: 'subject' },
-
-    // Alignment fields (for mapping to frameworks/standards)
-    { id: 'alignment.targetName', label: 'Name', description: 'Name of aligned competency/standard', group: 'alignment' },
-    { id: 'alignment.targetUrl', label: 'URL', description: 'URL to the aligned standard', group: 'alignment' },
-    { id: 'alignment.targetDescription', label: 'Description', description: 'Description of the alignment', group: 'alignment' },
-    { id: 'alignment.targetFramework', label: 'Framework', description: 'Name of the framework (e.g., CASE)', group: 'alignment' },
-    { id: 'alignment.targetCode', label: 'Code', description: 'Code within the framework', group: 'alignment' },
-    { id: 'alignment.targetType', label: 'Type', description: 'Type of alignment target', group: 'alignment' },
-
-    // Evidence fields
-    { id: 'evidence.name', label: 'Name', description: 'Name/title of evidence', group: 'evidence' },
-    { id: 'evidence.description', label: 'Description', description: 'Description of the evidence', group: 'evidence' },
-    { id: 'evidence.narrative', label: 'Narrative', description: 'Narrative about the evidence', group: 'evidence' },
-    { id: 'evidence.genre', label: 'Genre', description: 'Type/genre of evidence', group: 'evidence' },
-    { id: 'evidence.audience', label: 'Audience', description: 'Intended audience', group: 'evidence' },
-
-    // Result fields (for scores, grades, etc.)
-    { id: 'result.value', label: 'Value', description: 'Score, grade, or result value', group: 'result' },
-    { id: 'result.status', label: 'Status', description: 'Result status (Completed, Passed, Failed)', group: 'result' },
-    { id: 'result.achievedLevel', label: 'Achieved Level', description: 'Level achieved (URL to rubric level)', group: 'result' },
-
-    // Related achievement
-    { id: 'related.id', label: 'Related: ID/URL', description: 'URL of a related achievement', group: 'related' },
-    { id: 'related.version', label: 'Related: Version', description: 'Version of the related achievement', group: 'related' },
-    { id: 'related.inLanguage', label: 'Related: Language', description: 'Language of the related achievement', group: 'related' },
-];
-
-// Group labels for the dropdown
-const FIELD_GROUPS: Record<string, string> = {
-    skip: '',
-    credential: 'Credential',
-    achievement: 'Achievement',
-    subject: 'Recipient/Subject',
-    alignment: 'Alignment (Standards)',
-    evidence: 'Evidence',
-    result: 'Result',
-    related: 'Related Achievement',
-};
-
-// Issuance-level fields - distinguished by type:
-// - 'dynamic': Mustache variable that user provides at issuance time
-// - 'system': Auto-injected by the system (recipient DID, etc.)
-const ISSUANCE_FIELDS = [
-    { id: 'recipient_name', label: 'Recipient Name', description: 'Name of the credential recipient', type: 'dynamic' as const, required: true, defaultIncluded: true },
-    { id: 'recipient_email', label: 'Recipient Email', description: 'Email for sending the credential (used for delivery, not in credential)', type: 'system' as const, required: true, defaultIncluded: true },
-    { id: 'recipient_did', label: 'Recipient DID', description: 'Auto-injected recipient identifier', type: 'system' as const, required: false, defaultIncluded: true },
-    { id: 'issue_date', label: 'Issue Date', description: 'Auto-set when credential is issued', type: 'system' as const, required: false, defaultIncluded: true },
-    { id: 'completion_date', label: 'Completion Date', description: 'When the course was completed', type: 'dynamic' as const, required: false, defaultIncluded: false },
-    { id: 'score', label: 'Score/Grade', description: 'Score or grade achieved', type: 'dynamic' as const, required: false, defaultIncluded: false },
-    { id: 'expiration_date', label: 'Expiration Date', description: 'When the credential expires', type: 'dynamic' as const, required: false, defaultIncluded: false },
-];
-
-// Smart mapping suggestions for catalog columns (baked into each boost)
-const suggestCatalogFieldMapping = (columnName: string): string => {
-    const lower = columnName.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-    // Course name / title → Achievement Name
-    if (lower.includes('coursename') || lower.includes('title') || (lower.includes('name') && !lower.includes('student') && !lower.includes('instructor') && !lower.includes('framework'))) {
-        return 'achievement.name';
-    }
-
-    // Description
-    if (lower.includes('description') || lower.includes('desc') || lower.includes('summary') || lower.includes('overview')) {
-        return 'achievement.description';
-    }
-
-    // Achievement type
-    if (lower.includes('type') && (lower.includes('achievement') || lower.includes('credential') || lower.includes('badge'))) {
-        return 'achievement.achievementType';
-    }
-
-    // Criteria
-    if (lower.includes('criteria') || lower.includes('requirement') || lower.includes('objective') || lower.includes('learning outcome')) {
-        return 'achievement.criteria.narrative';
-    }
-
-    // Image/Badge
-    if (lower.includes('image') || lower.includes('badge') || lower.includes('icon') || lower.includes('logo')) {
-        return 'achievement.image';
-    }
-
-    // Alignment fields
-    if (lower.includes('standard') || lower.includes('competency') || lower.includes('skill') && !lower.includes('name')) {
-        return 'alignment.targetName';
-    }
-
-    if (lower.includes('framework') && lower.includes('name')) {
-        return 'alignment.targetFramework';
-    }
-
-    if (lower.includes('framework') && (lower.includes('url') || lower.includes('link'))) {
-        return 'alignment.targetUrl';
-    }
-
-    if (lower.includes('frameworkcode') || (lower.includes('code') && lower.includes('standard'))) {
-        return 'alignment.targetCode';
-    }
-
-    // Evidence
-    if (lower.includes('evidence') && lower.includes('name')) {
-        return 'evidence.name';
-    }
-
-    if (lower.includes('evidence') && lower.includes('desc')) {
-        return 'evidence.description';
-    }
-
-    // Result/Score
-    if (lower.includes('score') || lower.includes('grade') || lower.includes('result') || lower.includes('mark')) {
-        return 'result.value';
-    }
-
-    if (lower.includes('pass') || lower.includes('fail') || lower.includes('status')) {
-        return 'result.status';
-    }
-
-    // Course ID → Achievement ID
-    if (lower.includes('courseid') || lower.includes('badgeid') || lower.includes('credentialid')) {
-        return 'achievement.id';
-    }
-
-    // Skip fields that are clearly issuance-level or not useful
-    if (lower.includes('student') || lower.includes('email') || lower.includes('enrolled') || 
-        lower.includes('capacity') || lower.includes('room') || lower.includes('schedule') ||
-        lower.includes('seat') || lower.includes('available') || lower.includes('prerequisite') ||
-        lower.includes('instructor') || lower.includes('teacher') || lower.includes('professor')) {
-        return 'skip';
-    }
-
-    // Default to skip for unmapped columns (no custom extensions)
-    return 'skip';
-};
+// Loading fallback for lazy-loaded modals
+const ModalLoadingFallback = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl p-8">
+            <Loader2 className="w-8 h-8 animate-spin text-cyan-500 mx-auto" />
+        </div>
+    </div>
+);
 
 interface TemplateBuilderStepProps {
     templates: CredentialTemplate[];
@@ -231,200 +89,6 @@ interface TemplateBuilderStepProps {
     onComplete: (templates: CredentialTemplate[]) => void;
     onBack: () => void;
 }
-
-// Extended template type - uses CredentialTemplate with proper OBv3 typing
-type ExtendedTemplate = CredentialTemplate & {
-    obv3Template?: OBv3CredentialTemplate;
-    isMasterTemplate?: boolean;
-    parentTemplateId?: string;
-    childTemplates?: ExtendedTemplate[];
-};
-
-// Convert legacy CredentialTemplate to OBv3CredentialTemplate
-const legacyToOBv3 = (legacy: CredentialTemplate, issuerName?: string, issuerImage?: string): OBv3CredentialTemplate => {
-    const template = getBlankTemplate();
-
-    // Set basic info
-    template.name = staticField(legacy.name || '');
-    template.description = staticField(legacy.description || '');
-
-    if (legacy.imageUrl) {
-        template.image = staticField(legacy.imageUrl);
-    }
-
-    // Set issuer
-    if (issuerName) {
-        template.issuer.name = staticField(issuerName);
-    }
-
-    if (issuerImage) {
-        template.issuer.image = staticField(issuerImage);
-    }
-
-    // Set achievement
-    template.credentialSubject.achievement.name = staticField(legacy.name || '');
-    template.credentialSubject.achievement.description = staticField(legacy.description || '');
-
-    if (legacy.achievementType) {
-        template.credentialSubject.achievement.achievementType = staticField(legacy.achievementType);
-    }
-
-    // Convert legacy fields to OBv3 format
-    for (const field of legacy.fields || []) {
-        const varName = field.variableName || field.name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-
-        if (field.id === 'recipient_name' || varName === 'recipient_name') {
-            template.credentialSubject.name = dynamicField('recipient_name', '');
-        } else if (field.id === 'issue_date' || varName === 'issue_date') {
-            template.validFrom = dynamicField('issue_date', '');
-        } else {
-            // Add as custom field
-            template.customFields.push({
-                id: field.id,
-                key: staticField(varName),
-                value: dynamicField(varName, ''),
-            });
-        }
-    }
-
-    return template;
-};
-
-// Convert OBv3CredentialTemplate back to legacy CredentialTemplate format for storage
-const obv3ToLegacy = (obv3: OBv3CredentialTemplate, existingTemplate?: CredentialTemplate): CredentialTemplate => {
-    const dynamicVars = extractDynamicVariables(obv3);
-
-    // Build fields array from dynamic variables
-    const fields = dynamicVars.map(varName => ({
-        id: varName,
-        name: varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        type: 'text' as const,
-        required: varName === 'recipient_name' || varName === 'issue_date',
-        variableName: varName,
-    }));
-
-    return {
-        id: existingTemplate?.id || `template_${Date.now()}`,
-        boostUri: existingTemplate?.boostUri,
-        name: obv3.name.value || 'Untitled Template',
-        description: obv3.description?.value || '',
-        achievementType: obv3.credentialSubject.achievement.achievementType?.value || 'Achievement',
-        fields,
-        imageUrl: obv3.image?.value,
-        isNew: existingTemplate?.isNew ?? true,
-        isDirty: true,
-        obv3Template: obv3,
-    };
-};
-
-// Single template editor using CredentialBuilder
-interface TemplateEditorProps {
-    template: ExtendedTemplate;
-    branding: BrandingConfig | null;
-    onChange: (template: ExtendedTemplate) => void;
-    onDelete: () => void;
-    isExpanded: boolean;
-    onToggle: () => void;
-    onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
-    onValidationChange?: (templateId: string, status: 'unknown' | 'validating' | 'valid' | 'invalid' | 'dirty', error?: string) => void;
-    validationStatus?: 'unknown' | 'validating' | 'valid' | 'invalid' | 'dirty';
-}
-
-const TemplateEditor: React.FC<TemplateEditorProps> = ({
-    template,
-    branding,
-    onChange,
-    onDelete,
-    isExpanded,
-    onToggle,
-    onTestIssue,
-    onValidationChange,
-    validationStatus = 'unknown',
-}) => {
-    // Initialize OBv3 template from legacy or existing
-    const [obv3Template, setObv3Template] = useState<OBv3CredentialTemplate>(() => {
-        if (template.obv3Template) {
-            return template.obv3Template;
-        }
-
-        return legacyToOBv3(template, branding?.displayName, branding?.image);
-    });
-
-    const dynamicVars = useMemo(() => extractDynamicVariables(obv3Template), [obv3Template]);
-
-    const handleTemplateChange = useCallback((newObv3: OBv3CredentialTemplate) => {
-        setObv3Template(newObv3);
-
-        // Convert back to legacy format and notify parent
-        const legacyTemplate = obv3ToLegacy(newObv3, template) as ExtendedTemplate;
-        legacyTemplate.obv3Template = newObv3;
-        onChange(legacyTemplate);
-    }, [template, onChange]);
-
-    // Handle validation status changes from CredentialBuilder
-    const handleValidationChange = useCallback((status: 'unknown' | 'validating' | 'valid' | 'invalid' | 'dirty', error?: string) => {
-        onValidationChange?.(template.id, status, error);
-    }, [template.id, onValidationChange]);
-
-    return (
-        <div className="border border-gray-200 rounded-xl overflow-hidden">
-            {/* Header */}
-            <button
-                type="button"
-                onClick={onToggle}
-                className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-            >
-                <div className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center">
-                    <Award className="w-5 h-5 text-white" />
-                </div>
-
-                <div className="flex-1 text-left">
-                    <h4 className="font-medium text-gray-800">
-                        {obv3Template.name.value || 'Untitled Template'}
-                    </h4>
-
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                        {dynamicVars.length > 0 && (
-                            <span className="flex items-center gap-1">
-                                <Zap className="w-3 h-3 text-violet-500" />
-                                {dynamicVars.length} dynamic fields
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
-
-                {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-gray-400" />
-                ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
-                )}
-            </button>
-
-            {/* Content - Full CredentialBuilder */}
-            {isExpanded && (
-                <div className="h-[600px] border-t border-gray-200">
-                    <CredentialBuilder
-                        template={obv3Template}
-                        onChange={handleTemplateChange}
-                        issuerName={branding?.displayName}
-                        issuerImage={branding?.image}
-                        onTestIssue={onTestIssue}
-                        onValidationChange={handleValidationChange}
-                        initialValidationStatus={validationStatus}
-                    />
-                </div>
-            )}
-        </div>
-    );
-};
 
 export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     templates,
@@ -444,8 +108,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
 
-    // Validation status tracking for each template
-    type ValidationStatus = 'unknown' | 'validating' | 'valid' | 'invalid' | 'dirty';
+    // Validation status tracking for each template (ValidationStatus type imported from templateBuilderUtils)
     const [validationStatuses, setValidationStatuses] = useState<Record<string, { status: ValidationStatus; error?: string }>>({});
 
     // Handle validation status changes from TemplateEditor
@@ -487,6 +150,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     const integrationId = project?.id;
 
     // Fetch existing templates (boosts) for this integration
+    // OPTIMIZED: Uses parallel API calls instead of sequential for much faster loading
     const fetchTemplates = useCallback(async () => {
         if (!integrationId) {
             setLocalTemplates((templates.length > 0 ? templates : []) as ExtendedTemplate[]);
@@ -501,25 +165,18 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 query: { meta: { integrationId } },
             });
 
-            console.log('result', result);
-            // First pass: fetch full boost data to get credentials
-            const allTemplates: ExtendedTemplate[] = [];
-
-            for (const boostRecord of (result?.records || [])) {
+            const boostRecords = result?.records || [];
+            
+            // PARALLEL: Fetch all boost details at once instead of sequentially
+            const boostPromises = boostRecords.map(async (boostRecord) => {
                 const boostUri = (boostRecord as Record<string, unknown>).uri as string;
-
                 try {
-                    // Fetch full boost to get credential
                     const fullBoost = await wallet.invoke.getBoost(boostUri);
-                    console.log('full boost', fullBoost);
                     const meta = fullBoost.meta as TemplateBoostMeta | undefined;
                     const templateConfig = meta?.templateConfig;
-                    // The credential is in the 'boost' property
                     const credential = fullBoost.boost as Record<string, unknown> | undefined;
 
-                    // Try to parse existing credential as OBv3 template
                     let obv3Template: OBv3CredentialTemplate | undefined;
-
                     if (credential) {
                         try {
                             obv3Template = jsonToTemplate(credential);
@@ -528,11 +185,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         }
                     }
 
-                    // Get name/description from credential
                     const credentialName = credential?.name as string | undefined;
                     const credentialDesc = credential?.description as string | undefined;
 
-                    allTemplates.push({
+                    return {
                         id: boostUri,
                         boostUri,
                         name: fullBoost.name || credentialName || 'Untitled Template',
@@ -543,84 +199,97 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         isDirty: false,
                         obv3Template,
                         isMasterTemplate: meta?.isMasterTemplate,
-                    });
+                    } as ExtendedTemplate;
                 } catch (e) {
                     console.warn('Failed to fetch boost:', boostUri, e);
+                    return null;
                 }
-            }
+            });
 
-            // Second pass: for master templates, fetch their children and collect child URIs
-            const fetchedTemplates: ExtendedTemplate[] = [];
-            const childUris = new Set<string>();
+            const allTemplatesWithNulls = await Promise.all(boostPromises);
+            const allTemplates = allTemplatesWithNulls.filter((t): t is ExtendedTemplate => t !== null);
 
-            // First, fetch all children for master templates and collect their URIs
-            for (const template of allTemplates) {
-                if (template.isMasterTemplate && template.boostUri) {
-                    try {
-                        // Fetch child boost URIs for this master
-                        const childrenResult = await wallet.invoke.getBoostChildren(template.boostUri, { limit: 100 });
-                        const childRecords = childrenResult?.records || [];
+            // Identify master templates and fetch their children in parallel
+            const masterTemplates = allTemplates.filter(t => t.isMasterTemplate && t.boostUri);
+            
+            // PARALLEL: Fetch all children for all master templates at once
+            const childrenPromises = masterTemplates.map(async (master) => {
+                try {
+                    const childrenResult = await wallet.invoke.getBoostChildren(master.boostUri!, { limit: 100 });
+                    const childRecords = childrenResult?.records || [];
+                    
+                    // PARALLEL: Fetch all child boost details at once
+                    const childPromises = childRecords.map(async (childRecord) => {
+                        const childUri = (childRecord as Record<string, unknown>).uri as string;
+                        try {
+                            const fullChild = await wallet.invoke.getBoost(childUri);
+                            const childMeta = fullChild.meta as TemplateBoostMeta | undefined;
+                            const childConfig = childMeta?.templateConfig;
+                            const childCredential = fullChild.boost as Record<string, unknown> | undefined;
 
-                        // Fetch full boost data for each child to get the credential
-                        const children: ExtendedTemplate[] = [];
-
-                        for (const childRecord of childRecords) {
-                            const childUri = (childRecord as Record<string, unknown>).uri as string;
-                            childUris.add(childUri);
-
-                            try {
-                                // Fetch full boost to get credential
-                                const fullChild = await wallet.invoke.getBoost(childUri);
-                                const childMeta = fullChild.meta as TemplateBoostMeta | undefined;
-                                const childConfig = childMeta?.templateConfig;
-                                // The credential is in the 'boost' property
-                                const childCredential = fullChild.boost as Record<string, unknown> | undefined;
-
-                                let childObv3Template: OBv3CredentialTemplate | undefined;
-
-                                if (childCredential) {
-                                    try {
-                                        childObv3Template = jsonToTemplate(childCredential);
-                                    } catch (e) {
-                                        console.warn('Failed to parse child credential as OBv3:', e);
-                                    }
+                            let childObv3Template: OBv3CredentialTemplate | undefined;
+                            if (childCredential) {
+                                try {
+                                    childObv3Template = jsonToTemplate(childCredential);
+                                } catch (e) {
+                                    console.warn('Failed to parse child credential as OBv3:', e);
                                 }
-
-                                // Get name/description from credential
-                                const credentialName = childCredential?.name as string | undefined;
-                                const credentialDesc = childCredential?.description as string | undefined;
-
-                                children.push({
-                                    id: childUri,
-                                    boostUri: childUri,
-                                    name: fullChild.name || credentialName || 'Untitled',
-                                    description: credentialDesc || '',
-                                    achievementType: childConfig?.achievementType || 'Course Completion',
-                                    fields: childConfig?.fields || [],
-                                    isNew: false,
-                                    isDirty: false,
-                                    obv3Template: childObv3Template,
-                                    parentTemplateId: template.id,
-                                });
-                            } catch (e) {
-                                console.warn('Failed to fetch child boost:', childUri, e);
                             }
-                        }
 
-                        fetchedTemplates.push({
-                            ...template,
-                            childTemplates: children,
-                        });
-                    } catch (e) {
-                        console.warn('Failed to fetch children for master template:', e);
-                        fetchedTemplates.push(template);
-                    }
+                            const credentialName = childCredential?.name as string | undefined;
+                            const credentialDesc = childCredential?.description as string | undefined;
+
+                            return {
+                                id: childUri,
+                                boostUri: childUri,
+                                name: fullChild.name || credentialName || 'Untitled',
+                                description: credentialDesc || '',
+                                achievementType: childConfig?.achievementType || 'Course Completion',
+                                fields: childConfig?.fields || [],
+                                isNew: false,
+                                isDirty: false,
+                                obv3Template: childObv3Template,
+                                parentTemplateId: master.id,
+                            } as ExtendedTemplate;
+                        } catch (e) {
+                            console.warn('Failed to fetch child boost:', childUri, e);
+                            return null;
+                        }
+                    });
+
+                    const childrenWithNulls = await Promise.all(childPromises);
+                    const children = childrenWithNulls.filter((c): c is ExtendedTemplate => c !== null);
+                    const childUris = childRecords.map(r => (r as Record<string, unknown>).uri as string);
+                    
+                    return { masterId: master.id, children, childUris };
+                } catch (e) {
+                    console.warn('Failed to fetch children for master template:', e);
+                    return { masterId: master.id, children: [], childUris: [] };
                 }
+            });
+
+            const childrenResults = await Promise.all(childrenPromises);
+            
+            // Build a map of master -> children and collect all child URIs
+            const masterChildrenMap = new Map<string, ExtendedTemplate[]>();
+            const allChildUris = new Set<string>();
+            
+            for (const result of childrenResults) {
+                masterChildrenMap.set(result.masterId, result.children);
+                result.childUris.forEach(uri => allChildUris.add(uri));
             }
 
-            // Now add non-master templates, but exclude any that are children of a master
+            // Build final template list
+            const fetchedTemplates: ExtendedTemplate[] = [];
+            
             for (const template of allTemplates) {
-                if (!template.isMasterTemplate && !childUris.has(template.boostUri || '')) {
+                if (template.isMasterTemplate) {
+                    fetchedTemplates.push({
+                        ...template,
+                        childTemplates: masterChildrenMap.get(template.id) || [],
+                    });
+                } else if (!allChildUris.has(template.boostUri || '')) {
+                    // Only add non-master templates that aren't children
                     fetchedTemplates.push(template);
                 }
             }
@@ -775,6 +444,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
     };
 
     // Save all templates
+    // OPTIMIZED: Uses parallel API calls for much faster saving (especially for CSV imports)
     const handleSaveAll = async () => {
         if (!integrationId) {
             presentToast('No project selected', { type: ToastTypeEnum.Error, hasDismissButton: true });
@@ -784,80 +454,95 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         setIsSaving(true);
 
         try {
-            // Delete pending deletes
-            for (const uri of pendingDeletes) {
-                await deleteBoost(uri);
+            // PARALLEL: Delete all pending deletes at once
+            if (pendingDeletes.length > 0) {
+                await Promise.all(pendingDeletes.map(uri => deleteBoost(uri).catch(e => {
+                    console.warn('Failed to delete boost:', uri, e);
+                })));
+                setPendingDeletes([]);
             }
 
-            setPendingDeletes([]);
+            // Separate templates into categories for optimal parallel processing
+            const masterTemplates = localTemplates.filter(t => t.isMasterTemplate && t.childTemplates?.length);
+            const standaloneTemplates = localTemplates.filter(t => !t.isMasterTemplate || !t.childTemplates?.length);
 
-            // Save all templates that are new or dirty
-            const savedTemplates: CredentialTemplate[] = [];
-
-            for (const template of localTemplates) {
-                // Check if any children need saving (for master templates)
-                const hasChildUpdates = template.isMasterTemplate && 
-                    template.childTemplates?.some(c => c.isNew || c.isDirty || !c.boostUri);
-
-                if (template.isNew || template.isDirty || !template.boostUri || hasChildUpdates) {
-                    // Handle master templates with children
-                    if (template.isMasterTemplate && template.childTemplates?.length) {
-                        // First, save the master template
-                        const parentBoostUri = await saveTemplateAsBoost(template);
-
-                        if (parentBoostUri) {
-                            // Save each child that needs saving
-                            const savedChildren: ExtendedTemplate[] = [];
-
-                            for (const child of template.childTemplates) {
-                                // Only save children that are new, dirty, or don't have a boostUri
-                                if (child.isNew || child.isDirty || !child.boostUri) {
-                                    try {
-                                        const childBoostUri = await saveChildTemplateAsBoost(child, parentBoostUri);
-
-                                        savedChildren.push({
-                                            ...child,
-                                            id: childBoostUri || child.id,
-                                            boostUri: childBoostUri || undefined,
-                                            isNew: false,
-                                            isDirty: false,
-                                        });
-                                    } catch (e) {
-                                        console.error('Failed to save child boost:', e);
-                                        // Keep the original child on error
-                                        savedChildren.push(child);
-                                    }
-                                } else {
-                                    // Child doesn't need saving, keep as-is
-                                    savedChildren.push(child);
-                                }
-                            }
-
-                            savedTemplates.push({
-                                ...template,
-                                id: parentBoostUri,
-                                boostUri: parentBoostUri,
-                                isNew: false,
-                                isDirty: false,
-                                childTemplates: savedChildren,
-                            } as ExtendedTemplate);
-                        }
-                    } else {
-                        // Regular template - save as standalone boost
-                        const boostUri = await saveTemplateAsBoost(template);
-
-                        savedTemplates.push({
-                            ...template,
-                            id: boostUri || template.id,
-                            boostUri: boostUri || undefined,
+            // Helper to save a single child template
+            const saveChild = async (child: ExtendedTemplate, parentBoostUri: string): Promise<ExtendedTemplate> => {
+                if (child.isNew || child.isDirty || !child.boostUri) {
+                    try {
+                        const childBoostUri = await saveChildTemplateAsBoost(child, parentBoostUri);
+                        return {
+                            ...child,
+                            id: childBoostUri || child.id,
+                            boostUri: childBoostUri || undefined,
                             isNew: false,
                             isDirty: false,
-                        });
+                        };
+                    } catch (e) {
+                        console.error('Failed to save child boost:', e);
+                        return child;
                     }
-                } else {
-                    savedTemplates.push(template);
                 }
-            }
+                return child;
+            };
+
+            // Helper to save a master template and all its children
+            const saveMasterWithChildren = async (template: ExtendedTemplate): Promise<ExtendedTemplate> => {
+                const hasChildUpdates = template.childTemplates?.some(c => c.isNew || c.isDirty || !c.boostUri);
+
+                if (template.isNew || template.isDirty || !template.boostUri || hasChildUpdates) {
+                    // First, save the master template (must complete before children)
+                    const parentBoostUri = await saveTemplateAsBoost(template);
+
+                    if (parentBoostUri) {
+                        // PARALLEL: Save all children at once
+                        const savedChildren = await Promise.all(
+                            (template.childTemplates || []).map(child => saveChild(child, parentBoostUri))
+                        );
+
+                        return {
+                            ...template,
+                            id: parentBoostUri,
+                            boostUri: parentBoostUri,
+                            isNew: false,
+                            isDirty: false,
+                            childTemplates: savedChildren,
+                        } as ExtendedTemplate;
+                    }
+                }
+
+                return template;
+            };
+
+            // Helper to save a standalone template
+            const saveStandalone = async (template: ExtendedTemplate): Promise<ExtendedTemplate> => {
+                if (template.isNew || template.isDirty || !template.boostUri) {
+                    const boostUri = await saveTemplateAsBoost(template);
+                    return {
+                        ...template,
+                        id: boostUri || template.id,
+                        boostUri: boostUri || undefined,
+                        isNew: false,
+                        isDirty: false,
+                    };
+                }
+                return template;
+            };
+
+            // PARALLEL: Save all master templates (each saves its children in parallel internally)
+            // and all standalone templates at the same time
+            const [savedMasters, savedStandalones] = await Promise.all([
+                Promise.all(masterTemplates.map(saveMasterWithChildren)),
+                Promise.all(standaloneTemplates.map(saveStandalone)),
+            ]);
+
+            // Reconstruct the saved templates in original order
+            const savedTemplates = localTemplates.map(template => {
+                if (template.isMasterTemplate && template.childTemplates?.length) {
+                    return savedMasters.find(m => m.id === template.id || m.boostUri === template.boostUri) || template;
+                }
+                return savedStandalones.find(s => s.id === template.id || s.boostUri === template.boostUri) || template;
+            });
 
             setLocalTemplates(savedTemplates as ExtendedTemplate[]);
             presentToast('Templates saved successfully!', { type: ToastTypeEnum.Success, hasDismissButton: true });
@@ -939,504 +624,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
         }
     };
 
-    // Generate the master template with dynamic variables for all catalog + issuance fields
-    const generateMasterTemplate = (): ExtendedTemplate => {
-        const template = getBlankTemplate();
-
-        // Set issuer from branding
-        if (branding?.displayName) {
-            template.issuer.name = staticField(branding.displayName);
-        }
-
-        if (branding?.image) {
-            template.issuer.image = staticField(branding.image);
-        }
-
-        // Process catalog-level mappings as DYNAMIC variables in master template
-        // Uses dot-notation field IDs matching CATALOG_FIELD_OPTIONS
-        Object.entries(columnMappings).forEach(([columnName, fieldType]) => {
-            if (fieldType === 'skip') return;
-
-            const varName = columnName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-            const displayName = columnName.replace(/[^a-zA-Z0-9]+/g, ' ').trim();
-
-            // Handle credential-level fields
-            if (fieldType === 'credential.name') {
-                template.name = dynamicField(varName, '');
-                return;
-            }
-
-            if (fieldType === 'credential.description') {
-                template.description = dynamicField(varName, '');
-                return;
-            }
-
-            if (fieldType === 'credential.image') {
-                template.image = dynamicField(varName, '');
-                return;
-            }
-
-            // Handle achievement fields
-            if (fieldType === 'achievement.name') {
-                template.credentialSubject.achievement.name = dynamicField(varName, '');
-                return;
-            }
-
-            if (fieldType === 'achievement.description') {
-                template.credentialSubject.achievement.description = dynamicField(varName, '');
-                return;
-            }
-
-            if (fieldType === 'achievement.image') {
-                template.credentialSubject.achievement.image = dynamicField(varName, '');
-                return;
-            }
-
-            if (fieldType === 'achievement.achievementType') {
-                template.credentialSubject.achievement.achievementType = dynamicField(varName, '');
-                return;
-            }
-
-            if (fieldType === 'achievement.id') {
-                template.credentialSubject.achievement.id = dynamicField(varName, '');
-                return;
-            }
-
-            if (fieldType === 'achievement.criteria.narrative') {
-                if (!template.credentialSubject.achievement.criteria) {
-                    template.credentialSubject.achievement.criteria = {};
-                }
-                template.credentialSubject.achievement.criteria.narrative = dynamicField(varName, '');
-                return;
-            }
-
-            // For alignment, evidence, result, subject, related, and custom fields
-            // Add as custom fields with dynamic values in master template
-            if (fieldType.startsWith('alignment.') || 
-                fieldType.startsWith('evidence.') || 
-                fieldType.startsWith('result.') || 
-                fieldType.startsWith('subject.') || 
-                fieldType.startsWith('related.') ||
-                fieldType.startsWith('achievement.') ||
-                fieldType === 'custom' ||
-                fieldType === 'credential.inLanguage') {
-                template.customFields.push({
-                    id: `custom_${varName}`,
-                    key: staticField(displayName),
-                    value: dynamicField(varName, ''),
-                });
-            }
-        });
-
-        // Add issuance-level fields based on their type (dynamic or system)
-        const issuanceFieldDefs = ISSUANCE_FIELDS.reduce((acc, f) => ({ ...acc, [f.id]: f }), {} as Record<string, typeof ISSUANCE_FIELDS[0]>);
-
-        Object.entries(issuanceFieldsIncluded).forEach(([fieldId, included]) => {
-            if (!included) return;
-
-            const fieldDef = issuanceFieldDefs[fieldId];
-            const isSystem = fieldDef?.type === 'system';
-
-            switch (fieldId) {
-                case 'recipient_name':
-                    template.credentialSubject.name = dynamicField('recipient_name', '');
-                    break;
-
-                case 'recipient_did':
-                    // System field - auto-injected at issuance
-                    template.credentialSubject.id = systemField('Recipient DID (auto-injected)');
-                    break;
-
-                case 'recipient_email':
-                    // System field - used for delivery, not stored in credential
-                    // No action needed as it's handled at send time
-                    break;
-
-                case 'issue_date':
-                    // System field - auto-set at issuance time
-                    template.validFrom = systemField('issue_date');
-                    break;
-
-                case 'completion_date':
-                    // Use proper OBv3 activityEndDate field
-                    template.credentialSubject.activityEndDate = dynamicField('completion_date', '');
-                    break;
-
-                case 'score':
-                    // Use proper OBv3 Result structure for scores/grades
-                    if (!template.credentialSubject.result) {
-                        template.credentialSubject.result = [];
-                    }
-                    template.credentialSubject.result.push({
-                        id: 'result_score',
-                        value: dynamicField('score', ''),
-                    });
-                    break;
-
-                case 'expiration_date':
-                    template.validUntil = dynamicField('expiration_date', '');
-                    break;
-            }
-        });
-
-        // Find a name column mapped to achievement.name for the template name
-        const nameColumn = Object.entries(columnMappings).find(([_, type]) => type === 'achievement.name')?.[0];
-        const nameVarName = nameColumn ? nameColumn.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') : 'course_name';
-        template.name = dynamicField(nameVarName, 'Course Completion');
-        template.description = staticField('Master template for course completion credentials');
-
-        const dynamicVars = extractDynamicVariables(template);
-
-        return {
-            id: `master_${Date.now()}`,
-            name: 'Course Completion Template',
-            description: 'Master template for all course completions',
-            achievementType: 'Course Completion',
-            fields: dynamicVars.map(varName => ({
-                id: varName,
-                name: varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                type: 'text' as const,
-                required: varName === 'recipient_name',
-                variableName: varName,
-            })),
-            isNew: true,
-            isDirty: true,
-            obv3Template: template,
-            isMasterTemplate: true,
-        };
-    };
-
-    // Generate a child boost template for one course row with catalog data baked in
-    const generateChildBoostForCourse = (courseRow: Record<string, string>, parentId: string): ExtendedTemplate => {
-        const template = getBlankTemplate();
-
-        // Set issuer from branding
-        if (branding?.displayName) {
-            template.issuer.name = staticField(branding.displayName);
-        }
-
-        if (branding?.image) {
-            template.issuer.image = staticField(branding.image);
-        }
-
-        let boostName = 'Course Completion';
-        let boostDescription = '';
-        let achievementTypeSet = false;
-
-        // Track aggregate fields (alignment, evidence, result, related, subject)
-        const alignmentData: Record<string, string> = {};
-        const evidenceData: Record<string, string> = {};
-        const resultData: Record<string, string> = {};
-        const relatedData: Record<string, string> = {};
-        const subjectData: Record<string, string> = {};
-
-        // Process catalog-level mappings - BAKE IN the actual values from CSV
-        Object.entries(columnMappings).forEach(([columnName, fieldType]) => {
-            if (fieldType === 'skip') return;
-
-            const value = courseRow[columnName] || '';
-            if (!value.trim()) return;
-
-            // Handle OBv3 field mappings based on the dot-notation field IDs
-            // Using startsWith for grouped fields, exact match for others
-            if (fieldType.startsWith('alignment.')) {
-                alignmentData[fieldType.replace('alignment.', '')] = value;
-                return;
-            }
-
-            if (fieldType.startsWith('evidence.')) {
-                evidenceData[fieldType.replace('evidence.', '')] = value;
-                return;
-            }
-
-            if (fieldType.startsWith('result.')) {
-                resultData[fieldType.replace('result.', '')] = value;
-                return;
-            }
-
-            if (fieldType.startsWith('related.')) {
-                relatedData[fieldType.replace('related.', '')] = value;
-                return;
-            }
-
-            if (fieldType.startsWith('subject.')) {
-                subjectData[fieldType.replace('subject.', '')] = value;
-                return;
-            }
-
-            switch (fieldType) {
-                // Credential-level fields
-                case 'credential.name':
-                    template.name = staticField(value);
-                    boostName = value;
-                    break;
-
-                case 'credential.description':
-                    template.description = staticField(value);
-                    boostDescription = value;
-                    break;
-
-                case 'credential.image':
-                    template.image = staticField(value);
-                    break;
-
-                case 'credential.inLanguage':
-                    // Add as custom field since template doesn't have inLanguage
-                    template.customFields.push({
-                        id: 'credential_language',
-                        key: staticField('Language'),
-                        value: staticField(value),
-                    });
-                    break;
-
-                // Achievement fields
-                case 'achievement.name':
-                    template.credentialSubject.achievement.name = staticField(value);
-                    if (!boostName || boostName === 'Course Completion') {
-                        boostName = value;
-                    }
-                    break;
-
-                case 'achievement.description':
-                    template.credentialSubject.achievement.description = staticField(value);
-                    if (!boostDescription) {
-                        boostDescription = value;
-                    }
-                    break;
-
-                case 'achievement.image':
-                    template.credentialSubject.achievement.image = staticField(value);
-                    break;
-
-                case 'achievement.achievementType':
-                    template.credentialSubject.achievement.achievementType = staticField(value);
-                    achievementTypeSet = true;
-                    break;
-
-                case 'achievement.criteria.narrative':
-                    if (!template.credentialSubject.achievement.criteria) {
-                        template.credentialSubject.achievement.criteria = {};
-                    }
-                    template.credentialSubject.achievement.criteria.narrative = staticField(value);
-                    break;
-
-                case 'achievement.id':
-                    template.credentialSubject.achievement.id = staticField(value);
-                    break;
-
-                // Additional achievement fields - now properly supported in OBv3
-                case 'achievement.humanCode':
-                    template.credentialSubject.achievement.humanCode = staticField(value);
-                    break;
-
-                case 'achievement.fieldOfStudy':
-                    template.credentialSubject.achievement.fieldOfStudy = staticField(value);
-                    break;
-
-                case 'achievement.specialization':
-                    template.credentialSubject.achievement.specialization = staticField(value);
-                    break;
-
-                case 'achievement.creditsAvailable':
-                    template.credentialSubject.achievement.creditsAvailable = staticField(value);
-                    break;
-
-                case 'achievement.tag':
-                    // Tags are an array - split by comma if multiple
-                    if (!template.credentialSubject.achievement.tag) {
-                        template.credentialSubject.achievement.tag = [];
-                    }
-                    const tags = value.split(',').map(t => t.trim()).filter(Boolean);
-                    template.credentialSubject.achievement.tag.push(...tags);
-                    break;
-
-                case 'achievement.version':
-                    template.credentialSubject.achievement.version = staticField(value);
-                    break;
-
-                case 'achievement.inLanguage':
-                    template.credentialSubject.achievement.inLanguage = staticField(value);
-                    break;
-            }
-        });
-
-        // Create alignment entry if any alignment fields were mapped
-        if (Object.keys(alignmentData).length > 0 && (alignmentData.targetName || alignmentData.targetUrl)) {
-            if (!template.credentialSubject.achievement.alignment) {
-                template.credentialSubject.achievement.alignment = [];
-            }
-
-            template.credentialSubject.achievement.alignment.push({
-                id: `alignment_${Date.now()}`,
-                targetName: staticField(alignmentData.targetName || ''),
-                targetUrl: staticField(alignmentData.targetUrl || ''),
-                ...(alignmentData.targetDescription && { targetDescription: staticField(alignmentData.targetDescription) }),
-                ...(alignmentData.targetFramework && { targetFramework: staticField(alignmentData.targetFramework) }),
-                ...(alignmentData.targetCode && { targetCode: staticField(alignmentData.targetCode) }),
-            });
-        }
-
-        // Create evidence entry if any evidence fields were mapped
-        if (Object.keys(evidenceData).length > 0) {
-            if (!template.credentialSubject.evidence) {
-                template.credentialSubject.evidence = [];
-            }
-
-            template.credentialSubject.evidence.push({
-                id: `evidence_${Date.now()}`,
-                ...(evidenceData.name && { name: staticField(evidenceData.name) }),
-                ...(evidenceData.description && { description: staticField(evidenceData.description) }),
-                ...(evidenceData.narrative && { narrative: staticField(evidenceData.narrative) }),
-                ...(evidenceData.genre && { genre: staticField(evidenceData.genre) }),
-                ...(evidenceData.audience && { audience: staticField(evidenceData.audience) }),
-            });
-        }
-
-        // Add result data using proper OBv3 Result structure
-        if (Object.keys(resultData).length > 0) {
-            if (!template.credentialSubject.result) {
-                template.credentialSubject.result = [];
-            }
-
-            template.credentialSubject.result.push({
-                id: `result_${Date.now()}`,
-                ...(resultData.value && { value: staticField(resultData.value) }),
-                ...(resultData.status && { status: staticField(resultData.status) }),
-                ...(resultData.achievedLevel && { achievedLevel: staticField(resultData.achievedLevel) }),
-            });
-        }
-
-        // Add subject data using proper OBv3 AchievementSubject fields
-        Object.entries(subjectData).forEach(([key, value]) => {
-            switch (key) {
-                case 'creditsEarned':
-                    template.credentialSubject.creditsEarned = staticField(value);
-                    break;
-                case 'activityStartDate':
-                    template.credentialSubject.activityStartDate = staticField(value);
-                    break;
-                case 'activityEndDate':
-                    template.credentialSubject.activityEndDate = staticField(value);
-                    break;
-                case 'term':
-                    template.credentialSubject.term = staticField(value);
-                    break;
-                case 'licenseNumber':
-                    template.credentialSubject.licenseNumber = staticField(value);
-                    break;
-                case 'role':
-                    template.credentialSubject.role = staticField(value);
-                    break;
-            }
-        });
-
-        // Related achievement data - store as tags for now (OBv3 related is complex)
-        if (Object.keys(relatedData).length > 0 && relatedData.id) {
-            // Related achievements could be added to alignment or as a separate structure
-            // For simplicity, add related URL to alignment if provided
-            if (!template.credentialSubject.achievement.alignment) {
-                template.credentialSubject.achievement.alignment = [];
-            }
-
-            template.credentialSubject.achievement.alignment.push({
-                id: `related_${Date.now()}`,
-                targetName: staticField(relatedData.id || 'Related Achievement'),
-                targetUrl: staticField(relatedData.id || ''),
-                ...(relatedData.version && { targetDescription: staticField(`Version: ${relatedData.version}`) }),
-            });
-        }
-
-        // Apply default image if no image was mapped from CSV
-        if (defaultImage) {
-            // Only set if not already set by CSV mapping
-            if (!template.image?.value && !template.credentialSubject.achievement.image?.value) {
-                template.credentialSubject.achievement.image = staticField(defaultImage);
-            }
-        }
-
-        // Default achievement type to "Course" for course catalog imports (OBv3 spec)
-        if (!achievementTypeSet) {
-            template.credentialSubject.achievement.achievementType = staticField('Course');
-        }
-
-        // Add issuance-level fields based on their type (dynamic or system)
-        Object.entries(issuanceFieldsIncluded).forEach(([fieldId, included]) => {
-            if (!included) return;
-
-            switch (fieldId) {
-                case 'recipient_name':
-                    template.credentialSubject.name = dynamicField('recipient_name', '');
-                    break;
-
-                case 'recipient_did':
-                    // System field - auto-injected at issuance
-                    template.credentialSubject.id = systemField('Recipient DID (auto-injected)');
-                    break;
-
-                case 'recipient_email':
-                    // System field - used for delivery, not stored in credential
-                    // No action needed as it's handled at send time
-                    break;
-
-                case 'issue_date':
-                    // System field - auto-set at issuance time
-                    template.validFrom = systemField('issue_date');
-                    break;
-
-                case 'completion_date':
-                    // Use proper OBv3 activityEndDate field
-                    template.credentialSubject.activityEndDate = dynamicField('completion_date', '');
-                    break;
-
-                case 'score':
-                    // Use proper OBv3 Result structure for scores/grades
-                    if (!template.credentialSubject.result) {
-                        template.credentialSubject.result = [];
-                    }
-                    template.credentialSubject.result.push({
-                        id: 'result_score',
-                        value: dynamicField('score', ''),
-                    });
-                    break;
-
-                case 'expiration_date':
-                    template.validUntil = dynamicField('expiration_date', '');
-                    break;
-            }
-        });
-
-        template.name = staticField(`${boostName} Completion`);
-        template.description = staticField(boostDescription);
-
-        const dynamicVars = extractDynamicVariables(template);
-
-        return {
-            id: `child_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-            name: `${boostName} Completion`,
-            description: boostDescription,
-            achievementType: 'Course Completion',
-            fields: dynamicVars.map(varName => ({
-                id: varName,
-                name: varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                type: 'text' as const,
-                required: varName === 'recipient_name',
-                variableName: varName,
-            })),
-            isNew: true,
-            isDirty: true,
-            obv3Template: template,
-            parentTemplateId: parentId,
-        };
-    };
-
     // Handle import confirmation - generate master template + child boosts
     const handleImportConfirm = () => {
-        // Generate master template first
-        const masterTemplate = generateMasterTemplate();
+        // Generate master template first (using imported utility)
+        const masterTemplate = generateMasterTemplate(columnMappings, issuanceFieldsIncluded, branding);
 
-        // Generate child boosts for each course, linked to master
+        // Generate child boosts for each course, linked to master (using imported utility)
         const childTemplates = csvAllRows.map(row => 
-            generateChildBoostForCourse(row, masterTemplate.id)
+            generateChildBoostForCourse(row, masterTemplate.id, columnMappings, issuanceFieldsIncluded, branding, defaultImage)
         );
 
         // Attach children to master for UI display

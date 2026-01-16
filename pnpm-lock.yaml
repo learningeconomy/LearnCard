@@ -431,6 +431,9 @@ importers:
       react-countdown:
         specifier: ^2.3.6
         version: 2.3.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-datepicker:
+        specifier: ^9.1.0
+        version: 9.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-error-boundary:
         specifier: ^4.1.2
         version: 4.1.2(react@18.3.1)
@@ -900,7 +903,7 @@ importers:
         version: 6.6.3(@netlify/api@14.0.12)(@types/node@22.19.1)(astro@5.16.9(@netlify/blobs@10.5.0)(@types/node@22.19.1)(idb-keyval@6.2.2)(ioredis@5.8.2)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(rollup@4.53.3)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(typescript@5.6.2)(yaml@2.8.1))(idb-keyval@6.2.2)(ioredis@5.8.2)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(rollup@4.53.3)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(yaml@2.8.1)
       '@learncard/init':
         specifier: ^2.1.9
-        version: 2.2.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
+        version: 2.2.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
       '@learncard/partner-connect':
         specifier: workspace:*
         version: link:../../../packages/learn-card-partner-connect-sdk
@@ -919,7 +922,7 @@ importers:
         version: 6.6.3(@netlify/api@14.0.12)(@types/node@22.19.1)(astro@5.16.9(@netlify/blobs@10.5.0)(@types/node@22.19.1)(idb-keyval@6.2.2)(ioredis@5.8.2)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(rollup@4.53.3)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(typescript@5.6.2)(yaml@2.8.1))(idb-keyval@6.2.2)(ioredis@5.8.2)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(rollup@4.53.3)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(yaml@2.8.1)
       '@learncard/init':
         specifier: ^2.1.9
-        version: 2.2.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
+        version: 2.2.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
       '@learncard/partner-connect':
         specifier: workspace:*
         version: link:../../../packages/learn-card-partner-connect-sdk
@@ -938,7 +941,7 @@ importers:
         version: 6.6.3(@netlify/api@14.0.12)(@types/node@22.19.1)(astro@5.16.9(@netlify/blobs@10.5.0)(@types/node@22.19.1)(idb-keyval@6.2.2)(ioredis@5.8.2)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(rollup@4.53.3)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(typescript@5.6.2)(yaml@2.8.1))(idb-keyval@6.2.2)(ioredis@5.8.2)(jiti@2.6.1)(less@4.4.2)(lightningcss@1.30.2)(rollup@4.53.3)(sass@1.94.2)(terser@5.44.1)(tsx@4.20.6)(yaml@2.8.1)
       '@learncard/init':
         specifier: ^2.1.9
-        version: 2.2.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
+        version: 2.2.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
       '@learncard/partner-connect':
         specifier: workspace:*
         version: link:../../../packages/learn-card-partner-connect-sdk
@@ -7712,6 +7715,12 @@ packages:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
 
+  '@floating-ui/react@0.27.16':
+    resolution: {integrity: sha512-9O8N4SeG2z++TSM8QA/KTeKFBVCNEz/AGS7gWPJf6KFRzmRWixFRnCnkPHRDwSVZW6QPDO6uT0P2SpWNKCc9/g==}
+    peerDependencies:
+      react: '>=17.0.0'
+      react-dom: '>=17.0.0'
+
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
 
@@ -9054,8 +9063,8 @@ packages:
     resolution: {integrity: sha512-5KVe/DNqk28IYIfy29TJNUGzj2QMUkLPX2QJKSeGhI9EyGPY9/jhteaRPPcPTSpgWybZoJdGbhHTUr2F+fDIdQ==}
     engines: {node: '>=18.14.0'}
 
-  '@netlify/edge-bundler@14.9.2':
-    resolution: {integrity: sha512-qJErMNAW48QnvtAJe0yRtz2urenxHUdFhdVpbWoXWuG4Xlq8D06unjl9OfGnymNsoiwLpLcCjEngSNcdZoTa0w==}
+  '@netlify/edge-bundler@14.9.3':
+    resolution: {integrity: sha512-NaIIsjGfl6YcnZKRa5/BOpbBi4MK1B4U1E/ekH8VaAIy0I7aYwnWg45SZSkTrMOeHzZPGXTAwjyKqzPi8HBQ4A==}
     engines: {node: '>=18.14.0'}
 
   '@netlify/edge-functions-bootstrap@2.16.0':
@@ -9093,8 +9102,8 @@ packages:
     resolution: {integrity: sha512-1X3fUmacCLMlPIqyeV5tdo6Wbf9aBSWobgr4DyRvg9zDV9jbKqgdN3BNbcUXmVaqfN+0iiv0k9p02mcRV3OyOw==}
     engines: {node: '>=20.6.1'}
 
-  '@netlify/open-api@2.45.0':
-    resolution: {integrity: sha512-kLysr2N8HQi0qoEq04vpRvrE/fSnZaXJYf1bVxKre2lLaM1RSm05hqDswKTgxM601pZf9h1i1Ea3L4DZNgHb5w==}
+  '@netlify/open-api@2.46.0':
+    resolution: {integrity: sha512-ONTAnExC2fX4luhAQ91DD3ORbh+YFMmzk9ebrheVg+W4cTHmNnGxLbiYbmd44IqnLQjgqn4xrmmDULEMZcMdfw==}
     engines: {node: '>=14.8.0'}
 
   '@netlify/otel@5.1.1':
@@ -9143,8 +9152,8 @@ packages:
     peerDependencies:
       vite: ^5 || ^6 || ^7
 
-  '@netlify/zip-it-and-ship-it@14.1.18':
-    resolution: {integrity: sha512-l3wVvGMrGAjsUlQ4JNUngiyUDlNIqu93UFo+NuJMTC+7h/IeKyNcbcIHm5w0A5W2CmkiZyQgQRo+CfrtujqyPw==}
+  '@netlify/zip-it-and-ship-it@14.2.0':
+    resolution: {integrity: sha512-yM69tB71nhvl7L7orfq5fGEonmSVzi2G12/BAV8O+El7ISpkkjFz+8S8qZVxsEK3IbW4EFO+3L8l6jHJHZtxeQ==}
     engines: {node: '>=18.14.0'}
     hasBin: true
 
@@ -17645,9 +17654,9 @@ packages:
   fontfaceobserver@2.3.0:
     resolution: {integrity: sha512-6FPvD/IVyT4ZlNe7Wcn5Fb/4ChigpucKYSvD6a+0iMoLn2inpo711eyIcKjmDtE5XNcgAkSH9uN/nfAeZzHEfg==}
 
-  fontkitten@1.0.0:
-    resolution: {integrity: sha512-b0RdzQeztiiUFWEDzq6Ka26qkNVNLCehoRtifOIGNbQ4CfxyYRh73fyWaQX/JshPVcueITOEeoSWPy5XQv8FUg==}
-    engines: {node: '>=20'}
+  fontkitten@1.0.1:
+    resolution: {integrity: sha512-m+/cO+/kAU9farlejecXLgQH20+UXyH0K6oosGtogAz7BWco+KTYE60epKwMt8eVxqlOE2Fs+GoHVlGDUbKOoA==}
+    engines: {node: '>=24.12.0'}
 
   for-each@0.3.5:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
@@ -23607,6 +23616,16 @@ packages:
       react: '>= 15'
       react-dom: '>= 15'
 
+  react-datepicker@9.1.0:
+    resolution: {integrity: sha512-lOp+m5bc+ttgtB5MHEjwiVu4nlp4CvJLS/PG1OiOe5pmg9kV73pEqO8H0Geqvg2E8gjqTaL9eRhSe+ZpeKP3nA==}
+    peerDependencies:
+      date-fns-tz: ^3.0.0
+      react: ^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc
+      react-dom: ^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc
+    peerDependenciesMeta:
+      date-fns-tz:
+        optional: true
+
   react-dev-utils@12.0.1:
     resolution: {integrity: sha512-84Ivxmr17KjUupyqzFode6xKhjwuEJDROWKJy/BthkL7Wn6NJ8h4WE6k/exAv6ImS+0oZLRRW5j/aINMHyeGeQ==}
     engines: {node: '>=14'}
@@ -26523,8 +26542,8 @@ packages:
   unified@9.2.2:
     resolution: {integrity: sha512-Sg7j110mtefBD+qunSLO1lqOEKdrwBFBrR6Qd8f4uwkhWNlbkaqwHse6e7QvD3AP/MNoJdEDLaf8OxYyoWgorQ==}
 
-  unifont@0.7.1:
-    resolution: {integrity: sha512-0lg9M1cMYvXof8//wZBq6EDEfbwv4++t7+dYpXeS2ypaLuZJmUFYEwTm412/1ED/Wfo/wyzSu6kNZEr9hgRNfg==}
+  unifont@0.7.3:
+    resolution: {integrity: sha512-b0GtQzKCyuSHGsfj5vyN8st7muZ6VCI4XD4vFlr7Uy1rlWVYxC3npnfk8MyreHxJYrz1ooLDqDzFe9XqQTlAhA==}
 
   union-value@1.0.1:
     resolution: {integrity: sha512-tJfXmxMeWYnczCVs7XAEvIV7ieppALdyepWMkHkwciRpZraG/xwT+s2JN8+pr1+8jCRf80FFzvr+MpQeeoF4Xg==}
@@ -30507,7 +30526,7 @@ snapshots:
 
   '@capsizecss/unpack@4.0.0':
     dependencies:
-      fontkitten: 1.0.0
+      fontkitten: 1.0.1
 
   '@ceramicnetwork/codecs@1.14.0':
     dependencies:
@@ -33209,7 +33228,7 @@ snapshots:
     dependencies:
       ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 4.1.13
-      zod-to-json-schema: 3.25.0(zod@4.1.13)
+      zod-to-json-schema: 3.25.1(zod@4.1.13)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -33800,6 +33819,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
 
   '@floating-ui/react@0.26.28(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@floating-ui/react-dom': 2.1.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@floating-ui/utils': 0.2.10
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      tabbable: 6.3.0
+
+  '@floating-ui/react@0.27.16(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@floating-ui/react-dom': 2.1.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@floating-ui/utils': 0.2.10
@@ -35394,10 +35421,10 @@ snapshots:
 
   '@kwsites/promise-deferred@1.1.1': {}
 
-  '@learncard/chapi-plugin@1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/chapi-plugin@1.1.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkit-plugin': 1.6.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkit-plugin': 1.6.2(react@18.3.1)(typescript@5.6.2)
       credential-handler-polyfill: 3.2.1
       web-credential-handler: 2.0.2
     transitivePeerDependencies:
@@ -35406,7 +35433,7 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/core@9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/core@9.4.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
       '@learncard/helpers': 1.2.2(react@18.3.1)(typescript@5.6.2)
       abort-controller: 3.0.0
@@ -35418,9 +35445,9 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/crypto-plugin@1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/crypto-plugin@1.1.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
       isomorphic-webcrypto: 2.3.8(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))
     transitivePeerDependencies:
       - expo
@@ -35428,18 +35455,18 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/did-web-plugin@1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/did-web-plugin@1.1.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
     transitivePeerDependencies:
       - expo
       - react
       - react-native
       - typescript
 
-  '@learncard/didkey-plugin@1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/didkey-plugin@1.1.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/helpers': 1.2.2(react@18.3.1)(typescript@5.6.2)
       hex-lite: 1.5.0
     transitivePeerDependencies:
@@ -35448,9 +35475,9 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/didkit-plugin@1.6.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/didkit-plugin@1.6.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/types': 5.11.1
     transitivePeerDependencies:
       - expo
@@ -35458,18 +35485,18 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/dynamic-loader-plugin@1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/dynamic-loader-plugin@1.1.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
     transitivePeerDependencies:
       - expo
       - react
       - react-native
       - typescript
 
-  '@learncard/encryption-plugin@1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/encryption-plugin@1.1.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/types': 5.11.1
     transitivePeerDependencies:
       - expo
@@ -35477,9 +35504,9 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/ethereum-plugin@1.1.2(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)(utf-8-validate@5.0.10)':
+  '@learncard/ethereum-plugin@1.1.2(bufferutil@4.0.9)(react@18.3.1)(typescript@5.6.2)(utf-8-validate@5.0.10)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
       '@uniswap/default-token-list': 4.1.0
       ethers: 5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
@@ -35490,10 +35517,10 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@learncard/expiration-plugin@1.2.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/expiration-plugin@1.2.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/vc-plugin': 1.3.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/vc-plugin': 1.3.2(react@18.3.1)(typescript@5.6.2)
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - expo
@@ -35512,27 +35539,27 @@ snapshots:
       - react
       - typescript
 
-  '@learncard/init@2.2.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)':
+  '@learncard/init@2.2.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)':
     dependencies:
-      '@learncard/chapi-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/crypto-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/did-web-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkey-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkit-plugin': 1.6.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/dynamic-loader-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/encryption-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/ethereum-plugin': 1.1.2(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)(utf-8-validate@5.0.10)
-      '@learncard/expiration-plugin': 1.2.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/chapi-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/crypto-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/did-web-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkey-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkit-plugin': 1.6.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/dynamic-loader-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/encryption-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/ethereum-plugin': 1.1.2(bufferutil@4.0.9)(react@18.3.1)(typescript@5.6.2)(utf-8-validate@5.0.10)
+      '@learncard/expiration-plugin': 1.2.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/helpers': 1.2.2(react@18.3.1)(typescript@5.6.2)
-      '@learncard/learn-card-plugin': 1.2.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/learn-cloud-plugin': 2.3.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
-      '@learncard/network-plugin': 2.9.2(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)
+      '@learncard/learn-card-plugin': 1.2.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/learn-cloud-plugin': 2.3.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
+      '@learncard/network-plugin': 2.9.2(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)
       '@learncard/types': 5.11.1
-      '@learncard/vc-api-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/vc-plugin': 1.3.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/vc-templates-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/vpqr-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/vc-api-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/vc-plugin': 1.3.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/vc-templates-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/vpqr-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
     transitivePeerDependencies:
       - '@aws-sdk/credential-providers'
       - '@mongodb-js/zstd'
@@ -35557,10 +35584,10 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@learncard/learn-card-plugin@1.2.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/learn-card-plugin@1.2.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkit-plugin': 1.6.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkit-plugin': 1.6.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/types': 5.11.1
       date-fns: 2.30.0
     transitivePeerDependencies:
@@ -35569,9 +35596,9 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/learn-cloud-client@1.6.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)':
+  '@learncard/learn-cloud-client@1.6.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)':
     dependencies:
-      '@learncard/learn-cloud-service': 2.4.4(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
+      '@learncard/learn-cloud-service': 2.4.4(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
       '@trpc/client': 11.8.0(@trpc/server@11.7.1(typescript@5.6.2))(typescript@5.6.2)
     transitivePeerDependencies:
       - '@aws-sdk/credential-providers'
@@ -35597,12 +35624,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@learncard/learn-cloud-plugin@2.3.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)':
+  '@learncard/learn-cloud-plugin@2.3.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkit-plugin': 1.6.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkit-plugin': 1.6.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/helpers': 1.2.2(react@18.3.1)(typescript@5.6.2)
-      '@learncard/learn-cloud-client': 1.6.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
+      '@learncard/learn-cloud-client': 1.6.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)
       json-stringify-deterministic: 1.0.12
       lodash: 4.17.21
       pbkdf2-hmac: 1.2.1
@@ -35630,22 +35657,22 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@learncard/learn-cloud-service@2.4.4(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)':
+  '@learncard/learn-cloud-service@2.4.4(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(@types/node@22.19.1)(bufferutil@4.0.9)(react@18.3.1)(serverless@3.40.0(@types/node@22.19.1)(bufferutil@4.0.9)(utf-8-validate@5.0.10))(socks@2.8.7)(typescript@5.6.2)(utf-8-validate@5.0.10)(zod@4.1.13)':
     dependencies:
       '@fastify/cors': 9.0.1
       '@fastify/static': 7.0.4
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/crypto-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/did-web-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkey-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkit-plugin': 1.6.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/encryption-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/expiration-plugin': 1.2.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/crypto-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/did-web-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkey-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkit-plugin': 1.6.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/encryption-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/expiration-plugin': 1.2.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/helpers': 1.2.2(react@18.3.1)(typescript@5.6.2)
-      '@learncard/learn-card-plugin': 1.2.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/learn-card-plugin': 1.2.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/types': 5.11.1
-      '@learncard/vc-plugin': 1.3.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/vc-templates-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/vc-plugin': 1.3.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/vc-templates-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
       '@sentry/esbuild-plugin': 2.5.0
       '@sentry/serverless': 7.61.0
       '@trpc/server': 11.7.1(typescript@5.6.2)
@@ -35697,9 +35724,9 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@learncard/network-brain-client@2.5.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)':
+  '@learncard/network-brain-client@2.5.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)':
     dependencies:
-      '@learncard/network-brain-service': 3.9.2(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)
+      '@learncard/network-brain-service': 3.9.2(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)
       '@trpc/client': 11.3.0(@trpc/server@11.7.1(typescript@5.6.2))(typescript@5.6.2)
     transitivePeerDependencies:
       - '@trpc/server'
@@ -35714,7 +35741,7 @@ snapshots:
       - typescript
       - zod
 
-  '@learncard/network-brain-service@3.9.2(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)':
+  '@learncard/network-brain-service@3.9.2(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)':
     dependencies:
       '@aws-sdk/client-sqs': 3.936.0
       '@digitalcredentials/issuer-registry-client': 3.2.0-beta.5
@@ -35722,18 +35749,18 @@ snapshots:
       '@fastify/static': 7.0.4
       '@fastify/swagger': 8.15.0
       '@fastify/swagger-ui': 4.2.0
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/crypto-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/did-web-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkey-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkit-plugin': 1.6.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/encryption-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/expiration-plugin': 1.2.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/crypto-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/did-web-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkey-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkit-plugin': 1.6.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/encryption-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/expiration-plugin': 1.2.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/helpers': 1.2.2(react@18.3.1)(typescript@5.6.2)
-      '@learncard/learn-card-plugin': 1.2.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/learn-card-plugin': 1.2.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/types': 5.11.1
-      '@learncard/vc-plugin': 1.3.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/vc-templates-plugin': 1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/vc-plugin': 1.3.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/vc-templates-plugin': 1.1.2(react@18.3.1)(typescript@5.6.2)
       '@sentry/esbuild-plugin': 2.16.0
       '@sentry/serverless': 7.61.0
       '@trpc/server': 11.7.1(typescript@5.6.2)
@@ -35773,11 +35800,11 @@ snapshots:
       - typescript
       - zod
 
-  '@learncard/network-plugin@2.9.2(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)':
+  '@learncard/network-plugin@2.9.2(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/helpers': 1.2.2(react@18.3.1)(typescript@5.6.2)
-      '@learncard/network-brain-client': 2.5.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)
+      '@learncard/network-brain-client': 2.5.4(@trpc/server@11.7.1(typescript@5.6.2))(@types/ioredis-mock@8.2.6(ioredis@5.8.2))(react@18.3.1)(typescript@5.6.2)(zod@4.1.13)
       mustache: 4.2.0
     transitivePeerDependencies:
       - '@trpc/server'
@@ -35794,9 +35821,9 @@ snapshots:
 
   '@learncard/types@5.11.1': {}
 
-  '@learncard/vc-api-plugin@1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/vc-api-plugin@1.1.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/types': 5.11.1
     transitivePeerDependencies:
       - expo
@@ -35804,10 +35831,10 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/vc-plugin@1.3.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/vc-plugin@1.3.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
-      '@learncard/didkit-plugin': 1.6.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
+      '@learncard/didkit-plugin': 1.6.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/types': 5.11.1
       multiformats: 11.0.2
     transitivePeerDependencies:
@@ -35816,9 +35843,9 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/vc-templates-plugin@1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/vc-templates-plugin@1.1.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/types': 5.11.1
     transitivePeerDependencies:
       - expo
@@ -35826,10 +35853,10 @@ snapshots:
       - react-native
       - typescript
 
-  '@learncard/vpqr-plugin@1.1.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)':
+  '@learncard/vpqr-plugin@1.1.2(react@18.3.1)(typescript@5.6.2)':
     dependencies:
       '@digitalbazaar/vpqr': 3.0.0
-      '@learncard/core': 9.4.2(expo@54.0.25(@babel/core@7.28.5)(bufferutil@4.0.9)(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(utf-8-validate@5.0.10))(react-native@0.82.1(@babel/core@7.28.5)(@types/react@18.3.27)(bufferutil@4.0.9)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(typescript@5.6.2)
+      '@learncard/core': 9.4.2(react@18.3.1)(typescript@5.6.2)
       '@learncard/types': 5.11.1
     transitivePeerDependencies:
       - expo
@@ -36253,7 +36280,7 @@ snapshots:
 
   '@netlify/api@14.0.12':
     dependencies:
-      '@netlify/open-api': 2.45.0
+      '@netlify/open-api': 2.46.0
       node-fetch: 3.3.2
       p-wait-for: 5.0.2
       picoquery: 2.5.0
@@ -36399,7 +36426,7 @@ snapshots:
       urlpattern-polyfill: 8.0.2
       uuid: 11.1.0
 
-  '@netlify/edge-bundler@14.9.2':
+  '@netlify/edge-bundler@14.9.3':
     dependencies:
       '@import-maps/resolve': 2.0.0
       ajv: 8.17.1
@@ -36427,7 +36454,7 @@ snapshots:
   '@netlify/edge-functions-dev@1.0.7':
     dependencies:
       '@netlify/dev-utils': 4.3.3
-      '@netlify/edge-bundler': 14.9.2
+      '@netlify/edge-bundler': 14.9.3
       '@netlify/edge-functions': 3.0.3
       '@netlify/edge-functions-bootstrap': 2.16.0
       '@netlify/runtime-utils': 2.2.1
@@ -36451,7 +36478,7 @@ snapshots:
       '@netlify/blobs': 10.5.0
       '@netlify/dev-utils': 4.3.3
       '@netlify/functions': 5.1.2
-      '@netlify/zip-it-and-ship-it': 14.1.18(rollup@4.53.3)
+      '@netlify/zip-it-and-ship-it': 14.2.0(rollup@4.53.3)
       cron-parser: 4.9.0
       decache: 4.6.2
       extract-zip: 2.0.1
@@ -36509,7 +36536,7 @@ snapshots:
       - ioredis
       - uploadthing
 
-  '@netlify/open-api@2.45.0': {}
+  '@netlify/open-api@2.46.0': {}
 
   '@netlify/otel@5.1.1':
     dependencies:
@@ -36592,7 +36619,7 @@ snapshots:
       - supports-color
       - uploadthing
 
-  '@netlify/zip-it-and-ship-it@14.1.18(rollup@4.53.3)':
+  '@netlify/zip-it-and-ship-it@14.2.0(rollup@4.53.3)':
     dependencies:
       '@babel/parser': 7.28.5
       '@babel/types': 7.28.5
@@ -43496,7 +43523,7 @@ snapshots:
       tinyglobby: 0.2.15
       tsconfck: 3.1.6(typescript@5.6.2)
       ultrahtml: 1.6.0
-      unifont: 0.7.1
+      unifont: 0.7.3
       unist-util-visit: 5.0.0
       unstorage: 1.17.3(@netlify/blobs@10.5.0)(idb-keyval@6.2.2)(ioredis@5.8.2)
       vfile: 6.0.3
@@ -48712,12 +48739,12 @@ snapshots:
 
   fontace@0.4.0:
     dependencies:
-      fontkitten: 1.0.0
+      fontkitten: 1.0.1
 
   fontfaceobserver@2.3.0:
     optional: true
 
-  fontkitten@1.0.0:
+  fontkitten@1.0.1:
     dependencies:
       tiny-inflate: 1.0.3
 
@@ -57109,6 +57136,14 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
+  react-datepicker@9.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      '@floating-ui/react': 0.27.16(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      clsx: 2.1.1
+      date-fns: 4.1.0
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
   react-dev-utils@12.0.1(eslint@8.57.1)(typescript@5.6.2)(webpack@5.103.0(@swc/core@1.15.2(@swc/helpers@0.5.17))(esbuild@0.27.2)):
     dependencies:
       '@babel/code-frame': 7.27.1
@@ -61288,7 +61323,7 @@ snapshots:
       trough: 1.0.5
       vfile: 4.2.1
 
-  unifont@0.7.1:
+  unifont@0.7.3:
     dependencies:
       css-tree: 3.1.0
       ofetch: 1.5.1

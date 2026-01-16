@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.94.8",
+    "version": "1.94.9",
     "private": true,
     "dependencies": {
         "@capacitor-community/media": "^8.0.1",
@@ -90,6 +90,7 @@
         "react-code-input": "^3.10.1",
         "react-colorful": "^5.6.1",
         "react-countdown": "^2.3.6",
+        "react-datepicker": "^9.1.0",
         "react-error-boundary": "^4.1.2",
         "react-google-autocomplete": "^2.7.4",
         "react-lottie-player": "^1.5.6",

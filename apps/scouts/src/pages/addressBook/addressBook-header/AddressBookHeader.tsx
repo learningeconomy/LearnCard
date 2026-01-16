@@ -1,9 +1,9 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { IonGrid, IonRow, IonCol, useIonModal } from '@ionic/react';
+import { IonGrid, IonRow, IonCol } from '@ionic/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
-import { useIsCurrentUserLCNUser } from 'learn-card-base';
+import { useIsCurrentUserLCNUser, useModal, ModalTypes } from 'learn-card-base';
 import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
 import AddUser from 'apps/scouts/src/components/svgs/AddUser';
@@ -41,11 +41,20 @@ export const AddressBookHeader: React.FC<{
         headerTitle = connectionCount === 1 ? 'Contact' : 'Contacts';
     }
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookContactOptions, {
-        handleCloseModal: () => dismissCenterModal(),
-        showSearch,
-        handleShowSearch,
+    const { newModal, closeModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
+
+    const openContactOptions = () => {
+        newModal(
+            <AddressBookContactOptions
+                handleCloseModal={() => closeModal()}
+                showSearch={showSearch}
+                handleShowSearch={handleShowSearch}
+            />
+        );
+    };
 
     return (
         <IonGrid className="flex w-full items-center justify-center bg-grayscale-100">
@@ -68,11 +77,7 @@ export const AddressBookHeader: React.FC<{
                             if (!checkIfUserInNetwork()) return;
 
                             if (currentLCNUser) {
-                                presentCenterModal({
-                                    cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                    backdropDismiss: true,
-                                    showBackdrop: false,
-                                });
+                                openContactOptions();
                             }
                         }}
                         className="flex rounded-[40px] bg-sp-purple-base shadow-md shadow-black/25 py-[7px] px-[20px] text-white text-[15px] font-semibold font-notoSans"

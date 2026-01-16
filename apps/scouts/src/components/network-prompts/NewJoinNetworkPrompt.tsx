@@ -17,17 +17,10 @@ import {
     useIsCurrentUserLCNUser,
     useGetProfile,
     useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
-import {
-    IonCol,
-    IonRow,
-    IonInput,
-    IonSpinner,
-    useIonModal,
-    IonPage,
-    IonLoading,
-} from '@ionic/react';
+import { IonCol, IonRow, IonInput, IonSpinner, IonPage, IonLoading } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from '../../layout/ModalLayout';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
@@ -109,7 +102,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
 
     const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
 
-    const [presentLogoutErrorModal] = useIonModal(<ErrorLogout />);
+    const { newModal: newErrorLogoutModal, closeModal: closeErrorLogoutModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
+    });
+
+    const openErrorLogoutModal = () => {
+        newErrorLogoutModal(<ErrorLogout />);
+    };
 
     // const presentLogoutErrorModal = () => {
     //     newModal(<ErrorLogout />, { sectionClassName: '!max-w-[400px]' });
@@ -173,11 +173,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
 
     const handleStorageUpdate = async () => {
         await updateCurrentUser(currentUser?.privateKey, {
-            name: name ?? currentUser?.name ?? '',
-            profileImage: photo ?? currentUser?.profileImage ?? '',
+            name: (name ?? currentUser?.name ?? '') as string,
+            profileImage: (photo ?? currentUser?.profileImage ?? '') as string,
         });
         currentUserStore.set.currentUser({
-            ...currentUser,
+            ...(currentUser as any),
             name: name ?? currentUser?.name ?? '',
             profileImage: photo ?? currentUser?.profileImage ?? '',
         });
@@ -189,11 +189,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                 setIsLoading(true);
                 setIsCreateLoading(true);
                 const wallet = await initWallet();
-                const didWeb = await wallet.invoke.createProfile({
+                const didWeb = await (wallet.invoke.createProfile as any)({
                     did: wallet.id.did(),
-                    profileId: profileId,
-                    displayName: name,
-                    image: photo,
+                    profileId: profileId || '',
+                    displayName: name || '',
+                    image: (photo || undefined) as any,
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
 
@@ -206,9 +206,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                     setIsLoading(false);
                     setIsCreateLoading(false);
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.log('createProfile::error', err);
-                setError(err?.toString?.());
+                setError(err?.toString?.() || '');
                 setIsLoading(false);
                 setIsCreateLoading(false);
             }
@@ -220,8 +220,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
 
         if (lcNetworkProfile && lcNetworkProfile?.profileId) {
             const updatedProfile = await wallet?.invoke?.updateProfile({
-                displayName: name,
-                image: photo,
+                displayName: (name || undefined) as any,
+                image: (photo || undefined) as any,
                 notificationsWebhook: getNotificationsEndpoint(),
             });
         } else {
@@ -235,9 +235,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser, {
-                displayName: name ?? '',
-                photoURL: photo ?? '',
+            await updateProfile(auth()?.currentUser as any, {
+                displayName: (name ?? '') as any,
+                photoURL: (photo ?? '') as any,
             });
 
             handleStorageUpdate();
@@ -254,7 +254,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                 try {
                     if (authToken === 'dummy') {
                         currentUserStore.set.currentUser({
-                            ...currentUser,
+                            ...(currentUser as any),
                             name: name ?? currentUser?.name ?? '',
                             profileImage: photo ?? currentUser?.profileImage ?? '',
                         });
@@ -271,12 +271,12 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                         } else {
                             // update firebase profile
                             try {
-                                await updateProfile(auth()?.currentUser, {
-                                    displayName: name,
-                                    photoURL: photo,
+                                await updateProfile(auth()?.currentUser as any, {
+                                    displayName: name as any,
+                                    photoURL: photo as any,
                                 });
                             } catch (e) {
-                                presentLogoutErrorModal();
+                                openErrorLogoutModal();
                                 setError(`There was a firebase error: ${e?.toString?.()}`);
                             }
                         }
@@ -336,7 +336,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                                 customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px]"
                                 customImageClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[70px] min-h-[70px]"
                                 customSize={500}
-                                overrideSrc={photo?.length > 0}
+                                overrideSrc={(photo?.length || 0) > 0}
                                 overrideSrcURL={photo}
                             >
                                 {imageUploadLoading && (

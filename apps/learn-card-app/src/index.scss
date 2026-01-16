@@ -38,6 +38,7 @@ body.scanner-active > * {
 @import './assets/sass/launchpad.scss';
 @import './assets/sass/ai-sessions.scss';
 @import './assets/sass/ai-pathways.scss';
+@import 'react-datepicker/dist/react-datepicker.css';
 
 .disable-scrollbars {
     scrollbar-width: none;
@@ -86,20 +87,20 @@ body.scanner-active > * {
 }
 
 /* Fix browser autofill dark background - force light scheme on inputs with gray borders (guide pages) */
-input[class*="border-gray"],
-textarea[class*="border-gray"] {
+input[class*='border-gray'],
+textarea[class*='border-gray'] {
     color-scheme: light !important;
     background-color: white !important;
 }
 
-input[class*="border-gray"]:-webkit-autofill,
-input[class*="border-gray"]:-webkit-autofill:hover,
-input[class*="border-gray"]:-webkit-autofill:focus,
-input[class*="border-gray"]:-webkit-autofill:active,
-textarea[class*="border-gray"]:-webkit-autofill,
-textarea[class*="border-gray"]:-webkit-autofill:hover,
-textarea[class*="border-gray"]:-webkit-autofill:focus,
-textarea[class*="border-gray"]:-webkit-autofill:active {
+input[class*='border-gray']:-webkit-autofill,
+input[class*='border-gray']:-webkit-autofill:hover,
+input[class*='border-gray']:-webkit-autofill:focus,
+input[class*='border-gray']:-webkit-autofill:active,
+textarea[class*='border-gray']:-webkit-autofill,
+textarea[class*='border-gray']:-webkit-autofill:hover,
+textarea[class*='border-gray']:-webkit-autofill:focus,
+textarea[class*='border-gray']:-webkit-autofill:active {
     -webkit-box-shadow: 0 0 0 30px white inset !important;
     -webkit-text-fill-color: #374151 !important;
     caret-color: #374151 !important;

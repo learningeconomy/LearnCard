@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import { IonModal } from '@ionic/react';
-import useModal from 'learn-card-base';
 import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
-
 import {
     SocialLoginTypes,
     authStore,
@@ -12,6 +10,8 @@ import {
     useIsCurrentUserLCNUser,
     useWallet,
     useCurrentUser,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loading }) => {
@@ -37,7 +37,9 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
                 showDeleteAccountButton={false}
                 showNetworkModal
                 showNotificationsModal
-            />
+            />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
     };
 

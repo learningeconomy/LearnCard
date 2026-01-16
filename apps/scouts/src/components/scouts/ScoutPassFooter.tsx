@@ -3,7 +3,6 @@ import { ModalTypes, useModal } from 'learn-card-base';
 import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import ShareModal from '../share/ShareModal';
-import { useIonModal } from '@ionic/react';
 import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
 
 type ScoutPassFooterProps = {

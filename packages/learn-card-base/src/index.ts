@@ -53,6 +53,7 @@ export * from './components/shadcn/components/ui/button';
 export * from './components/shadcn/components/ui/popover';
 export * from './components/shadcn/lib/utils';
 export * from './components/generic/Select';
+export * from './components/toast/Toast';
 
 export * from './utils/regexes';
 export * from './utils/pushUtilities';

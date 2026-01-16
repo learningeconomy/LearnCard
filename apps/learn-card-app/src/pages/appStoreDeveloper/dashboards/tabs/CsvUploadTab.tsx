@@ -33,6 +33,7 @@ import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
 import type { CredentialTemplate } from '../types';
+import { useTemplateDetails } from '../hooks/useTemplateDetails';
 import { 
     extractVariablesByType,
     OBv3CredentialTemplate,
@@ -59,11 +60,14 @@ type ExtendedTemplate = CredentialTemplate & {
 
 export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
     integration,
-    templates,
+    templates: basicTemplates,
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const csvInputRef = useRef<HTMLInputElement>(null);
+
+    // Load full template details on-demand (not loaded by dashboard for performance)
+    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(integration.id, basicTemplates);
 
     // CSV state
     const [csvFileName, setCsvFileName] = useState<string | null>(null);
@@ -478,6 +482,15 @@ export const CsvUploadTab: React.FC<CsvUploadTabProps> = ({
                 <FileSpreadsheet className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p className="text-gray-500 font-medium">No templates available</p>
                 <p className="text-sm text-gray-400 mt-1">Create and save templates first to use CSV batch upload</p>
+            </div>
+        );
+    }
+
+    // Show loading state while fetching full template details
+    if (isLoadingTemplates) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
             </div>
         );
     }
