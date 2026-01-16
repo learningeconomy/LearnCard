@@ -20,7 +20,7 @@ const TroopIDTypeSelectorModal: React.FC<{
 }> = ({ handleCloseModal, earnedBoostIDs = [], isLoading, onSuccess }) => {
     // oxlint-disable-next-line no-unused-vars
     const flags = useFlags();
-    const canCreateGlobalIDs =true;
+   const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
 
     const [_viewMode, _setViewMode] = useState<TroopsCMSViewModeEnum | null>(null);
 
