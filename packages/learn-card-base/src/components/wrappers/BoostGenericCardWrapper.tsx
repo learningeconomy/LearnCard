@@ -95,6 +95,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 thumbImgSrc={thumbImgSrc}
                 indicatorColor={indicatorColor}
                 uri={uri}
+                unknownVerifierTitle={unknownVerifierTitle}
             />
         );
     }

@@ -24,8 +24,13 @@ export const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps>
     unknownVerifierTitle,
 }) => {
     // For Scouts: if we have a role-based title, show it with trusted styling
-    const displayAsTrusted = !!unknownVerifierTitle;
-    const effectiveState = displayAsTrusted ? VERIFIER_STATES.trustedVerifier : verifierState;
+    // BUT don't overwrite self-issued or untrusted status
+    const effectiveState =
+        unknownVerifierTitle &&
+        verifierState !== VERIFIER_STATES.selfVerified &&
+        verifierState !== VERIFIER_STATES.untrustedVerifier
+            ? VERIFIER_STATES.trustedVerifier
+            : verifierState;
     
     return (
         <div className={`flex justify-center ${className}`}>

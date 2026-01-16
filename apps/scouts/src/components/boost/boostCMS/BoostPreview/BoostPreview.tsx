@@ -41,6 +41,7 @@ type BoostPreviewProps = {
     qrCodeOnClick?: () => void;
     hideQRCode?: boolean;
     handleShareBoost?: () => void;
+    unknownVerifierTitle?: string;
 };
 enum BoostPreviewTypeEnum {
     managed,
@@ -58,6 +59,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     customThumbComponent,
     customBodyCardComponent,
     customFooterComponent,
+    unknownVerifierTitle: unknownVerifierTitleProp,
     subjectDID,
     subjectImageComponent,
     issuerImageComponent,
@@ -74,23 +76,25 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     handleShareBoost,
 }) => {
     const { initWallet } = useWallet();
-    const boostIssuer = (credential as any)?.boostCredential?.issuer;
-    const boostIssuerDid =
-        typeof boostIssuer === 'string' ? boostIssuer : boostIssuer?.id;
+    const issuerDid =
+        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
-    const profileID = boostIssuerDid?.split(':').pop();
+    const profileID = issuerDid?.split(':').pop();
 
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
-    const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
+    const { credentials: highlightedCreds } = useHighlightedCredentials(
+        unknownVerifierTitleProp ? undefined : profileID
+    );
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const [isFront, setIsFront] = useState(true);
     console.log('///highlightedCreds', highlightedCreds);
     const unknownVerifierTitle = useMemo(() => {
+        if (unknownVerifierTitleProp) return unknownVerifierTitleProp;
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
 
         const role = getRoleFromCred(highlightedCreds[0]);
         return getScoutsNounForRole(role); // Just the role, no "Verified" prefix
-    }, [highlightedCreds]);
+    }, [highlightedCreds, unknownVerifierTitleProp]);
 
     useEffect(() => {
         const verify = async () => {
