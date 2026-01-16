@@ -3442,6 +3442,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/didkit
+      '@learncard/didkit-plugin-node':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/didkit-plugin-node
       '@learncard/init':
         specifier: workspace:*
         version: link:../../../packages/learn-card-init
@@ -3599,6 +3602,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../../../packages/plugins/didkit
+      '@learncard/didkit-plugin-node':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/didkit-plugin-node
       '@learncard/encryption-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/encryption

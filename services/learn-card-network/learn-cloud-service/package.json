@@ -55,6 +55,7 @@
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/didkey-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
+        "@learncard/didkit-plugin-node": "workspace:*",
         "@learncard/encryption-plugin": "workspace:*",
         "@learncard/expiration-plugin": "workspace:*",
         "@learncard/helpers": "workspace:*",

@@ -46,6 +46,7 @@
         "@learncard/core": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/didkit-plugin-node": "workspace:*",
         "@learncard/init": "workspace:*",
         "@learncard/types": "workspace:*",
         "@sentry/esbuild-plugin": "^2.5.0",
