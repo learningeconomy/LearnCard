@@ -165,9 +165,15 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                                 unsignedDelegateCredential
                             );
 
-                            const unsignedDidAuthVp = await wallet.invoke.newPresentation(
+                            const unsignedDidAuthVp: any = await wallet.invoke.newPresentation(
                                 delegateCredential
                             );
+
+                            // Add contractUri to VP before signing for xAPI tracking
+                            if (contractDetails?.uri) {
+                                unsignedDidAuthVp.contractUri = contractDetails.uri;
+                            }
+
                             const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                                 proofPurpose: 'authentication',
                                 proofFormat: 'jwt',

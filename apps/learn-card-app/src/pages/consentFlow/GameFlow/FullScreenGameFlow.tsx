@@ -147,7 +147,7 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
                 isFromGame={isFromGame}
             />
         ),
-        [GameFlowStep.confirmation]: (
+        [GameFlowStep.confirmation]: selectedUser ? (
             <AddGameConfirmationPrompt
                 user={selectedUser}
                 contractDetails={contractDetails}
@@ -158,14 +158,14 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
                 handleBackToGame={handleBackToGame}
                 handleSelectADifferentPlayer={() => setStep(GameFlowStep.whosPlaying)}
             />
-        ),
-        [GameFlowStep.success]: (
+        ) : null,
+        [GameFlowStep.success]: selectedUser ? (
             <GameAccessSuccessPrompt
                 user={selectedUser}
                 contractDetails={contractDetails}
                 isFromGame={isFromGame}
             />
-        ),
+        ) : null,
         [GameFlowStep.backToGame]: (
             <ReturnToGamePrompt
                 contractDetails={contractDetails}
@@ -176,13 +176,15 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
 
     return (
         <div
-            className="h-full w-full bg-cover bg-emerald-700"
+            className="min-h-screen h-full w-full bg-cover bg-emerald-700"
             style={{
                 backgroundImage: `url(${contractDetails?.image})`,
             }}
         >
-            <div className="h-full w-full bg-black bg-opacity-20 backdrop-blur-[5px] flex items-center justify-center">
-                <div className="p-[30px] max-w-[400px]">{stepToComponent[step]}</div>
+            <div className="min-h-screen w-full h-full bg-black bg-opacity-20 backdrop-blur-[5px] flex flex-col items-center overflow-y-auto py-[20px] md:py-[40px]">
+                <div className="p-[30px] max-w-[400px] w-full md:my-auto">
+                    {stepToComponent[step]}
+                </div>
             </div>
         </div>
     );

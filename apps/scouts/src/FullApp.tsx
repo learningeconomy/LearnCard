@@ -24,6 +24,7 @@ import {
     ModalsProvider,
     useSQLiteInitWeb,
     lazyWithRetry,
+    Toast,
 } from 'learn-card-base';
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import useFeedbackWidget from './hooks/useFeedbackWidget';
@@ -115,6 +116,7 @@ const FullApp: React.FC = () => {
                     <IonApp>
                         <ModalsProvider>
                             <div id="modal-mid-root"></div>
+                            <Toast />
                             <NetworkListener />
                             <AppUrlListener />
                             <PushNotificationListener />

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-import { IonRow, useIonModal } from '@ionic/react';
+import { IonRow } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import {
@@ -9,6 +9,8 @@ import {
     replaceUnderscoresWithWhiteSpace,
     getAchievementTypeFromCustomType,
     BoostUserTypeEnum,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 import {
@@ -49,40 +51,52 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<BoostCMSTypeSelectorButton
         );
     } else {
         achievementTypeSelected =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type].find(
-                options => options?.type === state?.basicInfo?.achievementType
+            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type as any]?.find(
+                (options: any) => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }
 
-    const { color: _color, IconComponent: Icon } = boostCategoryOptions[state?.basicInfo?.type];
+    const { color: _color, IconComponent: Icon } = boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(
-        BoostCMSAchievementTypeSelectorModal,
-        {
-            state: state,
-            setState: setState,
-            showCloseButton: true,
-            handleCloseModal: () => dismissCenterModal(),
-            boostUserType: boostUserType,
-            handleCategoryAndTypeChange: handleCategoryAndTypeChange,
-            customTypes: customTypes,
-            setCustomTypes: setCustomTypes,
-        }
-    );
+    const { newModal: newCenterModal, closeModal: closeCenterModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(
-        BoostCMSAchievementTypeSelectorModal,
-        {
-            state: state,
-            setState: setState,
-            showCloseButton: false,
-            handleCloseModal: () => dismissSheetModal(),
-            boostUserType: boostUserType,
-            handleCategoryAndTypeChange: handleCategoryAndTypeChange,
-            customTypes: customTypes,
-            setCustomTypes: setCustomTypes,
-        }
-    );
+    const { newModal: newSheetModal, closeModal: closeSheetModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
+
+    const presentCenterModal = () => {
+        newCenterModal(
+            <BoostCMSAchievementTypeSelectorModal
+                state={state}
+                setState={setState}
+                showCloseButton={true}
+                handleCloseModal={() => closeCenterModal()}
+                boostUserType={boostUserType}
+                handleCategoryAndTypeChange={handleCategoryAndTypeChange}
+                customTypes={customTypes}
+                setCustomTypes={setCustomTypes}
+            />
+        );
+    };
+
+    const presentSheetModal = () => {
+        newSheetModal(
+            <BoostCMSAchievementTypeSelectorModal
+                state={state}
+                setState={setState}
+                showCloseButton={false}
+                handleCloseModal={() => closeSheetModal()}
+                boostUserType={boostUserType}
+                handleCategoryAndTypeChange={handleCategoryAndTypeChange}
+                customTypes={customTypes}
+                setCustomTypes={setCustomTypes}
+            />
+        );
+    };
 
     return (
         <IonRow className="w-full flex flex-col items-center justify-center max-w-[600px] mt-4">
@@ -94,11 +108,7 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<BoostCMSTypeSelectorButton
                     if (isMobile) {
                         presentSheetModal();
                     } else {
-                        presentCenterModal({
-                            cssClass: 'center-modal user-options-modal',
-                            backdropDismiss: false,
-                            showBackdrop: false,
-                        });
+                        presentCenterModal();
                     }
                 }}
             >

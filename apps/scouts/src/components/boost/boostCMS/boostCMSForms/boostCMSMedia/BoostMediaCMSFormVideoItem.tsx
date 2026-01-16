@@ -1,13 +1,13 @@
 import React from 'react';
-import { useIonModal } from '@ionic/react';
-
 import { BoostMediaOptionsEnum } from '../../../boost';
 import Pencil from '../../../../svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 import Video from 'learn-card-base/svgs/Video';
+// @ts-ignore
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import { CreateMediaAttachmentFormModal } from './CreateMediaAttachmentForm';
 import { BoostMediaCMSFormItemProps } from './BoostCMSMediaForm';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
     index,
@@ -16,7 +16,6 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
     state,
     setState,
 }) => {
-    // Function to determine if the URL is from YouTube
     const isYoutubeUrl = (url: string) => {
         try {
             const youtubeUrl = new URL(url);
@@ -27,101 +26,61 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
         }
     };
 
-    // Function to get the YouTube video ID from the URL
     const getYoutubeVideoId = (url: string) => {
         const regex = /(?:\?v=|\.com\/embed\/)([^&]+)/;
         const match = url.match(regex);
         return match ? match[1] : '';
     };
 
-    // Function to get the cover image URL for YouTube videos
     const getCoverImageUrl = (youtubeWatchUrl: string) => {
         if (!isYoutubeUrl(youtubeWatchUrl)) {
-            return ''; // Return an empty string if the URL is not a YouTube URL
+            return '';
         }
 
         const videoId = getYoutubeVideoId(youtubeWatchUrl);
-        // Construct and return the URL for the video's cover image
-        // This URL fetches the highest resolution image available
         return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : '';
     };
 
-    // Function to get the source of the video
     const getVideoSource = (url: string) => {
         try {
             const urlObj = new URL(url);
             let hostname = urlObj.hostname;
 
-            // Special handling for Google Drive links
             if (hostname.includes('drive.google')) {
                 return 'Google Drive';
             }
 
-            // Remove 'www' if present
             hostname = hostname.replace(/^www\./, '');
-
-            // Return the adjusted hostname in lowercase, preserving the domain extension
             return hostname.toLowerCase();
         } catch (e) {
             console.error('Invalid URL', e);
-            return ''; // Handle the error or return a default value
+            return '';
         }
     };
 
-    const [presentEditSheetModal, dismissEditSheetModal] = useIonModal(
-        CreateMediaAttachmentFormModal,
-        {
-            initialState: state,
-            initialMedia: media,
-            initialIndex: index,
-            setParentState: setState,
-            initialActiveMediaType: BoostMediaOptionsEnum.video,
-            handleCloseModal: () => dismissEditSheetModal(),
-            showCloseButton: false,
-            hideBackButton: true,
-            title: (
-                <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                    Media Attachment
-                </p>
-            ),
-        }
-    );
-
-    const [presentCenterModal, dismissCenterModal] = useIonModal(CreateMediaAttachmentFormModal, {
-        initialState: state,
-        initialMedia: media,
-        initialIndex: index,
-        setParentState: setState,
-        hideBackButton: true,
-        initialActiveMediaType: BoostMediaOptionsEnum.video,
-        handleCloseModal: () => dismissCenterModal(),
-        showCloseButton: false,
-        title: (
-            <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                Media Attachment
-            </p>
-        ),
+    const { newModal: newEditModal, closeModal: closeEditModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Cancel,
     });
 
-    const handleEditMobile = () => {
-        presentEditSheetModal({
-            cssClass: 'mobile-modal user-options-modal',
-            initialBreakpoint: 0.9,
-            handleBehavior: 'none',
-        });
-    };
-
-    const handleEditDesktop = () => {
-        presentCenterModal({
-            cssClass: 'center-modal user-options-modal',
-            backdropDismiss: false,
-            showBackdrop: false,
-        });
-    };
-
-    const handleCloseModal = () => {
-        dismissEditSheetModal();
-        dismissCenterModal();
+    const handleEdit = () => {
+        newEditModal(
+            <CreateMediaAttachmentFormModal
+                initialState={state}
+                initialMedia={media}
+                initialIndex={index}
+                setParentState={setState}
+                hideBackButton={true}
+                initialActiveMediaType={BoostMediaOptionsEnum.video}
+                handleCloseModal={() => closeEditModal()}
+                showCloseButton={false}
+                title={
+                    <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
+                        Media Attachment
+                    </p>
+                }
+            />
+        );
     };
 
     return (
@@ -129,7 +88,6 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
             key={index}
             className="group bg-grayscale-100 rounded-[20px] relative text-xs min-h-[120px] max-h-[120px] w-full flex overflow-hidden mb-4"
         >
-            {/* Thumbnail and gradient */}
             <div className="w-2/5 relative overflow-hidden rounded-[20px] shadow-3xl min-h-[120px] max-h-[120px] flex-shrink-0">
                 <a
                     href={media.url || ''}
@@ -147,7 +105,6 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 </a>
             </div>
 
-            {/* Title and source info, making sure it's clickable */}
             <a
                 href={media.url || ''}
                 target="_blank"
@@ -163,19 +120,11 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 </p>
             </a>
 
-            {/* TrashBin icon, positioned absolutely to the right bottom corner */}
             <div className="absolute right-1 bottom-1 z-30 cursor-pointer flex flex-col justify-between h-full pt-[10px]">
                 <button
-                    onClick={() => handleEditDesktop()}
+                    onClick={() => handleEdit()}
                     type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-desktop"
-                >
-                    <Pencil className="h-[60%]" />
-                </button>
-                <button
-                    onClick={() => handleEditMobile()}
-                    type="button"
-                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow modal-btn-mobile"
+                    className="text-grayscale-900 flex items-center justify-center bg-white rounded-full h-[35px] w-[35px] drop-shadow"
                 >
                     <Pencil className="h-[60%]" />
                 </button>
@@ -183,7 +132,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                     <TrashBin
                         className="h-[25px] w-[25px] text-grayscale-800"
                         onClick={e => {
-                            e.stopPropagation(); // Prevent link navigation
+                            e.stopPropagation();
                             setState(state => ({
                                 ...state,
                                 mediaAttachments: state.mediaAttachments.filter(

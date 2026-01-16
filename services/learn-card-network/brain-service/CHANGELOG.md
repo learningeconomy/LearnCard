@@ -1,5 +1,105 @@
 # @learncard/network-brain-service
 
+## 3.9.4
+
+### Patch Changes
+
+-   [#931](https://github.com/learningeconomy/LearnCard/pull/931) [`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - ## App Store Credential Issuance
+
+    Embedded apps in the LearnCard App Store can now issue credentials directly to users via the `sendAppEvent` postMessage API.
+
+    ### Features
+
+    -   **New `send-credential` app event**: Embedded apps can call `sendAppEvent({ type: 'send-credential', boostId, templateData })` to issue credentials from pre-configured boost templates
+    -   **Credential Claim Modal**: When a credential is issued, users see a claim modal with a preview of the credential and can accept it into their wallet
+    -   **Notification Integration**: Credentials create notifications that can be claimed later if dismissed, and are marked as completed when claimed
+    -   **Auto Signing Authority Setup**: When adding a boost to an app listing, the backend automatically configures the signing authority using the developer's primary SA
+    -   **Credentials Step in App Submission**: Developers can now add credential templates (boosts) to their app listings during the submission wizard
+
+    ### API
+
+    ```typescript
+    // From an embedded app
+    const result = await learnCard.sendAppEvent({
+        type: 'send-credential',
+        boostId: 'course-completion', // Boost ID configured in app listing
+        templateData: {
+            /* optional dynamic data */
+        },
+    });
+    // Returns: { credentialUri, boostUri }
+    ```
+
+    ### Documentation
+
+    Added new guide: "Connect an Embedded App" in How-To Guides > Connect Systems
+
+-   Updated dependencies [[`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025)]:
+    -   @learncard/types@5.11.3
+    -   @learncard/core@9.4.4
+    -   @learncard/helpers@1.2.4
+    -   @learncard/did-web-plugin@1.1.4
+    -   @learncard/didkey-plugin@1.1.4
+    -   @learncard/didkit-plugin@1.6.4
+    -   @learncard/encryption-plugin@1.1.4
+    -   @learncard/learn-card-plugin@1.2.4
+    -   @learncard/vc-plugin@1.3.4
+    -   @learncard/vc-templates-plugin@1.1.4
+    -   @learncard/crypto-plugin@1.1.4
+    -   @learncard/expiration-plugin@1.2.4
+
+## 3.9.3
+
+### Patch Changes
+
+-   [#924](https://github.com/learningeconomy/LearnCard/pull/924) [`0a2b464c82c52edad1e7eb18267b79073d05d36b`](https://github.com/learningeconomy/LearnCard/commit/0a2b464c82c52edad1e7eb18267b79073d05d36b) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add CredentialActivity Log for Auto-Delivery
+
+-   [#882](https://github.com/learningeconomy/LearnCard/pull/882) [`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f) Thanks [@Custard7](https://github.com/Custard7)! - feat: Unified Send
+
+-   [#922](https://github.com/learningeconomy/LearnCard/pull/922) [`95f6d91929e38231c7e616e4a6720c5c157861e2`](https://github.com/learningeconomy/LearnCard/commit/95f6d91929e38231c7e616e4a6720c5c157861e2) Thanks [@Custard7](https://github.com/Custard7)! - fix: Prevent CredentialActivity Deadlocking
+
+-   [#923](https://github.com/learningeconomy/LearnCard/pull/923) [`5eb024296c3b3155f7ec6062189876c05fb8ca37`](https://github.com/learningeconomy/LearnCard/commit/5eb024296c3b3155f7ec6062189876c05fb8ca37) Thanks [@Custard7](https://github.com/Custard7)! - fix: Apply locking fix to Inbox Credential
+
+-   Updated dependencies [[`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f)]:
+    -   @learncard/types@5.11.2
+    -   @learncard/core@9.4.3
+    -   @learncard/helpers@1.2.3
+    -   @learncard/did-web-plugin@1.1.3
+    -   @learncard/didkey-plugin@1.1.3
+    -   @learncard/didkit-plugin@1.6.3
+    -   @learncard/encryption-plugin@1.1.3
+    -   @learncard/learn-card-plugin@1.2.3
+    -   @learncard/vc-plugin@1.3.3
+    -   @learncard/vc-templates-plugin@1.1.3
+    -   @learncard/crypto-plugin@1.1.3
+    -   @learncard/expiration-plugin@1.2.3
+
+## 3.9.2
+
+### Patch Changes
+
+-   [#905](https://github.com/learningeconomy/LearnCard/pull/905) [`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d) Thanks [@Custard7](https://github.com/Custard7)! - feat: [LC-1103] Dynamic Boost Templates
+
+-   Updated dependencies [[`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d)]:
+    -   @learncard/types@5.11.1
+    -   @learncard/core@9.4.2
+    -   @learncard/helpers@1.2.2
+    -   @learncard/did-web-plugin@1.1.2
+    -   @learncard/didkey-plugin@1.1.2
+    -   @learncard/didkit-plugin@1.6.2
+    -   @learncard/encryption-plugin@1.1.2
+    -   @learncard/learn-card-plugin@1.2.2
+    -   @learncard/vc-plugin@1.3.2
+    -   @learncard/vc-templates-plugin@1.1.2
+    -   @learncard/crypto-plugin@1.1.2
+    -   @learncard/expiration-plugin@1.2.2
+
+## 3.9.1
+
+### Patch Changes
+
+-   [#902](https://github.com/learningeconomy/LearnCard/pull/902) [`0e7c2696df045597e3ba9b3ca992aaa85f425fb4`](https://github.com/learningeconomy/LearnCard/commit/0e7c2696df045597e3ba9b3ca992aaa85f425fb4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Correctly invalidate did web cache when claming a boost
+
 ## 3.9.0
 
 ### Minor Changes

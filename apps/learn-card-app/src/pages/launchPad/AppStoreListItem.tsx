@@ -26,11 +26,13 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     isInstalledLoading = false,
     onInstallSuccess,
 }) => {
-
     const { getColorSet } = useTheme();
     const colors = getColorSet(ColorSetEnum.launchPad);
 
-    const { newModal, replaceModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
+    const { newModal, replaceModal } = useModal({
+        desktop: ModalTypes.Right,
+        mobile: ModalTypes.Right,
+    });
 
     const buttonClass = `flex items-center justify-center rounded-full font-[600] px-[20px] py-[5px] normal text-base font-poppins ${colors?.buttons?.unconnected}`;
     const connectedButtonClass = `flex items-center justify-center rounded-full font-[600] px-[20px] py-[5px] normal text-base font-poppins ${colors?.buttons?.connected}`;
@@ -65,7 +67,8 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
         if (hasConsented && contract) {
             // Guardian consent apps need profile selection flow
             if (contract.needsGuardianConsent) {
-                const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
+                const redirectUrl =
+                    launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
 
                 if (redirectUrl) {
                     newModal(
@@ -138,7 +141,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
             newModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
-                    appId={listing.listing_id}
+                    appId={(listing as any).slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}
                     isInstalled={isInstalled || !!installedAt}

@@ -6,9 +6,10 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import useBoostModal from '../hooks/useBoostModal';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import { EmptyState } from '../boost-select-menu/NewBoostSelectMenu';
-import { IonRow, IonCol, IonGrid, IonSpinner, useIonModal } from '@ionic/react';
+import { IonRow, IonGrid, IonSpinner } from '@ionic/react';
 import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
+// @ts-ignore
 import HourGlass from '../../../assets/lotties/hourglass.json';
 import {
     CredentialCategoryEnum,
@@ -19,6 +20,8 @@ import {
     searchManagedBoostsFromCache,
     pluralize,
     BoostCategoryOptionsEnum,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 import { BoostQuery } from '@learncard/types';
 
@@ -56,8 +59,6 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     bgFillerColor,
     defaultImg,
     includeExtendedFamily,
-    search,
-    title,
     enableCreateButton = true,
     handleCloseModal,
 }) => {
@@ -95,10 +96,19 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
 
-    const [presentNewBoostSelector, dismissNewBoostSelector] = useIonModal(NewBoostSelectMenu, {
-        handleCloseModal: () => dismissNewBoostSelector(),
-        category,
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
     });
+
+    const openNewBoostSelector = () => {
+        newModal(
+            <NewBoostSelectMenu
+                handleCloseModal={() => closeModal()}
+                category={category}
+            />
+        );
+    };
 
     useEffect(() => {
         if (managedBoostsOnScreen && managedBoostsHasNextPage) managedBoostsFetchNextPage();
@@ -116,6 +126,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { handlePresentBoostModal } = useBoostModal(history, category);
 
     const credentialsBackgroundFetching = managedBoostsFetching && !managedBoostsLoading;
@@ -143,7 +154,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                         />
                     ))
             ) ?? [],
-        [managedBoosts, searchResults, category, viewMode, managedBoostsLoading]
+        [managedBoosts, searchResults, category, viewMode, managedBoostsLoading, managedBoostsRefetch, defaultImg]
     );
 
     const handleRefetch = async () => {

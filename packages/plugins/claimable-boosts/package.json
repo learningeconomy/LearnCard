@@ -1,6 +1,6 @@
 {
     "name": "@learncard/claimable-boosts-plugin",
-    "version": "1.1.1",
+    "version": "1.1.4",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",

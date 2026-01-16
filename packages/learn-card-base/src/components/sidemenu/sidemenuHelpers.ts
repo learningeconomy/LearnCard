@@ -327,9 +327,9 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
         },
         {
             id: 13,
-            name: 'Skills',
+            name: 'Competencies',
             IconComponent: SkillsTwoTonedIcon,
-            path: '/skills',
+            path: '/competencies',
         },
     ],
 };

@@ -559,6 +559,378 @@ describe('Notifications', () => {
             ).toHaveLength(1);
         });
     });
+
+    describe('Query Notifications', () => {
+        it('should allow querying notifications by type', async () => {
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+            ]);
+
+            const connectionRequests = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST },
+            });
+            expect(connectionRequests.notifications).toHaveLength(2);
+
+            const boostReceived = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED },
+            });
+            expect(boostReceived.notifications).toHaveLength(1);
+
+            const credentialReceived = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED },
+            });
+            expect(credentialReceived.notifications).toHaveLength(1);
+        });
+
+        it('should allow querying notifications by data.vcUris', async () => {
+            const vcUri1 = 'urn:lc:vc:test-credential-1';
+            const vcUri2 = 'urn:lc:vc:test-credential-2';
+
+            // Send notifications with vcUris in data
+            await sendTestNotificationWithData(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                { vcUris: [vcUri1] }
+            );
+            await sendTestNotificationWithData(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+                { vcUris: [vcUri2] }
+            );
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+            ]);
+
+            // Query by specific vcUri
+            const result1 = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { 'data.vcUris': vcUri1 },
+            });
+            expect(result1.notifications).toHaveLength(1);
+            expect(result1.notifications[0]?.type).toBe(
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED
+            );
+
+            const result2 = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { 'data.vcUris': vcUri2 },
+            });
+            expect(result2.notifications).toHaveLength(1);
+            expect(result2.notifications[0]?.type).toBe(
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED
+            );
+
+            // Query with non-existent vcUri should return empty
+            const noResults = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { 'data.vcUris': 'urn:lc:vc:non-existent' },
+            });
+            expect(noResults.notifications).toHaveLength(0);
+        });
+
+        it('should allow querying notifications by from.did', async () => {
+            // Send notifications from different users
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+            ]);
+
+            // Query by from.did
+            const result = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { 'from.did': userB.learnCard.id.did() },
+            });
+            expect(result.notifications).toHaveLength(2);
+            result.notifications.forEach(n => {
+                expect(n.from.did).toBe(userB.learnCard.id.did());
+            });
+        });
+
+        it('should allow querying notifications by from.profileId', async () => {
+            const fromProfile = {
+                displayName: 'Test User B',
+                profileId: 'test-profile-b',
+                did: userB.learnCard.id.did(),
+            };
+
+            await sendTestNotifications(userA.learnCard.id.did(), fromProfile, [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+            ]);
+
+            const result = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { 'from.profileId': 'test-profile-b' },
+            });
+            expect(result.notifications).toHaveLength(2);
+        });
+
+        it('should allow querying notifications by read status', async () => {
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+            ]);
+
+            // Mark one as read
+            await updateSomeNotifications(userA, { read: true }, 1);
+
+            const unreadResults = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { read: false },
+            });
+            expect(unreadResults.notifications).toHaveLength(2);
+
+            const readResults = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { read: true },
+            });
+            expect(readResults.notifications).toHaveLength(1);
+        });
+
+        it('should allow querying notifications by archived status', async () => {
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+            ]);
+
+            // Archive one
+            await updateSomeNotifications(userA, { archived: true }, 1);
+
+            const unarchivedResults = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { archived: false },
+            });
+            expect(unarchivedResults.notifications).toHaveLength(2);
+
+            const archivedResults = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { archived: true },
+            });
+            expect(archivedResults.notifications).toHaveLength(1);
+        });
+
+        it('should allow querying notifications by actionStatus', async () => {
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+            ]);
+
+            // Mark one as completed
+            await updateSomeNotifications(
+                userA,
+                { actionStatus: NotificationActionStatusEnumValidator.enum.COMPLETED },
+                1
+            );
+
+            const completedResults = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { actionStatus: NotificationActionStatusEnumValidator.enum.COMPLETED },
+            });
+            expect(completedResults.notifications).toHaveLength(1);
+        });
+
+        it('should allow combining multiple query filters', async () => {
+            const vcUri = 'urn:lc:vc:combined-test';
+
+            await sendTestNotificationWithData(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                { vcUris: [vcUri] }
+            );
+            await sendTestNotificationWithData(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+                { vcUris: [vcUri] }
+            );
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+            ]);
+
+            // Query with multiple filters
+            const result = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: {
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                    'data.vcUris': vcUri,
+                },
+            });
+            expect(result.notifications).toHaveLength(1);
+            expect(result.notifications[0]?.type).toBe(
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED
+            );
+        });
+
+        it('should support pagination', async () => {
+            await sendTestNotifications(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                [
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                ],
+                true
+            );
+
+            // First page
+            const page1 = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST },
+                options: { limit: 2 },
+            });
+            expect(page1.notifications).toHaveLength(2);
+            expect(page1.hasMore).toBe(true);
+            expect(page1.cursor).toBeDefined();
+
+            // Second page
+            const page2 = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST },
+                options: { limit: 2, cursor: page1.cursor },
+            });
+            expect(page2.notifications).toHaveLength(2);
+            expect(page2.hasMore).toBe(true);
+
+            // Third page
+            const page3 = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST },
+                options: { limit: 2, cursor: page2.cursor },
+            });
+            expect(page3.notifications).toHaveLength(1);
+            expect(page3.hasMore).toBe(false);
+        });
+
+        it('should support sorting CHRONOLOGICAL', async () => {
+            await sendTestNotifications(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                [
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                ],
+                true
+            );
+
+            const result = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: {},
+                options: { limit: 10, sort: NotificationsSortEnumValidator.enum.CHRONOLOGICAL },
+            });
+
+            expect(result.notifications).toHaveLength(3);
+            if (result.notifications[0]?.sent && result.notifications[2]?.sent) {
+                expect(
+                    new Date(result.notifications[0].sent).getTime()
+                ).toBeLessThan(new Date(result.notifications[2].sent).getTime());
+            }
+        });
+
+        it('should support sorting REVERSE_CHRONOLOGICAL', async () => {
+            await sendTestNotifications(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                [
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                    LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                ],
+                true
+            );
+
+            const result = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: {},
+                options: {
+                    limit: 10,
+                    sort: NotificationsSortEnumValidator.enum.REVERSE_CHRONOLOGICAL,
+                },
+            });
+
+            expect(result.notifications).toHaveLength(3);
+            if (result.notifications[0]?.sent && result.notifications[2]?.sent) {
+                expect(
+                    new Date(result.notifications[0].sent).getTime()
+                ).toBeGreaterThan(new Date(result.notifications[2].sent).getTime());
+            }
+        });
+
+        it('should only return notifications for the authenticated user (security)', async () => {
+            // Send notifications to both users
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+            ]);
+            await sendTestNotifications(userB.learnCard.id.did(), userA.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
+            ]);
+
+            // UserA should only see their own notifications
+            const userAResults = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: {},
+            });
+            expect(userAResults.notifications).toHaveLength(2);
+            userAResults.notifications.forEach(n => {
+                expect(n.to.did).toBe(userA.learnCard.id.did());
+            });
+
+            // UserB should only see their own notifications
+            const userBResults = await userB.clients.fullAuth.notifications.queryNotifications({
+                query: {},
+            });
+            expect(userBResults.notifications).toHaveLength(3);
+            userBResults.notifications.forEach(n => {
+                expect(n.to.did).toBe(userB.learnCard.id.did());
+            });
+        });
+
+        it('should not allow querying other users notifications even with explicit to.did filter', async () => {
+            // Send notifications to userA
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+                LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+            ]);
+
+            // UserB tries to query userA's notifications - should return empty
+            // The server should enforce to.did = authenticated user regardless of query
+            const result = await userB.clients.fullAuth.notifications.queryNotifications({
+                query: {},
+            });
+
+            // Should return 0 because userB has no notifications
+            expect(result.notifications).toHaveLength(0);
+        });
+
+        it('should return empty array for queries with no matches', async () => {
+            await sendTestNotifications(userA.learnCard.id.did(), userB.learnCard.id.did(), [
+                LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+            ]);
+
+            const result = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED },
+            });
+            expect(result.notifications).toHaveLength(0);
+            expect(result.hasMore).toBe(false);
+        });
+
+        it('should allow querying with limit of 1 for single result lookup', async () => {
+            const vcUri = 'urn:lc:vc:single-lookup';
+
+            await sendTestNotificationWithData(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                { vcUris: [vcUri] }
+            );
+
+            const result = await userA.clients.fullAuth.notifications.queryNotifications({
+                query: { 'data.vcUris': vcUri },
+                options: { limit: 1 },
+            });
+
+            expect(result.notifications).toHaveLength(1);
+            expect(result.notifications[0]?.data?.vcUris).toContain(vcUri);
+        });
+    });
 });
 
 export const updateSomeNotifications = async (
@@ -595,5 +967,16 @@ export const sendTestNotifications = async (
                 getTestNotification(to, from, t, sent)
             );
         })
+    );
+};
+
+export const sendTestNotificationWithData = async (
+    to: string | LCNProfile,
+    from: string | LCNProfile,
+    type: LCNNotificationTypeEnum,
+    data: { vcUris?: string[]; vpUris?: string[]; metadata?: Record<string, unknown> }
+) => {
+    return await userA.clients.authorizedDidAuth.notifications.sendNotification(
+        getTestNotification(to, from, type, undefined, data)
     );
 };

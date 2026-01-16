@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { HexColorPicker } from 'react-colorful';
 
-import { IonRow, IonCol, useIonModal } from '@ionic/react';
-import Eyedropper from 'learn-card-base/svgs/Eyedropper';
+import { IonCol } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 
 import { BoostCMSState } from '../../../boost';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 const BoostIDCardAccentForm: React.FC<{
     state: BoostCMSState;
@@ -36,22 +36,29 @@ const BoostIDCardAccentForm: React.FC<{
         return;
     };
 
-    const [presentColorPicker, dismissColorPicker] = useIonModal(
-        <div className="flex flex-col items-center justify-center w-full h-full transparent">
-            <div className="flex items-center justify-center mb-2">
-                <button
-                    onClick={() => dismissColorPicker()}
-                    className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
-                >
-                    <X className="text-black w-[30px]" />
-                </button>
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
+    const presentColorPicker = () => {
+        newModal(
+            <div className="flex flex-col items-center justify-center w-full h-full transparent">
+                <div className="flex items-center justify-center mb-2">
+                    <button
+                        onClick={() => closeModal()}
+                        className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
+                    >
+                        <X className="text-black w-[30px]" />
+                    </button>
+                </div>
+                <HexColorPicker
+                    color={state?.appearance?.accentColor ? state?.appearance?.accentColor : '#4F46E5'}
+                    onChange={handleColorChange}
+                />
             </div>
-            <HexColorPicker
-                color={state?.appearance?.accentColor ? state?.appearance?.accentColor : '#4F46E5'}
-                onChange={handleColorChange}
-            />
-        </div>
-    );
+        );
+    };
 
     return (
         <>
@@ -71,16 +78,11 @@ const BoostIDCardAccentForm: React.FC<{
                         type="text"
                         disabled={disabled}
                     />
-
-                    {/* <Eyedropper className="absolute w-[30px] h-[30px] right-2 text-grayscale-900" /> */}
                 </div>
 
                 <button
                     onClick={() => {
-                        presentColorPicker({
-                            backdropDismiss: true,
-                            showBackdrop: false,
-                        });
+                        presentColorPicker();
                     }}
                     className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-[10px] ml-2"
                     style={{

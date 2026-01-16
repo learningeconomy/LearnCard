@@ -94,6 +94,13 @@ import {
     PromotionLevel,
     PaginatedAppStoreListings,
     PaginatedInstalledApps,
+    AppEvent,
+    AppEventResponse,
+    // Activity
+    CredentialActivityEventType,
+    CredentialActivityRecord,
+    PaginatedCredentialActivities,
+    CredentialActivityStats,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -377,6 +384,7 @@ export type LearnCardNetworkPluginMethods = {
                   encrypt?: boolean;
                   overideFn?: (boost: UnsignedVC) => UnsignedVC;
                   skipNotification?: boolean;
+                  templateData?: Record<string, unknown>;
               }
     ) => Promise<string>;
 
@@ -705,18 +713,47 @@ export type LearnCardNetworkPluginMethods = {
 
     isAppStoreAdmin: () => Promise<boolean>;
     adminUpdateListingStatus: (listingId: string, status: AppListingStatus) => Promise<boolean>;
-    adminUpdatePromotionLevel: (listingId: string, promotionLevel: PromotionLevel) => Promise<boolean>;
+    adminUpdatePromotionLevel: (
+        listingId: string,
+        promotionLevel: PromotionLevel
+    ) => Promise<boolean>;
     adminGetAllListings: (options?: {
         limit?: number;
         cursor?: string;
         status?: AppListingStatus;
     }) => Promise<PaginatedAppStoreListings>;
 
+    // App Store Boost Management
+    addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;
+    removeBoostFromApp: (listingId: string, templateAlias: string) => Promise<boolean>;
+    getAppBoosts: (listingId: string) => Promise<Array<{ templateAlias: string; boostUri: string }>>;
+
+    // App Events (discriminated union)
+    sendAppEvent: (listingId: string, event: AppEvent) => Promise<AppEventResponse>;
+
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
 
     getLCNClient: () => LCNClient;
+
+    // Activity
+    getMyActivities: (options?: {
+        limit?: number;
+        cursor?: string;
+        boostUri?: string;
+        eventType?: CredentialActivityEventType;
+        integrationId?: string;
+    }) => Promise<PaginatedCredentialActivities>;
+
+    getActivityStats: (options?: {
+        boostUris?: string[];
+        integrationId?: string;
+    }) => Promise<CredentialActivityStats>;
+
+    getActivity: (options: { activityId: string }) => Promise<CredentialActivityRecord | null>;
+
+    getActivityChain: (options: { activityId: string }) => Promise<CredentialActivityRecord[]>;
 };
 
 /** @group LearnCardNetwork Plugin */

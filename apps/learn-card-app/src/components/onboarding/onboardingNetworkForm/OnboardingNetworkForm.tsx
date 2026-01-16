@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import moment from 'moment';
+import DatePickerInput from '../../date-picker/DatePickerInput';
 
 import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
@@ -37,6 +38,7 @@ import {
     BrandingEnum,
     useToast,
     ToastTypeEnum,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -68,6 +70,15 @@ type OnboardingNetworkFormProps = {
     role?: LearnCardRolesEnum | null;
     setStep?: (step: OnboardingStepsEnum) => void;
     onSuccess?: () => void;
+    formData: {
+        name: string | null | undefined;
+        dob: string | null | undefined;
+        country: string | undefined;
+        photo: string | null | undefined;
+        usMinorConsent: boolean;
+        profileId: string | null | undefined;
+    };
+    updateFormData: (updates: Partial<OnboardingNetworkFormProps['formData']>) => void;
 };
 
 const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
@@ -78,27 +89,54 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     setStep,
     role,
     onSuccess,
+    formData,
+    updateFormData,
 }) => {
     const { initWallet } = useWallet();
     const { newModal, closeModal } = useModal();
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
+    const { isDesktop, isMobile } = useDeviceTypeByWidth();
 
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
     const { handleLogout, isLoggingOut } = useLogout();
+    const { name, dob, country, photo, usMinorConsent, profileId } = formData;
 
-    const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
-    const [dob, setDob] = useState<string | null | undefined>('');
-    const [country, setCountry] = useState<string | undefined>(undefined);
-    const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
-    const [usMinorConsent, setUsMinorConsent] = useState<boolean>(false);
+    const handleNameChange = (value: string) => {
+        updateFormData({ name: value ?? '' });
+    };
+    const handleDobChange = (date: string) => {
+        setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.dob;
+            return newErrors;
+        });
+        updateFormData({ dob: date });
+        if (date) {
+            const age = calculateAge(date);
+            if (isNaN(age) || age < 13) {
+                setErrors(prev => ({
+                    ...prev,
+                    dob: ['You must be at least 13 years old'],
+                }));
+            }
+        }
+    };
+    const handleCountrySelect = (selectedCountry: string) => {
+        updateFormData({ country: selectedCountry });
+    };
+    const handlePhotoUpload = (photoUrl: string) => {
+        updateFormData({ photo: photoUrl });
+    };
+    const handleUsMinorConsentToggle = (value: boolean) => {
+        updateFormData({ usMinorConsent: value });
+    };
 
     const [networkToggle, setNetworkToggle] = useState<boolean>(true);
 
-    const [profileId, setProfileId] = useState<string | null | undefined>('');
     const [isLengthValid, setIsLengthValid] = useState(false);
     const [isFormatValid, setIsFormatValid] = useState(false);
     const [isUniqueValid, setIsUniqueValid] = useState(false);
@@ -153,11 +191,11 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         const age = dob ? calculateAge(dob) : Number.NaN;
         const isTeen = !Number.isNaN(age) && age >= 13 && age <= 17;
         const inEU = country ? isEUCountry(country) : false;
-        if (inEU || !isTeen) setUsMinorConsent(false);
+        if (inEU || !isTeen) handleUsMinorConsentToggle(false);
     }, [country, dob]);
 
     const onUpload = (data: UploadRes) => {
-        setPhoto(data?.url);
+        handlePhotoUpload(data?.url);
         setUploadProgress(false);
     };
 
@@ -204,17 +242,25 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         return false;
     };
 
-    const handleProfileIdInput = (value: string) => {
-        setProfileId(value);
-        setProfileIdErrors({});
-        setProfileIdError('');
-
+    const validateProfileIdValue = (value: string) => {
         const lengthOk = value.length >= 3 && value.length <= 25;
         setIsLengthValid(lengthOk);
-
         const formatOk = /^[a-zA-Z0-9-]+$/.test(value);
         setIsFormatValid(formatOk);
     };
+
+    const handleProfileIdInput = (value: string) => {
+        updateFormData({ profileId: value });
+        setProfileIdErrors({});
+        setProfileIdError('');
+        validateProfileIdValue(value);
+    };
+
+    useEffect(() => {
+        if (profileId) {
+            validateProfileIdValue(profileId);
+        }
+    }, [role]);
 
     const handleStorageUpdate = async () => {
         if (!currentUser?.privateKey) return;
@@ -448,7 +494,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             <USConsentNoticeModalContent
                 onBack={closeModal}
                 onContinue={() => {
-                    setUsMinorConsent(true);
+                    handleUsMinorConsentToggle(true);
                     closeModal();
                     handleUpdateUser({ skipUsConsentCheck: true });
                     console.log('///onContinue');
@@ -667,7 +713,12 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             isFormatValid &&
             isUniqueValid &&
             !isCheckingUnique);
-    const isContinueDisabled = !hasValidDob || !hasValidCountry || !hasValidProfileId || isLoading;
+    const isContinueDisabled =
+        !hasValidDob ||
+        !hasValidCountry ||
+        !hasValidProfileId ||
+        isLoading ||
+        Object.keys(errors).length > 0;
 
     return (
         <div className="w-full h-full bg-white relative overflow-y-auto">
@@ -746,7 +797,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                     }`}
                                     onIonInput={e => {
                                         setErrors({});
-                                        setName(e.detail.value);
+                                        handleNameChange(e.detail.value);
                                     }}
                                     value={name}
                                     placeholder="Full Name"
@@ -761,53 +812,13 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                             </div>
 
                             <div className="flex flex-col items-center justify-center w-full mt-2">
-                                <button
-                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
-                                        errors?.dob ? 'login-input-email-error' : ''
-                                    }`}
-                                    onClick={() => {
-                                        newModal(
-                                            <div className="w-full h-full transparent flex items-center justify-center">
-                                                <IonDatetime
-                                                    onIonChange={e => {
-                                                        setErrors({});
-                                                        setDob(
-                                                            moment(e.detail.value).format(
-                                                                'YYYY-MM-DD'
-                                                            )
-                                                        );
-                                                        closeModal();
-                                                    }}
-                                                    value={
-                                                        dob
-                                                            ? moment(dob).format('YYYY-MM-DD')
-                                                            : null
-                                                    }
-                                                    id="datetime"
-                                                    presentation="date"
-                                                    className="bg-white text-black rounded-[20px] w-full shadow-3xl z-50 font-notoSans"
-                                                    showDefaultButtons
-                                                    color="indigo-500"
-                                                    max={moment().format('YYYY-MM-DD')}
-                                                    min="1900-01-01"
-                                                    onIonCancel={closeModal}
-                                                />
-                                            </div>,
-                                            {
-                                                disableCloseHandlers: true,
-                                                sectionClassName:
-                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
-                                            },
-                                            {
-                                                desktop: ModalTypes.Center,
-                                                mobile: ModalTypes.Center,
-                                            }
-                                        );
-                                    }}
-                                >
-                                    {dob ? moment(dob).format('MMMM Do, YYYY') : 'Date of Birth'}
-                                    <Calendar className="w-[30px] text-grayscale-700" />
-                                </button>
+                                <DatePickerInput
+                                    value={dob || ''}
+                                    onChange={handleDobChange}
+                                    error={errors?.dob?.[0]}
+                                    isMobile={!isDesktop}
+                                    label="Date of Birth"
+                                />
 
                                 {dob && !Number.isNaN(calculateAge(dob)) && (
                                     <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
@@ -817,7 +828,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
 
                                 {errors?.dob && (
                                     <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
-                                        {errors?.dob}
+                                        {errors.dob[0]}
                                     </p>
                                 )}
                             </div>
@@ -836,7 +847,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                                                         delete next.country;
                                                         return next;
                                                     });
-                                                    setCountry(code);
+                                                    handleCountrySelect(code);
                                                     closeModal();
                                                 }}
                                             />,

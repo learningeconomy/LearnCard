@@ -12,6 +12,21 @@ import {
 import { LCNIntegrationQueryType } from '@learncard/types';
 import { neogma } from '@instance';
 
+/**
+ * Parse guideState from JSON string to object if present
+ */
+const parseIntegration = (integration: IntegrationType): IntegrationType => {
+    if (integration.guideState && typeof integration.guideState === 'string') {
+        try {
+            return { ...integration, guideState: JSON.parse(integration.guideState) };
+        } catch {
+            return integration;
+        }
+    }
+
+    return integration;
+};
+
 export const readIntegrationById = async (id: string): Promise<IntegrationType | null> => {
     const result = await new QueryBuilder(new BindParam({ id }))
         .match({ model: Integration, identifier: 'integration', where: { id } })
@@ -23,7 +38,7 @@ export const readIntegrationById = async (id: string): Promise<IntegrationType |
 
     if (!integration) return null;
 
-    return inflateObject<IntegrationType>(integration as any);
+    return parseIntegration(inflateObject<IntegrationType>(integration as any));
 };
 
 export const readIntegrationByPublishableKey = async (publishableKey: string): Promise<IntegrationType | null> => {
@@ -37,7 +52,7 @@ export const readIntegrationByPublishableKey = async (publishableKey: string): P
 
     if (!integration) return null;
 
-    return inflateObject<IntegrationType>(integration as any);
+    return parseIntegration(inflateObject<IntegrationType>(integration as any));
 };
 
 export const readIntegrationByName = async (name: string): Promise<IntegrationType | null> => {
@@ -51,7 +66,7 @@ export const readIntegrationByName = async (name: string): Promise<IntegrationTy
 
     if (!integration) return null;
 
-    return inflateObject<IntegrationType>(integration as any);
+    return parseIntegration(inflateObject<IntegrationType>(integration as any));
 };
 
 export const getIntegrationsForProfile = async (
@@ -82,7 +97,7 @@ export const getIntegrationsForProfile = async (
 
     return result.records.map(record => {
         const integration = record.get('integration')?.properties;
-        return inflateObject<IntegrationType>(integration as any);
+        return parseIntegration(inflateObject<IntegrationType>(integration as any));
     });
 };
 

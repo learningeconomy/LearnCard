@@ -102,7 +102,11 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
         try {
             newModal(
                 <BoostIssuanceLoading />,
-                { disableCloseHandlers: true },
+                {
+                    className: 'dark-modal-overlay',
+                    sectionClassName: 'transparent-modal',
+                    disableCloseHandlers: true,
+                },
                 { mobile: ModalTypes.FullScreen, desktop: ModalTypes.FullScreen }
             );
 

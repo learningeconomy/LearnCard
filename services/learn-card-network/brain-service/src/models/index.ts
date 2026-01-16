@@ -10,6 +10,10 @@ import { Skill } from './Skill';
 import { Tag } from './Tag';
 import { AppStoreListing } from './AppStoreListing';
 import { Integration } from './Integration';
+import { CredentialActivity } from './CredentialActivity';
+
+// Ensure CredentialActivity model is registered by referencing it
+void CredentialActivity;
 
 Credential.addRelationships({
     credentialReceived: {
@@ -241,6 +245,9 @@ if (shouldCreateIndices)
             neogma.queryRunner.run(
                 'CREATE TEXT INDEX app_store_listing_name_text_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.display_name)'
             ),
+            neogma.queryRunner.run(
+                'CREATE INDEX app_store_listing_slug_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.slug)'
+            ),
 
             // Relationship property indexes for AppStoreListing
             neogma.queryRunner.run(
@@ -248,6 +255,26 @@ if (shouldCreateIndices)
             ),
             neogma.queryRunner.run(
                 'CREATE INDEX installs_installed_at_idx IF NOT EXISTS FOR ()-[r:INSTALLS]-() ON (r.installed_at)'
+            ),
+
+            // CredentialActivity indexes
+            neogma.queryRunner.run(
+                'CREATE INDEX credential_activity_id_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.id)'
+            ),
+            neogma.queryRunner.run(
+                'CREATE INDEX credential_activity_activityid_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.activityId)'
+            ),
+            neogma.queryRunner.run(
+                'CREATE INDEX credential_activity_timestamp_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.timestamp)'
+            ),
+            neogma.queryRunner.run(
+                'CREATE INDEX credential_activity_actor_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.actorProfileId)'
+            ),
+            neogma.queryRunner.run(
+                'CREATE INDEX credential_activity_eventtype_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.eventType)'
+            ),
+            neogma.queryRunner.run(
+                'CREATE INDEX credential_activity_integration_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.integrationId)'
             ),
 
             // Constraints
@@ -283,3 +310,4 @@ export * from './Skill';
 export * from './Tag';
 export * from './Integration';
 export * from './AppStoreListing';
+export * from './CredentialActivity';

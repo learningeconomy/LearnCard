@@ -1,13 +1,14 @@
 import isEqual from 'lodash/isEqual';
 import cloneDeep from 'lodash/cloneDeep';
 import { v4 as uuidv4 } from 'uuid';
-import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator, ContactMethodQueryType } from '@learncard/types';
 import { isEncrypted, isVC2Format } from '@learncard/helpers';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import {
     injectObv3AlignmentsIntoCredentialForBoost,
     buildObv3AlignmentsForBoost,
 } from '@services/skills-provider/inject';
+import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
@@ -40,6 +41,14 @@ export const isProfileBoostOwner = async (
 
 export const isDraftBoost = (boost: BoostInstance): boolean => {
     return boost.status === BoostStatus.enum.DRAFT;
+};
+
+export const isProvisionalBoost = (boost: BoostInstance): boolean => {
+    return boost.status === BoostStatus.enum.PROVISIONAL;
+};
+
+export const isEditableBoost = (boost: BoostInstance): boolean => {
+    return isDraftBoost(boost) || isProvisionalBoost(boost);
 };
 
 export const convertCredentialToBoostTemplateJSON = (
@@ -85,6 +94,26 @@ export const verifyCredentialIsDerivedFromBoost = async (
     if (!isEqual(credential.boostId, boostURI)) {
         console.error('Credential boostId !== boost id', credential.boostId, boostURI);
         return false;
+    }
+
+    // If the boost template contains Mustache variables, we use a more lenient verification.
+    // We only verify that the credential type matches the template type, since other fields
+    // may have been dynamically substituted at issuance time.
+    const boostTemplateString = boost?.dataValues?.boost;
+    const isTemplatedBoost = hasMustacheVariables(boostTemplateString);
+
+    if (isTemplatedBoost) {
+        // For templated boosts, only verify the type matches
+        if (!isEqual(credential.type, boostCredential.type)) {
+            console.error(
+                'Credential type !== boost credential type (templated boost)',
+                credential.type,
+                boostCredential.type
+            );
+            return false;
+        }
+        // Templated boost passed basic verification
+        return true;
     }
 
     /// Simplify Comparison
@@ -294,7 +323,11 @@ export const sendBoost = async ({
     domain,
     skipNotification = false,
     autoAcceptCredential = false,
+    skipCertification = false,
     contractTerms,
+    metadata,
+    activityId,
+    integrationId,
 }: {
     from: ProfileType;
     to: ProfileType;
@@ -303,19 +336,25 @@ export const sendBoost = async ({
     domain: string;
     skipNotification?: boolean;
     autoAcceptCredential?: boolean;
+    skipCertification?: boolean;
     contractTerms?: DbTermsType;
+    metadata?: Record<string, unknown>;
+    activityId?: string;
+    integrationId?: string;
 }): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
-    if (decryptedCredential) {
-        if (process.env.NODE_ENV !== 'test') console.log('🚀 sendBoost:VC Decrypted');
+
+    // Skip certification if requested or if credential can't be decrypted or if it's not a boost credential
+    let _skipCertification = skipCertification || !decryptedCredential || !decryptedCredential?.type?.includes('BoostCredential');
+    if (!_skipCertification && decryptedCredential) {
         const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
         if (certifiedBoost) {
             const credentialInstance = await storeCredential(certifiedBoost);
 
             const tasks = [
                 createBoostInstanceOfRelationship(credentialInstance, boost),
-                createSentCredentialRelationship(from, to, credentialInstance),
+                createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId),
             ];
             // If this credential is being issued via a contract, create that relationship
             if (contractTerms) {
@@ -345,7 +384,7 @@ export const sendBoost = async ({
 
         const tasks = [
             createBoostInstanceOfRelationship(credentialInstance, boost),
-            createSentCredentialRelationship(from, to, credentialInstance),
+            createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId),
         ];
 
         if (contractTerms) {
@@ -476,3 +515,106 @@ export const issueClaimLinkBoost = async (
         autoAcceptCredential: true,
     });
 };
+
+/**
+ * Helper to detect if a recipient string is an email or phone number (for inbox routing)
+ */
+export const isInboxRecipient = (recipient: string): ContactMethodQueryType | null => {
+    // Email pattern
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+        return { type: 'email', value: recipient };
+    }
+
+    // Phone pattern (starts with + followed by digits, or just digits with optional dashes/spaces)
+    if (/^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''))) {
+        return { type: 'phone', value: recipient };
+    }
+
+    return null;
+};
+
+/**
+ * Prepares an unsigned credential from a boost template.
+ * Handles templateData rendering, issuance date, boostId injection, and OBv3 alignments.
+ */
+export const prepareCredentialFromBoost = async (
+    boost: BoostInstance,
+    boostUri: string,
+    domain: string,
+    options: {
+        templateData?: Record<string, unknown>;
+        recipientDid?: string;
+        issuerDid?: string;
+    } = {}
+): Promise<UnsignedVC> => {
+    const { templateData, recipientDid, issuerDid } = options;
+
+    let boostJsonString = boost.dataValues.boost;
+
+    if (templateData && Object.keys(templateData).length > 0) {
+        boostJsonString = renderBoostTemplate(boostJsonString, templateData);
+    }
+
+    const credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+
+    // Set issuance date based on VC version
+    const now = new Date().toISOString();
+    if (isVC2Format(credential)) {
+        credential.validFrom = now;
+    } else {
+        credential.issuanceDate = now;
+    }
+
+    // Set issuer if provided
+    if (issuerDid) {
+        credential.issuer = issuerDid;
+    }
+
+    // Set recipient DID in credentialSubject if provided
+    if (recipientDid) {
+        if (Array.isArray(credential.credentialSubject)) {
+            credential.credentialSubject = credential.credentialSubject.map(subject => ({
+                ...subject,
+                id: recipientDid,
+            }));
+        } else {
+            credential.credentialSubject = {
+                ...(credential.credentialSubject || {}),
+                id: recipientDid,
+            };
+        }
+    }
+
+    // Embed boostId for BoostCredential types
+    if (credential?.type?.includes('BoostCredential')) {
+        (credential as Record<string, unknown>).boostId = boostUri;
+    }
+
+    // Inject OBv3 alignments
+    await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, domain);
+
+    return credential;
+};
+
+/**
+ * Resolves a boost from a URI and validates it exists.
+ * Throws TRPCError if not found.
+ */
+export const resolveBoostByUri = async (
+    boostUri: string
+): Promise<BoostInstance> => {
+    const { TRPCError } = await import('@trpc/server');
+    const { getBoostByUri } = await import('@accesslayer/boost/read');
+
+    const boost = await getBoostByUri(boostUri);
+
+    if (!boost) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Could not find boost',
+        });
+    }
+
+    return boost;
+};
+

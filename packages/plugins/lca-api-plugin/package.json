@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-plugin",
-    "version": "1.1.2",
+    "version": "1.1.6",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/lca-api-plugin.esm.js",
@@ -37,7 +37,11 @@
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
+        "@learncard/core": "workspace:*",
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/init": "workspace:*",
         "@learncard/lca-api-client": "workspace:*",
+        "@learncard/types": "workspace:*",
         "hex-lite": "^1.5.0",
         "isomorphic-fetch": "^3.0.0",
         "isomorphic-webcrypto": "^2.3.8",

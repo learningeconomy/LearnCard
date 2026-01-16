@@ -62,6 +62,8 @@ services:
             SKILLS_PROVIDER_BASE_URL: ${SKILLS_PROVIDER_BASE_URL:-http://localhost:4000}
             SKILLS_PROVIDER_API_KEY: ${SKILLS_PROVIDER_API_KEY:-notARealKey}
 
+            APP_STORE_ADMIN_PROFILE_IDS: ${APP_STORE_ADMIN_PROFILE_IDS:-testa}
+
     cloud:
         image: learncard-monorepo-local
         build:

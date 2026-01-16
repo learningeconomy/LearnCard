@@ -9,6 +9,7 @@ import MainHeader from '../../components/main-header/MainHeader';
 import BoostEarnedList from '../../components/boost/boost-earned-card/BoostEarnedList';
 import BoostManagedList from '../../components/boost/boost-managed-card/BoostManagedList';
 import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoostSelectMenu';
+// @ts-ignore
 import EmptySocialBoostIcon from '../../assets/images/emptySocialBoost.svg';
 import Plus from '../../components/svgs/Plus';
 import { closeAll } from '../../helpers/uiHelpers';
@@ -31,15 +32,14 @@ import {
     ModalTypes,
     useIsLoggedIn,
     categoryMetadata,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 
 import { useLoadingLine } from '../../stores/loadingStore';
-import { useIonModal } from '@ionic/react';
 import {
     SubheaderContentType,
     SubheaderTypeEnum,
 } from '../../components/main-subheader/MainSubHeader.types';
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 const BoostsPage: React.FC = () => {
@@ -91,20 +91,28 @@ const BoostsPage: React.FC = () => {
 
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.SocialBadge];
 
-    const [presentNetworkModal, dismissNetworkModal] = useIonModal(NewJoinNetworkPrompt, {
-        handleCloseModal: () => {
-            dismissNetworkModal();
-            //Sometiems it doesn't close it completely, leaves backdrop for some reason...
-            closeAll?.();
-        },
-        showNotificationsModal: false,
+    const { newModal: newNetworkModal, closeModal: closeNetworkModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
+
+    const openNetworkModal = () => {
+        newNetworkModal(
+            <NewJoinNetworkPrompt
+                handleCloseModal={() => {
+                    closeNetworkModal();
+                    closeAll?.();
+                }}
+                showNotificationsModal={false}
+            />
+        );
+    };
     const { data, isLoading } = useIsCurrentUserLCNUser();
     const isLoggedIn = useIsLoggedIn();
 
     const handlePresentJoinNetworkModal = async () => {
         if (!isLoading && !data && isLoggedIn) {
-            presentNetworkModal();
+            openNetworkModal();
             return { prompted: true };
         }
         return { prompted: false };
@@ -146,10 +154,10 @@ const BoostsPage: React.FC = () => {
     const listProps = {
         viewMode: viewMode,
         defaultImg: imgSrc,
-        category: BoostCategoryOptionsEnum.socialBadge,
+        category: BoostCategoryOptionsEnum.socialBadge as unknown as CredentialCategoryEnum,
         title: 'Boosts',
         bgFillerColor: '!bg-sp-blue-light-ocean',
-        emptyImg: EmptySocialBoostIcon,
+        emptyImg: EmptySocialBoostIcon as any,
         emptyMessage: "You don't have any Boosts yet.",
         emptyMessageStyle: 'text-[#03748D] -mt-4',
     };

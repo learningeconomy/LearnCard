@@ -93,7 +93,7 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
     const { openConsentFlowModal } = useConsentFlow(contract, undefined, contractUri);
 
     const hideSideMenu =
-        ['/consent-flow', '/consent-flow-login', '/claim/from-dashboard/', '/chats'].includes(
+        ['/consent-flow', '/consent-flow-login', '/claim/from-dashboard/', '/chats', '/cli'].includes(
             location.pathname
         ) ||
         (collapsed && aiRoutes.includes(location.pathname) && !isMobile) ||

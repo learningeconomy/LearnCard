@@ -275,7 +275,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                     version="filled"
                                 />
                                 <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                    Skill
+                                    Competency
                                 </p>
                             </>
                         )}
@@ -289,12 +289,12 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                     {isTier ? (
                         <p className="text-center font-poppins text-[14px] text-grayscale-700 tracking-[-0.25px]">
                             A <span className="font-[600]">framework tier</span> serves as a
-                            structural container for skills.
+                            structural container for competencies.
                         </p>
                     ) : (
                         <p className="text-center font-poppins text-[14px] text-grayscale-700 tracking-[-0.25px]">
-                            A <span className="font-[600]">skill</span> is a verified credential
-                            that can be awarded and earned.
+                            A <span className="font-[600]">competency</span> is a verified
+                            credential that can be awarded and earned.
                         </p>
                     )}
                 </div>

@@ -9,10 +9,12 @@ import {
     isCustomBoostType,
     replaceUnderscoresWithWhiteSpace,
     getAchievementTypeFromCustomType,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
-import { IonRow, useIonModal, IonSpinner, IonGrid, IonToggle } from '@ionic/react';
+import { IonRow, IonSpinner, IonGrid } from '@ionic/react';
 import {
     boostCategoryOptions,
     CATEGORY_TO_SUBCATEGORY_LIST,
@@ -20,11 +22,10 @@ import {
 
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
 import Pencil from '../../../../svgs/Pencil';
-import Eyedropper from 'learn-card-base/svgs/Eyedropper';
+// @ts-ignore
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import TrashBin from '../../../../svgs/TrashBin';
 import X from 'learn-card-base/svgs/X';
-import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormModal';
 import BoostIDCardCMSAppearanceForm from '../../BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSAppearanceForm';
 
@@ -59,41 +60,9 @@ const BoostCMSAppearanceForm: React.FC<{
     const isID = state?.basicInfo?.type === BoostCategoryOptionsEnum.id;
     const isMembership = state?.basicInfo?.type === BoostCategoryOptionsEnum.membership;
 
-    const [image, setImage] = useState<string>(state?.appearance?.backgroundImage || '');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_image, setImage] = useState<string>(state?.appearance?.backgroundImage || '');
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
-
-    const handleColorChange = (hex: string) => handleStateChange('backgroundColor', hex);
-
-    const [presentColorPicker, dismissColorPicker] = useIonModal(
-        <div className="flex flex-col items-center justify-center w-full h-full transparent">
-            <div className="flex items-center justify-center mb-2">
-                <button
-                    onClick={() => dismissColorPicker()}
-                    className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
-                >
-                    <X className="text-black w-[30px]" />
-                </button>
-            </div>
-            <HexColorPicker
-                color={
-                    state?.appearance?.backgroundColor
-                        ? state?.appearance?.backgroundColor
-                        : '#353E64'
-                }
-                onChange={handleColorChange}
-            />
-        </div>
-    );
-
-    const handleColorInputOnChange = (value: string) => {
-        let updatedValue;
-
-        if (value !== '') updatedValue = value.startsWith('#') ? value : `#${value}`;
-
-        handleStateChange('backgroundColor', updatedValue);
-
-        return;
-    };
 
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
@@ -105,6 +74,46 @@ const BoostCMSAppearanceForm: React.FC<{
                 },
             };
         });
+    };
+
+    const handleColorChange = (hex: string) => handleStateChange('backgroundColor', hex);
+
+    const { newModal: newColorPickerModal, closeModal: closeColorPickerModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
+    const presentColorPicker = () => {
+        newColorPickerModal(
+            <div className="flex flex-col items-center justify-center w-full h-full transparent">
+                <div className="flex items-center justify-center mb-2">
+                    <button
+                        onClick={() => closeColorPickerModal()}
+                        className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
+                    >
+                        <X className="text-black w-[30px]" />
+                    </button>
+                </div>
+                <HexColorPicker
+                    color={
+                        state?.appearance?.backgroundColor
+                            ? state?.appearance?.backgroundColor
+                            : '#353E64'
+                    }
+                    onChange={handleColorChange}
+                />
+            </div>
+        );
+    };
+
+    const handleColorInputOnChange = (value: string) => {
+        let updatedValue;
+
+        if (value !== '') updatedValue = value.startsWith('#') ? value : `#${value}`;
+
+        handleStateChange('backgroundColor', updatedValue);
+
+        return;
     };
 
     const handleDeleteImageUploaded = () => {
@@ -124,6 +133,7 @@ const BoostCMSAppearanceForm: React.FC<{
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let achievementTypeSelected;
 
     if (isCustomBoostType(state?.basicInfo?.achievementType)) {
@@ -132,23 +142,19 @@ const BoostCMSAppearanceForm: React.FC<{
         );
     } else {
         achievementTypeSelected =
-            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type].find(
-                options => options?.type === state?.basicInfo?.achievementType
+            CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type as any]?.find(
+                (options: any) => options?.type === state?.basicInfo?.achievementType
             )?.title ?? '';
     }
 
     let formBackgroundColor: string = '';
-    let formTitle: string = '';
 
     const {
-        color: _color,
         subColor: _subColor,
-        IconComponent: Icon,
-    } = boostCategoryOptions[state?.basicInfo?.type];
+    } = boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     formBackgroundColor = state?.appearance?.backgroundColor
         ? state?.appearance?.backgroundColor
         : '#353E64';
-    formTitle = 'Appearance';
 
     return (
         <IonGrid
@@ -233,7 +239,7 @@ const BoostCMSAppearanceForm: React.FC<{
                                             className="w-full h-full object-cover"
                                         />
                                     )}
-                                    {imageUploadLoading && (
+                                    {(imageUploadLoading || uploadProgress !== false) && (
                                         <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
                                             <IonSpinner
                                                 name="crescent"
@@ -285,16 +291,11 @@ const BoostCMSAppearanceForm: React.FC<{
                                 type="text"
                                 disabled={disabled}
                             />
-                            {/* Hidden for now since eyedropper is misleading on what it does on app */}
-                            {/* <Eyedropper className="absolute w-[30px] h-[30px] right-2 text-grayscale-900" /> */}
                         </div>
 
                         <button
                             onClick={() => {
-                                presentColorPicker({
-                                    backdropDismiss: true,
-                                    showBackdrop: false,
-                                });
+                                presentColorPicker();
                             }}
                             className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-[10px] ml-2"
                             style={{

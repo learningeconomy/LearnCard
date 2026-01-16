@@ -225,10 +225,16 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                                     unsignedDelegateCredential
                                                 );
 
-                                            const unsignedDidAuthVp =
+                                            const unsignedDidAuthVp: any =
                                                 await wallet.invoke.newPresentation(
                                                     delegateCredential
                                                 );
+
+                                            // Add contractUri to VP before signing for xAPI tracking
+                                            if (uri && typeof uri === 'string') {
+                                                unsignedDidAuthVp.contractUri = uri;
+                                            }
+
                                             const vp = (await wallet.invoke.issuePresentation(
                                                 unsignedDidAuthVp,
                                                 {

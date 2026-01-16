@@ -9,6 +9,7 @@ import AdminToolsBulkBoostImportOption from '../bulk-import/AdminToolsBulkBoostI
 import AdminToolsConsentFlowOption from '../AdminToolsConsentFlow/AdminToolsConsentFlowOption';
 import AdminToolsSigningAuthorityOption from '../signingAuthority/AdminToolsSigningAuthorityOption';
 import AdminToolsSyncAllCredentialsOption from '../AdminToolsSyncAllCredentials/AdminToolsSyncAllCredentialsOption';
+import AdminToolsCLIOption from '../AdminToolsCLI/AdminToolsCLIOption';
 
 import { AdminToolOption, AdminToolOptionsEnum } from './admin-tools.helpers';
 
@@ -38,6 +39,9 @@ export const AdminToolsOptionsContainer: React.FC<{ option: AdminToolOption }> =
             break;
         case AdminToolOptionsEnum.SYNC_ALL_CREDENTIALS:
             adminToolContent = <AdminToolsSyncAllCredentialsOption option={option} />;
+            break;
+        case AdminToolOptionsEnum.CLI:
+            adminToolContent = <AdminToolsCLIOption option={option} />;
             break;
         default:
             adminToolContent = null;

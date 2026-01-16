@@ -1,5 +1,55 @@
 # @learncard/cli
 
+## 3.3.156
+
+### Patch Changes
+
+-   Updated dependencies [[`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025)]:
+    -   @learncard/types@5.11.3
+    -   @learncard/core@9.4.4
+    -   @learncard/init@2.2.6
+    -   @learncard/didkit-plugin@1.6.4
+    -   @learncard/learn-cloud-plugin@2.3.6
+    -   @learncard/linked-claims-plugin@0.2.4
+    -   @learncard/open-badge-v2-plugin@1.1.4
+    -   @learncard/simple-signing-plugin@1.1.4
+
+## 3.3.155
+
+### Patch Changes
+
+-   Updated dependencies [[`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f)]:
+    -   @learncard/types@5.11.2
+    -   @learncard/core@9.4.3
+    -   @learncard/init@2.2.5
+    -   @learncard/didkit-plugin@1.6.3
+    -   @learncard/learn-cloud-plugin@2.3.5
+    -   @learncard/linked-claims-plugin@0.2.3
+    -   @learncard/open-badge-v2-plugin@1.1.3
+    -   @learncard/simple-signing-plugin@1.1.3
+
+## 3.3.154
+
+### Patch Changes
+
+-   Updated dependencies [[`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d)]:
+    -   @learncard/types@5.11.1
+    -   @learncard/core@9.4.2
+    -   @learncard/init@2.2.4
+    -   @learncard/didkit-plugin@1.6.2
+    -   @learncard/learn-cloud-plugin@2.3.4
+    -   @learncard/linked-claims-plugin@0.2.2
+    -   @learncard/open-badge-v2-plugin@1.1.2
+    -   @learncard/simple-signing-plugin@1.1.2
+
+## 3.3.153
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@2.3.3
+    -   @learncard/init@2.2.3
+
 ## 3.3.152
 
 ### Patch Changes

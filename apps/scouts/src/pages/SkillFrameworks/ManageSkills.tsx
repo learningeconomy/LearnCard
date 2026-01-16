@@ -152,7 +152,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
 
                 return { ...framework, skills: skillsWithIcons };
             } catch (e) {
-                console.error('Error generating icons for skills:', e);
+                console.error('Error generating icons for competencies:', e);
 
                 setJsonError({
                     type: 'processing',
@@ -422,9 +422,9 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
             );
             // }, 301);
         } catch (error) {
-            console.error('Failed to add skills to framework:', error);
+            console.error('Failed to add competencies to framework:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
-            alert(`Failed to add skills: ${errorMessage}`);
+            alert(`Failed to add competencies: ${errorMessage}`);
         } finally {
             setIsSaving(false);
         }
@@ -493,7 +493,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                         <Pencil className="w-[40px] h-[40px] text-grayscale-900" version={3} />
                     )}
                     <h5 className="text-[22px] font-[600] text-grayscale-900 font-poppins leading-[24px]">
-                        {isManageJsonVersion ? 'Manage JSON' : 'Manage Skills'}
+                        {isManageJsonVersion ? 'Manage JSON' : 'Manage Competencies'}
                     </h5>
                     {isManageJsonVersion && (
                         <button
@@ -531,7 +531,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                             />
                             <div className="flex flex-col items-start">
                                 <span className="text-grayscale-600 font-poppins text-[12px] font-[700]">
-                                    Skills Framework
+                                    Competencies Framework
                                 </span>
                                 <span className="text-grayscale-900 font-poppins text-[14px] font-[600] leading-[130%] line-clamp-1 text-left">
                                     {framework?.name}

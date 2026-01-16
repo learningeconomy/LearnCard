@@ -45,6 +45,14 @@ type EmailFormProps = {
     buttonClassName?: string;
     suppressRedirect?: boolean;
     customRedirectUrl?: string;
+    resetRedirectPath?: string | null;
+    smallVerificationInput?: boolean;
+    emailInputClassName?: string;
+    emailInputVariant?: 'default' | 'appStore';
+    emailErrorPlacement?: 'inline' | 'below';
+    startOverClassNameOverride?: string;
+    resendCodeButtonClassNameOverride?: string;
+    verificationCodeInputClassName?: string;
     setShowSocialLogins: React.Dispatch<React.SetStateAction<boolean>>;
     showSocialLogins: boolean;
 };
@@ -56,6 +64,14 @@ const EmailForm: React.FC<EmailFormProps> = ({
     buttonClassName = '',
     suppressRedirect = false,
     customRedirectUrl = '',
+    resetRedirectPath = '/login',
+    smallVerificationInput = false,
+    emailInputClassName,
+    emailInputVariant = 'default',
+    emailErrorPlacement = 'inline',
+    startOverClassNameOverride,
+    resendCodeButtonClassNameOverride,
+    verificationCodeInputClassName,
     setShowSocialLogins,
     showSocialLogins,
 }) => {
@@ -71,9 +87,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const verificationEmail = redirectStore.get.email();
     const shouldVerifyCode = Boolean(query.get('verifyCode') || verificationEmail);
 
-    const [email, setEmail] = useState<string | null | undefined>('');
+    const [email, setEmail] = useState<string>('');
     const [code, setCode] = useState<string>('');
-    const [password, setPassword] = useState<string | null | undefined>('');
+    const [password, setPassword] = useState<string>('');
     const [currentStep, setCurrentStep] = useState<EmailFormStepsEnum>(EmailFormStepsEnum.email);
 
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -209,7 +225,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     if (enableMagicLinkLogin) {
                         try {
                             setIsLoading(true);
-                            await sendSignInLink(email as string, customRedirectUrl);
+                            await sendSignInLink(email, customRedirectUrl);
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
@@ -218,8 +234,8 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     } else {
                         try {
                             setIsLoading(true);
-                            await sendLoginVerificationCode({ email: email as string });
-                            redirectStore.set.email(email as string);
+                            await sendLoginVerificationCode({ email });
+                            redirectStore.set.email(email);
                             setCurrentStep(EmailFormStepsEnum.verification);
                             setIsLoading(false);
                         } catch (e) {
@@ -271,7 +287,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const resetForm = () => {
         setCurrentStep(EmailFormStepsEnum.email);
-        history.replace('/login');
+        if (resetRedirectPath !== null) {
+            history.replace(resetRedirectPath);
+        }
         redirectStore.set.email(null);
         setEmail('');
         setPassword('');
@@ -282,19 +300,47 @@ const EmailForm: React.FC<EmailFormProps> = ({
     let disabled = isLoading;
     if (currentStep === EmailFormStepsEnum.email) {
         formTitle = null;
+
+        const defaultEmailInputClassName =
+            'bg-emerald-600 text-white placeholder:text-white white-placeholder';
+        const resolvedEmailInputClassName = emailInputClassName ?? defaultEmailInputClassName;
+
+        const emailError = errors.email?.[0];
+
+        const emailInputBaseClassName =
+            emailInputVariant === 'appStore'
+                ? 'w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                : 'rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus:outline-none focus:ring-0 focus:border-transparent';
+
+        const emailInputErrorClassName =
+            emailInputVariant === 'appStore'
+                ? emailError
+                    ? 'border-red-300'
+                    : 'border-grayscale-200'
+                : emailError
+                ? 'login-input-email-error'
+                : '';
+
         activeStep = (
-            <div className="w-full flex items-center justify-center mb-[20px]">
+            <div
+                className={`w-full mb-[20px] ${
+                    emailErrorPlacement === 'below' ? 'flex flex-col' : 'flex items-center'
+                } justify-center`}
+            >
                 <input
                     aria-label="Email"
-                    className={`bg-emerald-600 text-white placeholder:text-white rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus:outline-none focus:ring-0 focus:border-transparent ${
-                        errors.email ? 'login-input-email-error' : ''
-                    } white-placeholder`}
+                    className={`${emailInputBaseClassName} ${resolvedEmailInputClassName} ${emailInputErrorClassName}`}
                     placeholder="Email address"
                     onChange={e => setEmail(e.target.value)}
                     value={email}
                     type="text"
                 />
-                {errors.email && <p className="login-input-error-msg">{errors.email}</p>}
+                {emailError &&
+                    (emailErrorPlacement === 'below' ? (
+                        <p className="w-full mt-2 text-red-500 font-medium">{emailError}</p>
+                    ) : (
+                        <p className="login-input-error-msg">{emailError}</p>
+                    ))}
             </div>
         );
         // buttonTitle = 'Continue';
@@ -309,7 +355,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 } text-center`}
             >
                 Enter verification code or{' '}
-                <span className="text-white underline font-bold" onClick={resetForm}>
+                <span
+                    className={startOverClassNameOverride ?? 'text-white underline font-bold'}
+                    onClick={resetForm}
+                >
                     start over
                 </span>
             </p>
@@ -325,13 +374,13 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     fields={6}
                     type="text"
                     onChange={e => setCode(e)}
-                    className={`react-code-input ${
-                        errors.code || codeError ? 'react-code-input-error' : ''
-                    }`}
+                    className={`react-code-input ${smallVerificationInput ? 'small' : ''} ${
+                        verificationCodeInputClassName ?? ''
+                    } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
                 />
-                {errors?.code && (
+                {errors?.code?.[0] && (
                     <p className="w-full text-center mt-2 text-red-500 font-medium">
-                        {errors?.code}
+                        {errors?.code?.[0]}
                     </p>
                 )}
                 {codeError && (
@@ -350,7 +399,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                     placeholder="Password"
                     // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value)}
+                    onIonInput={e => setPassword(e.detail.value ?? '')}
                     value={password}
                     type="password"
                 />
@@ -370,7 +419,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                     placeholder="Password"
                     // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value)}
+                    onIonInput={e => setPassword(e.detail.value ?? '')}
                     value={password}
                     type="password"
                 />
@@ -425,14 +474,20 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                         e.stopPropagation();
                                         handleResendCode();
                                     }}
-                                    className="text-white font-bold mt-4 border-b-white border-solid border-b-[1px]"
+                                    className={
+                                        resendCodeButtonClassNameOverride ??
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                    }
                                 >
                                     {resendCodeButtonText}
                                 </button>
                             ) : (
                                 <button
                                     disabled
-                                    className="text-white font-bold mt-4 border-b-white border-solid border-b-[1px]"
+                                    className={
+                                        resendCodeButtonClassNameOverride ??
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
+                                    }
                                 >
                                     Resend in {seconds}s
                                 </button>

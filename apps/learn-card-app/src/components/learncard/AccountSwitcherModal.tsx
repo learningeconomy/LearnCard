@@ -254,7 +254,7 @@ const AccountSwitcherModal: React.FC<AccountSwitcherModalProps> = ({
                             className="shrink-0 w-full max-w-[400px] py-[10px] px-[15px] text-[20px] bg-grayscale-900 rounded-full font-notoSans text-white shadow-button-bottom disabled:opacity-60"
                             disabled={!familyCredential?.boostId || isSwitching}
                         >
-                            Add Player
+                            Add New Player
                         </button>
                         <button
                             onClick={isFromGame ? handleBackToGame : closeAllModals}

@@ -1,5 +1,105 @@
 # Changelog
 
+## 1.94.10
+
+### Patch Changes
+
+-   [#931](https://github.com/learningeconomy/LearnCard/pull/931) [`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - ## App Store Credential Issuance
+
+    Embedded apps in the LearnCard App Store can now issue credentials directly to users via the `sendAppEvent` postMessage API.
+
+    ### Features
+
+    -   **New `send-credential` app event**: Embedded apps can call `sendAppEvent({ type: 'send-credential', boostId, templateData })` to issue credentials from pre-configured boost templates
+    -   **Credential Claim Modal**: When a credential is issued, users see a claim modal with a preview of the credential and can accept it into their wallet
+    -   **Notification Integration**: Credentials create notifications that can be claimed later if dismissed, and are marked as completed when claimed
+    -   **Auto Signing Authority Setup**: When adding a boost to an app listing, the backend automatically configures the signing authority using the developer's primary SA
+    -   **Credentials Step in App Submission**: Developers can now add credential templates (boosts) to their app listings during the submission wizard
+
+    ### API
+
+    ```typescript
+    // From an embedded app
+    const result = await learnCard.sendAppEvent({
+        type: 'send-credential',
+        boostId: 'course-completion', // Boost ID configured in app listing
+        templateData: {
+            /* optional dynamic data */
+        },
+    });
+    // Returns: { credentialUri, boostUri }
+    ```
+
+    ### Documentation
+
+    Added new guide: "Connect an Embedded App" in How-To Guides > Connect Systems
+
+-   [#917](https://github.com/learningeconomy/LearnCard/pull/917) [`f80bdea439e0382ddf3b0a232c9d778f8b5aa960`](https://github.com/learningeconomy/LearnCard/commit/f80bdea439e0382ddf3b0a232c9d778f8b5aa960) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1502] Improve Date of Birth picker on desktop
+
+-   [#931](https://github.com/learningeconomy/LearnCard/pull/931) [`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1521] sendAppEvent
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.4
+    -   @learncard/lca-api-plugin@1.1.6
+    -   @learncard/open-badge-v2-plugin@1.1.4
+    -   @learncard/react@2.9.6
+
+## 1.94.9
+
+### Patch Changes
+
+-   [#925](https://github.com/learningeconomy/LearnCard/pull/925) [`1a466303cf8fec9a138146b8ecdd30a17b8ff473`](https://github.com/learningeconomy/LearnCard/commit/1a466303cf8fec9a138146b8ecdd30a17b8ff473) Thanks [@Custard7](https://github.com/Custard7)! - fix: Optimize Guide Loading
+
+## 1.94.8
+
+### Patch Changes
+
+-   [#882](https://github.com/learningeconomy/LearnCard/pull/882) [`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f) Thanks [@Custard7](https://github.com/Custard7)! - feat: [LC-1520] Integration Builder
+
+-   [#922](https://github.com/learningeconomy/LearnCard/pull/922) [`95f6d91929e38231c7e616e4a6720c5c157861e2`](https://github.com/learningeconomy/LearnCard/commit/95f6d91929e38231c7e616e4a6720c5c157861e2) Thanks [@Custard7](https://github.com/Custard7)! - fix: Prevent CredentialActivity Deadlocking
+
+-   [#923](https://github.com/learningeconomy/LearnCard/pull/923) [`5eb024296c3b3155f7ec6062189876c05fb8ca37`](https://github.com/learningeconomy/LearnCard/commit/5eb024296c3b3155f7ec6062189876c05fb8ca37) Thanks [@Custard7](https://github.com/Custard7)! - fix: Apply locking fix to Inbox Credential
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.3
+    -   @learncard/lca-api-plugin@1.1.5
+    -   @learncard/open-badge-v2-plugin@1.1.3
+    -   @learncard/react@2.9.5
+
+## 1.94.7
+
+### Patch Changes
+
+-   [#915](https://github.com/learningeconomy/LearnCard/pull/915) [`b7026a050057612469121715d85f1d6c2443b34a`](https://github.com/learningeconomy/LearnCard/commit/b7026a050057612469121715d85f1d6c2443b34a) Thanks [@Custard7](https://github.com/Custard7)! - fix: CLI offscreen
+
+## 1.94.6
+
+### Patch Changes
+
+-   [#912](https://github.com/learningeconomy/LearnCard/pull/912) [`e61da3230f946b3d7238588baad502b16cee3ea1`](https://github.com/learningeconomy/LearnCard/commit/e61da3230f946b3d7238588baad502b16cee3ea1) Thanks [@Custard7](https://github.com/Custard7)! - feat: In-App CLI
+
+## 1.94.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.2
+    -   @learncard/open-badge-v2-plugin@1.1.2
+    -   @learncard/react@2.9.4
+    -   @learncard/lca-api-plugin@1.1.4
+
+## 1.94.4
+
+### Patch Changes
+
+-   [#903](https://github.com/learningeconomy/LearnCard/pull/903) [`eb3fe113e8e64616a1bd133ed73d38fe0a3cc2d9`](https://github.com/learningeconomy/LearnCard/commit/eb3fe113e8e64616a1bd133ed73d38fe0a3cc2d9) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1497] - Add AI Insights Empty Placeholder
+
+-   [#900](https://github.com/learningeconomy/LearnCard/pull/900) [`605f098e7c3ded38e236981dd3b3927860cb5869`](https://github.com/learningeconomy/LearnCard/commit/605f098e7c3ded38e236981dd3b3927860cb5869) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Contract URI to JWTs so that X-API statements are tagged by contract
+
+-   Updated dependencies []:
+    -   @learncard/react@2.9.3
+    -   @learncard/lca-api-plugin@1.1.3
+
 ## 1.94.3
 
 ### Patch Changes
