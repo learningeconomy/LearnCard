@@ -162,6 +162,23 @@ export const PaginatedNotificationsValidator = z.object({
 });
 
 export type PaginatedNotificationsType = z.infer<typeof PaginatedNotificationsValidator>;
+
+/** @group LCA API Plugin */
+export const NotificationQueryInputValidator = z
+    .object({
+        type: LCNNotificationTypeEnumValidator.optional(),
+        'from.did': z.string().optional(),
+        'from.profileId': z.string().optional(),
+        'data.vcUris': z.union([z.string(), z.array(z.string())]).optional(),
+        'data.vpUris': z.union([z.string(), z.array(z.string())]).optional(),
+        read: z.boolean().optional(),
+        archived: z.boolean().optional(),
+        actionStatus: NotificationActionStatusEnumValidator.optional(),
+    })
+    .passthrough();
+
+/** @group LCA API Plugin */
+export type NotificationQueryInputType = z.infer<typeof NotificationQueryInputValidator>;
 /** END Synced Types**/
 
 /** @group LCA API Plugin */
@@ -200,6 +217,10 @@ export type LCAPluginMethods = {
     getNotifications: (
         options: PaginatedNotificationsOptionsType,
         filter?: NotificationQueryFiltersType
+    ) => Promise<PaginatedNotificationsType | false>;
+    queryNotifications: (
+        query: NotificationQueryInputType,
+        options?: Partial<PaginatedNotificationsOptionsType>
     ) => Promise<PaginatedNotificationsType | false>;
     updateNotificationMeta: (_id: string, meta: NotificationMetaType) => Promise<boolean>;
     markAllNotificationsRead: () => Promise<boolean>;

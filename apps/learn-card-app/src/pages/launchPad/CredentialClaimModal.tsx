@@ -65,24 +65,18 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 const wallet = await initWallet();
                 if (wallet) {
                     await wallet.invoke.acceptCredential(credentialUri);
-                    // Get recent notifications to find the one for this credential
-                    const result = await wallet.invoke.getNotifications(
-                        { limit: 50, sort: 'REVERSE_CHRONOLOGICAL' },
-                        { archived: false }
+
+                    // Query for the notification with this credential URI
+                    const result = await wallet.invoke.queryNotifications(
+                        { 'data.vcUris': credentialUri, archived: false },
+                        { limit: 1 }
                     );
 
-                    if (result && typeof result !== 'boolean') {
-                        // Find notification with matching credential URI
-                        const notification = result.notifications?.find((n: any) =>
-                            n?.data?.vcUris?.includes(credentialUri)
-                        );
-
-                        if (notification?._id) {
-                            await wallet.invoke.updateNotificationMeta(notification._id, {
-                                actionStatus: 'COMPLETED',
-                                read: true,
-                            });
-                        }
+                    if (result && typeof result !== 'boolean' && result.notifications?.[0]?._id) {
+                        await wallet.invoke.updateNotificationMeta(result.notifications[0]._id, {
+                            actionStatus: 'COMPLETED',
+                            read: true,
+                        });
                     }
                 }
             } catch (notifErr) {

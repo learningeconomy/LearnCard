@@ -47,3 +47,18 @@ export const PaginatedNotificationsValidator = PaginationResponseValidator.exten
     notifications: MongoNotificationValidator.array(),
 });
 export type PaginatedNotificationsType = z.infer<typeof PaginatedNotificationsValidator>;
+
+// Query Notifications - flexible query input for finding specific notifications
+export const NotificationQueryInputValidator = z
+    .object({
+        type: LCNNotificationTypeEnumValidator.optional(),
+        'from.did': z.string().optional(),
+        'from.profileId': z.string().optional(),
+        'data.vcUris': z.union([z.string(), z.array(z.string())]).optional(),
+        'data.vpUris': z.union([z.string(), z.array(z.string())]).optional(),
+        read: z.boolean().optional(),
+        archived: z.boolean().optional(),
+        actionStatus: NotificationActionStatusEnumValidator.optional(),
+    })
+    .passthrough(); // Allow additional query fields
+export type NotificationQueryInputType = z.infer<typeof NotificationQueryInputValidator>;
