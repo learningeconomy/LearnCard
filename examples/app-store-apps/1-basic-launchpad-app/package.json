@@ -1,7 +1,7 @@
 {
   "name": "@learncard/app-store-demo-basic-launchpad",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "scripts": {
     "dev": "astro dev",
@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@astrojs/netlify": "^6.6.0",
-    "@learncard/init": "^2.1.9",
+    "@learncard/init": "^2.2.6",
     "@learncard/partner-connect": "workspace:*",
     "astro": "^5.15.2"
   },
