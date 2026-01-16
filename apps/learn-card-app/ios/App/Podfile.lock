@@ -61,7 +61,7 @@ PODS:
     - GoogleMLKit/BarcodeScanning (= 7.0.0)
   - CapacitorNativeSettings (7.0.2):
     - Capacitor
-  - CapacitorNetwork (7.0.2):
+  - CapacitorNetwork (8.0.0):
     - Capacitor
   - CapacitorPluginSafeArea (4.0.3):
     - Capacitor
@@ -240,7 +240,7 @@ DEPENDENCIES:
   - "CapacitorLocalNotifications (from `../../../../node_modules/.pnpm/@capacitor+local-notifications@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/local-notifications`)"
   - "CapacitorMlkitBarcodeScanning (from `../../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@8.0.1/node_modules/@capacitor-mlkit/barcode-scanning`)"
   - "CapacitorNativeSettings (from `../../../../node_modules/.pnpm/capacitor-native-settings@7.0.2_@capacitor+core@8.0.1/node_modules/capacitor-native-settings`)"
-  - "CapacitorNetwork (from `../../../../node_modules/.pnpm/@capacitor+network@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/network`)"
+  - "CapacitorNetwork (from `../../../../node_modules/.pnpm/@capacitor+network@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/network`)"
   - "CapacitorPluginSafeArea (from `../../../../node_modules/.pnpm/capacitor-plugin-safe-area@4.0.3_@capacitor+core@8.0.1/node_modules/capacitor-plugin-safe-area`)"
   - "CapacitorPushNotifications (from `../../../../node_modules/.pnpm/@capacitor+push-notifications@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications`)"
   - "CapacitorShare (from `../../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/share`)"
@@ -324,7 +324,7 @@ EXTERNAL SOURCES:
   CapacitorNativeSettings:
     :path: "../../../../node_modules/.pnpm/capacitor-native-settings@7.0.2_@capacitor+core@8.0.1/node_modules/capacitor-native-settings"
   CapacitorNetwork:
-    :path: "../../../../node_modules/.pnpm/@capacitor+network@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/network"
+    :path: "../../../../node_modules/.pnpm/@capacitor+network@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/network"
   CapacitorPluginSafeArea:
     :path: "../../../../node_modules/.pnpm/capacitor-plugin-safe-area@4.0.3_@capacitor+core@8.0.1/node_modules/capacitor-plugin-safe-area"
   CapacitorPushNotifications:
@@ -361,7 +361,7 @@ SPEC CHECKSUMS:
   CapacitorLocalNotifications: 177cfbf8228d9bd82a147e094cb7984d7afb9e29
   CapacitorMlkitBarcodeScanning: 05b2dfc7a70099f6d4594365c521534d79a17b1d
   CapacitorNativeSettings: 3cd2e2ef431fe471674f381609cfb29154ddfcfa
-  CapacitorNetwork: 695069886b3c5ed514db69aa3d026b8dc3c03a6b
+  CapacitorNetwork: 156f8096cbbce5337eb1769fcc0d6adc4b85d3f3
   CapacitorPluginSafeArea: 1abd81c6facac9eae0c6ae3cb0b3b53ccc135522
   CapacitorPushNotifications: bdd621fbd562be34a41f4a7b1750efa000447d5a
   CapacitorShare: be166411fa995ead2d39b104aa0aae56d8615c66
@@ -402,6 +402,6 @@ SPEC CHECKSUMS:
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: 51426546aedbfa9f66603f0244a28e3ba5f815e2
+PODFILE CHECKSUM: 8cb0b649644eef3ed0c107f4c373e37fdf246ab4
 
 COCOAPODS: 1.16.2
