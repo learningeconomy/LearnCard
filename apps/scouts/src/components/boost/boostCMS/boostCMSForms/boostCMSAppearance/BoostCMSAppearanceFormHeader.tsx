@@ -49,9 +49,6 @@ type BoostCMSAppearanceFormHeaderProps = {
     activeForm: BoostCMSActiveAppearanceForm;
     setActiveForm: React.Dispatch<React.SetStateAction<BoostCMSActiveAppearanceForm>>;
 
-    showStylePackCategoryList: boolean;
-    setShowStylePackCategoryList: React.Dispatch<React.SetStateAction<boolean>>;
-
     handleSaveAppearance?: () => void;
 };
 
@@ -71,9 +68,6 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     setActiveType,
     activeForm,
     setActiveForm,
-
-    showStylePackCategoryList,
-    setShowStylePackCategoryList,
 
     handleSaveAppearance = () => {},
 }) => {
@@ -143,13 +137,8 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
         headerContainerStyles = 'items-center justify-between';
         headerBackButtonStyles = 'w-[86px] h-[44px]';
     } else if (activeForm === BoostCMSActiveAppearanceForm.badgeForm) {
-        if (showStylePackCategoryList) {
-            formTitle = 'Select Style Pack';
-            headerContainerStyles = 'items-center justify-center';
-        } else {
-            formTitle = 'Select Image';
-            headerContainerStyles = 'items-center justify-center';
-        }
+        formTitle = 'Select Image';
+        headerContainerStyles = 'items-center justify-center';
     } else {
         formTitle = 'Appearance';
         titleStyles = 'flex-none';
@@ -157,13 +146,9 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     }
 
     const handleGoBack = () => {
-        if (showStylePackCategoryList) {
-            setShowStylePackCategoryList(false);
-        } else {
-            setActiveForm(BoostCMSActiveAppearanceForm.appearanceForm);
-            setActiveCategoryType(state?.basicInfo?.type);
-            setActiveType(state?.basicInfo?.achievementType);
-        }
+        setActiveForm(BoostCMSActiveAppearanceForm.appearanceForm);
+        setActiveCategoryType(state?.basicInfo?.type);
+        setActiveType(state?.basicInfo?.achievementType);
     };
 
     return (
