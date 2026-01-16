@@ -1,4 +1,8 @@
 import { useEffect, useCallback, useRef } from 'react';
+import type { AppEvent, SendCredentialEvent } from '@learncard/types';
+
+// Re-export for convenience
+export type { AppEvent, SendCredentialEvent };
 
 // ============================================================================
 // Types & Protocol Definition
@@ -97,15 +101,7 @@ export interface InitiateTemplateIssuePayload {
     draftRecipients?: string[]; // Optional list of profile IDs/DIDs
 }
 
-// App Event Types (discriminated union)
-export type SendCredentialEvent = {
-    type: 'send-credential';
-    templateAlias: string;
-    templateData?: Record<string, unknown>;
-};
-
-// Add new event types here as the union grows
-export type AppEvent = SendCredentialEvent;
+// AppEvent and SendCredentialEvent are imported from @learncard/types above
 
 export type AppEventPayload = AppEvent;
 

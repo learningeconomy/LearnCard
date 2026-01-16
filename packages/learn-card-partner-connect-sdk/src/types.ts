@@ -2,6 +2,9 @@
  * LearnCard Partner Connect SDK - Type Definitions
  */
 
+// Re-export AppEvent types from shared types package
+export type { AppEvent, SendCredentialEvent, AppEventResponse } from '@learncard/types';
+
 /**
  * Configuration options for initializing the SDK
  */
@@ -166,24 +169,7 @@ export interface TemplateIssueResponse {
     [key: string]: unknown;
 }
 
-/**
- * App Event Types (discriminated union)
- */
-export type SendCredentialEvent = {
-    type: 'send-credential';
-    templateAlias: string;
-    templateData?: Record<string, unknown>;
-};
-
-// Add new event types here as the union grows
-export type AppEvent = SendCredentialEvent;
-
-/**
- * Response from APP_EVENT action
- */
-export interface AppEventResponse {
-    [key: string]: unknown;
-}
+// AppEvent, SendCredentialEvent, and AppEventResponse are re-exported from @learncard/types above
 
 /**
  * Error codes that can be returned by the LearnCard host
@@ -230,7 +216,7 @@ export interface PostMessageResponse {
  * Pending request tracking structure
  */
 export interface PendingRequest {
-  resolve: (value: unknown) => void;
-  reject: (error: LearnCardError) => void;
-  timeoutId: ReturnType<typeof setTimeout>;
+    resolve: (value: unknown) => void;
+    reject: (error: LearnCardError) => void;
+    timeoutId: ReturnType<typeof setTimeout>;
 }

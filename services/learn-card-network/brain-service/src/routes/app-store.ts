@@ -426,7 +426,11 @@ const handleSendCredentialEvent = async (
     }
 
     // Get the boost associated with this app (templateAlias maps to internal boost)
-    const boostResult = await getBoostForListingByTemplateAlias(listingId, templateAlias, ctx.domain);
+    const boostResult = await getBoostForListingByTemplateAlias(
+        listingId,
+        templateAlias,
+        ctx.domain
+    );
     if (!boostResult) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
     }
@@ -1186,11 +1190,9 @@ export const appStoreRouter = t.router({
             if (!isInstalled) {
                 // Check if user owns the integration - allows testing without installation
                 const integration = await getIntegrationForListing(listingId);
-                console.log('integration', integration);
                 const isOwner = integration
                     ? await isIntegrationAssociatedWithProfile(integration.id, profile.profileId)
                     : false;
-                console.log('isOwner', isOwner);
                 if (!isOwner) {
                     throw new TRPCError({ code: 'FORBIDDEN', message: 'App not installed' });
                 }

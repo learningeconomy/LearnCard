@@ -163,7 +163,9 @@ export function useLearnCardMessageHandlers({
                                 isInstalled &&
                                 launchConfig?.permissions?.includes('request_identity')
                             ) {
-                                log('Skipping consent for installed app with request_identity permission');
+                                log(
+                                    'Skipping consent for installed app with request_identity permission'
+                                );
                                 // addTrustedOrigin(origin, appName);
                                 resolve(true);
                                 return;
@@ -732,33 +734,26 @@ export function useLearnCardMessageHandlers({
                 // App events - only available when appId is provided
                 sendAppEvent: appId
                     ? async (listingId: string, event: AppEvent) => {
-                          const learnCard = await initWallet();
-                          if (!learnCard) throw new Error('Wallet not initialized');
+                        const learnCard = await initWallet();
 
-                          // Use type assertion until types are rebuilt
-                          const invoke = learnCard.invoke as typeof learnCard.invoke & {
-                              sendAppEvent?: (
-                                  listingId: string,
-                                  event: AppEvent
-                              ) => Promise<Record<string, unknown>>;
-                          };
+                        if (!learnCard) throw new Error('Wallet not initialized');
 
-                          if (!invoke.sendAppEvent) {
-                              throw new Error('sendAppEvent not available - rebuild types');
-                          }
+                        if (!learnCard.invoke.sendAppEvent) {
+                            throw new Error('sendAppEvent not available - rebuild types');
+                        }
 
-                          const result = await invoke.sendAppEvent(listingId, event);
+                        const result = await learnCard.invoke.sendAppEvent(listingId, event);
 
-                          // If a credential was issued, notify the parent component
-                          if (result.credentialUri && onCredentialIssued) {
-                              onCredentialIssued(
-                                  result.credentialUri as string,
-                                  result.boostUri as string | undefined
-                              );
-                          }
+                        // If a credential was issued, notify the parent component
+                        if (result.credentialUri && onCredentialIssued) {
+                            onCredentialIssued(
+                                result.credentialUri as string,
+                                result.boostUri as string | undefined
+                            );
+                        }
 
-                          return result;
-                      }
+                        return result;
+                    }
                     : undefined,
                 getAppListingId: appId ? () => appId : undefined,
             }),
