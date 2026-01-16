@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 import { generateLearnCard, LearnCard } from '@learncard/core';
 import { CryptoPlugin, CryptoPluginType } from '@learncard/crypto-plugin';
-import { DIDKitPlugin, DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
+import type { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
 import { EncryptionPluginType, getEncryptionPlugin } from '@learncard/encryption-plugin';
 import { DidKeyPlugin, getDidKeyPlugin } from '@learncard/didkey-plugin';
 import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
@@ -11,7 +11,36 @@ import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin
 import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { isTest } from './test.helpers';
 
-const didkit = readFile(require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'));
+// Try native plugin first, fall back to WASM
+let didKitPluginPromise: Promise<DIDKitPlugin> | null = null;
+
+const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
+    if (didKitPluginPromise) return didKitPluginPromise;
+
+    didKitPluginPromise = (async () => {
+        try {
+            const {
+                default: { getDidKitPlugin: getNativePlugin },
+            } = await import('@learncard/didkit-plugin-node');
+
+            return await getNativePlugin();
+        } catch (e) {
+            console.log('Native DIDKit plugin not available, falling back to WASM');
+
+            const {
+                default: { getDidKitPlugin: getWasmPlugin },
+            } = await import('@learncard/didkit-plugin');
+
+            const wasmBuffer = await readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+            );
+
+            return await getWasmPlugin(wasmBuffer);
+        }
+    })();
+
+    return didKitPluginPromise;
+};
 
 export type EmptyLearnCard = LearnCard<
     [CryptoPluginType, DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, LearnCardPlugin]
@@ -38,7 +67,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     if (!emptyLearnCard) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await didkit));
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin());
 
         const expirationLc = await didkitLc.addPlugin(expirationPlugin(didkitLc));
 
@@ -58,7 +87,7 @@ export const getLearnCard = async (
     if (!learnCards[seed]) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await didkit));
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin());
 
         const didkeyLc = await didkitLc.addPlugin(
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')

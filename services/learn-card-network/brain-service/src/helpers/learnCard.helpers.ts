@@ -14,7 +14,7 @@ import { getDidWebPlugin, DidWebPlugin } from '@learncard/did-web-plugin';
 // Try native plugin first, fall back to WASM
 let didKitPluginPromise: Promise<DIDKitPlugin> | null = null;
 
-const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
+const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugin> => {
     if (didKitPluginPromise) return didKitPluginPromise;
 
     didKitPluginPromise = (async () => {
@@ -22,7 +22,7 @@ const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
             const {
                 default: { getDidKitPlugin: getNativePlugin },
             } = await import('@learncard/didkit-plugin-node');
-            return await getNativePlugin();
+            return await getNativePlugin(undefined, allowRemoteContexts);
         } catch (e) {
             console.log('Native DIDKit plugin not available, falling back to WASM');
             const {
@@ -31,7 +31,7 @@ const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
             const wasmBuffer = await readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
             );
-            return await getWasmPlugin(wasmBuffer);
+            return await getWasmPlugin(wasmBuffer, allowRemoteContexts);
         }
     })();
 
@@ -101,7 +101,7 @@ export const getLearnCard = async (
     if (!learnCards[seed] || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin());
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(allowRemoteContexts));
 
         const didkeyLc = await didkitLc.addPlugin(
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
