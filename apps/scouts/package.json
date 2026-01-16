@@ -153,7 +153,7 @@
         "postcss": "^8.5.2",
         "sass": "^1.84.0",
         "tailwindcss": "^3.4.17",
-        "vite": "^4.5.9",
+        "vite": "^5.4.21",
         "vite-plugin-svgr": "^3.3.0",
         "vite-tsconfig-paths": "4.2.3"
     },

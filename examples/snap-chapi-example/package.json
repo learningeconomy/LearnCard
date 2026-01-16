@@ -21,7 +21,7 @@
     "@metamask/providers": "^9.0.0",
     "@nanostores/persistent": "^0.7.0",
     "@nanostores/react": "^0.2.0",
-    "astro": "^1.2.8",
+    "astro": "^5.15.9",
     "nanostores": "^0.5.13",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
