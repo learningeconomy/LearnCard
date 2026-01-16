@@ -15,7 +15,7 @@ def capacitor_pods
   pod 'CapacitorCommunitySqlite', :path => '../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor-community/sqlite'
   pod 'CapacitorFirebaseAnalytics', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+analytics@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/analytics'
   pod 'CapacitorFirebaseAuthentication', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+authentication@8.0.1_@capacitor+core@8.0.1_firebase@12.8.0/node_modules/@capacitor-firebase/authentication'
-  pod 'CapacitorMlkitBarcodeScanning', :path => '../../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@8.0.1/node_modules/@capacitor-mlkit/barcode-scanning'
+  pod 'CapacitorMlkitBarcodeScanning', :path => '../../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor-mlkit/barcode-scanning'
   pod 'CapacitorApp', :path => '../../../../node_modules/.pnpm/@capacitor+app@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/app'
   pod 'CapacitorBrowser', :path => '../../../../node_modules/.pnpm/@capacitor+browser@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/browser'
   pod 'CapacitorCamera', :path => '../../../../node_modules/.pnpm/@capacitor+camera@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/camera'

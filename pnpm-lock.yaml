@@ -183,8 +183,8 @@ importers:
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.0.1)(firebase@12.8.0)
       '@capacitor-mlkit/barcode-scanning':
-        specifier: ^7.3.0
-        version: 7.3.0(@capacitor/core@8.0.1)
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
       '@capacitor/android':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.0.1)
@@ -5338,6 +5338,11 @@ packages:
     resolution: {integrity: sha512-pgSbNw0illjIpOXJKC/A/1a3xn4cgCNubhymOhz/Qdu2ZoplhYvpnOlEYpfRcdeXAM9M+682pS8qFyrez6a84A==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
+
+  '@capacitor-mlkit/barcode-scanning@8.0.0':
+    resolution: {integrity: sha512-1bmCv26ml1/Vb6YKwMv9dzkVcpPwPGehx3jmcXMdTg2eFg7zgMyWswlbTL5vfIUazC5JbEIc0f6sOG6W2N03nQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/android@7.4.4':
     resolution: {integrity: sha512-y8knfV1JXNrd6XZZLZireGT+EBCN0lvOo+HZ/s7L8LkrPBu4nY5UZn0Wxz4yOezItEII9rqYJSHsS5fMJG9gdw==}
@@ -30525,7 +30530,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.4.2
 
-  '@capacitor-mlkit/barcode-scanning@7.3.0(@capacitor/core@8.0.1)':
+  '@capacitor-mlkit/barcode-scanning@8.0.0(@capacitor/core@8.0.1)':
     dependencies:
       '@capacitor/core': 8.0.1
 
