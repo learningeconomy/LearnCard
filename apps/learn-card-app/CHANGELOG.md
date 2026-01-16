@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.11
+
+### Patch Changes
+
+-   [#939](https://github.com/learningeconomy/LearnCard/pull/939) [`0633cea0ec0356f6721401b8620e3104918b7138`](https://github.com/learningeconomy/LearnCard/commit/0633cea0ec0356f6721401b8620e3104918b7138) Thanks [@Custard7](https://github.com/Custard7)! - fix: Template Issuance errors
+
 ## 1.94.10
 
 ### Patch Changes
