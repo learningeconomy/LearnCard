@@ -53,12 +53,11 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
-    console.log('//issueeName', issueeName, 'issuee', issuee);
+ 
     const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
     });
 
-    console.log('//subjectDid', subjectDID);
 
     const getImageElement = (
         imageUrl: string,

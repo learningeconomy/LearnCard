@@ -87,7 +87,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     );
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const [isFront, setIsFront] = useState(true);
-    console.log('///highlightedCreds', highlightedCreds);
+
     const unknownVerifierTitle = useMemo(() => {
         if (unknownVerifierTitleProp) return unknownVerifierTitleProp;
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;

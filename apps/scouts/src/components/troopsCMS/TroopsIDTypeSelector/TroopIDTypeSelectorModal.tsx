@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
-import { IonPage, IonSpinner } from '@ionic/react';
-import ModalLayout from 'learn-card-base/components/modals/ionic-modals/CancelModalLayout';
+import { IonSpinner } from '@ionic/react';
+
 import TroopIDTypeSelectorListItem from './TroopIDTypeSelectorListItem';
-import TroopsCMSWrapper from '../TroopsCMSWrapper';
+
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -38,7 +38,7 @@ const TroopIDTypeSelectorModal: React.FC<{
 
     const allowedIDTypesToCreate = [];
 
-    console.log('//canCreateGlobalIds', canCreateGlobalIDs);
+
     if (!globalAdminId && canCreateGlobalIDs) {
         allowedIDTypesToCreate.push(troopsCMSViewModeDefaults?.global);
     }

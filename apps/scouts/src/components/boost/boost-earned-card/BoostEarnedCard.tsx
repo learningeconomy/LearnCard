@@ -86,8 +86,6 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         desktop: ModalTypes.FullScreen,
     });
 
-    console.log('///BOOST EARNED CARD');
-
     // Below query is so we can get parent boost info...
     // Get boostId from resolved credential
     const {
