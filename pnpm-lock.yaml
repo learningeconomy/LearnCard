@@ -204,8 +204,8 @@ importers:
         specifier: 8.0.1
         version: 8.0.1
       '@capacitor/file-transfer':
-        specifier: ^1.0.6
-        version: 1.0.6(@capacitor/core@8.0.1)
+        specifier: ^2.0.3
+        version: 2.0.3(@capacitor/core@8.0.1)
       '@capacitor/filesystem':
         specifier: ^7.1.4
         version: 7.1.5(@capacitor/core@8.0.1)
@@ -3482,7 +3482,7 @@ importers:
         version: 1.3.1
       openai:
         specifier: ^4.55.7
-        version: 4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
+        version: 4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13)
       postmark:
         specifier: ^4.0.5
         version: 4.0.5
@@ -5397,10 +5397,10 @@ packages:
   '@capacitor/core@8.0.1':
     resolution: {integrity: sha512-5UqSWxGMp/B8KhYu7rAijqNtYslhcLh+TrbfU48PfdMDsPfaU/VY48sMNzC22xL8BmoFoql/3SKyP+pavTOvOA==}
 
-  '@capacitor/file-transfer@1.0.6':
-    resolution: {integrity: sha512-R4aGcolmn77hfGPA3+RGhH9YBX1xTR7H43WOcoQx56whWnIUTlQ3B6SQkd8912JPFHvnPhOJ4lC0yNCDY1TjrQ==}
+  '@capacitor/file-transfer@2.0.3':
+    resolution: {integrity: sha512-2r5zTot5qPaIiJzUF5o+MjtvfhV6f7XATFDhJtQIwvhQaFc7tGV0rVZNwf7LG7exoiJdgrWQk7ciSFQH3WUNpQ==}
     peerDependencies:
-      '@capacitor/core': '>=7.0.0'
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/filesystem@7.1.5':
     resolution: {integrity: sha512-ZzJxpEh6SwKhF1cqSVmIAkEyNG3ozf3Lwg8rUNltX6CGdd94UJV45asqmFoP6X6aT5eVu7FPjPU5SHxi6XOFgA==}
@@ -30492,7 +30492,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@capacitor/file-transfer@1.0.6(@capacitor/core@8.0.1)':
+  '@capacitor/file-transfer@2.0.3(@capacitor/core@8.0.1)':
     dependencies:
       '@capacitor/core': 8.0.1
       '@capacitor/synapse': 1.0.4
@@ -55482,7 +55482,7 @@ snapshots:
       is-inside-container: 1.0.0
       is-wsl: 2.2.0
 
-  openai@4.104.0(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
+  openai@4.104.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.13):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -55492,7 +55492,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 4.1.13
     transitivePeerDependencies:
       - encoding

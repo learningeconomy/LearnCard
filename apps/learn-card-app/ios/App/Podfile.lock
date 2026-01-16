@@ -28,7 +28,7 @@ PODS:
   - CapacitorFilesystem (7.1.5):
     - Capacitor
     - IONFilesystemLib (~> 1.0.1)
-  - CapacitorFileTransfer (1.0.6):
+  - CapacitorFileTransfer (2.0.3):
     - Capacitor
     - IONFileTransferLib (~> 1.0.1)
   - CapacitorFirebaseAnalytics (7.3.0):
@@ -230,7 +230,7 @@ DEPENDENCIES:
   - "CapacitorCommunitySqlite (from `../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor-community/sqlite`)"
   - "CapacitorCordova (from `../../../../node_modules/.pnpm/@capacitor+ios@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/ios`)"
   - "CapacitorFilesystem (from `../../../../node_modules/.pnpm/@capacitor+filesystem@7.1.5_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem`)"
-  - "CapacitorFileTransfer (from `../../../../node_modules/.pnpm/@capacitor+file-transfer@1.0.6_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer`)"
+  - "CapacitorFileTransfer (from `../../../../node_modules/.pnpm/@capacitor+file-transfer@2.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer`)"
   - "CapacitorFirebaseAnalytics (from `../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/analytics`)"
   - "CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport (from `../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/analytics`)"
   - "CapacitorFirebaseAuthentication (from `../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.4.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/authentication`)"
@@ -308,7 +308,7 @@ EXTERNAL SOURCES:
   CapacitorFilesystem:
     :path: "../../../../node_modules/.pnpm/@capacitor+filesystem@7.1.5_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem"
   CapacitorFileTransfer:
-    :path: "../../../../node_modules/.pnpm/@capacitor+file-transfer@1.0.6_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer"
+    :path: "../../../../node_modules/.pnpm/@capacitor+file-transfer@2.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer"
   CapacitorFirebaseAnalytics:
     :path: "../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/analytics"
   CapacitorFirebaseAuthentication:
@@ -353,7 +353,7 @@ SPEC CHECKSUMS:
   CapacitorCommunitySqlite: a57c58e1c37f4bc250ef01e66b0055cb6ddd775e
   CapacitorCordova: 0d65b9bb74e995dcecb9463f34f1af2aba6f955c
   CapacitorFilesystem: 609d5cceca1ed93d7f25839dbfdfd224bfe78209
-  CapacitorFileTransfer: 591bdf4cbb809fbdaf85aba6ddfa93ff1c4c1b2d
+  CapacitorFileTransfer: d4c1787491128c91d0e96e3abe1bc45cc1c080da
   CapacitorFirebaseAnalytics: 99fb86679f3a40b148d6e3e7ddeb6115a9c08edf
   CapacitorFirebaseAuthentication: 2297f469e0f7a51a19446d28c452179675dfc330
   CapacitorHaptics: 2079d9fa04c5a71e18663b4722323c304c58245c
@@ -402,6 +402,6 @@ SPEC CHECKSUMS:
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: 455d471e959b54bbcc32edabf73857c44cf4961f
+PODFILE CHECKSUM: 70969d5a1df4a79c2d357f4933d00e5901e9a61c
 
 COCOAPODS: 1.16.2
