@@ -16,7 +16,7 @@
         "@capacitor/core": "8.0.1",
         "@capacitor/file-transfer": "^1.0.6",
         "@capacitor/filesystem": "^7.1.4",
-        "@capacitor/haptics": "^7.0.2",
+        "@capacitor/haptics": "^8.0.0",
         "@capacitor/ios": "^8.0.1",
         "@capacitor/keyboard": "^7.0.2",
         "@capacitor/local-notifications": "^7.0.2",

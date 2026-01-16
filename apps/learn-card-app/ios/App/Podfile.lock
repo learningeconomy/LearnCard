@@ -50,7 +50,7 @@ PODS:
   - CapacitorFirebaseAuthentication/Lite (7.4.0):
     - Capacitor
     - FirebaseAuth (~> 11.7.0)
-  - CapacitorHaptics (7.0.2):
+  - CapacitorHaptics (8.0.0):
     - Capacitor
   - CapacitorKeyboard (7.0.3):
     - Capacitor
@@ -235,7 +235,7 @@ DEPENDENCIES:
   - "CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport (from `../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/analytics`)"
   - "CapacitorFirebaseAuthentication (from `../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.4.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/authentication`)"
   - "CapacitorFirebaseAuthentication/Google (from `../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.4.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/authentication`)"
-  - "CapacitorHaptics (from `../../../../node_modules/.pnpm/@capacitor+haptics@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/haptics`)"
+  - "CapacitorHaptics (from `../../../../node_modules/.pnpm/@capacitor+haptics@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/haptics`)"
   - "CapacitorKeyboard (from `../../../../node_modules/.pnpm/@capacitor+keyboard@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/keyboard`)"
   - "CapacitorLocalNotifications (from `../../../../node_modules/.pnpm/@capacitor+local-notifications@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/local-notifications`)"
   - "CapacitorMlkitBarcodeScanning (from `../../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@8.0.1/node_modules/@capacitor-mlkit/barcode-scanning`)"
@@ -314,7 +314,7 @@ EXTERNAL SOURCES:
   CapacitorFirebaseAuthentication:
     :path: "../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.4.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/authentication"
   CapacitorHaptics:
-    :path: "../../../../node_modules/.pnpm/@capacitor+haptics@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/haptics"
+    :path: "../../../../node_modules/.pnpm/@capacitor+haptics@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/haptics"
   CapacitorKeyboard:
     :path: "../../../../node_modules/.pnpm/@capacitor+keyboard@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/keyboard"
   CapacitorLocalNotifications:
@@ -356,7 +356,7 @@ SPEC CHECKSUMS:
   CapacitorFileTransfer: 591bdf4cbb809fbdaf85aba6ddfa93ff1c4c1b2d
   CapacitorFirebaseAnalytics: 99fb86679f3a40b148d6e3e7ddeb6115a9c08edf
   CapacitorFirebaseAuthentication: 2297f469e0f7a51a19446d28c452179675dfc330
-  CapacitorHaptics: b3fb2869e72c4466e18ce9ccbeb60a3d8723b3d4
+  CapacitorHaptics: 2079d9fa04c5a71e18663b4722323c304c58245c
   CapacitorKeyboard: 62f36104f26d53d8b3a2a43f2a69fe714f1777d5
   CapacitorLocalNotifications: 0811aef56ab2e5f7f9ae72f47d3473ab50c29038
   CapacitorMlkitBarcodeScanning: 05b2dfc7a70099f6d4594365c521534d79a17b1d
@@ -402,6 +402,6 @@ SPEC CHECKSUMS:
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: 8d9be2ef455e42fc3672d8c84cada191ec67d116
+PODFILE CHECKSUM: 993e74ec4ba397f151753875bfa35a2b465959f1
 
 COCOAPODS: 1.16.2

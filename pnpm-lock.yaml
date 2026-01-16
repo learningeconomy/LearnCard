@@ -210,8 +210,8 @@ importers:
         specifier: ^7.1.4
         version: 7.1.5(@capacitor/core@8.0.1)
       '@capacitor/haptics':
-        specifier: ^7.0.2
-        version: 7.0.2(@capacitor/core@8.0.1)
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
       '@capacitor/ios':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.0.1)
@@ -5411,6 +5411,11 @@ packages:
     resolution: {integrity: sha512-vqfeEM6s2zMgLjpITCTUIy7P/hadq/Gr5E/RClFgMJPB41Y5FsqOKD+j85/uwh8N2cf/aWaPeXUmjnTzJbEB2g==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
+
+  '@capacitor/haptics@8.0.0':
+    resolution: {integrity: sha512-DY1IUOjke1T4ITl7mFHQIKCaJJyHYAYRYHG9bVApU7PDOZiMVGMp48Yjzdqjya+wv/AHS5mDabSTUmhJ5uDvBA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/ios@7.4.4':
     resolution: {integrity: sha512-Xp3bGWlSQAwsZGngRMWTdoD2agdMV12Whnm+/xsYPxfQSj+Tksbr7r/8Mso7VWkpnTKO4iMlx762g3PjW+wi4w==}
@@ -30466,7 +30471,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.4.2
 
-  '@capacitor/haptics@7.0.2(@capacitor/core@8.0.1)':
+  '@capacitor/haptics@8.0.0(@capacitor/core@8.0.1)':
     dependencies:
       '@capacitor/core': 8.0.1
 
