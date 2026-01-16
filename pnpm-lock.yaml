@@ -1814,6 +1814,10 @@ importers:
         version: 0.3.4
 
   packages/learn-card-partner-connect-sdk:
+    dependencies:
+      '@learncard/types':
+        specifier: workspace:*
+        version: link:../learn-card-types
     devDependencies:
       '@rollup/plugin-commonjs':
         specifier: ^22.0.2

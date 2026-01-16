@@ -30,6 +30,9 @@
   ],
   "license": "MIT",
   "author": "Learning Economy Foundation (www.learningeconomy.io)",
+  "dependencies": {
+    "@learncard/types": "workspace:*"
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.2",
     "@rollup/plugin-node-resolve": "^13.3.0",
