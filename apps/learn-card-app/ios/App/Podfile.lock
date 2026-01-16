@@ -17,7 +17,7 @@ PODS:
     - Capacitor
   - CapacitorClipboard (8.0.0):
     - Capacitor
-  - CapacitorCommunityMedia (8.0.1):
+  - CapacitorCommunityMedia (9.0.0):
     - Capacitor
     - SDWebImage
   - CapacitorCommunitySqlite (7.0.2):
@@ -226,7 +226,7 @@ DEPENDENCIES:
   - "CapacitorBrowser (from `../../../../node_modules/.pnpm/@capacitor+browser@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/browser`)"
   - "CapacitorCamera (from `../../../../node_modules/.pnpm/@capacitor+camera@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/camera`)"
   - "CapacitorClipboard (from `../../../../node_modules/.pnpm/@capacitor+clipboard@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/clipboard`)"
-  - "CapacitorCommunityMedia (from `../../../../node_modules/.pnpm/@capacitor-community+media@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor-community/media`)"
+  - "CapacitorCommunityMedia (from `../../../../node_modules/.pnpm/@capacitor-community+media@9.0.0_@capacitor+core@8.0.1/node_modules/@capacitor-community/media`)"
   - "CapacitorCommunitySqlite (from `../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor-community/sqlite`)"
   - "CapacitorCordova (from `../../../../node_modules/.pnpm/@capacitor+ios@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/ios`)"
   - "CapacitorFilesystem (from `../../../../node_modules/.pnpm/@capacitor+filesystem@7.1.5_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem`)"
@@ -300,7 +300,7 @@ EXTERNAL SOURCES:
   CapacitorClipboard:
     :path: "../../../../node_modules/.pnpm/@capacitor+clipboard@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/clipboard"
   CapacitorCommunityMedia:
-    :path: "../../../../node_modules/.pnpm/@capacitor-community+media@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor-community/media"
+    :path: "../../../../node_modules/.pnpm/@capacitor-community+media@9.0.0_@capacitor+core@8.0.1/node_modules/@capacitor-community/media"
   CapacitorCommunitySqlite:
     :path: "../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor-community/sqlite"
   CapacitorCordova:
@@ -349,7 +349,7 @@ SPEC CHECKSUMS:
   CapacitorBrowser: b7d7f05f840fe042e46f6528bb8db853e3058fb2
   CapacitorCamera: 592acb7ab9fb748e2d8571eb03af30ec4e1ace12
   CapacitorClipboard: 61832a3722adc61afed6e0191c8a0e11ba11674d
-  CapacitorCommunityMedia: d1538b56a3303298e7cf45a18b11e624fbcbdc8e
+  CapacitorCommunityMedia: de0b02527717081ab4753cd513a0f24f06d95656
   CapacitorCommunitySqlite: a57c58e1c37f4bc250ef01e66b0055cb6ddd775e
   CapacitorCordova: 0d65b9bb74e995dcecb9463f34f1af2aba6f955c
   CapacitorFilesystem: 609d5cceca1ed93d7f25839dbfdfd224bfe78209
@@ -402,6 +402,6 @@ SPEC CHECKSUMS:
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: 70969d5a1df4a79c2d357f4933d00e5901e9a61c
+PODFILE CHECKSUM: a562c3ac74c6c503ce46afa208567efc97414ab2
 
 COCOAPODS: 1.16.2

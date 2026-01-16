@@ -3,7 +3,7 @@ include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../../../node_modules/.pnpm/@capacitor+android@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/android/capacitor')
 
 include ':capacitor-community-media'
-project(':capacitor-community-media').projectDir = new File('../../../node_modules/.pnpm/@capacitor-community+media@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor-community/media/android')
+project(':capacitor-community-media').projectDir = new File('../../../node_modules/.pnpm/@capacitor-community+media@9.0.0_@capacitor+core@8.0.1/node_modules/@capacitor-community/media/android')
 
 include ':capacitor-community-sqlite'
 project(':capacitor-community-sqlite').projectDir = new File('../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor-community/sqlite/android')
