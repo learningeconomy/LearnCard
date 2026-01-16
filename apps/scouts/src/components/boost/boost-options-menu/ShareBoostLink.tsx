@@ -17,7 +17,6 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
-import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import {
     getCredentialName,
@@ -40,8 +39,7 @@ const ShareBoostLink: React.FC<{
     boostUri: string;
     customClassName?: string;
     categoryType: string;
-    unknownVerifierTitle?: string;
-}> = ({ boost, boostUri, customClassName, handleClose, categoryType, unknownVerifierTitle }) => {
+}> = ({ boost, boostUri, customClassName, handleClose, categoryType }) => {
     const { presentToast } = useToast();
     const [shareLink, setShareLink] = useState<string | undefined>('');
 
@@ -235,7 +233,7 @@ const ShareBoostLink: React.FC<{
 
                     <div className="w-full flex items-center justify-center">
                         <p className="text-white font-medium text-lg mb-4 flex items-center justify-center w-full">
-                            <IconComponent className="mr-1 h-[24px] w-[25px]" /> Verified{' '}
+                            <IconComponent className="mr-1 h-[24px] w-[25px]" />
                             {categoryTitle ?? 'Achievement'}
                         </p>
                     </div>
@@ -287,16 +285,8 @@ const ShareBoostLink: React.FC<{
                         </p>
                     </div>
 
-                    <div className="bg-white w-full flex items-center justify-center pt-4 pb-2">
+                    <div className="bg-white w-full flex items-center justify-center pt-4 pb-6">
                         <div className="bg-grayscale-300 h-[1px] w-[90%]" />
-                    </div>
-
-                    <div className="w-full flex items-center justify-center bg-white pb-2">
-                        <CredentialVerificationDisplay
-                            credential={cred}
-                            showText
-                            unknownVerifierTitle={unknownVerifierTitle}
-                        />
                     </div>
                 </div>
             </IonGrid>

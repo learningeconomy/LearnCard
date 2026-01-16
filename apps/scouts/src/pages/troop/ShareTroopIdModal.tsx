@@ -9,18 +9,24 @@ import {
     useGetCredentialWithEdits,
     useToast,
     ToastTypeEnum,
+    useGetProfile,
 } from 'learn-card-base';
-import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import { getScoutsNounForCred, useGetNetworkFromTroop } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
+import { getCredentialSubject as getSubject } from 'learn-card-base/helpers/credentialHelpers';
 
 type ShareTroopIdModalProps = {
     credential: VC;
     uri: string;
+    unknownVerifierTitle?: string;
 };
 
-const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({ credential, uri }) => {
+const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({
+    credential,
+    uri,
+    unknownVerifierTitle,
+}) => {
     const { presentToast } = useToast();
 
     const currentUser = useGetCurrentLCNUser();
@@ -29,13 +35,18 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({ credential, uri }
     const { credentialWithEdits } = useGetCredentialWithEdits(credential);
 
     const [shareLink, setShareLink] = useState<string | undefined>('');
-    const { mutate: shareEarnedBoost, loading: isLinkLoading } = useShareBoostMutation();
+    const subject = getSubject(credential);
+    const issueeDid = typeof subject?.id === 'string' ? subject?.id : (subject?.id as any)?.id;
+    const issueeProfileId = issueeDid?.includes(':users:') ? issueeDid.split(':').pop() : undefined;
+    const { data: issueeProfile } = useGetProfile(issueeProfileId);
+
+    const { mutate: shareEarnedBoost, loading: isLinkLoading } = useShareBoostMutation() as any;
 
     const generateShareLink = async () => {
         shareEarnedBoost(
             { credential, credentialUri: uri },
             {
-                async onSuccess(data) {
+                async onSuccess(data: any) {
                     setShareLink(data?.link);
                 },
             }
@@ -76,7 +87,9 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({ credential, uri }
                     />
                     <div className="flex flex-col items-center">
                         <span className="font-notoSans text-grayscale-900 text-[20px] font-[600]">
-                            {currentUser.currentLCNUser?.displayName ?? 'Unknown'}
+                            {issueeProfile?.displayName ??
+                                currentUser.currentLCNUser?.displayName ??
+                                'Unknown'}
                         </span>
                         <span className="font-notoSans text-grayscale-700 text-[14px] font-[600]">
                             {getScoutsNounForCred(credential)}
@@ -84,10 +97,6 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({ credential, uri }
                     </div>
                     <div className="flex flex-col items-center">
                         <span className="flex items-center gap-[4px] font-notoSans text-[17px] text-grayscale-900">
-                            {/* <CredentialVerificationDisplay
-                                credential={credential}
-                                iconClassName="!h-[20px] !w-[20px]"
-                            /> */}
                             {credentialWithEdits?.name}
                         </span>
                         <span className="font-notoSans text-[14px] font-[600] text-grayscale-900">

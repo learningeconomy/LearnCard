@@ -221,7 +221,6 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 boost={credential as any}
                 boostUri={uri || ''}
                 categoryType={categoryType as any}
-                unknownVerifierTitle={title}
             />
         );
     };
