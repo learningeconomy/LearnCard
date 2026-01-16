@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum, useIsLoggedIn } from 'learn-card-base';
 
 import { pushUtilities } from '../../utils/pushUtilities';
 
 export const PushNotificationListener = () => {
     const { initWallet } = useWallet();
-    const location = useLocation();
+    const isLoggedIn = useIsLoggedIn();
     const history = useHistory();
 
     const { presentToast } = useToast();
@@ -24,10 +24,10 @@ export const PushNotificationListener = () => {
         pushUtilities.addBackgroundPushNotificationListeners(
             initWallet,
             history,
-            true,
+            isLoggedIn,
             handleNotificationRegistrationError
         );
-    }, [history, location.pathname]);
+    }, [history, isLoggedIn]);
 
     return null;
 };
