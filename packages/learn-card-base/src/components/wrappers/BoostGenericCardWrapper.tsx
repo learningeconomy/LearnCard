@@ -125,6 +125,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                     <CredentialVerificationDisplay
                         credential={credential}
                         iconClassName="!w-[15px] !h-[15px] mr-1"
+                        showText={!!unknownVerifierTitle}
                         unknownVerifierTitle={unknownVerifierTitle}
                     />
                 )

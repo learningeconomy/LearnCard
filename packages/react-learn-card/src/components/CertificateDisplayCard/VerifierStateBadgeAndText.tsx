@@ -23,31 +23,35 @@ export const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps>
     className = '',
     unknownVerifierTitle,
 }) => {
+    // For Scouts: if we have a role-based title, show it with trusted styling
+    const displayAsTrusted = !!unknownVerifierTitle;
+    const effectiveState = displayAsTrusted ? VERIFIER_STATES.trustedVerifier : verifierState;
+    
     return (
         <div className={`flex justify-center ${className}`}>
-            {verifierState === VERIFIER_STATES.selfVerified && (
-                <span className="uppercase font-poppins text-[12px] font-[500] text-green-dark flex gap-[3px] items-center">
+            {effectiveState === VERIFIER_STATES.selfVerified && (
+                <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-green-dark">
                     <PersonBadge />
-                    Self Issued
-                </span>
+                    <span className="whitespace-nowrap">Self Issued</span>
+                </div>
             )}
-            {verifierState === VERIFIER_STATES.trustedVerifier && (
-                <span className="uppercase font-poppins text-[12px] font-[500] text-blue-light flex gap-[3px] items-center">
+            {effectiveState === VERIFIER_STATES.trustedVerifier && (
+                <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-green-600">
                     <VerifiedBadge />
-                    Trusted Issuer
-                </span>
+                    <span className="whitespace-nowrap">{unknownVerifierTitle ?? 'Trusted Issuer'}</span>
+                </div>
             )}
-            {verifierState === VERIFIER_STATES.unknownVerifier && (
-                <span className="uppercase font-poppins text-[12px] font-[500] text-orange-500 flex gap-[3px] items-center">
+            {effectiveState === VERIFIER_STATES.unknownVerifier && (
+                <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-orange-500">
                     <UnknownVerifierBadge />
-                    {unknownVerifierTitle ?? VERIFIER_STATES.unknownVerifier}
-                </span>
+                    <span className="whitespace-nowrap">{unknownVerifierTitle ?? VERIFIER_STATES.unknownVerifier}</span>
+                </div>
             )}
-            {verifierState === VERIFIER_STATES.untrustedVerifier && (
-                <span className="uppercase font-poppins text-[12px] font-[500] text-red-mastercard flex gap-[3px] items-center">
+            {effectiveState === VERIFIER_STATES.untrustedVerifier && (
+                <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-red-mastercard">
                     <RedFlag />
-                    Untrusted Issuer
-                </span>
+                    <span className="whitespace-nowrap">Untrusted Issuer</span>
+                </div>
             )}
         </div>
     );

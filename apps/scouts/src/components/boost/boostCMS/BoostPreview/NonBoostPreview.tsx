@@ -78,7 +78,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
 
         const role = getRoleFromCred(highlightedCreds[0]);
-        return `Verified ${getScoutsNounForRole(role)}`;
+        return getScoutsNounForRole(role); // Just the role, no "Verified" prefix
     }, [highlightedCreds]);
 
     useEffect(() => {

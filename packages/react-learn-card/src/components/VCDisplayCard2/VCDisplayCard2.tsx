@@ -141,6 +141,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const issuee = issueeOverride || _issuee;
     const issuer = issuerOverride || _issuer;
 
+    console.log('//unknownVerifierTitle', unknownVerifierTitle)
+
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
     const isFront = isFrontOverride ?? _isFront;
     const setIsFront = setIsFrontOverride ?? _setIsFront;

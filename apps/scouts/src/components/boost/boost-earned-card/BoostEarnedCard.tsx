@@ -86,6 +86,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         desktop: ModalTypes.FullScreen,
     });
 
+    console.log('///BOOST EARNED CARD');
+
     // Below query is so we can get parent boost info...
     // Get boostId from resolved credential
     const {
@@ -97,16 +99,31 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     const credential = resolvedCredential || _credential;
     const isBoost = credential && isBoostCredential(credential);
-    const profileID =
-        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
+    // Get the issuer from the boostCredential field for proper role-based verification
+    const boostIssuer = (credential as any)?.boostCredential?.issuer;
+    const boostIssuerDid =
+        typeof boostIssuer === 'string' ? boostIssuer : boostIssuer?.id;
+    
+    // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
+    const profileID = boostIssuerDid?.split(':').pop();
+    
     const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
+    console.log('//highlightedCreds', highlightedCreds);
+    console.log('//profileId', profileID);
+    console.log('//boostIssuerDid', boostIssuerDid);
+    console.log('//credential', credential);
 
     const unknownVerifierTitle = React.useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
 
         const role = getRoleFromCred(highlightedCreds[0]);
-        return `Verified ${getScoutsNounForRole(role)}`;
+        return getScoutsNounForRole(role); // Just the role, no "Verified" prefix
     }, [highlightedCreds]);
+
+
+    console.log('//unknownVerifierTitle', unknownVerifierTitle);
+
+    
     const cred = credential && unwrapBoostCredential(credential);
     const credImg = getUrlFromImage(getCredentialSubject(cred)?.image ?? '');
     const cardTitle = isBoost ? cred?.name : getCredentialName(cred);
@@ -451,6 +468,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     credential={cred as any}
                     branding={branding}
                     loading={showSkeleton}
+                    unknownVerifierTitle={unknownVerifierTitle}
                 />
             </IonCol>
         </ErrorBoundary>

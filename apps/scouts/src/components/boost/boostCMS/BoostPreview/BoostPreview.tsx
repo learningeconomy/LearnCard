@@ -80,12 +80,12 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const [isFront, setIsFront] = useState(true);
-
+    console.log('///highlightedCreds', highlightedCreds);
     const unknownVerifierTitle = useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
 
         const role = getRoleFromCred(highlightedCreds[0]);
-        return `Verified ${getScoutsNounForRole(role)}`;
+        return getScoutsNounForRole(role); // Just the role, no "Verified" prefix
     }, [highlightedCreds]);
 
     useEffect(() => {
