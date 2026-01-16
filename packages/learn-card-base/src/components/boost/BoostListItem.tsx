@@ -239,7 +239,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 )}
 
                 <span className="text-grayscale-800 font-normal flex items-center truncate w-full">
-                    {(isMediaDisplay || displayType !== DisplayTypeEnum.Media) && (
+                    {(isMediaDisplay || displayType !== DisplayTypeEnum.Media) && !managedBoost && (
                         <CredentialVerificationDisplay
                             managedBoost={managedBoost}
                             credential={credential}
