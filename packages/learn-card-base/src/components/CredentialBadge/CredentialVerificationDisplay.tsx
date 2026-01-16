@@ -75,6 +75,13 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     // For Scouts: if we have a role-based title (e.g., "Verified Scout"), treat as trusted
     const hasRoleBasedTitle = !!unknownVerifierTitle;
     
+    const registrySourceAsState =
+        knownDIDRegistry?.source === 'trusted'
+            ? VERIFIER_STATES.trustedVerifier
+            : knownDIDRegistry?.source === 'untrusted'
+            ? VERIFIER_STATES.untrustedVerifier
+            : VERIFIER_STATES.unknownVerifier;
+
     if (
         ((managedBoost && credential?.issuer === issuerDid) ||
             (!managedBoost && credentialSubject?.id === issuerDid)) &&
@@ -84,19 +91,13 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
-    } else if (hasRoleBasedTitle) {
-        // If we have a role-based title, treat as trusted verifier
+    } else if (registrySourceAsState === VERIFIER_STATES.untrustedVerifier) {
+        verifierState = VERIFIER_STATES.untrustedVerifier;
+    } else if (hasRoleBasedTitle || registrySourceAsState === VERIFIER_STATES.trustedVerifier) {
+        // If we have a role-based title OR we are already trusted in the registry, treat as trusted verifier
         verifierState = VERIFIER_STATES.trustedVerifier;
     } else {
-        if (knownDIDRegistry?.source === 'trusted') {
-            verifierState = VERIFIER_STATES.trustedVerifier;
-        } else if (knownDIDRegistry?.source === 'untrusted') {
-            verifierState = VERIFIER_STATES.untrustedVerifier;
-        } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
-        } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
-        }
+        verifierState = VERIFIER_STATES.unknownVerifier;
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
@@ -129,7 +130,6 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         return <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
     }
     if (verifierState === VERIFIER_STATES.unknownVerifier) {
-        console.log('///unknownVerifierState', unknownVerifierTitle, 'showText', showText);
         // https://welibrary.atlassian.net/browse/LC-704
         // https://welibrary.atlassian.net/browse/LC-694
         // removes question mark when credential is unknown
