@@ -24,7 +24,7 @@ def capacitor_pods
   pod 'CapacitorFilesystem', :path => '../../../../node_modules/.pnpm/@capacitor+filesystem@7.1.5_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem'
   pod 'CapacitorHaptics', :path => '../../../../node_modules/.pnpm/@capacitor+haptics@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/haptics'
   pod 'CapacitorKeyboard', :path => '../../../../node_modules/.pnpm/@capacitor+keyboard@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/keyboard'
-  pod 'CapacitorLocalNotifications', :path => '../../../../node_modules/.pnpm/@capacitor+local-notifications@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/local-notifications'
+  pod 'CapacitorLocalNotifications', :path => '../../../../node_modules/.pnpm/@capacitor+local-notifications@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/local-notifications'
   pod 'CapacitorNetwork', :path => '../../../../node_modules/.pnpm/@capacitor+network@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/network'
   pod 'CapacitorPushNotifications', :path => '../../../../node_modules/.pnpm/@capacitor+push-notifications@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications'
   pod 'CapacitorShare', :path => '../../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/share'
