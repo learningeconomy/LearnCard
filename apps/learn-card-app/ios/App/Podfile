@@ -17,7 +17,7 @@ def capacitor_pods
   pod 'CapacitorFirebaseAuthentication', :path => '../../../../node_modules/.pnpm/@capacitor-firebase+authentication@7.4.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/authentication'
   pod 'CapacitorMlkitBarcodeScanning', :path => '../../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@8.0.1/node_modules/@capacitor-mlkit/barcode-scanning'
   pod 'CapacitorApp', :path => '../../../../node_modules/.pnpm/@capacitor+app@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/app'
-  pod 'CapacitorBrowser', :path => '../../../../node_modules/.pnpm/@capacitor+browser@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/browser'
+  pod 'CapacitorBrowser', :path => '../../../../node_modules/.pnpm/@capacitor+browser@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/browser'
   pod 'CapacitorCamera', :path => '../../../../node_modules/.pnpm/@capacitor+camera@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/camera'
   pod 'CapacitorClipboard', :path => '../../../../node_modules/.pnpm/@capacitor+clipboard@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/clipboard'
   pod 'CapacitorFileTransfer', :path => '../../../../node_modules/.pnpm/@capacitor+file-transfer@1.0.6_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer'
