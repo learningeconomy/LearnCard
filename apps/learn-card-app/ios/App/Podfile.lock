@@ -67,11 +67,11 @@ PODS:
     - Capacitor
   - CapacitorPushNotifications (8.0.0):
     - Capacitor
-  - CapacitorShare (7.0.2):
+  - CapacitorShare (8.0.0):
     - Capacitor
-  - CapacitorSplashScreen (7.0.3):
+  - CapacitorSplashScreen (8.0.0):
     - Capacitor
-  - CapacitorStatusBar (7.0.3):
+  - CapacitorStatusBar (8.0.0):
     - Capacitor
   - CapawesomeCapacitorBadge (7.0.1):
     - Capacitor
@@ -243,9 +243,9 @@ DEPENDENCIES:
   - "CapacitorNetwork (from `../../../../node_modules/.pnpm/@capacitor+network@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/network`)"
   - "CapacitorPluginSafeArea (from `../../../../node_modules/.pnpm/capacitor-plugin-safe-area@4.0.3_@capacitor+core@8.0.1/node_modules/capacitor-plugin-safe-area`)"
   - "CapacitorPushNotifications (from `../../../../node_modules/.pnpm/@capacitor+push-notifications@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications`)"
-  - "CapacitorShare (from `../../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/share`)"
-  - "CapacitorSplashScreen (from `../../../../node_modules/.pnpm/@capacitor+splash-screen@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/splash-screen`)"
-  - "CapacitorStatusBar (from `../../../../node_modules/.pnpm/@capacitor+status-bar@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/status-bar`)"
+  - "CapacitorShare (from `../../../../node_modules/.pnpm/@capacitor+share@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/share`)"
+  - "CapacitorSplashScreen (from `../../../../node_modules/.pnpm/@capacitor+splash-screen@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/splash-screen`)"
+  - "CapacitorStatusBar (from `../../../../node_modules/.pnpm/@capacitor+status-bar@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/status-bar`)"
   - "CapawesomeCapacitorBadge (from `../../../../node_modules/.pnpm/@capawesome+capacitor-badge@7.0.1_@capacitor+core@8.0.1/node_modules/@capawesome/capacitor-badge`)"
   - "CapgoCapacitorUpdater (from `../../../../node_modules/.pnpm/@capgo+capacitor-updater@7.8.7_@capacitor+core@8.0.1/node_modules/@capgo/capacitor-updater`)"
   - Firebase/Messaging
@@ -330,11 +330,11 @@ EXTERNAL SOURCES:
   CapacitorPushNotifications:
     :path: "../../../../node_modules/.pnpm/@capacitor+push-notifications@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/push-notifications"
   CapacitorShare:
-    :path: "../../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/share"
+    :path: "../../../../node_modules/.pnpm/@capacitor+share@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/share"
   CapacitorSplashScreen:
-    :path: "../../../../node_modules/.pnpm/@capacitor+splash-screen@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/splash-screen"
+    :path: "../../../../node_modules/.pnpm/@capacitor+splash-screen@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/splash-screen"
   CapacitorStatusBar:
-    :path: "../../../../node_modules/.pnpm/@capacitor+status-bar@7.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/status-bar"
+    :path: "../../../../node_modules/.pnpm/@capacitor+status-bar@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/status-bar"
   CapawesomeCapacitorBadge:
     :path: "../../../../node_modules/.pnpm/@capawesome+capacitor-badge@7.0.1_@capacitor+core@8.0.1/node_modules/@capawesome/capacitor-badge"
   CapgoCapacitorUpdater:
@@ -364,9 +364,9 @@ SPEC CHECKSUMS:
   CapacitorNetwork: 156f8096cbbce5337eb1769fcc0d6adc4b85d3f3
   CapacitorPluginSafeArea: 1abd81c6facac9eae0c6ae3cb0b3b53ccc135522
   CapacitorPushNotifications: 722c1528eabbefd355f47e373a4c6235d01e85e9
-  CapacitorShare: be166411fa995ead2d39b104aa0aae56d8615c66
-  CapacitorSplashScreen: e388b8e0ed0e982a9d3a40417f478e7a018a8763
-  CapacitorStatusBar: 0659ddc7b1713764a05831463d215b177a15d054
+  CapacitorShare: 12f1d192170cbcf9f108fd675ac8e343761a4638
+  CapacitorSplashScreen: 422880d7117605c30699eb4b21644b62db42e86c
+  CapacitorStatusBar: 312e2e67928dfe9514c4a8916a1fd610552f5f35
   CapawesomeCapacitorBadge: 7fc1fa00c920b88eabb8451ddc92bdc75da2cffa
   CapgoCapacitorUpdater: 90b09b7c3c23c02f1b0dfe42db51d0abaf1910f3
   Firebase: a64bf6a8546e6eab54f1c715cd6151f39d2329f4
@@ -402,6 +402,6 @@ SPEC CHECKSUMS:
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: 49bbe85f1b74ce842f1f57105890df09f04d0ff5
+PODFILE CHECKSUM: 455d471e959b54bbcc32edabf73857c44cf4961f
 
 COCOAPODS: 1.16.2
