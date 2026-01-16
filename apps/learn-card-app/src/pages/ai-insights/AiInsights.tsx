@@ -117,18 +117,16 @@ const AiInsights: React.FC = () => {
                 <ExperimentalFeatureBox />
             </div>
             <div className="flex items-center justify-center w-full my-4">
-                {flags?.showGenerateAiInsightsButton && (
-                    <button
-                        className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
-                        type="button"
-                        disabled={createAiInsightCredentialLoading}
-                        onClick={() => createAiInsightCredential()}
-                    >
-                        {createAiInsightCredentialLoading
-                            ? 'Generating...'
-                            : 'Generate AI Insights'}
-                    </button>
-                )}
+                {/* {flags?.showGenerateAiInsightsButton && ( */}
+                <button
+                    className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
+                    type="button"
+                    disabled={createAiInsightCredentialLoading}
+                    onClick={() => createAiInsightCredential()}
+                >
+                    {createAiInsightCredentialLoading ? 'Generating...' : 'Generate AI Insights'}
+                </button>
+                {/* )} */}
             </div>
 
             {contractRequest}

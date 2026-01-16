@@ -21,7 +21,7 @@ const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }
     return (
         <div
             onClick={e => e.stopPropagation()}
-            className="flex flex-col gap-[10px] bg-transparent mx-auto cursor-auto min-w-[300px] h-full"
+            className="flex flex-col gap-[10px] bg-transparent mx-auto cursor-auto min-w-[300px] h-full safe-area-top-margin"
         >
             <div className="h-full relative overflow-hidden bg-grayscale-200">
                 <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col gap-[20px] items-center justify-start">
