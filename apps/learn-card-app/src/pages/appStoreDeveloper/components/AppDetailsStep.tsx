@@ -34,7 +34,10 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
     const removeArrayItem = (field: 'highlights' | 'screenshots', index: number) => {
         const currentArray = data[field] || [];
-        handleArrayChange(field, currentArray.filter((_, i) => i !== index));
+        handleArrayChange(
+            field,
+            currentArray.filter((_, i) => i !== index)
+        );
     };
 
     return (
@@ -86,9 +89,43 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         <span />
                     )}
 
-                    <span className="text-xs text-gray-400">{(data.display_name || '').length}/50</span>
+                    <span className="text-xs text-gray-400">
+                        {(data.display_name || '').length}/50
+                    </span>
                 </div>
             </div>
+
+            {/* Slug - disabled until fully implemented (needs uniqueness validation, backend persistence, etc.)
+            <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    App Slug
+                    <span className="text-gray-400 font-normal ml-1">(optional)</span>
+                </label>
+
+                <input
+                    type="text"
+                    value={data.slug || ''}
+                    onChange={e =>
+                        handleChange(
+                            'slug',
+                            e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                        )
+                    }
+                    placeholder="my-amazing-app"
+                    className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                        errors.slug ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                    maxLength={50}
+                />
+
+                <p className="text-xs text-gray-400 mt-1">
+                    Unique identifier for your app (lowercase, alphanumeric, hyphens). Used for
+                    credential issuance.
+                </p>
+
+                {errors.slug && <p className="text-sm text-red-500 mt-1">{errors.slug}</p>}
+            </div>
+            */}
 
             {/* Tagline */}
             <div>
@@ -118,7 +155,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Full Description */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Full Description</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    Full Description
+                </label>
 
                 <textarea
                     value={data.full_description || ''}
@@ -137,7 +176,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         <span />
                     )}
 
-                    <span className="text-xs text-gray-400">{(data.full_description || '').length}/2000</span>
+                    <span className="text-xs text-gray-400">
+                        {(data.full_description || '').length}/2000
+                    </span>
                 </div>
             </div>
 
@@ -165,7 +206,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <div className="flex items-center gap-2 mb-1">
                     <Palette className="w-4 h-4 text-gray-400" />
 
-                    <label className="text-sm font-medium text-gray-600">Listing Background Color</label>
+                    <label className="text-sm font-medium text-gray-600">
+                        Listing Background Color
+                    </label>
 
                     <span className="text-xs text-gray-400">(optional)</span>
                 </div>
@@ -339,7 +382,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <div className="flex items-center gap-2 mb-2">
                     <Smartphone className="w-4 h-4 text-gray-400" />
 
-                    <label className="text-sm font-medium text-gray-600">Native App Store Links</label>
+                    <label className="text-sm font-medium text-gray-600">
+                        Native App Store Links
+                    </label>
 
                     <span className="text-xs text-gray-400">(optional)</span>
                 </div>

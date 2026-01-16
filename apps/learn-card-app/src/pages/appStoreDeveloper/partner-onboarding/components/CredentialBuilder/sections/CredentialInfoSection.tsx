@@ -13,6 +13,7 @@ interface CredentialInfoSectionProps {
     onChange: (template: OBv3CredentialTemplate) => void;
     isExpanded: boolean;
     onToggle: () => void;
+    disableDynamicFields?: boolean;
 }
 
 export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
@@ -20,6 +21,7 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
     onChange,
     isExpanded,
     onToggle,
+    disableDynamicFields = false,
 }) => {
     const updateField = (key: keyof OBv3CredentialTemplate, value: TemplateFieldValue) => {
         onChange({ ...template, [key]: value });
@@ -39,6 +41,7 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
                 placeholder="e.g., Course Completion Certificate"
                 helpText="The name displayed on the credential"
                 required
+                showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
@@ -48,6 +51,7 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
                 placeholder="Describe what this credential represents..."
                 helpText="A brief description of the credential"
                 type="textarea"
+                showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
@@ -58,6 +62,7 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
                 helpText="URL to an image representing the credential"
                 type="url"
                 enableFileUpload
+                showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
@@ -66,6 +71,7 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
                 onChange={(f) => updateField('id', f)}
                 placeholder="urn:uuid:..."
                 helpText="Unique identifier for this credential (usually auto-generated)"
+                showDynamicToggle={!disableDynamicFields}
             />
         </CollapsibleSection>
     );

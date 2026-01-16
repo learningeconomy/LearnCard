@@ -20,6 +20,7 @@ interface AchievementSectionProps {
     onChange: (template: OBv3CredentialTemplate) => void;
     isExpanded: boolean;
     onToggle: () => void;
+    disableDynamicFields?: boolean;
 }
 
 export const AchievementSection: React.FC<AchievementSectionProps> = ({
@@ -27,6 +28,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
     onChange,
     isExpanded,
     onToggle,
+    disableDynamicFields = false,
 }) => {
     const achievement = template.credentialSubject.achievement;
 
@@ -95,6 +97,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 placeholder="e.g., Web Development Fundamentals"
                 helpText="The name of the achievement being recognized"
                 required
+                showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
@@ -104,6 +107,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 placeholder="Describe the achievement..."
                 helpText="What did the recipient achieve?"
                 type="textarea"
+                showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
@@ -113,6 +117,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 helpText="The category of achievement per OBv3 spec"
                 type="select"
                 options={achievementTypeOptions}
+                showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
@@ -123,6 +128,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 helpText="Badge or achievement image URL"
                 type="url"
                 enableFileUpload
+                showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
@@ -131,6 +137,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                 onChange={(f) => updateAchievement('id', f)}
                 placeholder="urn:uuid:..."
                 helpText="Unique identifier for this achievement type"
+                showDynamicToggle={!disableDynamicFields}
             />
 
             {/* Additional OBv3 Achievement Fields */}
@@ -144,6 +151,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         onChange={(f) => updateAchievement('humanCode', f)}
                         placeholder="e.g., CS101"
                         helpText="Human-readable code (course number)"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -152,6 +160,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         onChange={(f) => updateAchievement('creditsAvailable', f)}
                         placeholder="e.g., 3"
                         helpText="Number of credits"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -160,6 +169,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         onChange={(f) => updateAchievement('fieldOfStudy', f)}
                         placeholder="e.g., Computer Science"
                         helpText="Academic discipline"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -168,6 +178,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         onChange={(f) => updateAchievement('specialization', f)}
                         placeholder="e.g., Web Development"
                         helpText="Area of specialization"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -176,6 +187,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         onChange={(f) => updateAchievement('version', f)}
                         placeholder="e.g., 1.0"
                         helpText="Version of this achievement"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -184,6 +196,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         onChange={(f) => updateAchievement('inLanguage', f)}
                         placeholder="e.g., en"
                         helpText="Language code (ISO 639-1)"
+                        showDynamicToggle={!disableDynamicFields}
                     />
                 </div>
 
@@ -258,6 +271,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         placeholder="Describe what was required to earn this achievement..."
                         helpText="Human-readable description of the criteria"
                         type="textarea"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -267,6 +281,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                         placeholder="https://example.com/criteria/..."
                         helpText="URL to detailed criteria documentation"
                         type="url"
+                        showDynamicToggle={!disableDynamicFields}
                     />
                 </div>
             </div>
@@ -316,6 +331,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                     onChange={(f) => updateAlignment(index, 'targetName', f)}
                                     placeholder="e.g., ISTE Standards for Students"
                                     helpText="Name of the framework or standard"
+                                    showDynamicToggle={!disableDynamicFields}
                                 />
 
                                 <FieldEditor
@@ -325,6 +341,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                     placeholder="https://..."
                                     helpText="URL to the standard or framework"
                                     type="url"
+                                    showDynamicToggle={!disableDynamicFields}
                                 />
 
                                 <FieldEditor
@@ -333,6 +350,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                     onChange={(f) => updateAlignment(index, 'targetFramework', f)}
                                     placeholder="e.g., ISTE"
                                     helpText="Name of the framework"
+                                    showDynamicToggle={!disableDynamicFields}
                                 />
 
                                 <FieldEditor
@@ -341,6 +359,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
                                     onChange={(f) => updateAlignment(index, 'targetCode', f)}
                                     placeholder="e.g., 1.a"
                                     helpText="Code within the framework"
+                                    showDynamicToggle={!disableDynamicFields}
                                 />
                             </div>
                         ))}

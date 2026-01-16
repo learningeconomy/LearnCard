@@ -29,7 +29,8 @@ const createBaseTemplate = (overrides: Partial<OBv3CredentialTemplate>): OBv3Cre
         name: staticField(''),
     },
     credentialSubject: {
-        name: dynamicField('recipient_name', ''),
+        //name: dynamicField('recipient_name', ''),
+        id: systemField('recipient_did'),
         achievement: {
             name: staticField(''),
             description: staticField(''),

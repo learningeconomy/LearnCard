@@ -1,10 +1,12 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator, UnsignedVC } from '@learncard/types';
+import { isVC2Format } from '@learncard/helpers';
 
 import { t, openRoute, profileRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { logCredentialSent } from '@helpers/activity.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
@@ -23,20 +25,38 @@ import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
     associateListingWithIntegration,
     installAppForProfile,
+    associateBoostWithListing,
 } from '@accesslayer/app-store-listing/relationships/create';
-import { uninstallAppForProfile } from '@accesslayer/app-store-listing/relationships/delete';
+import {
+    uninstallAppForProfile,
+    removeBoostFromListing,
+} from '@accesslayer/app-store-listing/relationships/delete';
 import {
     getIntegrationForListing,
     countProfilesInstalledApp,
+    hasProfileInstalledApp,
+    getBoostForListingByTemplateAlias,
+    getBoostsForListing,
+    hasTemplateAliasForListing,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { readIntegrationById } from '@accesslayer/integration/read';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
+import {
+    getPrimarySigningAuthorityForIntegration,
+    getPrimarySigningAuthorityForUser,
+} from '@accesslayer/signing-authority/relationships/read';
+import { associateIntegrationWithSigningAuthority } from '@accesslayer/integration/relationships/create';
 import {
     AppListingStatus,
     LaunchType,
     PromotionLevel,
     AppStoreListingValidator,
 } from 'types/app-store-listing';
+import { getBoostByUri } from '@accesslayer/boost/read';
+import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
+import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import { getDidWeb } from '@helpers/did.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -117,15 +137,14 @@ const jsonStringValidator = z.string().refine(isValidJson, {
     message: 'Must be valid JSON',
 });
 
-const safeImageUrlValidator = z.string().url().refine(
-    url => isAllowedImageUrl(url),
-    { message: 'Image URL must be from an allowed domain' }
-);
+const safeImageUrlValidator = z
+    .string()
+    .url()
+    .refine(url => isAllowedImageUrl(url), { message: 'Image URL must be from an allowed domain' });
 
-const safeContentValidator = z.string().refine(
-    text => !containsSuspiciousContent(text),
-    { message: 'Content contains potentially unsafe patterns' }
-);
+const safeContentValidator = z.string().refine(text => !containsSuspiciousContent(text), {
+    message: 'Content contains potentially unsafe patterns',
+});
 
 // =============================================================================
 // ZOD VALIDATORS FOR API
@@ -133,14 +152,20 @@ const safeContentValidator = z.string().refine(
 
 // Base schema without superRefine (so we can use .partial() and .omit())
 const AppStoreListingBaseSchema = z.object({
-    display_name: z.string().min(1).max(100).refine(
-        text => !containsSuspiciousContent(text),
-        { message: 'Display name contains potentially unsafe patterns' }
-    ),
-    tagline: z.string().min(1).max(200).refine(
-        text => !containsSuspiciousContent(text),
-        { message: 'Tagline contains potentially unsafe patterns' }
-    ),
+    display_name: z
+        .string()
+        .min(1)
+        .max(100)
+        .refine(text => !containsSuspiciousContent(text), {
+            message: 'Display name contains potentially unsafe patterns',
+        }),
+    tagline: z
+        .string()
+        .min(1)
+        .max(200)
+        .refine(text => !containsSuspiciousContent(text), {
+            message: 'Tagline contains potentially unsafe patterns',
+        }),
     full_description: safeContentValidator.pipe(z.string().min(1).max(5000)),
     icon_url: safeImageUrlValidator,
     app_listing_status: AppListingStatus,
@@ -153,18 +178,31 @@ const AppStoreListingBaseSchema = z.object({
     android_app_store_id: z.string().max(100).optional(),
     privacy_policy_url: z.string().url().optional(),
     terms_url: z.string().url().optional(),
-    highlights: z.array(z.string().max(200).refine(
-        text => !containsSuspiciousContent(text),
-        { message: 'Highlight contains potentially unsafe patterns' }
-    )).max(10).optional(),
+    highlights: z
+        .array(
+            z
+                .string()
+                .max(200)
+                .refine(text => !containsSuspiciousContent(text), {
+                    message: 'Highlight contains potentially unsafe patterns',
+                })
+        )
+        .max(10)
+        .optional(),
     screenshots: z.array(safeImageUrlValidator).max(10).optional(),
-    hero_background_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, {
-        message: 'Must be a valid hex color (e.g., #FF5733)',
-    }).optional(),
+    hero_background_color: z
+        .string()
+        .regex(/^#[0-9A-Fa-f]{6}$/, {
+            message: 'Must be a valid hex color (e.g., #FF5733)',
+        })
+        .optional(),
 });
 
 // Iframe URL validation refinement (applied to schemas that include launch_type)
-const iframeUrlRefinement = (data: { launch_type?: string; launch_config_json?: string }, ctx: z.RefinementCtx) => {
+const iframeUrlRefinement = (
+    data: { launch_type?: string; launch_config_json?: string },
+    ctx: z.RefinementCtx
+) => {
     if (data.launch_type === 'EMBEDDED_IFRAME' && data.launch_config_json) {
         try {
             const config = JSON.parse(data.launch_config_json);
@@ -272,15 +310,18 @@ const transformInputForStorage = (input: any): any => {
 };
 
 // Regular update validator - excludes admin-only fields, all fields optional
-const AppStoreListingUpdateInputValidator = AppStoreListingBaseSchema
-    .omit({ app_listing_status: true, promotion_level: true })
+const AppStoreListingUpdateInputValidator = AppStoreListingBaseSchema.omit({
+    app_listing_status: true,
+    promotion_level: true,
+})
     .partial()
     .superRefine(iframeUrlRefinement);
 
 // Create validator - new listings start as DRAFT, no promotion level
-const AppStoreListingCreateInputValidator = AppStoreListingBaseSchema
-    .omit({ app_listing_status: true, promotion_level: true })
-    .superRefine(iframeUrlRefinement);
+const AppStoreListingCreateInputValidator = AppStoreListingBaseSchema.omit({
+    app_listing_status: true,
+    promotion_level: true,
+}).superRefine(iframeUrlRefinement);
 
 // Extended validator that includes the transformed array fields for API responses
 const AppStoreListingResponseValidator = AppStoreListingValidator.extend({
@@ -368,6 +409,163 @@ const getListingOrThrow = async (listingId: string) => {
     }
 
     return listing;
+};
+
+// Helper to handle send-credential app event
+const handleSendCredentialEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const templateAlias = event.templateAlias as string | undefined;
+    const templateData = event.templateData as Record<string, unknown> | undefined;
+
+    if (!templateAlias) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
+    }
+
+    // Get the boost associated with this app (templateAlias maps to internal boost)
+    const boostResult = await getBoostForListingByTemplateAlias(
+        listingId,
+        templateAlias,
+        ctx.domain
+    );
+    if (!boostResult) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+    }
+
+    const { boost, boostUri } = boostResult;
+
+    if (isDraftBoost(boost)) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Draft boosts cannot be issued',
+        });
+    }
+
+    // Get the integration that owns this listing
+    const integration = await getIntegrationForListing(listingId);
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+
+    // Get signing authority for the integration
+    const sa = await getPrimarySigningAuthorityForIntegration(integration);
+    if (!sa) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No signing authority configured for this app',
+        });
+    }
+
+    // Get integration owner for signing
+    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
+    if (!integrationOwner) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+    }
+
+    // Get the target profile (the user making the request)
+    const targetProfile = await getProfilesByProfileIds([profile.profileId]);
+    if (!targetProfile.length) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
+
+    // Build unsigned credential from boost template
+    let unsignedVc: UnsignedVC;
+
+    try {
+        let boostJsonString = boost.boost;
+
+        if (templateData && Object.keys(templateData).length > 0) {
+            boostJsonString = renderBoostTemplate(boostJsonString, templateData);
+        }
+
+        unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+
+        if (isVC2Format(unsignedVc)) {
+            unsignedVc.validFrom = new Date().toISOString();
+        } else {
+            unsignedVc.issuanceDate = new Date().toISOString();
+        }
+
+        const issuerDid = getDidWeb(ctx.domain, integrationOwner.profileId);
+        unsignedVc.issuer =
+            unsignedVc.issuer && typeof unsignedVc.issuer === 'object'
+                ? { ...unsignedVc.issuer, id: issuerDid }
+                : { id: issuerDid };
+
+        const targetDid = getDidWeb(ctx.domain, targetProfile[0]!.profileId);
+
+        if (Array.isArray(unsignedVc.credentialSubject)) {
+            unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
+                ...subject,
+                id: targetDid,
+            }));
+        } else {
+            unsignedVc.credentialSubject = {
+                ...unsignedVc.credentialSubject,
+                id: targetDid,
+            };
+        }
+
+        if (unsignedVc?.type?.includes('BoostCredential')) {
+            unsignedVc.boostId = boostUri;
+        }
+    } catch (e) {
+        console.error('Failed to parse boost', e);
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to parse boost template',
+        });
+    }
+
+    // Issue via signing authority
+    let credential;
+
+    try {
+        credential = await issueCredentialWithSigningAuthority(
+            integrationOwner,
+            unsignedVc,
+            sa,
+            ctx.domain
+        );
+    } catch (e) {
+        console.error('Failed to issue VC with signing authority', e);
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Could not issue credential with signing authority',
+        });
+    }
+
+    // Log credential activity FIRST to get activityId for chaining
+    const activityId = await logCredentialSent({
+        actorProfileId: integrationOwner.profileId,
+        recipientType: 'profile',
+        recipientIdentifier: targetProfile[0]!.profileId,
+        recipientProfileId: targetProfile[0]!.profileId,
+        boostUri,
+        integrationId: integration.id,
+        source: 'sendBoost',
+        metadata: { listingId, templateAlias },
+    });
+
+    // Send to user's wallet
+    const credentialUri = await sendBoost({
+        from: integrationOwner,
+        to: targetProfile[0]!,
+        boost,
+        credential,
+        domain: ctx.domain,
+        skipNotification: false,
+        activityId,
+        integrationId: integration.id,
+    });
+
+    return {
+        credentialUri,
+        boostUri,
+    };
 };
 
 export const appStoreRouter = t.router({
@@ -547,7 +745,9 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            const result = await updateAppStoreListing(listing, { app_listing_status: 'PENDING_REVIEW' });
+            const result = await updateAppStoreListing(listing, {
+                app_listing_status: 'PENDING_REVIEW',
+            });
 
             // Notify all App Store admins about the new submission
             if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
@@ -704,7 +904,10 @@ export const appStoreRouter = t.router({
             const listing = await readAppStoreListingById(input.listingId);
 
             if (!listing || listing.app_listing_status !== 'LISTED') {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found or not available' });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Listing not found or not available',
+                });
             }
 
             const alreadyInstalled = await checkIfProfileInstalledApp(
@@ -828,6 +1031,183 @@ export const appStoreRouter = t.router({
             return checkIfProfileInstalledApp(ctx.user.profile.profileId, input.listingId);
         }),
 
+    // ==================== App Boost Management Routes ====================
+
+    addBoostToListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/boost/add',
+                tags: ['App Store'],
+                summary: 'Add Boost to Listing',
+                description: 'Associate a boost with an app listing for credential issuance',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                boostUri: z.string(),
+                templateAlias: z
+                    .string()
+                    .min(1)
+                    .max(50)
+                    .regex(/^[a-z0-9-]+$/, {
+                        message: 'templateAlias must be lowercase alphanumeric with hyphens only',
+                    }),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { integration } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            const boost = await getBoostByUri(input.boostUri);
+            if (!boost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+            }
+
+            const exists = await hasTemplateAliasForListing(input.listingId, input.templateAlias);
+            if (exists) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'A boost with this templateAlias already exists for this listing',
+                });
+            }
+
+            // Auto-setup signing authority for integration if not already configured
+            const existingSa = await getPrimarySigningAuthorityForIntegration(integration);
+            if (!existingSa) {
+                // Try to use the user's primary signing authority
+                const userSa = await getPrimarySigningAuthorityForUser(ctx.user.profile);
+                if (userSa) {
+                    await associateIntegrationWithSigningAuthority(
+                        integration.id,
+                        userSa.signingAuthority.endpoint,
+                        {
+                            name: userSa.relationship.name,
+                            did: userSa.relationship.did,
+                            isPrimary: true,
+                        }
+                    );
+                }
+            }
+
+            return associateBoostWithListing(input.listingId, input.boostUri, input.templateAlias);
+        }),
+
+    removeBoostFromListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/boost/remove',
+                tags: ['App Store'],
+                summary: 'Remove Boost from Listing',
+                description: 'Remove a boost association from an app listing',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                templateAlias: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            await verifyListingOwnership(input.listingId, ctx.user.profile.profileId);
+
+            const exists = await hasTemplateAliasForListing(input.listingId, input.templateAlias);
+            if (!exists) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Boost not found for this listing',
+                });
+            }
+
+            return removeBoostFromListing(input.listingId, input.templateAlias);
+        }),
+
+    getBoostsForListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/listing/{listingId}/boosts',
+                tags: ['App Store'],
+                summary: 'Get Boosts for Listing',
+                description: 'Get all boosts associated with an app listing',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(
+            z.array(
+                z.object({
+                    templateAlias: z.string(),
+                    boostUri: z.string(),
+                })
+            )
+        )
+        .query(async ({ input, ctx }) => {
+            await verifyListingOwnership(input.listingId, ctx.user.profile.profileId);
+
+            return getBoostsForListing(input.listingId, ctx.domain);
+        }),
+
+    // ==================== Generic App Event Route ====================
+
+    appEvent: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/event',
+                tags: ['App Store'],
+                summary: 'Process App Event',
+                description: 'Process a generic event from an installed app',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                event: z.record(z.string(), z.unknown()),
+            })
+        )
+        .output(z.record(z.string(), z.unknown()))
+        .mutation(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+            const { listingId, event } = input;
+
+            // Check if user has this app installed OR owns the integration (for testing)
+            const isInstalled = await hasProfileInstalledApp(profile.profileId, listingId);
+
+            if (!isInstalled) {
+                // Check if user owns the integration - allows testing without installation
+                const integration = await getIntegrationForListing(listingId);
+                const isOwner = integration
+                    ? await isIntegrationAssociatedWithProfile(integration.id, profile.profileId)
+                    : false;
+                if (!isOwner) {
+                    throw new TRPCError({ code: 'FORBIDDEN', message: 'App not installed' });
+                }
+            }
+
+            // Route based on event type
+            const eventType = event.type as string | undefined;
+
+            if (eventType === 'send-credential') {
+                return handleSendCredentialEvent(ctx, profile, listingId, event);
+            }
+
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
+        }),
+
     // ==================== Admin Routes ====================
 
     adminUpdateListingStatus: profileRoute
@@ -855,7 +1235,9 @@ export const appStoreRouter = t.router({
             const listing = await getListingOrThrow(input.listingId);
             const previousStatus = listing.app_listing_status;
 
-            const result = await updateAppStoreListing(listing, { app_listing_status: input.status });
+            const result = await updateAppStoreListing(listing, {
+                app_listing_status: input.status,
+            });
 
             // Send notification to the listing owner if status changed
             if (previousStatus !== input.status) {
