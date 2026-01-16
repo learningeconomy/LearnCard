@@ -47,7 +47,7 @@ const ShareBoostLink: React.FC<{
 
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
-    const { mutate: shareEarnedBoost, isLoading: isLinkLoading } = useShareBoostMutation();
+    const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
     const categoryConfig =
         boostCategoryOptions?.[categoryType as string] ??
