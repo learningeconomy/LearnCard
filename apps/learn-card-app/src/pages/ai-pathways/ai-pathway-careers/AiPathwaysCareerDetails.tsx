@@ -37,20 +37,20 @@ const AiPathwayCareerDetails: React.FC<{ occupation: OccupationDetailsResponse }
 
                     <AiPathwayTopPayLocations occupation={occupation} />
                 </div>
-                <IonFooter
-                    mode="ios"
-                    className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
-                >
-                    <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
-                        <button
-                            onClick={closeModal}
-                            className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </IonFooter>
             </div>
+            <IonFooter
+                mode="ios"
+                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+            >
+                <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
+                    <button
+                        onClick={closeModal}
+                        className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
+                    >
+                        Close
+                    </button>
+                </div>
+            </IonFooter>
         </div>
     );
 };
