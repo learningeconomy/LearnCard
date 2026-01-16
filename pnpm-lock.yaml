@@ -172,76 +172,76 @@ importers:
     dependencies:
       '@capacitor-community/media':
         specifier: ^8.0.1
-        version: 8.0.1(@capacitor/core@7.4.2)
+        version: 8.0.1(@capacitor/core@8.0.1)
       '@capacitor-community/sqlite':
         specifier: ^7.0.1
-        version: 7.0.2(@capacitor/core@7.4.2)
+        version: 7.0.2(@capacitor/core@8.0.1)
       '@capacitor-firebase/analytics':
         specifier: 7.3.0
-        version: 7.3.0(@capacitor/core@7.4.2)(firebase@11.10.0)
+        version: 7.3.0(@capacitor/core@8.0.1)(firebase@11.10.0)
       '@capacitor-firebase/authentication':
         specifier: ^7.3.0
-        version: 7.4.0(@capacitor/core@7.4.2)(firebase@11.10.0)
+        version: 7.4.0(@capacitor/core@8.0.1)(firebase@11.10.0)
       '@capacitor-mlkit/barcode-scanning':
         specifier: ^7.3.0
-        version: 7.3.0(@capacitor/core@7.4.2)
+        version: 7.3.0(@capacitor/core@8.0.1)
       '@capacitor/android':
-        specifier: ^7.4.2
-        version: 7.4.4(@capacitor/core@7.4.2)
+        specifier: ^8.0.1
+        version: 8.0.1(@capacitor/core@8.0.1)
       '@capacitor/app':
         specifier: ^7.0.2
-        version: 7.1.0(@capacitor/core@7.4.2)
+        version: 7.1.0(@capacitor/core@8.0.1)
       '@capacitor/browser':
         specifier: ^7.0.2
-        version: 7.0.2(@capacitor/core@7.4.2)
+        version: 7.0.2(@capacitor/core@8.0.1)
       '@capacitor/camera':
         specifier: ^7.0.2
-        version: 7.0.2(@capacitor/core@7.4.2)
+        version: 7.0.2(@capacitor/core@8.0.1)
       '@capacitor/clipboard':
         specifier: ^7.0.2
-        version: 7.0.2(@capacitor/core@7.4.2)
+        version: 7.0.2(@capacitor/core@8.0.1)
       '@capacitor/core':
-        specifier: 7.4.2
-        version: 7.4.2
+        specifier: 8.0.1
+        version: 8.0.1
       '@capacitor/file-transfer':
         specifier: ^1.0.6
-        version: 1.0.6(@capacitor/core@7.4.2)
+        version: 1.0.6(@capacitor/core@8.0.1)
       '@capacitor/filesystem':
         specifier: ^7.1.4
-        version: 7.1.5(@capacitor/core@7.4.2)
+        version: 7.1.5(@capacitor/core@8.0.1)
       '@capacitor/haptics':
         specifier: ^7.0.2
-        version: 7.0.2(@capacitor/core@7.4.2)
+        version: 7.0.2(@capacitor/core@8.0.1)
       '@capacitor/ios':
-        specifier: ^7.4.2
-        version: 7.4.4(@capacitor/core@7.4.2)
+        specifier: ^8.0.1
+        version: 8.0.1(@capacitor/core@8.0.1)
       '@capacitor/keyboard':
         specifier: ^7.0.2
-        version: 7.0.3(@capacitor/core@7.4.2)
+        version: 7.0.3(@capacitor/core@8.0.1)
       '@capacitor/local-notifications':
         specifier: ^7.0.2
-        version: 7.0.3(@capacitor/core@7.4.2)
+        version: 7.0.3(@capacitor/core@8.0.1)
       '@capacitor/network':
         specifier: ^7.0.2
-        version: 7.0.2(@capacitor/core@7.4.2)
+        version: 7.0.2(@capacitor/core@8.0.1)
       '@capacitor/push-notifications':
         specifier: ^7.0.2
-        version: 7.0.3(@capacitor/core@7.4.2)
+        version: 7.0.3(@capacitor/core@8.0.1)
       '@capacitor/share':
         specifier: ^7.0.2
-        version: 7.0.2(@capacitor/core@7.4.2)
+        version: 7.0.2(@capacitor/core@8.0.1)
       '@capacitor/splash-screen':
         specifier: ^7.0.2
-        version: 7.0.3(@capacitor/core@7.4.2)
+        version: 7.0.3(@capacitor/core@8.0.1)
       '@capacitor/status-bar':
         specifier: ^7.0.2
-        version: 7.0.3(@capacitor/core@7.4.2)
+        version: 7.0.3(@capacitor/core@8.0.1)
       '@capawesome/capacitor-badge':
         specifier: 7.0.1
-        version: 7.0.1(@capacitor/core@7.4.2)
+        version: 7.0.1(@capacitor/core@8.0.1)
       '@capgo/capacitor-updater':
         specifier: 7.8.7
-        version: 7.8.7(@capacitor/core@7.4.2)
+        version: 7.8.7(@capacitor/core@8.0.1)
       '@emoji-mart/data':
         specifier: ^1.2.1
         version: 1.2.1
@@ -343,10 +343,10 @@ importers:
         version: 6.0.3
       capacitor-native-settings:
         specifier: ^7.0.1
-        version: 7.0.2(@capacitor/core@7.4.2)
+        version: 7.0.2(@capacitor/core@8.0.1)
       capacitor-plugin-safe-area:
         specifier: ^4.0.0
-        version: 4.0.3(@capacitor/core@7.4.2)
+        version: 4.0.3(@capacitor/core@8.0.1)
       crypto-js:
         specifier: ^4.2.0
         version: 4.2.0
@@ -502,8 +502,8 @@ importers:
         specifier: ^3.0.5
         version: 3.0.5(@swc/core@1.15.2(@swc/helpers@0.5.17))(@types/node@12.20.55)(typescript@5.6.2)
       '@capacitor/cli':
-        specifier: ^7.0.1
-        version: 7.4.4
+        specifier: ^8.0.1
+        version: 8.0.1
       '@capgo/cli':
         specifier: ^7.2.10
         version: 7.29.1
@@ -5326,6 +5326,11 @@ packages:
     peerDependencies:
       '@capacitor/core': ^7.4.0
 
+  '@capacitor/android@8.0.1':
+    resolution: {integrity: sha512-Mrk2MFKSg9YA4BPLKm03wwFnGKcvzNBERUTcxjW1NkLrF6YhJwygAT69f/YGopFvOhhqdnDPsuZuASUfmpkSpw==}
+    peerDependencies:
+      '@capacitor/core': ^8.0.0
+
   '@capacitor/app@7.1.0':
     resolution: {integrity: sha512-W7m09IWrUjZbo7AKeq+rc/KyucxrJekTBg0l4QCm/yDtCejE3hebxp/W2esU26KKCzMc7H3ClkUw32E9lZkwRA==}
     peerDependencies:
@@ -5356,6 +5361,11 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
 
+  '@capacitor/cli@8.0.1':
+    resolution: {integrity: sha512-okCNTsL8FNYrtPNeHWFjWb1S+PwBMhx5wFLhDC0MZOIrOLm+2ynMBtKu3BnR0Nv1hozoHcOCi6SuTF1TrRpb3w==}
+    engines: {node: '>=22.0.0'}
+    hasBin: true
+
   '@capacitor/clipboard@7.0.2':
     resolution: {integrity: sha512-Cm37cNPvSzuao3HlcrQT18py5WUfKdaNWBHFuQcubBzBuKhqtAC9P6xZ2d0ucPFdxvsEOgO7mjs2BWIpaKqpgg==}
     peerDependencies:
@@ -5363,6 +5373,9 @@ packages:
 
   '@capacitor/core@7.4.2':
     resolution: {integrity: sha512-akCf9A1FUR8AWTtmgGjHEq6LmGsjA2U7igaJ9PxiCBfyxKqlDbuGHrlNdpvHEjV5tUPH3KYtkze6gtFcNKPU9A==}
+
+  '@capacitor/core@8.0.1':
+    resolution: {integrity: sha512-5UqSWxGMp/B8KhYu7rAijqNtYslhcLh+TrbfU48PfdMDsPfaU/VY48sMNzC22xL8BmoFoql/3SKyP+pavTOvOA==}
 
   '@capacitor/file-transfer@1.0.6':
     resolution: {integrity: sha512-R4aGcolmn77hfGPA3+RGhH9YBX1xTR7H43WOcoQx56whWnIUTlQ3B6SQkd8912JPFHvnPhOJ4lC0yNCDY1TjrQ==}
@@ -5383,6 +5396,11 @@ packages:
     resolution: {integrity: sha512-Xp3bGWlSQAwsZGngRMWTdoD2agdMV12Whnm+/xsYPxfQSj+Tksbr7r/8Mso7VWkpnTKO4iMlx762g3PjW+wi4w==}
     peerDependencies:
       '@capacitor/core': ^7.4.0
+
+  '@capacitor/ios@8.0.1':
+    resolution: {integrity: sha512-pDxwQtx3n07DBhRKFGvYh4g00ruIsT7HxPm6IIT+tJD8VuTNgwgWYmEOZzfHkG6mZuCe03KqCsuD+aVmg5Rctg==}
+    peerDependencies:
+      '@capacitor/core': ^8.0.0
 
   '@capacitor/keyboard@7.0.3':
     resolution: {integrity: sha512-BIBKjmky5rOYNhvYhNeDi0MMvjwYZ6YF9JoCYcGKvKY+XLJKtezsEL78XfOlgWZBkbfR8uq3tzktY6PqgoYLKA==}
@@ -21557,6 +21575,11 @@ packages:
     engines: {node: '>=16.0.0'}
     hasBin: true
 
+  native-run@2.0.3:
+    resolution: {integrity: sha512-U1PllBuzW5d1gfan+88L+Hky2eZx+9gv3Pf6rNBxKbORxi7boHzqiA6QFGSnqMem4j0A9tZ08NMIs5+0m/VS1Q==}
+    engines: {node: '>=16.0.0'}
+    hasBin: true
+
   natural-compare-lite@1.4.0:
     resolution: {integrity: sha512-Tj+HTDSJJKaZnfiuw+iaF9skdPpTo2GtEly5JHnWV/hfv2Qj/9RKsGISQtLh2ox3l5EAGw487hnBee0sIJ6v2g==}
 
@@ -22595,6 +22618,7 @@ packages:
   phin@3.7.1:
     resolution: {integrity: sha512-GEazpTWwTZaEQ9RhL7Nyz0WwqilbqgLahDM3D0hxWwmVDI52nXEybHqiN6/elwpkJBhcuj+WbBu+QfT0uhPGfQ==}
     engines: {node: '>= 8'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   piccolore@0.1.3:
     resolution: {integrity: sha512-o8bTeDWjE086iwKrROaDf31K0qC/BENdm15/uH9usSC/uZjJOKb2YGiVHfLY4GhwsERiPI1jmwI2XrA7ACOxVw==}
@@ -23360,6 +23384,7 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qrcode-reader@1.0.4:
@@ -24546,6 +24571,7 @@ packages:
 
   scmp@2.1.0:
     resolution: {integrity: sha512-o/mRQGk9Rcer/jEEw/yw4mwo3EU/NvYvp577/Btqrym9Qy5/MdWGBqipbALgd2lrdWTJ5/gqDusxfnQBxOxT2Q==}
+    deprecated: Just use Node.js's crypto.timingSafeEqual()
 
   scoped-regex@2.1.0:
     resolution: {integrity: sha512-g3WxHrqSWCZHGHlSrF51VXFdjImhwvH8ZO/pryFH56Qi0cDsZfylQa/t0jCzVQFNbNvM00HfHjkDPEuarKDSWQ==}
@@ -27383,10 +27409,12 @@ packages:
   whatwg-encoding@2.0.0:
     resolution: {integrity: sha512-p41ogyeMUrw3jWclHWTQg1k05DSVXPLcVxRTYsXUk+ZooOCZLcoYgPZ/HL/D/N+uQPOtcp1me1WhBEaX02mhWg==}
     engines: {node: '>=12'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-fetch@3.6.20:
     resolution: {integrity: sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg==}
@@ -30219,18 +30247,29 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@capacitor-community/media@8.0.1(@capacitor/core@7.4.2)':
+  '@capacitor-community/media@8.0.1(@capacitor/core@8.0.1)':
     dependencies:
-      '@capacitor/core': 7.4.2
+      '@capacitor/core': 8.0.1
 
   '@capacitor-community/sqlite@7.0.2(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
       jeep-sqlite: 2.8.0
 
+  '@capacitor-community/sqlite@7.0.2(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+      jeep-sqlite: 2.8.0
+
   '@capacitor-firebase/analytics@7.3.0(@capacitor/core@7.4.2)(firebase@11.10.0)':
     dependencies:
       '@capacitor/core': 7.4.2
+    optionalDependencies:
+      firebase: 11.10.0
+
+  '@capacitor-firebase/analytics@7.3.0(@capacitor/core@8.0.1)(firebase@11.10.0)':
+    dependencies:
+      '@capacitor/core': 8.0.1
     optionalDependencies:
       firebase: 11.10.0
 
@@ -30240,17 +30279,35 @@ snapshots:
     optionalDependencies:
       firebase: 11.10.0
 
+  '@capacitor-firebase/authentication@7.4.0(@capacitor/core@8.0.1)(firebase@11.10.0)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+    optionalDependencies:
+      firebase: 11.10.0
+
   '@capacitor-mlkit/barcode-scanning@7.3.0(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor-mlkit/barcode-scanning@7.3.0(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@capacitor/android@7.4.4(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
 
+  '@capacitor/android@8.0.1(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   '@capacitor/app@7.1.0(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor/app@7.1.0(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@capacitor/assets@3.0.5(@swc/core@1.15.2(@swc/helpers@0.5.17))(@types/node@12.20.55)(typescript@5.6.2)':
     dependencies:
@@ -30281,9 +30338,17 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.4.2
 
+  '@capacitor/browser@7.0.2(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   '@capacitor/camera@7.0.2(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor/camera@7.0.2(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@capacitor/cli@5.7.8':
     dependencies:
@@ -30329,59 +30394,125 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@capacitor/cli@8.0.1':
+    dependencies:
+      '@ionic/cli-framework-output': 2.2.8
+      '@ionic/utils-subprocess': 3.0.1
+      '@ionic/utils-terminal': 2.3.5
+      commander: 12.1.0
+      debug: 4.4.3(supports-color@5.5.0)
+      env-paths: 2.2.1
+      fs-extra: 11.3.2
+      kleur: 4.1.5
+      native-run: 2.0.3
+      open: 8.4.2
+      plist: 3.1.0
+      prompts: 2.4.2
+      rimraf: 6.1.2
+      semver: 7.7.3
+      tar: 6.2.1
+      tslib: 2.8.1
+      xml2js: 0.6.2
+    transitivePeerDependencies:
+      - supports-color
+
   '@capacitor/clipboard@7.0.2(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor/clipboard@7.0.2(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@capacitor/core@7.4.2':
     dependencies:
       tslib: 2.8.1
 
-  '@capacitor/file-transfer@1.0.6(@capacitor/core@7.4.2)':
+  '@capacitor/core@8.0.1':
     dependencies:
-      '@capacitor/core': 7.4.2
+      tslib: 2.8.1
+
+  '@capacitor/file-transfer@1.0.6(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
       '@capacitor/synapse': 1.0.4
 
-  '@capacitor/filesystem@7.1.5(@capacitor/core@7.4.2)':
+  '@capacitor/filesystem@7.1.5(@capacitor/core@8.0.1)':
     dependencies:
-      '@capacitor/core': 7.4.2
+      '@capacitor/core': 8.0.1
       '@capacitor/synapse': 1.0.4
 
   '@capacitor/haptics@7.0.2(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
 
+  '@capacitor/haptics@7.0.2(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   '@capacitor/ios@7.4.4(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor/ios@8.0.1(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@capacitor/keyboard@7.0.3(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
 
+  '@capacitor/keyboard@7.0.3(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   '@capacitor/local-notifications@7.0.3(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor/local-notifications@7.0.3(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@capacitor/network@7.0.2(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
 
+  '@capacitor/network@7.0.2(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   '@capacitor/push-notifications@7.0.3(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor/push-notifications@7.0.3(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@capacitor/share@7.0.2(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
 
+  '@capacitor/share@7.0.2(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   '@capacitor/splash-screen@7.0.3(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
 
+  '@capacitor/splash-screen@7.0.3(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   '@capacitor/status-bar@7.0.3(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capacitor/status-bar@7.0.3(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@capacitor/synapse@1.0.4': {}
 
@@ -30389,9 +30520,17 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.4.2
 
+  '@capawesome/capacitor-badge@7.0.1(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   '@capgo/capacitor-updater@7.8.7(@capacitor/core@7.4.2)':
     dependencies:
       '@capacitor/core': 7.4.2
+
+  '@capgo/capacitor-updater@7.8.7(@capacitor/core@8.0.1)':
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   '@capgo/cli@7.29.1': {}
 
@@ -44451,9 +44590,17 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.4.2
 
+  capacitor-native-settings@7.0.2(@capacitor/core@8.0.1):
+    dependencies:
+      '@capacitor/core': 8.0.1
+
   capacitor-plugin-safe-area@4.0.3(@capacitor/core@7.4.2):
     dependencies:
       '@capacitor/core': 7.4.2
+
+  capacitor-plugin-safe-area@4.0.3(@capacitor/core@8.0.1):
+    dependencies:
+      '@capacitor/core': 8.0.1
 
   capacitor-standard-version@1.1.55(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
@@ -54586,6 +54733,22 @@ snapshots:
   native-promise-only@0.8.1: {}
 
   native-run@2.0.1:
+    dependencies:
+      '@ionic/utils-fs': 3.1.7
+      '@ionic/utils-terminal': 2.3.5
+      bplist-parser: 0.3.2
+      debug: 4.4.3(supports-color@5.5.0)
+      elementtree: 0.1.7
+      ini: 4.1.3
+      plist: 3.1.0
+      split2: 4.2.0
+      through2: 4.0.2
+      tslib: 2.8.1
+      yauzl: 2.10.0
+    transitivePeerDependencies:
+      - supports-color
+
+  native-run@2.0.3:
     dependencies:
       '@ionic/utils-fs': 3.1.7
       '@ionic/utils-terminal': 2.3.5
