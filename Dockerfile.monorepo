@@ -15,6 +15,8 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc .gitignore .nxignore ./
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
+COPY tools/scripts tools/scripts
+RUN chmod +x /app/tools/scripts/nx-watch-build.sh
 
 COPY services/learn-card-network/lca-api/package.json services/learn-card-network/lca-api/
 COPY packages/lca-api-client/package.json packages/lca-api-client/
@@ -27,8 +29,10 @@ COPY packages/learn-card-init/package.json packages/learn-card-init/
 COPY packages/learn-card-core/package.json packages/learn-card-core/
 COPY packages/learn-card-network/brain-client/package.json packages/learn-card-network/brain-client/
 COPY packages/learn-card-network/cloud-client/package.json packages/learn-card-network/cloud-client/
+COPY packages/learn-card-network/simple-signing-client/package.json packages/learn-card-network/simple-signing-client/
 COPY services/learn-card-network/brain-service/package.json services/learn-card-network/brain-service/
 COPY services/learn-card-network/learn-cloud-service/package.json services/learn-card-network/learn-cloud-service/
+COPY services/learn-card-network/simple-signing-service/package.json services/learn-card-network/simple-signing-service/
 COPY packages/plugins/chapi/package.json packages/plugins/chapi/
 COPY packages/plugins/crypto/package.json packages/plugins/crypto/
 COPY packages/plugins/ceramic/package.json packages/plugins/ceramic/
@@ -50,6 +54,7 @@ COPY packages/plugins/vc/package.json packages/plugins/vc/
 COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
 COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
 COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
+COPY packages/plugins/simple-signing-plugin/package.json packages/plugins/simple-signing-plugin/
 COPY apps/learn-card-app/package.json apps/learn-card-app/
 
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
@@ -66,8 +71,10 @@ COPY packages/learn-card-init packages/learn-card-init
 COPY packages/learn-card-core packages/learn-card-core
 COPY packages/learn-card-network/brain-client packages/learn-card-network/brain-client
 COPY packages/learn-card-network/cloud-client packages/learn-card-network/cloud-client
+COPY packages/learn-card-network/simple-signing-client packages/learn-card-network/simple-signing-client
 COPY services/learn-card-network/brain-service services/learn-card-network/brain-service
 COPY services/learn-card-network/learn-cloud-service services/learn-card-network/learn-cloud-service
+COPY services/learn-card-network/simple-signing-service services/learn-card-network/simple-signing-service
 COPY packages/plugins/chapi packages/plugins/chapi
 COPY packages/plugins/crypto packages/plugins/crypto
 COPY packages/plugins/ceramic packages/plugins/ceramic
@@ -89,10 +96,8 @@ COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-api packages/plugins/vc-api
 COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY packages/plugins/vpqr packages/plugins/vpqr
+COPY packages/plugins/simple-signing-plugin packages/plugins/simple-signing-plugin
 COPY apps/learn-card-app apps/learn-card-app
 
 RUN --mount=type=cache,id=nx-cache,target=/app/.nx \
-    pnpm exec nx docker-build learn-card-app && \
-    pnpm exec nx build:docker network-brain-service && \
-    pnpm exec nx build:docker learn-cloud-service && \
-    pnpm exec nx build:docker lca-api-service
+    pnpm exec nx run-many --target=build:docker --projects=learn-card-app,network-brain-service,learn-cloud-service,lca-api-service
