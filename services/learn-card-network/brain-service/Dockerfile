@@ -1,4 +1,5 @@
-FROM node:20.10.0-slim
+# Using bullseye (Debian 11) to avoid native module build issues on Debian 12
+FROM node:20.10.0-bullseye-slim
 
 # Set working directory to /app
 WORKDIR /app
