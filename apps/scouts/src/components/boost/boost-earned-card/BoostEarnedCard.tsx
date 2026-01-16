@@ -169,7 +169,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems: isBoost ? (undefined as any) : [],
-            handleShareBoost: () => openShareBoostLink(),
+            handleShareBoost: () => openShareBoostLink(unknownVerifierTitle),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
@@ -214,13 +214,14 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         closeModal
     );
 
-    const openShareBoostLink = () => {
+    const openShareBoostLink = (title?: string) => {
         newModal(
             <ShareBoostLink
                 handleClose={closeModal}
                 boost={credential as any}
                 boostUri={uri || ''}
                 categoryType={categoryType as any}
+                unknownVerifierTitle={title}
             />
         );
     };
