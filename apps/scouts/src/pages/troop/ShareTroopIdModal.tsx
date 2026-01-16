@@ -40,7 +40,7 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({
     const issueeProfileId = issueeDid?.includes(':users:') ? issueeDid.split(':').pop() : undefined;
     const { data: issueeProfile } = useGetProfile(issueeProfileId);
 
-    const { mutate: shareEarnedBoost, loading: isLinkLoading } = useShareBoostMutation() as any;
+    const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
     const generateShareLink = async () => {
         shareEarnedBoost(
