@@ -32,16 +32,24 @@ jobs:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
-  # Trigger E2E tests on changeset release PRs (or test branch for testing)
+  # Run E2E tests on changeset release PRs (or test branch for testing)
+  # SSHs into EC2 to run Playwright tests against the branch
   # TODO: Change condition to only 'changeset-release/main' when going live
-  trigger-e2e:
+  e2e-tests:
     if: github.head_ref == 'lc-1516-e2e-tests' || github.head_ref == 'changeset-release/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - name: Trigger E2E tests in learncard-e2e-runner
-        uses: peter-evans/repository-dispatch@v3
+      - name: Run E2E tests on EC2
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          token: ${{ secrets.E2E_RUNNER_PAT }}
-          repository: WeLibraryOS/learncard-e2e-runner
-          event-type: run-e2e-tests
-          client-payload: '{"branch": "${{ github.head_ref }}"}'
+          host: ${{ secrets.E2E_EC2_HOST }}
+          username: ${{ secrets.E2E_EC2_USERNAME }}
+          key: ${{ secrets.E2E_EC2_SSH_KEY }}
+          script_stop: true
+          command_timeout: 50m
+          script: |
+            cd ~/learncard-e2e-runner
+            git pull origin main
+            ./scripts/sync-repo.sh ${{ github.head_ref }}
+            ./scripts/run-tests.sh
