@@ -9,7 +9,7 @@
         "@capacitor-firebase/authentication": "^7.3.0",
         "@capacitor-mlkit/barcode-scanning": "^7.3.0",
         "@capacitor/android": "^8.0.1",
-        "@capacitor/app": "^7.0.2",
+        "@capacitor/app": "^8.0.0",
         "@capacitor/browser": "^7.0.2",
         "@capacitor/camera": "^7.0.2",
         "@capacitor/clipboard": "^7.0.2",
