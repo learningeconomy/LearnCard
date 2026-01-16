@@ -30,7 +30,7 @@ def capacitor_pods
   pod 'CapacitorShare', :path => '../../../../node_modules/.pnpm/@capacitor+share@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/share'
   pod 'CapacitorSplashScreen', :path => '../../../../node_modules/.pnpm/@capacitor+splash-screen@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/splash-screen'
   pod 'CapacitorStatusBar', :path => '../../../../node_modules/.pnpm/@capacitor+status-bar@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/status-bar'
-  pod 'CapawesomeCapacitorBadge', :path => '../../../../node_modules/.pnpm/@capawesome+capacitor-badge@7.0.1_@capacitor+core@8.0.1/node_modules/@capawesome/capacitor-badge'
+  pod 'CapawesomeCapacitorBadge', :path => '../../../../node_modules/.pnpm/@capawesome+capacitor-badge@8.0.0_@capacitor+core@8.0.1/node_modules/@capawesome/capacitor-badge'
   pod 'CapgoCapacitorUpdater', :path => '../../../../node_modules/.pnpm/@capgo+capacitor-updater@7.8.7_@capacitor+core@8.0.1/node_modules/@capgo/capacitor-updater'
   pod 'CapacitorNativeSettings', :path => '../../../../node_modules/.pnpm/capacitor-native-settings@7.0.2_@capacitor+core@8.0.1/node_modules/capacitor-native-settings'
   pod 'CapacitorPluginSafeArea', :path => '../../../../node_modules/.pnpm/capacitor-plugin-safe-area@4.0.3_@capacitor+core@8.0.1/node_modules/capacitor-plugin-safe-area'

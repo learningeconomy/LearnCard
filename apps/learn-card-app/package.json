@@ -25,7 +25,7 @@
         "@capacitor/share": "^8.0.0",
         "@capacitor/splash-screen": "^8.0.0",
         "@capacitor/status-bar": "^8.0.0",
-        "@capawesome/capacitor-badge": "7.0.1",
+        "@capawesome/capacitor-badge": "8.0.0",
         "@capgo/capacitor-updater": "7.8.7",
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",

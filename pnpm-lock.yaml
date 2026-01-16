@@ -237,8 +237,8 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0(@capacitor/core@8.0.1)
       '@capawesome/capacitor-badge':
-        specifier: 7.0.1
-        version: 7.0.1(@capacitor/core@8.0.1)
+        specifier: 8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
       '@capgo/capacitor-updater':
         specifier: 7.8.7
         version: 7.8.7(@capacitor/core@8.0.1)
@@ -5504,6 +5504,11 @@ packages:
     resolution: {integrity: sha512-jhVieRRVLgGO1NU7PW8uWZmf3WD4IsYUlkrJ82KuoRgLFx1tbJGwHU1ro0sUJmEwfLO9vldhBnJJ/J5nHrjbQQ==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
+
+  '@capawesome/capacitor-badge@8.0.0':
+    resolution: {integrity: sha512-dkcrXmjoxe01E8QkUAykQqXEstk2/x/ZfsYX+uMXo+UcJBILXWZtj/2JIHARRWaxCZjhr4iZnmyVziRKYCdSAg==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@capgo/capacitor-updater@7.8.7':
     resolution: {integrity: sha512-wTKm9RKuRIPSfACXVVYBhOV1jlO/pD/LVxVRSayyb032m/zAPLr01fdp7lKj4PP2PFx8Q6hdeBnV6++pCdsDrQ==}
@@ -30580,7 +30585,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.4.2
 
-  '@capawesome/capacitor-badge@7.0.1(@capacitor/core@8.0.1)':
+  '@capawesome/capacitor-badge@8.0.0(@capacitor/core@8.0.1)':
     dependencies:
       '@capacitor/core': 8.0.1
 
