@@ -92,7 +92,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     useLearnCardPostMessage({
         trustedOrigins: embedOrigin ? [embedOrigin] : [],
         handlers,
-        debug: true, // Enable detailed logging
+        debug: false, // Disable detailed logging
     });
 
     const embedUrlWithOverride = `${embedUrl}?lc_host_override=${window.location.origin}`;

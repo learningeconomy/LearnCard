@@ -121,6 +121,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
         launchConfig,
         isInstalled: true, // Preview mode - treat as installed
         onCredentialIssued: handleCredentialIssued,
+        debug: true, // Enable detailed logging for preview diagnostics
     });
 
     // Create wrapped handlers that log diagnostics
@@ -157,7 +158,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     useLearnCardPostMessage({
         trustedOrigins: embedOrigin ? [embedOrigin] : [],
         handlers: wrappedHandlers,
-        debug: true,
+        debug: true, // Enable detailed logging for preview diagnostics
     });
 
     const handleClose = () => {

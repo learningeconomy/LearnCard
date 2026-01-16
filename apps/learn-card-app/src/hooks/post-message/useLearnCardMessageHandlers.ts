@@ -21,6 +21,7 @@ interface UseLearnCardMessageHandlersOptions {
     isInstalled?: boolean;
     appId?: string;
     onCredentialIssued?: (credentialUri: string, boostUri?: string) => void;
+    debug?: boolean;
 }
 
 /**
@@ -34,12 +35,28 @@ export function useLearnCardMessageHandlers({
     isInstalled = false,
     appId,
     onCredentialIssued,
+    debug = false,
 }: UseLearnCardMessageHandlersOptions): ActionHandlers {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
     const history = useHistory();
     const { newModal, closeModal } = useModal();
     const { data: consentedContracts } = useConsentedContracts();
+
+    // Debug logging helper
+    const log = useCallback(
+        (...args: unknown[]) => {
+            if (debug) console.log('[PostMessage]', ...args);
+        },
+        [debug]
+    );
+
+    const logError = useCallback(
+        (...args: unknown[]) => {
+            if (debug) console.error('[PostMessage]', ...args);
+        },
+        [debug]
+    );
 
     /**
      * Imperative function to show consent flow and return result
@@ -51,14 +68,14 @@ export function useLearnCardMessageHandlers({
                     // Fetch the contract using LearnCard wallet
                     const wallet = await initWallet();
                     if (!wallet) {
-                        console.error('[PostMessage] Wallet not initialized');
+                        logError('Wallet not initialized');
                         resolve(false);
                         return;
                     }
 
                     const contract = await wallet.invoke.getContract(contractUri);
                     if (!contract) {
-                        console.error('[PostMessage] Contract not found:', contractUri);
+                        logError('Contract not found:', contractUri);
                         resolve(false);
                         return;
                     }
@@ -69,13 +86,13 @@ export function useLearnCardMessageHandlers({
                     );
 
                     const successCallback = () => {
-                        console.log('[PostMessage] Consent flow completed');
+                        log('Consent flow completed');
                         resolve(true);
                         closeModal();
                     };
 
                     const handleCancel = () => {
-                        console.log('[PostMessage] Consent flow cancelled');
+                        log('Consent flow cancelled');
                         resolve(false);
                     };
 
@@ -99,12 +116,12 @@ export function useLearnCardMessageHandlers({
                         { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                     );
                 } catch (error) {
-                    console.error('[PostMessage] Failed to fetch consent contract:', error);
+                    logError('Failed to fetch consent contract:', error);
                     resolve(false);
                 }
             });
         },
-        [initWallet, newModal, closeModal, consentedContracts]
+        [initWallet, newModal, closeModal, consentedContracts, log, logError]
     );
 
     const handlers = useMemo(
@@ -146,15 +163,13 @@ export function useLearnCardMessageHandlers({
                                 isInstalled &&
                                 launchConfig?.permissions?.includes('request_identity')
                             ) {
-                                console.log(
-                                    '[PostMessage] Skipping consent for installed app with request_identity permission'
-                                );
+                                log('Skipping consent for installed app with request_identity permission');
                                 // addTrustedOrigin(origin, appName);
                                 resolve(true);
                                 return;
                             }
 
-                            console.log('[PostMessage] Login consent requested for:', origin);
+                            log('Login consent requested for:', origin);
 
                             // Dynamically import LoginConsentModal
                             const { default: LoginConsentModal } = await import(
@@ -162,14 +177,14 @@ export function useLearnCardMessageHandlers({
                             );
 
                             const handleAccept = () => {
-                                console.log('[PostMessage] User accepted login consent');
+                                log('User accepted login consent');
                                 //addTrustedOrigin(origin, appName);
                                 closeModal();
                                 resolve(true);
                             };
 
                             const handleReject = () => {
-                                console.log('[PostMessage] User rejected login consent');
+                                log('User rejected login consent');
                                 closeModal();
                                 resolve(false);
                             };
@@ -193,10 +208,7 @@ export function useLearnCardMessageHandlers({
                                 }
                             );
                         } catch (error) {
-                            console.error(
-                                '[PostMessage] Failed to show login consent modal:',
-                                error
-                            );
+                            logError('Failed to show login consent modal:', error);
                             resolve(false);
                         }
                     });
@@ -214,7 +226,7 @@ export function useLearnCardMessageHandlers({
                         domain: embedOrigin,
                     });
 
-                    console.log('[PostMessage] Minted delegated token');
+                    log('Minted delegated token');
 
                     if (typeof jwt === 'string') return jwt;
 
@@ -223,7 +235,7 @@ export function useLearnCardMessageHandlers({
 
                 // Consent handlers
                 showConsentModal: async (contractUri: string) => {
-                    console.log('[PostMessage] Consent requested for contract:', contractUri);
+                    log('Consent requested for contract:', contractUri);
                     return showConsentFlow(contractUri);
                 },
 
@@ -231,7 +243,7 @@ export function useLearnCardMessageHandlers({
                 showCredentialAcceptanceModal: async (credential: any) => {
                     return new Promise(async resolve => {
                         try {
-                            console.log('[PostMessage] Credential offered:', credential);
+                            log('Credential offered:', credential);
 
                             // Dynamically import CredentialAcceptanceModal
                             const { default: CredentialAcceptanceModal } = await import(
@@ -244,7 +256,7 @@ export function useLearnCardMessageHandlers({
                                 if (accepting) return;
                                 accepting = true;
 
-                                console.log('[PostMessage] Credential accepted');
+                                log('Credential accepted');
 
                                 // Save the credential to wallet
                                 try {
@@ -259,17 +271,14 @@ export function useLearnCardMessageHandlers({
                                     closeModal();
                                     resolve(credentialId ?? true);
                                 } catch (error) {
-                                    console.error(
-                                        '[PostMessage] Failed to save credential:',
-                                        error
-                                    );
+                                    logError('Failed to save credential:', error);
                                     closeModal();
                                     resolve(false);
                                 }
                             };
 
                             const handleDismiss = () => {
-                                console.log('[PostMessage] Credential dismissed');
+                                log('Credential dismissed');
                                 closeModal();
                                 resolve(false);
                             };
@@ -290,16 +299,13 @@ export function useLearnCardMessageHandlers({
                                 }
                             );
                         } catch (error) {
-                            console.error(
-                                '[PostMessage] Failed to show credential acceptance modal:',
-                                error
-                            );
+                            logError('Failed to show credential acceptance modal:', error);
                             resolve(false);
                         }
                     });
                 },
                 saveCredential: async (credential: any) => {
-                    console.log('[PostMessage] Saving credential:', credential);
+                    log('Saving credential:', credential);
 
                     const stored = await storeAndAddVCToWallet(
                         credential,
@@ -310,7 +316,7 @@ export function useLearnCardMessageHandlers({
                     return stored.credentialUri;
                 },
                 getCredentialById: async (id: string) => {
-                    console.log('[PostMessage] Fetching credential:', id);
+                    log('Fetching credential:', id);
                     const learnCard = await initWallet();
 
                     if (!learnCard) {
@@ -321,7 +327,7 @@ export function useLearnCardMessageHandlers({
 
                     const credential = await learnCard.read.get(id);
 
-                    console.log('[PostMessage] Fetched credential:', credential);
+                    log('Fetched credential:', credential);
                     return credential;
                 },
                 searchCredentials: async (query: any) => {
@@ -340,7 +346,7 @@ export function useLearnCardMessageHandlers({
                     }
 
                     const indexedCredentials = await learnCard.index.LearnCloud.getPage(query);
-                    console.log('[PostMessage] Indexed credentials:', indexedCredentials);
+                    log('Indexed credentials:', indexedCredentials);
 
                     const resolvedCredentials = await Promise.all(
                         indexedCredentials.records.map(async credential => {
@@ -349,13 +355,13 @@ export function useLearnCardMessageHandlers({
                         })
                     );
 
-                    console.log('[PostMessage] Resolved credentials:', resolvedCredentials);
+                    log('Resolved credentials:', resolvedCredentials);
                     return resolvedCredentials;
                 },
                 showShareCredentialModal: async (credential: any) => {
                     return new Promise(async resolve => {
                         try {
-                            console.log('[PostMessage] Share credential?', credential);
+                            log('Share credential?', credential);
 
                             // Dynamically import ShareCredentialModal
                             const { default: ShareCredentialModal } = await import(
@@ -368,13 +374,13 @@ export function useLearnCardMessageHandlers({
                                 if (sharing) return;
                                 sharing = true;
 
-                                console.log('[PostMessage] User confirmed credential share');
+                                log('User confirmed credential share');
                                 closeModal();
                                 resolve(true);
                             };
 
                             const handleCancel = () => {
-                                console.log('[PostMessage] User cancelled credential share');
+                                log('User cancelled credential share');
                                 closeModal();
                                 resolve(false);
                             };
@@ -395,10 +401,7 @@ export function useLearnCardMessageHandlers({
                                 }
                             );
                         } catch (error) {
-                            console.error(
-                                '[PostMessage] Failed to show share credential modal:',
-                                error
-                            );
+                            logError('Failed to show share credential modal:', error);
                             resolve(false);
                         }
                     });
@@ -406,10 +409,7 @@ export function useLearnCardMessageHandlers({
                 showVprModal: async (verifiablePresentationRequest: any) => {
                     return new Promise(async resolve => {
                         try {
-                            console.log(
-                                '[PostMessage] VPR request:',
-                                verifiablePresentationRequest
-                            );
+                            log('VPR request:', verifiablePresentationRequest);
 
                             // Dynamically import VprShareModal
                             const { default: VprShareModal } = await import(
@@ -422,15 +422,12 @@ export function useLearnCardMessageHandlers({
                                 if (sharing) return;
                                 sharing = true;
 
-                                console.log(
-                                    '[PostMessage] User selected credentials:',
-                                    selectedCredentials
-                                );
+                                log('User selected credentials:', selectedCredentials);
 
                                 try {
                                     const learnCard = await initWallet();
                                     if (!learnCard) {
-                                        console.error('[PostMessage] Wallet not initialized');
+                                        logError('Wallet not initialized');
                                         closeModal();
                                         resolve(null);
                                         return;
@@ -449,7 +446,7 @@ export function useLearnCardMessageHandlers({
                                         holder: learnCard.id.did(),
                                     };
 
-                                    console.log('[PostMessage] Issuing VP:', vpToShare);
+                                    log('Issuing VP:', vpToShare);
 
                                     // Sign VP
                                     const signedVP = await learnCard.invoke.issuePresentation(
@@ -461,19 +458,19 @@ export function useLearnCardMessageHandlers({
                                         }
                                     );
 
-                                    console.log('[PostMessage] Signed VP:', signedVP);
+                                    log('Signed VP:', signedVP);
 
                                     closeModal();
                                     resolve(signedVP);
                                 } catch (error) {
-                                    console.error('[PostMessage] Failed to create VP:', error);
+                                    logError('Failed to create VP:', error);
                                     closeModal();
                                     resolve(null);
                                 }
                             };
 
                             const handleCancel = () => {
-                                console.log('[PostMessage] VPR cancelled');
+                                log('VPR cancelled');
                                 closeModal();
                                 resolve(null);
                             };
@@ -494,7 +491,7 @@ export function useLearnCardMessageHandlers({
                                 }
                             );
                         } catch (error) {
-                            console.error('[PostMessage] Failed to show VPR modal:', error);
+                            logError('Failed to show VPR modal:', error);
                             resolve(null);
                         }
                     });
@@ -502,7 +499,7 @@ export function useLearnCardMessageHandlers({
                 signCredential: async (credential: any) => {
                     return new Promise(async resolve => {
                         try {
-                            console.log('[PostMessage] Sign credential requested:', credential);
+                            log('Sign credential requested:', credential);
 
                             // Dynamically import SignCredentialModal
                             const { default: SignCredentialModal } = await import(
@@ -515,13 +512,13 @@ export function useLearnCardMessageHandlers({
                                 if (signing) return;
                                 signing = true;
 
-                                console.log('[PostMessage] Credential signing confirmed');
+                                log('Credential signing confirmed');
 
                                 try {
                                     const learnCard = await initWallet();
 
                                     if (!learnCard) {
-                                        console.error('[PostMessage] Wallet not initialized');
+                                        logError('Wallet not initialized');
                                         closeModal();
                                         resolve(null);
                                         return;
@@ -531,24 +528,18 @@ export function useLearnCardMessageHandlers({
                                         credential
                                     );
 
-                                    console.log(
-                                        '[PostMessage] Signed credential:',
-                                        signedCredential
-                                    );
+                                    log('Signed credential:', signedCredential);
                                     closeModal();
                                     resolve(signedCredential);
                                 } catch (error) {
-                                    console.error(
-                                        '[PostMessage] Failed to sign credential:',
-                                        error
-                                    );
+                                    logError('Failed to sign credential:', error);
                                     closeModal();
                                     resolve(null);
                                 }
                             };
 
                             const handleCancel = () => {
-                                console.log('[PostMessage] Credential signing cancelled');
+                                log('Credential signing cancelled');
                                 closeModal();
                                 resolve(null);
                             };
@@ -569,17 +560,14 @@ export function useLearnCardMessageHandlers({
                                 }
                             );
                         } catch (error) {
-                            console.error(
-                                '[PostMessage] Failed to show sign credential modal:',
-                                error
-                            );
+                            logError('Failed to show sign credential modal:', error);
                             resolve(null);
                         }
                     });
                 },
 
                 signPresentation: async (credential: any) => {
-                    console.log('[PostMessage] Signing presentation:', credential);
+                    log('Signing presentation:', credential);
 
                     const learnCard = await initWallet();
 
@@ -601,17 +589,17 @@ export function useLearnCardMessageHandlers({
                             domain: embedOrigin,
                         });
 
-                        console.log('[PostMessage] Signed presentation:', signedPresentation);
+                        log('Signed presentation:', signedPresentation);
                         return signedPresentation;
                     } catch (error) {
-                        console.error('[PostMessage] Error signing presentation:', error);
+                        logError('Error signing presentation:', error);
                         return null;
                     }
                 },
 
                 // Navigation handler
                 navigate: (path: string, params?: Record<string, string>) => {
-                    console.log('[PostMessage] Navigating to:', path, params);
+                    log('Navigating to:', path, params);
                     const queryParams = params ? '?' + new URLSearchParams(params).toString() : '';
                     history.push(path + queryParams);
 
@@ -627,14 +615,14 @@ export function useLearnCardMessageHandlers({
                         try {
                             const learnCard = await initWallet();
                             if (!learnCard) {
-                                console.error('[PostMessage] Wallet not initialized');
+                                logError('Wallet not initialized');
                                 resolve(false);
                                 return;
                             }
 
                             const profileId = (await learnCard.invoke.getProfile())?.profileId;
                             if (!profileId) {
-                                console.error('[PostMessage] Profile ID not found');
+                                logError('Profile ID not found');
                                 resolve(false);
                                 return;
                             }
@@ -642,10 +630,7 @@ export function useLearnCardMessageHandlers({
                             // Get boost data by templateId
                             const boost = await learnCard.invoke.getBoost(templateId);
                             if (!boost) {
-                                console.error(
-                                    '[PostMessage] Boost template not found:',
-                                    templateId
-                                );
+                                logError('Boost template not found:', templateId);
                                 resolve(false);
                                 return;
                             }
@@ -690,9 +675,7 @@ export function useLearnCardMessageHandlers({
                                     history,
                                     handleEditOnClick: () => {
                                         // Edit functionality not needed for issued boosts
-                                        console.log(
-                                            '[PostMessage] Edit not available for issued templates'
-                                        );
+                                        log('Edit not available for issued templates');
                                     },
                                     draftRecipients: boostCMSRecipients, // Pass draft recipients if provided
                                     onSuccess: () => handleSuccessModal(),
@@ -708,7 +691,7 @@ export function useLearnCardMessageHandlers({
                                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                             );
                         } catch (error) {
-                            console.error('[PostMessage] Failed to show boost issue modal:', error);
+                            logError('Failed to show boost issue modal:', error);
                             resolve(false);
                         }
                     });
@@ -717,7 +700,7 @@ export function useLearnCardMessageHandlers({
                     try {
                         const learnCard = await initWallet();
                         if (!learnCard) {
-                            console.error('[PostMessage] Wallet not initialized');
+                            logError('Wallet not initialized');
                             return false;
                         }
 
@@ -731,7 +714,7 @@ export function useLearnCardMessageHandlers({
                         });
 
                         if (!boost) {
-                            console.error('[PostMessage] Boost template not found:', templateId);
+                            logError('Boost template not found:', templateId);
                             return false;
                         }
 
@@ -741,7 +724,7 @@ export function useLearnCardMessageHandlers({
                             ?.map(admin => admin?.profileId)
                             .includes(userProfileId);
                     } catch (error) {
-                        console.error('[PostMessage] Failed to check admin status:', error);
+                        logError('Failed to check admin status:', error);
                         return false;
                     }
                 },
@@ -791,6 +774,8 @@ export function useLearnCardMessageHandlers({
             closeModal,
             appId,
             onCredentialIssued,
+            log,
+            logError,
         ]
     );
 
