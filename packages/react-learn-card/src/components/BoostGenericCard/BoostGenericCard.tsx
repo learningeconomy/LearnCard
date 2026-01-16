@@ -119,10 +119,10 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
                         {/* Date & Verifier */}
                         {customDateDisplay || (
-                            <p className="text-[12px] text-grayscale-700 mt-1 flex items-center">
+                            <div className="text-[11px] text-grayscale-700 mt-1 flex flex-col items-center">
                                 {verifierBadge}
-                                {dateDisplay}
-                            </p>
+                                <span>{dateDisplay}</span>
+                            </div>
                         )}
 
                         {/* Skills count if in modal */}

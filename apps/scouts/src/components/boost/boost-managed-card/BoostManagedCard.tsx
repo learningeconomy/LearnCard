@@ -378,6 +378,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                     categoryType={categoryType}
                     branding={branding}
                     loading={showSkeleton}
+                    managedBoost={true}
                 />
             )}
         </ErrorBoundary>

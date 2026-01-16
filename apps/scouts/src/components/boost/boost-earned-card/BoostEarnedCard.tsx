@@ -39,6 +39,8 @@ import {
 
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
+import { useHighlightedCredentials } from '../../../hooks/useHighlightedCredentials';
+import { getRoleFromCred, getScoutsNounForRole } from '../../../helpers/troop.helpers';
 
 type BoostEarnedCardProps = {
     credential?: VC;
@@ -96,6 +98,28 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const credential = resolvedCredential || _credential;
     const isBoost = credential && isBoostCredential(credential);
     const cred = credential && unwrapBoostCredential(credential);
+
+    const boostIssuer = (credential as any)?.boostCredential?.issuer;
+    const boostIssuerDid =
+        typeof boostIssuer === 'string' ? boostIssuer : boostIssuer?.id;
+
+    // Fallback to VC issuer if boostCredential.issuer is not available
+    const issuerDid =
+        boostIssuerDid ||
+        (typeof cred?.issuer === 'string' ? cred.issuer : (cred as any)?.issuer?.id);
+
+    // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
+    const profileID = issuerDid?.split(':').pop();
+
+    const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
+
+    const unknownVerifierTitle = React.useMemo(() => {
+        if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
+
+        const role = getRoleFromCred(highlightedCreds[0]);
+        return getScoutsNounForRole(role); // Just the role, no "Verified" prefix
+    }, [highlightedCreds]);
+
     const credImg = getUrlFromImage(getCredentialSubject(cred)?.image ?? '');
     const cardTitle = isBoost ? cred?.name : getCredentialName(cred);
 
@@ -143,7 +167,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems: isBoost ? (undefined as any) : [],
-            handleShareBoost: () => openShareBoostLink(),
+            handleShareBoost: () => openShareBoostLink(unknownVerifierTitle),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
@@ -167,6 +191,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             customBodyCardComponent: undefined as any,
             customFooterComponent: undefined as any,
             customIssueHistoryComponent: undefined as any,
+            unknownVerifierTitle,
         };
 
         const backgroundImage = isCertificate || isID ? cred?.display?.backgroundImage : undefined;
@@ -187,7 +212,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         closeModal
     );
 
-    const openShareBoostLink = () => {
+    const openShareBoostLink = (title?: string) => {
         newModal(
             <ShareBoostLink
                 handleClose={closeModal}
@@ -254,6 +279,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     boostPageViewMode={boostPageViewMode}
                     credential={cred as any}
                     branding={branding}
+                    unknownVerifierTitle={unknownVerifierTitle}
                 />
             </ErrorBoundary>
         );
@@ -309,6 +335,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         boostPageViewMode={boostPageViewMode}
                         credential={cred as any}
                         branding={branding}
+                        unknownVerifierTitle={unknownVerifierTitle}
                     />
                 </IonCol>
             </ErrorBoundary>
@@ -439,6 +466,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     credential={cred as any}
                     branding={branding}
                     loading={showSkeleton}
+                    unknownVerifierTitle={unknownVerifierTitle}
                 />
             </IonCol>
         </ErrorBoundary>

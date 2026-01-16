@@ -127,6 +127,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                 categoryType={categoryType}
                 branding={BrandingEnum.scoutPass}
                 loading={loading}
+                managedBoost={viewMode === CredentialListTabEnum.Managed}
             />
         );
     }

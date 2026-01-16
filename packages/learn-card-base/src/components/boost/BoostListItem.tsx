@@ -39,6 +39,7 @@ type BoostListItemProps = {
     managedBoost?: boolean;
     uri?: string;
     indicatorColor?: string;
+    unknownVerifierTitle?: string;
 };
 
 const DEFAULT_BG_COLOR = 'bg-white';
@@ -60,6 +61,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     managedBoost,
     uri,
     indicatorColor,
+    unknownVerifierTitle,
 }) => {
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
@@ -237,11 +239,12 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 )}
 
                 <span className="text-grayscale-800 font-normal flex items-center truncate w-full">
-                    {(isMediaDisplay || displayType !== DisplayTypeEnum.Media) && (
+                    {(isMediaDisplay || displayType !== DisplayTypeEnum.Media) && !managedBoost && (
                         <CredentialVerificationDisplay
                             managedBoost={managedBoost}
                             credential={credential}
                             iconClassName="w-[20px] h-[20px] min-w-[20px] min-h-[20px] mr-1 z-50"
+                            unknownVerifierTitle={unknownVerifierTitle}
                         />
                     )}
                     {issuerAndDateText}

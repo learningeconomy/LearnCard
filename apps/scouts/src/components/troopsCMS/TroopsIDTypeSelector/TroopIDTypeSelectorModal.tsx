@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
-import { IonPage, IonSpinner } from '@ionic/react';
-import ModalLayout from 'learn-card-base/components/modals/ionic-modals/CancelModalLayout';
+import { IonSpinner } from '@ionic/react';
+
 import TroopIDTypeSelectorListItem from './TroopIDTypeSelectorListItem';
-import TroopsCMSWrapper from '../TroopsCMSWrapper';
+
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -20,7 +20,7 @@ const TroopIDTypeSelectorModal: React.FC<{
 }> = ({ handleCloseModal, earnedBoostIDs = [], isLoading, onSuccess }) => {
     // oxlint-disable-next-line no-unused-vars
     const flags = useFlags();
-    const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
+   const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
 
     const [_viewMode, _setViewMode] = useState<TroopsCMSViewModeEnum | null>(null);
 
@@ -38,30 +38,12 @@ const TroopIDTypeSelectorModal: React.FC<{
 
     const allowedIDTypesToCreate = [];
 
+
     if (!globalAdminId && canCreateGlobalIDs) {
         allowedIDTypesToCreate.push(troopsCMSViewModeDefaults?.global);
     }
     if (globalAdminId) allowedIDTypesToCreate.push(troopsCMSViewModeDefaults?.network);
     if (nationalAdminId) allowedIDTypesToCreate.push(troopsCMSViewModeDefaults?.troop);
-
-    if (canCreateGlobalIDs && !globalAdminId && !nationalAdminId) {
-        // short circuit into creating a global network
-        return (
-            <TroopsCMSWrapper
-                viewMode={TroopsCMSViewModeEnum.global}
-                handleCloseModal={handleCloseModal}
-            />
-        );
-    } else if (globalAdminId && !nationalAdminId) {
-        // short circuit into creating a national network
-        return (
-            <TroopsCMSWrapper
-                viewMode={TroopsCMSViewModeEnum.network}
-                handleCloseModal={handleCloseModal}
-                parentUri={globalAdminId?.boostId}
-            />
-        );
-    }
 
     return (
         <div>

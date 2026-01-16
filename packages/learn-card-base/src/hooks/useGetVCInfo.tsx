@@ -75,7 +75,7 @@ export const useGetVCInfo = (
         Boolean(issuerProfileId)
     );
 
-    const issueeProfileId = getProfileIdFromLCNDidWeb(issueeName);
+    const issueeProfileId = getProfileIdFromLCNDidWeb(issueeDid);
     const { data: issueeProfile, isLoading: issueeProfileLoading } = useGetProfile(
         issueeProfileId!,
         Boolean(issueeProfileId)
@@ -168,8 +168,13 @@ export const useGetVCInfo = (
         }
     }
 
-    // If subject is not current user, fallback again for image
-    if (currentUser && issueeDid !== currentUserDidKey && issueeDid !== currentLCNUser?.did) {
+    // If subject is not current user, fallback again for image if not already resolved
+    if (
+        currentUser &&
+        issueeDid !== currentUserDidKey &&
+        issueeDid !== currentLCNUser?.did &&
+        !issueeProfile
+    ) {
         issueeName = getCredentialSubjectName(vc)!;
         const subjectImage = getSubjectImage(vc);
 

@@ -38,6 +38,9 @@ type CertificateFrontFaceProps = {
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
     customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
+    hideAwardedTo?: boolean;
+    hideFrontFaceDetails?: boolean;
 };
 
 export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
@@ -55,6 +58,9 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     showDetailsBtn = false,
     formattedDisplayType,
     customBodyContentSlot,
+    unknownVerifierTitle,
+    hideAwardedTo: hideAwardedToProp,
+    hideFrontFaceDetails,
 }) => {
     const {
         title = '',
@@ -110,6 +116,8 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
+    } else if (unknownVerifierTitle) {
+        verifierState = VERIFIER_STATES.trustedVerifier;
     } else {
         if (knownDIDRegistry?.source === 'trusted') {
             verifierState = VERIFIER_STATES.trustedVerifier;
@@ -126,7 +134,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const issueeImageExists = issueeImage || subjectImageComponent;
 
     const hideAwardedTo =
-        issueeName?.includes('did:key') || issueeName?.includes('did:example:123');
+        hideAwardedToProp ?? (issueeName?.includes('did:key') || issueeName?.includes('did:example:123'));
 
     return (
         <section
@@ -214,7 +222,10 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         {issuerName}
                     </span>
 
-                    <VerifierStateBadgeAndText verifierState={verifierState} />
+                        <VerifierStateBadgeAndText
+                            verifierState={verifierState}
+                            unknownVerifierTitle={unknownVerifierTitle}
+                        />
                 </div>
                 {customBodyContentSlot && customBodyContentSlot}
                 <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>
