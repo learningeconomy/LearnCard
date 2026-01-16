@@ -35,6 +35,7 @@ services:
     watcher:
         image: learncard-monorepo-local
         container_name: 'lcn-watcher'
+        user: '${UID:-1000}:${GID:-1000}'
         command:
             [
                 'pnpm',
