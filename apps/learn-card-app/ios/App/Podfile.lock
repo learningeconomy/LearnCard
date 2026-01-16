@@ -13,7 +13,7 @@ PODS:
     - Capacitor
   - CapacitorBrowser (8.0.0):
     - Capacitor
-  - CapacitorCamera (7.0.2):
+  - CapacitorCamera (8.0.0):
     - Capacitor
   - CapacitorClipboard (7.0.2):
     - Capacitor
@@ -224,7 +224,7 @@ DEPENDENCIES:
   - "Capacitor (from `../../../../node_modules/.pnpm/@capacitor+ios@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/ios`)"
   - "CapacitorApp (from `../../../../node_modules/.pnpm/@capacitor+app@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/app`)"
   - "CapacitorBrowser (from `../../../../node_modules/.pnpm/@capacitor+browser@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/browser`)"
-  - "CapacitorCamera (from `../../../../node_modules/.pnpm/@capacitor+camera@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/camera`)"
+  - "CapacitorCamera (from `../../../../node_modules/.pnpm/@capacitor+camera@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/camera`)"
   - "CapacitorClipboard (from `../../../../node_modules/.pnpm/@capacitor+clipboard@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/clipboard`)"
   - "CapacitorCommunityMedia (from `../../../../node_modules/.pnpm/@capacitor-community+media@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor-community/media`)"
   - "CapacitorCommunitySqlite (from `../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor-community/sqlite`)"
@@ -296,7 +296,7 @@ EXTERNAL SOURCES:
   CapacitorBrowser:
     :path: "../../../../node_modules/.pnpm/@capacitor+browser@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/browser"
   CapacitorCamera:
-    :path: "../../../../node_modules/.pnpm/@capacitor+camera@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/camera"
+    :path: "../../../../node_modules/.pnpm/@capacitor+camera@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/camera"
   CapacitorClipboard:
     :path: "../../../../node_modules/.pnpm/@capacitor+clipboard@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor/clipboard"
   CapacitorCommunityMedia:
@@ -347,7 +347,7 @@ SPEC CHECKSUMS:
   Capacitor: ff35b0f66370b84aa238251b35b91886a3207c16
   CapacitorApp: 3963a84197280757b84f126afd1520a85ae3b092
   CapacitorBrowser: b7d7f05f840fe042e46f6528bb8db853e3058fb2
-  CapacitorCamera: f9e54db0a18bb218a8dc360907d63aaefe9209ff
+  CapacitorCamera: 592acb7ab9fb748e2d8571eb03af30ec4e1ace12
   CapacitorClipboard: 7e227702976d4435a5a40df54f65e154d0dfc1f3
   CapacitorCommunityMedia: d1538b56a3303298e7cf45a18b11e624fbcbdc8e
   CapacitorCommunitySqlite: a57c58e1c37f4bc250ef01e66b0055cb6ddd775e
@@ -402,6 +402,6 @@ SPEC CHECKSUMS:
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: 8c383aaf423991a16fae6fd43427194eb4e66dfd
+PODFILE CHECKSUM: 38bec2811046462999032ab6326b371bfc1edc17
 
 COCOAPODS: 1.16.2
