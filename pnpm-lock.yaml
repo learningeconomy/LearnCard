@@ -207,8 +207,8 @@ importers:
         specifier: ^2.0.3
         version: 2.0.3(@capacitor/core@8.0.1)
       '@capacitor/filesystem':
-        specifier: ^7.1.4
-        version: 7.1.5(@capacitor/core@8.0.1)
+        specifier: ^8.0.0
+        version: 8.0.0(@capacitor/core@8.0.1)
       '@capacitor/haptics':
         specifier: ^8.0.0
         version: 8.0.0(@capacitor/core@8.0.1)
@@ -5402,10 +5402,10 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capacitor/filesystem@7.1.5':
-    resolution: {integrity: sha512-ZzJxpEh6SwKhF1cqSVmIAkEyNG3ozf3Lwg8rUNltX6CGdd94UJV45asqmFoP6X6aT5eVu7FPjPU5SHxi6XOFgA==}
+  '@capacitor/filesystem@8.0.0':
+    resolution: {integrity: sha512-RRGNLW9xEqvVVHGyGlfS4Oy0R3Na+bEefwZElKbex22S9eZr5cg8wc750BPPVwbcv5lf5fJymkY8x8y6UwKPyg==}
     peerDependencies:
-      '@capacitor/core': '>=7.0.0'
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/haptics@7.0.2':
     resolution: {integrity: sha512-vqfeEM6s2zMgLjpITCTUIy7P/hadq/Gr5E/RClFgMJPB41Y5FsqOKD+j85/uwh8N2cf/aWaPeXUmjnTzJbEB2g==}
@@ -30497,7 +30497,7 @@ snapshots:
       '@capacitor/core': 8.0.1
       '@capacitor/synapse': 1.0.4
 
-  '@capacitor/filesystem@7.1.5(@capacitor/core@8.0.1)':
+  '@capacitor/filesystem@8.0.0(@capacitor/core@8.0.1)':
     dependencies:
       '@capacitor/core': 8.0.1
       '@capacitor/synapse': 1.0.4

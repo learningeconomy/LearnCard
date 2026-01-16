@@ -15,7 +15,7 @@
         "@capacitor/clipboard": "^8.0.0",
         "@capacitor/core": "8.0.1",
         "@capacitor/file-transfer": "^2.0.3",
-        "@capacitor/filesystem": "^7.1.4",
+        "@capacitor/filesystem": "^8.0.0",
         "@capacitor/haptics": "^8.0.0",
         "@capacitor/ios": "^8.0.1",
         "@capacitor/keyboard": "^8.0.0",

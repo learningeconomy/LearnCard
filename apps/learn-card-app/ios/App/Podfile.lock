@@ -25,7 +25,7 @@ PODS:
     - SQLCipher
     - ZIPFoundation
   - CapacitorCordova (8.0.1)
-  - CapacitorFilesystem (7.1.5):
+  - CapacitorFilesystem (8.0.0):
     - Capacitor
     - IONFilesystemLib (~> 1.0.1)
   - CapacitorFileTransfer (2.0.3):
@@ -229,7 +229,7 @@ DEPENDENCIES:
   - "CapacitorCommunityMedia (from `../../../../node_modules/.pnpm/@capacitor-community+media@9.0.0_@capacitor+core@8.0.1/node_modules/@capacitor-community/media`)"
   - "CapacitorCommunitySqlite (from `../../../../node_modules/.pnpm/@capacitor-community+sqlite@7.0.2_@capacitor+core@8.0.1/node_modules/@capacitor-community/sqlite`)"
   - "CapacitorCordova (from `../../../../node_modules/.pnpm/@capacitor+ios@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/ios`)"
-  - "CapacitorFilesystem (from `../../../../node_modules/.pnpm/@capacitor+filesystem@7.1.5_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem`)"
+  - "CapacitorFilesystem (from `../../../../node_modules/.pnpm/@capacitor+filesystem@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem`)"
   - "CapacitorFileTransfer (from `../../../../node_modules/.pnpm/@capacitor+file-transfer@2.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer`)"
   - "CapacitorFirebaseAnalytics (from `../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/analytics`)"
   - "CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport (from `../../../../node_modules/.pnpm/@capacitor-firebase+analytics@7.3.0_@capacitor+core@8.0.1_firebase@11.10.0/node_modules/@capacitor-firebase/analytics`)"
@@ -306,7 +306,7 @@ EXTERNAL SOURCES:
   CapacitorCordova:
     :path: "../../../../node_modules/.pnpm/@capacitor+ios@8.0.1_@capacitor+core@8.0.1/node_modules/@capacitor/ios"
   CapacitorFilesystem:
-    :path: "../../../../node_modules/.pnpm/@capacitor+filesystem@7.1.5_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem"
+    :path: "../../../../node_modules/.pnpm/@capacitor+filesystem@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/filesystem"
   CapacitorFileTransfer:
     :path: "../../../../node_modules/.pnpm/@capacitor+file-transfer@2.0.3_@capacitor+core@8.0.1/node_modules/@capacitor/file-transfer"
   CapacitorFirebaseAnalytics:
@@ -352,7 +352,7 @@ SPEC CHECKSUMS:
   CapacitorCommunityMedia: de0b02527717081ab4753cd513a0f24f06d95656
   CapacitorCommunitySqlite: a57c58e1c37f4bc250ef01e66b0055cb6ddd775e
   CapacitorCordova: 0d65b9bb74e995dcecb9463f34f1af2aba6f955c
-  CapacitorFilesystem: 609d5cceca1ed93d7f25839dbfdfd224bfe78209
+  CapacitorFilesystem: 2cb7c29536024668f333266a2177f8c10bbd9c98
   CapacitorFileTransfer: d4c1787491128c91d0e96e3abe1bc45cc1c080da
   CapacitorFirebaseAnalytics: 99fb86679f3a40b148d6e3e7ddeb6115a9c08edf
   CapacitorFirebaseAuthentication: 2297f469e0f7a51a19446d28c452179675dfc330
@@ -402,6 +402,6 @@ SPEC CHECKSUMS:
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: a562c3ac74c6c503ce46afa208567efc97414ab2
+PODFILE CHECKSUM: bdc21000ebdcf50ece483bace8a758f9a065b9fe
 
 COCOAPODS: 1.16.2
