@@ -125,7 +125,9 @@ export const pushUtilities = {
                         : typeof error === 'string'
                         ? error
                         : 'Unknown error';
-                handleNotificationRegistrationError?.(`Registration failed: ${errMsg}`);
+                if (!errMsg.includes('Error, no valid private key found')) {
+                    handleNotificationRegistrationError?.(`Registration failed: ${errMsg}`);
+                }
             }
         });
 
