@@ -190,7 +190,7 @@ try {
 }
 ```
 
-### `initiateTemplateIssuance(templateUri)`
+### `initiateTemplateIssue(templateUri)`
 
 Let users send peer-to-peer badges to each other. Unlike `sendCredential` (which issues from your app to the current user), this opens a flow where the user selects a recipient from their contacts.
 
@@ -208,7 +208,7 @@ Let users send peer-to-peer badges to each other. Unlike `sendCredential` (which
 // Let users send a "Thank You" badge to someone
 async function sendThankYouBadge() {
     try {
-        await learnCard.initiateTemplateIssuance('urn:lc:boost:thank-you-badge');
+        await learnCard.initiateTemplateIssue('urn:lc:boost:thank-you-badge');
         console.log('Peer badge flow initiated');
     } catch (error) {
         console.error('Failed to initiate badge:', error);
@@ -218,7 +218,7 @@ async function sendThankYouBadge() {
 
 **How it works:**
 
-1. Your app calls `initiateTemplateIssuance` with a template URI
+1. Your app calls `initiateTemplateIssue` with a template URI
 2. LearnCard opens a recipient picker for the user
 3. User selects someone from their contacts
 4. Badge is sent from the user to the recipient
@@ -228,7 +228,7 @@ async function sendThankYouBadge() {
 1. Go to your app listing's **Templates** tab
 2. Create a template and select **Peer Badge** as the type
 3. Copy the **Template URI** shown after creation
-4. Use this URI when calling `initiateTemplateIssuance`
+4. Use this URI when calling `initiateTemplateIssue`
 
 {% hint style="info" %}
 Peer badges are sent **from the user** to another person, not from your app. This is ideal for recognition, gratitude, or social features within your app.
