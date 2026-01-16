@@ -240,8 +240,8 @@ importers:
         specifier: 8.0.0
         version: 8.0.0(@capacitor/core@8.0.1)
       '@capgo/capacitor-updater':
-        specifier: 7.8.7
-        version: 7.8.7(@capacitor/core@8.0.1)
+        specifier: 8.41.12
+        version: 8.41.12(@capacitor/core@8.0.1)
       '@emoji-mart/data':
         specifier: ^1.2.1
         version: 1.2.1
@@ -5514,6 +5514,11 @@ packages:
     resolution: {integrity: sha512-wTKm9RKuRIPSfACXVVYBhOV1jlO/pD/LVxVRSayyb032m/zAPLr01fdp7lKj4PP2PFx8Q6hdeBnV6++pCdsDrQ==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
+
+  '@capgo/capacitor-updater@8.41.12':
+    resolution: {integrity: sha512-RPSdWnslC3FUHNh0mlv6NfPZ/crEgbwDRypGqVVpBDIhl/qjqEBUIVSL3OeVsQk1nglnRqEpIJch3SScT/1f4Q==}
+    peerDependencies:
+      '@capacitor/core': ^8.0.0
 
   '@capgo/cli@7.29.1':
     resolution: {integrity: sha512-VxHznVWWOBwQsAiKWQ2I5GmMolwyDiCn3e/gJbLBVCMdUUJugrAQJ3/1RkcBrGAZKFpxdk9eG9XatW92Simwrg==}
@@ -30593,7 +30598,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.4.2
 
-  '@capgo/capacitor-updater@7.8.7(@capacitor/core@8.0.1)':
+  '@capgo/capacitor-updater@8.41.12(@capacitor/core@8.0.1)':
     dependencies:
       '@capacitor/core': 8.0.1
 

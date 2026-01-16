@@ -63,7 +63,7 @@ include ':capawesome-capacitor-badge'
 project(':capawesome-capacitor-badge').projectDir = new File('../../../node_modules/.pnpm/@capawesome+capacitor-badge@8.0.0_@capacitor+core@8.0.1/node_modules/@capawesome/capacitor-badge/android')
 
 include ':capgo-capacitor-updater'
-project(':capgo-capacitor-updater').projectDir = new File('../../../node_modules/.pnpm/@capgo+capacitor-updater@7.8.7_@capacitor+core@8.0.1/node_modules/@capgo/capacitor-updater/android')
+project(':capgo-capacitor-updater').projectDir = new File('../../../node_modules/.pnpm/@capgo+capacitor-updater@8.41.12_@capacitor+core@8.0.1/node_modules/@capgo/capacitor-updater/android')
 
 include ':capacitor-native-settings'
 project(':capacitor-native-settings').projectDir = new File('../../../node_modules/.pnpm/capacitor-native-settings@7.0.2_@capacitor+core@8.0.1/node_modules/capacitor-native-settings/android')

@@ -26,7 +26,7 @@
         "@capacitor/splash-screen": "^8.0.0",
         "@capacitor/status-bar": "^8.0.0",
         "@capawesome/capacitor-badge": "8.0.0",
-        "@capgo/capacitor-updater": "7.8.7",
+        "@capgo/capacitor-updater": "8.41.12",
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",
         "@headlessui/react": "^2.2.4",

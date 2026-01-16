@@ -75,12 +75,12 @@ PODS:
     - Capacitor
   - CapawesomeCapacitorBadge (8.0.0):
     - Capacitor
-  - CapgoCapacitorUpdater (7.8.7):
+  - CapgoCapacitorUpdater (8.41.12):
     - Alamofire (= 5.10.2)
     - BigInt (= 5.2.0)
     - Capacitor
-    - SSZipArchive (= 2.4.3)
     - Version (= 0.8.0)
+    - ZIPFoundation (~> 0.9)
   - Firebase/CoreOnly (11.7.0):
     - FirebaseCore (~> 11.7.0)
   - Firebase/Messaging (11.7.0):
@@ -216,7 +216,6 @@ PODS:
   - SQLCipher/common (4.10.0)
   - SQLCipher/standard (4.10.0):
     - SQLCipher/common
-  - SSZipArchive (2.4.3)
   - Version (0.8.0)
   - ZIPFoundation (0.9.20)
 
@@ -247,7 +246,7 @@ DEPENDENCIES:
   - "CapacitorSplashScreen (from `../../../../node_modules/.pnpm/@capacitor+splash-screen@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/splash-screen`)"
   - "CapacitorStatusBar (from `../../../../node_modules/.pnpm/@capacitor+status-bar@8.0.0_@capacitor+core@8.0.1/node_modules/@capacitor/status-bar`)"
   - "CapawesomeCapacitorBadge (from `../../../../node_modules/.pnpm/@capawesome+capacitor-badge@8.0.0_@capacitor+core@8.0.1/node_modules/@capawesome/capacitor-badge`)"
-  - "CapgoCapacitorUpdater (from `../../../../node_modules/.pnpm/@capgo+capacitor-updater@7.8.7_@capacitor+core@8.0.1/node_modules/@capgo/capacitor-updater`)"
+  - "CapgoCapacitorUpdater (from `../../../../node_modules/.pnpm/@capgo+capacitor-updater@8.41.12_@capacitor+core@8.0.1/node_modules/@capgo/capacitor-updater`)"
   - Firebase/Messaging
 
 SPEC REPOS:
@@ -284,7 +283,6 @@ SPEC REPOS:
     - RecaptchaInterop
     - SDWebImage
     - SQLCipher
-    - SSZipArchive
     - Version
     - ZIPFoundation
 
@@ -338,7 +336,7 @@ EXTERNAL SOURCES:
   CapawesomeCapacitorBadge:
     :path: "../../../../node_modules/.pnpm/@capawesome+capacitor-badge@8.0.0_@capacitor+core@8.0.1/node_modules/@capawesome/capacitor-badge"
   CapgoCapacitorUpdater:
-    :path: "../../../../node_modules/.pnpm/@capgo+capacitor-updater@7.8.7_@capacitor+core@8.0.1/node_modules/@capgo/capacitor-updater"
+    :path: "../../../../node_modules/.pnpm/@capgo+capacitor-updater@8.41.12_@capacitor+core@8.0.1/node_modules/@capgo/capacitor-updater"
 
 SPEC CHECKSUMS:
   Alamofire: 7193b3b92c74a07f85569e1a6c4f4237291e7496
@@ -368,7 +366,7 @@ SPEC CHECKSUMS:
   CapacitorSplashScreen: 422880d7117605c30699eb4b21644b62db42e86c
   CapacitorStatusBar: 312e2e67928dfe9514c4a8916a1fd610552f5f35
   CapawesomeCapacitorBadge: 8875ba23dfad72cfee5bc3aca27c1a580d33eee7
-  CapgoCapacitorUpdater: 90b09b7c3c23c02f1b0dfe42db51d0abaf1910f3
+  CapgoCapacitorUpdater: 02465b7612dc67e7bb945cb0f99fd4056e6395d4
   Firebase: a64bf6a8546e6eab54f1c715cd6151f39d2329f4
   FirebaseAnalytics: bc9e565af9044ba8d6c6e4157e4edca8e5fdf7ec
   FirebaseAppCheckInterop: 06fe5a3799278ae4667e6c432edd86b1030fa3df
@@ -398,10 +396,9 @@ SPEC CHECKSUMS:
   RecaptchaInterop: 7d1a4a01a6b2cb1610a47ef3f85f0c411434cb21
   SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
   SQLCipher: eb79c64049cb002b4e9fcb30edb7979bf4706dfc
-  SSZipArchive: fe6a26b2a54d5a0890f2567b5cc6de5caa600aef
   Version: de5907f2c5d0f3cf21708db7801d1d5401139486
   ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
 
-PODFILE CHECKSUM: 6c491a791646483414c1c3c6e8709d23620d314b
+PODFILE CHECKSUM: 8e1554e491386fe14d4b9241358ab3a503815e48
 
 COCOAPODS: 1.16.2
