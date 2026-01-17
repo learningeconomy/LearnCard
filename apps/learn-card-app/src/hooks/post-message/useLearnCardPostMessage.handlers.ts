@@ -357,10 +357,10 @@ export const createLaunchFeatureHandler = (dependencies: {
  */
 export const createInitiateTemplateIssueHandler = (dependencies: {
     showBoostIssueModal: (templateId: string, draftRecipients?: string[]) => Promise<boolean>;
-    isUserAdminOfTemplate: (templateId: string) => Promise<boolean>;
+    canUserIssueTemplate: (templateId: string) => Promise<boolean>;
 }): ActionHandler<'INITIATE_TEMPLATE_ISSUE'> => {
     return async ({ payload }) => {
-        const { showBoostIssueModal, isUserAdminOfTemplate } = dependencies;
+        const { showBoostIssueModal, canUserIssueTemplate } = dependencies;
 
         if (!payload.templateId) {
             return {
@@ -373,15 +373,16 @@ export const createInitiateTemplateIssueHandler = (dependencies: {
         }
 
         try {
-            // Verify user is admin of this template
-            const isAdmin = await isUserAdminOfTemplate(payload.templateId);
+            // Verify user has canIssue permission for this template
+            // This covers: admin status, explicit canIssue permission, or defaultPermissions.canIssue
+            const canIssue = await canUserIssueTemplate(payload.templateId);
 
-            if (!isAdmin) {
+            if (!canIssue) {
                 return {
                     success: false,
                     error: {
                         code: 'UNAUTHORIZED',
-                        message: 'User is not authorized to issue this template',
+                        message: 'User does not have permission to issue this template',
                     },
                 };
             }
@@ -474,7 +475,7 @@ export function createActionHandlers(dependencies: {
 
     // Boost template issuing
     showBoostIssueModal: (templateId: string, draftRecipients?: string[]) => Promise<boolean>;
-    isUserAdminOfTemplate: (templateId: string) => Promise<boolean>;
+    canUserIssueTemplate: (templateId: string) => Promise<boolean>;
 
     // App events
     sendAppEvent?: (listingId: string, event: AppEvent) => Promise<Record<string, unknown>>;

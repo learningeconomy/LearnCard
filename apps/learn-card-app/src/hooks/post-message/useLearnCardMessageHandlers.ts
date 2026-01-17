@@ -698,7 +698,7 @@ export function useLearnCardMessageHandlers({
                         }
                     });
                 },
-                isUserAdminOfTemplate: async (templateId: string) => {
+                canUserIssueTemplate: async (templateId: string) => {
                     try {
                         const learnCard = await initWallet();
                         if (!learnCard) {
@@ -706,27 +706,21 @@ export function useLearnCardMessageHandlers({
                             return false;
                         }
 
-                        // Get the current user's DID
-                        const userProfileId = (await learnCard.invoke.getProfile())?.profileId;
-
-                        // Get boost data
+                        // Get the boost to verify it exists
                         const boost = await learnCard.invoke.getBoost(templateId);
-                        const admins = await learnCard.invoke.getBoostAdmins(templateId, {
-                            includeSelf: true,
-                        });
 
                         if (!boost) {
                             logError('Boost template not found:', templateId);
                             return false;
                         }
 
-                        // Check if boost.profileId matches current user
-                        // profileId is typically the DID or profile identifier of the boost owner
-                        return admins?.records
-                            ?.map(admin => admin?.profileId)
-                            .includes(userProfileId);
+                        // Check if user has canIssue permission
+                        // This covers: admin status, explicit canIssue permission, or defaultPermissions.canIssue
+                        const permissions = await learnCard.invoke.getBoostPermissions(templateId);
+
+                        return Boolean(permissions?.canIssue);
                     } catch (error) {
-                        logError('Failed to check admin status:', error);
+                        logError('Failed to check issue permission:', error);
                         return false;
                     }
                 },
