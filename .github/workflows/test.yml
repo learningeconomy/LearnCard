@@ -50,12 +50,12 @@ jobs:
           echo "Waiting for EC2 instance to be ready..."
           for i in {1..30}; do
             STATUS=$(curl -s "${{ secrets.E2E_EC2_LAMBDA_URL }}/status")
-            STATE=$(echo "$STATUS" | jq -r '.state // empty')
-            IP=$(echo "$STATUS" | jq -r '.public_ip // empty')
+            STATE=$(echo "$STATUS" | grep -i "^State:" | awk '{print $2}')
+            IP=$(echo "$STATUS" | grep -i "^Public IP:" | awk '{print $3}')
 
             echo "Attempt $i: state=$STATE, ip=$IP"
 
-            if [ "$STATE" = "running" ] && [ -n "$IP" ] && [ "$IP" != "null" ]; then
+            if [ "$STATE" = "running" ] && [ -n "$IP" ]; then
               echo "EC2 is ready at $IP"
               echo "E2E_EC2_IP=$IP" >> $GITHUB_ENV
               exit 0
