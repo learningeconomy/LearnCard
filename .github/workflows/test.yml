@@ -56,9 +56,18 @@ jobs:
             echo "Attempt $i: state=$STATE, ip=$IP"
 
             if [ "$STATE" = "running" ] && [ -n "$IP" ]; then
-              echo "EC2 is ready at $IP"
-              echo "E2E_EC2_IP=$IP" >> $GITHUB_ENV
-              exit 0
+              echo "EC2 is running, waiting for SSH to be ready..."
+              for j in {1..30}; do
+                if nc -z -w5 "$IP" 22 2>/dev/null; then
+                  echo "SSH is ready at $IP"
+                  echo "E2E_EC2_IP=$IP" >> $GITHUB_ENV
+                  exit 0
+                fi
+                echo "  SSH not ready yet (attempt $j)..."
+                sleep 5
+              done
+              echo "Timeout waiting for SSH"
+              exit 1
             fi
 
             sleep 10
