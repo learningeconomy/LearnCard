@@ -63,7 +63,7 @@
         "@learncard/vc-templates-plugin": "workspace:*",
         "@sentry/esbuild-plugin": "2.16.0",
         "@sentry/serverless": "7.61.0",
-        "@trpc/server": "11.7.1",
+        "@trpc/server": "11.8.0",
         "@types/lodash": "^4.14.191",
         "base64url": "^3.0.1",
         "cors": "^2.8.5",

@@ -70,7 +70,7 @@
         "immer": "^10.1.1",
         "ionicons": "^5.5.4",
         "json-stringify-deterministic": "^1.0.12",
-        "jspdf": "^3.0.4",
+        "jspdf": "^4.0.0",
         "jszip": "^3.10.1",
         "jwt-decode": "^3.1.2",
         "katex": "^0.16.22",
@@ -171,7 +171,7 @@
         "postcss": "^8.5.2",
         "sass": "^1.84.0",
         "tailwindcss": "^3.4.17",
-        "vite": "4.3.8",
+        "vite": "5.4.21",
         "vite-plugin-svgr": "^3.3.0",
         "vite-tsconfig-paths": "4.2.3"
     },

@@ -13,7 +13,7 @@
     },
     "dependencies": {
         "@learncard/embed-sdk": "workspace:^",
-        "astro": "^4.7.0"
+        "astro": "^5.15.9"
     },
     "devDependencies": {
         "prettier-plugin-astro": "^0.5.4"
