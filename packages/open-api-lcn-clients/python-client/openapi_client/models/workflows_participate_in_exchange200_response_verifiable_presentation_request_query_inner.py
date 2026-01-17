@@ -27,8 +27,9 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
     """
     WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner
     """ # noqa: E501
-    type: StrictStr
+    type: Optional[StrictStr]
     credential_query: Optional[List[WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner]] = Field(default=None, alias="credentialQuery")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["type", "credentialQuery"]
 
     model_config = ConfigDict(
@@ -61,8 +62,10 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -77,6 +80,16 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
                 if _item_credential_query:
                     _items.append(_item_credential_query.to_dict())
             _dict['credentialQuery'] = _items
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if type (nullable) is None
+        # and model_fields_set contains the field
+        if self.type is None and "type" in self.model_fields_set:
+            _dict['type'] = None
+
         return _dict
 
     @classmethod
@@ -92,6 +105,11 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
             "type": obj.get("type"),
             "credentialQuery": [WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner.from_dict(_item) for _item in obj["credentialQuery"]] if obj.get("credentialQuery") is not None else None
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

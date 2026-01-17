@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **sort** | **str** |  | [optional] 
 **uri** | **str** |  | 
 **query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
-**number_of_generations** | **float** |  | [optional] [default to 1]
+**number_of_generations** | **float** |  | [optional] 
 
 ## Example
 

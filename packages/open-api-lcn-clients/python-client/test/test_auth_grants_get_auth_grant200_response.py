@@ -38,7 +38,7 @@ class TestAuthGrantsGetAuthGrant200Response(unittest.TestCase):
                 id = '',
                 name = '',
                 description = '',
-                challenge = 'auth-grant:0123456789',
+                challenge = 'auth-grant:jUR,rZ#UM/?R,Fp^l6$ARj0123456789',
                 status = 'revoked',
                 scope = '',
                 created_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),

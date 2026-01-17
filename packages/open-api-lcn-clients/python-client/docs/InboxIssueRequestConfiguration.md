@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **signing_authority** | [**InboxIssueRequestConfigurationSigningAuthority**](InboxIssueRequestConfigurationSigningAuthority.md) |  | [optional] 
 **webhook_url** | **str** | The webhook URL to receive credential issuance events. | [optional] 
 **expires_in_days** | **float** | The number of days the credential will be valid for. | [optional] 
+**template_data** | **Dict[str, object]** | Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided. | [optional] 
 **delivery** | [**InboxIssueRequestConfigurationDelivery**](InboxIssueRequestConfigurationDelivery.md) |  | [optional] 
 
 ## Example

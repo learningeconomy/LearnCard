@@ -5,12 +5,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**uri** | [**BoostGetBoostsRequestQueryUri**](BoostGetBoostsRequestQueryUri.md) |  | [optional] 
-**name** | [**BoostGetBoostsRequestQueryUri**](BoostGetBoostsRequestQueryUri.md) |  | [optional] 
-**type** | [**BoostGetBoostsRequestQueryUri**](BoostGetBoostsRequestQueryUri.md) |  | [optional] 
-**category** | [**BoostGetBoostsRequestQueryUri**](BoostGetBoostsRequestQueryUri.md) |  | [optional] 
-**meta** | [**Dict[str, BoostGetBoostsRequestQueryUri]**](BoostGetBoostsRequestQueryUri.md) |  | [optional] 
-**status** | [**BoostGetBoostsRequestQueryStatus**](BoostGetBoostsRequestQueryStatus.md) |  | [optional] 
+**var_or** | [**List[BoostGetBoostsRequestQueryAnyOfOrInner]**](BoostGetBoostsRequestQueryAnyOfOrInner.md) |  | 
+**uri** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
+**name** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
+**type** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
+**category** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
+**meta** | [**Dict[str, BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement]**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
+**status** | [**BoostGetBoostsRequestQueryAnyOfOrInnerStatus**](BoostGetBoostsRequestQueryAnyOfOrInnerStatus.md) |  | [optional] 
 **auto_connect_recipients** | **bool** |  | [optional] 
 
 ## Example

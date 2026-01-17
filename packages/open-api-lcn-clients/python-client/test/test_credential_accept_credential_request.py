@@ -36,8 +36,11 @@ class TestCredentialAcceptCredentialRequest(unittest.TestCase):
         if include_optional:
             return CredentialAcceptCredentialRequest(
                 uri = '',
-                options = openapi_client.models.boost_send_boost_request_options.boost_sendBoost_request_options(
-                    skip_notification = True, )
+                options = openapi_client.models.credential_accept_credential_request_options.credential_acceptCredential_request_options(
+                    skip_notification = True, 
+                    metadata = {
+                        'key' : null
+                        }, )
             )
         else:
             return CredentialAcceptCredentialRequest(
