@@ -1,6 +1,23 @@
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { getBespokeLearnCard } from './wallet.helpers';
-import { BoostCategoryOptionsEnum } from '../src/components/boost/boost-options/boostOptions';
+
+// Duplicated from learn-card-base to avoid importing app source code (breaks Playwright)
+export enum BoostCategoryOptionsEnum {
+    socialBadge = 'Social Badge',
+    achievement = 'Achievement',
+    course = 'Course',
+    job = 'Job',
+    id = 'ID',
+    skill = 'Skill',
+    membership = 'Membership',
+    currency = 'Currency',
+    accomplishment = 'Accomplishment',
+    accommodation = 'Accommodation',
+    workHistory = 'Work History',
+    learningHistory = 'Learning History',
+    family = 'Family',
+    describe = 'Describe',
+}
 
 export const testContract = {
     name: 'Test Contract',

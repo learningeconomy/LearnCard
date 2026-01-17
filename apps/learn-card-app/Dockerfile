@@ -1,5 +1,6 @@
 # Use an official Node runtime as the base image
-FROM node:20.10.0-slim
+# Using bullseye (Debian 11) to avoid native module build issues on Debian 12
+FROM node:20.10.0-bullseye-slim
 
 # Set the working directory in the container
 WORKDIR /app

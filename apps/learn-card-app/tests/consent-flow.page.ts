@@ -1,5 +1,6 @@
 import { expect, Locator, Page } from '@playwright/test';
 import {
+    BoostCategoryOptionsEnum,
     categoryToDisplayNameMap,
     CustomContractOptions,
     getPermutations,
@@ -8,7 +9,6 @@ import {
     joinWithAnd,
     testContract,
 } from './consent-flow.helpers';
-import { BoostCategoryOptionsEnum } from '../src/components/boost/boost-options/boostOptions';
 
 export class ConsentFlowPage {
     readonly page: Page;

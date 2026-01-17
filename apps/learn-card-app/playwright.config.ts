@@ -34,6 +34,8 @@ const config: PlaywrightTestConfig = {
         [process.env.CI ? 'dot' : 'list'],
         ['html', { open: 'never' }],
         ['json', { outputFile: 'test-results/results.json' }],
+        // GitHub Actions reporter - shows results in job summary
+        ...(process.env.CI ? [['github'] as const] : []),
     ],
     /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
     use: {
