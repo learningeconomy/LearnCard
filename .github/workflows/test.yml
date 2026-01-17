@@ -89,6 +89,26 @@ jobs:
             ./scripts/sync-repo.sh ${{ github.head_ref }}
             ./scripts/run-tests.sh
 
+      - name: Download Playwright report from EC2
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p playwright-report
+          echo "${{ secrets.E2E_EC2_SSH_KEY }}" > /tmp/ec2_key
+          chmod 600 /tmp/ec2_key
+          scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+            ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/playwright-report/* \
+            playwright-report/ || echo "Failed to download report"
+          rm /tmp/ec2_key
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
       - name: Cleanup EC2 (docker down, prune)
         if: always()
         continue-on-error: true
