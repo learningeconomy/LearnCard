@@ -40,10 +40,36 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Start EC2 instance
+        run: |
+          echo "Starting EC2 instance..."
+          curl -s "${{ secrets.E2E_EC2_LAMBDA_URL }}/start"
+
+      - name: Wait for EC2 to be ready
+        run: |
+          echo "Waiting for EC2 instance to be ready..."
+          for i in {1..30}; do
+            STATUS=$(curl -s "${{ secrets.E2E_EC2_LAMBDA_URL }}/status")
+            STATE=$(echo "$STATUS" | jq -r '.state // empty')
+            IP=$(echo "$STATUS" | jq -r '.public_ip // empty')
+
+            echo "Attempt $i: state=$STATE, ip=$IP"
+
+            if [ "$STATE" = "running" ] && [ -n "$IP" ] && [ "$IP" != "null" ]; then
+              echo "EC2 is ready at $IP"
+              echo "E2E_EC2_IP=$IP" >> $GITHUB_ENV
+              exit 0
+            fi
+
+            sleep 10
+          done
+          echo "Timeout waiting for EC2 to be ready"
+          exit 1
+
       - name: Run E2E tests on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.E2E_EC2_HOST }}
+          host: ${{ env.E2E_EC2_IP }}
           username: ${{ secrets.E2E_EC2_USERNAME }}
           key: ${{ secrets.E2E_EC2_SSH_KEY }}
           script_stop: true
@@ -53,3 +79,9 @@ jobs:
             git pull origin main
             ./scripts/sync-repo.sh ${{ github.head_ref }}
             ./scripts/run-tests.sh
+
+      - name: Stop EC2 instance
+        if: always()
+        run: |
+          echo "Stopping EC2 instance..."
+          curl -s "${{ secrets.E2E_EC2_LAMBDA_URL }}/stop"
