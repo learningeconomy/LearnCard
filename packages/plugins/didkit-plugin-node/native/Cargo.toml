@@ -1,0 +1,40 @@
+[package]
+name = "didkit_plugin_node"
+version = "0.1.0"
+authors = ["Learning Economy Foundation"]
+edition = "2021"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2", default-features = false, features = ["napi4", "tokio_rt"] }
+napi-derive = "2"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+once_cell = "1"
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"] }
+iref = "3.2"
+json-ld-core = "0.12"
+# Use the vendored DIDKit/SSI in the monorepo
+didkit = { path = "../../../../lib/didkit/lib", default-features = false, features = ["w3c", "ed25519", "secp256k1", "tezos", "eip", "ripemd-160", "http-did", "ring"] }
+ssi = { path = "../../../../lib/ssi" }
+ssi-contexts = { path = "../../../../lib/ssi/contexts" }
+# JWE dependencies
+chacha20poly1305 = "0.10"
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+ed25519-dalek = "2"
+sha2 = "0.10"
+rand_chacha = "0.3"
+byteorder = "1"
+base64 = "0.21"
+anyhow = "1"
+multibase = "0.9"
+
+[build-dependencies]
+napi-build = "2"
+
+[package.metadata.napi]
+name = "index"

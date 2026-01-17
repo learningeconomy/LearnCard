@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 import { generateLearnCard, LearnCard } from '@learncard/core';
 import { CryptoPlugin, CryptoPluginType } from '@learncard/crypto-plugin';
-import { DIDKitPlugin, DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
+import type { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
 import { DidKeyPlugin, getDidKeyPlugin } from '@learncard/didkey-plugin';
 import { EncryptionPluginType, getEncryptionPlugin } from '@learncard/encryption-plugin';
 import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
@@ -11,15 +11,31 @@ import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin
 import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin, DidWebPlugin } from '@learncard/did-web-plugin';
 
-// Initialize didkit lazily to avoid top-level await issues
-let didkitPromise: Promise<Buffer> | null = null;
-const getDidkitWasm = () => {
-    if (!didkitPromise) {
-        didkitPromise = readFile(
-            require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-        );
-    }
-    return didkitPromise;
+// Try native plugin first, fall back to WASM
+let didKitPluginPromise: Promise<DIDKitPlugin> | null = null;
+
+const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugin> => {
+    if (didKitPluginPromise) return didKitPluginPromise;
+
+    didKitPluginPromise = (async () => {
+        try {
+            const {
+                default: { getDidKitPlugin: getNativePlugin },
+            } = await import('@learncard/didkit-plugin-node');
+            return await getNativePlugin(undefined, allowRemoteContexts);
+        } catch (e) {
+            console.log('Native DIDKit plugin not available, falling back to WASM');
+            const {
+                default: { getDidKitPlugin: getWasmPlugin },
+            } = await import('@learncard/didkit-plugin');
+            const wasmBuffer = await readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+            );
+            return await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+        }
+    })();
+
+    return didKitPluginPromise;
 };
 
 export type EmptyLearnCard = LearnCard<
@@ -64,7 +80,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     if (!emptyLearnCard || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await getDidkitWasm()));
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin());
 
         const expirationLc = await didkitLc.addPlugin(expirationPlugin(didkitLc));
 
@@ -76,13 +92,16 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     return emptyLearnCard;
 };
 
-export const getLearnCard = async (seed = process.env.SEED, allowRemoteContexts = false): Promise<SeedLearnCard> => {
+export const getLearnCard = async (
+    seed = process.env.SEED,
+    allowRemoteContexts = false
+): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
 
     if (!learnCards[seed] || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await getDidkitWasm(), allowRemoteContexts));
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(allowRemoteContexts));
 
         const didkeyLc = await didkitLc.addPlugin(
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
@@ -129,7 +148,7 @@ export const getDidWebLearnCard = async (): Promise<DidWebLearnCard> => {
     if (!didWebLearnCard || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await getDidkitWasm()));
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin());
 
         const didkeyLc = await didkitLc.addPlugin(
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')

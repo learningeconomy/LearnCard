@@ -1,0 +1,22 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "didkit-plugin-node",
+  "sourceRoot": "packages/plugins/didkit-plugin-node/src",
+  "projectType": "library",
+  "root": "packages/plugins/didkit-plugin-node",
+  "tags": [],
+  "implicitDependencies": ["types","core","didkit-plugin"],
+  "namedInputs": {
+    "source": ["{projectRoot}/src/**/*"],
+    "dist": ["{projectRoot}/dist/**/*"]
+  },
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "inputs": ["source"],
+      "options": {
+        "script": "build"
+      }
+    }
+  }
+}

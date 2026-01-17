@@ -44,7 +44,17 @@ export const networkLearnCardFromSeed = async ({
 
     const cryptoLc = await dynamicLc.addPlugin(CryptoPlugin);
 
-    const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(didkit, allowRemoteContexts));
+    const getDidkit = async (): Promise<typeof getDidKitPlugin> => {
+        if (didkit === 'node') {
+            const mod = await import('@learncard/didkit-plugin-node');
+            return mod.getDidKitPlugin as typeof getDidKitPlugin;
+        }
+        return getDidKitPlugin;
+    };
+
+    const didkitLc = await cryptoLc.addPlugin(
+        await (await getDidkit())(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
+    );
 
     const didkeyLc = await didkitLc.addPlugin(
         await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')

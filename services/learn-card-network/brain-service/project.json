@@ -20,80 +20,61 @@
         "nx-run-command"
     ],
     "namedInputs": {
-        "source": [
-            "{projectRoot}/src/**/*"
-        ],
-        "tests": [
-            "{projectRoot}/test/**/*"
-        ],
-        "dist": [
-            "{projectRoot}/dist/**/*"
-        ]
+        "source": ["{projectRoot}/src/**/*"],
+        "tests": ["{projectRoot}/test/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
     },
     "targets": {
         "serverless-deploy": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source"
-            ],
-            "dependsOn": [
-                "^build"
-            ],
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
             "options": {
                 "script": "serverless-deploy"
             }
         },
         "build": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source"
-            ],
+            "inputs": ["source"],
             "options": {
                 "script": "build"
             }
         },
         "build:docker": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source"
-            ],
-            "dependsOn": [
-                "^build"
-            ],
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
             "options": {
                 "script": "build:docker"
             }
         },
+        "start:docker": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "start:docker"
+            }
+        },
         "start": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source"
-            ],
-            "dependsOn": [
-                "^build"
-            ],
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
             "options": {
                 "script": "start"
             }
         },
         "start-p-4000": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source"
-            ],
-            "dependsOn": [
-                "^build"
-            ],
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
             "options": {
                 "script": "start-p-4000"
             }
         },
         "test": {
             "executor": "nx:run-script",
-            "inputs": [
-                "source",
-                "tests"
-            ],
+            "inputs": ["source", "tests"],
             "options": {
                 "script": "test"
             }

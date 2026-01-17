@@ -96,7 +96,8 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
         ['/consent-flow', '/consent-flow-login', '/claim/from-dashboard/', '/chats', '/cli'].includes(
             location.pathname
         ) ||
-        (collapsed && aiRoutes.includes(location.pathname) && !isMobile) || location.pathname.includes('/app-store');
+        (collapsed && aiRoutes.includes(location.pathname) && !isMobile) ||
+        location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
 

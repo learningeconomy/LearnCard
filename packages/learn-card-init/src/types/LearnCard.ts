@@ -28,7 +28,7 @@ export type LearnCardConfig = {
         unencryptedCustomFields?: string[];
         automaticallyAssociateDids?: boolean;
     };
-    didkit: InitInput | Promise<InitInput>;
+    didkit: InitInput | Promise<InitInput> | 'node';
     allowRemoteContexts?: boolean;
     ethereumConfig: EthereumConfig;
     debug?: typeof console.log;
