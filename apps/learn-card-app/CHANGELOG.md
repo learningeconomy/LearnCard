@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.13
+
+### Patch Changes
+
+-   [#943](https://github.com/learningeconomy/LearnCard/pull/943) [`4b0df8efbc45cd82515ea0fd31dc3f453eca087b`](https://github.com/learningeconomy/LearnCard/commit/4b0df8efbc45cd82515ea0fd31dc3f453eca087b) Thanks [@Custard7](https://github.com/Custard7)! - fix: Fix Template Issuance Permissions
+
 ## 1.94.12
 
 ### Patch Changes
