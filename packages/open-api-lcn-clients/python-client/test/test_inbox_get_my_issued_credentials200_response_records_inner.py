@@ -39,12 +39,16 @@ class TestInboxGetMyIssuedCredentials200ResponseRecordsInner(unittest.TestCase):
                 credential = '',
                 is_signed = True,
                 current_status = 'PENDING',
+                is_accepted = True,
                 expires_at = '',
                 created_at = '',
                 issuer_did = '',
                 webhook_url = '',
-                signing_authority_endpoint = '',
-                signing_authority_name = ''
+                boost_uri = '',
+                activity_id = '',
+                signing_authority = openapi_client.models.inbox_get_my_issued_credentials_200_response_records_inner_signing_authority.inbox_getMyIssuedCredentials_200_response_records_inner_signingAuthority(
+                    endpoint = '', 
+                    name = '', )
             )
         else:
             return InboxGetMyIssuedCredentials200ResponseRecordsInner(

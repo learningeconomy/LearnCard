@@ -10,8 +10,8 @@ Name | Type | Description | Notes
 **sort** | **str** |  | [optional] 
 **uri** | **str** |  | 
 **query** | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |  | [optional] 
-**parent_generations** | **float** |  | [optional] [default to 1]
-**child_generations** | **float** |  | [optional] [default to 1]
+**parent_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |  | [optional] 
+**child_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |  | [optional] 
 **include_extended_family** | **bool** |  | [optional] [default to False]
 
 ## Example

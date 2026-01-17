@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **anonymize** | **bool** |  | [optional] 
 **credentials** | [**StorageResolve200ResponseAnyOf1ReadCredentials**](StorageResolve200ResponseAnyOf1ReadCredentials.md) |  | 
-**personal** | **Dict[str, str]** |  | 
+**personal** | **Dict[str, Optional[str]]** |  | 
 
 ## Example
 

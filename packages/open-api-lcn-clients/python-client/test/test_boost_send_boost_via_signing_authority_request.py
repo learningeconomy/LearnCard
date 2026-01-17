@@ -39,6 +39,9 @@ class TestBoostSendBoostViaSigningAuthorityRequest(unittest.TestCase):
                 signing_authority = openapi_client.models.boost_send_boost_via_signing_authority_request_signing_authority.boost_sendBoostViaSigningAuthority_request_signingAuthority(
                     name = '', 
                     endpoint = '', ),
+                template_data = {
+                    'key' : null
+                    },
                 options = openapi_client.models.boost_send_boost_request_options.boost_sendBoost_request_options(
                     skip_notification = True, )
             )

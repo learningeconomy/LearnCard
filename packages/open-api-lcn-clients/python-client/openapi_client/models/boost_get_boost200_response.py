@@ -19,8 +19,9 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_create_boost_request_credential_any_of import BoostCreateBoostRequestCredentialAnyOf
+from openapi_client.models.boost_get_boost200_response_boost import BoostGetBoost200ResponseBoost
 from openapi_client.models.boost_get_boost200_response_claim_permissions import BoostGetBoost200ResponseClaimPermissions
+from openapi_client.models.boost_get_boost200_response_default_permissions import BoostGetBoost200ResponseDefaultPermissions
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -34,11 +35,13 @@ class BoostGetBoost200Response(BaseModel):
     status: Optional[StrictStr] = None
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
+    default_permissions: Optional[BoostGetBoost200ResponseDefaultPermissions] = Field(default=None, alias="defaultPermissions")
     allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     claim_permissions: Optional[BoostGetBoost200ResponseClaimPermissions] = Field(default=None, alias="claimPermissions")
-    uri: StrictStr
-    boost: BoostCreateBoostRequestCredentialAnyOf
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "claimPermissions", "uri", "boost"]
+    uri: Optional[StrictStr]
+    boost: BoostGetBoost200ResponseBoost
+    additional_properties: Dict[str, Any] = {}
+    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "defaultPermissions", "allowAnyoneToCreateChildren", "claimPermissions", "uri", "boost"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -46,8 +49,8 @@ class BoostGetBoost200Response(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['DRAFT', 'LIVE']):
-            raise ValueError("must be one of enum values ('DRAFT', 'LIVE')")
+        if value not in set(['DRAFT', 'PROVISIONAL', 'LIVE']):
+            raise ValueError("must be one of enum values ('DRAFT', 'PROVISIONAL', 'LIVE')")
         return value
 
     model_config = ConfigDict(
@@ -80,8 +83,10 @@ class BoostGetBoost200Response(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -89,12 +94,40 @@ class BoostGetBoost200Response(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of default_permissions
+        if self.default_permissions:
+            _dict['defaultPermissions'] = self.default_permissions.to_dict()
         # override the default output from pydantic by calling `to_dict()` of claim_permissions
         if self.claim_permissions:
             _dict['claimPermissions'] = self.claim_permissions.to_dict()
         # override the default output from pydantic by calling `to_dict()` of boost
         if self.boost:
             _dict['boost'] = self.boost.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if type (nullable) is None
+        # and model_fields_set contains the field
+        if self.type is None and "type" in self.model_fields_set:
+            _dict['type'] = None
+
+        # set to None if category (nullable) is None
+        # and model_fields_set contains the field
+        if self.category is None and "category" in self.model_fields_set:
+            _dict['category'] = None
+
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
         return _dict
 
     @classmethod
@@ -113,11 +146,17 @@ class BoostGetBoost200Response(BaseModel):
             "status": obj.get("status"),
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
+            "defaultPermissions": BoostGetBoost200ResponseDefaultPermissions.from_dict(obj["defaultPermissions"]) if obj.get("defaultPermissions") is not None else None,
             "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
             "claimPermissions": BoostGetBoost200ResponseClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
             "uri": obj.get("uri"),
-            "boost": BoostCreateBoostRequestCredentialAnyOf.from_dict(obj["boost"]) if obj.get("boost") is not None else None
+            "boost": BoostGetBoost200ResponseBoost.from_dict(obj["boost"]) if obj.get("boost") is not None else None
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

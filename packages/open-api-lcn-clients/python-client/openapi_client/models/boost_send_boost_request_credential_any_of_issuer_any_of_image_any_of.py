@@ -26,8 +26,8 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImageAnyOf(BaseModel):
     """
     BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImageAnyOf
     """ # noqa: E501
-    id: StrictStr
-    type: StrictStr
+    id: Optional[StrictStr]
+    type: Optional[StrictStr]
     caption: Optional[StrictStr] = None
     __properties: ClassVar[List[str]] = ["id", "type", "caption"]
 
@@ -70,6 +70,21 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImageAnyOf(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if id (nullable) is None
+        # and model_fields_set contains the field
+        if self.id is None and "id" in self.model_fields_set:
+            _dict['id'] = None
+
+        # set to None if type (nullable) is None
+        # and model_fields_set contains the field
+        if self.type is None and "type" in self.model_fields_set:
+            _dict['type'] = None
+
+        # set to None if caption (nullable) is None
+        # and model_fields_set contains the field
+        if self.caption is None and "caption" in self.model_fields_set:
+            _dict['caption'] = None
+
         return _dict
 
     @classmethod

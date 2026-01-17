@@ -35,6 +35,18 @@ class TestBoostGetBoostsRequestQuery(unittest.TestCase):
         model = BoostGetBoostsRequestQuery()
         if include_optional:
             return BoostGetBoostsRequestQuery(
+                var_or = [
+                    openapi_client.models.boost_get_boosts_request_query_any_of__or_inner.boost_getBoosts_request_query_anyOf__or_inner(
+                        uri = null, 
+                        name = null, 
+                        type = null, 
+                        category = null, 
+                        meta = {
+                            'key' : null
+                            }, 
+                        status = null, 
+                        auto_connect_recipients = True, )
+                    ],
                 uri = None,
                 name = None,
                 type = None,
@@ -47,6 +59,18 @@ class TestBoostGetBoostsRequestQuery(unittest.TestCase):
             )
         else:
             return BoostGetBoostsRequestQuery(
+                var_or = [
+                    openapi_client.models.boost_get_boosts_request_query_any_of__or_inner.boost_getBoosts_request_query_anyOf__or_inner(
+                        uri = null, 
+                        name = null, 
+                        type = null, 
+                        category = null, 
+                        meta = {
+                            'key' : null
+                            }, 
+                        status = null, 
+                        auto_connect_recipients = True, )
+                    ],
         )
         """
 

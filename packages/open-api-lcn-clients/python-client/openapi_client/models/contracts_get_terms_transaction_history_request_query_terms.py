@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_get_consented_contracts_request_query_read import ContractsGetConsentedContractsRequestQueryRead
 from openapi_client.models.contracts_get_consented_contracts_request_query_write import ContractsGetConsentedContractsRequestQueryWrite
+from openapi_client.models.contracts_get_terms_transaction_history_request_query_terms_read import ContractsGetTermsTransactionHistoryRequestQueryTermsRead
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,7 +28,7 @@ class ContractsGetTermsTransactionHistoryRequestQueryTerms(BaseModel):
     """
     ContractsGetTermsTransactionHistoryRequestQueryTerms
     """ # noqa: E501
-    read: Optional[ContractsGetConsentedContractsRequestQueryRead] = None
+    read: Optional[ContractsGetTermsTransactionHistoryRequestQueryTermsRead] = None
     write: Optional[ContractsGetConsentedContractsRequestQueryWrite] = None
     __properties: ClassVar[List[str]] = ["read", "write"]
 
@@ -89,7 +89,7 @@ class ContractsGetTermsTransactionHistoryRequestQueryTerms(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "read": ContractsGetConsentedContractsRequestQueryRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
+            "read": ContractsGetTermsTransactionHistoryRequestQueryTermsRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": ContractsGetConsentedContractsRequestQueryWrite.from_dict(obj["write"]) if obj.get("write") is not None else None
         })
         return _obj

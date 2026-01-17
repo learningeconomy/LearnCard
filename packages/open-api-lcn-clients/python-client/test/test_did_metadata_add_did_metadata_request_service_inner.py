@@ -37,12 +37,17 @@ class TestDidMetadataAddDidMetadataRequestServiceInner(unittest.TestCase):
             return DidMetadataAddDidMetadataRequestServiceInner(
                 id = '',
                 type = None,
-                service_endpoint = None
+                service_endpoint = [
+                    null
+                    ]
             )
         else:
             return DidMetadataAddDidMetadataRequestServiceInner(
                 id = '',
                 type = None,
+                service_endpoint = [
+                    null
+                    ],
         )
         """
 

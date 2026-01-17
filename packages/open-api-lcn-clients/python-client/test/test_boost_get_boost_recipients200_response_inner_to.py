@@ -47,7 +47,7 @@ class TestBoostGetBoostRecipients200ResponseInnerTo(unittest.TestCase):
                 website_link = '',
                 is_service_profile = True,
                 type = '',
-                notifications_webhook = 'http',
+                notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj',
                 display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_display.boost_getBoostRecipients_200_response_inner_to_display(
                     background_color = '', 
                     background_image = '', 
@@ -60,8 +60,13 @@ class TestBoostGetBoostRecipients200ResponseInnerTo(unittest.TestCase):
                     fade_id_background_image = True, 
                     id_background_color = '', 
                     repeat_id_background_image = True, ),
+                highlighted_credentials = [
+                    ''
+                    ],
                 role = '',
-                dob = ''
+                dob = '',
+                country = '',
+                approved = True
             )
         else:
             return BoostGetBoostRecipients200ResponseInnerTo(
