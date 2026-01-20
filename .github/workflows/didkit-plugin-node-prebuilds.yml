@@ -1,189 +1,190 @@
 name: DIDKit Plugin Node Prebuilds
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "packages/plugins/didkit-plugin-node/**"
-      - ".github/workflows/didkit-plugin-node-prebuilds.yml"
-  pull_request:
-    paths:
-      - "packages/plugins/didkit-plugin-node/**"
-      - ".github/workflows/didkit-plugin-node-prebuilds.yml"
-  workflow_dispatch:
+    push:
+        branches:
+            - main
+        paths:
+            - 'packages/plugins/didkit-plugin-node/**'
+            - '.github/workflows/didkit-plugin-node-prebuilds.yml'
+    pull_request:
+        paths:
+            - 'packages/plugins/didkit-plugin-node/**'
+            - '.github/workflows/didkit-plugin-node-prebuilds.yml'
+    workflow_dispatch:
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        settings:
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            build: |
-              cd packages/plugins/didkit-plugin-node
-              pnpm build
-              strip -x *.node
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            build: |
-              cd packages/plugins/didkit-plugin-node
-              pnpm build --target aarch64-unknown-linux-gnu
-              aarch64-linux-gnu-strip *.node
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
-            build: |
-              cd packages/plugins/didkit-plugin-node
-              pnpm build
-              strip *.node
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-musl
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
-            build: |
-              cd packages/plugins/didkit-plugin-node
-              rustup target add aarch64-unknown-linux-musl
-              pnpm build --target aarch64-unknown-linux-musl
-              /aarch64-linux-musl-cross/bin/aarch64-linux-musl-strip *.node
-          - host: macos-latest
-            target: x86_64-apple-darwin
-            build: |
-              cd packages/plugins/didkit-plugin-node
-              pnpm build
-              strip -x *.node
-          - host: macos-latest
-            target: aarch64-apple-darwin
-            build: |
-              cd packages/plugins/didkit-plugin-node
-              pnpm build --target aarch64-apple-darwin
-              strip -x *.node
+    build:
+        strategy:
+            fail-fast: false
+            matrix:
+                settings:
+                    - host: ubuntu-latest
+                      target: x86_64-unknown-linux-gnu
+                      build: |
+                          cd packages/plugins/didkit-plugin-node
+                          pnpm build
+                          strip -x *.node
+                    - host: ubuntu-latest
+                      target: aarch64-unknown-linux-gnu
+                      build: |
+                          cd packages/plugins/didkit-plugin-node
+                          pnpm build --target aarch64-unknown-linux-gnu
+                          aarch64-linux-gnu-strip *.node
+                    - host: ubuntu-latest
+                      target: x86_64-unknown-linux-musl
+                      docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
+                      build: |
+                          cd packages/plugins/didkit-plugin-node
+                          pnpm build
+                          strip *.node
+                    - host: ubuntu-latest
+                      target: aarch64-unknown-linux-musl
+                      docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
+                      build: |
+                          cd packages/plugins/didkit-plugin-node
+                          rustup target add aarch64-unknown-linux-musl
+                          pnpm build --target aarch64-unknown-linux-musl
+                          /aarch64-linux-musl-cross/bin/aarch64-linux-musl-strip *.node
+                    - host: macos-latest
+                      target: x86_64-apple-darwin
+                      build: |
+                          cd packages/plugins/didkit-plugin-node
+                          pnpm build
+                          strip -x *.node
+                    - host: macos-latest
+                      target: aarch64-apple-darwin
+                      build: |
+                          cd packages/plugins/didkit-plugin-node
+                          pnpm build --target aarch64-apple-darwin
+                          strip -x *.node
 
-    name: Build ${{ matrix.settings.target }}
-    runs-on: ${{ matrix.settings.host }}
+        name: Build ${{ matrix.settings.target }}
+        runs-on: ${{ matrix.settings.host }}
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: true
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
+            - name: Install pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 9
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          targets: ${{ matrix.settings.target }}
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  toolchain: stable
+                  targets: ${{ matrix.settings.target }}
 
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            .cargo-cache
-            target/
-          key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            - name: Cache cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry/index/
+                      ~/.cargo/registry/cache/
+                      ~/.cargo/git/db/
+                      .cargo-cache
+                      target/
+                  key: ${{ matrix.settings.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install cross-compilation tools (aarch64-linux-gnu)
-        if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+            - name: Install cross-compilation tools (aarch64-linux-gnu)
+              if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+            - name: Install dependencies
+              run: pnpm install --no-frozen-lockfile
 
-      - name: Build in Docker (musl)
-        if: matrix.settings.docker
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ${{ matrix.settings.docker }}
-          options: -v ${{ github.workspace }}:/build -w /build
-          run: |
-            corepack enable
-            corepack prepare pnpm@latest --activate
-            pnpm install --no-frozen-lockfile
-            ${{ matrix.settings.build }}
+            - name: Build in Docker (musl)
+              if: matrix.settings.docker
+              uses: addnab/docker-run-action@v3
+              with:
+                  image: ${{ matrix.settings.docker }}
+                  options: -v ${{ github.workspace }}:/build -w /build
+                  run: |
+                      npm install -g corepack@latest
+                      corepack enable
+                      corepack prepare pnpm@9 --activate
+                      pnpm install --no-frozen-lockfile
+                      ${{ matrix.settings.build }}
 
-      - name: Build
-        if: ${{ !matrix.settings.docker }}
-        run: ${{ matrix.settings.build }}
-        shell: bash
+            - name: Build
+              if: ${{ !matrix.settings.docker }}
+              run: ${{ matrix.settings.build }}
+              shell: bash
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: bindings-${{ matrix.settings.target }}
-          path: packages/plugins/didkit-plugin-node/*.node
-          if-no-files-found: error
+            - name: Upload artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: bindings-${{ matrix.settings.target }}
+                  path: packages/plugins/didkit-plugin-node/*.node
+                  if-no-files-found: error
 
-  publish:
-    name: Publish to npm
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    publish:
+        name: Publish to npm
+        needs: build
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: "https://registry.npmjs.org"
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  registry-url: 'https://registry.npmjs.org'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
+            - name: Install pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 9
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+            - name: Install dependencies
+              run: pnpm install --no-frozen-lockfile
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: packages/plugins/didkit-plugin-node
-          pattern: bindings-*
-          merge-multiple: true
+            - name: Download all artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: packages/plugins/didkit-plugin-node
+                  pattern: bindings-*
+                  merge-multiple: true
 
-      - name: List downloaded binaries
-        run: ls -la packages/plugins/didkit-plugin-node/*.node
+            - name: List downloaded binaries
+              run: ls -la packages/plugins/didkit-plugin-node/*.node
 
-      - name: Move artifacts to platform packages
-        working-directory: packages/plugins/didkit-plugin-node
-        run: pnpm artifacts
+            - name: Move artifacts to platform packages
+              working-directory: packages/plugins/didkit-plugin-node
+              run: pnpm artifacts
 
-      - name: Build TypeScript
-        working-directory: packages/plugins/didkit-plugin-node
-        run: pnpm exec tsc -p tsconfig.json
+            - name: Build TypeScript
+              working-directory: packages/plugins/didkit-plugin-node
+              run: pnpm exec tsc -p tsconfig.json
 
-      - name: Publish platform packages
-        working-directory: packages/plugins/didkit-plugin-node
-        run: pnpm exec napi prepublish -t npm --cargo-cwd native
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            - name: Publish platform packages
+              working-directory: packages/plugins/didkit-plugin-node
+              run: pnpm exec napi prepublish -t npm --cargo-cwd native
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish to npm
-        run: |
-          cd packages/plugins/didkit-plugin-node
-          for dir in npm/*; do
-            if [ -d "$dir" ]; then
-              echo "Publishing $dir..."
-              cd "$dir"
-              npm publish --access public || true
-              cd ../..
-            fi
-          done
-          npm publish --access public || true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            - name: Publish to npm
+              run: |
+                  cd packages/plugins/didkit-plugin-node
+                  for dir in npm/*; do
+                    if [ -d "$dir" ]; then
+                      echo "Publishing $dir..."
+                      cd "$dir"
+                      npm publish --access public || true
+                      cd ../..
+                    fi
+                  done
+                  npm publish --access public || true
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
