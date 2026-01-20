@@ -22,42 +22,36 @@ jobs:
                     - host: ubuntu-latest
                       target: x86_64-unknown-linux-gnu
                       build: |
-                          cd packages/plugins/didkit-plugin-node
-                          pnpm build
-                          strip -x *.node
+                          pnpm exec nx run @learncard/didkit-plugin-node:build
+                          strip -x packages/plugins/didkit-plugin-node/*.node
                     - host: ubuntu-latest
                       target: aarch64-unknown-linux-gnu
                       build: |
-                          cd packages/plugins/didkit-plugin-node
-                          pnpm build --target aarch64-unknown-linux-gnu
-                          aarch64-linux-gnu-strip *.node
+                          pnpm exec nx run @learncard/didkit-plugin-node:build -- --target aarch64-unknown-linux-gnu
+                          aarch64-linux-gnu-strip packages/plugins/didkit-plugin-node/*.node
                     - host: ubuntu-latest
                       target: x86_64-unknown-linux-musl
                       docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
                       build: |
-                          cd packages/plugins/didkit-plugin-node
-                          pnpm build
-                          strip *.node
+                          pnpm exec nx run @learncard/didkit-plugin-node:build
+                          strip packages/plugins/didkit-plugin-node/*.node
                     - host: ubuntu-latest
                       target: aarch64-unknown-linux-musl
                       docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
                       build: |
-                          cd packages/plugins/didkit-plugin-node
                           rustup target add aarch64-unknown-linux-musl
-                          pnpm build --target aarch64-unknown-linux-musl
-                          /aarch64-linux-musl-cross/bin/aarch64-linux-musl-strip *.node
+                          pnpm exec nx run @learncard/didkit-plugin-node:build -- --target aarch64-unknown-linux-musl
+                          /aarch64-linux-musl-cross/bin/aarch64-linux-musl-strip packages/plugins/didkit-plugin-node/*.node
                     - host: macos-latest
                       target: x86_64-apple-darwin
                       build: |
-                          cd packages/plugins/didkit-plugin-node
-                          pnpm build
-                          strip -x *.node
+                          pnpm exec nx run @learncard/didkit-plugin-node:build
+                          strip -x packages/plugins/didkit-plugin-node/*.node
                     - host: macos-latest
                       target: aarch64-apple-darwin
                       build: |
-                          cd packages/plugins/didkit-plugin-node
-                          pnpm build --target aarch64-apple-darwin
-                          strip -x *.node
+                          pnpm exec nx run @learncard/didkit-plugin-node:build -- --target aarch64-apple-darwin
+                          strip -x packages/plugins/didkit-plugin-node/*.node
 
         name: Build ${{ matrix.settings.target }}
         runs-on: ${{ matrix.settings.host }}
