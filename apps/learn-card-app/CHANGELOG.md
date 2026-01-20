@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.94.13
+
+### Patch Changes
+
+-   [#943](https://github.com/learningeconomy/LearnCard/pull/943) [`4b0df8efbc45cd82515ea0fd31dc3f453eca087b`](https://github.com/learningeconomy/LearnCard/commit/4b0df8efbc45cd82515ea0fd31dc3f453eca087b) Thanks [@Custard7](https://github.com/Custard7)! - fix: Fix Template Issuance Permissions
+
+## 1.94.12
+
+### Patch Changes
+
+-   [#941](https://github.com/learningeconomy/LearnCard/pull/941) [`c52711a4d531a87f19a122f15235a320ba82e6c4`](https://github.com/learningeconomy/LearnCard/commit/c52711a4d531a87f19a122f15235a320ba82e6c4) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add Custom Category to CredentialBuilder
+
+## 1.94.11
+
+### Patch Changes
+
+-   [#939](https://github.com/learningeconomy/LearnCard/pull/939) [`0633cea0ec0356f6721401b8620e3104918b7138`](https://github.com/learningeconomy/LearnCard/commit/0633cea0ec0356f6721401b8620e3104918b7138) Thanks [@Custard7](https://github.com/Custard7)! - fix: Template Issuance errors
+
 ## 1.94.10
 
 ### Patch Changes

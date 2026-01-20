@@ -851,7 +851,7 @@ function findPeerBadgeTemplate(query: string) {
 
 async function sendPeerBadge(templateUri: string) {
     try {
-        await learnCard.initiateTemplateIssuance(templateUri);
+        await learnCard.initiateTemplateIssue(templateUri);
         console.log('Peer badge flow initiated with template:', templateUri);
     } catch (error) {
         console.error('Failed to initiate peer badge:', error);
@@ -1123,7 +1123,7 @@ console.log('User:', identity.profile.displayName);`;
                                     </>
                                 ) : (
                                     <>
-                                        <strong>Peer Badges:</strong> Templates users can send to each other via <code className="bg-violet-100 px-1 rounded">initiateTemplateIssuance()</code>
+                                        <strong>Peer Badges:</strong> Templates users can send to each other via <code className="bg-violet-100 px-1 rounded">initiateTemplateIssue()</code>
                                     </>
                                 )}
                             </div>

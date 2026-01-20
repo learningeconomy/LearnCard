@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.9.5
+
+### Patch Changes
+
+-   [#945](https://github.com/learningeconomy/LearnCard/pull/945) [`a0e5a30dab11f0dcc0a23a6ddeeda999c37e0b89`](https://github.com/learningeconomy/LearnCard/commit/a0e5a30dab11f0dcc0a23a6ddeeda999c37e0b89) Thanks [@Custard7](https://github.com/Custard7)! - fix: Demoted Apps Missing from admin list
+
 ## 3.9.4
 
 ### Patch Changes
