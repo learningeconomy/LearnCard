@@ -6,12 +6,14 @@ export type PromotionLevel = 'FEATURED_CAROUSEL' | 'CURATED_LIST' | 'STANDARD' |
 
 // Extended listing type until types package is rebuilt
 export interface ExtendedAppStoreListing extends AppStoreListing {
+    slug?: string;
     highlights?: string[];
     screenshots?: string[];
     hero_background_color?: string;
 }
 
 export interface AppStoreListingCreate {
+    slug?: string;
     display_name: string;
     tagline: string;
     full_description: string;
@@ -40,13 +42,41 @@ export type AppPermission =
     | 'template_issuance';
 
 export const PERMISSION_OPTIONS: { value: AppPermission; label: string; description: string }[] = [
-    { value: 'request_identity', label: 'Request Identity', description: 'Request user identity and DID' },
-    { value: 'send_credential', label: 'Send Credential', description: 'Send credentials to user wallet' },
-    { value: 'launch_feature', label: 'Launch Feature', description: 'Launch wallet features programmatically' },
-    { value: 'credential_search', label: 'Credential Search', description: 'Search user credentials' },
-    { value: 'credential_by_id', label: 'Credential by ID', description: 'Retrieve specific credentials by ID' },
-    { value: 'request_consent', label: 'Request Consent', description: 'Request consent for data sharing' },
-    { value: 'template_issuance', label: 'Template Issuance', description: 'Issue credentials from templates' },
+    {
+        value: 'request_identity',
+        label: 'Request Identity',
+        description: 'Request user identity and DID',
+    },
+    {
+        value: 'send_credential',
+        label: 'Send Credential',
+        description: 'Send credentials to user wallet',
+    },
+    {
+        value: 'launch_feature',
+        label: 'Launch Feature',
+        description: 'Launch wallet features programmatically',
+    },
+    {
+        value: 'credential_search',
+        label: 'Credential Search',
+        description: 'Search user credentials',
+    },
+    {
+        value: 'credential_by_id',
+        label: 'Credential by ID',
+        description: 'Retrieve specific credentials by ID',
+    },
+    {
+        value: 'request_consent',
+        label: 'Request Consent',
+        description: 'Request consent for data sharing',
+    },
+    {
+        value: 'template_issuance',
+        label: 'Template Issuance',
+        description: 'Issue credentials from templates',
+    },
 ];
 
 export interface LaunchConfig {
@@ -133,24 +163,22 @@ export const STATUS_INFO: Record<
     },
 };
 
-export const PROMOTION_LEVEL_INFO: Record<
-    PromotionLevel,
-    { label: string; description: string }
-> = {
-    FEATURED_CAROUSEL: {
-        label: 'Featured Carousel',
-        description: 'Prominently displayed in the featured section',
-    },
-    CURATED_LIST: {
-        label: 'Curated List',
-        description: 'Included in curated collections',
-    },
-    STANDARD: {
-        label: 'Standard',
-        description: 'Normal visibility in search and browse',
-    },
-    DEMOTED: {
-        label: 'Demoted',
-        description: 'Reduced visibility in listings',
-    },
-};
+export const PROMOTION_LEVEL_INFO: Record<PromotionLevel, { label: string; description: string }> =
+    {
+        FEATURED_CAROUSEL: {
+            label: 'Featured Carousel',
+            description: 'Prominently displayed in the featured section',
+        },
+        CURATED_LIST: {
+            label: 'Curated List',
+            description: 'Included in curated collections',
+        },
+        STANDARD: {
+            label: 'Standard',
+            description: 'Normal visibility in search and browse',
+        },
+        DEMOTED: {
+            label: 'Demoted',
+            description: 'Reduced visibility in listings',
+        },
+    };

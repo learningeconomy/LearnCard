@@ -112,8 +112,9 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
                 showApiTokens: true,
                 showAppListings: true,
                 showPartnerConnect: true,
-                showAppConfig: true,
-                showTemplates: true,
+                // Re-enable app config when polished
+                showAppConfig: false,
+                showTemplates: false,
                 showContracts: true,
             };
 

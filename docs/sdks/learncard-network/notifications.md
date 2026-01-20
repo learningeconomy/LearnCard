@@ -2,6 +2,95 @@
 
 The LearnCloud Network includes a notification system that alerts users of important events such as received credentials, connection requests, and consent requests.
 
+## Reading Notifications
+
+### Get Notifications (Paginated)
+
+Fetch a paginated list of notifications with optional filters:
+
+```typescript
+const result = await learnCard.invoke.getNotifications(
+    { limit: 20, sort: 'REVERSE_CHRONOLOGICAL' },
+    { read: false, archived: false } // optional filters
+);
+
+console.log(result.notifications); // Array of notifications
+console.log(result.hasMore);       // Boolean indicating more pages
+console.log(result.cursor);        // Cursor for next page
+```
+
+**Options:**
+- `limit` - Number of notifications per page
+- `cursor` - Pagination cursor from previous response
+- `sort` - `'CHRONOLOGICAL'` or `'REVERSE_CHRONOLOGICAL'`
+
+**Filters:**
+- `type` - Filter by notification type (e.g., `'CREDENTIAL_RECEIVED'`)
+- `read` - Filter by read status (`true` or `false`)
+- `archived` - Filter by archived status (`true` or `false`)
+- `actionStatus` - Filter by action status (`'PENDING'`, `'COMPLETED'`, `'REJECTED'`)
+
+### Query Notifications
+
+For more flexible querying, use `queryNotifications` to find notifications matching specific criteria:
+
+```typescript
+// Find notification by credential URI
+const result = await learnCard.invoke.queryNotifications(
+    { 'data.vcUris': 'urn:lc:vc:example-credential-uri' },
+    { limit: 1 }
+);
+
+// Find notifications from a specific sender
+const fromSender = await learnCard.invoke.queryNotifications(
+    { 'from.did': 'did:web:network.learncard.com:users:sender123' }
+);
+
+// Find unread boost notifications
+const unreadBoosts = await learnCard.invoke.queryNotifications(
+    { type: 'BOOST_RECEIVED', read: false }
+);
+
+// Combine multiple filters
+const result = await learnCard.invoke.queryNotifications(
+    { 
+        type: 'CREDENTIAL_RECEIVED',
+        archived: false,
+        actionStatus: 'PENDING'
+    },
+    { limit: 10, sort: 'REVERSE_CHRONOLOGICAL' }
+);
+```
+
+**Query Fields:**
+- `type` - Notification type enum
+- `from.did` - Sender's DID
+- `from.profileId` - Sender's profile ID
+- `data.vcUris` - Credential URI(s) associated with the notification
+- `data.vpUris` - Presentation URI(s) associated with the notification
+- `read` - Read status
+- `archived` - Archived status
+- `actionStatus` - Action status (`'PENDING'`, `'COMPLETED'`, `'REJECTED'`)
+
+### Update Notification
+
+Mark a notification as read, archived, or update its action status:
+
+```typescript
+await learnCard.invoke.updateNotificationMeta(notificationId, {
+    read: true,
+    actionStatus: 'COMPLETED'
+});
+```
+
+### Mark All Read
+
+Mark all notifications as read:
+
+```typescript
+await learnCard.invoke.markAllNotificationsRead();
+```
+
 ## Architecture
 
 ```mermaid

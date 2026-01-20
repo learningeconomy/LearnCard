@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
@@ -7,6 +7,7 @@ import { IonPage, IonContent, IonToast } from '@ionic/react';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
+import { CredentialClaimModal } from './CredentialClaimModal';
 
 interface LaunchConfig {
     url?: string;
@@ -36,6 +37,20 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+
+    // Credential claim modal state
+    const [pendingCredential, setPendingCredential] = useState<{
+        credentialUri: string;
+        boostUri?: string;
+    } | null>(null);
+
+    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string) => {
+        setPendingCredential({ credentialUri, boostUri });
+    }, []);
+
+    const handleDismissClaimModal = useCallback(() => {
+        setPendingCredential(null);
+    }, []);
 
     const handleFullScreen = () => {
         // Close the modal first
@@ -69,13 +84,15 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         onNavigate: closeModal,
         launchConfig,
         isInstalled,
+        appId: appId?.toString(),
+        onCredentialIssued: handleCredentialIssued,
     });
 
     // Initialize the PostMessage listener with trusted origins
     useLearnCardPostMessage({
         trustedOrigins: embedOrigin ? [embedOrigin] : [],
         handlers,
-        debug: true, // Enable detailed logging
+        debug: false, // Disable detailed logging
     });
 
     const embedUrlWithOverride = `${embedUrl}?lc_host_override=${window.location.origin}`;
@@ -160,6 +177,14 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                 position="bottom"
                 color="danger"
             />
+
+            {pendingCredential && (
+                <CredentialClaimModal
+                    credentialUri={pendingCredential.credentialUri}
+                    boostUri={pendingCredential.boostUri}
+                    onDismiss={handleDismissClaimModal}
+                />
+            )}
         </IonPage>
     );
 };

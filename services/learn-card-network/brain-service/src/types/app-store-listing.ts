@@ -13,16 +13,12 @@ export const LaunchType = z.enum([
 ]);
 export type LaunchTypeEnum = z.infer<typeof LaunchType>;
 
-export const PromotionLevel = z.enum([
-    'FEATURED_CAROUSEL',
-    'CURATED_LIST',
-    'STANDARD',
-    'DEMOTED',
-]);
+export const PromotionLevel = z.enum(['FEATURED_CAROUSEL', 'CURATED_LIST', 'STANDARD', 'DEMOTED']);
 export type PromotionLevelEnum = z.infer<typeof PromotionLevel>;
 
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
+    slug: z.string().optional(),
     display_name: z.string(),
     tagline: z.string(),
     full_description: z.string(),

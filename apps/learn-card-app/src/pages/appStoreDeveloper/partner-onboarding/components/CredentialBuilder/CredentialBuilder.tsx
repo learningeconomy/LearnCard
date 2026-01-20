@@ -253,6 +253,8 @@ interface CredentialBuilderProps {
     onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
     onValidationChange?: (status: ValidationStatus, error?: string) => void;
     initialValidationStatus?: ValidationStatus;
+    /** When true, hides the "Dynamic" field mode option (useful for peer-to-peer badges) */
+    disableDynamicFields?: boolean;
 }
 
 export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
@@ -263,6 +265,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     issuerImage,
     onValidationChange,
     initialValidationStatus = 'unknown',
+    disableDynamicFields = false,
 }) => {
     const { initWallet } = useWallet();
     const [userDid, setUserDid] = useState<string>('did:web:preview');
@@ -382,8 +385,44 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
         fetchDid();
     }, [initWallet]);
     const [expandedSections, setExpandedSections] = useState<Set<SectionId>>(
-        new Set(['credential', 'achievement'])
+        new Set(['achievement'])
     );
+
+    // Auto-sync credential-level fields from achievement fields
+    // This simplifies the UX by hiding the redundant CredentialInfoSection
+    useEffect(() => {
+        const achievement = template.credentialSubject?.achievement;
+        if (!achievement) return;
+
+        let needsUpdate = false;
+        const updates: Partial<OBv3CredentialTemplate> = {};
+
+        // Sync name: achievement.name -> credential.name
+        if (achievement.name?.value && template.name?.value !== achievement.name.value) {
+            updates.name = { ...achievement.name };
+            needsUpdate = true;
+        }
+
+        // Sync description: achievement.description -> credential.description  
+        if (achievement.description?.value && template.description?.value !== achievement.description?.value) {
+            updates.description = { ...achievement.description };
+            needsUpdate = true;
+        }
+
+        // Sync image: achievement.image -> credential.image
+        if (achievement.image?.value && template.image?.value !== achievement.image?.value) {
+            updates.image = { ...achievement.image };
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            onChange({ ...template, ...updates });
+        }
+    }, [
+        template.credentialSubject?.achievement?.name?.value,
+        template.credentialSubject?.achievement?.description?.value,
+        template.credentialSubject?.achievement?.image?.value,
+    ]);
     const [showPresetSelector, setShowPresetSelector] = useState(false);
 
     // Toggle section expansion
@@ -769,12 +808,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                     </div>
                 ) : activeTab === 'builder' ? (
                     <div className="h-full overflow-y-auto p-4 space-y-3">
-                        <CredentialInfoSection
-                            template={template}
-                            onChange={onChange}
-                            isExpanded={expandedSections.has('credential')}
-                            onToggle={() => toggleSection('credential')}
-                        />
+                        {/* CredentialInfoSection hidden - fields auto-populated from Achievement */}
 
                         <IssuerSection
                             isExpanded={expandedSections.has('issuer')}
@@ -786,6 +820,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onChange={onChange}
                             isExpanded={expandedSections.has('recipient')}
                             onToggle={() => toggleSection('recipient')}
+                            disableDynamicFields={disableDynamicFields}
                         />
 
                         <AchievementSection
@@ -793,6 +828,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onChange={onChange}
                             isExpanded={expandedSections.has('achievement')}
                             onToggle={() => toggleSection('achievement')}
+                            disableDynamicFields={disableDynamicFields}
                         />
 
                         <EvidenceSection
@@ -800,6 +836,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onChange={onChange}
                             isExpanded={expandedSections.has('evidence')}
                             onToggle={() => toggleSection('evidence')}
+                            disableDynamicFields={disableDynamicFields}
                         />
 
                         <DatesSection
@@ -807,6 +844,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onChange={onChange}
                             isExpanded={expandedSections.has('dates')}
                             onToggle={() => toggleSection('dates')}
+                            disableDynamicFields={disableDynamicFields}
                         />
 
                     </div>
