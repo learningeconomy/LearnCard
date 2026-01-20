@@ -36,7 +36,7 @@ const config: CapacitorConfig = {
         CapacitorUpdater: {
             appId: 'org.scoutpass.app',
             autoUpdate: false,
-            defaultChannel: 'migration',
+            defaultChannel: '1.0.3', // bumped here -> https://github.com/learningeconomy/LearnCard/pull/938
         },
     },
 };
