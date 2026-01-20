@@ -12,6 +12,7 @@ import { createNotification } from '@accesslayer/notifications/create';
 import {
     getPaginatedNotificationsForDid,
     getNotificationById,
+    queryNotifications,
 } from '@accesslayer/notifications/read';
 import {
     markAllNotificationsReadForUser,
@@ -19,6 +20,7 @@ import {
 } from '@accesslayer/notifications/update';
 import {
     NotificationQueryFiltersValidator,
+    NotificationQueryInputValidator,
     NotificationMetaValidator,
     PaginatedNotificationsOptionsValidator,
     NotificationsSortEnumValidator,
@@ -68,6 +70,48 @@ export const notificationsRouter = t.router({
             }
             return notifications;
         }),
+
+    queryNotifications: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/notifications/query',
+                tags: ['Notifications'],
+                summary: 'Query notifications',
+                description:
+                    'Query notifications with flexible filter criteria. Always scoped to the authenticated user.',
+            },
+        })
+        .input(
+            z.object({
+                query: NotificationQueryInputValidator,
+                options: PaginatedNotificationsOptionsValidator.optional().default({
+                    limit: 20,
+                    sort: NotificationsSortEnumValidator.enum.REVERSE_CHRONOLOGICAL,
+                }),
+            })
+        )
+        .output(
+            z.object({
+                notifications: z.array(z.any()),
+                cursor: z.string().optional(),
+                hasMore: z.boolean(),
+            })
+        )
+        .query(async ({ input, ctx }) => {
+            const result = await queryNotifications(ctx.user.did, input.query, input.options);
+
+            if (!result) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Unable to query notifications.',
+                });
+            }
+
+            return result;
+        }),
+
     updateNotificationMeta: didAndChallengeRoute
         .meta({
             openapi: {

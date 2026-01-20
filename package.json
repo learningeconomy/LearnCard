@@ -72,6 +72,8 @@
             "uint8arrays": "^3.0.0",
             "serverless": "3.40.0",
             "zod": "4.1.13",
+            "astro>zod": "3.24.2",
+            "astro>zod-to-json-schema": "3.23.5",
             "zod-openapi": "5.4.5",
             "trpc-to-openapi": "3.1.0",
             "@ceramicnetwork/streamid": "2.7.0",

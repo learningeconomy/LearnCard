@@ -18,6 +18,7 @@ interface EvidenceSectionProps {
     onChange: (template: OBv3CredentialTemplate) => void;
     isExpanded: boolean;
     onToggle: () => void;
+    disableDynamicFields?: boolean;
 }
 
 export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
@@ -25,6 +26,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
     onChange,
     isExpanded,
     onToggle,
+    disableDynamicFields = false,
 }) => {
     const evidence = template.credentialSubject.evidence || [];
 
@@ -108,6 +110,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 onChange={(f) => updateEvidenceItem(index, 'type', f)}
                                 placeholder="Evidence"
                                 helpText="Type of evidence (e.g., Evidence, Artifact)"
+                                showDynamicToggle={!disableDynamicFields}
                             />
 
                             <FieldEditor
@@ -116,6 +119,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 onChange={(f) => updateEvidenceItem(index, 'name', f)}
                                 placeholder="e.g., Final Project"
                                 helpText="Name of the evidence item"
+                                showDynamicToggle={!disableDynamicFields}
                             />
 
                             <FieldEditor
@@ -125,6 +129,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 placeholder="Describe the evidence..."
                                 helpText="Description of the evidence"
                                 type="textarea"
+                                showDynamicToggle={!disableDynamicFields}
                             />
 
                             <FieldEditor
@@ -134,6 +139,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 placeholder="Detailed narrative..."
                                 helpText="Detailed narrative about the evidence"
                                 type="textarea"
+                                showDynamicToggle={!disableDynamicFields}
                             />
 
                             <FieldEditor
@@ -142,6 +148,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 onChange={(f) => updateEvidenceItem(index, 'genre', f)}
                                 placeholder="e.g., Portfolio, Assessment"
                                 helpText="Category or genre of the evidence"
+                                showDynamicToggle={!disableDynamicFields}
                             />
 
                             <FieldEditor
@@ -150,6 +157,7 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                                 onChange={(f) => updateEvidenceItem(index, 'audience', f)}
                                 placeholder="e.g., Employers, Educators"
                                 helpText="Intended audience for this evidence"
+                                showDynamicToggle={!disableDynamicFields}
                             />
                         </div>
                     ))}
