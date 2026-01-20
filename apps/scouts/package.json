@@ -138,7 +138,7 @@
         ]
     },
     "devDependencies": {
-        "@capacitor/cli": "^7.0.1",
+        "@capacitor/cli": "^8.0.1",
         "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
         "@ionic/cli": "^6.20.9",
         "@playwright/test": "^1.51.0",
