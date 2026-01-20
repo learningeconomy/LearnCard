@@ -101,7 +101,7 @@ jobs:
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build in Docker (musl)
         if: matrix.settings.docker
@@ -112,7 +112,7 @@ jobs:
           run: |
             corepack enable
             corepack prepare pnpm@latest --activate
-            pnpm install --frozen-lockfile
+            pnpm install --no-frozen-lockfile
             ${{ matrix.settings.build }}
 
       - name: Build
@@ -147,7 +147,7 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
