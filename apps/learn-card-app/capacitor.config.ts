@@ -36,7 +36,7 @@ const config: CapacitorConfig = {
         CapacitorUpdater: {
             appId: 'com.learncard.app',
             autoUpdate: true,
-            defaultChannel: '1.0.2',
+            defaultChannel: '1.0.3', // bumped here -> https://github.com/learningeconomy/LearnCard/pull/938
         },
     },
 };
