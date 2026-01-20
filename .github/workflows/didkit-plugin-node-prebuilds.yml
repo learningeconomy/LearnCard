@@ -108,13 +108,13 @@ jobs:
                       corepack enable
                       corepack prepare pnpm@9 --activate
                       pnpm install --no-frozen-lockfile
-                      pnpm exec nx run @learncard/didkit-plugin-node:build -- --target $TARGET
+                      pnpm exec nx run didkit-plugin-node:build -- --target $TARGET
                       $STRIP_CMD packages/plugins/didkit-plugin-node/$NODE_FILE
 
             - name: Build
               if: ${{ !matrix.settings.docker }}
               run: |
-                  pnpm exec nx run @learncard/didkit-plugin-node:build ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' && matrix.settings.target != 'x86_64-apple-darwin' && format('-- --target {0}', matrix.settings.target) || '' }}
+                  pnpm exec nx run didkit-plugin-node:build ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' && matrix.settings.target != 'x86_64-apple-darwin' && format('-- --target {0}', matrix.settings.target) || '' }}
                   ${{ matrix.settings.strip }} packages/plugins/didkit-plugin-node/${{ matrix.settings.node_file }}
               shell: bash
 
