@@ -111,8 +111,20 @@ jobs:
                       pnpm exec nx run didkit-plugin-node:build -- --target $TARGET
                       $STRIP_CMD packages/plugins/didkit-plugin-node/$NODE_FILE
 
+            - name: Build (aarch64-unknown-linux-gnu)
+              if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
+              env:
+                  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+                  CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+                  CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
+                  AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
+              run: |
+                  pnpm exec nx run didkit-plugin-node:build -- --target aarch64-unknown-linux-gnu
+                  ${{ matrix.settings.strip }} packages/plugins/didkit-plugin-node/${{ matrix.settings.node_file }}
+              shell: bash
+
             - name: Build
-              if: ${{ !matrix.settings.docker }}
+              if: ${{ !matrix.settings.docker && matrix.settings.target != 'aarch64-unknown-linux-gnu' }}
               run: |
                   pnpm exec nx run didkit-plugin-node:build ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' && matrix.settings.target != 'x86_64-apple-darwin' && format('-- --target {0}', matrix.settings.target) || '' }}
                   ${{ matrix.settings.strip }} packages/plugins/didkit-plugin-node/${{ matrix.settings.node_file }}
