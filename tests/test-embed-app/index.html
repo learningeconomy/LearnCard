@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>App Store Credential Test</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background: #f5f5f5;
+            }
+            h1 {
+                color: #333;
+                font-size: 1.5rem;
+            }
+            .card {
+                background: white;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 16px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            label {
+                display: block;
+                margin-bottom: 6px;
+                font-weight: 600;
+                color: #555;
+            }
+            input,
+            textarea {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                margin-bottom: 12px;
+                font-size: 14px;
+            }
+            button {
+                background: #4f46e5;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 600;
+                width: 100%;
+            }
+            button:hover {
+                background: #4338ca;
+            }
+            button:disabled {
+                background: #9ca3af;
+                cursor: not-allowed;
+            }
+            .log {
+                background: #1e1e1e;
+                color: #d4d4d4;
+                padding: 16px;
+                border-radius: 8px;
+                font-family: 'Monaco', 'Menlo', monospace;
+                font-size: 12px;
+                max-height: 300px;
+                overflow-y: auto;
+                white-space: pre-wrap;
+                word-break: break-all;
+            }
+            .log-entry {
+                margin-bottom: 8px;
+            }
+            .log-entry.success {
+                color: #4ade80;
+            }
+            .log-entry.error {
+                color: #f87171;
+            }
+            .log-entry.info {
+                color: #60a5fa;
+            }
+            .status {
+                padding: 8px 12px;
+                border-radius: 6px;
+                margin-bottom: 12px;
+                font-size: 13px;
+            }
+            .status.connected {
+                background: #dcfce7;
+                color: #166534;
+            }
+            .status.disconnected {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>🎫 App Store Credential Test</h1>
+
+        <div class="card">
+            <div id="status" class="status disconnected">Not initialized</div>
+            <button id="initBtn" onclick="initialize()">Initialize SDK</button>
+        </div>
+
+        <div class="card">
+            <h3>Send Credential</h3>
+            <label>Boost ID</label>
+            <input type="text" id="templateAlias" placeholder="e.g., test-badge" value="test-badge" />
+
+            <label>Template Data (JSON, optional)</label>
+            <textarea id="templateData" rows="3" placeholder='{"name": "John Doe"}'></textarea>
+
+            <button id="sendBtn" onclick="sendCredential()" disabled>Send Credential</button>
+        </div>
+
+        <div class="card">
+            <h3>Request Identity</h3>
+            <button id="identityBtn" onclick="requestIdentity()" disabled>Request Identity</button>
+        </div>
+
+        <div class="card">
+            <h3>Log</h3>
+            <div id="log" class="log"></div>
+        </div>
+
+        <script type="module">
+            // Import from CDN or local build
+            // For local dev, we'll implement a minimal version inline
+
+            let sdk = null;
+
+            function log(message, type = 'info') {
+                const logEl = document.getElementById('log');
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                logEl.appendChild(entry);
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+
+            window.log = log;
+
+            // Minimal Partner Connect SDK implementation for testing
+            class PartnerConnect {
+                constructor(options = {}) {
+                    this.hostOrigin = options.hostOrigin || 'http://localhost:3000';
+                    this.protocol = 'LEARNCARD_V1';
+                    this.pendingRequests = new Map();
+                    this.requestTimeout = 30000;
+                }
+
+                async initialize() {
+                    return new Promise(resolve => {
+                        this.messageListener = event => {
+                            if (!event.origin.includes('localhost')) return;
+
+                            try {
+                                const data = event.data;
+                                if (data.protocol !== this.protocol) return;
+
+                                const pending = this.pendingRequests.get(data.requestId);
+                                if (pending) {
+                                    clearTimeout(pending.timeoutId);
+                                    this.pendingRequests.delete(data.requestId);
+
+                                    if (data.type === 'SUCCESS') {
+                                        pending.resolve(data.data);
+                                    } else {
+                                        pending.reject(data.error);
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Message parse error:', e);
+                            }
+                        };
+
+                        window.addEventListener('message', this.messageListener);
+                        resolve();
+                    });
+                }
+
+                sendMessage(action, payload) {
+                    return new Promise((resolve, reject) => {
+                        const requestId = crypto.randomUUID();
+
+                        const timeoutId = setTimeout(() => {
+                            this.pendingRequests.delete(requestId);
+                            reject({ code: 'TIMEOUT', message: 'Request timed out' });
+                        }, this.requestTimeout);
+
+                        this.pendingRequests.set(requestId, { resolve, reject, timeoutId });
+
+                        const message = {
+                            protocol: this.protocol,
+                            action,
+                            requestId,
+                            payload,
+                        };
+
+                        window.parent.postMessage(message, '*');
+                        log(`Sent ${action}: ${JSON.stringify(payload)}`, 'info');
+                    });
+                }
+
+                requestIdentity(options = {}) {
+                    return this.sendMessage('REQUEST_IDENTITY', options);
+                }
+
+                sendAppEvent(event) {
+                    return this.sendMessage('APP_EVENT', event);
+                }
+            }
+
+            window.initialize = async function () {
+                try {
+                    log('Initializing SDK...', 'info');
+                    sdk = new PartnerConnect({ hostOrigin: 'http://localhost:3000' });
+                    await sdk.initialize();
+
+                    document.getElementById('status').className = 'status connected';
+                    document.getElementById('status').textContent = 'SDK Initialized ✓';
+                    document.getElementById('sendBtn').disabled = false;
+                    document.getElementById('identityBtn').disabled = false;
+                    document.getElementById('initBtn').disabled = true;
+
+                    log('SDK initialized successfully!', 'success');
+                } catch (e) {
+                    log(`Init failed: ${e.message}`, 'error');
+                }
+            };
+
+            window.requestIdentity = async function () {
+                try {
+                    log('Requesting identity...', 'info');
+                    const result = await sdk.requestIdentity();
+                    log(`Identity received: ${JSON.stringify(result, null, 2)}`, 'success');
+                } catch (e) {
+                    log(`Identity request failed: ${JSON.stringify(e)}`, 'error');
+                }
+            };
+
+            window.sendCredential = async function () {
+                const templateAlias = document.getElementById('templateAlias').value.trim();
+                const templateDataStr = document.getElementById('templateData').value.trim();
+
+                if (!templateAlias) {
+                    log('Template Alias is required', 'error');
+                    return;
+                }
+
+                let templateData;
+                if (templateDataStr) {
+                    try {
+                        templateData = JSON.parse(templateDataStr);
+                    } catch (e) {
+                        log('Invalid JSON in template data', 'error');
+                        return;
+                    }
+                }
+
+                try {
+                    log(`Sending credential with templateAlias: ${templateAlias}`, 'info');
+                    const event = {
+                        type: 'send-credential',
+                        templateAlias,
+                        ...(templateData && { templateData }),
+                    };
+
+                    const result = await sdk.sendAppEvent(event);
+                    log(`Credential sent! Result: ${JSON.stringify(result, null, 2)}`, 'success');
+                } catch (e) {
+                    log(`Send failed: ${JSON.stringify(e)}`, 'error');
+                }
+            };
+
+            // Auto-init if in iframe
+            if (window.parent !== window) {
+                log('Running in iframe, ready to initialize', 'info');
+            } else {
+                log('Not in iframe - open this page inside LearnCard app', 'info');
+            }
+        </script>
+    </body>
+</html>

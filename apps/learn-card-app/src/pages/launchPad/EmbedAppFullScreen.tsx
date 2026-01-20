@@ -68,7 +68,7 @@ export const EmbedAppFullScreen: React.FC = () => {
     useLearnCardPostMessage({
         trustedOrigins: embedOrigin ? [embedOrigin] : [],
         handlers,
-        debug: true, // Enable detailed logging
+        debug: false, // Disable detailed logging
     });
 
     if (!embedUrl) {

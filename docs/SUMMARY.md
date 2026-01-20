@@ -20,6 +20,7 @@
 * [Verify My Issuer](how-to-guides/verify-my-issuer.md)
 * [Connect Systems](how-to-guides/connect-systems/README.md)
   * [Connect a Website](how-to-guides/connect-systems/connect-a-website.md)
+  * [Connect an Embedded App](how-to-guides/connect-systems/connect-an-embedded-app.md)
   * [Connect a Game](how-to-guides/connect-systems/connect-a-game.md)
   * [Connect AI Agent](how-to-guides/connect-systems/connect-ai-agent.md)
 * [Implement Flows](how-to-guides/implement-flows/README.md)
