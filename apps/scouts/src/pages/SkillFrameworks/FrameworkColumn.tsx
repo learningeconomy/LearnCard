@@ -292,7 +292,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         className="w-[40px] h-[40px] shrink-0 text-grayscale-800"
                     />
                     <span className="text-[22px] font-poppins font-[600] leading-[24px] text-grayscale-900">
-                        Add Skills
+                        Add Competencies
                     </span>
                     <span className="ml-auto text-[22px] font-poppins font-[600] leading-[24px] text-grayscale-700">
                         {selectedSkills?.length || 0}
@@ -520,7 +520,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                 >
                                     <Plus className="w-[25px] h-[25px] text-grayscale-900" />
                                     <span className="text-[17px] text-grayscale-900 font-poppins">
-                                        Add tier or skill
+                                        Add tier or competency
                                     </span>
                                 </button>
                             )}
@@ -535,7 +535,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         >
                             <Plus className="w-[25px] h-[25px] text-grayscale-900" />
                             <span className="text-[17px] text-grayscale-700 font-poppins font-[600]">
-                                Add tier or skill
+                                Add tier or competency
                             </span>
                         </button>
                     </div>

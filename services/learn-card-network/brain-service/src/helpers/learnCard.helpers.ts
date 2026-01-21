@@ -76,13 +76,13 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     return emptyLearnCard;
 };
 
-export const getLearnCard = async (seed = process.env.SEED): Promise<SeedLearnCard> => {
+export const getLearnCard = async (seed = process.env.SEED, allowRemoteContexts = false): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
 
     if (!learnCards[seed] || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await getDidkitWasm()));
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await getDidkitWasm(), allowRemoteContexts));
 
         const didkeyLc = await didkitLc.addPlugin(
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')

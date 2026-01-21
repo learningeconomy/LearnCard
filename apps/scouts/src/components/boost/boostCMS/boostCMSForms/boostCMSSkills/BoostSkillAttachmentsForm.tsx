@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { IonRow, IonCol, useIonModal } from '@ionic/react';
+import { IonRow, IonCol } from '@ionic/react';
 
 import Plus from 'learn-card-base/svgs/Plus';
 import PuzzlePiece from '../../../../svgs/PuzzlePiece';
@@ -16,6 +16,7 @@ import {
     CATEGORY_TO_SKILLS,
     SKILLS_TO_SUBSKILLS,
 } from './boostSkills';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 export enum BoostCMSSkillsAttachmentFormModeEnum {
     view = 'view',
@@ -33,7 +34,15 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
         _setState(state);
     }, [state]);
 
-    // Alignment conversions are centralized in alignmentHelpers
+    const { newModal: newCenterModal, closeModal: closeCenterModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+
+    const { newModal: newSheetModal, closeModal: closeSheetModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
 
     const handleAddSkill = (
         skill: {
@@ -82,7 +91,6 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
                 const removedSkill = prevState.skills.find(s => s.skill === skill);
                 const filteredAlignments = (prevState.alignments ?? []).filter(a => {
                     if (!removedSkill) return true;
-                    // remove the primary skill alignment and any subskill alignments under it
                     const isPrimary =
                         a.targetName === removedSkill.skill &&
                         a.targetFramework === String(removedSkill.category);
@@ -214,81 +222,53 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
         setState(prevState => {
             return {
                 ...prevState,
-                skills: [..._state?.skills],
+                skills: [...(_state?.skills ?? [])],
                 alignments: [...(_state?.alignments ?? [])],
             };
         });
     };
 
-    const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSSkillOptions, {
-        state: _state,
-        setState: _setState,
-        title: <p className="text-left text-2xl font-notoSans text-grayscale-900">Add Skills</p>,
-        showCloseButton: true,
-        handleAddSkill: (
-            skill: {
-                category: BoostCMSSKillsCategoryEnum | string;
-                skill: BoostCMSSkillsEnum;
-                subskills: BoostCMSSubSkillEnum[];
-            },
-            mode: BoostCMSSkillsAttachmentFormModeEnum
-        ) => handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit),
-        handleRemoveSkill: (
-            skill: BoostCMSSkill | string,
-            mode: BoostCMSSkillsAttachmentFormModeEnum
-        ) => handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit),
-        handleAddSubSkill: (
-            skill: BoostCMSSkill | string,
-            subskill: BoostCMSSubSkillEnum,
-            mode: BoostCMSSkillsAttachmentFormModeEnum
-        ) => handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit),
-        handleRemoveSubSkill: (
-            skill: BoostCMSSkill | string,
-            subskill: BoostCMSSubSkillEnum,
-            mode: BoostCMSSkillsAttachmentFormModeEnum
-        ) => handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit),
-        handleCloseModal: () => dismissCenterModal(),
-        handleSaveSkills: () => {
-            handleSaveSkills();
-            _setState(null);
-            dismissCenterModal();
-        },
-    });
+    const presentCenterSkillsModal = () => {
+        newCenterModal(
+            <BoostCMSSkillOptions
+                state={_state as any}
+                setState={_setState as any}
+                title={<p className="text-left text-2xl font-notoSans text-grayscale-900">Add Skills</p>}
+                showCloseButton={true}
+                handleAddSkill={(skill: any) => handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleRemoveSkill={(skill: any) => handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleAddSubSkill={(skill: any, subskill: any) => handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleRemoveSubSkill={(skill: any, subskill: any) => handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleCloseModal={() => closeCenterModal()}
+                handleSaveSkills={() => {
+                    handleSaveSkills();
+                    _setState(null);
+                    closeCenterModal();
+                }}
+            />
+        );
+    };
 
-    const [presentSheetModal, dismissSheetModal] = useIonModal(BoostCMSSkillOptions, {
-        state: _state,
-        setState: _setState,
-        title: <p className="text-left text-2xl font-notoSans text-grayscale-900">Add Skills</p>,
-        showCloseButton: false,
-        handleAddSkill: (
-            skill: {
-                category: BoostCMSSKillsCategoryEnum | string;
-                skill: BoostCMSSkillsEnum;
-                subskills: BoostCMSSubSkillEnum[];
-            },
-            mode: BoostCMSSkillsAttachmentFormModeEnum
-        ) => handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit),
-        handleRemoveSkill: (
-            skill: BoostCMSSkill | string,
-            mode: BoostCMSSkillsAttachmentFormModeEnum
-        ) => handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit),
-        handleAddSubSkill: (
-            skill: BoostCMSSkill | string,
-            subskill: BoostCMSSubSkillEnum,
-            mode: BoostCMSSkillsAttachmentFormModeEnum
-        ) => handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit),
-        handleRemoveSubSkill: (
-            skill: BoostCMSSkill | string,
-            subskill: BoostCMSSubSkillEnum,
-            mode: BoostCMSSkillsAttachmentFormModeEnum
-        ) => handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit),
-        handleCloseModal: () => dismissSheetModal(),
-        handleSaveSkills: () => {
-            handleSaveSkills();
-            _setState(null);
-            dismissSheetModal();
-        },
-    });
+    const presentSheetSkillsModal = () => {
+        newSheetModal(
+            <BoostCMSSkillOptions
+                state={_state as any}
+                setState={_setState as any}
+                title={<p className="text-left text-2xl font-notoSans text-grayscale-900">Add Skills</p>}
+                showCloseButton={false}
+                handleAddSkill={(skill: any) => handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleRemoveSkill={(skill: any) => handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleAddSubSkill={(skill: any, subskill: any) => handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleRemoveSubSkill={(skill: any, subskill: any) => handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleCloseModal={() => closeSheetModal()}
+                handleSaveSkills={() => {
+                    handleSaveSkills();
+                    _setState(null);
+                    closeSheetModal();
+                }}
+            />
+        );
+    };
 
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px]">
@@ -301,16 +281,9 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
                     onClick={() => {
                         const isMobile = window.innerWidth < 992;
                         if (isMobile) {
-                            presentSheetModal();
+                            presentSheetSkillsModal();
                         } else {
-                            presentCenterModal({
-                                cssClass: 'center-modal user-options-modal',
-                                backdropDismiss: false,
-                                showBackdrop: false,
-                                onWillDismiss: () => {
-                                    _setState(state);
-                                },
-                            });
+                            presentCenterSkillsModal();
                         }
                     }}
                 >
@@ -349,9 +322,9 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
                                     key={index}
                                     state={state}
                                     setState={setState}
-                                    category={category}
-                                    skill={skill}
-                                    subSkills={subSkills}
+                                    category={category as any}
+                                    skill={skill as any}
+                                    subSkills={subSkills as any}
                                     selectedSkills={selectedSkills}
                                     skillSelected={skillSelected}
                                     handleAddSkill={handleAddSkill}

@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { IonItem, IonList, useIonModal } from '@ionic/react';
+import { IonItem, IonList } from '@ionic/react';
 
 import { Notification, NotificationProps } from '@learncard/react';
 import { VCClaim } from 'learn-card-base/components/vcmodal/VCModal';
 
 import {
-    useWallet,
     useAcceptCredentialMutation,
     usePathQuery,
     useToast,
     ToastTypeEnum,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 import { useAddCredentialToWallet } from '../../boost/mutations';
 
@@ -31,8 +32,13 @@ export const NotificationItem: React.FC<{
 
     const { presentToast } = useToast();
 
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
+
     const handleViewOnClick = () => {
-        presentModal();
+        presentClaimModal();
     };
 
     const handleClaimOnClick = async () => {
@@ -42,37 +48,39 @@ export const NotificationItem: React.FC<{
             mutate(
                 { uri: notification?.uri },
                 {
-                    async onSuccess(data, variables, context) {
+                    async onSuccess() {
                         await addCredentialToWallet({ uri: notification?.uri });
                         presentToast(`Successfully claimed Credential!`, {
                             type: ToastTypeEnum.Success,
                             hasDismissButton: true,
                         });
-                        dismissModal?.();
+                        closeModal();
 
                         setIsClaimed(true);
                     },
                 }
             );
-        } catch (err) {
+        } catch (err: any) {
             console.log('acceptCredential::error', err?.message);
         }
     };
 
-    const [presentModal, dismissModal] = useIonModal(VCClaim, {
-        _streamId: notification?.uri,
-        dismiss: () => dismissModal(),
-        showFooter: false,
-        showBoostFooter: true,
-        handleClaimBoostCredential: handleClaimOnClick,
-        isLoading: isLoading,
-    });
+    const presentClaimModal = () => {
+        newModal(
+            <VCClaim
+                _streamId={notification?.uri}
+                dismiss={() => closeModal()}
+                showFooter={false}
+                showBoostFooter={true}
+                handleClaimBoostCredential={handleClaimOnClick}
+                isLoading={isLoading}
+            />
+        );
+    };
 
     useEffect(() => {
         if (_uri === notification?.uri && _claim) {
-            presentModal({
-                onDidDismiss: () => history.replace('/notifications'),
-            });
+            presentClaimModal();
         }
     }, []);
 

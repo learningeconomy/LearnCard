@@ -1,7 +1,8 @@
 import React from 'react';
 
-import { IonRow, IonCol, useIonModal } from '@ionic/react';
+import { IonRow, IonCol } from '@ionic/react';
 
+import { useModal, ModalTypes } from 'learn-card-base';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 import ModalLayout from '../../layout/ModalLayout';
 import { JoinNetworkModalWrapper } from './hooks/useJoinLCNetworkModal';
@@ -9,9 +10,18 @@ import { JoinNetworkModalWrapper } from './hooks/useJoinLCNetworkModal';
 export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = ({
     handleCloseModal,
 }) => {
-    const [presentNetworkModal, dismissNetworkModal] = useIonModal(JoinNetworkModalWrapper, {
-        handleCloseModal: () => dismissNetworkModal(),
+    const { newModal, closeModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
     });
+
+    const openNetworkModal = () => {
+        newModal(
+            <JoinNetworkModalWrapper handleCloseModal={closeModal} showNotificationsModal={false} />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
 
     return (
         <ModalLayout handleOnClick={handleCloseModal}>
@@ -51,11 +61,7 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                         <button
                             onClick={() => {
                                 handleCloseModal();
-                                presentNetworkModal({
-                                    cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                    backdropDismiss: false,
-                                    showBackdrop: false,
-                                });
+                                openNetworkModal();
                             }}
                             className="text-grayscale-900 text-center text-base w-full font-medium"
                         >

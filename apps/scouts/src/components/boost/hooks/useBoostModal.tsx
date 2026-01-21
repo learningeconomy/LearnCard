@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { BoostCategoryOptionsEnum, ModalTypes, useScreenWidth } from 'learn-card-base';
-import { useLocation, useHistory, RouteComponentProps } from 'react-router-dom';
-import { useIonModal } from '@ionic/react';
+import React from 'react';
+import { BoostCategoryOptionsEnum, ModalTypes } from 'learn-card-base';
+import { RouteComponentProps } from 'react-router-dom';
 import BoostVCTypeOptions from '../boost-options/boostVCTypeOptions/BoostVCTypeOptions';
 import { closeAll } from '../../../helpers/uiHelpers';
 import { useModal } from 'learn-card-base';
@@ -13,7 +12,6 @@ const useBoostModal = (
     showCloseButton = true,
     otherUserProfileId?: string
 ) => {
-    const screenWidth = useScreenWidth(true);
     const { newModal, closeAllModals } = useModal({
         mobile: ModalTypes.Center,
         desktop: ModalTypes.Center,

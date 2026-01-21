@@ -1,5 +1,19 @@
 # @learncard/network-brain-client
 
+## 1.6.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.4.6
+
+## 1.6.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.4.5
+
 ## 1.6.4
 
 ### Patch Changes

@@ -17,10 +17,21 @@ export const updateIntegration = async (
         updatesToPersist.whitelistedDomains = updates.whitelistedDomains;
     if (updates.rotatePublishableKey) updatesToPersist.publishableKey = 'pk_' + uuid();
 
+    // Setup/onboarding updates
+    if (typeof updates.status !== 'undefined') updatesToPersist.status = updates.status;
+    if (typeof updates.guideType !== 'undefined') updatesToPersist.guideType = updates.guideType;
+    if (typeof updates.guideState !== 'undefined') {
+        // Store guideState as JSON string in Neo4j (cast to any to allow string storage)
+        (updatesToPersist as any).guideState = JSON.stringify(updates.guideState);
+    }
+
+    // Always update updatedAt timestamp when changes are made
+    updatesToPersist.updatedAt = new Date().toISOString();
+
     const params: Partial<FlatIntegrationType> = updatesToPersist;
 
-    // Nothing to update
-    if (Object.keys(params as Record<string, unknown>).length === 0) return true;
+    // Nothing to update (only updatedAt)
+    if (Object.keys(params as Record<string, unknown>).length <= 1) return true;
 
     const result = await new QueryBuilder(new BindParam({ params }))
         .match({ model: Integration, where: { id: integration.id }, identifier: 'integration' })

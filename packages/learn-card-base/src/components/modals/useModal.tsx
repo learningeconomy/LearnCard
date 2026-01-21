@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useModalActionsContext } from './ModalsContext';
 
 import { ModalTypes, ModalType, ModalOptions, ModalComponent } from './types/Modals';
@@ -13,15 +14,19 @@ export const useModal = ({
         closeAllModals,
     } = useModalActionsContext();
 
-    const newModal = (
-        component: ModalComponent,
-        options?: ModalOptions,
-        { desktop = _desktop, mobile = _mobile } = { desktop: _desktop, mobile: _mobile }
-    ) => {
-        _newModal(component, { desktop, mobile }, options);
-    };
+    const newModal = useCallback(
+        (
+            component: ModalComponent,
+            options?: ModalOptions,
+            { desktop = _desktop, mobile = _mobile } = { desktop: _desktop, mobile: _mobile }
+        ) => {
+            _newModal(component, { desktop, mobile }, options);
+        },
+        [_newModal, _desktop, _mobile]
+    );
 
     return { newModal, replaceModal, closeModal, closeAllModals };
 };
+
 
 export default useModal;

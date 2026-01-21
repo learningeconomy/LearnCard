@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
 
-import { useIonModal } from '@ionic/react';
 import Eyedropper from 'learn-card-base/svgs/Eyedropper';
 import X from 'learn-card-base/svgs/X';
 
 import { TroopsCMSState, TroopsCMSViewModeEnum } from '../troopCMSState';
+import { useModal, ModalTypes } from 'learn-card-base';
 
 export const TroopsCMSColorPicker: React.FC<{
     title: string;
@@ -27,29 +27,38 @@ export const TroopsCMSColorPicker: React.FC<{
         handleStateChange(updateFieldKey, hex);
     };
 
-    const [presentColorPicker, dismissColorPicker] = useIonModal(
-        <div className="flex flex-col items-center justify-center w-full h-full transparent">
-            <div className="flex items-center justify-center mb-2">
-                <button
-                    onClick={() => dismissColorPicker()}
-                    className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
-                >
-                    <X className="text-black w-[30px]" />
-                </button>
+    const { newModal, closeModal } = useModal({
+        mobile: ModalTypes.Cancel,
+        desktop: ModalTypes.Cancel,
+    });
+
+    const openColorPicker = () => {
+        newModal(
+            <div className="flex flex-col items-center justify-center w-full h-full transparent">
+                <div className="flex items-center justify-center mb-2">
+                    <button
+                        onClick={() => closeModal()}
+                        className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
+                    >
+                        <X className="text-black w-[30px]" />
+                    </button>
+                </div>
+                <HexColorPicker color={color ? color : '#353E64'} onChange={handleColorChange} />
             </div>
-            <HexColorPicker color={color ? color : '#353E64'} onChange={handleColorChange} />
-        </div>
-    );
+        );
+    };
 
     const handleColorInputOnChange = (value: string) => {
-        let updatedValue;
+        if (value === '') {
+            handleStateChange(updateFieldKey, '');
+            setColor('');
+            return;
+        }
 
-        if (value !== '') updatedValue = value.startsWith('#') ? value : `#${value}`;
+        const updatedValue = value.startsWith('#') ? value : `#${value}`;
 
         handleStateChange(updateFieldKey, updatedValue);
         setColor(updatedValue);
-
-        return;
     };
 
     const handleStateChange = (key: string, value: any) => {
@@ -58,9 +67,9 @@ export const TroopsCMSColorPicker: React.FC<{
                 return {
                     ...prevState,
                     memberID: {
-                        ...prevState.memberID,
+                        ...(prevState.memberID as any),
                         appearance: {
-                            ...prevState?.memberID?.appearance,
+                            ...(prevState?.memberID?.appearance as any),
                             [key]: value,
                         },
                     },
@@ -73,7 +82,7 @@ export const TroopsCMSColorPicker: React.FC<{
             return {
                 ...prevState,
                 appearance: {
-                    ...prevState?.appearance,
+                    ...(prevState?.appearance as any),
                     [key]: value,
                 },
             };
@@ -90,10 +99,7 @@ export const TroopsCMSColorPicker: React.FC<{
                 {isDisabled && state?.inheritNetworkStyles ? (
                     <button
                         onClick={() => {
-                            presentColorPicker({
-                                backdropDismiss: true,
-                                showBackdrop: false,
-                            });
+                            openColorPicker();
                         }}
                         className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-[10px] mr-2 shadow-soft-bottom"
                         style={{
@@ -106,10 +112,7 @@ export const TroopsCMSColorPicker: React.FC<{
                 ) : (
                     <button
                         onClick={() => {
-                            presentColorPicker({
-                                backdropDismiss: true,
-                                showBackdrop: false,
-                            });
+                            openColorPicker();
                         }}
                         className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-[10px] mr-2 shadow-soft-bottom"
                         style={{

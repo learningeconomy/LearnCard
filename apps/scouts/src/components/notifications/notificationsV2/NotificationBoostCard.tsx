@@ -4,12 +4,13 @@ import { useHistory } from 'react-router-dom';
 import X from 'learn-card-base/svgs/X';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import NotificationSkeleton from './NotificationSkeleton';
+// @ts-ignore
 import ArrowArcLeft from '../../../assets/images/ArrowArcLeft.svg';
 import BoostClaimCard from '../../boost/claim-boost-card/BoostClaimCard';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import ViewTroopIdModal from '../../../pages/troop/ViewTroopIdModal';
 
-import { useIonModal, useIonAlert } from '@ionic/react';
+import { useIonAlert } from '@ionic/react';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 import {
@@ -61,6 +62,11 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         mobile: ModalTypes.FullScreen,
     });
 
+    const { newModal: newClaimModal, closeModal: closeClaimModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
+
     // Ref for the element that we want to detect whether on screen
     const ref: any = useRef<HTMLDivElement>();
     // Call the hook passing in ref and root margin
@@ -68,32 +74,25 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     // ... than 300px of element is visible.
     const onScreen: boolean = useOnScreen<HTMLDivElement>(ref, '-130px');
 
-    // const [isLoading, setIsLoading] = useState<boolean>( true);
     const credentialUri = notification?.data?.vcUris?.[0];
     const history = useHistory();
     const query = usePathQuery();
     const _uri = query.get('uri') ?? '';
     const _claim = query.get('claim') ?? '';
 
-    //for now assume the first uri is what we need...
-    // unsure what the situation is when there are multiple uris to resolved
-    // eg current component is not built to handle displaying multiple resolved vcs as such....
-    // so it seeems like some kind of future use case
     const { data, isLoading } = useGetResolvedCredential(notification?.data?.vcUris?.[0]);
     const { mutate, isLoading: acceptCredentialLoading } = useAcceptCredentialMutation();
     const {
         mutate: updateNotification,
-        isLoading: updateNotificationLoading,
-        isSuccess: updateNotificationSuccess,
     } = useUpdateNotification();
     const boostVc = data;
     const unwrappedCred = data && unwrapBoostCredential(boostVc);
-    const credCategory = boostVc && getDefaultCategoryForCredential(unwrappedCred);
-    const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred);
+    const credCategory = boostVc && (getDefaultCategoryForCredential(unwrappedCred as any) as CredentialCategoryEnum);
+    const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred as any);
     const notificationCategoryFromCredCategory =
         credCategory && CATEGORY_TO_NOTIFICATION_ENUM[credCategory];
 
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const [presentAlert] = useIonAlert();
 
     const handleReadStatus = async () => {
         setIsRead(true);
@@ -104,9 +103,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     };
 
     const {
-        iconCircleStyles,
         textStyles,
-        viewButtonStyles,
         claimedButtonStyles,
         unclaimedButtonStyles,
         typeText,
@@ -128,7 +125,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     };
 
     const handleSuccess = async () => {
-        const res = await updateNotification({
+        await updateNotification({
             notificationId: notification?._id,
             payload: { actionStatus: 'COMPLETED', read: true },
         });
@@ -136,18 +133,23 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         setIsClaimed(true);
     };
 
-    const [presentModal, dismissModal] = useIonModal(BoostClaimCard, {
-        credential: unwrappedCred,
-        credentialUri,
-        dismiss: () => dismissModal(),
-        showFooter: false,
-        showBoostFooter: true,
-        handleClaimBoostCredential: handleClaimOnClick,
-        isLoading: isLoading,
-        acceptCredentialLoading: acceptCredentialLoading,
-        acceptCredentialCompleted: isClaimed,
-        successCallback: handleSuccess,
-    });
+    const presentClaimModal = () => {
+        newClaimModal(
+            <BoostClaimCard
+                credential={unwrappedCred as any}
+                credentialUri={credentialUri as string}
+                dismiss={() => closeClaimModal()}
+                showFooter={false}
+                showBoostFooter={true}
+                handleClaimBoostCredential={handleClaimOnClick}
+                isLoading={isLoading}
+                acceptCredentialLoading={acceptCredentialLoading}
+                acceptCredentialCompleted={isClaimed}
+                successCallback={handleSuccess}
+            />
+        );
+    };
+
     useEffect(() => {
         if (_uri === credentialUri && _claim && !claimModalOpen && !isClaimed) {
             setClaimModalOpen(true);
@@ -156,8 +158,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 if (isID) {
                     newModal(
                         <ViewTroopIdModal
-                            credential={unwrappedCred}
-                            boostUri={unwrappedCred.boostId}
+                            credential={unwrappedCred as any}
+                            boostUri={(unwrappedCred as any)?.boostId}
                             claimCredentialUri={credentialUri}
                             useCurrentUserInfo
                             isClaimMode
@@ -177,21 +179,10 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                     setIonicModalBackground(unwrappedCred?.display?.backgroundImage);
                 }
 
-                presentModal({
-                    cssClass: 'notification-claim-boost-modal-open',
-                    onDidDismiss: async () => {
-                        resetIonicModalBackground();
-                        updateNotification({
-                            notificationId: notification?._id,
-                            payload: { actionStatus: 'COMPLETED', read: true },
-                        });
-                        setClaimModalOpen(false);
-                        history.replace('/notifications');
-                    },
-                });
+                presentClaimModal();
             }
         }
-    }, []);
+    }, [unwrappedCred, isID, isMeritBadge]);
 
     let buttonText: string = '';
 
@@ -205,8 +196,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         if (isID) {
             newModal(
                 <ViewTroopIdModal
-                    credential={unwrappedCred}
-                    boostUri={unwrappedCred.boostId}
+                    credential={unwrappedCred as any}
+                    boostUri={(unwrappedCred as any)?.boostId}
                     claimCredentialUri={credentialUri}
                     useCurrentUserInfo
                     isClaimMode
@@ -225,9 +216,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         if (isMeritBadge) {
             setIonicModalBackground(unwrappedCred?.display?.backgroundImage);
         }
-        presentModal({
-            onDidDismiss: () => resetIonicModalBackground(),
-        });
+        presentClaimModal();
     };
 
     const isArchived = false;
@@ -270,12 +259,16 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                         achievementType={
                             unwrappedCred?.credentialSubject?.achievement?.achievementType
                         }
-                        boostType={credCategory}
-                        badgeThumbnail={credImgUrl}
+                        boostType={credCategory as any}
+                        badgeThumbnail={credImgUrl as string}
                         badgeCircleCustomClass="w-[90px] h-[90px]"
                         badgeContainerCustomClass="notification-cred-badge mt-[0px] mb-[0px]"
                         badgeRibbonContainerCustomClass="notification-cred-badge-ribbon my-[0px]"
                         branding={BrandingEnum.scoutPass}
+                        showBackgroundImage={false}
+                        backgroundImage={unwrappedCred?.display?.backgroundImage ?? ''}
+                        backgroundColor={unwrappedCred?.display?.backgroundColor ?? ''}
+                        credential={unwrappedCred as any}
                     />
                 )}
 

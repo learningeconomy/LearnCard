@@ -121,7 +121,7 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                                 <span className="font-bold font-poppins">
                                                     {numberOfCompetencies}
                                                 </span>{' '}
-                                                Skills
+                                                Competencies
                                             </li>
                                         </ul>
 

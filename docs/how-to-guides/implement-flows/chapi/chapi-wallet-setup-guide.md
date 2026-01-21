@@ -126,8 +126,8 @@ const vc = Array.isArray(vp.verifiableCredential)
 After displaying the credential to the user, you may prompt the user for a title and store it with the following code:
 
 ```typescript
-const uri = await learnCard.invoke.publishCredential(vc);
-await learnCard.invoke.addCredential({ id, uri });
+const uri = await learnCard.store.Ceramic.upload(vc);
+await learnCard.index.IDX.add({ id, uri });
 ```
 
 Once the credential is stored, you may inform the calling code that you have successfully stored the credential with the following code:

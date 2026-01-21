@@ -90,6 +90,10 @@ const useLogout = () => {
 
                     // Then clear the database
                     await clearDB();
+
+                    // Clear CLI-related localStorage
+                    localStorage.removeItem('learncard-cli-welcomed');
+                    localStorage.removeItem('learncard-cli-chains');
                 } catch (e) {
                     console.error(e);
                 }

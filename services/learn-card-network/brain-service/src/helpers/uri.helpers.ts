@@ -56,6 +56,9 @@ export const getUriParts = (_uri: string, allowOutsideUris: boolean = false): UR
 
 export const getIdFromUri = (uri: string): string => getUriParts(uri).id;
 
+export const getDomainFromUri = (uri: string): string =>
+    getUriParts(uri).domain.replace(/\/trpc$/, '');
+
 export const constructUri = (type: URIType, id: string, domain: string): string =>
     `lc:network:${domain}/trpc:${type}:${id}`;
 

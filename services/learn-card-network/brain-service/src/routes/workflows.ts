@@ -8,7 +8,10 @@ import { t, openRoute, Context } from '@routes';
 
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
+import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import { storeCredential } from '@accesslayer/credential/create';
+import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
 
 import {
     isClaimLinkAlreadySetForBoost,
@@ -35,6 +38,7 @@ import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-pro
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import { EXHAUSTED, exhaustExchangeChallengeForToken, getExchangeChallengeStateForToken, setValidExchangeChallengeForToken } from '@cache/exchanges';
 import { randomUUID } from 'crypto';
 
@@ -611,9 +615,45 @@ async function handleInboxClaimPresentation(
             await markInboxCredentialAsIssued(inboxCredential.id);
             await markInboxCredentialAsIsAccepted(inboxCredential.id);
 
+            // Store credential and create boost relationship if this was a boost issuance
+            const boostUri = (inboxCredential as any).boostUri as string | undefined;
+            if (holderProfile && boostUri) {
+                const boost = await getBoostByUri(boostUri);
+                const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+
+                if (boost && issuerProfile) {
+                    // Store the credential in the database
+                    const credentialInstance = await storeCredential(finalCredential);
+
+                    // Create the boost instance relationship
+                    await createBoostInstanceOfRelationship(credentialInstance, boost);
+
+                    // Create the sent/received credential relationship
+                    await createSentCredentialRelationship(issuerProfile, holderProfile, credentialInstance);
+                }
+            }
+
             // Create claimed relationship if holder has a profile
             if (holderProfile) {
                 await createClaimedRelationship(holderProfile.profileId, inboxCredential.id, claimToken);
+            }
+
+            // Log CLAIMED activity - chain to original activityId/integrationId if available
+            // activityId and integrationId are stored on the inbox credential
+            const activityId = (inboxCredential as any).activityId as string | undefined;
+            const integrationId = (inboxCredential as any).integrationId as string | undefined;
+            const issuerProfileForActivity = await getProfileByDid(inboxCredential.issuerDid);
+            if (issuerProfileForActivity) {
+                await logCredentialClaimed({
+                    activityId,
+                    actorProfileId: issuerProfileForActivity.profileId,
+                    recipientType: contactMethod.type as 'email' | 'phone',
+                    recipientIdentifier: contactMethod.value,
+                    recipientProfileId: holderProfile?.profileId,
+                    boostUri,
+                    integrationId,
+                    source: 'claimLink',
+                });
             }
 
             // Trigger webhook if configured
@@ -646,6 +686,31 @@ async function handleInboxClaimPresentation(
         } catch (error) {
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
             
+            // Log FAILED activity - chain to original activityId/integrationId if available
+            const failedActivityId = (inboxCredential as any).activityId as string | undefined;
+            const failedIntegrationId = (inboxCredential as any).integrationId as string | undefined;
+            const failedBoostUri = (inboxCredential as any).boostUri as string | undefined;
+            const failedIssuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+            if (failedIssuerProfile) {
+                try {
+                    await logCredentialFailed({
+                        activityId: failedActivityId,
+                        actorProfileId: failedIssuerProfile.profileId,
+                        recipientType: contactMethod.type as 'email' | 'phone',
+                        recipientIdentifier: contactMethod.value,
+                        recipientProfileId: holderProfile?.profileId,
+                        boostUri: failedBoostUri,
+                        integrationId: failedIntegrationId,
+                        source: 'claimLink',
+                        metadata: {
+                            error: error instanceof Error ? error.message : 'Unknown error',
+                        },
+                    });
+                } catch (logError) {
+                    console.error('Failed to log credential failed activity:', logError);
+                }
+            }
+
             try {
                 // Trigger webhook for error if configured
                 if (inboxCredential.webhookUrl) {

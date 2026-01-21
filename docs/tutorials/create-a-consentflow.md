@@ -313,7 +313,7 @@ Your contract might allow you to `write` credentials to users who have consented
 const relevantBoostUri = 'uri:boost:YOUR_RELEVANT_BOOST_URI'; // Replace!
 
 // Define the credential you want to issue to this user
-const boostTemplate = await networkLearnCard.invoke.newCredential({
+const boostTemplate = networkLearnCard.invoke.newCredential({
   type: "boost"
 });
 

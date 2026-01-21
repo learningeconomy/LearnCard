@@ -1,13 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 
-import { IonFooter, IonLoading, IonToolbar, useIonModal } from '@ionic/react';
+import { IonFooter, IonLoading, IonToolbar } from '@ionic/react';
 import TroopIDPreview from '../TroopsIDCMS/TroopIDPreview/TroopIDPreview';
 import X from '../../svgs/X';
 
 import { TroopsCMSTabsEnum } from '../TroopsCMSTabs/TroopsCMSTabs';
 import { TroopsCMSEditorModeEnum, TroopsCMSState, TroopsCMSViewModeEnum } from '../troopCMSState';
-import { isPlatformIOS } from 'learn-card-base';
+import { isPlatformIOS, useModal, ModalTypes } from 'learn-card-base';
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 
@@ -52,12 +52,23 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
         actionButtonColor = 'bg-sp-purple-base';
     }
 
-    const [presentModal, dismissModal] = useIonModal(TroopIDPreview, {
-        rootViewMode,
-        viewMode,
-        state,
-        handleCloseModal: () => dismissModal(),
+    const { newModal, closeModal: closePreviewModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
+
+    const openPreview = () => {
+        if (!state) return;
+
+        newModal(
+            <TroopIDPreview
+                rootViewMode={rootViewMode as TroopsCMSViewModeEnum}
+                viewMode={viewMode}
+                state={state}
+                handleCloseModal={() => closePreviewModal()}
+            />
+        );
+    };
 
     keyboardStore.store.subscribe(({ isOpen }) => {
         if (isOpen && Capacitor.isNativePlatform() && bottomBarRef.current) {
@@ -79,7 +90,7 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
         <IonFooter
             mode="ios"
             className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] absolute bottom-0 bg-white !max-h-[85px]"
-            ref={bottomBarRef}
+            ref={bottomBarRef as any}
         >
             <IonToolbar color="transparent" mode="ios">
                 {isInIDMode && (
@@ -96,7 +107,7 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                                     <X className="h-auto w-[20px] text-grayscale-80" />
                                 </button>
                                 <button
-                                    onClick={() => presentModal()}
+                                    onClick={() => openPreview()}
                                     className="bg-white text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                                 >
                                     Preview
@@ -132,8 +143,9 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                             <button
                                 disabled={isTroopCreationDisabled ?? false}
                                 onClick={() => handlePublishBoosts?.()}
-                                className={`text-white text-lg font-bold rounded-full py-[12px] w-full ${isTroopCreationDisabled ? 'bg-opacity-50' : ''
-                                    } ${actionButtonColor}`}
+                                className={`text-white text-lg font-bold rounded-full py-[12px] w-full ${
+                                    isTroopCreationDisabled ? 'bg-opacity-50' : ''
+                                } ${actionButtonColor}`}
                             >
                                 {isEdit ? 'Save' : 'Create'}
                             </button>

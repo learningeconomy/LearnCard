@@ -105,7 +105,7 @@ async function quickstartBoost() {
     }
 
     console.log('Creating boost template...');
-    const boostTemplate = await claimableLearnCard.invoke.newCredential({
+    const boostTemplate = claimableLearnCard.invoke.newCredential({
       type: 'boost', 
       boostName: 'Quickstart Achievement',
       boostImage: 'https://placehold.co/400x400?text=Quickstart',
