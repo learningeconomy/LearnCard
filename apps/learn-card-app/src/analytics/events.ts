@@ -11,9 +11,15 @@ export const AnalyticsEvents = {
     BOOST_CMS_PUBLISH: 'boostCMS_publish',
     BOOST_CMS_ISSUE_TO: 'boostCMS_issue_to',
     BOOST_CMS_CONFIRMATION: 'boostCMS_confirmation',
+    BOOST_CMS_DATA_ENTRY: 'boostCMS_data_entry',
     
-    // Sharing
+    // Sharing & Link Generation
     GENERATE_SHARE_LINK: 'generate_share_link',
+    GENERATE_CLAIM_LINK: 'generate_claim_link',
+    
+    // Boost Sending
+    SELF_BOOST: 'self_boost',
+    SEND_BOOST: 'send_boost',
     
     // Navigation/Screens
     SCREEN_VIEW: 'screen_view',
@@ -57,7 +63,32 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.GENERATE_SHARE_LINK]: {
         category?: string;
         boostType?: string;
-        method: 'Share Boost' | string;
+        method: 'Earned Boost' | string;
+    };
+
+    [AnalyticsEvents.GENERATE_CLAIM_LINK]: {
+        category?: string;
+        boostType?: string;
+        method: 'Claim Link' | string;
+    };
+
+    [AnalyticsEvents.BOOST_CMS_DATA_ENTRY]: {
+        timestamp: number;
+        action: 'data_entry';
+        boostType?: string;
+        category?: string;
+    };
+
+    [AnalyticsEvents.SELF_BOOST]: {
+        category?: string;
+        boostType?: string;
+        method: 'Managed Boost' | string;
+    };
+
+    [AnalyticsEvents.SEND_BOOST]: {
+        category?: string;
+        boostType?: string;
+        method: 'Managed Boost' | string;
     };
 
     [AnalyticsEvents.SCREEN_VIEW]: {

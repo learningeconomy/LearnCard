@@ -22,7 +22,7 @@ import {
     ToastTypeEnum,
     useToast,
 } from 'learn-card-base';
-import useFirebaseAnalytics from 'apps/learn-card-app/src/hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
     getCredentialName,
@@ -61,7 +61,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     const { presentToast } = useToast();
     const [shareLink, setShareLink] = useState<string | undefined>('');
 
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
 
     const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
@@ -165,7 +165,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                         setShareLink(data?.link);
                     }
 
-                    logAnalyticsEvent('generate_share_link', {
+                    track(AnalyticsEvents.GENERATE_SHARE_LINK, {
                         category: categoryType,
                         boostType: achievementType,
                         method: 'Earned Boost',
