@@ -3,13 +3,8 @@ import React, { useState } from 'react';
 import AiInsightsPromptBoxInput from './AiInsightsPromptBoxInput';
 import AiInsightsPromptList from './ai-insights-prompt-list/AiInsightsPromptList';
 
-import useTheme from '../../../theme/hooks/useTheme';
-
 export const AiInsightsPromptBoxContainer: React.FC = () => {
     const [prompt, setPrompt] = useState<string>('');
-
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
 
     const handleSubmitPrompt = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -26,7 +21,7 @@ export const AiInsightsPromptBoxContainer: React.FC = () => {
                 <AiInsightsPromptBoxInput prompt={prompt} setPrompt={setPrompt} />
                 <button
                     type="submit"
-                    className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold px-4 py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px]`}
+                    className={`bg-indigo-600 text-xl text-white flex items-center justify-center font-semibold px-4 py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px]`}
                 >
                     Let's Go!
                 </button>
@@ -35,6 +30,10 @@ export const AiInsightsPromptBoxContainer: React.FC = () => {
             <div className="h-[1px] bg-grayscale-200 w-full" />
 
             <AiInsightsPromptList />
+
+            <div className="w-full flex items-center justify-center">
+                <button className="text-grayscale-700 font-semibold">Explore more</button>
+            </div>
         </div>
     );
 };
