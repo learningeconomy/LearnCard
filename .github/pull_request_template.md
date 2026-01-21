@@ -73,6 +73,7 @@ Quick guide: What docs does your change need?
 - [ ] I have **commented** my code, particularly where ambiguous
 - [ ] New and existing **unit tests pass** locally with my changes
 - [ ] I have completed the **Documentation Checklist** above (or explained why N/A)
+- [ ] I have considered **product analytics** for user-facing features (use `@analytics` in learn-card-app)
 
 ### 🚀 Ready to squash-and-merge?:
 - [ ] Code is backwards compatible
