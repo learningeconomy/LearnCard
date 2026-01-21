@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import AiInsightsPromptBoxInput from './AiInsightsPromptBoxInput';
+import AiInsightsPromptList from './ai-insights-prompt-list/AiInsightsPromptList';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
@@ -30,6 +31,10 @@ export const AiInsightsPromptBoxContainer: React.FC = () => {
                     Let's Go!
                 </button>
             </form>
+
+            <div className="h-[1px] bg-grayscale-200 w-full" />
+
+            <AiInsightsPromptList />
         </div>
     );
 };
