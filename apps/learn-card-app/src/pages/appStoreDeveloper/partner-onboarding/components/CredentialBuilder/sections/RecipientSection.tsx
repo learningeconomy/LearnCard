@@ -20,6 +20,7 @@ interface RecipientSectionProps {
     onChange: (template: OBv3CredentialTemplate) => void;
     isExpanded: boolean;
     onToggle: () => void;
+    disableDynamicFields?: boolean;
 }
 
 export const RecipientSection: React.FC<RecipientSectionProps> = ({
@@ -27,6 +28,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
     onChange,
     isExpanded,
     onToggle,
+    disableDynamicFields = false,
 }) => {
     const subject = template.credentialSubject;
 
@@ -70,6 +72,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                 onChange={(f) => updateSubject('name', f)}
                 placeholder="Recipient's full name"
                 helpText="The name of the person receiving this credential"
+                showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
@@ -90,6 +93,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                         onChange={(f) => updateSubject('creditsEarned', f)}
                         placeholder="e.g., 3"
                         helpText="Credits earned by recipient"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -98,6 +102,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                         onChange={(f) => updateSubject('term', f)}
                         placeholder="e.g., Fall 2024"
                         helpText="Academic term"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -106,7 +111,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                         onChange={(f) => updateSubject('activityStartDate', f)}
                         placeholder="YYYY-MM-DD"
                         helpText="When the activity started"
-                        type="date"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -115,7 +120,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                         onChange={(f) => updateSubject('activityEndDate', f)}
                         placeholder="YYYY-MM-DD"
                         helpText="When the activity ended (completion date)"
-                        type="date"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -124,6 +129,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                         onChange={(f) => updateSubject('licenseNumber', f)}
                         placeholder="e.g., A-12345"
                         helpText="License or certificate number"
+                        showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
@@ -132,6 +138,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                         onChange={(f) => updateSubject('role', f)}
                         placeholder="e.g., Student"
                         helpText="Recipient's role"
+                        showDynamicToggle={!disableDynamicFields}
                     />
                 </div>
             </div>
@@ -181,6 +188,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                                     onChange={(f) => updateResult(index, 'value', f)}
                                     placeholder="e.g., A, 95%, Pass"
                                     helpText="The achieved result"
+                                    showDynamicToggle={!disableDynamicFields}
                                 />
 
                                 <FieldEditor
@@ -189,6 +197,7 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                                     onChange={(f) => updateResult(index, 'status', f)}
                                     placeholder="e.g., Completed, Passed"
                                     helpText="Result status"
+                                    showDynamicToggle={!disableDynamicFields}
                                 />
                             </div>
                         ))}

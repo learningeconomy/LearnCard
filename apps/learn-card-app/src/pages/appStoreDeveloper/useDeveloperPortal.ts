@@ -134,10 +134,15 @@ export const useDeveloperPortal = () => {
             }): Promise<string> => {
                 const wallet = await initWallet();
 
-                return wallet.invoke.createAppStoreListing(integrationId, listing as AppStoreListingCreateType);
+                return wallet.invoke.createAppStoreListing(
+                    integrationId,
+                    listing as AppStoreListingCreateType
+                );
             },
             onSuccess: (_, { integrationId }) => {
-                queryClient.invalidateQueries({ queryKey: ['developer', 'listings', integrationId] });
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'listings', integrationId],
+                });
             },
         });
     };
@@ -155,7 +160,10 @@ export const useDeveloperPortal = () => {
             }): Promise<boolean> => {
                 const wallet = await initWallet();
 
-                return wallet.invoke.updateAppStoreListing(listingId, updates as AppStoreListingUpdateType);
+                return wallet.invoke.updateAppStoreListing(
+                    listingId,
+                    updates as AppStoreListingUpdateType
+                );
             },
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });

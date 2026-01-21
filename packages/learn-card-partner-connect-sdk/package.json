@@ -1,6 +1,10 @@
 {
   "name": "@learncard/partner-connect",
-  "version": "0.2.1",
+  "version": "0.2.2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/learningeconomy/LearnCard"
+  },
   "description": "LearnCard Partner Connect SDK - Promise-based cross-origin messaging for partner apps",
   "main": "dist/partner-connect.js",
   "module": "dist/partner-connect.esm.js",
@@ -30,6 +34,9 @@
   ],
   "license": "MIT",
   "author": "Learning Economy Foundation (www.learningeconomy.io)",
+  "dependencies": {
+    "@learncard/types": "workspace:*"
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.2",
     "@rollup/plugin-node-resolve": "^13.3.0",

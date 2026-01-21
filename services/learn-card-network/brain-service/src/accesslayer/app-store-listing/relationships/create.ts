@@ -1,4 +1,5 @@
 import { AppStoreListing } from '@models';
+import { getIdFromUri } from '@helpers/uri.helpers';
 
 export const associateListingWithIntegration = async (
     listingId: string,
@@ -29,6 +30,28 @@ export const installAppForProfile = async (
         properties: {
             listing_id: listingId,
             installed_at: installedAt,
+        },
+    });
+
+    return true;
+};
+
+export const associateBoostWithListing = async (
+    listingId: string,
+    boostUri: string,
+    templateAlias: string
+): Promise<boolean> => {
+    const id = getIdFromUri(boostUri);
+
+    await AppStoreListing.relateTo({
+        alias: 'hasBoost',
+        where: {
+            source: { listing_id: listingId },
+            target: { id },
+        },
+        properties: {
+            templateAlias,
+            createdAt: new Date().toISOString(),
         },
     });
 

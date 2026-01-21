@@ -3,7 +3,17 @@ import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import numeral from 'numeral';
 
 import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
-import { useModal, ModalTypes, useConfirmation, useWithdrawConsent, useWallet, useGetAppMetadata, useGetAppReviews, AppStoreAppMetadata, AppStoreAppReview } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useConfirmation,
+    useWithdrawConsent,
+    useWallet,
+    useGetAppMetadata,
+    useGetAppReviews,
+    AppStoreAppMetadata,
+    AppStoreAppReview,
+} from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
@@ -77,7 +87,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         listing.listing_id
     );
 
-    const isInstalled = isInstalledData ?? initialIsInstalled ?? ('installed_at' in listing);
+    const isInstalled = isInstalledData ?? initialIsInstalled ?? 'installed_at' in listing;
 
     // Get install count
     const { data: installCount } = useInstallCount(listing.listing_id);
@@ -196,7 +206,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const [showCopiedToast, setShowCopiedToast] = useState(false);
 
     const handleShareApp = async () => {
-        const appUrl = !IS_PRODUCTION ? `${window.location.origin}/app/${listing.listing_id}` : `https://learncard.app/app/${listing.listing_id}`;
+        const appUrl = !IS_PRODUCTION
+            ? `${window.location.origin}/app/${listing.listing_id}`
+            : `https://learncard.app/app/${listing.listing_id}`;
 
         try {
             await navigator.clipboard.writeText(appUrl);
@@ -287,7 +299,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         if (hasConsented && contract) {
             // Guardian consent apps need profile selection flow
             if (contract.needsGuardianConsent) {
-                const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
+                const redirectUrl =
+                    launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
 
                 if (redirectUrl) {
                     closeModal();
@@ -361,7 +374,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             replaceModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
-                    appId={listing.listing_id}
+                    appId={(listing as any).slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}
                     isInstalled={isInstalled}
@@ -387,95 +400,105 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             {/* Header */}
             <IonHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
-                <div className="flex items-center justify-normal ion-padding">
-                    <div className="h-[65px] w-[65px] mr-3">
-                        <img
-                            className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
-                            alt={`${listing.display_name} logo`}
-                            src={listing.icon_url}
-                            onError={e => {
-                                (e.target as HTMLImageElement).src =
-                                    'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
-                            }}
-                        />
-                    </div>
+                    <div className="flex items-center justify-normal ion-padding">
+                        <div className="h-[65px] w-[65px] mr-3">
+                            <img
+                                className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
+                                alt={`${listing.display_name} logo`}
+                                src={listing.icon_url}
+                                onError={e => {
+                                    (e.target as HTMLImageElement).src =
+                                        'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
+                                }}
+                            />
+                        </div>
 
-                    <div className="flex flex-col items-start justify-center flex-1 min-w-0">
-                        <p className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[1]">
-                            {listing.display_name}
-                        </p>
+                        <div className="flex flex-col items-start justify-center flex-1 min-w-0">
+                            <p className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[1]">
+                                {listing.display_name}
+                            </p>
 
-                        <p className="text-sm text-grayscale-600 font-poppins mt-1">
-                            {listing.tagline}
-                        </p>
+                            <p className="text-sm text-grayscale-600 font-poppins mt-1">
+                                {listing.tagline}
+                            </p>
 
-                        {!iosMetadata && <div className="flex items-center gap-2 mt-2">
-                            {listing.category && (
-                                <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
-                                    {listing.category}
-                                </span>
-                            )}
+                            {!iosMetadata && (
+                                <div className="flex items-center gap-2 mt-2">
+                                    {listing.category && (
+                                        <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                                            {listing.category}
+                                        </span>
+                                    )}
 
-                            {/* {installCount !== undefined && (
+                                    {/* {installCount !== undefined && (
                                 <span className="text-xs text-grayscale-500">
                                     {installCount.toLocaleString()} installs
                                 </span>
                             )} */}
-                        </div>}
-                    </div>
-                </div>
-
-                {/* iOS App Store Metadata Section */}
-                {iosMetadata && (
-                    <div className="flex items-center justify-evenly ">
-                        <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
-                            <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
-                                {iosMetadata.userRatingCount >= 1000
-                                    ? numeral(iosMetadata.userRatingCount).format('0.0a')
-                                    : iosMetadata.userRatingCount} Ratings
-                            </p>
-
-                            <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
-                                {iosMetadata.averageUserRating?.toFixed(1)}
-                            </h6>
-
-                            <StaticStarRating rating={iosMetadata.averageUserRating} />
-                        </div>
-
-                        <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
-                            <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
-                                AGE
-                            </p>
-
-                            <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
-                                {iosMetadata.contentAdvisoryRating || '12+'}
-                            </h6>
-
-                            <p className="text-xs text-grayscale-400 text-center font-notoSans uppercase">
-                                Years Old
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col items-center justify-center px-4">
-                            <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
-                                Category
-                            </p>
-
-                            <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
-                                {'#2'}
-                            </h6>
-
-                            <p className="text-xs text-grayscale-400 text-center font-notoSans uppercase">
-                                {listing.category || iosMetadata.primaryGenreName || 'App'}
-                            </p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                )}
 
+                    {/* iOS App Store Metadata Section */}
+                    {iosMetadata && (
+                        <div className="flex items-center justify-evenly ">
+                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+                                <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
+                                    {iosMetadata.userRatingCount >= 1000
+                                        ? numeral(iosMetadata.userRatingCount).format('0.0a')
+                                        : iosMetadata.userRatingCount}{' '}
+                                    Ratings
+                                </p>
+
+                                <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
+                                    {iosMetadata.averageUserRating?.toFixed(1)}
+                                </h6>
+
+                                <StaticStarRating rating={iosMetadata.averageUserRating} />
+                            </div>
+
+                            <div className="flex flex-col items-center justify-center pl-4 pr-6 border-r-solid border-r-grayscale-200 border-r-[1px]">
+                                <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
+                                    AGE
+                                </p>
+
+                                <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
+                                    {iosMetadata.contentAdvisoryRating || '12+'}
+                                </h6>
+
+                                <p className="text-xs text-grayscale-400 text-center font-notoSans uppercase">
+                                    Years Old
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col items-center justify-center px-4">
+                                <p className="text-sm text-grayscale-400 text-center font-notoSans uppercase">
+                                    Category
+                                </p>
+
+                                <h6 className="text-grayscale-600 font-bold text-[17px] my-2 font-notoSans">
+                                    {'#2'}
+                                </h6>
+
+                                <p className="text-xs text-grayscale-400 text-center font-notoSans uppercase">
+                                    {listing.category || iosMetadata.primaryGenreName || 'App'}
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </IonHeader>
 
-            <IonContent fullscreen className="ion-padding" style={{ '--background': listing.hero_background_color || '#00BA88' } as React.CSSProperties}>
+            <IonContent
+                fullscreen
+                className="ion-padding"
+                style={
+                    {
+                        '--background': listing.hero_background_color || '#00BA88',
+                    } as React.CSSProperties
+                }
+            >
                 <div className="w-full flex flex-col pb-[120px]">
                     {/* About Section */}
                     <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
@@ -489,7 +512,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Highlights Section */}
                     {listing.highlights && listing.highlights.length > 0 && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans">Why Use This App?</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans">
+                                Why Use This App?
+                            </h3>
 
                             {listing.highlights.map((highlight: string, index: number) => (
                                 <div key={index} className="flex items-center justify-start mt-2">
