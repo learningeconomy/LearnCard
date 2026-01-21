@@ -5,6 +5,8 @@ import {
     useSearchFrameworkSkills,
     ModalTypes,
     conditionalPluralize,
+    useManageSelfAssignedSkillsBoost,
+    // useGetSelfAssignedSkillsBoost,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
@@ -95,6 +97,28 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         } else {
             closeModal();
         }
+    };
+
+    const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
+
+    // const { data: sasBoost } = useGetSelfAssignedSkillsBoost();
+
+    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+    // console.log(sasBoost);
+    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+
+    const handleSave = async () => {
+        const { boostUri } = await createOrUpdateSkills({
+            skills: selectedSkills.map(s => ({
+                frameworkId: frameworkId,
+                id: s.id,
+                proficiencyLevel: s.proficiency,
+            })),
+        });
+
+        // TODO maybe a toast?
+
+        closeModal();
     };
 
     const isAdd = step === Step.Add;
@@ -210,7 +234,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                                       setStep(Step.Review);
                                       setSearchInput('');
                                   }
-                                : () => {}
+                                : handleSave
                         }
                         className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1 disabled:bg-grayscale-300"
                         disabled={selectedSkills.length === 0}

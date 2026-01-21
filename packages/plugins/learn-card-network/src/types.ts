@@ -235,9 +235,6 @@ export type LearnCardNetworkPluginMethods = {
             skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }
     ) => Promise<string>;
-    createOrUpdateSelfAssignedSkills: (
-        skills: { frameworkId: string; id: string; proficiencyLevel?: number }[]
-    ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
     getBoostFrameworks: (
         uri: string,
@@ -354,7 +351,9 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedLCNProfileManagers>;
     updateBoost: (
         uri: string,
-        updates: Partial<Omit<Boost, 'uri'>>,
+        updates: Partial<Omit<Boost, 'uri'>> & {
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
+        },
         credential?: UnsignedVC | VC
     ) => Promise<boolean>;
     attachFrameworkToBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;

@@ -7,6 +7,7 @@ import {
     CredentialCategoryEnum,
     getBaseUrl,
     switchedProfileStore,
+    useGetSelfAssignedSkillsBoost,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -492,6 +493,156 @@ export const useCreateChildBoost = () => {
                 }
             });
         },
+    });
+};
+
+export const useManageSelfAssignedSkillsBoost = () => {
+    const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
+    const { data: sasBoost, isLoading: isLoadingSasBoost } = useGetSelfAssignedSkillsBoost();
+
+    return useMutation({
+        mutationFn: async ({
+            skills,
+        }: {
+            skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
+        }) => {
+            if (isLoadingSasBoost) {
+                console.log('Loading self-assigned skills boost... please try again.');
+                return { boostUri: undefined };
+            }
+
+            const wallet = await initWallet();
+
+            const sasBoostExists = !!sasBoost;
+
+            const walletDid = wallet?.id?.did();
+            const currentDate = new Date()?.toISOString();
+
+            const credentialPayload: Record<string, any> = {
+                subject: walletDid,
+                type: 'boost',
+                issuanceDate: currentDate,
+                boostName: 'Self-Assigned Skills',
+                // achievementType: '',
+                // achievementDescription: '',
+                // achievementNarrative: '',
+                // achievementName: '',
+                // boostImage: '',
+                // achievementImage: '',
+                // expirationDate: expirationDate,
+                display: {
+                    // backgroundColor: undefined,
+                    // backgroundImage: undefined,
+                    displayType: 'badge',
+                    // previewType: 'default',
+
+                    // Troops 2.0 fields
+                    // fadeBackgroundImage: undefined,
+                    // repeatBackgroundImage: undefined,
+
+                    // family emoji
+                    // emoji: {
+                    //     activeSkinTone: '',
+                    //     unified: '',
+                    //     unifiedWithoutSkinTone: '',
+                    //     names: [],
+                    //     imageUrl: '',
+                    // },
+                },
+            };
+
+            const unsignedCredential = wallet.invoke.newCredential(credentialPayload as any);
+
+            // console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
+            // console.log('unsignedCredential:', unsignedCredential);
+            // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+            // console.log('skills:', skills);
+
+            let boostUri;
+
+            if (sasBoostExists) {
+                const updatedBoostBoolean = await wallet?.invoke?.updateBoost(sasBoost.uri, {
+                    name: 'Self-Assigned Skills',
+                    type: 'Self-Assigned Skill',
+                    category: CredentialCategoryEnum.skill,
+                    status: 'PROVISIONAL',
+                    credential: unsignedCredential,
+                    skills,
+                });
+                boostUri = sasBoost.uri;
+                // TODO unclaim previous credential
+            } else {
+                /// CREATE BOOST
+                // makes request to LCN, second param is metadata associated with template
+                // metadata is used to categorize etc
+                // skillIds will auto-attach framework and align these skills
+                boostUri = await wallet.invoke.createBoost(unsignedCredential, {
+                    name: 'Self-Assigned Skills',
+                    type: 'Self-Assigned Skill',
+                    category: CredentialCategoryEnum.skill,
+                    status: 'PROVISIONAL',
+                    skills,
+                });
+            }
+
+            // TODO issue the credential
+
+            return {
+                boostUri,
+                // name: state.basicInfo.name,
+                // type: state.basicInfo.achievementType ?? '',
+                // category: state.basicInfo.type,
+                // status,
+            };
+        },
+        onSuccess: async ({ boostUri }) => {
+            const switchedDid = switchedProfileStore.get.switchedDid();
+            await queryClient.cancelQueries({
+                queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
+            });
+            queryClient.refetchQueries({
+                queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
+            });
+        },
+        // onSuccess: async ({ boostUri, name, type, category, status }) => {
+        //     await queryClient.cancelQueries({
+        //         queryKey: ['useGetPaginatedManagedBoosts', category],
+        //     });
+        //     const wallet = await initWallet();
+
+        //     // update cache optimistically
+        //     insertItem(queryClient, ['useGetPaginatedManagedBoosts', category], {
+        //         uri: boostUri,
+        //         name,
+        //         type,
+        //         category,
+        //         status,
+        //     });
+
+        //     // Intentionally don't await these to keep this mutation fast!
+
+        //     queryClient.refetchQueries({ queryKey: ['useGetPaginatedManagedBoosts', category] });
+        //     queryClient.invalidateQueries({ queryKey: ['useGetPaginatedFamilialBoosts'] });
+        //     queryClient.invalidateQueries({ queryKey: ['useGetBoostChildren'] });
+        //     queryClient.invalidateQueries({ queryKey: ['useCountBoostChildren'] });
+
+        //     queryClient.invalidateQueries({
+        //         queryKey: ['currentUserTroopIds'],
+        //     });
+
+        //     wallet.invoke.resolveFromLCN(boostUri).then(async boost => {
+        //         const validationResult = await VCValidator.spa(boost);
+
+        //         if (validationResult.success) {
+        //             queryClient.setQueryData<VC>(
+        //                 ['useResolveBoost', boostUri],
+        //                 validationResult.data
+        //             );
+        //         }
+        //     });
+        // },
     });
 };
 

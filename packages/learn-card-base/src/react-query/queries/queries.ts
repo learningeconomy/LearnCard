@@ -102,6 +102,28 @@ export const useGetBoost = (uri: string) => {
     });
 };
 
+export const useGetSelfAssignedSkillsBoost = () => {
+    const { initWallet } = useWallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+
+    // TODO: Better way to identify boost. i.e. not just by hardcoded name
+    return useQuery({
+        queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            const result = await wallet.invoke.getPaginatedBoosts({
+                query: {
+                    // category: CredentialCategoryEnum.selfAssignedSkills,
+                    name: 'Self-Assigned Skills',
+                },
+            });
+
+            const records = result?.records ?? [];
+            return records.length > 0 ? records[records.length - 1] : undefined;
+        },
+    });
+};
+
 /**
  * Query: Get multiple boosts by their URIs.
  * Uses useQueries to fetch multiple boosts in parallel while respecting Rules of Hooks.

@@ -3,44 +3,44 @@ import EyeSlash from 'learn-card-base/svgs/EyeSlash';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 export enum SkillLevel {
-    Hidden = 'Hidden',
-    Novice = 'Novice',
-    Beginner = 'Beginner',
-    Proficient = 'Proficient',
-    Advanced = 'Advanced',
-    Expert = 'Expert',
+    Hidden = 0,
+    Novice = 1,
+    Beginner = 2,
+    Proficient = 3,
+    Advanced = 4,
+    Expert = 5,
 }
 
 const SKILL_LEVEL_META = {
     [SkillLevel.Hidden]: {
+        name: 'Hidden',
         color: 'grayscale-500',
         description: 'Do not display your proficiency status.',
-        value: 0,
     },
     [SkillLevel.Novice]: {
+        name: 'Novice',
         color: 'grayscale-700',
         description: 'Just starting and needs guidance.',
-        value: 1,
     },
     [SkillLevel.Beginner]: {
+        name: 'Beginner',
         color: 'orange-400',
         description: 'Handles simple tasks without support.',
-        value: 2,
     },
     [SkillLevel.Proficient]: {
+        name: 'Proficient',
         color: 'violet-500',
         description: 'Works independently on routine tasks.',
-        value: 3,
     },
     [SkillLevel.Advanced]: {
+        name: 'Advanced',
         color: 'light-blue-500',
         description: 'Solves complex tasks efficiently.',
-        value: 4,
     },
     [SkillLevel.Expert]: {
+        name: 'Expert',
         color: 'emerald-500',
         description: 'Deep mastery; can lead and mentor others.',
-        value: 5,
     },
 };
 
@@ -56,8 +56,15 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
     const segmentRefs = useRef<Array<HTMLDivElement | null>>([]);
 
     const color = SKILL_LEVEL_META[skillLevel].color;
-    const levels = Object.values(SkillLevel) as SkillLevel[];
-    const currentIndex = SKILL_LEVEL_META[skillLevel].value;
+    const levels: SkillLevel[] = [
+        SkillLevel.Hidden,
+        SkillLevel.Novice,
+        SkillLevel.Beginner,
+        SkillLevel.Proficient,
+        SkillLevel.Advanced,
+        SkillLevel.Expert,
+    ];
+    const currentIndex = skillLevel;
 
     const chooseIndexFromClientX = (clientX: number) => {
         let nearestIndex = 0;
@@ -94,7 +101,8 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
         <div className="flex flex-col gap-[15px]">
             <div className="flex flex-col">
                 <p className="text-grayscale-800 font-poppins font-[600] text-[14px]">
-                    Skill Level - <span className={`text-${color}`}>{skillLevel}</span>
+                    Skill Level -{' '}
+                    <span className={`text-${color}`}>{SKILL_LEVEL_META[skillLevel].name}</span>
                 </p>
                 <p className="text-grayscale-700 font-poppins text-[12px]">
                     {SKILL_LEVEL_META[skillLevel].description}
@@ -108,7 +116,7 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
                     setIsDragging(true);
                     const idx = chooseIndexFromClientX(e.clientX);
                     const next = levels[idx];
-                    if (next) {
+                    if (idx >= 0 && idx < levels.length) {
                         setSkillLevel(next);
                         onChange?.(next);
                     }
@@ -117,7 +125,7 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
                     if (!isDragging) return;
                     const idx = chooseIndexFromClientX(e.clientX);
                     const next = levels[idx];
-                    if (next) {
+                    if (idx >= 0 && idx < levels.length) {
                         setSkillLevel(next);
                         onChange?.(next);
                     }
@@ -175,7 +183,7 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
                     onChange={e => {
                         const idx = Number(e.target.value);
                         const next = levels[idx];
-                        if (next) {
+                        if (idx >= 0 && idx < levels.length) {
                             setSkillLevel(next);
                             onChange?.(next);
                         }

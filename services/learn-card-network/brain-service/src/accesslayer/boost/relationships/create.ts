@@ -79,10 +79,42 @@ export const addAlignedSkillsToBoost = async (
         `UNWIND $skillRefs AS sr
          MATCH (b:Boost { id: $boostId })
          MATCH (f:SkillFramework { id: sr.frameworkId })-[:CONTAINS]->(s:Skill { id: sr.id })
-         MERGE (b)-[:ALIGNED_TO]->(s)
-         SET s.proficiencyLevel = sr.proficiencyLevel`,
+         MERGE (b)-[r:ALIGNED_TO]->(s)
+         SET r.proficiencyLevel = sr.proficiencyLevel`,
         { boostId: boost.id, skillRefs }
     );
+};
+
+// Replace aligned skills for a Boost: remove any existing ALIGNED_TO relationships
+// not present in the provided list, and upsert the provided relationships with
+// per-relationship proficiencyLevel.
+export const replaceAlignedSkillsForBoost = async (
+    boost: BoostInstance,
+    skillRefs: { frameworkId: string; id: string; proficiencyLevel?: number }[]
+): Promise<void> => {
+    const allowedKeys = skillRefs.map(sr => `${sr.frameworkId}:${sr.id}`);
+
+    // Delete relationships not in the provided list
+    await neogma.queryRunner.run(
+        `WITH $allowedKeys AS allowed
+         MATCH (b:Boost { id: $boostId })-[r:ALIGNED_TO]->(s:Skill)<-[:CONTAINS]-(f:SkillFramework)
+         WITH r, f, s, allowed, (f.id + ':' + s.id) AS pairKey
+         WHERE NOT pairKey IN allowed
+         DELETE r`,
+        { boostId: boost.id, allowedKeys }
+    );
+
+    // Upsert the provided relationships with relationship-level proficiency
+    if (skillRefs.length > 0) {
+        await neogma.queryRunner.run(
+            `UNWIND $skillRefs AS sr
+             MATCH (b:Boost { id: $boostId })
+             MATCH (f:SkillFramework { id: sr.frameworkId })-[:CONTAINS]->(s:Skill { id: sr.id })
+             MERGE (b)-[r:ALIGNED_TO]->(s)
+             SET r.proficiencyLevel = sr.proficiencyLevel`,
+            { boostId: boost.id, skillRefs }
+        );
+    }
 };
 
 export const createAutoConnectRecipientRelationship = async (

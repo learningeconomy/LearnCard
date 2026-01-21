@@ -41,9 +41,7 @@ const escapeJsonStringValue = (value: unknown): string => {
 /**
  * Prepares templateData for safe JSON rendering by escaping string values.
  */
-const prepareTemplateData = (
-    templateData: Record<string, unknown>
-): Record<string, string> => {
+const prepareTemplateData = (templateData: Record<string, unknown>): Record<string, string> => {
     const prepared: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(templateData)) {
@@ -56,10 +54,7 @@ const prepareTemplateData = (
 /**
  * Renders a Mustache template with JSON-safe escaping.
  */
-const renderTemplateJson = (
-    jsonString: string,
-    templateData: Record<string, unknown>
-): string => {
+const renderTemplateJson = (jsonString: string, templateData: Record<string, unknown>): string => {
     const preparedData = prepareTemplateData(templateData);
     const unescapedTemplate = jsonString.replace(/\{\{([^{}]+)\}\}/g, '{{{$1}}}');
 
@@ -808,10 +803,17 @@ export async function getLearnCardNetworkPlugin(
             updateBoost: async (_learnCard, uri, updates, credential) => {
                 await ensureUser();
 
-                return client.boost.updateBoost.mutate({
+                // Allow passing skills similar to createBoost; send them at top-level, not inside updates
+                const { skills, ...restUpdates } = (updates as any) ?? {};
+
+                const payload: any = {
                     uri,
-                    updates: { ...(credential && { credential }), ...updates },
-                });
+                    updates: { ...(credential && { credential }), ...restUpdates },
+                };
+
+                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+
+                return client.boost.updateBoost.mutate(payload);
             },
             attachFrameworkToBoost: async (_learnCard, boostUri, frameworkId) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -928,8 +930,10 @@ export async function getLearnCardNetworkPlugin(
                         boost = JSON.parse(rendered);
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
-                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                            `Template substitution failed: ${
+                                error instanceof Error ? error.message : 'Unknown error'
+                            }. ` +
+                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -1052,10 +1056,7 @@ export async function getLearnCardNetworkPlugin(
                             let boost = data.data;
 
                             // Apply templateData if provided
-                            if (
-                                input.templateData &&
-                                Object.keys(input.templateData).length > 0
-                            ) {
+                            if (input.templateData && Object.keys(input.templateData).length > 0) {
                                 try {
                                     const boostString = JSON.stringify(boost);
                                     const rendered = renderTemplateJson(
@@ -1065,7 +1066,9 @@ export async function getLearnCardNetworkPlugin(
                                     boost = JSON.parse(rendered);
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'}`
+                                        `Failed to apply template data: ${
+                                            error instanceof Error ? error.message : 'Unknown error'
+                                        }`
                                     );
                                 }
                             }

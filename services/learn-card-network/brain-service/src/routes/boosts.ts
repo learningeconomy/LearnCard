@@ -30,7 +30,11 @@ import {
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { logCredentialSent, logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import {
+    logCredentialSent,
+    logCredentialClaimed,
+    logCredentialFailed,
+} from '@helpers/activity.helpers';
 
 import { t, profileRoute } from '@routes';
 
@@ -127,6 +131,7 @@ import {
     setProfileAsBoostAdmin,
     setBoostUsesFramework,
     addAlignedSkillsToBoost,
+    replaceAlignedSkillsForBoost,
 } from '@accesslayer/boost/relationships/create';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { neogma } from '@instance';
@@ -215,7 +220,8 @@ export const boostsRouter = t.router({
         })
         .input(z.object({ uri: z.string() }))
         .output(
-            z.object({
+            z
+                .object({
                     targetCode: z.string().optional(),
                     targetName: z.string().optional(),
                     targetDescription: z.string().optional(),
@@ -969,7 +975,6 @@ export const boostsRouter = t.router({
                             proficiencyLevel: z.number().optional(),
                         })
                     )
-                    .min(1)
                     .optional(),
             })
         )
@@ -1932,13 +1937,22 @@ export const boostsRouter = t.router({
                         credential: VCValidator.or(UnsignedVCValidator).optional(),
                         defaultPermissions: BoostPermissionsValidator.partial().optional(),
                     }),
+                skills: z
+                    .array(
+                        z.object({
+                            frameworkId: z.string(),
+                            id: z.string(),
+                            proficiencyLevel: z.number().optional(),
+                        })
+                    )
+                    .optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { uri, updates } = input;
+            const { uri, updates, skills } = input;
             const { name, type, category, status, credential, meta, defaultPermissions } = updates;
 
             const decodedUri = decodeURIComponent(uri);
@@ -1999,6 +2013,11 @@ export const boostsRouter = t.router({
                     ...EMPTY_PERMISSIONS,
                     ...defaultPermissions,
                 });
+            }
+
+            // If skills provided (including empty array), replace aligned skills for this boost
+            if (Array.isArray(skills)) {
+                await replaceAlignedSkillsForBoost(boost, skills);
             }
 
             return result;
