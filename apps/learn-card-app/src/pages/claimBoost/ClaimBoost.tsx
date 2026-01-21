@@ -32,7 +32,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
+import { useAnalytics, AnalyticsEvents } from '../../analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
@@ -125,7 +125,7 @@ const ClaimBoost: React.FC<{
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, addVCtoWallet } = useWallet();
     const [presentAlert, dismissAlert] = useIonAlert();
-    const { logAnalyticsEvent } = useFirebaseAnalytics();
+    const { track } = useAnalytics();
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -211,7 +211,7 @@ const ClaimBoost: React.FC<{
             const achievementType = getAchievementType(boost);
 
             if (boost) {
-                logAnalyticsEvent('claim_boost', {
+                track(AnalyticsEvents.CLAIM_BOOST, {
                     boostType: category,
                     achievementType,
                     method: 'Claim Modal',

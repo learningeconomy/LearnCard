@@ -8,7 +8,7 @@ import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 import useAiSession from '../../hooks/useAiSession';
-import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
+import { useAnalytics } from '../../analytics';
 
 import SideMenuFooter from './SideMenuFooter';
 import SideMenuRootLinks from './SideMenuRootLinks';
@@ -48,7 +48,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     const history = useHistory();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
-    const { setCurrentScreen } = useFirebaseAnalytics();
+    const { page: setCurrentScreen } = useAnalytics();
     const { gate } = useLCNGatedAction();
     const { openNewAiSessionModal } = useAiSession();
 

@@ -44,7 +44,7 @@ import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals } from 'learn-card-base';
-import { useSetFirebaseAnalyticsUserId } from './hooks/useSetFirebaseAnalyticsUserId';
+import { useSetAnalyticsUserId } from './analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
@@ -206,7 +206,7 @@ const AppRouter: React.FC<{ initLoading: boolean }> = ({ initLoading }) => {
     useLaunchDarklyIdentify({ debug: false });
     useSentryIdentify({ debug: false });
 
-    useSetFirebaseAnalyticsUserId({ debug: false });
+    useSetAnalyticsUserId({ debug: false });
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();
 

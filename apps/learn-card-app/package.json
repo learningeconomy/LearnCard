@@ -84,6 +84,7 @@
         "numeral": "^2.0.6",
         "papaparse": "^5.5.1",
         "pdf-lib": "^1.17.1",
+        "posthog-js": "^1.333.0",
         "pretty-bytes": "^6.1.1",
         "qrcode.react": "^4.2.0",
         "query-string": "^8.2.0",
