@@ -24,13 +24,12 @@ export const AiInsightsExploreMoreModal: React.FC = () => {
                         <X className="w-6 h-6 text-grayscale-900" />
                     </button>
                 </div>
-                <AiInsightsPromptBox />
             </div>
 
             {/* Scrollable Content */}
-            <ul className="flex-1 overflow-y-auto px-4 pb-4">
+            <ul className="flex-1 overflow-y-auto px-4 pb-4 desktop:max-h-[700px]">
+                <AiInsightsPromptBox />
                 <div className="h-[1px] bg-grayscale-200 w-full my-4" />
-
                 <AiInsightsPromptList showTitle={false} />
             </ul>
         </div>

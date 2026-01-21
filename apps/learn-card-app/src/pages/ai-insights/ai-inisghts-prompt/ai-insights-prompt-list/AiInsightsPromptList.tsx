@@ -4,7 +4,10 @@ import AiInsightsPromptListItem from './AiInsightsPromptListItem';
 
 import { DEFAULT_PROMPTS } from '../ai-insights-prompt-helpers';
 
-export const AiInsightsPromptList: React.FC<{ showTitle?: boolean }> = ({ showTitle = true }) => {
+export const AiInsightsPromptList: React.FC<{ showTitle?: boolean; limit?: number }> = ({
+    showTitle = true,
+    limit = DEFAULT_PROMPTS.length,
+}) => {
     return (
         <div role="button" className="w-full flex flex-col items-center justify-center gap-2">
             {showTitle && (
@@ -14,7 +17,7 @@ export const AiInsightsPromptList: React.FC<{ showTitle?: boolean }> = ({ showTi
                     </h2>
                 </div>
             )}
-            {DEFAULT_PROMPTS.map(({ prompt }, index) => (
+            {DEFAULT_PROMPTS.slice(0, limit).map(({ prompt }, index) => (
                 <AiInsightsPromptListItem key={index} prompt={prompt} />
             ))}
         </div>
