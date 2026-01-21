@@ -20,7 +20,7 @@ import {
     useWallet,
     useGetCurrentLCNUser,
 } from 'learn-card-base';
-import { useAnalytics, AnalyticsEvents } from '../../../analytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { EndorsementRequestState } from './endorsement-request.helpers';
 import { VC } from '@learncard/types';
 

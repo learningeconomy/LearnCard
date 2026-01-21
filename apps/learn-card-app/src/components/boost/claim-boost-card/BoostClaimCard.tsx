@@ -9,7 +9,7 @@ import HourGlass from '../../../assets/lotties/hourglass.json';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
-import { useAnalytics, AnalyticsEvents } from 'apps/learn-card-app/src/analytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
 

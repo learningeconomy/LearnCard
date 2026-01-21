@@ -32,7 +32,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
-import { useAnalytics, AnalyticsEvents } from '../../analytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';

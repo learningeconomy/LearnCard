@@ -51,7 +51,7 @@ import {
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
-import { useAnalytics, AnalyticsEvents } from '../../../analytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import {
     getAchievementTypeFromCustomType,

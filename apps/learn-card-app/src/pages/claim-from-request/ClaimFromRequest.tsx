@@ -41,7 +41,7 @@ import {
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
-import { useAnalytics, AnalyticsEvents } from '../../analytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
     getAchievementType,

@@ -27,7 +27,7 @@ import NetworkListener from './components/network-listener/NetworkListener';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 
-import { AnalyticsContextProvider } from './analytics';
+import { AnalyticsContextProvider } from '@analytics';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
 import localforage from 'localforage';
 

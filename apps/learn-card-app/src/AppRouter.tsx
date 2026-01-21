@@ -44,7 +44,7 @@ import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals } from 'learn-card-base';
-import { useSetAnalyticsUserId } from './analytics';
+import { useSetAnalyticsUserId } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { redirectStore } from 'learn-card-base/stores/redirectStore';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';

@@ -8,7 +8,7 @@ import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 import useAiSession from '../../hooks/useAiSession';
-import { useAnalytics } from '../../analytics';
+import { useAnalytics } from '@analytics';
 
 import SideMenuFooter from './SideMenuFooter';
 import SideMenuRootLinks from './SideMenuRootLinks';

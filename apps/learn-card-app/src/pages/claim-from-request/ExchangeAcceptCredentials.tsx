@@ -15,7 +15,7 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import X from 'learn-card-base/svgs/X';
 
 import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode } from 'learn-card-base';
-import { useAnalytics, AnalyticsEvents } from '../../analytics';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import {
     getAchievementType,
