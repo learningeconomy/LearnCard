@@ -116,36 +116,6 @@ jobs:
             test-results/
           retention-days: 30
 
-      - name: Write job summary
-        if: always()
-        run: |
-          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Parse test results if available
-          if [ -f "test-results/results.json" ]; then
-            PASSED=$(jq '.stats.expected // 0' test-results/results.json)
-            FAILED=$(jq '.stats.unexpected // 0' test-results/results.json)
-            SKIPPED=$(jq '.stats.skipped // 0' test-results/results.json)
-            DURATION=$(jq '.stats.duration // 0' test-results/results.json)
-            DURATION_SEC=$((DURATION / 1000))
-
-            if [ "$FAILED" -eq 0 ]; then
-              echo "### ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "### ❌ $FAILED test(s) failed" >> $GITHUB_STEP_SUMMARY
-            fi
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Passed | Failed | Skipped | Duration |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------|--------|---------|----------|" >> $GITHUB_STEP_SUMMARY
-            echo "| $PASSED | $FAILED | $SKIPPED | ${DURATION_SEC}s |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### ⚠️ Test results not available" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📦 **[Download Playwright Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)** (includes videos & traces)" >> $GITHUB_STEP_SUMMARY
-
       - name: Cleanup EC2 (docker down, prune)
         if: always()
         continue-on-error: true
