@@ -7,7 +7,10 @@ import {
     CredentialCategoryEnum,
     getBaseUrl,
     switchedProfileStore,
+    useDeleteCredentialRecord,
+    useGetProfile,
     useGetSelfAssignedSkillsBoost,
+    useGetSelfAssignedSkillsCredential,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -15,17 +18,21 @@ import {
     VC,
     VCValidator,
     UnsignedVP,
-    LCNBoostStatusEnum,
     // oxlint-disable-next-line no-unused-vars
     Boost,
     BoostPermissions,
     UnsignedVC,
+    LCNBoostStatusEnum,
 } from '@learncard/types';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { BoostCMSState } from 'learn-card-base/components/boost/boost';
-import { getEndorsementsForVC } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getDefaultCategoryForCredential,
+    getEndorsementsForVC,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { insertItem } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
+import { v4 as uuidv4 } from 'uuid';
 
 type SharedCredentialsIndex = {
     type: 'shared-credentials';
@@ -500,7 +507,11 @@ export const useManageSelfAssignedSkillsBoost = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
+    const { data: profile } = useGetProfile();
     const { data: sasBoost, isLoading: isLoadingSasBoost } = useGetSelfAssignedSkillsBoost();
+    const { data: sasCred, isLoading: isLoadingSasCred } = useGetSelfAssignedSkillsCredential();
+
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     return useMutation({
         mutationFn: async ({
@@ -508,8 +519,12 @@ export const useManageSelfAssignedSkillsBoost = () => {
         }: {
             skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }) => {
-            if (isLoadingSasBoost) {
-                console.log('Loading self-assigned skills boost... please try again.');
+            if (isLoadingSasBoost || isLoadingSasCred) {
+                console.log('Loading self-assigned skills boost/credential... please try again.');
+                return { boostUri: undefined };
+            }
+            if (!profile) {
+                console.log('No profile found, please try again.');
                 return { boostUri: undefined };
             }
 
@@ -525,10 +540,11 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 type: 'boost',
                 issuanceDate: currentDate,
                 boostName: 'Self-Assigned Skills',
-                // achievementType: '',
-                // achievementDescription: '',
-                // achievementNarrative: '',
-                // achievementName: '',
+                achievementType: 'Self-Assigned Skill', // e.g. "ext: Attendance"
+                achievementDescription:
+                    'A self-attested credential that lists the skills you have.',
+                achievementNarrative: '',
+                achievementName: 'Self-Assigned Skills',
                 // boostImage: '',
                 // achievementImage: '',
                 // expirationDate: expirationDate,
@@ -536,7 +552,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                     // backgroundColor: undefined,
                     // backgroundImage: undefined,
                     displayType: 'badge',
-                    // previewType: 'default',
+                    previewType: 'default',
 
                     // Troops 2.0 fields
                     // fadeBackgroundImage: undefined,
@@ -565,14 +581,17 @@ export const useManageSelfAssignedSkillsBoost = () => {
             if (sasBoostExists) {
                 const updatedBoostBoolean = await wallet?.invoke?.updateBoost(sasBoost.uri, {
                     name: 'Self-Assigned Skills',
-                    type: 'Self-Assigned Skill',
-                    category: CredentialCategoryEnum.skill,
+                    type: 'Self-Assigned Skill', // in boost CMS: 'ext:Artowork'
+                    category: CredentialCategoryEnum.skill, // in boost CMS: "Achievement", "Accomplishment", etc.
                     status: 'PROVISIONAL',
                     credential: unsignedCredential,
                     skills,
                 });
+                console.log('updatedBoostBoolean:', updatedBoostBoolean);
+
                 boostUri = sasBoost.uri;
-                // TODO unclaim previous credential
+
+                await deleteCredentialRecord(sasCred?.record);
             } else {
                 /// CREATE BOOST
                 // makes request to LCN, second param is metadata associated with template
@@ -588,6 +607,29 @@ export const useManageSelfAssignedSkillsBoost = () => {
             }
 
             // TODO issue the credential
+            const sentCredentialUri = await wallet?.invoke?.sendBoost(
+                profile?.profileId,
+                boostUri,
+                {
+                    skipNotification: true,
+                    encrypt: true,
+                }
+            );
+            const sentCredential = await wallet?.read?.get(sentCredentialUri);
+            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentCredential);
+
+            // addCredentialToWallet
+            const vc = await VCValidator.parseAsync(await wallet.read.get(issuedVcUri));
+
+            const category = getDefaultCategoryForCredential(vc) || 'Achievement';
+            console.log('category:', category);
+
+            const res = await wallet.index.LearnCloud.add({
+                id: uuidv4(),
+                uri: issuedVcUri,
+                category,
+                title: 'Self-Assigned Skills',
+            });
 
             return {
                 boostUri,
@@ -605,44 +647,13 @@ export const useManageSelfAssignedSkillsBoost = () => {
             queryClient.refetchQueries({
                 queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
             });
+            queryClient.refetchQueries({
+                queryKey: ['selfAssignedSkillsCredential', switchedDid ?? ''],
+            });
+            queryClient.refetchQueries({
+                queryKey: ['useGetSkills', switchedDid ?? ''],
+            });
         },
-        // onSuccess: async ({ boostUri, name, type, category, status }) => {
-        //     await queryClient.cancelQueries({
-        //         queryKey: ['useGetPaginatedManagedBoosts', category],
-        //     });
-        //     const wallet = await initWallet();
-
-        //     // update cache optimistically
-        //     insertItem(queryClient, ['useGetPaginatedManagedBoosts', category], {
-        //         uri: boostUri,
-        //         name,
-        //         type,
-        //         category,
-        //         status,
-        //     });
-
-        //     // Intentionally don't await these to keep this mutation fast!
-
-        //     queryClient.refetchQueries({ queryKey: ['useGetPaginatedManagedBoosts', category] });
-        //     queryClient.invalidateQueries({ queryKey: ['useGetPaginatedFamilialBoosts'] });
-        //     queryClient.invalidateQueries({ queryKey: ['useGetBoostChildren'] });
-        //     queryClient.invalidateQueries({ queryKey: ['useCountBoostChildren'] });
-
-        //     queryClient.invalidateQueries({
-        //         queryKey: ['currentUserTroopIds'],
-        //     });
-
-        //     wallet.invoke.resolveFromLCN(boostUri).then(async boost => {
-        //         const validationResult = await VCValidator.spa(boost);
-
-        //         if (validationResult.success) {
-        //             queryClient.setQueryData<VC>(
-        //                 ['useResolveBoost', boostUri],
-        //                 validationResult.data
-        //             );
-        //         }
-        //     });
-        // },
     });
 };
 

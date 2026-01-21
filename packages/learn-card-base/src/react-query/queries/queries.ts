@@ -30,6 +30,7 @@ import {
     CredentialCategory,
     IndexMetadata,
 } from 'learn-card-base/types/credentials';
+import { LCR } from 'learn-card-base/types/credential-records';
 import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
 import { getBespokeLearnCard, generatePK } from 'learn-card-base/helpers/walletHelpers';
 
@@ -120,6 +121,36 @@ export const useGetSelfAssignedSkillsBoost = () => {
 
             const records = result?.records ?? [];
             return records.length > 0 ? records[records.length - 1] : undefined;
+        },
+    });
+};
+
+export const useGetSelfAssignedSkillsCredential = () => {
+    const { initWallet } = useWallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+
+    const { data: boost } = useGetSelfAssignedSkillsBoost();
+
+    return useQuery<{ uri: string; credential: VC | undefined } | undefined>({
+        queryKey: ['selfAssignedSkillsCredential', switchedDid ?? ''],
+        queryFn: async () => {
+            const wallet = await initWallet();
+
+            if (!boost?.uri) return undefined;
+
+            const credentialRecords = await wallet.index.all.get<LCR>({ boostUri: boost.uri });
+            const credentialRecord =
+                credentialRecords.length > 0
+                    ? credentialRecords[credentialRecords.length - 1]
+                    : undefined;
+
+            if (!credentialRecord?.uri) return undefined;
+
+            return {
+                uri: credentialRecord.uri,
+                record: credentialRecord,
+                credential: (await wallet.read.get(credentialRecord.uri)) as VC | undefined,
+            };
         },
     });
 };
