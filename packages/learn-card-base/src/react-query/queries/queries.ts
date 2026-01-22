@@ -131,7 +131,7 @@ export const useGetSelfAssignedSkillsCredential = () => {
 
     const { data: boost } = useGetSelfAssignedSkillsBoost();
 
-    return useQuery<{ uri: string; credential: VC | undefined } | undefined>({
+    return useQuery<{ uri: string; record: LCR; credential: VC | undefined } | undefined>({
         queryKey: ['selfAssignedSkillsCredential', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
