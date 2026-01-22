@@ -9,6 +9,7 @@ import {
     Profile,
     ConsentFlowTerms,
     ConsentFlowTransaction,
+    AppStoreListing,
 } from '@models';
 import { flattenObject } from '@helpers/objects.helpers';
 import { ProfileType } from 'types/profile';
@@ -45,6 +46,44 @@ export const createSentCredentialRelationship = async (
         })
         .create(
             `(profile)-[r:${Profile.getRelationshipByAlias('credentialSent').name}]->(credential)`
+        )
+        .set('r = $params')
+        .run();
+};
+
+export const createListingSentCredentialRelationship = async (
+    listingId: string,
+    to: ProfileType,
+    credential: CredentialInstance,
+    metadata?: Record<string, unknown>,
+    activityId?: string,
+    integrationId?: string
+): Promise<void> => {
+    const properties = flattenObject({
+        to: to.profileId,
+        date: new Date().toISOString(),
+        ...(metadata ? { metadata } : {}),
+        ...(activityId ? { activityId } : {}),
+        ...(integrationId ? { integrationId } : {}),
+    });
+
+    await new QueryBuilder(new BindParam({ params: properties }))
+        .match({
+            related: [
+                {
+                    model: AppStoreListing,
+                    where: { listing_id: listingId },
+                    identifier: 'listing',
+                },
+            ],
+        })
+        .match({
+            related: [
+                { model: Credential, where: { id: credential.id }, identifier: 'credential' },
+            ],
+        })
+        .create(
+            `(listing)-[r:${AppStoreListing.getRelationshipByAlias('credentialSent').name}]->(credential)`
         )
         .set('r = $params')
         .run();

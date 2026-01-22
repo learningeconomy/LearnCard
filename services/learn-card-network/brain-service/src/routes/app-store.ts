@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { randomInt, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { LCNNotificationTypeEnumValidator, UnsignedVC } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
@@ -13,6 +14,8 @@ import { getOwnerProfileForIntegration } from '@accesslayer/integration/relation
 import { createAppStoreListing } from '@accesslayer/app-store-listing/create';
 import {
     readAppStoreListingById,
+    readAppStoreListingBySlug,
+    readAppStoreListingByIdOrSlug,
     getListingsForIntegration,
     countListingsForIntegration,
     getListedApps,
@@ -56,7 +59,7 @@ import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getDidWeb } from '@helpers/did.helpers';
+import { getAppDidWeb, getDidWeb } from '@helpers/did.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -309,6 +312,54 @@ const transformInputForStorage = (input: any): any => {
     return result;
 };
 
+const MAX_APP_SLUG_LENGTH = 50;
+
+const normalizeAppSlug = (value: string): string => {
+    const normalized = value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    const trimmed = normalized.slice(0, MAX_APP_SLUG_LENGTH).replace(/-+$/g, '');
+
+    return trimmed || 'app';
+};
+
+const appendSlugSuffix = (base: string, suffix: string): string => {
+    const availableLength = MAX_APP_SLUG_LENGTH - suffix.length;
+    const trimmedBase = base.slice(0, Math.max(availableLength, 0)).replace(/-+$/g, '');
+    const safeBase = trimmedBase || 'app';
+
+    return `${safeBase}${suffix}`.slice(0, MAX_APP_SLUG_LENGTH);
+};
+
+const getAvailableAppSlug = async (displayName: string, listingId?: string): Promise<string> => {
+    const baseSlug = normalizeAppSlug(displayName);
+
+    const candidates = [baseSlug];
+    for (let suffix = 0; suffix <= 8; suffix += 1) {
+        candidates.push(appendSlugSuffix(baseSlug, `-${suffix}`));
+    }
+
+    for (const candidate of candidates) {
+        const existing = await readAppStoreListingBySlug(candidate);
+
+        if (!existing || (listingId && existing.listing_id === listingId)) {
+            return candidate;
+        }
+    }
+
+    const randomCandidate = appendSlugSuffix(baseSlug, `-${randomInt(0, 100001)}`);
+    const randomExisting = await readAppStoreListingBySlug(randomCandidate);
+
+    if (!randomExisting || (listingId && randomExisting.listing_id === listingId)) {
+        return randomCandidate;
+    }
+
+    return appendSlugSuffix(baseSlug, `-${randomUUID()}`);
+};
+
 // Regular update validator - excludes admin-only fields, all fields optional
 const AppStoreListingUpdateInputValidator = AppStoreListingBaseSchema.omit({
     app_listing_status: true,
@@ -444,6 +495,11 @@ const handleSendCredentialEvent = async (
         });
     }
 
+    const listing = await readAppStoreListingById(listingId);
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+    }
+
     // Get the integration that owns this listing
     const integration = await getIntegrationForListing(listingId);
     if (!integration) {
@@ -489,7 +545,9 @@ const handleSendCredentialEvent = async (
             unsignedVc.issuanceDate = new Date().toISOString();
         }
 
-        const issuerDid = getDidWeb(ctx.domain, integrationOwner.profileId);
+        const issuerDid = listing.slug
+            ? getAppDidWeb(ctx.domain, listing.slug)
+            : getDidWeb(ctx.domain, integrationOwner.profileId);
         unsignedVc.issuer =
             unsignedVc.issuer && typeof unsignedVc.issuer === 'object'
                 ? { ...unsignedVc.issuer, id: issuerDid }
@@ -528,7 +586,9 @@ const handleSendCredentialEvent = async (
             integrationOwner,
             unsignedVc,
             sa,
-            ctx.domain
+            ctx.domain,
+            true,
+            listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined
         );
     } catch (e) {
         console.error('Failed to issue VC with signing authority', e);
@@ -546,6 +606,7 @@ const handleSendCredentialEvent = async (
         recipientProfileId: targetProfile[0]!.profileId,
         boostUri,
         integrationId: integration.id,
+        listingId,
         source: 'sendBoost',
         metadata: { listingId, templateAlias },
     });
@@ -560,6 +621,7 @@ const handleSendCredentialEvent = async (
         skipNotification: false,
         activityId,
         integrationId: integration.id,
+        listingId,
     });
 
     return {
@@ -600,7 +662,11 @@ export const appStoreRouter = t.router({
                 promotion_level: 'STANDARD',
             });
 
-            const listing = await createAppStoreListing(storageData);
+            const slug = await getAvailableAppSlug(storageData.display_name);
+            const listing = await createAppStoreListing({
+                ...storageData,
+                slug,
+            });
 
             await associateListingWithIntegration(listing.listing_id, input.integrationId);
 
@@ -713,6 +779,11 @@ export const appStoreRouter = t.router({
             );
 
             const storageUpdates = transformInputForStorage(input.updates);
+
+            if (!listing.slug) {
+                const displayName = storageUpdates.display_name ?? listing.display_name;
+                storageUpdates.slug = await getAvailableAppSlug(displayName, listing.listing_id);
+            }
 
             return updateAppStoreListing(listing, storageUpdates);
         }),
@@ -1184,15 +1255,25 @@ export const appStoreRouter = t.router({
             const { profile } = ctx.user;
             const { listingId, event } = input;
 
+            const listing = await readAppStoreListingByIdOrSlug(listingId);
+
+            if (!listing) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+            }
+
+            const resolvedListingId = listing.listing_id;
+
             // Check if user has this app installed OR owns the integration (for testing)
-            const isInstalled = await hasProfileInstalledApp(profile.profileId, listingId);
+            const isInstalled = await hasProfileInstalledApp(profile.profileId, resolvedListingId);
 
             if (!isInstalled) {
                 // Check if user owns the integration - allows testing without installation
-                const integration = await getIntegrationForListing(listingId);
+                const integration = await getIntegrationForListing(resolvedListingId);
                 const isOwner = integration
                     ? await isIntegrationAssociatedWithProfile(integration.id, profile.profileId)
                     : false;
+                console.log('integration', integration, isOwner);
+                console.log('listingId', listingId);
                 if (!isOwner) {
                     throw new TRPCError({ code: 'FORBIDDEN', message: 'App not installed' });
                 }
@@ -1202,7 +1283,7 @@ export const appStoreRouter = t.router({
             const eventType = event.type as string | undefined;
 
             if (eventType === 'send-credential') {
-                return handleSendCredentialEvent(ctx, profile, listingId, event);
+                return handleSendCredentialEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });

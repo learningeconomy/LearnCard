@@ -17,6 +17,7 @@ import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
+    createListingSentCredentialRelationship,
     createCredentialIssuedViaContractRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
@@ -328,6 +329,7 @@ export const sendBoost = async ({
     metadata,
     activityId,
     integrationId,
+    listingId,
 }: {
     from: ProfileType;
     to: ProfileType;
@@ -341,6 +343,7 @@ export const sendBoost = async ({
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
+    listingId?: string;
 }): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
@@ -356,6 +359,18 @@ export const sendBoost = async ({
                 createBoostInstanceOfRelationship(credentialInstance, boost),
                 createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId),
             ];
+            if (listingId) {
+                tasks.push(
+                    createListingSentCredentialRelationship(
+                        listingId,
+                        to,
+                        credentialInstance,
+                        metadata,
+                        activityId,
+                        integrationId
+                    )
+                );
+            }
             // If this credential is being issued via a contract, create that relationship
             if (contractTerms) {
                 tasks.push(
@@ -386,6 +401,18 @@ export const sendBoost = async ({
             createBoostInstanceOfRelationship(credentialInstance, boost),
             createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId),
         ];
+        if (listingId) {
+            tasks.push(
+                createListingSentCredentialRelationship(
+                    listingId,
+                    to,
+                    credentialInstance,
+                    metadata,
+                    activityId,
+                    integrationId
+                )
+            );
+        }
 
         if (contractTerms) {
             tasks.push(
@@ -617,4 +644,3 @@ export const resolveBoostByUri = async (
 
     return boost;
 };
-

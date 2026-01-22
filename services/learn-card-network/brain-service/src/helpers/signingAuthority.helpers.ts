@@ -21,7 +21,8 @@ export async function issueCredentialWithSigningAuthority(
     credential: UnsignedVC,
     signingAuthorityForUser: SigningAuthorityForUserType,
     domain: string,
-    encrypt: boolean = true
+    encrypt: boolean = true,
+    ownerDidOverride?: string
 ): Promise<VC | JWE> {
     try {
         if (!IS_TEST_ENVIRONMENT) {
@@ -46,9 +47,23 @@ export async function issueCredentialWithSigningAuthority(
 
         if (!IS_TEST_ENVIRONMENT) console.log('Issuer Endpoint: ', issuerEndpoint);
 
-        const ownerDid = getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
+        const ownerDid =
+            ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
 
-        const encryption = encrypt ? { recipients: [learnCard.id.did()] } : undefined;
+        const encryption = encrypt
+            ? {
+                recipients: [
+                    learnCard.id.did(),
+                    ...(ownerDidOverride
+                        ? [
+                            Array.isArray(credential.credentialSubject)
+                                ? credential.credentialSubject[0]?.id
+                                : credential.credentialSubject.id,
+                        ]
+                        : []),
+                ],
+            }
+            : undefined;
 
         // Create an AbortController instance and get the signal
         const controller = new AbortController();

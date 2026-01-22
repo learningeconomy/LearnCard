@@ -5,6 +5,7 @@ import { neogma } from '@instance';
 import { Integration, IntegrationInstance } from './Integration';
 import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
+import { Credential, CredentialInstance } from './Credential';
 import {
     FlatAppStoreListingType,
     AppListingStatus,
@@ -25,6 +26,12 @@ export type AppStoreListingRelationships = {
         BoostInstance,
         { templateAlias: string; createdAt: string },
         { templateAlias: string; createdAt: string }
+    >;
+    credentialSent: ModelRelatedNodesI<
+        typeof Credential,
+        CredentialInstance,
+        { to: string; date: string; metadata?: Record<string, unknown>; activityId?: string; integrationId?: string },
+        { to: string; date: string; metadata?: Record<string, unknown>; activityId?: string; integrationId?: string }
     >;
 };
 
@@ -95,6 +102,15 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
                         property: 'createdAt',
                         schema: { type: 'string', required: true },
                     },
+                },
+            },
+            credentialSent: {
+                model: Credential,
+                direction: 'out',
+                name: 'CREDENTIAL_SENT',
+                properties: {
+                    to: { property: 'to', schema: { type: 'string', required: true } },
+                    date: { property: 'date', schema: { type: 'string', required: true } },
                 },
             },
         },

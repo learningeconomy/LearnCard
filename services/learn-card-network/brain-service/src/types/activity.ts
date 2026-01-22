@@ -81,6 +81,7 @@ export type LogCredentialActivityParams = {
     credentialUri?: string;
     inboxCredentialId?: string;
     integrationId?: string;
+    listingId?: string;
     source: CredentialActivitySourceType;
     metadata?: Record<string, unknown>;
     activityId?: string;
