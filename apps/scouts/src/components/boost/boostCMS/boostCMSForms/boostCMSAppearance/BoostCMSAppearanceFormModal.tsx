@@ -56,8 +56,6 @@ const BoostCMSAppearanceFormModal: React.FC<{
         ...state,
     });
 
-    const [showStylePackCategoryList, setShowStylePackCategoryList] = useState<boolean>(false);
-
     const handleSaveAppearance = () => {
         setState({
             ...appearanceFormState,
@@ -68,7 +66,7 @@ const BoostCMSAppearanceFormModal: React.FC<{
     let formBackgroundColor: string = '';
 
     if (activeForm === BoostCMSActiveAppearanceForm.badgeForm) {
-        formBackgroundColor = '#ffffff';
+        formBackgroundColor = '#FFFFFF'; // white
 
         activeFormEl = (
             <IonGrid
@@ -83,8 +81,6 @@ const BoostCMSAppearanceFormModal: React.FC<{
                     handleCloseModal={handleCloseModal}
                     disabled={disabled}
                     boostUserType={boostUserType}
-                    showStylePackCategoryList={showStylePackCategoryList}
-                    setShowStylePackCategoryList={setShowStylePackCategoryList}
                     setActiveForm={setActiveForm}
                 />
             </IonGrid>
@@ -118,8 +114,6 @@ const BoostCMSAppearanceFormModal: React.FC<{
                 handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                 activeForm={activeForm}
                 setActiveForm={setActiveForm}
-                showStylePackCategoryList={showStylePackCategoryList}
-                setShowStylePackCategoryList={setShowStylePackCategoryList}
                 handleSaveAppearance={handleSaveAppearance}
             />
             <IonContent fullscreen>{activeFormEl}</IonContent>
