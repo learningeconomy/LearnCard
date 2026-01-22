@@ -1,4 +1,5 @@
 import { Locator, Page } from '@playwright/test';
+import { TEST_USER_SEED } from './constants';
 
 // This is basically expect(locator).toBeVisible() except it'll actually wait for the timeout if the element isn't visible yet
 export const locatorExists = async (locator: Locator, timeout: number = 1000) =>
@@ -38,8 +39,8 @@ export const waitForAuthenticatedState = async (
 ) => {
     // Parse options
     const options = typeof pathOrOptions === 'string'
-        ? { path: pathOrOptions, seed: 'a'.repeat(64) }
-        : { path: pathOrOptions.path ?? '/', seed: pathOrOptions.seed ?? 'a'.repeat(64) };
+        ? { path: pathOrOptions, seed: TEST_USER_SEED }
+        : { path: pathOrOptions.path ?? '/', seed: pathOrOptions.seed ?? TEST_USER_SEED };
 
     // Login via seed - this creates a proper user with privateKey
     await page.goto('/hidden/seed');

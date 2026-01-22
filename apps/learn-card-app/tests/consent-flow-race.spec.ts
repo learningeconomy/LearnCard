@@ -3,17 +3,15 @@ import { test } from './fixtures/test';
 import { getBespokeLearnCard } from './wallet.helpers';
 import { testContract } from './consent-flow.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
+import { TEST_USER_SEED, CONTRACT_OWNER_SEED } from './constants';
 
 test.describe('ConsentFlow', () => {
     // Disable retries - we want to see the race condition failure
     test.describe.configure({ retries: 0 });
 
     test('auto-redirects already-consented user', async ({ page }) => {
-        const userSeed = 'a'.repeat(64); // Same seed used by waitForAuthenticatedState
-
         // Set up contract owner and create contract
-        const ownerSeed = 'b'.repeat(64);
-        const owner = await getBespokeLearnCard(ownerSeed);
+        const owner = await getBespokeLearnCard(CONTRACT_OWNER_SEED);
         const existingOwnerProfile = await owner.invoke.getProfile().catch(() => null);
         if (!existingOwnerProfile) {
             await owner.invoke.createProfile({ profileId: 'contract-owner', displayName: 'Owner' });
@@ -21,7 +19,7 @@ test.describe('ConsentFlow', () => {
         const contractUri = await owner.invoke.createContract(testContract);
 
         // Pre-consent user via SDK (same seed as browser login)
-        const user = await getBespokeLearnCard(userSeed);
+        const user = await getBespokeLearnCard(TEST_USER_SEED);
         const existingUserProfile = await user.invoke.getProfile().catch(() => null);
         if (!existingUserProfile) {
             await user.invoke.createProfile({ profileId: 'test-user', displayName: 'Test' });
