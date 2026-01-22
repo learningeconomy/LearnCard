@@ -50,6 +50,7 @@ export default defineConfig(({ mode }) => {
                     '@web3auth/openlogin-adapter/dist/openloginAdapter.umd.min.js',
                 'learn-card-base': path.resolve(__dirname, '../../packages/learn-card-base/src'),
                 'apps/learn-card-app': path.resolve(__dirname),
+                '@analytics': path.resolve(__dirname, 'src/analytics'),
             },
             dedupe: [
                 'react',
