@@ -79,11 +79,13 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     const { credentials } = useHighlightedCredentials();
 
     // Check if user is Global Admin or National Admin
-    const isAdmin = credentials.some(cred =>
-        ['ext:GlobalID', 'ext:NetworkID'].includes(
-            cred?.credentialSubject?.achievement?.achievementType
-        )
-    );
+    const isAdmin = credentials.some(cred => {
+        const subject = cred?.credentialSubject;
+        if (!subject || Array.isArray(subject)) return false;
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(
+            subject?.achievement?.achievementType
+        );
+    });
 
     const { data: boostAppearanceBadgeList, isLoading } = useScoutPassStylesPackRegistry();
 
