@@ -59,6 +59,60 @@ export function useLearnCardMessageHandlers({
     );
 
     /**
+     * Generate a consent VP and redirect to the contract's redirect URL in a new tab.
+     * Returns true if redirect was successful, false otherwise.
+     */
+    const generateVpAndRedirect = useCallback(
+        async (
+            wallet: Awaited<ReturnType<typeof initWallet>>,
+            contract: { redirectUrl?: string; owner?: { did?: string }; uri?: string }
+        ): Promise<boolean> => {
+            if (!wallet || !contract.redirectUrl) {
+                return false;
+            }
+
+            try {
+                const urlObj = new URL(contract.redirectUrl);
+                urlObj.searchParams.set('did', wallet.id.did());
+
+                if (contract.owner?.did) {
+                    const unsignedDelegateCredential = wallet.invoke.newCredential({
+                        type: 'delegate',
+                        subject: contract.owner.did,
+                        access: ['read', 'write'],
+                    });
+
+                    const delegateCredential = await wallet.invoke.issueCredential(
+                        unsignedDelegateCredential
+                    );
+
+                    const unsignedDidAuthVp: UnsignedVP & { contractUri?: string } =
+                        await wallet.invoke.newPresentation(delegateCredential);
+
+                    if (contract.uri) {
+                        unsignedDidAuthVp.contractUri = contract.uri;
+                    }
+
+                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                        proofPurpose: 'authentication',
+                        proofFormat: 'jwt',
+                    })) as unknown as string;
+
+                    urlObj.searchParams.set('vp', vp);
+                }
+
+                log('Opening redirect in new tab:', urlObj.toString());
+                window.open(urlObj.toString(), '_blank', 'noopener,noreferrer');
+                return true;
+            } catch (error) {
+                logError('Failed to generate VP for redirect:', error);
+                return false;
+            }
+        },
+        [log, logError]
+    );
+
+    /**
      * Imperative function to show consent flow and return result
      */
     const showConsentFlow = useCallback(
@@ -96,46 +150,9 @@ export function useLearnCardMessageHandlers({
                         log('User already consented to contract');
 
                         if (redirect && contract.redirectUrl) {
-                            // Auto-redirect with VP generation
-                            try {
-                                const urlObj = new URL(contract.redirectUrl);
-                                urlObj.searchParams.set('did', wallet.id.did());
-
-                                if (contract.owner?.did) {
-                                    const unsignedDelegateCredential = wallet.invoke.newCredential({
-                                        type: 'delegate',
-                                        subject: contract.owner.did,
-                                        access: ['read', 'write'],
-                                    });
-
-                                    const delegateCredential = await wallet.invoke.issueCredential(
-                                        unsignedDelegateCredential
-                                    );
-
-                                    const unsignedDidAuthVp: UnsignedVP & { contractUri?: string } =
-                                        await wallet.invoke.newPresentation(delegateCredential);
-
-                                    if (contract.uri) {
-                                        unsignedDidAuthVp.contractUri = contract.uri;
-                                    }
-
-                                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
-                                        proofPurpose: 'authentication',
-                                        proofFormat: 'jwt',
-                                    })) as unknown as string;
-
-                                    urlObj.searchParams.set('vp', vp);
-                                }
-
-                                log('Redirecting to:', urlObj.toString());
-                                window.location.href = urlObj.toString();
-                                resolve({ granted: true });
-                                return;
-                            } catch (error) {
-                                logError('Failed to generate VP for redirect:', error);
-                                resolve({ granted: false });
-                                return;
-                            }
+                            const success = await generateVpAndRedirect(wallet, contract);
+                            resolve({ granted: success });
+                            return;
                         }
 
                         resolve({ granted: true });
@@ -173,7 +190,7 @@ export function useLearnCardMessageHandlers({
                 }
             });
         },
-        [initWallet, newModal, closeModal, consentedContracts, log, logError]
+        [initWallet, newModal, closeModal, consentedContracts, log, logError, generateVpAndRedirect]
     );
 
     const handlers = useMemo(
