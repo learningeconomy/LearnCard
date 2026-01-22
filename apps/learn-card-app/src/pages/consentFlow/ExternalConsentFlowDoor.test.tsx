@@ -10,14 +10,22 @@
  */
 
 import * as React from 'react';
+import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 // Ensure React is in scope for JSX
 global.React = React;
 
 // Mock query-string before it's imported
-jest.mock('query-string', () => ({
-    parse: jest.fn(() => ({
+vi.mock('query-string', () => ({
+    default: {
+        parse: vi.fn(() => ({
+            uri: 'lc:network:localhost:contract:test-123',
+            returnTo: 'https://example.com/callback',
+            recipientToken: undefined,
+        })),
+    },
+    parse: vi.fn(() => ({
         uri: 'lc:network:localhost:contract:test-123',
         returnTo: 'https://example.com/callback',
         recipientToken: undefined,
@@ -25,37 +33,37 @@ jest.mock('query-string', () => ({
 }));
 
 // Mock Capacitor
-jest.mock('@capacitor/core', () => ({
+vi.mock('@capacitor/core', () => ({
     Capacitor: {
         getPlatform: () => 'web',
         isNativePlatform: () => false,
     },
 }));
 
-jest.mock('@capacitor-firebase/authentication', () => ({
+vi.mock('@capacitor-firebase/authentication', () => ({
     FirebaseAuthentication: {
-        signOut: jest.fn(),
+        signOut: vi.fn(),
     },
 }));
 
 // Mock sub-components that have complex dependencies
-jest.mock('./GameFlow/FullScreenGameFlow', () => ({
+vi.mock('./GameFlow/FullScreenGameFlow', () => ({
     __esModule: true,
     default: () => <div data-testid="full-screen-game-flow" />,
 }));
 
-jest.mock('./ConsentFlowCredFrontDoor', () => ({
+vi.mock('./ConsentFlowCredFrontDoor', () => ({
     __esModule: true,
     default: () => <div data-testid="consent-flow-cred-front-door" />,
 }));
 
-jest.mock('./ConsentFlowError', () => ({
+vi.mock('./ConsentFlowError', () => ({
     __esModule: true,
     default: () => <div data-testid="consent-flow-error" />,
 }));
 
 // Mock all the heavy dependencies
-jest.mock('@ionic/react', () => ({
+vi.mock('@ionic/react', () => ({
     IonPage: ({ children, className }: any) => <div data-testid="ion-page" className={className}>{children}</div>,
     IonCol: ({ children }: any) => <div>{children}</div>,
     IonRow: ({ children }: any) => <div>{children}</div>,
@@ -63,34 +71,34 @@ jest.mock('@ionic/react', () => ({
     IonSpinner: () => <div data-testid="spinner" />,
 }));
 
-jest.mock('react-router-dom', () => ({
-    useHistory: jest.fn(),
-    useLocation: jest.fn(),
+vi.mock('react-router-dom', () => ({
+    useHistory: vi.fn(),
+    useLocation: vi.fn(),
 }));
 
-jest.mock('@tanstack/react-query', () => ({
-    useQueryClient: () => ({ resetQueries: jest.fn() }),
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({ resetQueries: vi.fn() }),
 }));
 
 // Mock the entire learn-card-base module to avoid deep crypto dependencies
 // Use require for mocks that need to be configurable
 const mockFns = {
-    useContract: jest.fn(),
-    useConsentedContracts: jest.fn(),
-    useCurrentUser: jest.fn(),
-    initWallet: jest.fn(),
+    useContract: vi.fn(),
+    useConsentedContracts: vi.fn(),
+    useCurrentUser: vi.fn(),
+    initWallet: vi.fn(),
 };
 
-jest.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
+vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
     __esModule: true,
     default: () => mockFns.useCurrentUser(),
 }));
 
-jest.mock('learn-card-base/hooks/useConsentedContracts', () => ({
+vi.mock('learn-card-base/hooks/useConsentedContracts', () => ({
     useConsentedContracts: () => mockFns.useConsentedContracts(),
 }));
 
-jest.mock('learn-card-base/hooks/useSocialLogins', () => ({
+vi.mock('learn-card-base/hooks/useSocialLogins', () => ({
     SocialLoginTypes: {
         apple: 'apple',
         sms: 'sms',
@@ -99,33 +107,33 @@ jest.mock('learn-card-base/hooks/useSocialLogins', () => ({
     },
 }));
 
-jest.mock('learn-card-base', () => ({
+vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: mockFns.initWallet }),
     ProfilePicture: () => <div data-testid="profile-picture" />,
-    pushUtilities: { revokePushToken: jest.fn() },
-    useWeb3Auth: () => ({ logout: jest.fn() }),
-    useSQLiteStorage: () => ({ clearDB: jest.fn(), setCurrentUser: jest.fn() }),
+    pushUtilities: { revokePushToken: vi.fn() },
+    useWeb3Auth: () => ({ logout: vi.fn() }),
+    useSQLiteStorage: () => ({ clearDB: vi.fn(), setCurrentUser: vi.fn() }),
     useContract: (...args: any[]) => mockFns.useContract(...args),
-    redirectStore: { set: { authRedirect: jest.fn() } },
+    redirectStore: { set: { authRedirect: vi.fn() } },
     ModalTypes: { FullScreen: 'fullscreen' },
-    useModal: () => ({ newModal: jest.fn() }),
+    useModal: () => ({ newModal: vi.fn() }),
 }));
 
-jest.mock('learn-card-base/stores/authStore', () => ({
+vi.mock('learn-card-base/stores/authStore', () => ({
     __esModule: true,
     default: { get: { typeOfLogin: () => '', deviceToken: () => '' } },
 }));
 
-jest.mock('../../firebase/firebase', () => ({
-    auth: () => ({ signOut: jest.fn() }),
+vi.mock('../../firebase/firebase', () => ({
+    auth: () => ({ signOut: vi.fn() }),
 }));
 
-jest.mock('../../helpers/externalLinkHelpers', () => ({
-    openPP: jest.fn(),
-    openToS: jest.fn(),
+vi.mock('../../helpers/externalLinkHelpers', () => ({
+    openPP: vi.fn(),
+    openToS: vi.fn(),
 }));
 
-jest.mock('../../theme/hooks/useTheme', () => ({
+vi.mock('../../theme/hooks/useTheme', () => ({
     __esModule: true,
     default: () => ({ colors: { defaults: { primaryColor: 'emerald-700' } } }),
 }));
@@ -134,16 +142,16 @@ jest.mock('../../theme/hooks/useTheme', () => ({
 import { useHistory, useLocation } from 'react-router-dom';
 import ExternalConsentFlowDoor from './ExternalConsentFlowDoor';
 
-const mockUseHistory = useHistory as jest.Mock;
-const mockUseLocation = useLocation as jest.Mock;
+const mockUseHistory = useHistory as Mock;
+const mockUseLocation = useLocation as Mock;
 
 describe('ExternalConsentFlowDoor', () => {
-    const mockPush = jest.fn();
+    const mockPush = vi.fn();
     const contractUri = 'lc:network:localhost:contract:test-123';
     const returnTo = 'https://example.com/callback';
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
 
         mockUseHistory.mockReturnValue({ push: mockPush });
         mockUseLocation.mockReturnValue({

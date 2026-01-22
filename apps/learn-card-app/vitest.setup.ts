@@ -1,9 +1,10 @@
 import '@testing-library/jest-dom';
-import { TextEncoder, TextDecoder } from 'util';
+import { vi } from 'vitest';
+import { TextEncoder, TextDecoder as NodeTextDecoder } from 'util';
 
 // Polyfill for Node.js environment
 global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder as any;
+global.TextDecoder = NodeTextDecoder as unknown as typeof TextDecoder;
 
 // Define global constants that are normally set by webpack DefinePlugin
 (global as any).LCN_API_URL = 'http://localhost:4000/api';
@@ -15,14 +16,14 @@ global.TextDecoder = TextDecoder as any;
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation(query => ({
+    value: vi.fn().mockImplementation(query => ({
         matches: false,
         media: query,
         onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
     })),
 });
