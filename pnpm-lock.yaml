@@ -32815,14 +32815,6 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       tabbable: 6.3.0
 
-  '@floating-ui/react@0.27.16(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@floating-ui/react-dom': 2.1.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@floating-ui/utils': 0.2.10
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      tabbable: 6.3.0
-
   '@floating-ui/utils@0.2.10': {}
 
   '@glazed/constants@0.2.0': {}
