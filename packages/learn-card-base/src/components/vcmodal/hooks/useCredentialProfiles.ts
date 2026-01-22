@@ -41,7 +41,7 @@ const useCredentialProfiles = (credential: VC, lc?: BespokeLearnCard) => {
         let profile: Profile | undefined;
 
         if (hasLCNetworkAcct) {
-            const regex = /(users:|:p:)(.*)/;
+            const regex = /(users:)(.*)/;
             const profileId = credential?.issuer?.match?.(regex)?.[2];
             profile = await wallet.invoke.getProfile(profileId);
 
@@ -63,7 +63,7 @@ const useCredentialProfiles = (credential: VC, lc?: BespokeLearnCard) => {
         const hasLCNetworkAcct = credentialSubject?.id?.includes('did:web');
 
         if (hasLCNetworkAcct) {
-            const regex = /(users:|:p:)(.*)/;
+            const regex = /(users:)(.*)/;
             const profileId = credentialSubject?.id?.match?.(regex)?.[2];
             // console.log('///issuee profile', credentialSubject);
             if (profileId) {

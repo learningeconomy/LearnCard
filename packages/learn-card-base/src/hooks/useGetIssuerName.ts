@@ -17,7 +17,7 @@ export const useGetIssuerName = (vc: VC) => {
         let profile;
 
         if (hasLCNetworkAcct) {
-            const regex = /(users:|:p:)(.*)/;
+            const regex = /(users:)(.*)/;
             const profileId = vc?.issuer?.match(regex)?.[2];
             profile = await wallet?.invoke?.getProfile(profileId);
             return profile?.displayName;

@@ -98,7 +98,7 @@ export const getEmojiFromDidString = (did: string) => {
 // get user ID / handle from user did
 export const getUserHandleFromDid = (userDid: string) => {
     // ie: did:web:network.learncard.com:users:kent
-    const regex = /(users:|:p:)(.*)/;
+    const regex = /(users:)(.*)/;
 
     const match = userDid.match(regex);
 
