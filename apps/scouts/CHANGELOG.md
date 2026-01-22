@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.89.12
+
+### Patch Changes
+
+-   [#947](https://github.com/learningeconomy/LearnCard/pull/947) [`9183cdf03644bdedea3140913a49332a02417ecf`](https://github.com/learningeconomy/LearnCard/commit/9183cdf03644bdedea3140913a49332a02417ecf) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1388] Save full name once creating an account
+
+-   [#928](https://github.com/learningeconomy/LearnCard/pull/928) [`d9950fd5c1bf6be9ccf4f661f2df85acf747fa83`](https://github.com/learningeconomy/LearnCard/commit/d9950fd5c1bf6be9ccf4f661f2df85acf747fa83) Thanks [@goblincore](https://github.com/goblincore)! - feat:[LC-1512] Add role-based gating in boost CMS for image uploads
+
+-   [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
+
+-   [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
+
+-   [#938](https://github.com/learningeconomy/LearnCard/pull/938) [`20c48c727aade41921e226e3f26922d3798c7b5e`](https://github.com/learningeconomy/LearnCard/commit/20c48c727aade41921e226e3f26922d3798c7b5e) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1498] - 🚀 Migrate Capacitor & Plugins from v7 → v8 + 🔥 Firebase v12
+
+-   Updated dependencies [[`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be), [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be)]:
+    -   @learncard/react@2.9.7
+
 ## 1.89.11
 
 ### Patch Changes
