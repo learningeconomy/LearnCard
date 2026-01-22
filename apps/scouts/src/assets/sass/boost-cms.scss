@@ -3,6 +3,11 @@
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
+    
+    @media (min-width: 768px) {
+        max-width: 768px;
+        margin: 0 auto;
+    }
 }
 
 .boost-cms-badge {
@@ -77,6 +82,12 @@
     }
 
     // Media queries
+    @media (min-width: 768px) {
+        width: 23%;
+        padding-bottom: 23%;
+        margin: 1%;
+    }
+
     @media (max-width: 991px) {
         width: 31%;
         padding-bottom: 31%;

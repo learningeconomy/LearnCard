@@ -19,6 +19,7 @@ import {
     boostCategoryOptions,
     CATEGORY_TO_SUBCATEGORY_LIST,
 } from '../../../boost-options/boostOptions';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
 
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
 import Pencil from '../../../../svgs/Pencil';
@@ -53,7 +54,19 @@ const BoostCMSAppearanceForm: React.FC<{
     handleSaveAppearance,
 }) => {
     const flags = useFlags();
-    const { CategoryImage } = boostCategoryOptions[activeCategoryType];
+    const { credentials } = useHighlightedCredentials();
+
+    // Check if user is Global Admin or National Admin
+    const isAdmin = credentials.some(cred => {
+        const subject = cred?.credentialSubject;
+        if (!subject || Array.isArray(subject)) return false;
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(
+            subject?.achievement?.achievementType
+        );
+    });
+
+    const categoryMetadata = boostCategoryOptions[activeCategoryType];
+    const { CategoryImage } = categoryMetadata || {};
 
     const isDefaultImage = state?.appearance?.badgeThumbnail === CategoryImage;
 
@@ -213,7 +226,8 @@ const BoostCMSAppearanceForm: React.FC<{
                     </div>
                 )}
 
-                {!flags?.disableCmsCustomization && (
+                {/* Allow admins to upload background images even when CMS customization is disabled */}
+                {(!flags?.disableCmsCustomization || isAdmin) && (
                     <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
                         <h3 className="text-grayscale-700 text-left w-full">
                             {isID || isMembership

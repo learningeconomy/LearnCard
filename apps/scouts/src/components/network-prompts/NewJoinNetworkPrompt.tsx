@@ -265,20 +265,15 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                         setIsLoading(false);
                         // handleCloseModal();
                     } else {
-                        if (typeOfLogin === SocialLoginTypes.scoutsSSO) {
-                            // ! skip updating a user's profile if the user logged
-                            // ! in using scouts single-sign-on
-                        } else {
-                            // update firebase profile
-                            try {
-                                await updateProfile(auth()?.currentUser as any, {
-                                    displayName: name as any,
-                                    photoURL: photo as any,
-                                });
-                            } catch (e) {
-                                openErrorLogoutModal();
-                                setError(`There was a firebase error: ${e?.toString?.()}`);
-                            }
+                        // update firebase profile
+                        try {
+                            await updateProfile(auth()?.currentUser as any, {
+                                displayName: name as any,
+                                photoURL: photo as any,
+                            });
+                        } catch (e) {
+                            openErrorLogoutModal();
+                            setError(`There was a firebase error: ${e?.toString?.()}`);
                         }
 
                         // update LC network profile

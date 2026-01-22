@@ -83,11 +83,21 @@ export const createRequestIdentityHandler = (dependencies: {
 };
 
 /**
+ * Response from showConsentModal
+ */
+export interface ConsentModalResult {
+    granted: boolean;
+}
+
+/**
  * REQUEST_CONSENT Handler
  * Partner needs general user permission via a consent contract.
  */
 export const createRequestConsentHandler = (dependencies: {
-    showConsentModal: (contractUri: string) => Promise<boolean>;
+    showConsentModal: (
+        contractUri: string,
+        options?: { redirect?: boolean }
+    ) => Promise<ConsentModalResult>;
 }): ActionHandler<'REQUEST_CONSENT'> => {
     return async ({ payload }) => {
         const { showConsentModal } = dependencies;
@@ -103,13 +113,13 @@ export const createRequestConsentHandler = (dependencies: {
         }
 
         try {
-            const granted = await showConsentModal(payload.contractUri);
+            const result = await showConsentModal(payload.contractUri, {
+                redirect: payload.redirect,
+            });
 
             return {
                 success: true,
-                data: {
-                    granted,
-                },
+                data: result,
             };
         } catch (error) {
             return {
@@ -459,7 +469,10 @@ export function createActionHandlers(dependencies: {
     showLoginConsentModal: (origin: string, appName?: string) => Promise<boolean>;
 
     // Consent
-    showConsentModal: (contractUri: string) => Promise<boolean>;
+    showConsentModal: (
+        contractUri: string,
+        options?: { redirect?: boolean }
+    ) => Promise<ConsentModalResult>;
 
     // Credentials
     showCredentialAcceptanceModal: (credential: any) => Promise<string | boolean>;

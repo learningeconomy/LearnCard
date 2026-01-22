@@ -124,6 +124,19 @@
         </div>
 
         <div class="card">
+            <h3>Request Consent</h3>
+            <label>Contract URI</label>
+            <input type="text" id="contractUri" placeholder="lc:network:network.learncard.com/trpc:contract:abc123" />
+
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <input type="checkbox" id="redirectEnabled" style="width: auto; margin: 0;" />
+                Enable Redirect (redirect to contract's redirectUrl with VP)
+            </label>
+
+            <button id="consentBtn" onclick="requestConsent()" disabled>Request Consent</button>
+        </div>
+
+        <div class="card">
             <h3>Log</h3>
             <div id="log" class="log"></div>
         </div>
@@ -214,6 +227,13 @@
                 sendAppEvent(event) {
                     return this.sendMessage('APP_EVENT', event);
                 }
+
+                requestConsent(contractUri, options = {}) {
+                    return this.sendMessage('REQUEST_CONSENT', {
+                        contractUri,
+                        redirect: options.redirect ?? false,
+                    });
+                }
             }
 
             window.initialize = async function () {
@@ -226,6 +246,7 @@
                     document.getElementById('status').textContent = 'SDK Initialized ✓';
                     document.getElementById('sendBtn').disabled = false;
                     document.getElementById('identityBtn').disabled = false;
+                    document.getElementById('consentBtn').disabled = false;
                     document.getElementById('initBtn').disabled = true;
 
                     log('SDK initialized successfully!', 'success');
@@ -241,6 +262,24 @@
                     log(`Identity received: ${JSON.stringify(result, null, 2)}`, 'success');
                 } catch (e) {
                     log(`Identity request failed: ${JSON.stringify(e)}`, 'error');
+                }
+            };
+
+            window.requestConsent = async function () {
+                const contractUri = document.getElementById('contractUri').value.trim();
+                const redirectEnabled = document.getElementById('redirectEnabled').checked;
+
+                if (!contractUri) {
+                    log('Contract URI is required', 'error');
+                    return;
+                }
+
+                try {
+                    log(`Requesting consent for: ${contractUri} (redirect: ${redirectEnabled})`, 'info');
+                    const result = await sdk.requestConsent(contractUri, { redirect: redirectEnabled });
+                    log(`Consent result: ${JSON.stringify(result, null, 2)}`, 'success');
+                } catch (e) {
+                    log(`Consent request failed: ${JSON.stringify(e)}`, 'error');
                 }
             };
 

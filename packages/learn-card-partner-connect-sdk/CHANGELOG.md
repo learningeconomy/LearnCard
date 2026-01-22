@@ -1,5 +1,11 @@
 # @learncard/partner-connect
 
+## 0.2.3
+
+### Patch Changes
+
+-   [#949](https://github.com/learningeconomy/LearnCard/pull/949) [`f797ad95a9324dd56bc3d22e4e2b07caa0c53d94`](https://github.com/learningeconomy/LearnCard/commit/f797ad95a9324dd56bc3d22e4e2b07caa0c53d94) Thanks [@Custard7](https://github.com/Custard7)! - feat: Enhance Partner Connect
+
 ## 0.2.2
 
 ### Patch Changes
