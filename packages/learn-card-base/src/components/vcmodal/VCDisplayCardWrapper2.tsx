@@ -55,6 +55,22 @@ type VCDisplayCardWrapper2Props = {
     customLinkedCredentialsComponent?: React.ReactNode;
     useCurrentUserName?: boolean;
     customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
+    issueeOverride?: string;
+    issuerOverride?: string;
+    issueHistory?: any[];
+    verificationItems?: VerificationItem[];
+    customThumbComponent?: React.ReactNode;
+    subjectDID?: string;
+    subjectImageComponent?: React.ReactNode;
+    issuerImageComponent?: React.ReactNode;
+    customDescription?: React.ReactNode;
+    customCriteria?: React.ReactNode;
+    customIssueHistoryComponent?: React.ReactNode;
+    enableLightbox?: boolean;
+    titleOverride?: string;
+    qrCodeOnClick?: () => void;
+    onDotsClick?: () => void;
 };
 
 export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
@@ -84,6 +100,22 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     customLinkedCredentialsComponent,
     useCurrentUserName,
     customBodyContentSlot,
+    unknownVerifierTitle,
+    issueeOverride,
+    issuerOverride,
+    issueHistory,
+    verificationItems,
+    customThumbComponent,
+    subjectDID,
+    subjectImageComponent,
+    issuerImageComponent,
+    customDescription: customDescriptionProp,
+    customCriteria,
+    customIssueHistoryComponent,
+    enableLightbox,
+    titleOverride,
+    qrCodeOnClick,
+    onDotsClick,
 }) => {
     const currentUser = useCurrentUser();
 
@@ -160,7 +192,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     ].includes(category);
 
     let customRibbonCategoryComponent = undefined;
-    let customDescription;
+    let customDescription = customDescriptionProp;
 
     if (idSubjectDID && idDisplayType === ID_CARD_DISPLAY_TYPES.PermanentResidentCard) {
         customDescription = <CredentialSubjectDisplay credentialSubject={idSubjectDID} />;
@@ -303,6 +335,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             bottomButton={bottomButton}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             customBodyContentSlot={customBodyContentSlot}
+            onDotsClick={onDotsClick}
+            unknownVerifierTitle={unknownVerifierTitle}
         />
     );
 };

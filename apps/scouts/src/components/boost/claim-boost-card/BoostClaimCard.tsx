@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useClaimCredential, BrandingEnum } from 'learn-card-base';
@@ -16,6 +16,8 @@ import {
     getAchievementType,
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { useHighlightedCredentials } from '../../../hooks/useHighlightedCredentials';
+import { getRoleFromCred, getScoutsNounForRole } from '../../../helpers/troop.helpers';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -51,6 +53,22 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const [isFront, setIsFront] = useState(true);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+    // Extract issuer DID and profileID for scouts role logic
+    const issuerDid = 
+        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
+    const profileID = issuerDid?.split(':').pop();
+
+    // Fetch highlighted credentials to get the issuer's role
+    const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
+    
+    // Compute unknownVerifierTitle based on the role (same logic as BoostPreview)
+    const unknownVerifierTitle = useMemo(() => {
+        if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
+
+        const role = getRoleFromCred(highlightedCreds[0]);
+        return getScoutsNounForRole(role);
+    }, [highlightedCreds]);
 
     const { handleClaimCredential, isClaiming, isClaimed } = useClaimCredential(credentialUri, {
         successCallback,
@@ -111,6 +129,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 setIsFrontOverride={setIsFront}
                                 brandingEnum={BrandingEnum.scoutPass}
                                 onMediaClick={handleImageClick}
+                                unknownVerifierTitle={unknownVerifierTitle}
                             />
                         )}
                         {selectedImage && (

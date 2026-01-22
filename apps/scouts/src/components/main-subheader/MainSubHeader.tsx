@@ -141,8 +141,8 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     }
 
     const { newModal: newDescriptorModal, closeModal: closeDescriptorModal } = useModal({
-        desktop: ModalTypes.Center,
-        mobile: ModalTypes.Center,
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
     });
 
     const presentCategoryDescriptorModal = () => {
