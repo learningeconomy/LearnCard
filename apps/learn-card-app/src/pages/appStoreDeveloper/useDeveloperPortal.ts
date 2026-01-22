@@ -9,10 +9,76 @@ import type {
     AppListingStatus,
     PromotionLevel,
 } from '@learncard/types';
+import { getAppDidFromSlug } from './utils/appDid';
 
 export const useDeveloperPortal = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+
+    const APP_SIGNING_AUTHORITY_PREFIX = 'app-';
+    const MAX_SIGNING_AUTHORITY_NAME_LENGTH = 15;
+
+    const buildAppSigningAuthorityName = (slug: string): string => {
+        const normalized = slug.replace(/[^a-z0-9-]/g, '');
+        const trimmed = normalized.slice(0, MAX_SIGNING_AUTHORITY_NAME_LENGTH - APP_SIGNING_AUTHORITY_PREFIX.length);
+        const base = trimmed || 'app';
+
+        return `${APP_SIGNING_AUTHORITY_PREFIX}${base}`.slice(0, MAX_SIGNING_AUTHORITY_NAME_LENGTH);
+    };
+
+    const buildFallbackSigningAuthorityName = (baseName: string): string => {
+        const suffix = `-${Math.floor(Math.random() * 1000)}`;
+        const trimmed = baseName.slice(0, MAX_SIGNING_AUTHORITY_NAME_LENGTH - suffix.length);
+        const base = trimmed || 'app';
+
+        return `${base}${suffix}`.slice(0, MAX_SIGNING_AUTHORITY_NAME_LENGTH);
+    };
+
+    const ensureAppSigningAuthority = async (
+        listingId: string,
+        integrationId: string
+    ): Promise<void> => {
+        const wallet = await initWallet();
+        const listing = await wallet.invoke.getAppStoreListing(listingId);
+
+        if (!listing?.slug) return;
+
+        const appDid = getAppDidFromSlug(listing.slug);
+        const baseName = buildAppSigningAuthorityName(listing.slug);
+
+        const createAuthority = async (name: string) => {
+            try {
+                return await wallet.invoke.createSigningAuthority(name, appDid);
+            } catch (error) {
+                console.warn('Failed to create app signing authority', error);
+                return null;
+            }
+        };
+
+        const authority =
+            (await createAuthority(baseName)) ??
+            (await createAuthority(buildFallbackSigningAuthorityName(baseName)));
+
+        if (!authority?.endpoint || !authority?.name || !authority?.did) return;
+
+        try {
+            await wallet.invoke.registerSigningAuthority(
+                authority.endpoint,
+                authority.name,
+                authority.did
+            );
+
+            await wallet.invoke.associateIntegrationWithSigningAuthority(
+                integrationId,
+                authority.endpoint,
+                authority.name,
+                authority.did,
+                true
+            );
+        } catch (error) {
+            console.warn('Failed to register app signing authority', error);
+        }
+    };
 
     // ========== Integration Hooks ==========
 
@@ -134,10 +200,14 @@ export const useDeveloperPortal = () => {
             }): Promise<string> => {
                 const wallet = await initWallet();
 
-                return wallet.invoke.createAppStoreListing(
+                const listingId = await wallet.invoke.createAppStoreListing(
                     integrationId,
                     listing as AppStoreListingCreateType
                 );
+
+                await ensureAppSigningAuthority(listingId, integrationId);
+
+                return listingId;
             },
             onSuccess: (_, { integrationId }) => {
                 queryClient.invalidateQueries({
@@ -154,16 +224,24 @@ export const useDeveloperPortal = () => {
             mutationFn: async ({
                 listingId,
                 updates,
+                integrationId,
             }: {
                 listingId: string;
                 updates: AppStoreListingUpdateType | Record<string, unknown>;
+                integrationId?: string;
             }): Promise<boolean> => {
                 const wallet = await initWallet();
 
-                return wallet.invoke.updateAppStoreListing(
+                const result = await wallet.invoke.updateAppStoreListing(
                     listingId,
                     updates as AppStoreListingUpdateType
                 );
+
+                if (integrationId) {
+                    await ensureAppSigningAuthority(listingId, integrationId);
+                }
+
+                return result;
             },
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
