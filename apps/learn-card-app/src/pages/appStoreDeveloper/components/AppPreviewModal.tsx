@@ -7,7 +7,12 @@ import { useLearnCardPostMessage } from '../../../hooks/post-message/useLearnCar
 import { useLearnCardMessageHandlers } from '../../../hooks/post-message/useLearnCardMessageHandlers';
 
 import { DiagnosticsPanel, DiagnosticEvent, ACTION_TO_PERMISSION } from './DiagnosticsPanel';
-import type { AppPermission, LaunchConfig as LocalLaunchConfig, ExtendedAppStoreListing } from '../types';
+import { CredentialClaimModal } from '../../launchPad/CredentialClaimModal';
+import type {
+    AppPermission,
+    LaunchConfig as LocalLaunchConfig,
+    ExtendedAppStoreListing,
+} from '../types';
 import { LAUNCH_TYPE_INFO } from '../types';
 
 // LaunchConfig type compatible with useLearnCardMessageHandlers
@@ -31,6 +36,20 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     const [isDiagnosticsExpanded, setIsDiagnosticsExpanded] = useState(true);
     const eventIdCounter = useRef(0);
 
+    // Credential claim modal state
+    const [pendingCredential, setPendingCredential] = useState<{
+        credentialUri: string;
+        boostUri?: string;
+    } | null>(null);
+
+    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string) => {
+        setPendingCredential({ credentialUri, boostUri });
+    }, []);
+
+    const handleDismissClaimModal = useCallback(() => {
+        setPendingCredential(null);
+    }, []);
+
     // Parse launch config
     const launchConfig: LaunchConfig = useMemo(() => {
         try {
@@ -41,7 +60,8 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     }, [listing.launch_config_json]);
 
     const embedUrl = launchConfig.url || '';
-    const requestedPermissions: AppPermission[] = (launchConfig.permissions || []) as AppPermission[];
+    const requestedPermissions: AppPermission[] = (launchConfig.permissions ||
+        []) as AppPermission[];
 
     // Check if this is an embeddable app type
     const isEmbeddable = listing.launch_type === 'EMBEDDED_IFRAME';
@@ -84,17 +104,15 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     );
 
     // Update diagnostic event
-    const updateDiagnosticEvent = useCallback(
-        (id: string, updates: Partial<DiagnosticEvent>) => {
-            setDiagnosticEvents(prev =>
-                prev.map(event => (event.id === id ? { ...event, ...updates } : event))
-            );
-        },
-        []
-    );
+    const updateDiagnosticEvent = useCallback((id: string, updates: Partial<DiagnosticEvent>) => {
+        setDiagnosticEvents(prev =>
+            prev.map(event => (event.id === id ? { ...event, ...updates } : event))
+        );
+    }, []);
 
     // Wrap handlers to intercept and log calls
     const baseHandlers = useLearnCardMessageHandlers({
+        appId: listing.slug || listing.listing_id,
         embedOrigin,
         onNavigate: () => {
             closeModal();
@@ -102,6 +120,8 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
         },
         launchConfig,
         isInstalled: true, // Preview mode - treat as installed
+        onCredentialIssued: handleCredentialIssued,
+        debug: true, // Enable detailed logging for preview diagnostics
     });
 
     // Create wrapped handlers that log diagnostics
@@ -133,11 +153,12 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
         return wrapped;
     }, [baseHandlers, addDiagnosticEvent, updateDiagnosticEvent]);
 
+
     // Initialize the PostMessage listener
     useLearnCardPostMessage({
         trustedOrigins: embedOrigin ? [embedOrigin] : [],
         handlers: wrappedHandlers,
-        debug: true,
+        debug: true, // Enable detailed logging for preview diagnostics
     });
 
     const handleClose = () => {
@@ -145,7 +166,9 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
         onClose?.();
     };
 
-    const embedUrlWithOverride = embedUrl ? `${embedUrl}?lc_host_override=${window.location.origin}` : '';
+    const embedUrlWithOverride = embedUrl
+        ? `${embedUrl}?lc_host_override=${window.location.origin}`
+        : '';
 
     if (!isEmbeddable) {
         return (
@@ -188,7 +211,8 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 </h3>
 
                                 <p className="text-gray-500 mb-4">
-                                    This app uses <strong>{LAUNCH_TYPE_INFO[listing.launch_type]?.label}</strong>{' '}
+                                    This app uses{' '}
+                                    <strong>{LAUNCH_TYPE_INFO[listing.launch_type]?.label}</strong>{' '}
                                     launch type which cannot be previewed in an embedded view.
                                 </p>
 
@@ -254,7 +278,9 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                             <p className="text-lg font-semibold text-gray-800">
                                                 Loading {listing.display_name}...
                                             </p>
-                                            <p className="text-sm text-gray-600 mt-1">Please wait</p>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                Please wait
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -279,7 +305,9 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 events={diagnosticEvents}
                                 requestedPermissions={requestedPermissions}
                                 isExpanded={isDiagnosticsExpanded}
-                                onToggleExpand={() => setIsDiagnosticsExpanded(!isDiagnosticsExpanded)}
+                                onToggleExpand={() =>
+                                    setIsDiagnosticsExpanded(!isDiagnosticsExpanded)
+                                }
                             />
                         </div>
                     </div>
@@ -294,6 +322,14 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                 position="bottom"
                 color="danger"
             />
+
+            {pendingCredential && (
+                <CredentialClaimModal
+                    credentialUri={pendingCredential.credentialUri}
+                    boostUri={pendingCredential.boostUri}
+                    onDismiss={handleDismissClaimModal}
+                />
+            )}
         </IonPage>
     );
 };

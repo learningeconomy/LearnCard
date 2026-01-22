@@ -156,7 +156,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                     sa?.did
                 );
 
-                if (rsa && claimLink) {
+                if (rsa) {
                     const boostClaimLink = await wallet?.invoke?.generateClaimLink(
                         _boostUriForClaimLink,
                         {

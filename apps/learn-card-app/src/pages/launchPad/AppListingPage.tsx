@@ -4,7 +4,18 @@ import type { AppStoreListing } from '@learncard/types';
 import numeral from 'numeral';
 
 import { IonPage, IonContent, IonSpinner, IonToast } from '@ionic/react';
-import { useModal, ModalTypes, useConfirmation, useIsLoggedIn, useWithdrawConsent, useWallet, useGetAppMetadata, useGetAppReviews, AppStoreAppMetadata, AppStoreAppReview } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useConfirmation,
+    useIsLoggedIn,
+    useWithdrawConsent,
+    useWallet,
+    useGetAppMetadata,
+    useGetAppReviews,
+    AppStoreAppMetadata,
+    AppStoreAppReview,
+} from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
@@ -66,16 +77,15 @@ const AppListingPage: React.FC = () => {
     const previewListing = (location.state?.listing as ExtendedAppStoreListing) || null;
     const isPreviewMode = location.state?.isPreview || false;
 
-    const {
-        usePublicListing,
-        useInstallApp,
-        useUninstallApp,
-        useInstallCount,
-        useIsAppInstalled,
-    } = useAppStore();
+    const { usePublicListing, useInstallApp, useUninstallApp, useInstallCount, useIsAppInstalled } =
+        useAppStore();
 
     // Fetch public listing (skip if we have preview data)
-    const { data: fetchedListing, isLoading: isLoadingListing, error } = usePublicListing(listingId);
+    const {
+        data: fetchedListing,
+        isLoading: isLoadingListing,
+        error,
+    } = usePublicListing(listingId);
 
     // Use preview listing if available, otherwise use fetched
     const listing = previewListing || fetchedListing;
@@ -309,7 +319,8 @@ const AppListingPage: React.FC = () => {
         if (hasConsented && contract) {
             // Guardian consent apps need profile selection flow
             if (contract.needsGuardianConsent) {
-                const redirectUrl = launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
+                const redirectUrl =
+                    launchConfig.redirectUri?.trim() || contract.redirectUrl?.trim();
 
                 if (redirectUrl) {
                     newModal(
@@ -384,7 +395,7 @@ const AppListingPage: React.FC = () => {
             newModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
-                    appId={listing.listing_id}
+                    appId={(listing as any).slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}
                     isInstalled={isInstalled}
@@ -475,16 +486,17 @@ const AppListingPage: React.FC = () => {
                 {/* Preview Mode Banner */}
                 {isPreviewMode && (
                     <div className="sticky top-0 z-50 bg-amber-500 text-white px-4 py-2 flex items-center justify-between shadow-md">
-                        <button onClick={() => history.goBack()} className="flex items-center gap-1 hover:bg-amber-600 rounded-lg px-2 py-1 transition-colors">
+                        <button
+                            onClick={() => history.goBack()}
+                            className="flex items-center gap-1 hover:bg-amber-600 rounded-lg px-2 py-1 transition-colors"
+                        >
                             <ArrowLeft className="w-4 h-4" />
                             <span className="text-sm font-medium">Back</span>
                         </button>
-
                         <div className="flex items-center gap-2">
                             <Eye className="w-4 h-4" />
                             <span className="text-sm font-medium">Preview Mode</span>
                         </div>
-
                         <div className="w-16" /> {/* Spacer for centering */}
                     </div>
                 )}
@@ -500,7 +512,6 @@ const AppListingPage: React.FC = () => {
                         <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
                         <div className="relative max-w-4xl mx-auto px-4 pt-12 pb-8">
-
                             {/* App Header */}
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                                 <div className="w-28 h-28 rounded-[28px] overflow-hidden bg-white shadow-xl flex-shrink-0 border border-grayscale-100">
@@ -603,15 +614,20 @@ const AppListingPage: React.FC = () => {
                                         <div className="flex flex-col items-center justify-center px-4">
                                             <p className="text-xs text-grayscale-400 uppercase tracking-wide mb-1">
                                                 {iosMetadata.userRatingCount >= 1000
-                                                    ? numeral(iosMetadata.userRatingCount).format('0.0a')
-                                                    : iosMetadata.userRatingCount} Ratings
+                                                    ? numeral(iosMetadata.userRatingCount).format(
+                                                          '0.0a'
+                                                      )
+                                                    : iosMetadata.userRatingCount}{' '}
+                                                Ratings
                                             </p>
 
                                             <p className="text-xl font-bold text-grayscale-700 mb-1">
                                                 {iosMetadata.averageUserRating?.toFixed(1)}
                                             </p>
 
-                                            <StaticStarRating rating={iosMetadata.averageUserRating} />
+                                            <StaticStarRating
+                                                rating={iosMetadata.averageUserRating}
+                                            />
                                         </div>
 
                                         <div className="flex flex-col items-center justify-center px-4">
@@ -623,9 +639,7 @@ const AppListingPage: React.FC = () => {
                                                 {iosMetadata.contentAdvisoryRating || '12+'}
                                             </p>
 
-                                            <p className="text-xs text-grayscale-400">
-                                                Years Old
-                                            </p>
+                                            <p className="text-xs text-grayscale-400">Years Old</p>
                                         </div>
 
                                         <div className="flex flex-col items-center justify-center px-4">
@@ -638,7 +652,9 @@ const AppListingPage: React.FC = () => {
                                             </p>
 
                                             <p className="text-xs text-grayscale-400">
-                                                {listing.category || iosMetadata.primaryGenreName || 'App'}
+                                                {listing.category ||
+                                                    iosMetadata.primaryGenreName ||
+                                                    'App'}
                                             </p>
                                         </div>
                                     </div>
@@ -651,9 +667,7 @@ const AppListingPage: React.FC = () => {
                     <div className="max-w-4xl mx-auto px-4 pb-16">
                         {/* About Section */}
                         <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
-                            <h2 className="text-xl font-semibold text-grayscale-900 mb-4">
-                                About
-                            </h2>
+                            <h2 className="text-xl font-semibold text-grayscale-900 mb-4">About</h2>
 
                             <p className="text-grayscale-700 leading-relaxed whitespace-pre-wrap">
                                 {listing.full_description}
@@ -670,17 +684,12 @@ const AppListingPage: React.FC = () => {
                                 <div className="space-y-3">
                                     {extendedListing.highlights.map(
                                         (highlight: string, index: number) => (
-                                            <div
-                                                key={index}
-                                                className="flex items-start gap-3"
-                                            >
+                                            <div key={index} className="flex items-start gap-3">
                                                 <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mt-0.5">
                                                     <Checkmark className="w-4 h-4 text-emerald-600" />
                                                 </div>
 
-                                                <p className="text-grayscale-700">
-                                                    {highlight}
-                                                </p>
+                                                <p className="text-grayscale-700">{highlight}</p>
                                             </div>
                                         )
                                     )}

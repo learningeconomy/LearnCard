@@ -55,7 +55,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
     const { closeModal } = useModal();
     const sectionPortal = document.getElementById('section-cancel-portal');
 
-    const color = boostCategoryMetadata[category].color;
+    const color = boostCategoryMetadata[category]?.color ?? 'grayscale-900';
 
     const issueButtonDisabled = issuedTo.length === 0;
 

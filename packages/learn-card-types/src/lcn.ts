@@ -377,7 +377,10 @@ export type SendBrandingOptions = z.infer<typeof SendBrandingOptionsValidator>;
 // Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
 export const SendOptionsValidator = z.object({
     webhookUrl: z.string().url().optional().describe('Webhook URL to receive claim notifications'),
-    suppressDelivery: z.boolean().optional().describe('If true, returns claimUrl without sending email/SMS'),
+    suppressDelivery: z
+        .boolean()
+        .optional()
+        .describe('If true, returns claimUrl without sending email/SMS'),
     branding: SendBrandingOptionsValidator.optional().describe('Branding for email/SMS delivery'),
 });
 export type SendOptions = z.infer<typeof SendOptionsValidator>;
@@ -391,7 +394,9 @@ export const SendBoostInputValidator = z
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
-        options: SendOptionsValidator.optional().describe('Options for email/phone recipients (Universal Inbox)'),
+        options: SendOptionsValidator.optional().describe(
+            'Options for email/phone recipients (Universal Inbox)'
+        ),
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional().describe('Integration ID for activity tracking'),
     })
@@ -414,7 +419,9 @@ export const SendBoostResponseValidator = z.object({
     credentialUri: z.string(),
     uri: z.string(),
     activityId: z.string().describe('Links to the activity lifecycle for this issuance'),
-    inbox: SendInboxResponseValidator.optional().describe('Present when sent via email/phone (Universal Inbox)'),
+    inbox: SendInboxResponseValidator.optional().describe(
+        'Present when sent via email/phone (Universal Inbox)'
+    ),
 });
 export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
@@ -1042,107 +1049,109 @@ export const IssueInboxCredentialValidator = z
         // === PROCESS CONFIGURATION (Optional) ===
         // HOW should this issuance be handled?
         configuration: z
-        .object({
-            signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
-                'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
+            .object({
+                signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe(
+                    'The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'
+                ),
+                webhookUrl: z
+                    .string()
+                    .url()
+                    .optional()
+                    .describe('The webhook URL to receive credential issuance events.'),
+                expiresInDays: z
+                    .number()
+                    .min(1)
+                    .max(365)
+                    .optional()
+                    .describe('The number of days the credential will be valid for.'),
+                templateData: z
+                    .record(z.string(), z.unknown())
+                    .optional()
+                    .describe(
+                        'Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided.'
+                    ),
+                // --- For User-Facing Delivery (Email/SMS) ---
+                delivery: z
+                    .object({
+                        suppress: z
+                            .boolean()
+                            .optional()
+                            .default(false)
+                            .describe(
+                                'Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users.'
+                            ),
+                        template: z
+                            .object({
+                                id: z
+                                    .enum(['universal-inbox-claim'])
+                                    .optional()
+                                    .describe(
+                                        'The template ID to use for the credential delivery. If not provided, the default template will be used.'
+                                    ),
+                                model: z
+                                    .object({
+                                        issuer: z
+                                            .object({
+                                                name: z
+                                                    .string()
+                                                    .optional()
+                                                    .describe(
+                                                        'The name of the organization (e.g., "State University").'
+                                                    ),
+                                                logoUrl: z
+                                                    .string()
+                                                    .url()
+                                                    .optional()
+                                                    .describe(
+                                                        "The URL of the organization's logo."
+                                                    ),
+                                            })
+                                            .optional(),
+                                        credential: z
+                                            .object({
+                                                name: z
+                                                    .string()
+                                                    .optional()
+                                                    .describe(
+                                                        'The name of the credential (e.g., "Bachelor of Science").'
+                                                    ),
+                                                type: z
+                                                    .string()
+                                                    .optional()
+                                                    .describe(
+                                                        'The type of the credential (e.g., "degree", "certificate").'
+                                                    ),
+                                            })
+                                            .optional(),
+                                        recipient: z
+                                            .object({
+                                                name: z
+                                                    .string()
+                                                    .optional()
+                                                    .describe(
+                                                        'The name of the recipient (e.g., "John Doe").'
+                                                    ),
+                                            })
+                                            .optional(),
+                                    })
+                                    .describe(
+                                        'The template model to use for the credential delivery. Injects via template variables into email/sms templates. If not provided, the default template will be used.'
+                                    ),
+                            })
+                            .optional()
+                            .describe(
+                                'The template to use for the credential delivery. If not provided, the default template will be used.'
+                            ),
+                    })
+                    .optional()
+                    .describe(
+                        'Configuration for the credential delivery i.e. email or SMS. When credentials are sent to a user who has a verified email or phone associated with their account, delivery is skipped, and the credential will be sent using in-app notifications. If not provided, the default configuration will be used.'
+                    ),
+            })
+            .optional()
+            .describe(
+                'Configuration for the credential issuance. If not provided, the default configuration will be used.'
             ),
-            webhookUrl: z
-                .string()
-                .url()
-                .optional()
-                .describe('The webhook URL to receive credential issuance events.'),
-            expiresInDays: z
-                .number()
-                .min(1)
-                .max(365)
-                .optional()
-                .describe('The number of days the credential will be valid for.'),
-            templateData: z
-                .record(z.string(), z.unknown())
-                .optional()
-                .describe(
-                    'Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided.'
-                ),
-            // --- For User-Facing Delivery (Email/SMS) ---
-            delivery: z
-                .object({
-                    suppress: z
-                        .boolean()
-                        .optional()
-                        .default(false)
-                        .describe(
-                            'Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users.'
-                        ),
-                    template: z
-                        .object({
-                            id: z
-                                .enum(['universal-inbox-claim'])
-                                .optional()
-                                .describe(
-                                    'The template ID to use for the credential delivery. If not provided, the default template will be used.'
-                                ),
-                            model: z
-                                .object({
-                                    issuer: z
-                                        .object({
-                                            name: z
-                                                .string()
-                                                .optional()
-                                                .describe(
-                                                    'The name of the organization (e.g., "State University").'
-                                                ),
-                                            logoUrl: z
-                                                .string()
-                                                .url()
-                                                .optional()
-                                                .describe("The URL of the organization's logo."),
-                                        })
-                                        .optional(),
-                                    credential: z
-                                        .object({
-                                            name: z
-                                                .string()
-                                                .optional()
-                                                .describe(
-                                                    'The name of the credential (e.g., "Bachelor of Science").'
-                                                ),
-                                            type: z
-                                                .string()
-                                                .optional()
-                                                .describe(
-                                                    'The type of the credential (e.g., "degree", "certificate").'
-                                                ),
-                                        })
-                                        .optional(),
-                                    recipient: z
-                                        .object({
-                                            name: z
-                                                .string()
-                                                .optional()
-                                                .describe(
-                                                    'The name of the recipient (e.g., "John Doe").'
-                                                ),
-                                        })
-                                        .optional(),
-                                })
-                                .describe(
-                                    'The template model to use for the credential delivery. Injects via template variables into email/sms templates. If not provided, the default template will be used.'
-                                ),
-                        })
-                        .optional()
-                        .describe(
-                            'The template to use for the credential delivery. If not provided, the default template will be used.'
-                        ),
-                })
-                .optional()
-                .describe(
-                    'Configuration for the credential delivery i.e. email or SMS. When credentials are sent to a user who has a verified email or phone associated with their account, delivery is skipped, and the credential will be sent using in-app notifications. If not provided, the default configuration will be used.'
-                ),
-        })
-        .optional()
-        .describe(
-            'Configuration for the credential issuance. If not provided, the default configuration will be used.'
-        ),
     })
     .refine(data => data.credential || data.templateUri, {
         message: 'Either credential or templateUri must be provided.',
@@ -1632,6 +1641,7 @@ export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
 
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
+    slug: z.string().optional(),
     display_name: z.string(),
     tagline: z.string(),
     full_description: z.string(),
@@ -1687,6 +1697,44 @@ export const PaginatedInstalledAppsValidator = PaginationResponseValidator.exten
 
 export type PaginatedInstalledApps = z.infer<typeof PaginatedInstalledAppsValidator>;
 
+// App Store Boost Association
+export const AppBoostValidator = z.object({
+    templateAlias: z
+        .string()
+        .min(1)
+        .max(50)
+        .regex(/^[a-z0-9-]+$/),
+    boostUri: z.string(),
+});
+
+export type AppBoost = z.infer<typeof AppBoostValidator>;
+
+// App Event Types (discriminated union for type safety)
+export const SendCredentialEventValidator = z.object({
+    type: z.literal('send-credential'),
+    templateAlias: z.string(),
+    templateData: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type SendCredentialEvent = z.infer<typeof SendCredentialEventValidator>;
+
+// Add new event types here as the union grows
+export const AppEventValidator = z.discriminatedUnion('type', [SendCredentialEventValidator]);
+
+export type AppEvent = z.infer<typeof AppEventValidator>;
+
+// Full input including listingId (used by brain service)
+export const AppEventInputValidator = z.object({
+    listingId: z.string(),
+    event: AppEventValidator,
+});
+
+export type AppEventInput = z.infer<typeof AppEventInputValidator>;
+
+// Response is generic since different events may return different data
+export const AppEventResponseValidator = z.record(z.string(), z.unknown());
+
+export type AppEventResponse = z.infer<typeof AppEventResponseValidator>;
 // Credential Activity
 export const CredentialActivityEventTypeValidator = z.enum([
     'CREATED',
@@ -1698,7 +1746,9 @@ export const CredentialActivityEventTypeValidator = z.enum([
 export type CredentialActivityEventType = z.infer<typeof CredentialActivityEventTypeValidator>;
 
 export const CredentialActivityRecipientTypeValidator = z.enum(['profile', 'email', 'phone']);
-export type CredentialActivityRecipientType = z.infer<typeof CredentialActivityRecipientTypeValidator>;
+export type CredentialActivityRecipientType = z.infer<
+    typeof CredentialActivityRecipientTypeValidator
+>;
 
 export const CredentialActivitySourceTypeValidator = z.enum([
     'send',
@@ -1730,15 +1780,19 @@ export const CredentialActivityValidator = z.object({
 export type CredentialActivityRecord = z.infer<typeof CredentialActivityValidator>;
 
 export const CredentialActivityWithDetailsValidator = CredentialActivityValidator.extend({
-    boost: z.object({
-        id: z.string(),
-        name: z.string().optional(),
-        category: z.string().optional(),
-    }).optional(),
-    recipientProfile: z.object({
-        profileId: z.string(),
-        displayName: z.string().optional(),
-    }).optional(),
+    boost: z
+        .object({
+            id: z.string(),
+            name: z.string().optional(),
+            category: z.string().optional(),
+        })
+        .optional(),
+    recipientProfile: z
+        .object({
+            profileId: z.string(),
+            displayName: z.string().optional(),
+        })
+        .optional(),
 });
 export type CredentialActivityWithDetails = z.infer<typeof CredentialActivityWithDetailsValidator>;
 

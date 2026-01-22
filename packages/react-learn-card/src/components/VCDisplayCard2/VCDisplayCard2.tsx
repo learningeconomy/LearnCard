@@ -78,6 +78,9 @@ export type VCDisplayCard2Props = {
     customLinkedCredentialsComponent?: React.ReactNode;
     customContentSlot?: React.ReactNode;
     customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
+    hideAwardedTo?: boolean;
+    hideFrontFaceDetails?: boolean;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -124,6 +127,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customLinkedCredentialsComponent,
     customContentSlot,
     customBodyContentSlot,
+    unknownVerifierTitle,
+    hideAwardedTo,
+    hideFrontFaceDetails,
 }) => {
     const {
         title = '',
@@ -216,6 +222,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 formattedDisplayType={formattedDisplayType}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
+                unknownVerifierTitle={unknownVerifierTitle}
+                hideAwardedTo={hideAwardedTo}
+                hideFrontFaceDetails={hideFrontFaceDetails}
             />
         );
     }
@@ -247,6 +256,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 formattedDisplayType={formattedDisplayType}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
+                unknownVerifierTitle={unknownVerifierTitle}
+                hideAwardedTo={hideAwardedTo}
+                hideFrontFaceDetails={hideFrontFaceDetails}
             />
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
@@ -276,6 +288,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     customIDDescription={customIDDescription}
                     hideGradientBackground={hideGradientBackground}
                     customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                    unknownVerifierTitle={unknownVerifierTitle}
                 />
             </div>
         );
@@ -384,6 +397,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     imageUrl={imageUrl}
                                     knownDIDRegistry={knownDIDRegistry}
                                     customBodyContentSlot={customBodyContentSlot}
+                                    unknownVerifierTitle={unknownVerifierTitle}
                                 />
                             )}
                             {!isFront && (

@@ -17,7 +17,9 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
 
     const openNetworkModal = () => {
         newModal(
-            <JoinNetworkModalWrapper handleCloseModal={closeModal} showNotificationsModal={false} />
+            <JoinNetworkModalWrapper handleCloseModal={closeModal} showNotificationsModal={false} />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
     };
 

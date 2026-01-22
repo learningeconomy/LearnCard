@@ -13,6 +13,7 @@ interface DatesSectionProps {
     onChange: (template: OBv3CredentialTemplate) => void;
     isExpanded: boolean;
     onToggle: () => void;
+    disableDynamicFields?: boolean;
 }
 
 export const DatesSection: React.FC<DatesSectionProps> = ({
@@ -20,6 +21,7 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
     onChange,
     isExpanded,
     onToggle,
+    disableDynamicFields = false,
 }) => {
     const updateField = (key: 'validFrom' | 'validUntil', value: TemplateFieldValue) => {
         onChange({ ...template, [key]: value });
@@ -74,6 +76,7 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
                         onChange={(f) => updateField('validUntil', f)}
                         placeholder="2025-01-15T00:00:00Z"
                         helpText="When the credential expires (optional, ISO 8601 format)"
+                        showDynamicToggle={!disableDynamicFields}
                     />
                 )}
 

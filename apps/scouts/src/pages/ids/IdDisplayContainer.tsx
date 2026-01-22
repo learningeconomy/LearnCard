@@ -113,6 +113,10 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
 
     let achievementTypeText = getAchievementTypeDisplayText(achievementType, categoryType);
 
+    if (achievementTypeText === 'Scout') {
+        achievementTypeText = 'Troop';
+    }
+
     if (boostPageViewMode === BoostPageViewMode.List) {
         return (
             <BoostListItem
@@ -123,6 +127,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                 categoryType={categoryType}
                 branding={BrandingEnum.scoutPass}
                 loading={loading}
+                managedBoost={viewMode === CredentialListTabEnum.Managed}
             />
         );
     }
@@ -319,11 +324,9 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                             </span>
                                         </h3>
                                     )}
-                                    {subtitle && (
-                                        <span className="text-grayscale-700 font-notoSans text-[14px] font-[600]">
-                                            {subtitle}
-                                        </span>
-                                    )}
+                                    <span className="text-grayscale-700 font-notoSans text-[14px] font-[600] line-clamp-1">
+                                        {achievementTypeText} {subtitle && `• ${subtitle}`}
+                                    </span>
                                     {/* {location && (
                                 <p className="text-sm text-grayscale-800 text-left font-medium">
                                     {location}

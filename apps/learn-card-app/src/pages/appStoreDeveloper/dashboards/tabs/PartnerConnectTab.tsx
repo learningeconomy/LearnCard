@@ -27,14 +27,18 @@ import {
     ExternalLink,
     Info,
     ChevronDown,
+    Layout,
+    Loader2,
 } from 'lucide-react';
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
 import { useToast, ToastTypeEnum, useWallet } from 'learn-card-base';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
 import type { EmbedAppGuideConfig, LLMIntegrationMetadata, TemplateMetadata, GuideState } from '../../guides/types';
 import { Clipboard } from '@capacitor/clipboard';
 
 import { CodeBlock } from '../../components/CodeBlock';
+import { TemplateListManager } from '../../components/TemplateListManager';
 
 interface ApiMethod {
     id: string;
@@ -71,6 +75,8 @@ interface BoostTemplate {
     category?: string;
     image?: string;
     createdAt?: string;
+    templateAlias?: string;
+    variables?: string[];
 }
 
 const FEATURES = [
@@ -105,9 +111,7 @@ const METHODS: ApiMethod[] = [
         },
         code: `import { createPartnerConnect } from '@learncard/partner-connect';
 
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Get the authenticated user's identity
 const identity = await learnCard.requestIdentity();
@@ -130,51 +134,53 @@ const userId = identity.did;`,
         category: 'credentials',
         icon: <Send className="w-4 h-4" />,
         shortDescription: 'Issue a credential',
-        description: 'Send a Verifiable Credential directly to the user\'s wallet. The user will see a prompt to accept the credential. Use this for course completions, achievements, certificates, and more.',
+        description: 'Issue a credential to the user\'s wallet using a pre-configured template. Create templates in the Templates tab, then reference them by alias. The credential is automatically signed and issued.',
         parameters: [
             {
-                name: 'credential',
-                type: 'VerifiableCredential',
+                name: 'templateAlias',
+                type: 'string',
                 required: true,
-                description: 'The W3C Verifiable Credential object to send',
+                description: 'The alias of the credential template to use (configured in Templates tab)',
+            },
+            {
+                name: 'templateData',
+                type: 'Record<string, string>',
+                required: false,
+                description: 'Values for template variables (e.g., recipient_name, course_name)',
             },
         ],
         returns: {
-            type: 'Promise<{ success: boolean }>',
-            description: 'Whether the credential was accepted',
-            example: `{ "success": true }`,
+            type: 'Promise<{ credentialUri?: string }>',
+            description: 'The URI of the issued credential if successful',
+            example: `{ "credentialUri": "urn:lc:credential:abc123" }`,
         },
-        code: `// Issue a credential when user completes something
-const credential = {
-    "@context": [
-        "https://www.w3.org/2018/credentials/v1",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
-    ],
-    "type": ["VerifiableCredential", "OpenBadgeCredential"],
-    "name": "JavaScript Fundamentals",
-    "issuer": {
-        "id": "did:web:your-app.com",
-        "name": "Your App Name"
+        code: `// Issue a credential using a template alias
+// Templates are configured in the Templates tab
+
+// Simple credential (no template variables)
+const result = await learnCard.sendCredential({
+    templateAlias: 'course-completion',
+});
+
+// Credential with template variables
+const resultWithData = await learnCard.sendCredential({
+    templateAlias: 'course-completion',
+    templateData: {
+        recipient_name: 'Jane Doe',
+        course_name: 'JavaScript Fundamentals',
+        completion_date: new Date().toISOString(),
     },
-    "credentialSubject": {
-        "achievement": {
-            "type": ["Achievement"],
-            "name": "JavaScript Fundamentals",
-            "description": "Completed the JavaScript fundamentals course",
-            "achievementType": "Certificate"
-        }
-    }
-};
+});
 
-const result = await learnCard.sendCredential({ credential });
-
-if (result.success) {
+if (resultWithData.credentialUri) {
+    console.log('Credential issued:', resultWithData.credentialUri);
     showSuccessMessage('Credential added to your wallet!');
 }`,
         tips: [
-            'Use Open Badges 3.0 format for maximum compatibility',
-            'Include your issuer DID for credential verification',
-            'The user can decline — always handle the rejection case',
+            'Create templates in the Templates tab first',
+            'Template aliases are auto-generated from the template name',
+            'Use templateData to fill in dynamic values like names and dates',
+            'Check the generated code in the Code tab for your specific templates',
         ],
     },
     {
@@ -391,22 +397,43 @@ const CATEGORIES = [
 
 export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
     integration,
-    selectedListing,
+    selectedListing: externalSelectedListing,
 }) => {
     const { presentToast } = useToast();
     const { initWallet } = useWallet();
+    const { useListingsForIntegration } = useDeveloperPortal();
+
+    // Fetch app listings for this integration
+    const { data: appListings, isLoading: listingsLoading } = useListingsForIntegration(integration.id);
+
+    // Local selected listing state (can be overridden by external prop)
+    const [localSelectedListing, setLocalSelectedListing] = useState<AppStoreListing | null>(externalSelectedListing || null);
+
+    // Use external selection if provided, otherwise use local
+    const selectedListing = externalSelectedListing || localSelectedListing;
+
+    // Auto-select first listing when listings load
+    useEffect(() => {
+        if (appListings && appListings.length > 0 && !localSelectedListing && !externalSelectedListing) {
+            setLocalSelectedListing(appListings[0]);
+        }
+    }, [appListings, localSelectedListing, externalSelectedListing]);
+
     const [selectedMethodId, setSelectedMethodId] = useState('requestIdentity');
-    const [showInstall, setShowInstall] = useState(false);
-    const [showApiReference, setShowApiReference] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
-    const [templates, setTemplates] = useState<BoostTemplate[]>([]);
+    const [issueCredentialsTemplates, setIssueCredentialsTemplates] = useState<BoostTemplate[]>([]);
+    const [peerBadgesTemplates, setPeerBadgesTemplates] = useState<BoostTemplate[]>([]);
+
+    // Tab navigation state
+    const [activeTab, setActiveTab] = useState<'templates' | 'code' | 'setup'>('templates');
+    const [templateType, setTemplateType] = useState<'issue-credentials' | 'peer-badges'>('issue-credentials');
 
     // ============================================================
     // EXTRACT SAVED CONFIG FROM GUIDE STATE
     // ============================================================
     const guideState = integration?.guideState as GuideState | undefined;
     const savedConfig = guideState?.config?.embedAppConfig as EmbedAppGuideConfig | undefined;
-    const selectedFeatures = savedConfig?.selectedFeatures || [];
+    const savedSelectedFeatures = savedConfig?.selectedFeatures || [];
     const featureConfig = savedConfig?.featureConfig || {};
 
     // Extract feature-specific configuration
@@ -414,14 +441,13 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
     const requestDataConsentConfig = featureConfig['request-data-consent'];
     const requestCredentialsConfig = featureConfig['request-credentials'];
 
-    const hasConfig = selectedFeatures.length > 0;
-
     // ============================================================
-    // FETCH TEMPLATES - by both appListingId AND integrationId
+    // FETCH TEMPLATES - Separate issue-credentials and peer-badges
     // ============================================================
     useEffect(() => {
-        if (!selectedListing?.listing_id && !integration?.id) {
-            setTemplates([]);
+        if (!selectedListing?.listing_id) {
+            setIssueCredentialsTemplates([]);
+            setPeerBadgesTemplates([]);
             return;
         }
 
@@ -430,54 +456,89 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
         const fetchAllTemplates = async () => {
             try {
                 const wallet = await initWallet();
-                const allTemplates: BoostTemplate[] = [];
-                const seenUris = new Set<string>();
 
-                const addTemplates = (records: Record<string, unknown>[]) => {
-                    for (const boost of records) {
-                        const uri = boost.uri as string;
+                // Extract template variables from credential JSON
+                const extractVariables = (credential: Record<string, unknown>): string[] => {
+                    const variables: string[] = [];
+                    const pattern = /\{\{(\w+)\}\}/g;
 
-                        if (!seenUris.has(uri)) {
-                            seenUris.add(uri);
-                            allTemplates.push({
-                                uri,
-                                name: boost.name as string || 'Untitled Template',
-                                description: boost.description as string,
-                                type: boost.type as string,
-                                category: boost.category as string,
-                                image: boost.image as string,
-                                createdAt: boost.createdAt as string,
-                            });
+                    const extractFromValue = (value: unknown) => {
+                        if (typeof value === 'string') {
+                            let match;
+                            while ((match = pattern.exec(value)) !== null) {
+                                if (!variables.includes(match[1])) {
+                                    variables.push(match[1]);
+                                }
+                            }
+                        } else if (Array.isArray(value)) {
+                            value.forEach(extractFromValue);
+                        } else if (value && typeof value === 'object') {
+                            Object.values(value).forEach(extractFromValue);
                         }
-                    }
+                    };
+
+                    extractFromValue(credential);
+                    return variables;
                 };
 
-                // Fetch by appListingId
-                if (selectedListing?.listing_id) {
-                    const byListing = await wallet.invoke.getPaginatedBoosts({
-                        limit: 100,
-                        query: { meta: { appListingId: selectedListing.listing_id } }
-                    });
-                    addTemplates(byListing?.records || []);
+                // 1. Fetch issue-credentials templates (via getAppBoosts - have templateAlias)
+                const issueTemplates: BoostTemplate[] = [];
+                const boostLinks = await wallet.invoke.getAppBoosts(selectedListing.listing_id) || [];
+
+                for (const link of boostLinks) {
+                    try {
+                        const fullBoost = await wallet.invoke.getBoost(link.boostUri);
+                        const credential = (fullBoost?.boost as Record<string, unknown>) || {};
+
+                        issueTemplates.push({
+                            uri: link.boostUri,
+                            name: fullBoost?.name || (credential?.name as string) || 'Untitled Template',
+                            description: credential?.description as string,
+                            type: fullBoost?.type as string,
+                            category: fullBoost?.category as string,
+                            templateAlias: link.templateAlias,
+                            variables: extractVariables(credential),
+                        });
+                    } catch (e) {
+                        console.warn('Failed to fetch boost:', link.boostUri, e);
+                    }
                 }
 
-                // Fetch by integrationId
-                if (integration?.id) {
-                    const byIntegration = await wallet.invoke.getPaginatedBoosts({
-                        limit: 100,
-                        query: { meta: { integrationId: integration.id } }
-                    });
-                    addTemplates(byIntegration?.records || []);
+                // 2. Fetch peer-badges templates (by featureType metadata)
+                const peerTemplates: BoostTemplate[] = [];
+                const peerBoostsResult = await wallet.invoke.getPaginatedBoosts({
+                    limit: 50,
+                    query: { meta: { appListingId: selectedListing.listing_id, featureType: 'peer-badges' } },
+                });
+
+                for (const boost of (peerBoostsResult?.records || [])) {
+                    try {
+                        const uri = boost.uri as string;
+                        const fullBoost = await wallet.invoke.getBoost(uri);
+                        const credential = (fullBoost?.boost as Record<string, unknown>) || {};
+
+                        peerTemplates.push({
+                            uri,
+                            name: fullBoost?.name || (boost.name as string) || 'Untitled Template',
+                            description: (credential?.description as string) || '',
+                            type: fullBoost?.type as string,
+                            category: fullBoost?.category as string,
+                        });
+                    } catch (e) {
+                        console.warn('Failed to fetch peer boost:', boost.uri, e);
+                    }
                 }
 
                 if (!cancelled) {
-                    setTemplates(allTemplates);
+                    setIssueCredentialsTemplates(issueTemplates);
+                    setPeerBadgesTemplates(peerTemplates);
                 }
             } catch (err) {
                 console.error('Failed to fetch templates:', err);
 
                 if (!cancelled) {
-                    setTemplates([]);
+                    setIssueCredentialsTemplates([]);
+                    setPeerBadgesTemplates([]);
                 }
             }
         };
@@ -487,7 +548,29 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [selectedListing?.listing_id, integration?.id, initWallet]);
+    }, [selectedListing?.listing_id, initWallet]);
+
+    // ============================================================
+    // DERIVE EFFECTIVE SELECTED FEATURES
+    // ============================================================
+    // Auto-include features if templates exist for them
+    const selectedFeatures = useMemo(() => {
+        const features = new Set(savedSelectedFeatures);
+
+        // Auto-include issue-credentials if templates exist
+        if (issueCredentialsTemplates.length > 0) {
+            features.add('issue-credentials');
+        }
+
+        // Auto-include peer-badges if templates exist
+        if (peerBadgesTemplates.length > 0) {
+            features.add('peer-badges');
+        }
+
+        return Array.from(features);
+    }, [savedSelectedFeatures, issueCredentialsTemplates, peerBadgesTemplates]);
+
+    const hasConfig = selectedFeatures.length > 0;
 
     // ============================================================
     // GENERATE PERSONALIZED CODE
@@ -507,15 +590,17 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
             },
             features: selectedFeatures,
             templates: {
-                peerBadges: templates.map(t => ({
+                peerBadges: peerBadgesTemplates.map((t: BoostTemplate) => ({
                     uri: t.uri,
                     name: t.name,
                     description: t.description,
                     type: t.type,
                 })),
-                issueCredentials: templates.map(t => ({
+                issueCredentials: issueCredentialsTemplates.map((t: BoostTemplate) => ({
                     uri: t.uri,
                     name: t.name,
+                    templateAlias: t.templateAlias,
+                    variables: t.variables,
                     description: t.description,
                     type: t.type,
                 })),
@@ -554,7 +639,8 @@ ${JSON.stringify(llmMetadata, null, 2).split('\n').map(line => ' * ' + line).joi
  * ================================================================
  * QUICK REFERENCE
  * ================================================================
- * ${templates.length > 0 ? `Templates: ${templates.length} available` : 'Templates: None configured'}
+ * ${issueCredentialsTemplates.length > 0 ? `Issue Credentials Templates: ${issueCredentialsTemplates.length} available` : 'Issue Credentials Templates: None configured'}
+ * ${peerBadgesTemplates.length > 0 ? `Peer Badges Templates: ${peerBadgesTemplates.length} available` : 'Peer Badges Templates: None configured'}
  * ${dataConsentContractUri ? `Data Consent Contract: ${dataConsentContractUri}` : 'Data Consent Contract: Not configured'}
  * ${issueContractUri ? `Issue Credentials Contract: ${issueContractUri}` : 'Issue Credentials Contract: Not configured'}
  * 
@@ -578,9 +664,7 @@ import { createPartnerConnect } from '@learncard/partner-connect';`);
 // ============================================================
 // SDK INITIALIZATION
 // ============================================================
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app',
-});`);
+const learnCard = createPartnerConnect();`);
 
         // USER IDENTITY
         sections.push(`
@@ -653,42 +737,92 @@ async function issueCredentialToUser() {
     }
 }`);
             } else {
-                // sync-wallet mode
-                const firstTemplate = templates[0];
-                const templateUri = firstTemplate?.uri || 'urn:lc:boost:YOUR_TEMPLATE_URI';
+                // sync-wallet mode - use templates with aliases
                 const contractUri = issueContractUri || 'urn:lc:contract:YOUR_CONTRACT_URI';
+
+                // Generate template config with aliases and variables
+                const templateConfigJson = JSON.stringify(issueCredentialsTemplates.map((t: BoostTemplate) => ({
+                    templateAlias: t.templateAlias,
+                    uri: t.uri,
+                    name: t.name,
+                    description: t.description || '',
+                    variables: t.variables || [],
+                })), null, 4);
+
+                // Generate example functions for each template
+                const templateFunctions = issueCredentialsTemplates.map((t: BoostTemplate) => {
+                    const hasVars = t.variables && t.variables.length > 0;
+                    const templateDataParam = hasVars
+                        ? `{\n${t.variables!.map(v => `        ${v}: 'value', // Replace with actual value`).join('\n')}\n    }`
+                        : '// No template variables needed';
+
+                    if (hasVars) {
+                        return `
+// Issue "${t.name}" credential
+async function issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.toUpperCase()) || 'Credential'}(templateData: Record<string, string>) {
+    const result = await learnCard.sendCredential({
+        templateAlias: '${t.templateAlias}',
+        templateData,
+    });
+    
+    if (result.credentialUri) {
+        console.log('Credential issued:', result.credentialUri);
+    }
+    return result;
+}
+
+// Example usage:
+// await issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.toUpperCase()) || 'Credential'}(${templateDataParam});`;
+                    } else {
+                        return `
+// Issue "${t.name}" credential (no template variables)
+async function issue${t.templateAlias?.replace(/-/g, '_').replace(/^./, c => c.toUpperCase()) || 'Credential'}() {
+    const result = await learnCard.sendCredential({
+        templateAlias: '${t.templateAlias}',
+    });
+    
+    if (result.credentialUri) {
+        console.log('Credential issued:', result.credentialUri);
+    }
+    return result;
+}`;
+                    }
+                }).join('\n');
 
                 sections.push(`
 // ============================================================
-// ISSUE CREDENTIALS - Sync to Wallet (Server-Side)
+// ISSUE CREDENTIALS - Using Templates
 // ============================================================
 // Contract URI: ${contractUri}
-// ${firstTemplate ? `Using template: "${firstTemplate.name}" (${templateUri})` : 'No templates configured'}
+// Templates configured: ${issueCredentialsTemplates.length}
 
-const CREDENTIAL_TEMPLATES = ${JSON.stringify(templates.map(t => ({ uri: t.uri, name: t.name, description: t.description || '' })), null, 4)};
+const CREDENTIAL_TEMPLATES = ${templateConfigJson};
+${templateFunctions}
 
-async function requestUserConsent() {
-    const result = await learnCard.requestConsent({
-        contractUri: '${contractUri}',
+// Generic function to issue any template by alias
+async function issueCredentialByAlias(templateAlias: string, templateData?: Record<string, string>) {
+    const template = CREDENTIAL_TEMPLATES.find(t => t.templateAlias === templateAlias);
+    if (!template) {
+        throw new Error(\`Template not found: \${templateAlias}. Available: \${CREDENTIAL_TEMPLATES.map(t => t.templateAlias).join(', ')}\`);
+    }
+    
+    const result = await learnCard.sendCredential({
+        templateAlias,
+        ...(templateData && { templateData }),
     });
     
-    if (result.granted) {
-        await fetch('/api/consent-granted', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: result.userId, contractUri: '${contractUri}' })
-        });
-        return true;
+    if (result.credentialUri) {
+        console.log('Credential issued:', result.credentialUri);
     }
-    return false;
+    return result;
 }`);
             }
         }
 
         // PEER BADGES
         if (selectedFeatures.includes('peer-badges')) {
-            const templateConfigJson = templates.length > 0
-                ? JSON.stringify(templates.map(t => ({
+            const templateConfigJson = peerBadgesTemplates.length > 0
+                ? JSON.stringify(peerBadgesTemplates.map((t: BoostTemplate) => ({
                     id: t.uri.split(':').pop() || t.uri,
                     uri: t.uri,
                     name: t.name,
@@ -702,10 +836,11 @@ async function requestUserConsent() {
 // PEER-TO-PEER BADGES - Template Configuration
 // ============================================================
 // LLM INTEGRATION NOTE: Use these template URIs when calling sendPeerBadge().
+// Templates configured: ${peerBadgesTemplates.length}
 
 const PEER_BADGE_TEMPLATES = ${templateConfigJson};
 
-function findTemplate(query: string) {
+function findPeerBadgeTemplate(query: string) {
     const q = query.toLowerCase();
     return PEER_BADGE_TEMPLATES.find(t =>
         t.name.toLowerCase().includes(q) ||
@@ -716,7 +851,7 @@ function findTemplate(query: string) {
 
 async function sendPeerBadge(templateUri: string) {
     try {
-        await learnCard.initiateTemplateIssuance({ boostUri: templateUri });
+        await learnCard.initiateTemplateIssue(templateUri);
         console.log('Peer badge flow initiated with template:', templateUri);
     } catch (error) {
         console.error('Failed to initiate peer badge:', error);
@@ -815,7 +950,7 @@ async function launchWalletFeature(path: string, description?: string) {
         }
 
         return sections.join('\n');
-    }, [selectedFeatures, selectedListing, integration, templates, issueCredentialsConfig, requestDataConsentConfig, requestCredentialsConfig]);
+    }, [selectedFeatures, selectedListing, integration, issueCredentialsTemplates, peerBadgesTemplates, issueCredentialsConfig, requestDataConsentConfig, requestCredentialsConfig]);
 
     const selectedMethod = useMemo(
         () => METHODS.find(m => m.id === selectedMethodId) || METHODS[0],
@@ -843,355 +978,468 @@ async function launchWalletFeature(path: string, description?: string) {
 
     const initCode = `import { createPartnerConnect } from '@learncard/partner-connect';
 
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Get user identity (SSO - no login needed!)
 const identity = await learnCard.requestIdentity();
 console.log('User:', identity.profile.displayName);`;
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h2 className="text-lg font-semibold text-gray-800">Partner Connect SDK</h2>
-                <p className="text-sm text-gray-500">
-                    {hasConfig 
-                        ? `Your personalized integration code for ${selectedListing?.display_name || 'your app'}`
-                        : 'Complete the setup wizard to generate personalized code'
-                    }
-                </p>
+        <div className="space-y-4">
+            {/* Header with App Selector */}
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                    <h2 className="text-lg font-semibold text-gray-800">Partner Connect SDK</h2>
+                    <p className="text-sm text-gray-500">
+                        Manage templates and generate integration code
+                    </p>
+                </div>
+
+                {/* App Listing Selector - Compact */}
+                {appListings && appListings.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <Layout className="w-4 h-4 text-gray-400" />
+                        <select
+                            value={selectedListing?.listing_id || ''}
+                            onChange={(e) => {
+                                const listing = appListings.find(l => l.listing_id === e.target.value);
+                                setLocalSelectedListing(listing || null);
+                            }}
+                            className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        >
+                            {appListings.map(listing => (
+                                <option key={listing.listing_id} value={listing.listing_id}>
+                                    {listing.display_name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
             </div>
 
-            {/* ============================================================ */}
-            {/* YOUR INTEGRATION - Personalized Code Section */}
-            {/* ============================================================ */}
-            <div className="border-2 border-cyan-200 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-50 to-white">
-                <div className="p-4 border-b border-cyan-200 bg-cyan-50/50">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-cyan-100 rounded-lg">
-                                <Code className="w-5 h-5 text-cyan-600" />
-                            </div>
+            {listingsLoading && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
+                    <span className="text-gray-600">Loading app listings...</span>
+                </div>
+            )}
 
-                            <div>
-                                <h3 className="font-semibold text-gray-800">
-                                    {hasConfig ? 'Your Integration Code' : 'Integration Code'}
-                                </h3>
-                                <p className="text-xs text-gray-500">
-                                    {hasConfig 
-                                        ? `${selectedFeatures.length} feature${selectedFeatures.length !== 1 ? 's' : ''} configured • ${templates.length} template${templates.length !== 1 ? 's' : ''} available`
-                                        : 'Run the setup wizard to configure features'
-                                    }
-                                </p>
-                            </div>
+            {!listingsLoading && (!appListings || appListings.length === 0) && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div className="flex items-center gap-3">
+                        <Info className="w-5 h-5 text-amber-600" />
+                        <div>
+                            <p className="text-sm text-amber-800 font-medium">No app listings found</p>
+                            <p className="text-xs text-amber-700">
+                                Create an app listing in the &quot;App Listings&quot; tab first.
+                            </p>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Tab Navigation */}
+            {selectedListing && (
+                <>
+                    <div className="flex border-b border-gray-200">
+                        <button
+                            onClick={() => setActiveTab('templates')}
+                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === 'templates'
+                                    ? 'border-cyan-500 text-cyan-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            <Award className="w-4 h-4" />
+                            Templates
+                        </button>
 
                         <button
-                            onClick={() => handleCopy(generatePersonalizedCode, 'personalized')}
-                            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition-colors"
+                            onClick={() => setActiveTab('code')}
+                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === 'code'
+                                    ? 'border-cyan-500 text-cyan-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
                         >
-                            {copied === 'personalized' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                            {copied === 'personalized' ? 'Copied!' : 'Copy All'}
+                            <Code className="w-4 h-4" />
+                            Code
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('setup')}
+                            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === 'setup'
+                                    ? 'border-cyan-500 text-cyan-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            <Package className="w-4 h-4" />
+                            Setup
                         </button>
                     </div>
 
-                    {/* Selected Features Summary */}
-                    {hasConfig && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            {selectedFeatures.map(featureId => {
-                                const feature = FEATURES.find(f => f.id === featureId);
-                                return feature ? (
-                                    <div
-                                        key={featureId}
-                                        className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-cyan-200 rounded-full text-xs font-medium text-cyan-700"
-                                    >
-                                        {feature.icon}
-                                        {feature.title}
-                                    </div>
-                                ) : null;
-                            })}
+                    {/* ============================================================ */}
+                    {/* TEMPLATES TAB */}
+                    {/* ============================================================ */}
+                    {activeTab === 'templates' && (
+                        <div className="space-y-4">
+                            {/* Template Type Toggle */}
+                            <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg w-fit">
+                                <button
+                                    onClick={() => setTemplateType('issue-credentials')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                        templateType === 'issue-credentials'
+                                            ? 'bg-white text-gray-800 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <Award className="w-4 h-4" />
+                                    Issue Credentials
+                                </button>
+
+                                <button
+                                    onClick={() => setTemplateType('peer-badges')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                        templateType === 'peer-badges'
+                                            ? 'bg-white text-gray-800 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <Send className="w-4 h-4" />
+                                    Peer Badges
+                                </button>
+                            </div>
+
+                            {/* Template Type Description */}
+                            <div className={`p-3 rounded-lg text-sm ${
+                                templateType === 'issue-credentials'
+                                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                                    : 'bg-violet-50 border border-violet-200 text-violet-800'
+                            }`}>
+                                {templateType === 'issue-credentials' ? (
+                                    <>
+                                        <strong>Issue Credentials:</strong> Templates for credentials your app issues to users via <code className="bg-emerald-100 px-1 rounded">sendCredential()</code>
+                                    </>
+                                ) : (
+                                    <>
+                                        <strong>Peer Badges:</strong> Templates users can send to each other via <code className="bg-violet-100 px-1 rounded">initiateTemplateIssue()</code>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Template List Manager */}
+                            <TemplateListManager
+                                listingId={selectedListing.listing_id}
+                                integrationId={integration?.id}
+                                featureType={templateType}
+                                showCodeSnippets={true}
+                                editable={true}
+                            />
                         </div>
                     )}
-                </div>
 
-                <div className="p-4">
-                    <CodeBlock code={generatePersonalizedCode} maxHeight="max-h-[500px]" />
-
-                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                        <p className="text-sm text-amber-800">
-                            <strong>💡 LLM-Ready:</strong> Copy this code and paste it into an AI assistant (like ChatGPT or Claude) along with your requirements. The <code className="bg-amber-100 px-1 rounded">@llm-config</code> section contains all your template URIs and settings.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Installation Section */}
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <button
-                    onClick={() => setShowInstall(!showInstall)}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                    <div className="flex items-center gap-3">
-                        <Package className="w-5 h-5 text-cyan-600" />
-                        <div className="text-left">
-                            <h3 className="font-medium text-gray-800">Installation & Setup</h3>
-                            <p className="text-xs text-gray-500">Install the SDK and initialize it in your app</p>
-                        </div>
-                    </div>
-
-                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showInstall ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showInstall && (
-                    <div className="p-4 border-t border-gray-200 space-y-4">
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-gray-700">1. Install the SDK</span>
-                                <button
-                                    onClick={() => handleCopy(installCode, 'install')}
-                                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                                >
-                                    {copied === 'install' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                    {copied === 'install' ? 'Copied!' : 'Copy'}
-                                </button>
-                            </div>
-                            <CodeBlock code={installCode} />
-                            <p className="text-xs text-gray-500 mt-1">
-                                Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code> or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
-                            </p>
-                        </div>
-
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-gray-700">2. Initialize</span>
-                                <button
-                                    onClick={() => handleCopy(initCode, 'init')}
-                                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                                >
-                                    {copied === 'init' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                    {copied === 'init' ? 'Copied!' : 'Copy'}
-                                </button>
-                            </div>
-                            <CodeBlock code={initCode} />
-                        </div>
-
-                        <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
-                            <p className="text-sm text-cyan-800">
-                                <strong>That's it!</strong> Users are already logged in when inside the wallet, so <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code> returns instantly with their profile.
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* API Reference - Collapsible */}
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <button
-                    onClick={() => setShowApiReference(!showApiReference)}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                    <div className="flex items-center gap-3">
-                        <Code className="w-5 h-5 text-gray-600" />
-                        <div className="text-left">
-                            <h3 className="font-medium text-gray-800">API Reference</h3>
-                            <p className="text-xs text-gray-500">Explore all available SDK methods</p>
-                        </div>
-                    </div>
-
-                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showApiReference ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showApiReference && (
-                <div className="p-4 border-t border-gray-200">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                    {/* Method Navigation */}
-                    <div className="lg:col-span-4 space-y-3">
-                        {CATEGORIES.map(category => {
-                            const categoryMethods = METHODS.filter(m => m.category === category.id);
-
-                            return (
-                                <div key={category.id}>
-                                    <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        {category.icon}
-                                        {category.name}
+                    {/* ============================================================ */}
+                    {/* CODE TAB */}
+                    {/* ============================================================ */}
+                    {activeTab === 'code' && (
+                        <div className="space-y-4">
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-cyan-100 rounded-lg">
+                                            <Code className="w-5 h-5 text-cyan-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-medium text-gray-800">Your Integration Code</h3>
+                                            <p className="text-xs text-gray-500">
+                                                {issueCredentialsTemplates.length + peerBadgesTemplates.length} template{(issueCredentialsTemplates.length + peerBadgesTemplates.length) !== 1 ? 's' : ''} configured
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-1">
-                                        {categoryMethods.map(method => (
-                                            <button
-                                                key={method.id}
-                                                onClick={() => setSelectedMethodId(method.id)}
-                                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
-                                                    selectedMethodId === method.id
-                                                        ? 'bg-cyan-50 border border-cyan-200 text-cyan-700'
-                                                        : 'hover:bg-gray-50 text-gray-700'
-                                                }`}
-                                            >
-                                                <span className={`p-1.5 rounded-md ${getCategoryColor(method.category)}`}>
-                                                    {method.icon}
-                                                </span>
+                                    <button
+                                        onClick={() => handleCopy(generatePersonalizedCode, 'personalized')}
+                                        className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 transition-colors"
+                                    >
+                                        {copied === 'personalized' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                        {copied === 'personalized' ? 'Copied!' : 'Copy All'}
+                                    </button>
+                                </div>
 
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="font-mono text-sm font-medium truncate">
-                                                        {method.name}()
+                                <div className="p-4">
+                                    <CodeBlock code={generatePersonalizedCode} maxHeight="max-h-[500px]" />
+
+                                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                        <p className="text-sm text-amber-800">
+                                            <strong>💡 LLM-Ready:</strong> Copy this code and paste it into an AI assistant (like ChatGPT or Claude) along with your requirements. The <code className="bg-amber-100 px-1 rounded">@llm-config</code> section contains all your template URIs and settings.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ============================================================ */}
+                    {/* SETUP TAB */}
+                    {/* ============================================================ */}
+                    {activeTab === 'setup' && (
+                        <div className="space-y-4">
+                            {/* Installation */}
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div className="p-4 bg-gray-50 border-b border-gray-200">
+                                    <div className="flex items-center gap-3">
+                                        <Package className="w-5 h-5 text-cyan-600" />
+                                        <div>
+                                            <h3 className="font-medium text-gray-800">Installation & Setup</h3>
+                                            <p className="text-xs text-gray-500">Install the SDK and initialize it in your app</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 space-y-4">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium text-gray-700">1. Install the SDK</span>
+                                            <button
+                                                onClick={() => handleCopy(installCode, 'install')}
+                                                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                                            >
+                                                {copied === 'install' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                {copied === 'install' ? 'Copied!' : 'Copy'}
+                                            </button>
+                                        </div>
+                                        <CodeBlock code={installCode} />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code> or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium text-gray-700">2. Initialize</span>
+                                            <button
+                                                onClick={() => handleCopy(initCode, 'init')}
+                                                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                                            >
+                                                {copied === 'init' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                {copied === 'init' ? 'Copied!' : 'Copy'}
+                                            </button>
+                                        </div>
+                                        <CodeBlock code={initCode} />
+                                    </div>
+
+                                    <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
+                                        <p className="text-sm text-cyan-800">
+                                            <strong>That's it!</strong> Users are already logged in when inside the wallet, so <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code> returns instantly with their profile.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* API Reference */}
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div className="p-4 bg-gray-50 border-b border-gray-200">
+                                    <div className="flex items-center gap-3">
+                                        <Code className="w-5 h-5 text-gray-600" />
+                                        <div>
+                                            <h3 className="font-medium text-gray-800">API Reference</h3>
+                                            <p className="text-xs text-gray-500">Explore all available SDK methods</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4">
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                        {/* Method Navigation */}
+                                        <div className="lg:col-span-4 space-y-3">
+                                            {CATEGORIES.map(category => {
+                                                const categoryMethods = METHODS.filter(m => m.category === category.id);
+
+                                                return (
+                                                    <div key={category.id}>
+                                                        <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                            {category.icon}
+                                                            {category.name}
+                                                        </div>
+
+                                                        <div className="space-y-1">
+                                                            {categoryMethods.map(method => (
+                                                                <button
+                                                                    key={method.id}
+                                                                    onClick={() => setSelectedMethodId(method.id)}
+                                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                                                                        selectedMethodId === method.id
+                                                                            ? 'bg-cyan-50 border border-cyan-200 text-cyan-700'
+                                                                            : 'hover:bg-gray-50 text-gray-700'
+                                                                    }`}
+                                                                >
+                                                                    <span className={`p-1.5 rounded-md ${getCategoryColor(method.category)}`}>
+                                                                        {method.icon}
+                                                                    </span>
+
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="font-mono text-sm font-medium truncate">
+                                                                            {method.name}()
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-500 truncate">
+                                                                            {method.shortDescription}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {selectedMethodId === method.id && (
+                                                                        <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0" />
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-xs text-gray-500 truncate">
-                                                        {method.shortDescription}
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Method Details */}
+                                        <div className="lg:col-span-8 space-y-4">
+                                            {/* Method Header */}
+                                            <div className="p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl">
+                                                <div className="flex items-start gap-4">
+                                                    <div className={`p-3 rounded-xl ${getCategoryColor(selectedMethod.category)}`}>
+                                                        {selectedMethod.icon}
+                                                    </div>
+
+                                                    <div className="flex-1">
+                                                        <h4 className="text-lg font-mono font-semibold text-gray-800">
+                                                            learnCard.{selectedMethod.name}()
+                                                        </h4>
+                                                        <p className="mt-2 text-gray-600 text-sm leading-relaxed">
+                                                            {selectedMethod.description}
+                                                        </p>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                {selectedMethodId === method.id && (
-                                                    <ChevronRight className="w-4 h-4 text-cyan-500 flex-shrink-0" />
-                                                )}
-                                            </button>
-                                        ))}
+                                            {/* Parameters */}
+                                            {selectedMethod.parameters.length > 0 && (
+                                                <div>
+                                                    <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                                        <Code className="w-4 h-4 text-gray-500" />
+                                                        Parameters
+                                                    </h5>
+
+                                                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                                        {selectedMethod.parameters.map((param, idx) => (
+                                                            <div
+                                                                key={param.name}
+                                                                className={`p-3 ${idx > 0 ? 'border-t border-gray-200' : ''}`}
+                                                            >
+                                                                <div className="flex items-start gap-2 flex-wrap">
+                                                                    <code className="px-2 py-0.5 bg-gray-100 rounded text-sm font-mono text-gray-800">
+                                                                        {param.name}
+                                                                    </code>
+                                                                    <code className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+                                                                        {param.type}
+                                                                    </code>
+                                                                    {param.required && (
+                                                                        <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
+                                                                            required
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="mt-1 text-sm text-gray-600">{param.description}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Returns */}
+                                            <div>
+                                                <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                                                    Returns
+                                                </h5>
+
+                                                <div className="p-3 border border-gray-200 rounded-xl">
+                                                    <code className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-sm">
+                                                        {selectedMethod.returns.type}
+                                                    </code>
+                                                    <p className="mt-1 text-sm text-gray-600">{selectedMethod.returns.description}</p>
+
+                                                    <div className="mt-2">
+                                                        <CodeBlock code={selectedMethod.returns.example} maxHeight="max-h-32" />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Code Example */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h5 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                                        <Terminal className="w-4 h-4 text-gray-500" />
+                                                        Example
+                                                    </h5>
+                                                    <button
+                                                        onClick={() => handleCopy(selectedMethod.code, 'example')}
+                                                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                                                    >
+                                                        {copied === 'example' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                        {copied === 'example' ? 'Copied!' : 'Copy'}
+                                                    </button>
+                                                </div>
+
+                                                <CodeBlock code={selectedMethod.code} maxHeight="max-h-72" />
+                                            </div>
+
+                                            {/* Tips */}
+                                            {selectedMethod.tips && selectedMethod.tips.length > 0 && (
+                                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                                    <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                                        <Zap className="w-4 h-4" />
+                                                        Pro Tips
+                                                    </h5>
+                                                    <ul className="space-y-1">
+                                                        {selectedMethod.tips.map((tip, idx) => (
+                                                            <li key={idx} className="flex items-start gap-2 text-sm text-amber-700">
+                                                                <ChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                                {tip}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Method Details */}
-                    <div className="lg:col-span-8 space-y-4">
-                        {/* Method Header */}
-                        <div className="p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl">
-                            <div className="flex items-start gap-4">
-                                <div className={`p-3 rounded-xl ${getCategoryColor(selectedMethod.category)}`}>
-                                    {selectedMethod.icon}
-                                </div>
-
-                                <div className="flex-1">
-                                    <h4 className="text-lg font-mono font-semibold text-gray-800">
-                                        learnCard.{selectedMethod.name}()
-                                    </h4>
-                                    <p className="mt-2 text-gray-600 text-sm leading-relaxed">
-                                        {selectedMethod.description}
-                                    </p>
-                                </div>
                             </div>
-                        </div>
 
-                        {/* Parameters */}
-                        {selectedMethod.parameters.length > 0 && (
-                            <div>
-                                <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                                    <Code className="w-4 h-4 text-gray-500" />
-                                    Parameters
-                                </h5>
-
-                                <div className="border border-gray-200 rounded-xl overflow-hidden">
-                                    {selectedMethod.parameters.map((param, idx) => (
-                                        <div
-                                            key={param.name}
-                                            className={`p-3 ${idx > 0 ? 'border-t border-gray-200' : ''}`}
-                                        >
-                                            <div className="flex items-start gap-2 flex-wrap">
-                                                <code className="px-2 py-0.5 bg-gray-100 rounded text-sm font-mono text-gray-800">
-                                                    {param.name}
-                                                </code>
-                                                <code className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
-                                                    {param.type}
-                                                </code>
-                                                {param.required && (
-                                                    <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
-                                                        required
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="mt-1 text-sm text-gray-600">{param.description}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Returns */}
-                        <div>
-                            <h5 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                                <ChevronRight className="w-4 h-4 text-gray-500" />
-                                Returns
-                            </h5>
-
-                            <div className="p-3 border border-gray-200 rounded-xl">
-                                <code className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-sm">
-                                    {selectedMethod.returns.type}
-                                </code>
-                                <p className="mt-1 text-sm text-gray-600">{selectedMethod.returns.description}</p>
-
-                                <div className="mt-2">
-                                    <CodeBlock code={selectedMethod.returns.example} maxHeight="max-h-32" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Code Example */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <h5 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                                    <Terminal className="w-4 h-4 text-gray-500" />
-                                    Example
-                                </h5>
-                                <button
-                                    onClick={() => handleCopy(selectedMethod.code, 'example')}
-                                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                            {/* Resources */}
+                            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                                <a
+                                    href="https://docs.learncard.com/sdks/partner-connect"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                 >
-                                    {copied === 'example' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                                    {copied === 'example' ? 'Copied!' : 'Copy'}
-                                </button>
-                            </div>
+                                    <FileText className="w-4 h-4" />
+                                    SDK Documentation
+                                    <ExternalLink className="w-3 h-3" />
+                                </a>
 
-                            <CodeBlock code={selectedMethod.code} maxHeight="max-h-72" />
+                                <a
+                                    href="https://github.com/learningeconomy/LearnCard"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                                >
+                                    <Code className="w-4 h-4" />
+                                    GitHub Examples
+                                    <ExternalLink className="w-3 h-3" />
+                                </a>
+                            </div>
                         </div>
-
-                        {/* Tips */}
-                        {selectedMethod.tips && selectedMethod.tips.length > 0 && (
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                <h5 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
-                                    <Zap className="w-4 h-4" />
-                                    Pro Tips
-                                </h5>
-                                <ul className="space-y-1">
-                                    {selectedMethod.tips.map((tip, idx) => (
-                                        <li key={idx} className="flex items-start gap-2 text-sm text-amber-700">
-                                            <ChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                            {tip}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                </div>
-                )}
-            </div>
-
-            {/* Resources */}
-            <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                <a
-                    href="https://docs.learncard.com/sdks/partner-connect"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-                >
-                    <FileText className="w-4 h-4" />
-                    SDK Documentation
-                    <ExternalLink className="w-3 h-3" />
-                </a>
-
-                <a
-                    href="https://github.com/learningeconomy/LearnCard"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-                >
-                    <Code className="w-4 h-4" />
-                    GitHub Examples
-                    <ExternalLink className="w-3 h-3" />
-                </a>
-            </div>
+                    )}
+                </>
+            )}
         </div>
     );
 };
