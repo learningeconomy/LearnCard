@@ -155,7 +155,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         };
 
         handleNavigation();
-    }, [userClickedContinue, consentedContractLoading, consentedContract, login, returnTo, contractDetails]);
+    }, [userClickedContinue, consentedContractLoading, consentedContract, login, returnTo, contractDetails, uri, recipientToken, history]);
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
