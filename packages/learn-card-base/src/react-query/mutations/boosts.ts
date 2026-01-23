@@ -641,8 +641,14 @@ export const useManageSelfAssignedSkillsBoost = () => {
         },
         onSuccess: async ({ boostUri }) => {
             const switchedDid = switchedProfileStore.get.switchedDid();
-            await queryClient.cancelQueries({
+            queryClient.invalidateQueries({
                 queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['selfAssignedSkillsCredential', switchedDid ?? ''],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetSkills', switchedDid ?? ''],
             });
             queryClient.refetchQueries({
                 queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],

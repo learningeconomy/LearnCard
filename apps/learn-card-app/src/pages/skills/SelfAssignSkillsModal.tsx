@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     useModal,
     useListMySkillFrameworks,
@@ -6,7 +6,9 @@ import {
     ModalTypes,
     conditionalPluralize,
     useManageSelfAssignedSkillsBoost,
-    // useGetSelfAssignedSkillsBoost,
+    useGetSelfAssignedSkillsBoost,
+    useGetSelfAssignedSkillsCredential,
+    useGetBoost,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
@@ -22,6 +24,7 @@ import {
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
 import { SkillLevel } from './SkillProgressBar';
+import { deriveAlignmentsFromVC } from '../../components/boost/alignmentHelpers';
 
 enum Step {
     Add,
@@ -100,12 +103,17 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     };
 
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
+    const { data: sasCredData } = useGetSelfAssignedSkillsCredential();
+    const sasCred = sasCredData?.credential;
 
     // const { data: sasBoost } = useGetSelfAssignedSkillsBoost();
 
-    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-    // console.log(sasBoost);
-    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+    useEffect(() => {
+        if (sasCred) {
+            const alignments = deriveAlignmentsFromVC(sasCred?.boostCredential);
+            setSelectedSkills(alignments.map(a => ({ id: a.id, proficiency: SkillLevel.Hidden })));
+        }
+    }, [sasCred]);
 
     const handleSave = async () => {
         const { boostUri } = await createOrUpdateSkills({
