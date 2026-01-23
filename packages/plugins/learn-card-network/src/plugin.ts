@@ -599,6 +599,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.boost.getBoost.query({ uri });
             },
+            getBoostSkills: async (_learnCard, uri) => {
+                await ensureUser();
+
+                return client.boost.getBoostSkills.query({ uri });
+            },
             getBoostFrameworks: async (_learnCard, uri, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
 

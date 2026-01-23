@@ -7,8 +7,8 @@ import {
     conditionalPluralize,
     useManageSelfAssignedSkillsBoost,
     useGetSelfAssignedSkillsBoost,
-    useGetSelfAssignedSkillsCredential,
     useGetBoost,
+    useGetBoostSkills,
 } from 'learn-card-base';
 
 import X from 'learn-card-base/svgs/X';
@@ -24,7 +24,6 @@ import {
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
 import { SkillLevel } from './SkillProgressBar';
-import { deriveAlignmentsFromVC } from '../../components/boost/alignmentHelpers';
 
 enum Step {
     Add,
@@ -36,6 +35,7 @@ type SelfAssignSkillsModalProps = {};
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { closeModal, newModal } = useModal();
 
+    const [isUpdating, setIsUpdating] = useState(false);
     const [step, setStep] = useState<Step>(Step.Add);
     const [searchInput, setSearchInput] = useState('');
     const [selectedSkills, setSelectedSkills] = useState<
@@ -103,28 +103,36 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     };
 
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
-    const { data: sasCredData } = useGetSelfAssignedSkillsCredential();
-    const sasCred = sasCredData?.credential;
+    const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
+    const { data: sasBoost } = useGetBoost(sasBoostData?.uri);
+    const { data: sasBoostSkills, isLoading: skillsLoading } = useGetBoostSkills(sasBoostData?.uri);
 
-    // const { data: sasBoost } = useGetSelfAssignedSkillsBoost();
 
     useEffect(() => {
-        if (sasCred) {
-            const alignments = deriveAlignmentsFromVC(sasCred?.boostCredential);
-            setSelectedSkills(alignments.map(a => ({ id: a.id, proficiency: SkillLevel.Hidden })));
+        if (sasBoostSkills) {
+            setSelectedSkills(
+                sasBoostSkills.map(s => ({ id: s.id, proficiency: s.proficiencyLevel }))
+            );
         }
-    }, [sasCred]);
+    }, [sasBoostSkills]);
 
     const handleSave = async () => {
-        const { boostUri } = await createOrUpdateSkills({
-            skills: selectedSkills.map(s => ({
-                frameworkId: frameworkId,
-                id: s.id,
-                proficiencyLevel: s.proficiency,
-            })),
-        });
+        setIsUpdating(true);
+        try {
+            const { boostUri } = await createOrUpdateSkills({
+                skills: selectedSkills.map(s => ({
+                    frameworkId: frameworkId,
+                    id: s.id,
+                    proficiencyLevel: s.proficiency,
+                })),
+            });
 
-        // TODO maybe a toast?
+            // TODO maybe a toast?
+        } catch (error) {
+            console.error('Error creating or updating skills:', error);
+        } finally {
+            setIsUpdating(false);
+        }
 
         closeModal();
     };
@@ -245,7 +253,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                                 : handleSave
                         }
                         className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1 disabled:bg-grayscale-300"
-                        disabled={selectedSkills.length === 0}
+                        disabled={selectedSkills.length === 0 || skillsLoading || isUpdating}
                     >
                         {isAdd ? 'Select' : 'Save'}
                     </button>

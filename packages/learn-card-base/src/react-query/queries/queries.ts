@@ -156,6 +156,22 @@ export const useGetSelfAssignedSkillsCredential = () => {
 };
 
 /**
+ * Query: Get aligned skills (with proficiencyLevel) for a specific boost by its URI.
+ */
+export const useGetBoostSkills = (uri?: string) => {
+    const { initWallet } = useWallet();
+    return useQuery({
+        queryKey: ['useGetBoostSkills', uri ?? ''],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            if (!uri) return [];
+            return wallet.invoke.getBoostSkills(uri);
+        },
+        enabled: !!uri,
+    });
+};
+
+/**
  * Query: Get multiple boosts by their URIs.
  * Uses useQueries to fetch multiple boosts in parallel while respecting Rules of Hooks.
  */

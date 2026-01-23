@@ -659,6 +659,12 @@ export const useManageSelfAssignedSkillsBoost = () => {
             queryClient.refetchQueries({
                 queryKey: ['useGetSkills', switchedDid ?? ''],
             });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetBoostSkills', boostUri],
+            });
+            queryClient.refetchQueries({
+                queryKey: ['useGetBoostSkills', boostUri],
+            });
         },
     });
 };

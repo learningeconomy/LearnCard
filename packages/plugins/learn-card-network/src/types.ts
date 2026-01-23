@@ -236,6 +236,7 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
+    getBoostSkills: (uri: string) => Promise<(SkillType & { proficiencyLevel?: number })[]>;
     getBoostFrameworks: (
         uri: string,
         options?: { limit?: number; cursor?: string | null; query?: SkillFrameworkQuery }

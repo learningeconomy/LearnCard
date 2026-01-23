@@ -70,6 +70,7 @@ import {
     canProfileEditBoost,
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
+    getBoostSkillsWithProficiency,
     getFrameworkSkillsAvailableForBoost,
     getFrameworksForBoostPaged,
     searchSkillsAvailableForBoost,
@@ -247,6 +248,54 @@ export const boostsRouter = t.router({
             }
 
             return buildObv3AlignmentsForBoost(boost, ctx.domain);
+        }),
+
+    getBoostSkills: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/skills',
+                tags: ['Boosts'],
+                summary: 'Get aligned skills for a boost',
+                description:
+                    'Returns skills aligned to a boost via ALIGNED_TO, including proficiencyLevel stored on the relationship.',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(z.array(SkillValidator.extend({ proficiencyLevel: z.number().optional() })))
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const decodedUri = decodeURIComponent(input.uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            // For now, require admin to view aligned skills (consistent with other boost-skill endpoints)
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const skills = await getBoostSkillsWithProficiency(boost);
+
+            // Ensure we only return fields that match SkillValidator (+ proficiencyLevel)
+            return skills.map(skill => ({
+                id: skill.id,
+                statement: skill.statement,
+                description: skill.description ?? undefined,
+                code: skill.code ?? undefined,
+                icon: (skill as any).icon ?? undefined,
+                type: (skill as any).type ?? 'competency',
+                status: (skill as any).status ?? 'active',
+                createdAt: (skill as any).createdAt,
+                updatedAt: (skill as any).updatedAt,
+                frameworkId: (skill as any).frameworkId,
+                proficiencyLevel: (skill as any).proficiencyLevel,
+            }));
         }),
     attachFrameworkToBoost: profileRoute
         .meta({
