@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import { IonPage, IonContent, IonHeader, IonToolbar, IonButtons, IonButton, IonTitle } from '@ionic/react';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
+import { CredentialClaimModal } from './CredentialClaimModal';
 
 interface EmbedAppParams {
     appId: string;
@@ -27,7 +28,21 @@ interface LaunchConfig {
 export const EmbedAppFullScreen: React.FC = () => {
     const history = useHistory<{ embedUrl?: string; appName?: string; launchConfig?: LaunchConfig; isInstalled?: boolean }>();
     const { appId } = useParams<EmbedAppParams>();
-    const [isLoading, setIsLoading] = React.useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Credential claim modal state
+    const [pendingCredential, setPendingCredential] = useState<{
+        credentialUri: string;
+        boostUri?: string;
+    } | null>(null);
+
+    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string) => {
+        setPendingCredential({ credentialUri, boostUri });
+    }, []);
+
+    const handleDismissClaimModal = useCallback(() => {
+        setPendingCredential(null);
+    }, []);
 
     // Get embedUrl and appName from query params or location state
     const queryParams = React.useMemo(() => new URLSearchParams(history.location.search), [history.location.search]);
@@ -63,13 +78,14 @@ export const EmbedAppFullScreen: React.FC = () => {
         launchConfig,
         isInstalled,
         appId,
+        onCredentialIssued: handleCredentialIssued,
     });
 
     // Initialize the PostMessage listener with trusted origins
     useLearnCardPostMessage({
         trustedOrigins: embedOrigin ? [embedOrigin] : [],
         handlers,
-        debug: false, // Disable detailed logging
+        debug: true, // Disable detailed logging
     });
 
     if (!embedUrl) {
@@ -132,6 +148,14 @@ export const EmbedAppFullScreen: React.FC = () => {
                     />
                 </div>
             </IonContent>
+
+            {pendingCredential && (
+                <CredentialClaimModal
+                    credentialUri={pendingCredential.credentialUri}
+                    boostUri={pendingCredential.boostUri}
+                    onDismiss={handleDismissClaimModal}
+                />
+            )}
         </IonPage>
     );
 };
