@@ -535,12 +535,14 @@ export const useManageSelfAssignedSkillsBoost = () => {
             const walletDid = wallet?.id?.did();
             const currentDate = new Date()?.toISOString();
 
+            const achievementType = 'ext:SelfAssignedSkills';
+
             const credentialPayload: Record<string, any> = {
                 subject: walletDid,
                 type: 'boost',
                 issuanceDate: currentDate,
                 boostName: 'Self-Assigned Skills',
-                achievementType: 'Self-Assigned Skill', // e.g. "ext: Attendance"
+                achievementType: achievementType, // e.g. "ext: Attendance"
                 achievementDescription:
                     'A self-attested credential that lists the skills you have.',
                 achievementNarrative: '',
@@ -581,13 +583,12 @@ export const useManageSelfAssignedSkillsBoost = () => {
             if (sasBoostExists) {
                 const updatedBoostBoolean = await wallet?.invoke?.updateBoost(sasBoost.uri, {
                     name: 'Self-Assigned Skills',
-                    type: 'Self-Assigned Skill', // in boost CMS: 'ext:Artowork'
+                    type: achievementType, // in boost CMS: 'ext:Artowork'
                     category: CredentialCategoryEnum.skill, // in boost CMS: "Achievement", "Accomplishment", etc.
                     status: 'PROVISIONAL',
                     credential: unsignedCredential,
                     skills,
                 });
-                console.log('updatedBoostBoolean:', updatedBoostBoolean);
 
                 boostUri = sasBoost.uri;
 
@@ -599,7 +600,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 // skillIds will auto-attach framework and align these skills
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: 'Self-Assigned Skills',
-                    type: 'Self-Assigned Skill',
+                    type: achievementType,
                     category: CredentialCategoryEnum.skill,
                     status: 'PROVISIONAL',
                     skills,
@@ -615,14 +616,14 @@ export const useManageSelfAssignedSkillsBoost = () => {
                     encrypt: true,
                 }
             );
+
             const sentCredential = await wallet?.read?.get(sentCredentialUri);
             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentCredential);
 
             // addCredentialToWallet
             const vc = await VCValidator.parseAsync(await wallet.read.get(issuedVcUri));
 
-            const category = getDefaultCategoryForCredential(vc) || 'Achievement';
-            console.log('category:', category);
+            const category = getDefaultCategoryForCredential(vc) || 'Skill';
 
             const res = await wallet.index.LearnCloud.add({
                 id: uuidv4(),

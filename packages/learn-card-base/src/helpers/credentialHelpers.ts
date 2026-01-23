@@ -341,6 +341,8 @@ const CATEGORY_MAP: Record<
     'ext:WildernessSurvival': 'Merit Badge',
 
     'ext:Family': 'Family',
+
+    'ext:SelfAssignedSkills': 'Skill',
 };
 
 // unwrapBoost helper returns inner vc of boost or if normal vc returns vc
