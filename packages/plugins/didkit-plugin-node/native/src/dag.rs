@@ -1,137 +1,115 @@
 use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Result};
+use libipld::{cbor::DagCborCodec, codec::Codec, Ipld};
+use libipld::serde::{from_ipld, to_ipld};
 use serde_json::Value;
+use unsigned_varint::{decode as varint_decode, encode as varint_encode};
 
-/// Encode a value as an identity CID
-pub fn encode_identity_cid(value: &Value) -> Result<Vec<u8>> {
-    let bytes = serde_json::to_vec(value)?;
-    
-    // Create identity multihash manually (code 0x00)
-    // Format: [code, length, ...data]
-    let mut multihash = Vec::with_capacity(2 + bytes.len());
-    multihash.push(0x00); // identity code
-    
-    // Use unsigned varint encoding for length
-    encode_varint(bytes.len(), &mut multihash);
-    multihash.extend_from_slice(&bytes);
-    
-    // Create CID v1 with raw codec (0x55)
-    let mut cid_bytes = Vec::new();
-    cid_bytes.push(0x01); // CID version 1
-    cid_bytes.push(0x55); // raw codec
-    cid_bytes.extend_from_slice(&multihash);
-    
-    Ok(cid_bytes)
+const ENC_BLOCK_SIZE: usize = 24;
+const IDENTITY_CODE: u64 = 0x00;
+const DAG_CBOR_CODE: u64 = 0x71;
+const VERSION_1: u64 = 0x01;
+
+#[derive(Debug)]
+struct SimpleCid {
+    codec: u64,
+    digest: Vec<u8>,
 }
 
-/// Decode a cleartext from CID bytes after decryption and unpadding
-pub fn decode_cleartext(bytes: &[u8]) -> Result<Value> {
-    let unpadded = unpad(bytes)?;
-    
-    // Parse CID
-    if unpadded.is_empty() {
-        return Err(anyhow!("Empty CID"));
+impl SimpleCid {
+    fn new_v1(codec: u64, digest: Vec<u8>) -> Self {
+        Self { codec, digest }
     }
-    
-    let version = unpadded[0];
-    if version != 0x01 {
-        return Err(anyhow!("Only CID v1 supported"));
-    }
-    
-    if unpadded.len() < 3 {
-        return Err(anyhow!("Invalid CID"));
-    }
-    
-    let _codec = unpadded[1]; // Should be 0x55 for raw
-    
-    // Parse multihash
-    let hash_code = unpadded[2];
-    if hash_code != 0x00 {
-        return Err(anyhow!("Expected identity multihash"));
-    }
-    
-    // Decode varint length
-    let (length, offset) = decode_varint(&unpadded[3..])?;
-    let data_start = 3 + offset;
-    let data_end = data_start + length;
-    
-    if data_end > unpadded.len() {
-        return Err(anyhow!("Invalid multihash length"));
-    }
-    
-    let data = &unpadded[data_start..data_end];
-    let value: Value = serde_json::from_slice(data)?;
-    Ok(value)
-}
 
-/// Encode unsigned varint
-fn encode_varint(mut n: usize, buf: &mut Vec<u8>) {
-    while n >= 0x80 {
-        buf.push((n as u8) | 0x80);
-        n >>= 7;
-    }
-    buf.push(n as u8);
-}
+    fn write_bytes(&self, mut w: impl std::io::Write) -> Result<usize> {
+        let mut version_buf = varint_encode::u64_buffer();
+        let version = varint_encode::u64(VERSION_1, &mut version_buf);
 
-/// Decode unsigned varint, returns (value, bytes_read)
-fn decode_varint(bytes: &[u8]) -> Result<(usize, usize)> {
-    let mut result = 0usize;
-    let mut shift = 0;
-    
-    for (i, &byte) in bytes.iter().enumerate() {
-        if i > 9 {
-            return Err(anyhow!("Varint too long"));
+        let mut codec_buf = varint_encode::u64_buffer();
+        let codec = varint_encode::u64(self.codec, &mut codec_buf);
+
+        let mut hash_code_buf = varint_encode::u64_buffer();
+        let hash_code = varint_encode::u64(IDENTITY_CODE, &mut hash_code_buf);
+
+        let mut size_buf = varint_encode::u64_buffer();
+        let size = varint_encode::u64(self.digest.len() as u64, &mut size_buf);
+
+        let mut written = 0;
+        written += w.write(version)?;
+        written += w.write(codec)?;
+        written += w.write(hash_code)?;
+        written += w.write(size)?;
+        written += w.write(&self.digest)?;
+
+        Ok(written)
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>> {
+        let mut bytes = Vec::new();
+        self.write_bytes(&mut bytes)?;
+        Ok(bytes)
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        let (version, rest) = varint_decode::u64(bytes)?;
+        if version != VERSION_1 {
+            return Err(anyhow!("Only CIDv1 is supported"));
         }
-        
-        result |= ((byte & 0x7f) as usize) << shift;
-        
-        if byte & 0x80 == 0 {
-            return Ok((result, i + 1));
+
+        let (codec, rest) = varint_decode::u64(rest)?;
+
+        let (hash_code, rest) = varint_decode::u64(rest)?;
+        if hash_code != IDENTITY_CODE {
+            return Err(anyhow!("Only identity hash is supported"));
         }
-        
-        shift += 7;
+
+        let (hash_len, rest) = varint_decode::u64(rest)?;
+        let hash_len = hash_len as usize;
+
+        if rest.len() < hash_len {
+            return Err(anyhow!("Invalid multihash length"));
+        }
+
+        let digest = rest[..hash_len].to_vec();
+
+        Ok(Self::new_v1(codec, digest))
     }
-    
-    Err(anyhow!("Incomplete varint"))
+}
+
+fn pad(bytes: &[u8], block_size: Option<usize>) -> Vec<u8> {
+    let block_size = block_size.unwrap_or(ENC_BLOCK_SIZE);
+    let pad_len = (block_size - (bytes.len() % block_size)) % block_size;
+    let mut padded = Vec::with_capacity(bytes.len() + pad_len);
+    padded.extend_from_slice(bytes);
+    padded.extend(std::iter::repeat(0).take(pad_len));
+    padded
+}
+
+/// Encodes a value using DAG-CBOR and creates a CID with identity multihash
+fn encode_identity_cid(value: &Value) -> Result<SimpleCid> {
+    let ipld: Ipld = to_ipld(value).map_err(|e| anyhow!("IPLD conversion failed: {e}"))?;
+    let bytes = DagCborCodec.encode(&ipld)?;
+    Ok(SimpleCid::new_v1(DAG_CBOR_CODE, bytes))
+}
+
+/// Decodes a CID with identity multihash back to the original value
+fn decode_identity_cid(cid: &SimpleCid) -> Result<Value> {
+    if cid.codec != DAG_CBOR_CODE {
+        return Err(anyhow!("CID codec must be dag-cbor"));
+    }
+
+    let ipld: Ipld = DagCborCodec.decode(&cid.digest)?;
+    from_ipld(ipld).map_err(|e| anyhow!("IPLD conversion failed: {e}"))
 }
 
 /// Prepare cleartext for encryption by encoding as CID and padding
 pub fn prepare_cleartext(value: &Value, block_size: Option<usize>) -> Result<Vec<u8>> {
-    let cid_bytes = encode_identity_cid(value)?;
-    Ok(pad(&cid_bytes, block_size))
+    let cid = encode_identity_cid(value)?;
+    Ok(pad(&cid.to_bytes()?, block_size))
 }
 
-/// Pad data to a multiple of block_size (default 4096)
-fn pad(data: &[u8], block_size: Option<usize>) -> Vec<u8> {
-    let block_size = block_size.unwrap_or(4096);
-    let pad_len = block_size - (data.len() % block_size);
-    
-    let mut padded = Vec::with_capacity(data.len() + pad_len);
-    padded.extend_from_slice(data);
-    
-    // PKCS#7 padding
-    padded.resize(data.len() + pad_len, pad_len as u8);
-    
-    padded
-}
-
-/// Remove PKCS#7 padding
-fn unpad(data: &[u8]) -> Result<&[u8]> {
-    if data.is_empty() {
-        return Err(anyhow!("Empty data"));
-    }
-    
-    let pad_len = *data.last().unwrap() as usize;
-    
-    if pad_len == 0 || pad_len > data.len() {
-        return Err(anyhow!("Invalid padding"));
-    }
-    
-    // Verify all padding bytes are correct
-    for i in (data.len() - pad_len)..data.len() {
-        if data[i] != pad_len as u8 {
-            return Err(anyhow!("Invalid padding"));
-        }
-    }
-    
-    Ok(&data[..data.len() - pad_len])
+/// Decode a cleartext from CID bytes after decryption
+pub fn decode_cleartext(bytes: &[u8]) -> Result<Value> {
+    let cid = SimpleCid::from_bytes(bytes)?;
+    decode_identity_cid(&cid)
 }
