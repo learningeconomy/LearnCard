@@ -23,7 +23,7 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node', 'firebase-admin']
+        external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
         sourcemap: external
         target: 'node20'
         watch:
