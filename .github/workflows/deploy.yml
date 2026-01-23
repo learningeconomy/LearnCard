@@ -254,7 +254,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: didkit-native-linux-x64
-          path: packages/plugins/didkit-plugin-node/*.node
+          path: |
+            packages/plugins/didkit-plugin-node/*.node
+            packages/plugins/didkit-plugin-node/dist/**
           if-no-files-found: error
           retention-days: 1
 
