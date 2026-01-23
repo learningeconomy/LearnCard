@@ -1,11 +1,7 @@
 import { readFile } from 'node:fs/promises';
 
-import {
-    initLearnCard,
-    EmptyLearnCard,
-    LearnCardFromSeed,
-    DidWebLearnCardFromSeed,
-} from '@learncard/init';
+import { initLearnCard } from '@learncard/init';
+import type { EmptyLearnCard, LearnCardFromSeed, DidWebLearnCardFromSeed } from '@learncard/init';
 
 import { getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
 import { getLRUCache } from '@cache/in-memory-lru';
@@ -26,15 +22,28 @@ const ephemeralCardsCache = getLRUCache<LearnCardFromSeed['returnValue']>();
 // Try native plugin first, fall back to WASM
 let didKitInitPromise: Promise<'node' | Buffer> | null = null;
 
+const resolveDidKitPluginFactory = (
+    module: Record<string, unknown>
+): (() => Promise<unknown>) => {
+    const factory =
+        (module as { getDidKitPlugin?: unknown }).getDidKitPlugin ??
+        (module as { default?: { getDidKitPlugin?: unknown } }).default?.getDidKitPlugin;
+
+    if (typeof factory !== 'function') {
+        throw new Error('DIDKit plugin factory not found in module exports');
+    }
+
+    return factory as () => Promise<unknown>;
+};
+
 const getDidKitInit = async (): Promise<'node' | Buffer> => {
     if (didKitInitPromise) return didKitInitPromise;
 
     didKitInitPromise = (async () => {
         try {
             // Check if native plugin is available by trying to load it
-            const {
-                default: { getDidKitPlugin: getNativePlugin },
-            } = await import('@learncard/didkit-plugin-node');
+            const didkitModule = await import('@learncard/didkit-plugin-node');
+            const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
 
             // Test that it actually works
             await getNativePlugin();
@@ -86,7 +95,7 @@ export const getSigningAuthorityLearnCard = async (
 
     if (!seed) throw new Error('No seed set for SA!');
 
-    let cachedValue = saCardsCache.get(seed);
+    const cachedValue = saCardsCache.get(seed);
 
     if (cachedValue) return cachedValue;
 

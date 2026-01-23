@@ -1,33 +1,54 @@
 import { readFile } from 'node:fs/promises';
 
-import { generateLearnCard, LearnCard } from '@learncard/core';
-import { CryptoPlugin, CryptoPluginType } from '@learncard/crypto-plugin';
+import { generateLearnCard } from '@learncard/core';
+import type { LearnCard } from '@learncard/core';
+import { CryptoPlugin } from '@learncard/crypto-plugin';
+import type { CryptoPluginType } from '@learncard/crypto-plugin';
 import type { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
-import { DidKeyPlugin, getDidKeyPlugin } from '@learncard/didkey-plugin';
-import { EncryptionPluginType, getEncryptionPlugin } from '@learncard/encryption-plugin';
-import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
-import { VCTemplatePlugin, getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
-import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin';
-import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
-import { getDidWebPlugin, DidWebPlugin } from '@learncard/did-web-plugin';
+import { getDidKeyPlugin } from '@learncard/didkey-plugin';
+import type { DidKeyPlugin } from '@learncard/didkey-plugin';
+import { getEncryptionPlugin } from '@learncard/encryption-plugin';
+import type { EncryptionPluginType } from '@learncard/encryption-plugin';
+import { getVCPlugin } from '@learncard/vc-plugin';
+import type { VCPlugin } from '@learncard/vc-plugin';
+import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
+import type { VCTemplatePlugin } from '@learncard/vc-templates-plugin';
+import { expirationPlugin } from '@learncard/expiration-plugin';
+import type { ExpirationPlugin } from '@learncard/expiration-plugin';
+import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
+import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
+import { getDidWebPlugin } from '@learncard/did-web-plugin';
+import type { DidWebPlugin } from '@learncard/did-web-plugin';
 
 // Try native plugin first, fall back to WASM
 let didKitPluginPromise: Promise<DIDKitPlugin> | null = null;
+
+const resolveDidKitPluginFactory = (
+    module: Record<string, unknown>
+): ((input?: unknown, allowRemoteContexts?: boolean) => Promise<DIDKitPlugin>) => {
+    const factory =
+        (module as { getDidKitPlugin?: unknown }).getDidKitPlugin ??
+        (module as { default?: { getDidKitPlugin?: unknown } }).default?.getDidKitPlugin;
+
+    if (typeof factory !== 'function') {
+        throw new Error('DIDKit plugin factory not found in module exports');
+    }
+
+    return factory as (input?: unknown, allowRemoteContexts?: boolean) => Promise<DIDKitPlugin>;
+};
 
 const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugin> => {
     if (didKitPluginPromise) return didKitPluginPromise;
 
     didKitPluginPromise = (async () => {
         try {
-            const {
-                default: { getDidKitPlugin: getNativePlugin },
-            } = await import('@learncard/didkit-plugin-node');
+            const didkitModule = await import('@learncard/didkit-plugin-node');
+            const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
             return await getNativePlugin(undefined, allowRemoteContexts);
         } catch (e) {
             console.log('Native DIDKit plugin not available, falling back to WASM');
-            const {
-                default: { getDidKitPlugin: getWasmPlugin },
-            } = await import('@learncard/didkit-plugin');
+            const didkitModule = await import('@learncard/didkit-plugin');
+            const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
             const wasmBuffer = await readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
             );
@@ -71,7 +92,7 @@ export type DidWebLearnCard = LearnCard<
 
 let emptyLearnCard: EmptyLearnCard;
 
-let learnCards: Record<string, SeedLearnCard> = {};
+const learnCards: Record<string, SeedLearnCard> = {};
 let didWebLearnCard: DidWebLearnCard;
 
 const IS_OFFLINE = process.env.IS_OFFLINE;
@@ -118,7 +139,13 @@ export const getLearnCard = async (
         learnCards[seed] = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc));
     }
 
-    return learnCards[seed]!;
+    const learnCard = learnCards[seed];
+
+    if (!learnCard) {
+        throw new Error('LearnCard not initialized');
+    }
+
+    return learnCard;
 };
 
 export const getServerDidWebDID = (): string => {
@@ -135,7 +162,9 @@ export const isServersDidWebDID = (did: string): boolean => {
 };
 
 export const isTrustedLoginProviderDID = (did: string): boolean => {
-    return did === getServerDidWebDID() || did === process.env.LOGIN_PROVIDER_DID!;
+    const loginProviderDid = process.env.LOGIN_PROVIDER_DID;
+
+    return did === getServerDidWebDID() || (loginProviderDid ? did === loginProviderDid : false);
 };
 
 export const getDidWebLearnCard = async (): Promise<DidWebLearnCard> => {

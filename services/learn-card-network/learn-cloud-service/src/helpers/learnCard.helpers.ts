@@ -1,35 +1,54 @@
 import { readFile } from 'node:fs/promises';
 
-import { generateLearnCard, LearnCard } from '@learncard/core';
-import { CryptoPlugin, CryptoPluginType } from '@learncard/crypto-plugin';
+import { generateLearnCard } from '@learncard/core';
+import type { LearnCard } from '@learncard/core';
+import { CryptoPlugin } from '@learncard/crypto-plugin';
+import type { CryptoPluginType } from '@learncard/crypto-plugin';
 import type { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
-import { EncryptionPluginType, getEncryptionPlugin } from '@learncard/encryption-plugin';
-import { DidKeyPlugin, getDidKeyPlugin } from '@learncard/didkey-plugin';
-import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
-import { VCTemplatePlugin, getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
-import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin';
-import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
+import { getEncryptionPlugin } from '@learncard/encryption-plugin';
+import type { EncryptionPluginType } from '@learncard/encryption-plugin';
+import { getDidKeyPlugin } from '@learncard/didkey-plugin';
+import type { DidKeyPlugin } from '@learncard/didkey-plugin';
+import { getVCPlugin } from '@learncard/vc-plugin';
+import type { VCPlugin } from '@learncard/vc-plugin';
+import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
+import type { VCTemplatePlugin } from '@learncard/vc-templates-plugin';
+import { expirationPlugin } from '@learncard/expiration-plugin';
+import type { ExpirationPlugin } from '@learncard/expiration-plugin';
+import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
+import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { isTest } from './test.helpers';
 
 // Try native plugin first, fall back to WASM
 let didKitPluginPromise: Promise<DIDKitPlugin> | null = null;
+
+const resolveDidKitPluginFactory = (
+    module: Record<string, unknown>
+): ((input?: unknown, allowRemoteContexts?: boolean) => Promise<DIDKitPlugin>) => {
+    const factory =
+        (module as { getDidKitPlugin?: unknown }).getDidKitPlugin ??
+        (module as { default?: { getDidKitPlugin?: unknown } }).default?.getDidKitPlugin;
+
+    if (typeof factory !== 'function') {
+        throw new Error('DIDKit plugin factory not found in module exports');
+    }
+
+    return factory as (input?: unknown, allowRemoteContexts?: boolean) => Promise<DIDKitPlugin>;
+};
 
 const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
     if (didKitPluginPromise) return didKitPluginPromise;
 
     didKitPluginPromise = (async () => {
         try {
-            const {
-                default: { getDidKitPlugin: getNativePlugin },
-            } = await import('@learncard/didkit-plugin-node');
-
+            const didkitModule = await import('@learncard/didkit-plugin-node');
+            const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
             return await getNativePlugin();
         } catch (e) {
             console.log('Native DIDKit plugin not available, falling back to WASM');
 
-            const {
-                default: { getDidKitPlugin: getWasmPlugin },
-            } = await import('@learncard/didkit-plugin');
+            const didkitModule = await import('@learncard/didkit-plugin');
+            const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
 
             const wasmBuffer = await readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
@@ -61,7 +80,7 @@ export type SeedLearnCard = LearnCard<
 
 let emptyLearnCard: EmptyLearnCard;
 
-let learnCards: Record<string, SeedLearnCard> = {};
+const learnCards: Record<string, SeedLearnCard> = {};
 
 export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     if (!emptyLearnCard) {
@@ -104,5 +123,11 @@ export const getLearnCard = async (
         learnCards[seed] = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc));
     }
 
-    return learnCards[seed]!;
+    const learnCard = learnCards[seed];
+
+    if (!learnCard) {
+        throw new Error('LearnCard not initialized');
+    }
+
+    return learnCard;
 };
