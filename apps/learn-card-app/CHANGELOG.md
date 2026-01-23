@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.16
+
+### Patch Changes
+
+-   [#955](https://github.com/learningeconomy/LearnCard/pull/955) [`20868790b68a41fbe001e29ecd98719a988b9e22`](https://github.com/learningeconomy/LearnCard/commit/20868790b68a41fbe001e29ecd98719a988b9e22) Thanks [@Custard7](https://github.com/Custard7)! - fix: Embed Full Screen missing credential acceptance
+
 ## 1.94.15
 
 ### Patch Changes

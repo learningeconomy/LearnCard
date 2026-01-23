@@ -15,6 +15,7 @@ on:
         options:
           - staging
           - production
+          - scouts
       # Component selection - which things to deploy
       deploy-brain-service:
         description: "Deploy Brain Service (Network API)"
@@ -33,6 +34,11 @@ on:
         type: boolean
       deploy-lca-frontend:
         description: "Deploy LearnCard App Frontend (Netlify + CapGo)"
+        required: false
+        default: false
+        type: boolean
+      deploy-scouts-frontend:
+        description: "Deploy Scouts App Frontend (Netlify + CapGo)"
         required: false
         default: false
         type: boolean
@@ -265,7 +271,7 @@ jobs:
         (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'network-brain-service'))
       )
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-network-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-network-api-production') || 'learn-cloud-network-api-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'scouts' && 'scout-network-api-production') || (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-network-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-network-api-production') || 'learn-cloud-network-api-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -321,7 +327,7 @@ jobs:
         (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'learn-cloud-service'))
       )
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-storage-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-storage-api-production') || 'learn-cloud-storage-api-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'scouts' && 'scout-storage-api-production') || (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-storage-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-storage-api-production') || 'learn-cloud-storage-api-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -371,7 +377,7 @@ jobs:
         (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
       )
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-api-production') || 'learn-card-app-api-staging' }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'scouts' && 'scout-app-api-production') || (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-api-production') || 'learn-card-app-api-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -511,6 +517,87 @@ jobs:
             -a ${{ secrets.CAPGO_TOKEN }} \
             -b ${{ steps.lca-version.outputs.version }} \
             com.learncard.app
+
+  deploy-scouts-frontend:
+    name: Deploy Scouts App Frontend
+    needs:
+      [
+        determine-affected,
+        deploy-brain-service,
+        deploy-learn-cloud,
+        deploy-lca-api,
+      ]
+    if: |
+      always() &&
+      !cancelled() &&
+      (
+        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-scouts-frontend == 'true') ||
+        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
+      ) &&
+      !contains(needs.deploy-brain-service.result, 'failure') &&
+      !contains(needs.deploy-learn-cloud.result, 'failure') &&
+      !contains(needs.deploy-lca-api.result, 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment: scout-app-production
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Use Composite Setup Action
+        uses: ./.github/actions/setup
+
+      # Deploy to Netlify by pushing to production-scouts branch (Netlify auto-deploys from it)
+      - name: Push to production-scouts branch
+        run: git push --force origin HEAD:production-scouts
+
+      - name: Get Scouts App Version
+        id: scouts-version
+        run: |
+          VERSION=$(node -p "require('./apps/scouts/package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Get CapGo Channel
+        id: capgo-channel
+        run: |
+          CHANNEL=$(node tools/capgo/getCapgoChannel.js --app scouts)
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+
+      - name: Build Scouts App
+        run: pnpm exec nx build scouts
+        env:
+          NODE_ENV: ${{ vars.NODE_ENV }}
+          VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+          SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
+          WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+
+      # Deploy OTA update to CapGo
+      - name: Upload to CapGo
+        run: |
+          npx @capgo/cli@latest bundle upload \
+            org.scoutpass.app \
+            --delta \
+            --apikey ${{ secrets.CAPGO_TOKEN }} \
+            --path apps/scouts/build \
+            --channel ${{ steps.capgo-channel.outputs.channel }} \
+            --bundle ${{ steps.scouts-version.outputs.version }} \
+            --package-json apps/scouts/package.json \
+            --node-modules apps/scouts/node_modules
+
+      - name: Set CapGo Channel
+        run: |
+          npx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
+            -s default \
+            -a ${{ secrets.CAPGO_TOKEN }} \
+            -b ${{ steps.scouts-version.outputs.version }} \
+            org.scoutpass.app
 
   # ============================================================================
   # DOCKER IMAGES
