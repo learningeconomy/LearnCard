@@ -1,10 +1,12 @@
 import { readFile } from 'node:fs/promises';
+
 import {
     initLearnCard,
     EmptyLearnCard,
     LearnCardFromSeed,
     DidWebLearnCardFromSeed,
 } from '@learncard/init';
+
 import { getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
 import { getLRUCache } from '@cache/in-memory-lru';
 
@@ -21,12 +23,41 @@ const saCardsCache = getLRUCache<
 const didWebCardsCache = getLRUCache<DidWebLearnCardFromSeed['returnValue']>();
 const ephemeralCardsCache = getLRUCache<LearnCardFromSeed['returnValue']>();
 
-const didkit = readFile(require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'));
+// Try native plugin first, fall back to WASM
+let didKitInitPromise: Promise<'node' | Buffer> | null = null;
+
+const getDidKitInit = async (): Promise<'node' | Buffer> => {
+    if (didKitInitPromise) return didKitInitPromise;
+
+    didKitInitPromise = (async () => {
+        try {
+            // Check if native plugin is available by trying to load it
+            const {
+                default: { getDidKitPlugin: getNativePlugin },
+            } = await import('@learncard/didkit-plugin-node');
+
+            // Test that it actually works
+            await getNativePlugin();
+            return 'node' as const;
+        } catch (e) {
+            console.log('Native DIDKit plugin not available, falling back to WASM');
+
+            // Return the WASM buffer for initLearnCard to use
+            const wasmBuffer = await readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+            );
+
+            return wasmBuffer;
+        }
+    })();
+
+    return didKitInitPromise;
+};
 
 export const getEmptyLearnCard = async (): Promise<EmptyLearnCard['returnValue']> => {
     if (!emptyLearnCard)
         emptyLearnCard = await initLearnCard({
-            didkit: await didkit,
+            didkit: await getDidKitInit(),
         });
 
     return emptyLearnCard;
@@ -39,7 +70,7 @@ export const getLearnCard = async (): Promise<LearnCardFromSeed['returnValue']> 
 
     if (!learnCard)
         learnCard = await initLearnCard({
-            didkit: await didkit,
+            didkit: await getDidKitInit(),
             seed,
             cloud,
         });
@@ -61,16 +92,16 @@ export const getSigningAuthorityLearnCard = async (
 
     const saLearnCard = ownerDID.startsWith('did:web:')
         ? await initLearnCard({
-            didkit: await didkit,
-            seed,
-            didWeb: ownerDID,
-            cloud,
-        })
+              didkit: await getDidKitInit(),
+              seed,
+              didWeb: ownerDID,
+              cloud,
+          })
         : await initLearnCard({
-            didkit: await didkit,
-            seed,
-            cloud,
-        });
+              didkit: await getDidKitInit(),
+              seed,
+              cloud,
+          });
 
     saCardsCache.add(seed, saLearnCard);
 
@@ -90,7 +121,6 @@ export const getDidWebLearnCard = async (
     seed?: string,
     didWeb?: string
 ): Promise<DidWebLearnCardFromSeed['returnValue']> => {
-
     const _seed = seed || process.env.SEED;
     const _didWeb = didWeb || getServerDidWebDID();
     if (!_seed) throw new Error('No seed set!');
@@ -101,7 +131,7 @@ export const getDidWebLearnCard = async (
     if (cachedValue) return cachedValue;
 
     const didWebLearnCard = await initLearnCard({
-        didkit: await didkit,
+        didkit: await getDidKitInit(),
         seed: _seed,
         didWeb: _didWeb,
         cloud,
@@ -120,7 +150,7 @@ export const getEphemeralLearnCard = async (
     if (cachedValue) return cachedValue;
 
     const ephemeralLearnCard = await initLearnCard({
-        didkit: await didkit,
+        didkit: await getDidKitInit(),
         seed,
         cloud,
     });

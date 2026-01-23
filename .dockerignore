@@ -1,2 +1,37 @@
-**/*/dist
-**/*/node_modules
+# Exclude Rust build artifacts to save massive amounts of space
+lib/didkit/target
+lib/ssi/target
+
+# Dependencies (copied selectively in Dockerfiles)
+node_modules
+**/node_modules
+
+# Build outputs
+**/dist
+**/build
+**/.next
+**/.turbo
+**/.nx
+
+# Common exclusions
+*.log
+.git
+.github
+docs
+examples
+*.md
+.vscode
+.idea
+.changeset
+
+# Test artifacts
+**/*.test.ts
+**/*.spec.ts
+**/coverage
+**/__tests__
+**/playwright-report
+**/test-results
+
+# Native build artifacts
+**/*.node
+**/native/target
