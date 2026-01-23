@@ -23,7 +23,7 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
+        external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
         sourcemap: external
         target: 'node20'
         watch:
@@ -76,6 +76,9 @@ package:
     patterns:
         - '!node_modules/**'
         - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+        - 'node_modules/@learncard/didkit-plugin-node/*.node'
+        - 'node_modules/@learncard/didkit-plugin-node/package.json'
+        - 'node_modules/@learncard/didkit-plugin-node/dist/**'
         - 'src/swagger-ui'
 
 provider:

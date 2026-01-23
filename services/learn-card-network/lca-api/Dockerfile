@@ -2,16 +2,17 @@
 # Using bullseye (Debian 11) to avoid native module build issues on Debian 12
 FROM node:20.10.0-bullseye-slim
 
-# Set working directory to /app
+# Skip native DIDKit build (uses WASM fallback)
+ENV SKIP_DIDKIT_NAPI=1
+
 WORKDIR /app
 
-# Sometimes we need python to build packages
-RUN apt-get update || : && apt-get install -y \
+# Install build dependencies and pnpm in one layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    build-essential
-
-# Install PNPM package manager
-RUN npm install -g pnpm
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g pnpm
 
 # Copy root workspace files
 
@@ -34,6 +35,7 @@ COPY packages/plugins/idx/package.json packages/plugins/idx/
 COPY packages/plugins/ceramic/package.json packages/plugins/ceramic/
 COPY packages/plugins/didkey/package.json packages/plugins/didkey/
 COPY packages/plugins/didkit/package.json packages/plugins/didkit/
+COPY packages/plugins/didkit-plugin-node/package.json packages/plugins/didkit-plugin-node/
 COPY packages/plugins/did-web-plugin/package.json packages/plugins/did-web-plugin/
 COPY packages/plugins/dynamic-loader/package.json packages/plugins/dynamic-loader/
 COPY packages/plugins/encryption/package.json packages/plugins/encryption/
@@ -48,7 +50,6 @@ COPY packages/plugins/vc-api/package.json packages/plugins/vc-api/
 COPY packages/plugins/vc-templates/package.json packages/plugins/vc-templates/
 COPY packages/plugins/vpqr/package.json packages/plugins/vpqr/
 
-# Install dependencies - Install inside container ensures parity on all machines
 RUN pnpm install --no-frozen-lockfile
 
 # Copy full sources after installing dependencies to leverage caching
@@ -67,6 +68,7 @@ COPY packages/plugins/idx packages/plugins/idx
 COPY packages/plugins/ceramic packages/plugins/ceramic
 COPY packages/plugins/didkey packages/plugins/didkey
 COPY packages/plugins/didkit packages/plugins/didkit
+COPY packages/plugins/didkit-plugin-node packages/plugins/didkit-plugin-node
 COPY packages/plugins/did-web-plugin packages/plugins/did-web-plugin
 COPY packages/plugins/dynamic-loader packages/plugins/dynamic-loader
 COPY packages/plugins/encryption packages/plugins/encryption

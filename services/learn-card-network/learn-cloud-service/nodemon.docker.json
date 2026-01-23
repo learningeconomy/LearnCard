@@ -1,0 +1,23 @@
+{
+    "watch": [
+        "src",
+        "../../../packages/learn-card-types/dist",
+        "../../../packages/learn-card-helpers/dist",
+        "../../../packages/learn-card-core/dist",
+        "../../../packages/plugins/crypto/dist",
+        "../../../packages/plugins/didkey/dist",
+        "../../../packages/plugins/didkit/dist",
+        "../../../packages/plugins/didkit-plugin-node/dist",
+        "../../../packages/plugins/did-web-plugin/dist",
+        "../../../packages/plugins/encryption/dist",
+        "../../../packages/plugins/expiration/dist",
+        "../../../packages/plugins/learn-card/dist",
+        "../../../packages/plugins/vc/dist",
+        "../../../packages/plugins/vc-templates/dist"
+    ],
+    "ext": "ts,js,cjs,mjs,json",
+    "ignore": ["**/*.d.ts", "**/node_modules/**", "**/coverage/**", "**/*.test.ts", "**/*.spec.ts"],
+    "exec": "pnpm build:docker && node dist/docker-entry.js",
+    "delay": "500",
+    "verbose": true
+}

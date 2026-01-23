@@ -8,6 +8,20 @@ import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
+// Workspace packages that should not be pre-bundled for HMR support
+const workspacePackages = [
+    '@learncard/helpers',
+    '@learncard/types',
+    '@learncard/react',
+    '@learncard/init',
+    '@learncard/core',
+    '@learncard/chapi-plugin',
+    '@learncard/lca-api-plugin',
+    '@learncard/open-badge-v2-plugin',
+    '@learncard/network-brain-client',
+    '@learncard/network-plugin',
+];
+
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     return {
@@ -16,6 +30,8 @@ export default defineConfig(({ mode }) => {
         optimizeDeps: {
             // disabled: false,
             include: ['buffer', 'process', 'react-router', 'react-router-dom', 'crypto-browserify'],
+            // Exclude workspace packages from pre-bundling to enable HMR when they rebuild
+            exclude: workspacePackages,
             esbuildOptions: {
                 target: 'esnext',
                 define: { global: 'globalThis' },
@@ -60,6 +76,15 @@ export default defineConfig(({ mode }) => {
                 '@ionic/react-router',
             ],
         },
-        server: { port: 3000 },
+        server: {
+            port: 3000,
+            watch: {
+                // Enable polling for Docker volume mounts
+                usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
+                interval: parseInt(process.env.CHOKIDAR_INTERVAL || '1000', 10),
+                // Watch workspace package dist folders for changes (when watcher rebuilds them)
+                ignored: ['!**/packages/**/dist/**', '!**/packages/plugins/**/dist/**'],
+            },
+        },
     };
 });

@@ -3563,7 +3563,7 @@ describe('Consent Flow Contracts', () => {
                 ...thirdPageMedium.records,
             ];
             expect(combinedRecords.length).toEqual(allResults.records.length);
-        });
+        }, 30000); // Increased timeout: creates 15 credentials with signing overhead
 
         it('should handle edge cases with uneven page divisions', async () => {
             // Create 10 credentials for pagination testing
@@ -3646,7 +3646,7 @@ describe('Consent Flow Contracts', () => {
                 ...thirdPage.records,
                 ...fourthPage.records,
             ]);
-        });
+        }, 20000); // Increased timeout: creates 10 credentials with signing overhead
 
         it('should maintain cursor consistency across requests', async () => {
             // Add a set of credentials
@@ -3706,7 +3706,7 @@ describe('Consent Flow Contracts', () => {
             // Results should be identical
             expect(secondPageA.records).toEqual(secondPageB.records);
             expect(secondPageA.cursor).toEqual(secondPageB.cursor);
-        });
+        }, 20000); // Increased timeout: creates 10 credentials with signing overhead
     });
 
     describe('syncCredentialsToContract', () => {
@@ -4063,7 +4063,7 @@ describe('Consent Flow Contracts', () => {
                 boostUri: boost2,
                 credential: credential2,
             });
-        });
+        }, 15000); // Increased hook timeout: sets up complex contract state with credential signing
 
         afterEach(async () => {
             await Profile.delete({ detach: true, where: {} });
@@ -4190,7 +4190,7 @@ describe('Consent Flow Contracts', () => {
             expect(
                 [...firstPage.records, ...secondPage.records, ...thirdPage.records].length
             ).toEqual(allResults.records.length);
-        });
+        }, 20000); // Increased timeout: creates 10 additional credentials with signing overhead
 
         it('should respect the includeReceived parameter', async () => {
             // Get all credentials
