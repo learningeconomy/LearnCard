@@ -62,6 +62,7 @@ export const EmbedAppFullScreen: React.FC = () => {
         embedOrigin,
         launchConfig,
         isInstalled,
+        appId,
     });
 
     // Initialize the PostMessage listener with trusted origins
