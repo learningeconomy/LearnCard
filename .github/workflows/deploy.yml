@@ -472,7 +472,7 @@ jobs:
 
       # Deploy to Netlify by pushing to production-scouts branch (Netlify auto-deploys from it)
       - name: Push to production-scouts branch
-        run: git push origin HEAD:production-scouts
+        run: git push --force origin HEAD:production-scouts
 
       - name: Get Scouts App Version
         id: scouts-version
