@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.94.15
+
+### Patch Changes
+
+-   [#950](https://github.com/learningeconomy/LearnCard/pull/950) [`268ef541499f53b4809f7e4ef4c8da5551aae09e`](https://github.com/learningeconomy/LearnCard/commit/268ef541499f53b4809f7e4ef4c8da5551aae09e) Thanks [@Custard7](https://github.com/Custard7)! - Add app id
+
 ## 1.94.14
 
 ### Patch Changes
