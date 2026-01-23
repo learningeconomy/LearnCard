@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.9.6
+
+### Patch Changes
+
+-   [#952](https://github.com/learningeconomy/LearnCard/pull/952) [`e41a15b2b2850fc3c562b254b3aef707d34e5437`](https://github.com/learningeconomy/LearnCard/commit/e41a15b2b2850fc3c562b254b3aef707d34e5437) Thanks [@Custard7](https://github.com/Custard7)! - fix: Encrypt for Recipient with SA
+
 ## 3.9.5
 
 ### Patch Changes
