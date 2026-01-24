@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use anyhow::{anyhow, Result};
 use libipld::{cbor::DagCborCodec, codec::Codec, Ipld};
 use libipld::serde::{from_ipld, to_ipld};
 use serde_json::Value;
