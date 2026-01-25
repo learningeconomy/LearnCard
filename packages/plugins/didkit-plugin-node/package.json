@@ -45,13 +45,5 @@
     "devDependencies": {
         "@napi-rs/cli": "^2.18.0",
         "typescript": "^5.3.3"
-    },
-    "optionalDependencies": {
-        "@learncard/didkit-plugin-node-linux-x64-gnu": "0.1.0",
-        "@learncard/didkit-plugin-node-linux-arm64-gnu": "0.1.0",
-        "@learncard/didkit-plugin-node-linux-x64-musl": "0.1.0",
-        "@learncard/didkit-plugin-node-linux-arm64-musl": "0.1.0",
-        "@learncard/didkit-plugin-node-darwin-x64": "0.1.0",
-        "@learncard/didkit-plugin-node-darwin-arm64": "0.1.0"
     }
 }

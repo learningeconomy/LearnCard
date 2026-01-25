@@ -90,8 +90,8 @@ jobs:
             - name: Install dependencies
               run: pnpm install --no-frozen-lockfile
 
-            - name: Build in Docker (musl)
-              if: matrix.settings.docker
+            - name: Build in Docker (x86_64-musl)
+              if: matrix.settings.target == 'x86_64-unknown-linux-musl'
               uses: addnab/docker-run-action@v3
               env:
                   TARGET: ${{ matrix.settings.target }}
@@ -100,6 +100,31 @@ jobs:
               with:
                   image: ${{ matrix.settings.docker }}
                   options: -v ${{ github.workspace }}:/build -w /build -e TARGET -e STRIP_CMD -e NODE_FILE
+                  run: |
+                      rustup update stable
+                      rustup default stable
+                      rustup target add $TARGET
+                      npm install -g corepack@latest
+                      corepack enable
+                      corepack prepare pnpm@9 --activate
+                      pnpm install --no-frozen-lockfile
+                      pnpm exec nx run didkit-plugin-node:build -- --target $TARGET
+                      $STRIP_CMD packages/plugins/didkit-plugin-node/$NODE_FILE
+
+            - name: Build in Docker (aarch64-musl)
+              if: matrix.settings.target == 'aarch64-unknown-linux-musl'
+              uses: addnab/docker-run-action@v3
+              env:
+                  TARGET: ${{ matrix.settings.target }}
+                  STRIP_CMD: ${{ matrix.settings.strip }}
+                  NODE_FILE: ${{ matrix.settings.node_file }}
+                  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: /aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc
+                  CC_aarch64_unknown_linux_musl: /aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc
+                  CXX_aarch64_unknown_linux_musl: /aarch64-linux-musl-cross/bin/aarch64-linux-musl-g++
+                  AR_aarch64_unknown_linux_musl: /aarch64-linux-musl-cross/bin/aarch64-linux-musl-ar
+              with:
+                  image: ${{ matrix.settings.docker }}
+                  options: -v ${{ github.workspace }}:/build -w /build -e TARGET -e STRIP_CMD -e NODE_FILE -e CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER -e CC_aarch64_unknown_linux_musl -e CXX_aarch64_unknown_linux_musl -e AR_aarch64_unknown_linux_musl
                   run: |
                       rustup update stable
                       rustup default stable
@@ -126,7 +151,7 @@ jobs:
             - name: Build
               if: ${{ !matrix.settings.docker && matrix.settings.target != 'aarch64-unknown-linux-gnu' }}
               run: |
-                  pnpm exec nx run didkit-plugin-node:build ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' && matrix.settings.target != 'x86_64-apple-darwin' && format('-- --target {0}', matrix.settings.target) || '' }}
+                  pnpm exec nx run didkit-plugin-node:build ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' && format('-- --target {0}', matrix.settings.target) || '' }}
                   ${{ matrix.settings.strip }} packages/plugins/didkit-plugin-node/${{ matrix.settings.node_file }}
               shell: bash
 
