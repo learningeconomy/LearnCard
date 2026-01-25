@@ -1,5 +1,11 @@
 # @welibraryos/lca-api-service
 
+## 1.1.8
+
+### Patch Changes
+
+-   [`c04ff8e86677b7f88fb2858be2b9b3f8bb28f427`](https://github.com/learningeconomy/LearnCard/commit/c04ff8e86677b7f88fb2858be2b9b3f8bb28f427) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Deployed Lambda issue
+
 ## 1.1.7
 
 ### Patch Changes

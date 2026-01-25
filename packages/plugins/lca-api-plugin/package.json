@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-plugin",
-    "version": "1.1.7",
+    "version": "1.1.8",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/lca-api-plugin.esm.js",
