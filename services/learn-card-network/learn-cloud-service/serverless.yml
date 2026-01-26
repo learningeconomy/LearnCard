@@ -23,7 +23,7 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         # minify: true
-        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
+        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node']
         sourcemap: external
         target: 'node16'
         watch:
@@ -79,6 +79,9 @@ package:
   patterns: 
     - '!node_modules/**'
     - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+    - 'node_modules/@learncard/didkit-plugin-node/*.node'
+    - 'node_modules/@learncard/didkit-plugin-node/package.json'
+    - 'node_modules/@learncard/didkit-plugin-node/dist/**'
 
 provider:
     name: aws
