@@ -61,10 +61,28 @@ export const credentialsRouter = t.router({
                 });
 
                 if (encryption) {
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('recipients', [learnCard.id.did(), ...encryption.recipients]);
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+                    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
                     const jwe = await learnCard.invoke.createDagJwe(issuedCredential, [
                         learnCard.id.did(),
                         ...encryption.recipients,
                     ]);
+                    console.log('jwe', JSON.stringify(jwe));
                     return jwe;
                 }
 
