@@ -28,6 +28,11 @@ interface TopicCredential {
     title: string;
 }
 
+export enum AiSessionMode {
+    tutor = 'ai-tutor',
+    insights = 'ai-insights',
+}
+
 let ws: WebSocket | null = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
@@ -714,7 +719,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
 }
 
 // Function to initiate a new session plan for a topic
-export async function startTopic(topic: string) {
+export async function startTopic(topic: string, mode: AiSessionMode = AiSessionMode.tutor) {
     isTyping.set(true);
     isLoading.set(true);
     planReady.set(false);
@@ -834,6 +839,7 @@ export async function startTopic(topic: string) {
         action: 'start_topic',
         topic,
         did, // Include DID for backend processing
+        mode,
     };
 
     // Ensure WebSocket is ready before sending - retry if needed
