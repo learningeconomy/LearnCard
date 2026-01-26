@@ -41,8 +41,8 @@
         "shx": "^0.3.4"
     },
     "dependencies": {
-        "@fastify/cors": "^8.5.0",
-        "@fastify/static": "^6.12.0",
+        "@fastify/cors": "^11.2.0",
+        "@fastify/static": "^9.0.0",
         "@learncard/core": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -58,7 +58,7 @@
         "axios": "^0.27.2",
         "dotenv": "^16.0.3",
         "express": "^4.18.2",
-        "fastify": "^4.28.1",
+        "fastify": "^5.7.2",
         "filestack-js": "^3.24.0",
         "firebase-admin": "13.4.0",
         "ioredis": "^5.2.2",
