@@ -1,5 +1,12 @@
 # learn-card-base
 
+## 0.1.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.9
+
 ## 0.1.11
 
 ### Patch Changes
