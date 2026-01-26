@@ -32,13 +32,8 @@ on:
         required: false
         default: false
         type: boolean
-      deploy-lca-frontend:
-        description: "Deploy LearnCard App Frontend (Netlify + CapGo)"
-        required: false
-        default: false
-        type: boolean
-      deploy-scouts-frontend:
-        description: "Deploy Scouts App Frontend (Netlify + CapGo)"
+      deploy-frontend:
+        description: "Deploy Frontend (Netlify + CapGo)"
         required: false
         default: false
         type: boolean
@@ -352,8 +347,8 @@ jobs:
   # FRONTEND DEPLOYMENTS
   # For production: Wait for any services that are deploying to complete first
   # ============================================================================
-  deploy-lca-frontend:
-    name: Deploy LearnCard App Frontend
+  deploy-frontend:
+    name: Deploy Frontend
     needs:
       [
         determine-affected,
@@ -365,92 +360,8 @@ jobs:
       always() &&
       !cancelled() &&
       (
-        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-lca-frontend == 'true') ||
-        (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true')
-      ) &&
-      !contains(needs.deploy-brain-service.result, 'failure') &&
-      !contains(needs.deploy-learn-cloud.result, 'failure') &&
-      !contains(needs.deploy-lca-api.result, 'failure')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-production') || 'learn-card-app-staging' }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
-
-      # Deploy to Netlify by pushing to production branch (Netlify auto-deploys from it)
-      # Only for production deploys (release commits or manual production deploy)
-      - name: Push to production branch
-        if: |
-          needs.determine-affected.outputs.is_release == 'true' ||
-          (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production')
-        run: git push origin HEAD:production
-
-      - name: Get LearnCard App Version
-        id: lca-version
-        run: |
-          VERSION=$(node -p "require('./apps/learn-card-app/package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Get CapGo Channel
-        id: capgo-channel
-        run: |
-          CHANNEL=$(node tools/capgo/getCapgoChannel.js --app lca)
-          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
-
-      - name: Build LearnCard App
-        run: pnpm exec nx build learn-card-app
-        env:
-          NODE_ENV: ${{ vars.NODE_ENV }}
-          VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
-          SENTRY_ENV: ${{ vars.SENTRY_ENV }}
-          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
-          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-          WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
-          WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
-
-      # Deploy OTA update to CapGo
-      - name: Upload to CapGo
-        run: |
-          npx @capgo/cli@latest bundle upload \
-            com.learncard.app \
-            --delta \
-            --apikey ${{ secrets.CAPGO_TOKEN }} \
-            --path apps/learn-card-app/build \
-            --channel ${{ steps.capgo-channel.outputs.channel }} \
-            --bundle ${{ steps.lca-version.outputs.version }} \
-            --package-json apps/learn-card-app/package.json \
-            --node-modules apps/learn-card-app/node_modules
-
-      - name: Set CapGo Channel
-        run: |
-          npx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
-            -s default \
-            -a ${{ secrets.CAPGO_TOKEN }} \
-            -b ${{ steps.lca-version.outputs.version }} \
-            com.learncard.app
-
-  deploy-scouts-frontend:
-    name: Deploy Scouts App Frontend
-    needs:
-      [
-        determine-affected,
-        deploy-brain-service,
-        deploy-learn-cloud,
-        deploy-lca-api,
-      ]
-    if: |
-      always() &&
-      !cancelled() &&
-      (
-        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-scouts-frontend == 'true') ||
+        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
+        (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
         (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
       ) &&
       !contains(needs.deploy-brain-service.result, 'failure') &&
@@ -459,7 +370,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    environment: scout-app-production
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'scouts' && 'scout-app-production') || (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-production') || 'learn-card-app-staging' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -467,27 +378,55 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set Deployment Variables
+        id: vars
+        run: |
+          TARGET_ENV="${{ github.event.inputs.target-environment }}"
+          if [[ "$TARGET_ENV" == "scouts" ]]; then
+            echo "app_id=scouts" >> "$GITHUB_OUTPUT"
+            echo "project_name=scouts" >> "$GITHUB_OUTPUT"
+            echo "netlify_branch=production-scouts" >> "$GITHUB_OUTPUT"
+            echo "capgo_id=org.scoutpass.app" >> "$GITHUB_OUTPUT"
+            echo "build_path=apps/scouts/build" >> "$GITHUB_OUTPUT"
+            echo "force_push=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "app_id=lca" >> "$GITHUB_OUTPUT"
+            echo "project_name=learn-card-app" >> "$GITHUB_OUTPUT"
+            echo "netlify_branch=production" >> "$GITHUB_OUTPUT"
+            echo "capgo_id=com.learncard.app" >> "$GITHUB_OUTPUT"
+            echo "build_path=apps/learn-card-app/build" >> "$GITHUB_OUTPUT"
+            echo "force_push=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Use Composite Setup Action
         uses: ./.github/actions/setup
 
-      # Deploy to Netlify by pushing to production-scouts branch (Netlify auto-deploys from it)
-      - name: Push to production-scouts branch
-        run: git push --force origin HEAD:production-scouts
-
-      - name: Get Scouts App Version
-        id: scouts-version
+      # Deploy to Netlify by pushing to production branch (Netlify auto-deploys from it)
+      - name: Push to production branch
+        if: |
+          needs.determine-affected.outputs.is_release == 'true' ||
+          (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
         run: |
-          VERSION=$(node -p "require('./apps/scouts/package.json').version")
+          if [[ "${{ steps.vars.outputs.force_push }}" == "true" ]]; then
+            git push --force origin HEAD:${{ steps.vars.outputs.netlify_branch }}
+          else
+            git push origin HEAD:${{ steps.vars.outputs.netlify_branch }}
+          fi
+
+      - name: Get App Version
+        id: app-version
+        run: |
+          VERSION=$(node -p "require('./apps/${{ steps.vars.outputs.project_name }}/package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Get CapGo Channel
         id: capgo-channel
         run: |
-          CHANNEL=$(node tools/capgo/getCapgoChannel.js --app scouts)
+          CHANNEL=$(node tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
           echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
-      - name: Build Scouts App
-        run: pnpm exec nx build scouts
+      - name: Build App
+        run: pnpm exec nx build ${{ steps.vars.outputs.project_name }}
         env:
           NODE_ENV: ${{ vars.NODE_ENV }}
           VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
@@ -501,22 +440,22 @@ jobs:
       - name: Upload to CapGo
         run: |
           npx @capgo/cli@latest bundle upload \
-            org.scoutpass.app \
+            ${{ steps.vars.outputs.capgo_id }} \
             --delta \
             --apikey ${{ secrets.CAPGO_TOKEN }} \
-            --path apps/scouts/build \
+            --path ${{ steps.vars.outputs.build_path }} \
             --channel ${{ steps.capgo-channel.outputs.channel }} \
-            --bundle ${{ steps.scouts-version.outputs.version }} \
-            --package-json apps/scouts/package.json \
-            --node-modules apps/scouts/node_modules
+            --bundle ${{ steps.app-version.outputs.version }} \
+            --package-json apps/${{ steps.vars.outputs.project_name }}/package.json \
+            --node-modules apps/${{ steps.vars.outputs.project_name }}/node_modules
 
       - name: Set CapGo Channel
         run: |
           npx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
             -s default \
             -a ${{ secrets.CAPGO_TOKEN }} \
-            -b ${{ steps.scouts-version.outputs.version }} \
-            org.scoutpass.app
+            -b ${{ steps.app-version.outputs.version }} \
+            ${{ steps.vars.outputs.capgo_id }}
 
   # ============================================================================
   # DOCKER IMAGES
@@ -613,6 +552,7 @@ jobs:
         deploy-brain-service,
         deploy-learn-cloud,
         deploy-lca-api,
+        deploy-frontend,
       ]
     if: |
       always() &&
