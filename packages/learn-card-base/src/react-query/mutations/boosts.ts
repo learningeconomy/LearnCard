@@ -27,6 +27,7 @@ import {
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { BoostCMSState } from 'learn-card-base/components/boost/boost';
 import {
+    SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
     getDefaultCategoryForCredential,
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
@@ -535,14 +536,12 @@ export const useManageSelfAssignedSkillsBoost = () => {
             const walletDid = wallet?.id?.did();
             const currentDate = new Date()?.toISOString();
 
-            const achievementType = 'ext:SelfAssignedSkills';
-
             const credentialPayload: Record<string, any> = {
                 subject: walletDid,
                 type: 'boost',
                 issuanceDate: currentDate,
                 boostName: 'Self-Assigned Skills',
-                achievementType: achievementType, // e.g. "ext: Attendance"
+                achievementType: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // e.g. "ext: Attendance"
                 achievementDescription:
                     'A self-attested credential that lists the skills you have.',
                 achievementNarrative: '',
@@ -583,7 +582,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
             if (sasBoostExists) {
                 const updatedBoostBoolean = await wallet?.invoke?.updateBoost(sasBoost.uri, {
                     name: 'Self-Assigned Skills',
-                    type: achievementType, // in boost CMS: 'ext:Artowork'
+                    type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // in boost CMS: 'ext:Artowork'
                     category: CredentialCategoryEnum.skill, // in boost CMS: "Achievement", "Accomplishment", etc.
                     status: 'PROVISIONAL',
                     credential: unsignedCredential,
@@ -600,7 +599,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 // skillIds will auto-attach framework and align these skills
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: 'Self-Assigned Skills',
-                    type: achievementType,
+                    type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
                     category: CredentialCategoryEnum.skill,
                     status: 'PROVISIONAL',
                     skills,

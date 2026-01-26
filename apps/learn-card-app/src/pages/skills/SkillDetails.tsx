@@ -7,6 +7,7 @@ import {
     BoostCategoryOptionsEnum,
     ModalTypes,
     useGetSkillFrameworkById,
+    useGetSkill,
     useModal,
 } from 'learn-card-base';
 
@@ -21,7 +22,12 @@ import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import FrameworkSkillsCount from '../SkillFrameworks/FrameworkSkillsCount';
 
 import { VC } from '@learncard/types';
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
+    getDefaultCategoryForCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
+import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
+import SelfAssignedSkillCard from './SelfAssignedSkillCard';
 
 type SkillDetailsProps = {
     frameworkId: string;
@@ -35,6 +41,8 @@ const SkillDetails: React.FC<SkillDetailsProps> = ({ frameworkId, skillId, crede
         mobile: ModalTypes.FullScreen,
     });
     const { data: frameworkData } = useGetSkillFrameworkById(frameworkId);
+
+    const { data: skillData } = useGetSkill(frameworkId, skillId);
 
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
@@ -108,25 +116,39 @@ const SkillDetails: React.FC<SkillDetailsProps> = ({ frameworkId, skillId, crede
                                 const isMembership =
                                     boostCategory === BoostCategoryOptionsEnum.membership;
 
+                                const isSelfAssignedSkill =
+                                    boost.boostCredential?.credentialSubject?.achievement
+                                        ?.achievementType === SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE;
+
                                 return (
                                     <SwiperSlide key={index} style={{ width: 'auto' }}>
-                                        {isID || isMembership ? (
-                                            <div className="mt-6">
-                                                <BoostEarnedIDCard
-                                                    credential={boost}
-                                                    categoryType={boostCategory}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <BoostEarnedCard
-                                                credential={boost}
-                                                categoryType={boostCategory}
-                                                sizeLg={12}
-                                                sizeMd={12}
-                                                sizeSm={12}
-                                                isInSkillsModal={true}
-                                                className="!min-h-[310px]"
+                                        {isSelfAssignedSkill && (
+                                            <SelfAssignedSkillCard
+                                                skillId={skillId}
+                                                frameworkId={frameworkId}
                                             />
+                                        )}
+                                        {!isSelfAssignedSkill && (
+                                            <>
+                                                {isID || isMembership ? (
+                                                    <div className="mt-6">
+                                                        <BoostEarnedIDCard
+                                                            credential={boost}
+                                                            categoryType={boostCategory}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <BoostEarnedCard
+                                                        credential={boost}
+                                                        categoryType={boostCategory}
+                                                        sizeLg={12}
+                                                        sizeMd={12}
+                                                        sizeSm={12}
+                                                        isInSkillsModal={true}
+                                                        className="!min-h-[310px]"
+                                                    />
+                                                )}
+                                            </>
                                         )}
                                     </SwiperSlide>
                                 );
