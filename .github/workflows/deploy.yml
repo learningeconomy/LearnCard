@@ -1,584 +1,743 @@
 name: Deploy
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-    inputs:
-      # Environment selection
-      target-environment:
-        description: "Target Environment"
-        required: true
-        default: "staging"
-        type: choice
-        options:
-          - staging
-          - production
-      # Component selection - which things to deploy
-      deploy-brain-service:
-        description: "Deploy Brain Service (Network API)"
-        required: false
-        default: false
-        type: boolean
-      deploy-learn-cloud:
-        description: "Deploy LearnCloud (Storage API)"
-        required: false
-        default: false
-        type: boolean
-      deploy-lca-api:
-        description: "Deploy LCA API Service"
-        required: false
-        default: false
-        type: boolean
-      deploy-lca-frontend:
-        description: "Deploy LearnCard App Frontend (Netlify + CapGo)"
-        required: false
-        default: false
-        type: boolean
-      publish-npm:
-        description: "Publish NPM Packages"
-        required: false
-        default: false
-        type: boolean
-      push-docker:
-        description: "Push Docker Images"
-        required: false
-        default: false
-        type: boolean
+    push:
+        branches:
+            - main
+    workflow_dispatch:
+        inputs:
+            # Environment selection
+            target-environment:
+                description: 'Target Environment'
+                required: true
+                default: 'staging'
+                type: choice
+                options:
+                    - staging
+                    - production
+                    - scouts
+            # Component selection - which things to deploy
+            deploy-brain-service:
+                description: 'Deploy Brain Service (Network API)'
+                required: false
+                default: false
+                type: boolean
+            deploy-learn-cloud:
+                description: 'Deploy LearnCloud (Storage API)'
+                required: false
+                default: false
+                type: boolean
+            deploy-lca-api:
+                description: 'Deploy LCA API Service'
+                required: false
+                default: false
+                type: boolean
+            deploy-lca-frontend:
+                description: 'Deploy LearnCard App Frontend (Netlify + CapGo)'
+                required: false
+                default: false
+                type: boolean
+            deploy-scouts-frontend:
+                description: 'Deploy Scouts App Frontend (Netlify + CapGo)'
+                required: false
+                default: false
+                type: boolean
+            publish-npm:
+                description: 'Publish NPM Packages'
+                required: false
+                default: false
+                type: boolean
+            push-docker:
+                description: 'Push Docker Images'
+                required: false
+                default: false
+                type: boolean
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
-  CI: true
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_DEFAULT_REGION: us-east-1
+    CI: true
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    AWS_DEFAULT_REGION: us-east-1
 
 jobs:
-  # ============================================================================
-  # DETERMINE WHAT'S AFFECTED
-  # ============================================================================
-  determine-affected:
-    name: Determine Affected Projects
-    runs-on: ubuntu-latest
-    outputs:
-      affected: ${{ steps.affected.outputs.affected }}
-      is_release: ${{ steps.check_release.outputs.is_release }}
-      is_manual: ${{ steps.check_manual.outputs.is_manual }}
-      # For production releases, check which services have version changes
-      brain_service_changed: ${{ steps.check_versions.outputs.brain_service_changed }}
-      learn_cloud_changed: ${{ steps.check_versions.outputs.learn_cloud_changed }}
-      lca_api_changed: ${{ steps.check_versions.outputs.lca_api_changed }}
-      lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
-    steps:
-      # Check these first - no dependencies needed
-      - name: Check if this is a manual dispatch
-        id: check_manual
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "is_manual=true" >> $GITHUB_OUTPUT
-            echo "This is a manual dispatch - skipping affected detection"
-          else
-            echo "is_manual=false" >> $GITHUB_OUTPUT
-          fi
+    # ============================================================================
+    # DETERMINE WHAT'S AFFECTED
+    # ============================================================================
+    determine-affected:
+        name: Determine Affected Projects
+        runs-on: ubuntu-latest
+        outputs:
+            affected: ${{ steps.affected.outputs.affected }}
+            is_release: ${{ steps.check_release.outputs.is_release }}
+            is_manual: ${{ steps.check_manual.outputs.is_manual }}
+            # For production releases, check which services have version changes
+            brain_service_changed: ${{ steps.check_versions.outputs.brain_service_changed }}
+            learn_cloud_changed: ${{ steps.check_versions.outputs.learn_cloud_changed }}
+            lca_api_changed: ${{ steps.check_versions.outputs.lca_api_changed }}
+            lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
+            native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
+        steps:
+            # Check these first - no dependencies needed
+            - name: Check if this is a manual dispatch
+              id: check_manual
+              run: |
+                  if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                    echo "is_manual=true" >> $GITHUB_OUTPUT
+                    echo "This is a manual dispatch - skipping affected detection"
+                  else
+                    echo "is_manual=false" >> $GITHUB_OUTPUT
+                  fi
 
-      - name: Check if this is a release commit
-        id: check_release
-        if: github.event_name != 'workflow_dispatch'
-        run: |
-          if [[ "${{ github.event.head_commit.message }}" == *"chore(release):"* ]]; then
-            echo "is_release=true" >> $GITHUB_OUTPUT
-            echo "This is a release commit"
-          else
-            echo "is_release=false" >> $GITHUB_OUTPUT
-          fi
+            - name: Check if this is a release commit
+              id: check_release
+              if: github.event_name != 'workflow_dispatch'
+              run: |
+                  if [[ "${{ github.event.head_commit.message }}" == *"chore(release):"* ]]; then
+                    echo "is_release=true" >> $GITHUB_OUTPUT
+                    echo "This is a release commit"
+                  else
+                    echo "is_release=false" >> $GITHUB_OUTPUT
+                  fi
 
-      # Skip heavy steps for manual dispatch - we already know what to deploy
-      - name: Checkout Repo
-        if: github.event_name != 'workflow_dispatch'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+            # Skip heavy steps for manual dispatch - we already know what to deploy
+            - name: Checkout Repo
+              if: github.event_name != 'workflow_dispatch'
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - name: Fetch main for NX comparison
-        if: github.event_name != 'workflow_dispatch'
-        run: git fetch --no-tags --prune origin main
+            - name: Fetch main for NX comparison
+              if: github.event_name != 'workflow_dispatch'
+              run: git fetch --no-tags --prune origin main
 
-      - name: Use Composite Setup Action
-        if: github.event_name != 'workflow_dispatch'
-        uses: ./.github/actions/setup
+            - name: Use Composite Setup Action
+              if: github.event_name != 'workflow_dispatch'
+              uses: ./.github/actions/setup
 
-      - name: Get Affected List
-        if: github.event_name != 'workflow_dispatch'
-        id: affected
-        run: |
-          affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
-          echo "affected=$affected" >> $GITHUB_OUTPUT
-          echo "Affected projects: $affected"
+            - name: Get Affected List
+              if: github.event_name != 'workflow_dispatch'
+              id: affected
+              run: |
+                  affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
+                  echo "affected=$affected" >> $GITHUB_OUTPUT
+                  echo "Affected projects: $affected"
 
-      - name: Check version changes for release
-        if: github.event_name != 'workflow_dispatch'
-        id: check_versions
-        run: |
-          # Check which packages had version changes in this commit
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+            - name: Check version changes for release
+              if: github.event_name != 'workflow_dispatch'
+              id: check_versions
+              run: |
+                  # Check which packages had version changes in this commit
+                  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
 
-          if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/brain-service/package.json"; then
-            echo "brain_service_changed=true" >> $GITHUB_OUTPUT
-            echo "Brain service version changed"
-          else
-            echo "brain_service_changed=false" >> $GITHUB_OUTPUT
-          fi
+                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/brain-service/package.json"; then
+                    echo "brain_service_changed=true" >> $GITHUB_OUTPUT
+                    echo "Brain service version changed"
+                  else
+                    echo "brain_service_changed=false" >> $GITHUB_OUTPUT
+                  fi
 
-          if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/learn-cloud-service/package.json"; then
-            echo "learn_cloud_changed=true" >> $GITHUB_OUTPUT
-            echo "LearnCloud version changed"
-          else
-            echo "learn_cloud_changed=false" >> $GITHUB_OUTPUT
-          fi
+                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/learn-cloud-service/package.json"; then
+                    echo "learn_cloud_changed=true" >> $GITHUB_OUTPUT
+                    echo "LearnCloud version changed"
+                  else
+                    echo "learn_cloud_changed=false" >> $GITHUB_OUTPUT
+                  fi
 
-          if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/lca-api/package.json"; then
-            echo "lca_api_changed=true" >> $GITHUB_OUTPUT
-            echo "LCA API version changed"
-          else
-            echo "lca_api_changed=false" >> $GITHUB_OUTPUT
-          fi
+                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/lca-api/package.json"; then
+                    echo "lca_api_changed=true" >> $GITHUB_OUTPUT
+                    echo "LCA API version changed"
+                  else
+                    echo "lca_api_changed=false" >> $GITHUB_OUTPUT
+                  fi
 
-          if echo "$CHANGED_FILES" | grep -q "apps/learn-card-app/package.json"; then
-            echo "lca_app_changed=true" >> $GITHUB_OUTPUT
-            echo "LearnCard App version changed"
-          else
-            echo "lca_app_changed=false" >> $GITHUB_OUTPUT
-          fi
+                  if echo "$CHANGED_FILES" | grep -q "apps/learn-card-app/package.json"; then
+                    echo "lca_app_changed=true" >> $GITHUB_OUTPUT
+                    echo "LearnCard App version changed"
+                  else
+                    echo "lca_app_changed=false" >> $GITHUB_OUTPUT
+                  fi
 
-  # ============================================================================
-  # TESTING (skip on production releases and manual deploys)
-  # ============================================================================
-  test-affected:
-    name: Test Affected Projects
-    needs: determine-affected
-    if: |
-      needs.determine-affected.outputs.affected != '' &&
-      needs.determine-affected.outputs.is_release != 'true' &&
-      needs.determine-affected.outputs.is_manual != 'true'
-    runs-on: ubuntu-latest
-    environment: ci-tests
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+                  if echo "$CHANGED_FILES" | grep -qE "packages/plugins/didkit-plugin-node/(native|src)/"; then
+                    echo "native_plugin_changed=true" >> $GITHUB_OUTPUT
+                    echo "Native DIDKit plugin changed - will wait for prebuilds"
+                  else
+                    echo "native_plugin_changed=false" >> $GITHUB_OUTPUT
+                  fi
 
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
-
-      - name: Run tests
-        uses: nick-fields/retry@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
-        env:
-          SEED: ${{ secrets.SEED }}
-          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
-
-  # ============================================================================
-  # SERVICE DEPLOYMENTS
-  # Triggers:
-  #   - Push: Deploy to staging if affected
-  #   - Release: Deploy to production if version changed
-  #   - Manual: Deploy to selected environment if selected
-  # ============================================================================
-  deploy-brain-service:
-    name: Deploy Brain Service (Network API)
-    needs: [determine-affected, test-affected]
-    if: |
-      always() &&
-      !cancelled() &&
-      (
-        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-brain-service == 'true') ||
-        (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.brain_service_changed == 'true') ||
-        (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'network-brain-service'))
-      )
-    runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-network-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-network-api-production') || 'learn-cloud-network-api-staging' }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
-
-      - name: Deploy Brain Service Lambda
-        run: pnpm exec nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
-        env:
-          CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
-          POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
-          SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
-          SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
-          SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
-          SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-          SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
-          APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
-          SEED: ${{ secrets.SEED }}
-          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-          NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
-          NEO4J_URI: ${{ secrets.NEO4J_URI }}
-          NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
-          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
-          POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
-          MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
-          MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
-          SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
-          SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
-          LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
-
-  deploy-learn-cloud:
-    name: Deploy LearnCloud (Storage API)
-    needs: [determine-affected, test-affected]
-    if: |
-      always() &&
-      !cancelled() &&
-      (
-        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-learn-cloud == 'true') ||
-        (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.learn_cloud_changed == 'true') ||
-        (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'learn-cloud-service'))
-      )
-    runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-storage-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-storage-api-production') || 'learn-cloud-storage-api-staging' }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
-
-      - name: Deploy LearnCloud Lambda
-        run: pnpm exec nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
-        env:
-          SERVER_URL: ${{ vars.SERVER_URL }}
-          SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
-          SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
-          SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
-          SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-          SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
-          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
-          LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
-          LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
-          XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
-          XAPI_USERNAME: ${{ secrets.XAPI_USERNAME }}
-          XAPI_PASSWORD: ${{ secrets.XAPI_PASSWORD }}
-          RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
-          RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
-          JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-
-  deploy-lca-api:
-    name: Deploy LCA API Service
-    needs: [determine-affected, test-affected]
-    if: |
-      always() &&
-      !cancelled() &&
-      (
-        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-lca-api == 'true') ||
-        (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_api_changed == 'true') ||
-        (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
-      )
-    runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-api-production') || 'learn-card-app-api-staging' }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
-
-      - name: Deploy LCA API Service Lambda
-        run: pnpm exec nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }}
-        env:
-          DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
-          SEED: ${{ secrets.SEED }}
-          METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
-          POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
-          POSTMARK_LOGIN_CODE_TEMPLATE_ID: ${{ secrets.POSTMARK_LOGIN_CODE_TEMPLATE_ID }}
-          POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID: ${{ secrets.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID }}
-          POSTMARK_FROM_EMAIL: ${{ secrets.POSTMARK_FROM_EMAIL }}
-          POSTMARK_BRAND_NAME: ${{ secrets.POSTMARK_BRAND_NAME }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
-          GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-
-  # ============================================================================
-  # SDK GENERATION (after brain-service deploy, only on staging)
-  # ============================================================================
-  generate-sdk:
-    name: Generate SDK Clients
-    needs: [determine-affected, deploy-brain-service]
-    if: |
-      always() &&
-      needs.deploy-brain-service.result == 'success' &&
-      needs.determine-affected.outputs.is_release != 'true' &&
-      contains(needs.determine-affected.outputs.affected, 'network-brain-service')
-    uses: ./.github/workflows/open-api-generator.yml
-    with:
-      affected: ${{ needs.determine-affected.outputs.affected }}
-
-  # ============================================================================
-  # FRONTEND DEPLOYMENTS
-  # For production: Wait for any services that are deploying to complete first
-  # ============================================================================
-  deploy-lca-frontend:
-    name: Deploy LearnCard App Frontend
-    needs:
-      [
-        determine-affected,
-        deploy-brain-service,
-        deploy-learn-cloud,
-        deploy-lca-api,
-      ]
-    if: |
-      always() &&
-      !cancelled() &&
-      (
-        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-lca-frontend == 'true') ||
-        (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true')
-      ) &&
-      !contains(needs.deploy-brain-service.result, 'failure') &&
-      !contains(needs.deploy-learn-cloud.result, 'failure') &&
-      !contains(needs.deploy-lca-api.result, 'failure')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-production') || 'learn-card-app-staging' }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
-
-      # Deploy to Netlify by pushing to production branch (Netlify auto-deploys from it)
-      # Only for production deploys (release commits or manual production deploy)
-      - name: Push to production branch
+    # ============================================================================
+    # TESTING (skip on production releases and manual deploys)
+    # ============================================================================
+    test-affected:
+        name: Test Affected Projects
+        needs: [determine-affected, build-native-plugin]
         if: |
-          needs.determine-affected.outputs.is_release == 'true' ||
-          (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production')
-        run: git push origin HEAD:production
+            needs.determine-affected.outputs.affected != '' &&
+            needs.determine-affected.outputs.is_release != 'true' &&
+            needs.determine-affected.outputs.is_manual != 'true'
+        runs-on: ubuntu-latest
+        environment: ci-tests
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - name: Get LearnCard App Version
-        id: lca-version
-        run: |
-          VERSION=$(node -p "require('./apps/learn-card-app/package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            - name: Download native plugin binary
+              uses: actions/download-artifact@v4
+              with:
+                  name: didkit-native-linux-x64
+                  path: packages/plugins/didkit-plugin-node
 
-      - name: Get CapGo Channel
-        id: capgo-channel
-        run: |
-          CHANNEL=$(node tools/capgo/getCapgoChannel.js --app lca)
-          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
 
-      - name: Build LearnCard App
-        run: pnpm exec nx build learn-card-app
-        env:
-          NODE_ENV: ${{ vars.NODE_ENV }}
-          VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
-          SENTRY_ENV: ${{ vars.SENTRY_ENV }}
-          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
-          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-          WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
-          WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+            - name: Run tests
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_minutes: 10
+                  max_attempts: 3
+                  command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+              env:
+                  SEED: ${{ secrets.SEED }}
+                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
-      # Deploy OTA update to CapGo
-      - name: Upload to CapGo
-        run: |
-          npx @capgo/cli@latest bundle upload \
-            com.learncard.app \
-            --delta \
-            --apikey ${{ secrets.CAPGO_TOKEN }} \
-            --path apps/learn-card-app/build \
-            --channel ${{ steps.capgo-channel.outputs.channel }} \
-            --bundle ${{ steps.lca-version.outputs.version }} \
-            --package-json apps/learn-card-app/package.json \
-            --node-modules apps/learn-card-app/node_modules
+    # ============================================================================
+    # BUILD NATIVE PLUGIN (for Lambda deploys - Linux x64)
+    # ============================================================================
+    build-native-plugin:
+        name: Build Native DIDKit Plugin
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  submodules: true
 
-      - name: Set CapGo Channel
-        run: |
-          npx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
-            -s default \
-            -a ${{ secrets.CAPGO_TOKEN }} \
-            -b ${{ steps.lca-version.outputs.version }} \
-            com.learncard.app
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24.12.0
 
-  # ============================================================================
-  # DOCKER IMAGES
-  # ============================================================================
-  push-docker-images:
-    name: Push Docker Images
-    needs: [determine-affected, deploy-brain-service, deploy-learn-cloud]
-    if: |
-      always() &&
-      !cancelled() &&
-      (
-        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.push-docker == 'true') ||
-        (needs.determine-affected.outputs.is_release == 'true' && (needs.determine-affected.outputs.brain_service_changed == 'true' || needs.determine-affected.outputs.learn_cloud_changed == 'true'))
-      ) &&
-      !contains(needs.deploy-brain-service.result, 'failure') &&
-      !contains(needs.deploy-learn-cloud.result, 'failure')
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: read
-      attestations: write
-      id-token: write
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+            - name: Install pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 9
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  toolchain: stable
+                  targets: x86_64-unknown-linux-gnu
+
+            - name: Cache cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry/index/
+                      ~/.cargo/registry/cache/
+                      ~/.cargo/git/db/
+                      packages/plugins/didkit-plugin-node/native/target/
+                  key: linux-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+            - name: Install dependencies
+              run: pnpm install --no-frozen-lockfile
+
+            - name: Build native plugin
+              working-directory: packages/plugins/didkit-plugin-node
+              run: |
+                  pnpm exec nx build didkit-plugin-node
+                  strip -x *.node
+
+            - name: Upload native binary
+              uses: actions/upload-artifact@v4
+              with:
+                  name: didkit-native-linux-x64
+                  path: |
+                      packages/plugins/didkit-plugin-node/*.node
+                      packages/plugins/didkit-plugin-node/dist/**
+                  if-no-files-found: error
+                  retention-days: 1
+
+    # ============================================================================
+    # SERVICE DEPLOYMENTS
+    # Triggers:
+    #   - Push: Deploy to staging if affected
+    #   - Release: Deploy to production if version changed
+    #   - Manual: Deploy to selected environment if selected
+    # ============================================================================
+    deploy-brain-service:
+        name: Deploy Brain Service (Network API)
+        needs: [determine-affected, test-affected, build-native-plugin]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-brain-service == 'true') ||
+              (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.brain_service_changed == 'true') ||
+              (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'network-brain-service'))
+            )
+        runs-on: ubuntu-latest
+        environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'scouts' && 'scout-network-api-production') || (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-network-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-network-api-production') || 'learn-cloud-network-api-staging' }}
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+
+            - name: Download native plugin binary
+              uses: actions/download-artifact@v4
+              with:
+                  name: didkit-native-linux-x64
+                  path: packages/plugins/didkit-plugin-node
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Deploy Brain Service Lambda
+              run: pnpm exec nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
+              env:
+                  CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
+                  POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
+                  SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
+                  SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
+                  SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
+                  SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
+                  SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
+                  APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
+                  SEED: ${{ secrets.SEED }}
+                  DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+                  NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
+                  NEO4J_URI: ${{ secrets.NEO4J_URI }}
+                  NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
+                  NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+                  POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
+                  MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
+                  MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
+                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+                  SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
+                  SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
+                  SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
+                  LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
+
+    deploy-learn-cloud:
+        name: Deploy LearnCloud (Storage API)
+        needs: [determine-affected, test-affected, build-native-plugin]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-learn-cloud == 'true') ||
+              (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.learn_cloud_changed == 'true') ||
+              (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'learn-cloud-service'))
+            )
+        runs-on: ubuntu-latest
+        environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'scouts' && 'scout-storage-api-production') || (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-cloud-storage-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-cloud-storage-api-production') || 'learn-cloud-storage-api-staging' }}
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+
+            - name: Download native plugin binary
+              uses: actions/download-artifact@v4
+              with:
+                  name: didkit-native-linux-x64
+                  path: packages/plugins/didkit-plugin-node
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Deploy LearnCloud Lambda
+              run: pnpm exec nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
+              env:
+                  SERVER_URL: ${{ vars.SERVER_URL }}
+                  SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
+                  SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
+                  SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
+                  SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
+                  SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
+                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+                  LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
+                  LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
+                  XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
+                  XAPI_USERNAME: ${{ secrets.XAPI_USERNAME }}
+                  XAPI_PASSWORD: ${{ secrets.XAPI_PASSWORD }}
+                  RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
+                  RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
+                  JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+
+    deploy-lca-api:
+        name: Deploy LCA API Service
+        needs: [determine-affected, test-affected, build-native-plugin]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-lca-api == 'true') ||
+              (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_api_changed == 'true') ||
+              (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
+            )
+        runs-on: ubuntu-latest
+        environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'scouts' && 'scout-app-api-production') || (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-api-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-api-production') || 'learn-card-app-api-staging' }}
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+
+            - name: Download native plugin binary
+              uses: actions/download-artifact@v4
+              with:
+                  name: didkit-native-linux-x64
+                  path: packages/plugins/didkit-plugin-node
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Deploy LCA API Service Lambda
+              run: pnpm exec nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }}
+              env:
+                  DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
+                  SEED: ${{ secrets.SEED }}
+                  METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
+                  POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
+                  POSTMARK_LOGIN_CODE_TEMPLATE_ID: ${{ secrets.POSTMARK_LOGIN_CODE_TEMPLATE_ID }}
+                  POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID: ${{ secrets.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID }}
+                  POSTMARK_FROM_EMAIL: ${{ secrets.POSTMARK_FROM_EMAIL }}
+                  POSTMARK_BRAND_NAME: ${{ secrets.POSTMARK_BRAND_NAME }}
+                  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+                  AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
+                  GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
+                  MONGO_URI: ${{ secrets.MONGO_URI }}
+                  MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+
+    # ============================================================================
+    # SDK GENERATION (after brain-service deploy, only on staging)
+    # ============================================================================
+    generate-sdk:
+        name: Generate SDK Clients
+        needs: [determine-affected, deploy-brain-service]
+        if: |
+            always() &&
+            needs.deploy-brain-service.result == 'success' &&
+            needs.determine-affected.outputs.is_release != 'true' &&
+            contains(needs.determine-affected.outputs.affected, 'network-brain-service')
+        uses: ./.github/workflows/open-api-generator.yml
         with:
-          fetch-depth: 0
+            affected: ${{ needs.determine-affected.outputs.affected }}
 
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
+    # ============================================================================
+    # FRONTEND DEPLOYMENTS
+    # For production: Wait for any services that are deploying to complete first
+    # ============================================================================
+    deploy-lca-frontend:
+        name: Deploy LearnCard App Frontend
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-lca-frontend == 'true') ||
+              (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true')
+            ) &&
+            !contains(needs.deploy-brain-service.result, 'failure') &&
+            !contains(needs.deploy-learn-cloud.result, 'failure') &&
+            !contains(needs.deploy-lca-api.result, 'failure')
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production' && 'learn-card-app-production') || (needs.determine-affected.outputs.is_release == 'true' && 'learn-card-app-production') || 'learn-card-app-staging' }}
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
 
-      - name: Get Brain Service package version
-        id: brain-service-version
-        working-directory: "./services/learn-card-network/brain-service"
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            # Deploy to Netlify by pushing to production branch (Netlify auto-deploys from it)
+            # Only for production deploys (release commits or manual production deploy)
+            - name: Push to production branch
+              if: |
+                  needs.determine-affected.outputs.is_release == 'true' ||
+                  (github.event_name == 'workflow_dispatch' && github.event.inputs.target-environment == 'production')
+              run: git push origin HEAD:production
 
-      - name: Extract metadata for Brain Service
-        id: brain-service-meta
-        uses: docker/metadata-action@v5
-        with:
-          images: welibrary/lcn-brain-service
-          tags: |
-            type=semver,pattern={{version}},value=v${{ steps.brain-service-version.outputs.version }}
+            - name: Get LearnCard App Version
+              id: lca-version
+              run: |
+                  VERSION=$(node -p "require('./apps/learn-card-app/package.json').version")
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push Brain Service image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./services/learn-card-network/brain-service/Dockerfile
-          push: true
-          tags: ${{ steps.brain-service-meta.outputs.tags }}
-          labels: ${{ steps.brain-service-meta.outputs.labels }}
+            - name: Get CapGo Channel
+              id: capgo-channel
+              run: |
+                  CHANNEL=$(node tools/capgo/getCapgoChannel.js --app lca)
+                  echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
-      - name: Get LearnCloud Service package version
-        id: cloud-service-version
-        working-directory: "./services/learn-card-network/learn-cloud-service"
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            - name: Build LearnCard App
+              run: pnpm exec nx build learn-card-app
+              env:
+                  NODE_ENV: ${{ vars.NODE_ENV }}
+                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+                  SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+                  SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
+                  WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+                  SKIP_DIDKIT_NAPI: '1'
 
-      - name: Extract metadata for Cloud Service
-        id: cloud-service-meta
-        uses: docker/metadata-action@v5
-        with:
-          images: welibrary/lcn-cloud-service
-          tags: |
-            type=semver,pattern={{version}},value=v${{ steps.cloud-service-version.outputs.version }}
+            # Deploy OTA update to CapGo
+            - name: Upload to CapGo
+              run: |
+                  npx @capgo/cli@latest bundle upload \
+                    com.learncard.app \
+                    --delta \
+                    --apikey ${{ secrets.CAPGO_TOKEN }} \
+                    --path apps/learn-card-app/build \
+                    --channel ${{ steps.capgo-channel.outputs.channel }} \
+                    --bundle ${{ steps.lca-version.outputs.version }} \
+                    --package-json apps/learn-card-app/package.json \
+                    --node-modules apps/learn-card-app/node_modules
 
-      - name: Build and push Cloud Service image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./services/learn-card-network/learn-cloud-service/Dockerfile
-          push: true
-          tags: ${{ steps.cloud-service-meta.outputs.tags }}
-          labels: ${{ steps.cloud-service-meta.outputs.labels }}
+            - name: Set CapGo Channel
+              run: |
+                  npx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
+                    -s default \
+                    -a ${{ secrets.CAPGO_TOKEN }} \
+                    -b ${{ steps.lca-version.outputs.version }} \
+                    com.learncard.app
 
-  # ============================================================================
-  # NPM PUBLISHING
-  # ============================================================================
-  publish-npm:
-    name: Publish NPM Packages
-    needs:
-      [
-        determine-affected,
-        deploy-brain-service,
-        deploy-learn-cloud,
-        deploy-lca-api,
-      ]
-    if: |
-      always() &&
-      !cancelled() &&
-      (
-        (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-npm == 'true') ||
-        needs.determine-affected.outputs.is_release == 'true'
-      ) &&
-      !contains(needs.deploy-brain-service.result, 'failure') &&
-      !contains(needs.deploy-learn-cloud.result, 'failure') &&
-      !contains(needs.deploy-lca-api.result, 'failure')
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    deploy-scouts-frontend:
+        name: Deploy Scouts App Frontend
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-scouts-frontend == 'true') ||
+              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
+            ) &&
+            !contains(needs.deploy-brain-service.result, 'failure') &&
+            !contains(needs.deploy-learn-cloud.result, 'failure') &&
+            !contains(needs.deploy-lca-api.result, 'failure')
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        environment: scout-app-production
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
 
-      - name: Build packages
-        run: pnpm exec nx run-many --target=build --exclude docs
+            # Deploy to Netlify by pushing to production-scouts branch (Netlify auto-deploys from it)
+            - name: Push to production-scouts branch
+              run: git push --force origin HEAD:production-scouts
 
-      - name: Publish to NPM
-        run: pnpm publish -r --no-git-checks
+            - name: Get Scouts App Version
+              id: scouts-version
+              run: |
+                  VERSION=$(node -p "require('./apps/scouts/package.json').version")
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-  # ============================================================================
-  # CHANGESET PR MANAGEMENT (only on non-release, non-manual pushes)
-  # ============================================================================
-  manage-releases:
-    name: Manage Release PR
-    needs: determine-affected
-    if: |
-      needs.determine-affected.outputs.is_release != 'true' &&
-      needs.determine-affected.outputs.is_manual != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+            - name: Get CapGo Channel
+              id: capgo-channel
+              run: |
+                  CHANNEL=$(node tools/capgo/getCapgoChannel.js --app scouts)
+                  echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
+            - name: Build Scouts App
+              run: pnpm exec nx build scouts
+              env:
+                  NODE_ENV: ${{ vars.NODE_ENV }}
+                  VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
+                  SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+                  SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
+                  WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
 
-      - name: Create Release Pull Request
-        uses: changesets/action@v1
-        with:
-          commit: "chore(release): version packages"
-          title: "chore(release): version packages"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            # Deploy OTA update to CapGo
+            - name: Upload to CapGo
+              run: |
+                  npx @capgo/cli@latest bundle upload \
+                    org.scoutpass.app \
+                    --delta \
+                    --apikey ${{ secrets.CAPGO_TOKEN }} \
+                    --path apps/scouts/build \
+                    --channel ${{ steps.capgo-channel.outputs.channel }} \
+                    --bundle ${{ steps.scouts-version.outputs.version }} \
+                    --package-json apps/scouts/package.json \
+                    --node-modules apps/scouts/node_modules
+
+            - name: Set CapGo Channel
+              run: |
+                  npx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
+                    -s default \
+                    -a ${{ secrets.CAPGO_TOKEN }} \
+                    -b ${{ steps.scouts-version.outputs.version }} \
+                    org.scoutpass.app
+
+    # ============================================================================
+    # DOCKER IMAGES
+    # ============================================================================
+    push-docker-images:
+        name: Push Docker Images
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.push-docker == 'true') ||
+              (needs.determine-affected.outputs.is_release == 'true' && (needs.determine-affected.outputs.brain_service_changed == 'true' || needs.determine-affected.outputs.learn_cloud_changed == 'true'))
+            ) &&
+            !contains(needs.deploy-brain-service.result, 'failure') &&
+            !contains(needs.deploy-learn-cloud.result, 'failure')
+        runs-on: ubuntu-latest
+        permissions:
+            packages: write
+            contents: read
+            attestations: write
+            id-token: write
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            - name: Get Brain Service package version
+              id: brain-service-version
+              working-directory: './services/learn-card-network/brain-service'
+              run: |
+                  VERSION=$(node -p "require('./package.json').version")
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+            - name: Extract metadata for Brain Service
+              id: brain-service-meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: welibrary/lcn-brain-service
+                  tags: |
+                      type=semver,pattern={{version}},value=v${{ steps.brain-service-version.outputs.version }}
+
+            - name: Build and push Brain Service image
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: ./services/learn-card-network/brain-service/Dockerfile
+                  push: true
+                  tags: ${{ steps.brain-service-meta.outputs.tags }}
+                  labels: ${{ steps.brain-service-meta.outputs.labels }}
+
+            - name: Get LearnCloud Service package version
+              id: cloud-service-version
+              working-directory: './services/learn-card-network/learn-cloud-service'
+              run: |
+                  VERSION=$(node -p "require('./package.json').version")
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+            - name: Extract metadata for Cloud Service
+              id: cloud-service-meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: welibrary/lcn-cloud-service
+                  tags: |
+                      type=semver,pattern={{version}},value=v${{ steps.cloud-service-version.outputs.version }}
+
+            - name: Build and push Cloud Service image
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: ./services/learn-card-network/learn-cloud-service/Dockerfile
+                  push: true
+                  tags: ${{ steps.cloud-service-meta.outputs.tags }}
+                  labels: ${{ steps.cloud-service-meta.outputs.labels }}
+
+    # ============================================================================
+    # NPM PUBLISHING
+    # ============================================================================
+    publish-npm:
+        name: Publish NPM Packages
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+              (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-npm == 'true') ||
+              needs.determine-affected.outputs.is_release == 'true'
+            ) &&
+            !contains(needs.deploy-brain-service.result, 'failure') &&
+            !contains(needs.deploy-learn-cloud.result, 'failure') &&
+            !contains(needs.deploy-lca-api.result, 'failure')
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write
+            contents: read
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Build packages
+              run: pnpm exec nx run-many --target=build --exclude docs
+
+            - name: Publish to NPM
+              run: pnpm publish -r --no-git-checks
+
+    # ============================================================================
+    # CHANGESET PR MANAGEMENT (only on non-release, non-manual pushes)
+    # ============================================================================
+    manage-releases:
+        name: Manage Release PR
+        needs: determine-affected
+        if: |
+            needs.determine-affected.outputs.is_release != 'true' &&
+            needs.determine-affected.outputs.is_manual != 'true'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Create Release Pull Request
+              uses: changesets/action@v1
+              with:
+                  commit: 'chore(release): version packages'
+                  title: 'chore(release): version packages'
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

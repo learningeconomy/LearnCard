@@ -11,7 +11,7 @@ jobs:
         uses: ./.github/workflows/fastlane-deploy-native-apps.yml
         with:
             environment: "learn-card-app-production"
-            googlePlayReleaseTrack: "internal"
+            googlePlayReleaseTrack: "production"
             submitToAppStore: true
             releaseNotes: "- Critical Bug Fixes and Security Patches"
         secrets: inherit
