@@ -4,6 +4,7 @@ import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import { useGetVCInfo } from 'learn-card-base';
+import { openExternalLink } from '../../../../helpers/externalLinkHelpers';
 
 import { VC } from '@learncard/types';
 
@@ -45,14 +46,16 @@ const CredentialIssuerInformation: React.FC<CredentialIssuerInformationProps> = 
                     A trusted verifier is an organization that has been officially vetted by a
                     community of peers to reliably confirm that a person's skills, experiences, and
                     credentials are authentic.{' '}
-                    <a
-                        href="https://docs.learncard.com/core-concepts/identities-and-keys/trust-registries"
+                    <button
+                        onClick={() =>
+                            openExternalLink(
+                                'https://docs.learncard.com/core-concepts/identities-and-keys/trust-registries'
+                            )
+                        }
                         className="text-indigo-500 font-poppins text-[14px] font-[600] underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
                     >
                         Learn More
-                    </a>
+                    </button>
                 </p>
             </div>
 
@@ -68,14 +71,12 @@ const CredentialIssuerInformation: React.FC<CredentialIssuerInformationProps> = 
                         )}
                     </div>
                     {url && (
-                        <a
-                            href={url}
+                        <button
+                            onClick={() => openExternalLink(url)}
                             className="text-indigo-500 font-poppins text-[14px] underline line-clamp-1"
-                            target="_blank"
-                            rel="noopener noreferrer"
                         >
                             {url}
-                        </a>
+                        </button>
                     )}
                 </div>
             </div>
@@ -94,14 +95,12 @@ const CredentialIssuerInformation: React.FC<CredentialIssuerInformationProps> = 
                     <p className="text-[11px] font-poppins text-grayscale-600 uppercase font-[500]">
                         Credential Engine URL
                     </p>
-                    <a
-                        href={credentialEngineUrl}
+                    <button
+                        onClick={() => openExternalLink(credentialEngineUrl)}
                         className="text-[14px] font-poppins text-indigo-500 underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
                     >
                         {credentialEngineUrl}
-                    </a>
+                    </button>
                 </div>
             )}
 
