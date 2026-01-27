@@ -123,7 +123,10 @@ const ChatInput: React.FC = () => {
                         {thread?.topicCredentialUri && !thread?.summaries?.[0] && (
                             <>
                                 <button
-                                    onClick={() => history.push('/')}
+                                    onClick={() => {
+                                        closeAllModals();
+                                        history.push('/');
+                                    }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                                 >
                                     Return Home
