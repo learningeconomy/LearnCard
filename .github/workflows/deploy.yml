@@ -650,7 +650,7 @@ jobs:
     # ============================================================================
     publish-npm:
         name: Publish NPM Packages
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api, deploy-frontend]
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
         if: |
             always() &&
             !cancelled() &&
