@@ -1491,6 +1491,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
+ "bs58 0.5.1",
  "byteorder",
  "chacha20poly1305",
  "didkit",
