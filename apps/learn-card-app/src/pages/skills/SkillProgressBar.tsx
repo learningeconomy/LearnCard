@@ -50,7 +50,7 @@ type SkillProgressBarProps = {
 };
 
 const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, onChange }) => {
-    const [skillLevel, setSkillLevel] = useState<SkillLevel>(proficiencyLevel ?? SkillLevel.Novice);
+    const [skillLevel, setSkillLevel] = useState<SkillLevel>(proficiencyLevel ?? SkillLevel.Hidden);
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const segmentRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -98,7 +98,7 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
     }, [proficiencyLevel]);
 
     return (
-        <div className="flex flex-col gap-[15px]">
+        <div className="flex flex-col gap-[15px] w-full">
             <div className="flex flex-col">
                 <p className="text-grayscale-800 font-poppins font-[600] text-[14px]">
                     Skill Level -{' '}

@@ -83,7 +83,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         if (isAlreadySelected) {
             setSelectedSkills(selectedSkills.filter(s => s.id !== skillId));
         } else {
-            setSelectedSkills([...selectedSkills, { id: skillId, proficiency: SkillLevel.Novice }]);
+            setSelectedSkills([...selectedSkills, { id: skillId, proficiency: SkillLevel.Hidden }]);
         }
     };
 
@@ -207,7 +207,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                                     framework={selfAssignedSkillFramework}
                                     handleToggleSelect={() => handleToggleSelect(skill.id)}
                                     isNodeSelected={!!selected}
-                                    proficiencyLevel={selected?.proficiency ?? SkillLevel.Novice}
+                                    proficiencyLevel={selected?.proficiency ?? SkillLevel.Hidden}
                                     onChangeProficiency={level =>
                                         setSelectedSkills(prev =>
                                             prev.map(s =>
