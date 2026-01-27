@@ -203,7 +203,7 @@ jobs:
 
             - name: Publish platform packages
               working-directory: packages/plugins/didkit-plugin-node
-              run: pnpm exec napi prepublish -t npm --cargo-cwd native
+              run: pnpm exec napi prepublish -t npm
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
