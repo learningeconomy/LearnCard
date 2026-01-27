@@ -20,8 +20,30 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     
     const appUrl = `https://scoutnetwork.org/frameworks/${framework.id}/skills/${skill.id}`;
 
-    // TODO: Replace with the actual CDN link for the logo provided by the user
-    const logoUrl = 'https://cdn.filestackcontent.com/bVO0X4JITFypGBTNSOjE'; 
+    // Branding Configuration
+    const brand = process.env.APP_BRAND || 'scouts';
+
+    let theme = {
+        bgColor: '#5b2994',
+        cardBg: '#ffffff',
+        primary: '#5b2994',
+        text: '#000000',
+        textMuted: '#666666',
+        logoUrl: 'https://cdn.filestackcontent.com/bVO0X4JITFypGBTNSOjE', // Scouts Logo
+        logoAlt: 'ScoutPass'
+    };
+
+    if (brand === 'lca') {
+        theme = {
+            bgColor: '#00ba88',
+            cardBg: '#ffffff',
+            primary: '#00ba88',
+            text: '#000000',
+            textMuted: '#666666',
+            logoUrl: 'https://cdn.filestackcontent.com/S2N8iyiaQNaRPiqijnq7', // LCA Logo
+            logoAlt: 'LearnCard'
+        };
+    }
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -48,11 +70,11 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     
     <style>
         :root {
-            --bg-color: #5b2994;
-            --card-bg: #ffffff;
-            --primary: #5b2994;
-            --text: #000000;
-            --text-muted: #666666;
+            --bg-color: ${theme.bgColor};
+            --card-bg: ${theme.cardBg};
+            --primary: ${theme.primary};
+            --text: ${theme.text};
+            --text-muted: ${theme.textMuted};
         }
 
         body {
@@ -130,8 +152,9 @@ export const renderSkillPage = (data: SkillRenderData): string => {
         .framework-tag {
             display: inline-block;
             padding: 4px 12px;
-            background: rgba(91, 41, 148, 0.1);
+            background: rgba(255, 255, 255, 0.9);
             color: var(--primary);
+            border: 1px solid var(--primary);
             border-radius: 100px;
             font-size: 11px;
             font-weight: 600;
@@ -145,9 +168,7 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     <div class="container">
         <div class="card">
             <div class="logo">
-                <!-- Placeholder for the logo user requested -->
-                <!-- Use a generic alt text styling if image fails until fixed -->
-                <img src="${logoUrl}" alt="Scout Pass" onerror="this.onerror=null; this.parentElement.innerHTML='<span style=\'font-weight:800; color:#5b2994; font-size: 20px;\'>ScoutPass</span>'">
+                <img src="${theme.logoUrl}" alt="${theme.logoAlt}" onerror="this.onerror=null; this.parentElement.innerHTML='<span style=\'font-weight:800; color:${theme.primary}; font-size: 20px;\'>${theme.logoAlt}</span>'">
             </div>
 
             <div class="skill-icon">
