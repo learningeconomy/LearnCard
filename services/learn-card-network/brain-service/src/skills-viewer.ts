@@ -127,7 +127,9 @@ export const skillsViewerFastifyPlugin: FastifyPluginAsync = async fastify => {
                 return reply.status(404).send({ error: 'Skill not found' });
             }
 
-            if (request.headers.accept?.includes('text/html')) {
+            const acceptHeader = request.headers.accept || '';
+            const acceptsHtml = acceptHeader.split(',').some(type => type.trim().startsWith('text/html'));
+            if (acceptsHtml) {
                 const framework = await getSkillFrameworkById(frameworkId);
                 return reply.type('text/html').send(
                     renderSkillPage({
