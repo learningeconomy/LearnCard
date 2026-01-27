@@ -81,14 +81,18 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
 
             {isNodeSelected && (
                 <div className="flex flex-col gap-[15px] items-center p-[10px] border-solid border-t-[1px] border-grayscale-200">
-                    {isExpanded && (
-                        <div className="bg-grayscale-50 flex flex-col gap-[15px] w-full">
-                            <SkillProgressBar
-                                proficiencyLevel={proficiencyLevel}
-                                onChange={onChangeProficiency}
-                            />
-                        </div>
-                    )}
+                    <div
+                        className={`bg-grayscale-50 flex flex-col gap-[15px] w-full overflow-hidden transition-[max-height,opacity,transform] duration-200 ease-in-out ${
+                            isExpanded
+                                ? 'max-h-[200px] opacity-100 translate-y-0'
+                                : 'max-h-0 opacity-0 -translate-y-1 pointer-events-none'
+                        }`}
+                    >
+                        <SkillProgressBar
+                            proficiencyLevel={proficiencyLevel}
+                            onChange={onChangeProficiency}
+                        />
+                    </div>
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
                         className="flex items-center gap-[5px] text-grayscale-700 font-poppins text-[12px] font-[600]"
