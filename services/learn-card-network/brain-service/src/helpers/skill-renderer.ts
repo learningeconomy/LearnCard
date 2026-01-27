@@ -18,10 +18,10 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     const title = `${skill.statement} | ${framework.name}`;
     const description = skill.description || `Explore the ${skill.statement} skill in the ${framework.name} framework.`;
     
-    const appUrl = `https://scoutnetwork.org/frameworks/${framework.id}/skills/${skill.id}`;
-
-    // Branding Configuration
     const brand = process.env.APP_BRAND || 'scouts';
+    const appUrl = brand === 'lca' 
+        ? `https://learncard.com/frameworks/${framework.id}/skills/${skill.id}`
+        : `https://scoutnetwork.org/frameworks/${framework.id}/skills/${skill.id}`;
 
     let theme = {
         bgColor: '#5b2994',
