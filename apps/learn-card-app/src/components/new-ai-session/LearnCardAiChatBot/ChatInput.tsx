@@ -31,7 +31,7 @@ import {
     aiPassportApps,
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { NewAiSessionStepEnum, sessionWrapUpText } from '../newAiSession.helpers';
+import { AiSessionMode, NewAiSessionStepEnum, sessionWrapUpText } from '../newAiSession.helpers';
 import FinishSessionButton from './FinishSessionButton';
 
 import { chatBotStore } from '../../../stores/chatBotStore';
@@ -51,6 +51,7 @@ const ChatInput: React.FC = () => {
     const [showPathwaySelection, setShowPathwaySelection] = useState(false);
     const [pathways, setPathways] = useState<LearningPathway[]>([]);
     const [loadingPathways, setLoadingPathways] = useState(false);
+    const mode = chatBotStore.useTracked.mode();
 
     const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
     const { refetch: fetchTopics } = useGetCredentialList('AI Topic');
@@ -87,7 +88,7 @@ const ChatInput: React.FC = () => {
 
     const showContinue = $planReady;
 
-    if (showContinue) {
+    if (showContinue && mode === AiSessionMode.tutor) {
         return (
             <div className="flex justify-center p-5">
                 <button
