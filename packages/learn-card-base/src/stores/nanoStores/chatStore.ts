@@ -19,6 +19,7 @@ export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
 
 export const BACKEND_URL = 'https://api.learncloud.ai';
+// export const BACKEND_URL = 'http://localhost:3001';
 
 interface TopicCredential {
     uri: string;
@@ -241,7 +242,7 @@ export function connectWebSocket() {
             }
 
             // Handle plan ready event (after intro)
-            if (data.event === 'plan_ready') {
+            if (data.event === 'plan_ready' || data.event === 'insights_ready') {
                 isTyping.set(false);
                 isLoading.set(false);
                 planReady.set(true);

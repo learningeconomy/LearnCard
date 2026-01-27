@@ -24,7 +24,7 @@ import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
-import { sessionWrapUpText } from '../newAiSession.helpers';
+import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
 export const BACKEND_URL = 'https://api.learncloud.ai';
@@ -35,6 +35,7 @@ type LearnCardAiChatBotProps = {
     initialTopicUri?: string | undefined;
     contractUri?: string | undefined;
     handleStartOver?: () => void;
+    mode?: AiSessionMode;
 };
 
 export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
@@ -43,6 +44,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     initialTopicUri: _initialTopicUri = undefined,
     contractUri = AiPassportAppContractUri.learncardapp,
     handleStartOver: _handleStartOver,
+    mode = AiSessionMode.tutor,
 }) => {
     const { isDesktop } = useDeviceTypeByWidth();
     const [showInitialMessages, setShowInitialMessages] = useState(true);
@@ -108,7 +110,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             if (!authState?.did) return; // Wait for auth to be ready
 
             setTopicInitialized(true);
-            startTopic(initialTopic);
+            startTopic(initialTopic, mode);
         }
     }, [initialTopic, _initialTopicUri, topicInitialized, authState?.did]);
 
