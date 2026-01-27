@@ -13,18 +13,6 @@ export const comingSoonAiApps: LaunchPadAppListItem[] = [
         handleView: () => {},
         appType: [LaunchPadAppType.LEARNING],
     },
-    {
-        id: 2,
-        name: 'Learning FQ',
-        description: 'AI Storytelling & Engagement',
-        img: 'https://cdn.filestackcontent.com/FUV8jB5CSCSmPqDR6Jkb',
-        isConnected: false,
-        displayInLaunchPad: true,
-        comingSoon: true,
-        handleConnect: () => {},
-        handleView: () => {},
-        appType: [LaunchPadAppType.AI, LaunchPadAppType.LEARNING],
-    },
 ];
 
 export const comingSoonGameApps: LaunchPadAppListItem[] = [
@@ -116,18 +104,6 @@ export const comingSoonIntegrations: LaunchPadAppListItem[] = [
         appType: [LaunchPadAppType.LEARNING],
     },
     {
-        id: 3,
-        name: 'Earth Cubs',
-        description: 'Climate Change Education',
-        img: 'https://cdn.filestackcontent.com/R36GAZp8QhK3P3TKs4ph',
-        isConnected: false,
-        displayInLaunchPad: true,
-        comingSoon: true,
-        handleConnect: () => {},
-        handleView: () => {},
-        appType: [LaunchPadAppType.LEARNING],
-    },
-    {
         id: 4,
         name: 'Pi-Top',
         description: 'STEM Skills Development',
@@ -174,17 +150,5 @@ export const comingSoonIntegrations: LaunchPadAppListItem[] = [
         handleConnect: () => {},
         handleView: () => {},
         appType: [LaunchPadAppType.LEARNING],
-    },
-    {
-        id: 8,
-        name: 'Guardians',
-        description: 'Learning Tools for Parents',
-        img: 'https://cdn.filestackcontent.com/IFZGcw8xQWuhHcUW6LPi',
-        isConnected: false,
-        displayInLaunchPad: true,
-        comingSoon: true,
-        handleConnect: () => {},
-        handleView: () => {},
-        appType: [LaunchPadAppType.AI, LaunchPadAppType.LEARNING, LaunchPadAppType.GAME],
     },
 ];
