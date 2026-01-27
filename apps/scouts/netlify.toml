@@ -4,9 +4,10 @@
 
 [build.environment]
 PNPM_FLAGS = "-P false"
+SKIP_DIDKIT_NAPI = "1"
 # Global Context Default
 [build]
-command = "pnpm exec nx build scouts"
+command = "pnpm exec nx build scouts --skip-nx-cache"
 publish = "build/"
 
 # Netlify Deploy Preview
