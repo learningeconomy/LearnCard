@@ -488,22 +488,12 @@ jobs:
             - name: Set Deployment Variables
               id: vars
               run: |
-                  TARGET_ENV="${{ github.event.inputs.target-environment }}"
-                  if [[ "$TARGET_ENV" == "scouts" ]]; then
-                    echo "app_id=scouts" >> "$GITHUB_OUTPUT"
-                    echo "project_name=scouts" >> "$GITHUB_OUTPUT"
-                    echo "netlify_branch=production-scouts" >> "$GITHUB_OUTPUT"
-                    echo "capgo_id=org.scoutpass.app" >> "$GITHUB_OUTPUT"
-                    echo "build_path=apps/scouts/build" >> "$GITHUB_OUTPUT"
-                    echo "force_push=true" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "app_id=lca" >> "$GITHUB_OUTPUT"
-                    echo "project_name=learn-card-app" >> "$GITHUB_OUTPUT"
-                    echo "netlify_branch=production" >> "$GITHUB_OUTPUT"
-                    echo "capgo_id=com.learncard.app" >> "$GITHUB_OUTPUT"
-                    echo "build_path=apps/learn-card-app/build" >> "$GITHUB_OUTPUT"
-                    echo "force_push=false" >> "$GITHUB_OUTPUT"
-                  fi
+                  echo "app_id=${{ vars.DEPLOY_APP_ID }}" >> "$GITHUB_OUTPUT"
+                  echo "project_name=${{ vars.DEPLOY_PROJECT_NAME }}" >> "$GITHUB_OUTPUT"
+                  echo "netlify_branch=${{ vars.NETLIFY_BRANCH }}" >> "$GITHUB_OUTPUT"
+                  echo "capgo_id=${{ vars.APP_ID }}" >> "$GITHUB_OUTPUT"
+                  echo "build_path=${{ vars.DEPLOY_BUILD_PATH }}" >> "$GITHUB_OUTPUT"
+                  echo "force_push=${{ vars.DEPLOY_FORCE_PUSH }}" >> "$GITHUB_OUTPUT"
 
             - name: Checkout Repo
               uses: actions/checkout@v4
