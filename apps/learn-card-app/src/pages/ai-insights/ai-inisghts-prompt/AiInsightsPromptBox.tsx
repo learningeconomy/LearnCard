@@ -1,8 +1,23 @@
 import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
 
 import AiInsightsPromptBoxInput from './AiInsightsPromptBoxInput';
 
+import {
+    AiSessionMode,
+    NewAiSessionStepEnum,
+} from '../../../components/new-ai-session/newAiSession.helpers';
+
+import { chatBotStore } from '../../../stores/chatBotStore';
+import { ChatBotQuestionsEnum } from '../../../components/new-ai-session/NewAiSessionChatBot/newAiSessionChatbot.helpers';
+
 export const AiInsightsPromptBox: React.FC = () => {
+    const history = useHistory();
+
+    const setMode = chatBotStore.set.setMode;
+    const setChatBotQA = chatBotStore.set.setChatBotQA;
+    const setInternalAiChatBot = chatBotStore.set.setStartInternalAiChatBot;
+
     const [prompt, setPrompt] = useState<string>('');
 
     const promptIsEmpty = !prompt || prompt.trim() === '';
@@ -10,7 +25,34 @@ export const AiInsightsPromptBox: React.FC = () => {
     const handleSubmitPrompt = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (promptIsEmpty) return;
-        console.log(prompt);
+        setMode(AiSessionMode.insights);
+        setChatBotQA([
+            {
+                id: 0,
+                question: null,
+                answer: 'New Topic',
+                phraseToEmphasize: undefined,
+            },
+            {
+                id: 1,
+                question: 'What would you like to learn about?',
+                answer: prompt,
+                type: ChatBotQuestionsEnum.TopicSelection,
+                phraseToEmphasize: 'learn',
+            },
+            {
+                id: 2,
+                question: 'What app do you want to use?',
+                answer: 1,
+                type: ChatBotQuestionsEnum.AppSelection,
+                phraseToEmphasize: 'What app',
+            },
+        ]);
+        setInternalAiChatBot(true);
+        chatBotStore.set.setMode(AiSessionMode.insights);
+        history.push(
+            `/ai/topics?shortCircuitStep=${NewAiSessionStepEnum.newTopic}&selectedAppId=${1}`
+        );
     };
 
     return (

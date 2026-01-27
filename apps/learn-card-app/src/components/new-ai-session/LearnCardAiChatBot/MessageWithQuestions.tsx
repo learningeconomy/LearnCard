@@ -1,4 +1,5 @@
 import React from 'react';
+import { useStore } from '@nanostores/react';
 
 import { ProfilePicture } from 'learn-card-base';
 import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
@@ -6,6 +7,7 @@ import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsI
 import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/MarkdownRenderer';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
+import { isTyping } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import { chatBotStore } from '../../../stores/chatBotStore';
 import { AiSessionMode } from '../newAiSession.helpers';
@@ -16,6 +18,8 @@ interface MessageProps {
 
 export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
     function MessageWithQuestions({ message }) {
+        const $isTyping = useStore(isTyping);
+
         const mode = chatBotStore.useTracked.mode();
 
         const assistantBubbleStyles = 'bg-grayscale-100 mr-auto !max-w-full px-4';
@@ -23,7 +27,7 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
 
         return (
             <div className="w-full flex items-center justify-end">
-                {message.role === 'assistant' && (
+                {message.role === 'assistant' && !$isTyping && (
                     <div className="mr-2 self-stretch flex items-end pb-5">
                         {mode === AiSessionMode.insights ? (
                             <AiInsightsIconWithShape className="text-grayscale-900 h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px] mt-[0px] mb-0" />
@@ -39,7 +43,7 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
                 >
                     <MarkdownRenderer>{message.content}</MarkdownRenderer>
                 </div>
-                {message.role !== 'assistant' && (
+                {message.role !== 'assistant' && !$isTyping && (
                     <div className="ml-2 self-stretch flex items-end pb-5">
                         <ProfilePicture
                             customContainerClass="text-grayscale-900 h-[35px] w-[35px] min-h-[35px] min-w-[35px] max-h-[35px] max-w-[35px] mt-[0px] mb-0"
