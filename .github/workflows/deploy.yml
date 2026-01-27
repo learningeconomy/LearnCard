@@ -83,7 +83,7 @@ jobs:
             - name: Check if this is a manual dispatch
               id: check_manual
               run: |
-                  if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
                     echo "is_manual=true" >> $GITHUB_OUTPUT
                     echo "This is a manual dispatch - skipping affected detection"
                   else
@@ -104,12 +104,12 @@ jobs:
             - name: Determine Deployment Environments
               id: set-env
               run: |
-                  if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
+                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
                     echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
                     echo "brain_env=scout-network-api-production" >> "$GITHUB_OUTPUT"
                     echo "cloud_env=scout-storage-api-production" >> "$GITHUB_OUTPUT"
                     echo "lca_api_env=scout-app-api-production" >> "$GITHUB_OUTPUT"
-                  elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
                     echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
                     echo "brain_env=learn-cloud-network-api-production" >> "$GITHUB_OUTPUT"
                     echo "cloud_env=learn-cloud-storage-api-production" >> "$GITHUB_OUTPUT"
@@ -407,7 +407,7 @@ jobs:
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-lca-api == 'true') ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_api_changed == 'true') ||
-                (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, "lca-api-service"))
+                (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
             )
         runs-on: ubuntu-latest
         environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}
@@ -457,7 +457,7 @@ jobs:
             always() &&
             needs.deploy-brain-service.result == 'success' &&
             needs.determine-affected.outputs.is_release != 'true' &&
-            contains(needs.determine-affected.outputs.affected, "network-brain-service")
+            contains(needs.determine-affected.outputs.affected, 'network-brain-service')
         uses: ./.github/workflows/open-api-generator.yml
         with:
             affected: ${{ needs.determine-affected.outputs.affected }}
@@ -477,9 +477,9 @@ jobs:
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
             ) &&
-            !contains(needs.deploy-brain-service.result, "failure") &&
-            !contains(needs.deploy-learn-cloud.result, "failure") &&
-            !contains(needs.deploy-lca-api.result, "failure")
+            !contains(needs.deploy-brain-service.result, 'failure') &&
+            !contains(needs.deploy-learn-cloud.result, 'failure') &&
+            !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
         permissions:
             contents: write
@@ -508,7 +508,7 @@ jobs:
             - name: Push to production branch
               if: |
                   needs.determine-affected.outputs.is_release == 'true' ||
-                  (github.event_name == "workflow_dispatch" && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
+                  (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
               run: |
                   if [[ "${{ steps.vars.outputs.force_push }}" == 'true' ]]; then
                     git push --force origin HEAD:${{ steps.vars.outputs.netlify_branch }}
@@ -574,8 +574,8 @@ jobs:
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.push-docker == 'true') ||
                 (needs.determine-affected.outputs.is_release == 'true' && (needs.determine-affected.outputs.brain_service_changed == 'true' || needs.determine-affected.outputs.learn_cloud_changed == 'true'))
             ) &&
-            !contains(needs.deploy-brain-service.result, "failure") &&
-            !contains(needs.deploy-learn-cloud.result, "failure")
+            !contains(needs.deploy-brain-service.result, 'failure') &&
+            !contains(needs.deploy-learn-cloud.result, 'failure')
         runs-on: ubuntu-latest
         permissions:
             packages: write
@@ -658,9 +658,9 @@ jobs:
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-npm == 'true') ||
                 needs.determine-affected.outputs.is_release == 'true'
             ) &&
-            !contains(needs.deploy-brain-service.result, "failure") &&
-            !contains(needs.deploy-learn-cloud.result, "failure") &&
-            !contains(needs.deploy-lca-api.result, "failure")
+            !contains(needs.deploy-brain-service.result, 'failure') &&
+            !contains(needs.deploy-learn-cloud.result, 'failure') &&
+            !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
         permissions:
             id-token: write
