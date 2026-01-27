@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.89.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.9
+
 ## 1.89.14
 
 ### Patch Changes
