@@ -207,6 +207,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                                     framework={selfAssignedSkillFramework}
                                     handleToggleSelect={() => handleToggleSelect(skill.id)}
                                     isNodeSelected={!!selected}
+                                    shouldCollapseOptions={isReview}
                                     proficiencyLevel={selected?.proficiency ?? SkillLevel.Hidden}
                                     onChangeProficiency={level =>
                                         setSelectedSkills(prev =>

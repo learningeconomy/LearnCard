@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
@@ -18,6 +18,7 @@ type SelfAssignedSkillRowProps = {
     handleToggleSelect: () => void;
     proficiencyLevel?: SkillLevel;
     onChangeProficiency?: (level: SkillLevel) => void;
+    shouldCollapseOptions?: boolean;
 };
 
 const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
@@ -27,9 +28,14 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
     handleToggleSelect,
     proficiencyLevel,
     onChangeProficiency,
+    shouldCollapseOptions,
 }) => {
     const { newModal } = useModal();
     const [isExpanded, setIsExpanded] = useState(true);
+
+    useEffect(() => {
+        if (shouldCollapseOptions) setIsExpanded(false);
+    }, [shouldCollapseOptions]);
 
     return (
         <div className="flex flex-col rounded-[15px] shadow-box-bottom">
