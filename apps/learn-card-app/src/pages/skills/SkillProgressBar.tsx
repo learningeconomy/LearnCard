@@ -44,6 +44,15 @@ const SKILL_LEVEL_META = {
     },
 };
 
+const LEVELS: SkillLevel[] = [
+    SkillLevel.Hidden,
+    SkillLevel.Novice,
+    SkillLevel.Beginner,
+    SkillLevel.Proficient,
+    SkillLevel.Advanced,
+    SkillLevel.Expert,
+];
+
 type SkillProgressBarProps = {
     proficiencyLevel?: SkillLevel;
     onChange?: (level: SkillLevel) => void;
@@ -52,24 +61,62 @@ type SkillProgressBarProps = {
 const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, onChange }) => {
     const [skillLevel, setSkillLevel] = useState<SkillLevel>(proficiencyLevel ?? SkillLevel.Hidden);
     const [isDragging, setIsDragging] = useState(false);
+    const [thumbLeftPx, setThumbLeftPx] = useState<number | null>(null);
+    const [thumbHalfWidthPx, setThumbHalfWidthPx] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const segmentRefs = useRef<Array<HTMLDivElement | null>>([]);
+    const lastPointerClientXRef = useRef<number | null>(null);
+    const skillLevelRef = useRef<SkillLevel>(skillLevel);
+    const onChangeRef = useRef<SkillProgressBarProps['onChange']>(onChange);
+    const thumbRef = useRef<HTMLDivElement | null>(null);
 
     const color = SKILL_LEVEL_META[skillLevel].color;
-    const levels: SkillLevel[] = [
-        SkillLevel.Hidden,
-        SkillLevel.Novice,
-        SkillLevel.Beginner,
-        SkillLevel.Proficient,
-        SkillLevel.Advanced,
-        SkillLevel.Expert,
-    ];
     const currentIndex = skillLevel;
+
+    useEffect(() => {
+        skillLevelRef.current = skillLevel;
+    }, [skillLevel]);
+
+    useEffect(() => {
+        onChangeRef.current = onChange;
+    }, [onChange]);
+
+    useEffect(() => {
+        const measure = () => {
+            const el = thumbRef.current;
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            setThumbHalfWidthPx(rect.width / 2);
+        };
+        measure();
+
+        window.addEventListener('resize', measure);
+        return () => window.removeEventListener('resize', measure);
+    }, []);
+
+    const getThumbLeftPxFromClientX = (clientX: number) => {
+        const container = containerRef.current;
+        if (!container) return null;
+        const rect = container.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const min = thumbHalfWidthPx;
+        const max = Math.max(thumbHalfWidthPx, rect.width - thumbHalfWidthPx);
+        return Math.max(min, Math.min(max, x));
+    };
+
+    const getSegmentCenterLeftPx = (idx: number) => {
+        const container = containerRef.current;
+        const segment = segmentRefs.current[idx];
+        if (!container || !segment) return null;
+        const containerRect = container.getBoundingClientRect();
+        const segmentRect = segment.getBoundingClientRect();
+        return segmentRect.left - containerRect.left + segmentRect.width / 2;
+    };
 
     const chooseIndexFromClientX = (clientX: number) => {
         let nearestIndex = 0;
         let nearestDistance = Infinity;
-        for (let i = 0; i < levels.length; i++) {
+        for (let i = 0; i < LEVELS.length; i++) {
             const el = segmentRefs.current[i];
             if (!el) continue;
             const rect = el.getBoundingClientRect();
@@ -86,10 +133,58 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
     };
 
     useEffect(() => {
-        const onPointerUp = () => setIsDragging(false);
+        if (!isDragging) return;
+
+        const onPointerMove = (e: PointerEvent) => {
+            lastPointerClientXRef.current = e.clientX;
+            setThumbLeftPx(getThumbLeftPxFromClientX(e.clientX));
+
+            const idx = chooseIndexFromClientX(e.clientX);
+            const next = LEVELS[idx];
+            if (idx >= 0 && idx < LEVELS.length && next !== skillLevelRef.current) {
+                skillLevelRef.current = next;
+                setSkillLevel(next);
+                onChangeRef.current?.(next);
+            }
+        };
+
+        const onPointerUp = () => {
+            setIsDragging(false);
+
+            const clientX = lastPointerClientXRef.current;
+            if (clientX == null) return;
+
+            const idx = chooseIndexFromClientX(clientX);
+            const next = LEVELS[idx];
+            if (idx >= 0 && idx < LEVELS.length) {
+                skillLevelRef.current = next;
+                setSkillLevel(next);
+                onChangeRef.current?.(next);
+            }
+            setThumbLeftPx(getSegmentCenterLeftPx(idx));
+        };
+
+        window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
-        return () => window.removeEventListener('pointerup', onPointerUp);
-    }, []);
+        return () => {
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+        };
+    }, [isDragging, thumbHalfWidthPx]);
+
+    useEffect(() => {
+        if (isDragging) return;
+        setThumbLeftPx(getSegmentCenterLeftPx(currentIndex));
+    }, [currentIndex, isDragging]);
+
+    useEffect(() => {
+        const onResize = () => {
+            if (isDragging) return;
+            setThumbLeftPx(getSegmentCenterLeftPx(currentIndex));
+        };
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [currentIndex, isDragging]);
 
     useEffect(() => {
         if (proficiencyLevel && proficiencyLevel !== skillLevel) {
@@ -111,28 +206,22 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
 
             <div
                 ref={containerRef}
-                className="relative flex gap-[1px] w-full rounded-[20px]"
+                className="relative flex gap-[1px] w-full rounded-[20px] select-none touch-none"
                 onPointerDown={e => {
                     setIsDragging(true);
+                    lastPointerClientXRef.current = e.clientX;
+                    setThumbLeftPx(getThumbLeftPxFromClientX(e.clientX));
+
                     const idx = chooseIndexFromClientX(e.clientX);
-                    const next = levels[idx];
-                    if (idx >= 0 && idx < levels.length) {
+                    const next = LEVELS[idx];
+                    if (idx >= 0 && idx < LEVELS.length && next !== skillLevelRef.current) {
+                        skillLevelRef.current = next;
                         setSkillLevel(next);
-                        onChange?.(next);
-                    }
-                }}
-                onPointerMove={e => {
-                    if (!isDragging) return;
-                    const idx = chooseIndexFromClientX(e.clientX);
-                    const next = levels[idx];
-                    if (idx >= 0 && idx < levels.length) {
-                        setSkillLevel(next);
-                        onChange?.(next);
+                        onChangeRef.current?.(next);
                     }
                 }}
             >
-                {levels.map((level, index) => {
-                    const isCurrentLevel = index === currentIndex;
+                {LEVELS.map((level, index) => {
                     return (
                         <div
                             key={level}
@@ -148,42 +237,46 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
                                             ? `bg-${color}`
                                             : 'bg-grayscale-200'
                                     } ${index === 0 ? 'rounded-l-[20px]' : ''} ${
-                                    index === levels.length - 1 ? 'rounded-r-[20px]' : ''
+                                    index === LEVELS.length - 1 ? 'rounded-r-[20px]' : ''
                                 }
                                 `}
                             ></div>
-                            {isCurrentLevel && (
-                                <div
-                                    className={`rounded-[20px] bg-white text-${color} border-solid border-[2px] border-${color} px-[12px] py-[6px] absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] shadow-soft-bottom select-none ${
-                                        isDragging ? 'cursor-grabbing' : 'cursor-grab'
-                                    }`}
-                                >
-                                    {level === SkillLevel.Hidden ? (
-                                        <EyeSlash className="h-[13px] w-[14px]" />
-                                    ) : (
-                                        <Checkmark
-                                            className="h-[13px] w-[13px]"
-                                            strokeWidth="3"
-                                            version="no-padding"
-                                        />
-                                    )}
-                                </div>
-                            )}
                         </div>
                     );
                 })}
+
+                <div
+                    ref={thumbRef}
+                    className={`rounded-[20px] bg-white text-${color} border-solid border-[2px] border-${color} px-[12px] py-[6px] absolute top-[50%] translate-x-[-50%] translate-y-[-50%] shadow-soft-bottom select-none z-10 ${
+                        isDragging
+                            ? 'cursor-grabbing'
+                            : 'cursor-grab transition-[left] duration-150 ease-out'
+                    }`}
+                    style={{ left: thumbLeftPx != null ? `${thumbLeftPx}px` : undefined }}
+                >
+                    {skillLevel === SkillLevel.Hidden ? (
+                        <EyeSlash className="h-[13px] w-[14px]" />
+                    ) : (
+                        <Checkmark
+                            className="h-[13px] w-[13px]"
+                            strokeWidth="3"
+                            version="no-padding"
+                        />
+                    )}
+                </div>
 
                 {/* Invisible slider overlay for drag and keyboard accessibility */}
                 <input
                     type="range"
                     min={0}
-                    max={levels.length - 1}
+                    max={LEVELS.length - 1}
                     step={1}
                     value={currentIndex}
                     onChange={e => {
                         const idx = Number(e.target.value);
-                        const next = levels[idx];
-                        if (idx >= 0 && idx < levels.length) {
+                        const next = LEVELS[idx];
+                        if (idx >= 0 && idx < LEVELS.length) {
+                            skillLevelRef.current = next;
                             setSkillLevel(next);
                             onChange?.(next);
                         }
@@ -193,7 +286,7 @@ const SkillProgressBar: React.FC<SkillProgressBarProps> = ({ proficiencyLevel, o
                 />
 
                 {/* To make sure tailwind puts these colors in the CSS */}
-                <span className="hidden bg-orange-400 bg-light-blue-500 text-light-blue-500 border-grayscale-700 border-orange-400 border-light-blue-500" />
+                <span className="hidden bg-orange-400 bg-light-blue-500 bg-violet-500 bg-emerald-500 bg-grayscale-500 text-light-blue-500 text-violet-500 text-emerald-500 text-grayscale-500 border-grayscale-700 border-orange-400 border-light-blue-500 border-violet-500 border-emerald-500 border-grayscale-500" />
             </div>
         </div>
     );
