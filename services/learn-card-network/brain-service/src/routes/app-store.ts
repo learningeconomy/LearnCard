@@ -528,7 +528,8 @@ const handleSendCredentialEvent = async (
             integrationOwner,
             unsignedVc,
             sa,
-            ctx.domain
+            ctx.domain,
+            false
         );
     } catch (e) {
         console.error('Failed to issue VC with signing authority', e);

@@ -47,16 +47,13 @@ export async function issueCredentialWithSigningAuthority(
         if (!IS_TEST_ENVIRONMENT) console.log('Issuer Endpoint: ', issuerEndpoint);
 
         const ownerDid = getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
-        const subjectId = Array.isArray(credential?.credentialSubject)
-            ? credential?.credentialSubject[0]?.id
-            : credential?.credentialSubject?.id;
+        // const subjectId = Array.isArray(credential?.credentialSubject)
+        //     ? credential?.credentialSubject[0]?.id
+        //     : credential?.credentialSubject?.id;
 
         const encryption = encrypt
             ? {
-                  recipients: [
-                      learnCard.id.did(),
-                      ...(subjectId ? [subjectId] : []),
-                  ],
+                  recipients: [learnCard.id.did()]
               }
             : undefined;
 
@@ -107,7 +104,7 @@ export async function issueCredentialWithSigningAuthority(
             return validationResult.data;
         }
     } catch (error) {
-        console.error('SA Helpers - Error While Sending:', error);
+        console.error('SA Helpers - Error While Sending:', JSON.stringify(error));
         throw new Error('SA Helpers - Error While Sending');
     }
 }
