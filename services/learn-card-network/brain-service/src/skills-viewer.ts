@@ -2,6 +2,7 @@ import express from 'express';
 import { FastifyPluginAsync } from 'fastify';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { getSkillsByIds, getSkillByFrameworkAndId } from '@accesslayer/skill/read';
+import { renderSkillPage } from './helpers/skill-renderer';
 
 // Express app for Lambda
 export const app = express();
@@ -41,6 +42,16 @@ app.get('/frameworks/:frameworkId/skills/:skillId', async (req, res) => {
             return res.status(404).json({ error: 'Skill not found' });
         }
 
+        if (req.accepts('html')) {
+            const framework = await getSkillFrameworkById(frameworkId);
+            return res.send(
+                renderSkillPage({
+                    skill: skill as any,
+                    framework: { id: frameworkId, name: framework?.name || 'Skill Framework' },
+                })
+            );
+        }
+
         return res.json({
             id: skill.id,
             code: skill.code,
@@ -48,6 +59,7 @@ app.get('/frameworks/:frameworkId/skills/:skillId', async (req, res) => {
             description: skill.description,
             type: skill.type,
             status: skill.status,
+            icon: (skill as any).icon,
         });
     } catch (error) {
         console.error('Error fetching skill by framework/id:', error);
@@ -115,6 +127,18 @@ export const skillsViewerFastifyPlugin: FastifyPluginAsync = async fastify => {
                 return reply.status(404).send({ error: 'Skill not found' });
             }
 
+            const acceptHeader = request.headers.accept || '';
+            const acceptsHtml = acceptHeader.split(',').some(type => type.trim().startsWith('text/html'));
+            if (acceptsHtml) {
+                const framework = await getSkillFrameworkById(frameworkId);
+                return reply.type('text/html').send(
+                    renderSkillPage({
+                        skill: skill as any,
+                        framework: { id: frameworkId, name: framework?.name || 'Skill Framework' },
+                    })
+                );
+            }
+
             return reply.send({
                 id: skill.id,
                 code: skill.code,
@@ -122,6 +146,7 @@ export const skillsViewerFastifyPlugin: FastifyPluginAsync = async fastify => {
                 description: skill.description,
                 type: skill.type,
                 status: skill.status,
+                icon: (skill as any).icon,
             });
         } catch (error) {
             console.error('Error fetching skill by framework/id:', error);

@@ -25,8 +25,8 @@
         "build": "node scripts/build.js",
         "build:debug": "napi build --platform --cargo-cwd native && tsc -p tsconfig.json",
         "test": "jest --passWithNoTests",
-        "artifacts": "napi artifacts --cargo-cwd native",
-        "prepublishOnly": "napi prepublish -t npm --cargo-cwd native"
+        "artifacts": "napi artifacts",
+        "prepublishOnly": "napi prepublish -t npm"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",

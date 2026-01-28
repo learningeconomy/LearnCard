@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.94.19
+
+### Patch Changes
+
+-   [#953](https://github.com/learningeconomy/LearnCard/pull/953) [`819bd73226ee1da96109c720543a2fe605381fdd`](https://github.com/learningeconomy/LearnCard/commit/819bd73226ee1da96109c720543a2fe605381fdd) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1476] Open trusted issuer links in in-app browser on native
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.9
+
 ## 1.94.18
 
 ### Patch Changes
