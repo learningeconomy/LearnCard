@@ -51,7 +51,7 @@
         "@tanstack/react-query-persist-client": "^5.54.1",
         "@traversable/zod": "^0.0.57",
         "core-js": "^3.25.1",
-        "firebase": "11.10.0",
+        "firebase": "12.8.0",
         "history": "4.10.1",
         "launchdarkly-react-client-sdk": "^3.0.1",
         "react": "18.3.1",
@@ -66,6 +66,7 @@
     },
     "pnpm": {
         "overrides": {
+            "fastify": "5.7.2",
             "pvutils": "1.0.17",
             "did-jwt": "5.9.0",
             "typescript": "5.6.2",

@@ -200,6 +200,7 @@ export const aiRouter = t.router({
             const {
                 user: { did },
             } = ctx;
+
             if (!openai) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
@@ -224,24 +225,40 @@ Rules:
 
             // TODO switch to gpt 5 and use responses API
             // will have to bump the openai package
-            const completion = await openai.chat.completions.create({
-                model: 'gpt-4o-2024-08-06',
-                messages: [
-                    {
-                        role: 'system',
-                        content: systemPrompt,
-                    },
-                    { role: 'user', content: userContent },
-                ],
-                // Use the object-wrapped list schema for structured outputs
-                response_format: zodResponseFormat(IconListContainerValidator, 'icons'),
-                user: did,
-            });
+            let completion: any;
+            try {
+                completion = await openai.chat.completions.create({
+                    model: 'gpt-4o-2024-08-06',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: systemPrompt,
+                        },
+                        { role: 'user', content: userContent },
+                    ],
+                    // Use the object-wrapped list schema for structured outputs
+                    //   currently breaks because response is wrapped in a code fence (```json ... ```)
+                    //   likely would need to to bump openai package version
+                    // response_format: zodResponseFormat(IconListContainerValidator, 'icons'),
+                    response_format: { type: 'json_object' },
+                    user: did,
+                });
+            } catch (error) {
+                console.error('🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+                console.error('error:', error);
+            }
 
-            const response = JSON.parse(completion.choices[0]?.message.content ?? '');
+            const content = completion.choices[0]?.message.content ?? '';
 
+            const response = JSON.parse(content);
             // First, validate the model output with the object-wrapped list schema
             const parsed = await IconListContainerValidator.parseAsync(response);
+            if (!parsed) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'No parsed structured output returned.',
+                });
+            }
 
             // Transform into a record mapping input names to icons
             const record: Record<string, string> = {};

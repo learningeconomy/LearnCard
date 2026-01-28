@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace 'org.scoutpass.app'
-    compileSdk rootProject.ext.compileSdkVersion
+    namespace = 'org.scoutpass.app'
+    compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "org.scoutpass.app"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion = rootProject.ext.minSdkVersion
+        targetSdkVersion = rootProject.ext.targetSdkVersion
         versionCode project.hasProperty('versionCode') ? Integer.parseInt(project.versionCode) : 1
         versionName project.hasProperty('versionName') ? project.versionName : "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
