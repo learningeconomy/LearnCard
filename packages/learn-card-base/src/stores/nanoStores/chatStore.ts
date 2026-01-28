@@ -257,7 +257,7 @@ export function connectWebSocket() {
             }
 
             // Handle plan ready event (after intro)
-            if (data.event === 'plan_ready' || data.event === 'insights_ready') {
+            if (data.event === 'plan_ready') {
                 isTyping.set(false);
                 isLoading.set(false);
                 planReady.set(true);
@@ -283,6 +283,16 @@ export function connectWebSocket() {
                         ]);
                     }
                 }
+                return;
+            }
+
+            if (data.event === 'insights_ready') {
+                planReady.set(true);
+                planReadyThread.set(data.threadId);
+                currentThreadId.set(data.threadId);
+
+                isLoading.set(true);
+                isTyping.set(false);
                 return;
             }
 
@@ -359,6 +369,12 @@ export function connectWebSocket() {
             if (data.error) {
                 console.error('Error:', data.error);
                 isTyping.set(false);
+                return;
+            }
+
+            if (data.event === 'assistant_typing') {
+                isLoading.set(false);
+                isTyping.set(true);
                 return;
             }
 
@@ -474,6 +490,7 @@ export function connectWebSocket() {
                 }
 
                 isLoading.set(false);
+                isTyping.set(true);
             }
         } catch (error) {
             console.error('WebSocket message error:', error);

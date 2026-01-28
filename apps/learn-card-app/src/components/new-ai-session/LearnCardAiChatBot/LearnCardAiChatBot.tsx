@@ -19,6 +19,7 @@ import {
     isEndingSession,
     showEndingSessionLoader,
     disconnectWebSocket,
+    startInsightsSession,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
@@ -28,6 +29,7 @@ import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
 export const BACKEND_URL = 'https://api.learncloud.ai';
+// export const BACKEND_URL = 'http://localhost:3001';
 
 type LearnCardAiChatBotProps = {
     initialMessages: ChatMessage[];
@@ -110,7 +112,12 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             if (!authState?.did) return; // Wait for auth to be ready
 
             setTopicInitialized(true);
-            startTopic(initialTopic, mode);
+
+            if (mode === AiSessionMode.insights) {
+                startInsightsSession(initialTopic);
+            } else {
+                startTopic(initialTopic, mode);
+            }
         }
     }, [initialTopic, _initialTopicUri, topicInitialized, authState?.did]);
 
