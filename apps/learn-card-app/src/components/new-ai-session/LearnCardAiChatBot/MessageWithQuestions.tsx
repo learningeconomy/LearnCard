@@ -25,6 +25,8 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
         const assistantBubbleStyles = 'bg-grayscale-100 mr-auto !max-w-full px-4';
         const userBubbleStyles = 'bg-cyan-50 px-4';
 
+        if (message.content === '') return null;
+
         return (
             <div className="w-full flex items-center justify-end">
                 {message.role === 'assistant' && !$isTyping && (

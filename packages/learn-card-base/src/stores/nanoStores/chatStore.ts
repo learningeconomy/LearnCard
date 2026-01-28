@@ -889,9 +889,17 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
 export async function startInsightsSession(topic: string, initialText?: string) {
     isTyping.set(true);
     isLoading.set(true);
+
     planReady.set(false);
     planReadyThread.set(null);
-    messages.set([]);
+
+    messages.set([
+        {
+            role: 'assistant',
+            content: '', // placeholder for streaming
+        },
+    ]);
+
     activeQuestions.set([]);
     sessionEnded.set(false);
 
@@ -903,7 +911,6 @@ export async function startInsightsSession(topic: string, initialText?: string) 
         return;
     }
 
-    // Reset socket / thread so server creates a fresh insights thread
     disconnectWebSocket();
     currentThreadId.set(null);
 
