@@ -6,6 +6,7 @@ import {
     useMarkNotificationRead,
     useGetProfile,
     useGetCurrentLCNUser,
+    switchedProfileStore,
 } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import NotificationBoostCard from './NotificationBoostCard';
@@ -41,6 +42,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     queryOptions,
 }) => {
     const { data, isLoading } = useGetProfile(_notification.from.profileId);
+    const switchedDid = switchedProfileStore.use.switchedDid();
 
     const notification = data ? { ..._notification, from: data, message: {} } : _notification;
 
@@ -72,11 +74,18 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     const { mutate: markNotificationAsRead } = useMarkNotificationRead();
     const { refetch: refetchCurrentLCNUser } = useGetCurrentLCNUser();
 
-    const handleArchiveNotification = async () => {
-        await updateNotification({
-            notificationId: notification?._id,
-            payload: { archived: !notification?.archived, read: true },
-        });
+    const handleArchiveNotification = () => {
+        updateNotification(
+            {
+                notificationId: notification?._id,
+                payload: { archived: !notification?.archived, read: true },
+            },
+            {
+                onError: error => {
+                    console.error('Error archiving notification:', error);
+                },
+            }
+        );
     };
 
     const handleMarkAsRead = async () => {
@@ -98,6 +107,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                     //update query cache
                     const currentQuery = queryClient.getQueryData([
                         'useGetUserNotifications',
+                        switchedDid ?? '',
                         queryOptions?.options,
                         queryOptions?.filter,
                     ]);
@@ -137,6 +147,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                         queryClient.setQueryData(
                             [
                                 'useGetUserNotifications',
+                                switchedDid ?? '',
                                 queryOptions?.options,
                                 queryOptions?.filter,
                             ],
@@ -156,6 +167,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                         });
                         const currentQuery = queryClient.getQueryData([
                             'useGetUserNotifications',
+                            switchedDid ?? '',
                             queryOptions?.options,
                             queryOptions?.filter,
                         ]);
@@ -203,6 +215,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                                             queryClient.setQueryData(
                                                 [
                                                     'useGetUserNotifications',
+                                                    switchedDid ?? '',
                                                     queryOptions?.options,
                                                     queryOptions?.filter,
                                                 ],
