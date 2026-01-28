@@ -852,7 +852,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
     // The backend should handle thread finalization if a new 'start_topic' arrives for a DID with an existing active thread.
 
     const messageToSend = {
-        action: 'start_topic',
+        action: mode === AiSessionMode?.tutor,
         topic,
         did, // Include DID for backend processing
         mode,
@@ -867,6 +867,55 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         }
     };
     sendMessage();
+}
+
+export async function startInsightsSession(topic: string, initialText?: string) {
+    isTyping.set(true);
+    isLoading.set(true);
+    planReady.set(false);
+    planReadyThread.set(null);
+    messages.set([]);
+    activeQuestions.set([]);
+    sessionEnded.set(false);
+
+    const { did } = auth.get();
+    if (!did) {
+        isTyping.set(false);
+        isLoading.set(false);
+        showErrorModal('Authentication Required', 'Please sign in to start Insights.');
+        return;
+    }
+
+    // Reset socket / thread so server creates a fresh insights thread
+    disconnectWebSocket();
+    currentThreadId.set(null);
+
+    // Ensure WS connected
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        try {
+            await new Promise<void>((resolve, reject) => {
+                connectWebSocket();
+                onReady(resolve);
+                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
+            });
+        } catch (err) {
+            console.error('WS connect failed:', err);
+            isTyping.set(false);
+            isLoading.set(false);
+            showErrorModal('Connection Error', 'Could not connect to chat service.');
+            return;
+        }
+    }
+
+    const firstMessage = (initialText?.trim() || `Let's do insights on: ${topic}`).trim();
+
+    ws!.send(
+        JSON.stringify({
+            mode: AiSessionMode.insights,
+            topic,
+            message: { role: 'user', content: firstMessage },
+        })
+    );
 }
 
 // Function to continue after plan introduction
@@ -998,3 +1047,34 @@ currentThreadId.listen(threadId => {
         window.history.replaceState({}, '', url);
     }
 });
+
+export async function closeInsightsSession(threadId?: string) {
+    const activeThreadId = threadId || currentThreadId.get();
+
+    if (!activeThreadId) return;
+
+    const socket = connectWebSocket();
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        onReady(() => closeInsightsSession(activeThreadId));
+        return;
+    }
+
+    socket.send(
+        JSON.stringify({
+            action: 'close_insights_session',
+            threadId: activeThreadId,
+        })
+    );
+
+    // Optimistically reset state
+    messages.set([]);
+    currentThreadId.set(null);
+    planReady.set(false);
+    planReadyThread.set(null);
+    sessionEnded.set(false);
+    activeQuestions.set([]);
+    topicCredentials.set([]);
+
+    // Refresh thread list
+    loadThreads();
+}

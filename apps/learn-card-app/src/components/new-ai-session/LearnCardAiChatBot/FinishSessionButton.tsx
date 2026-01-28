@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { useGetCredentialList, useSyncConsentFlow } from 'learn-card-base';
+import { useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
 
 import X from '../../svgs/X';
 import TickSquareIcon from 'learn-card-base/svgs/TickSquareIcon';
@@ -11,12 +11,15 @@ import {
     sessionEnded,
     finishSession,
     isEndingSession,
+    closeInsightsSession,
+    resetChatStores,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { chatBotStore } from '../../../stores/chatBotStore';
 import { AiSessionMode } from '../newAiSession.helpers';
 import { ChatBotQuestionsEnum } from '../NewAiSessionChatBot/newAiSessionChatbot.helpers';
 
 const FinishSessionButton: React.FC = () => {
+    const { closeAllModals } = useModal();
     const $sessionEnded = useStore(sessionEnded);
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
@@ -35,8 +38,15 @@ const FinishSessionButton: React.FC = () => {
 
     if (hasSessionEnded || $isEndingSession) return <></>;
 
-    const handleFinish = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleFinish = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
+        if (mode === AiSessionMode.insights) {
+            closeAllModals();
+            await closeInsightsSession();
+            chatBotStore.set.resetStore();
+            resetChatStores();
+            return;
+        }
         finishSession(async () => {
             await fetchNewContractCredentials();
             await fetchTopics();
