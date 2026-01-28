@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_create_boost_request_claim_permissions import BoostCreateBoostRequestClaimPermissions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -27,8 +27,8 @@ class ClaimHookCreateClaimHookRequestHookOneOfData(BaseModel):
     """
     ClaimHookCreateClaimHookRequestHookOneOfData
     """ # noqa: E501
-    claim_uri: StrictStr = Field(alias="claimUri")
-    target_uri: StrictStr = Field(alias="targetUri")
+    claim_uri: Optional[StrictStr] = Field(alias="claimUri")
+    target_uri: Optional[StrictStr] = Field(alias="targetUri")
     permissions: BoostCreateBoostRequestClaimPermissions
     __properties: ClassVar[List[str]] = ["claimUri", "targetUri", "permissions"]
 
@@ -74,6 +74,16 @@ class ClaimHookCreateClaimHookRequestHookOneOfData(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of permissions
         if self.permissions:
             _dict['permissions'] = self.permissions.to_dict()
+        # set to None if claim_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.claim_uri is None and "claim_uri" in self.model_fields_set:
+            _dict['claimUri'] = None
+
+        # set to None if target_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.target_uri is None and "target_uri" in self.model_fields_set:
+            _dict['targetUri'] = None
+
         return _dict
 
     @classmethod

@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.inbox_get_my_issued_credentials200_response_records_inner_signing_authority import InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -30,19 +31,21 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
     credential: StrictStr
     is_signed: StrictBool = Field(alias="isSigned")
     current_status: StrictStr = Field(alias="currentStatus")
+    is_accepted: Optional[StrictBool] = Field(default=None, alias="isAccepted")
     expires_at: StrictStr = Field(alias="expiresAt")
     created_at: StrictStr = Field(alias="createdAt")
     issuer_did: StrictStr = Field(alias="issuerDid")
     webhook_url: Optional[StrictStr] = Field(default=None, alias="webhookUrl")
-    signing_authority_endpoint: Optional[StrictStr] = Field(default=None, alias="signingAuthority.endpoint")
-    signing_authority_name: Optional[StrictStr] = Field(default=None, alias="signingAuthority.name")
-    __properties: ClassVar[List[str]] = ["id", "credential", "isSigned", "currentStatus", "expiresAt", "createdAt", "issuerDid", "webhookUrl", "signingAuthority.endpoint", "signingAuthority.name"]
+    boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
+    activity_id: Optional[StrictStr] = Field(default=None, alias="activityId")
+    signing_authority: Optional[InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority] = Field(default=None, alias="signingAuthority")
+    __properties: ClassVar[List[str]] = ["id", "credential", "isSigned", "currentStatus", "isAccepted", "expiresAt", "createdAt", "issuerDid", "webhookUrl", "boostUri", "activityId", "signingAuthority"]
 
     @field_validator('current_status')
     def current_status_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED']):
-            raise ValueError("must be one of enum values ('PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED')")
+        if value not in set(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']):
+            raise ValueError("must be one of enum values ('PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED')")
         return value
 
     model_config = ConfigDict(
@@ -84,6 +87,9 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of signing_authority
+        if self.signing_authority:
+            _dict['signingAuthority'] = self.signing_authority.to_dict()
         return _dict
 
     @classmethod
@@ -100,12 +106,14 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
             "credential": obj.get("credential"),
             "isSigned": obj.get("isSigned"),
             "currentStatus": obj.get("currentStatus"),
+            "isAccepted": obj.get("isAccepted"),
             "expiresAt": obj.get("expiresAt"),
             "createdAt": obj.get("createdAt"),
             "issuerDid": obj.get("issuerDid"),
             "webhookUrl": obj.get("webhookUrl"),
-            "signingAuthority.endpoint": obj.get("signingAuthority.endpoint"),
-            "signingAuthority.name": obj.get("signingAuthority.name")
+            "boostUri": obj.get("boostUri"),
+            "activityId": obj.get("activityId"),
+            "signingAuthority": InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
         })
         return _obj
 

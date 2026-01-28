@@ -41,7 +41,7 @@ class UtilitiesApi:
     @validate_call
     def utilities_get_challenges(
         self,
-        amount: Optional[Annotated[int, Field(le=100, strict=True, gt=0)]] = None,
+        amount: Optional[Annotated[int, Field(le=100, strict=True)]] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -113,7 +113,7 @@ class UtilitiesApi:
     @validate_call
     def utilities_get_challenges_with_http_info(
         self,
-        amount: Optional[Annotated[int, Field(le=100, strict=True, gt=0)]] = None,
+        amount: Optional[Annotated[int, Field(le=100, strict=True)]] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -185,7 +185,7 @@ class UtilitiesApi:
     @validate_call
     def utilities_get_challenges_without_preload_content(
         self,
-        amount: Optional[Annotated[int, Field(le=100, strict=True, gt=0)]] = None,
+        amount: Optional[Annotated[int, Field(le=100, strict=True)]] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],

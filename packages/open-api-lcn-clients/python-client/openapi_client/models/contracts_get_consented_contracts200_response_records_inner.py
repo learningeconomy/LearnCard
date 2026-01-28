@@ -19,9 +19,9 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo
+from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
 from openapi_client.models.contracts_get_consent_flow_contract200_response import ContractsGetConsentFlowContract200Response
-from openapi_client.models.storage_resolve200_response_any_of1 import StorageResolve200ResponseAnyOf1
+from openapi_client.models.contracts_get_consented_contracts200_response_records_inner_terms import ContractsGetConsentedContracts200ResponseRecordsInnerTerms
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -31,11 +31,12 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
     """ # noqa: E501
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    terms: StorageResolve200ResponseAnyOf1
+    terms: ContractsGetConsentedContracts200ResponseRecordsInnerTerms
     contract: ContractsGetConsentFlowContract200Response
-    uri: StrictStr
-    consenter: BoostGetBoostRecipients200ResponseInnerTo
+    uri: Optional[StrictStr]
+    consenter: BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
     status: StrictStr
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "contract", "uri", "consenter", "status"]
 
     @field_validator('status')
@@ -75,8 +76,10 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -93,6 +96,21 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of consenter
         if self.consenter:
             _dict['consenter'] = self.consenter.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if expires_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.expires_at is None and "expires_at" in self.model_fields_set:
+            _dict['expiresAt'] = None
+
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
         return _dict
 
     @classmethod
@@ -107,12 +125,17 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         _obj = cls.model_validate({
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime"),
-            "terms": StorageResolve200ResponseAnyOf1.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "terms": ContractsGetConsentedContracts200ResponseRecordsInnerTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "contract": ContractsGetConsentFlowContract200Response.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "uri": obj.get("uri"),
-            "consenter": BoostGetBoostRecipients200ResponseInnerTo.from_dict(obj["consenter"]) if obj.get("consenter") is not None else None,
+            "consenter": BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(obj["consenter"]) if obj.get("consenter") is not None else None,
             "status": obj.get("status")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

@@ -32,8 +32,9 @@ class InboxIssueRequestConfiguration(BaseModel):
     signing_authority: Optional[InboxIssueRequestConfigurationSigningAuthority] = Field(default=None, alias="signingAuthority")
     webhook_url: Optional[StrictStr] = Field(default=None, description="The webhook URL to receive credential issuance events.", alias="webhookUrl")
     expires_in_days: Optional[Union[Annotated[float, Field(le=365, strict=True, ge=1)], Annotated[int, Field(le=365, strict=True, ge=1)]]] = Field(default=None, description="The number of days the credential will be valid for.", alias="expiresInDays")
+    template_data: Optional[Dict[str, Any]] = Field(default=None, description="Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided.", alias="templateData")
     delivery: Optional[InboxIssueRequestConfigurationDelivery] = None
-    __properties: ClassVar[List[str]] = ["signingAuthority", "webhookUrl", "expiresInDays", "delivery"]
+    __properties: ClassVar[List[str]] = ["signingAuthority", "webhookUrl", "expiresInDays", "templateData", "delivery"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -95,6 +96,7 @@ class InboxIssueRequestConfiguration(BaseModel):
             "signingAuthority": InboxIssueRequestConfigurationSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
             "webhookUrl": obj.get("webhookUrl"),
             "expiresInDays": obj.get("expiresInDays"),
+            "templateData": obj.get("templateData"),
             "delivery": InboxIssueRequestConfigurationDelivery.from_dict(obj["delivery"]) if obj.get("delivery") is not None else None
         })
         return _obj

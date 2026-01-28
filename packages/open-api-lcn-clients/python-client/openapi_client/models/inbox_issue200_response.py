@@ -27,18 +27,19 @@ class InboxIssue200Response(BaseModel):
     """
     InboxIssue200Response
     """ # noqa: E501
-    issuance_id: StrictStr = Field(alias="issuanceId")
+    issuance_id: Optional[StrictStr] = Field(alias="issuanceId")
     status: StrictStr
     recipient: InboxIssue200ResponseRecipient
     claim_url: Optional[StrictStr] = Field(default=None, alias="claimUrl")
     recipient_did: Optional[StrictStr] = Field(default=None, alias="recipientDid")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["issuanceId", "status", "recipient", "claimUrl", "recipientDid"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED']):
-            raise ValueError("must be one of enum values ('PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED')")
+        if value not in set(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']):
+            raise ValueError("must be one of enum values ('PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED')")
         return value
 
     model_config = ConfigDict(
@@ -71,8 +72,10 @@ class InboxIssue200Response(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -83,6 +86,21 @@ class InboxIssue200Response(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of recipient
         if self.recipient:
             _dict['recipient'] = self.recipient.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if issuance_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.issuance_id is None and "issuance_id" in self.model_fields_set:
+            _dict['issuanceId'] = None
+
+        # set to None if recipient_did (nullable) is None
+        # and model_fields_set contains the field
+        if self.recipient_did is None and "recipient_did" in self.model_fields_set:
+            _dict['recipientDid'] = None
+
         return _dict
 
     @classmethod
@@ -101,6 +119,11 @@ class InboxIssue200Response(BaseModel):
             "claimUrl": obj.get("claimUrl"),
             "recipientDid": obj.get("recipientDid")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

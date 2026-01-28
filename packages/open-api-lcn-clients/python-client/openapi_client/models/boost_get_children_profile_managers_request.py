@@ -30,7 +30,7 @@ class BoostGetChildrenProfileManagersRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = 25
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
-    uri: StrictStr
+    uri: Optional[StrictStr]
     query: Optional[BoostGetChildrenProfileManagersRequestQuery] = None
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "uri", "query"]
 
@@ -76,6 +76,21 @@ class BoostGetChildrenProfileManagersRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
+        # set to None if cursor (nullable) is None
+        # and model_fields_set contains the field
+        if self.cursor is None and "cursor" in self.model_fields_set:
+            _dict['cursor'] = None
+
+        # set to None if sort (nullable) is None
+        # and model_fields_set contains the field
+        if self.sort is None and "sort" in self.model_fields_set:
+            _dict['sort'] = None
+
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
         return _dict
 
     @classmethod

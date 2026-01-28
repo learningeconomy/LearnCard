@@ -57,7 +57,25 @@ class TestBoostCreateBoostRequest(unittest.TestCase):
                     can_revoke_children = '', 
                     can_manage_children_permissions = '', 
                     can_manage_children_profiles = True, 
-                    can_view_analytics = True, )
+                    can_view_analytics = True, ),
+                default_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
+                    role = '', 
+                    can_edit = True, 
+                    can_issue = True, 
+                    can_revoke = True, 
+                    can_manage_permissions = True, 
+                    can_issue_children = '', 
+                    can_create_children = '', 
+                    can_edit_children = '', 
+                    can_revoke_children = '', 
+                    can_manage_children_permissions = '', 
+                    can_manage_children_profiles = True, 
+                    can_view_analytics = True, ),
+                skills = [
+                    openapi_client.models.boost_send_request_template_skills_inner.boost_send_request_template_skills_inner(
+                        framework_id = '', 
+                        id = '', )
+                    ]
             )
         else:
             return BoostCreateBoostRequest(

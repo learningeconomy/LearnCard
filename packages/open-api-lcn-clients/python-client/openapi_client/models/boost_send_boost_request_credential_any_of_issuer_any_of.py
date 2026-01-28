@@ -17,8 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_address import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddress
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_image import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_other_identifier_inner import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner
@@ -38,7 +39,7 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOf(BaseModel):
     description: Optional[StrictStr] = None
     endorsement: Optional[List[Any]] = None
     image: Optional[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage] = None
-    email: Optional[StrictStr] = None
+    email: Optional[Annotated[str, Field(strict=True)]] = None
     address: Optional[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddress] = None
     other_identifier: Optional[List[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner]] = Field(default=None, alias="otherIdentifier")
     official: Optional[StrictStr] = None
@@ -53,6 +54,16 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOf(BaseModel):
     date_of_birth: Optional[StrictStr] = Field(default=None, alias="dateOfBirth")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "type", "name", "url", "phone", "description", "endorsement", "image", "email", "address", "otherIdentifier", "official", "parentOrg", "familyName", "givenName", "additionalName", "patronymicName", "honorificPrefix", "honorificSuffix", "familyNamePrefix", "dateOfBirth"]
+
+    @field_validator('email')
+    def email_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        return value
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -116,10 +127,80 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
+        # set to None if id (nullable) is None
+        # and model_fields_set contains the field
+        if self.id is None and "id" in self.model_fields_set:
+            _dict['id'] = None
+
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if url (nullable) is None
+        # and model_fields_set contains the field
+        if self.url is None and "url" in self.model_fields_set:
+            _dict['url'] = None
+
+        # set to None if phone (nullable) is None
+        # and model_fields_set contains the field
+        if self.phone is None and "phone" in self.model_fields_set:
+            _dict['phone'] = None
+
+        # set to None if description (nullable) is None
+        # and model_fields_set contains the field
+        if self.description is None and "description" in self.model_fields_set:
+            _dict['description'] = None
+
+        # set to None if official (nullable) is None
+        # and model_fields_set contains the field
+        if self.official is None and "official" in self.model_fields_set:
+            _dict['official'] = None
+
         # set to None if parent_org (nullable) is None
         # and model_fields_set contains the field
         if self.parent_org is None and "parent_org" in self.model_fields_set:
             _dict['parentOrg'] = None
+
+        # set to None if family_name (nullable) is None
+        # and model_fields_set contains the field
+        if self.family_name is None and "family_name" in self.model_fields_set:
+            _dict['familyName'] = None
+
+        # set to None if given_name (nullable) is None
+        # and model_fields_set contains the field
+        if self.given_name is None and "given_name" in self.model_fields_set:
+            _dict['givenName'] = None
+
+        # set to None if additional_name (nullable) is None
+        # and model_fields_set contains the field
+        if self.additional_name is None and "additional_name" in self.model_fields_set:
+            _dict['additionalName'] = None
+
+        # set to None if patronymic_name (nullable) is None
+        # and model_fields_set contains the field
+        if self.patronymic_name is None and "patronymic_name" in self.model_fields_set:
+            _dict['patronymicName'] = None
+
+        # set to None if honorific_prefix (nullable) is None
+        # and model_fields_set contains the field
+        if self.honorific_prefix is None and "honorific_prefix" in self.model_fields_set:
+            _dict['honorificPrefix'] = None
+
+        # set to None if honorific_suffix (nullable) is None
+        # and model_fields_set contains the field
+        if self.honorific_suffix is None and "honorific_suffix" in self.model_fields_set:
+            _dict['honorificSuffix'] = None
+
+        # set to None if family_name_prefix (nullable) is None
+        # and model_fields_set contains the field
+        if self.family_name_prefix is None and "family_name_prefix" in self.model_fields_set:
+            _dict['familyNamePrefix'] = None
+
+        # set to None if date_of_birth (nullable) is None
+        # and model_fields_set contains the field
+        if self.date_of_birth is None and "date_of_birth" in self.model_fields_set:
+            _dict['dateOfBirth'] = None
 
         return _dict
 
