@@ -26,7 +26,7 @@ type NotificationType = {
     sent: string;
     type: string;
     actionStatus?: string;
-    [key: string]: any; // For any additional properties
+    [key: string]: any;
 };
 
 export type PageType = {
@@ -94,7 +94,7 @@ export const useUpdateNotification = () => {
 
             const isArchiving = updatedNotification?.payload?.archived;
 
-            // 1. Define both query keys with proper typing
+            // 1. Define both query keys
             const activeQueryKey = [
                 'useGetUserNotifications',
                 cacheDid,
@@ -114,13 +114,12 @@ export const useUpdateNotification = () => {
                 queryKey: isArchiving ? activeQueryKey : archiveQueryKey,
             });
 
-            // 3. Get the current data for the active tab with proper typing
+            // 3. Get the current data for the active tab
             const currentTabData = queryClient.getQueryData<InfiniteData<PageType>>(activeQueryKey);
             const notificationToArchive = currentTabData?.pages
                 ?.flatMap(page => page.notifications)
                 ?.find(notification => notification?._id === updatedNotification.notificationId);
 
-            // 4. If we're archiving, we need to update both active and archive caches
             if (isArchiving) {
                 // Remove from active
                 if (currentTabData?.pages?.[0]?.notifications) {
@@ -137,7 +136,7 @@ export const useUpdateNotification = () => {
                     });
                 }
 
-                // Add to archive (if archive query exists)
+                // Add to archive
                 const archiveData =
                     queryClient.getQueryData<PaginatedNotificationsType>(archiveQueryKey);
                 if (archiveData?.pages?.[0]?.notifications && notificationToArchive) {
@@ -197,7 +196,7 @@ export const useUpdateNotification = () => {
                 }
             }
 
-            // 5. Return the previous data for rollback
+            // 4. Return the previous data
             return { previousData: currentTabData };
         },
         onSuccess: async () => {
