@@ -55,6 +55,23 @@ class TestClaimHookGetClaimHooksForBoostRequestQuery(unittest.TestCase):
             )
         else:
             return ClaimHookGetClaimHooksForBoostRequestQuery(
+                type = None,
+                data = openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query_data.claimHook_getClaimHooksForBoost_request_query_data(
+                    claim_uri = null, 
+                    target_uri = null, 
+                    permissions = openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query_data_permissions.claimHook_getClaimHooksForBoost_request_query_data_permissions(
+                        role = null, 
+                        can_edit = True, 
+                        can_issue = True, 
+                        can_revoke = True, 
+                        can_manage_permissions = True, 
+                        can_issue_children = null, 
+                        can_create_children = null, 
+                        can_edit_children = null, 
+                        can_revoke_children = null, 
+                        can_manage_children_permissions = null, 
+                        can_manage_children_profiles = True, 
+                        can_view_analytics = True, ), ),
         )
         """
 

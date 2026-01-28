@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **credentials** | [**ContractsGetConsentedDataForContractRequestQueryCredentials**](ContractsGetConsentedDataForContractRequestQueryCredentials.md) |  | [optional] 
 **personal** | **Dict[str, bool]** |  | [optional] 
-**id** | [**BoostGetBoostsRequestQueryUri**](BoostGetBoostsRequestQueryUri.md) |  | [optional] 
+**id** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | [optional] 
 
 ## Example
 

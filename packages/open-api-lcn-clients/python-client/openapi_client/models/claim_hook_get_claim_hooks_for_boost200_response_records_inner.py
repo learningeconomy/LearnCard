@@ -18,8 +18,8 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
-from openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of1_data import ClaimHookCreateClaimHookRequestHookOneOf1Data
+from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.claim_hook_get_claim_hooks_for_boost200_response_records_inner_all_of_one_of2_data import ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,18 +27,18 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
     """
     ClaimHookGetClaimHooksForBoost200ResponseRecordsInner
     """ # noqa: E501
-    id: StrictStr
-    created_at: StrictStr = Field(alias="createdAt")
-    updated_at: StrictStr = Field(alias="updatedAt")
+    id: Optional[StrictStr]
+    created_at: Optional[StrictStr] = Field(alias="createdAt")
+    updated_at: Optional[StrictStr] = Field(alias="updatedAt")
     type: StrictStr
-    data: ClaimHookCreateClaimHookRequestHookOneOf1Data
+    data: ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data
     __properties: ClassVar[List[str]] = ["id", "createdAt", "updatedAt", "type", "data"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['ADD_ADMIN']):
-            raise ValueError("must be one of enum values ('ADD_ADMIN')")
+        if value not in set(['AUTO_CONNECT']):
+            raise ValueError("must be one of enum values ('AUTO_CONNECT')")
         return value
 
     model_config = ConfigDict(
@@ -83,6 +83,21 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of data
         if self.data:
             _dict['data'] = self.data.to_dict()
+        # set to None if id (nullable) is None
+        # and model_fields_set contains the field
+        if self.id is None and "id" in self.model_fields_set:
+            _dict['id'] = None
+
+        # set to None if created_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.created_at is None and "created_at" in self.model_fields_set:
+            _dict['createdAt'] = None
+
+        # set to None if updated_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.updated_at is None and "updated_at" in self.model_fields_set:
+            _dict['updatedAt'] = None
+
         return _dict
 
     @classmethod
@@ -99,7 +114,7 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
             "createdAt": obj.get("createdAt"),
             "updatedAt": obj.get("updatedAt"),
             "type": obj.get("type"),
-            "data": ClaimHookCreateClaimHookRequestHookOneOf1Data.from_dict(obj["data"]) if obj.get("data") is not None else None
+            "data": ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data.from_dict(obj["data"]) if obj.get("data") is not None else None
         })
         return _obj
 

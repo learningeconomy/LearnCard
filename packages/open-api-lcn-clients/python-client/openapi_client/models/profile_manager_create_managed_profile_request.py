@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to_display import BoostGetBoostRecipients200ResponseInnerToDisplay
+from openapi_client.models.profile_create_service_profile_request_display import ProfileCreateServiceProfileRequestDisplay
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -40,10 +40,13 @@ class ProfileManagerCreateManagedProfileRequest(BaseModel):
     is_service_profile: Optional[StrictBool] = Field(default=False, description="Whether the profile is a service profile or not.", alias="isServiceProfile")
     type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
     notifications_webhook: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="URL to send notifications to.", alias="notificationsWebhook")
-    display: Optional[BoostGetBoostRecipients200ResponseInnerToDisplay] = None
+    display: Optional[ProfileCreateServiceProfileRequestDisplay] = None
+    highlighted_credentials: Optional[Annotated[List[StrictStr], Field(max_length=5)]] = Field(default=None, description="Up to 5 unique boost URIs to highlight on the profile.", alias="highlightedCredentials")
     role: Optional[StrictStr] = Field(default='', description="Role of the profile: e.g. \"teacher\", \"student\".")
     dob: Optional[StrictStr] = Field(default='', description="Date of birth of the profile: e.g. \"1990-01-01\".")
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "email", "image", "heroImage", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "role", "dob"]
+    country: Optional[StrictStr] = Field(default=None, description="Country for the profile.")
+    approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "email", "image", "heroImage", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "approved"]
 
     @field_validator('notifications_webhook')
     def notifications_webhook_validate_regular_expression(cls, value):
@@ -51,8 +54,8 @@ class ProfileManagerCreateManagedProfileRequest(BaseModel):
         if value is None:
             return value
 
-        if not re.match(r"^http", value):
-            raise ValueError(r"must validate the regular expression /^http/")
+        if not re.match(r"^http.*", value):
+            raise ValueError(r"must validate the regular expression /^http.*/")
         return value
 
     model_config = ConfigDict(
@@ -121,9 +124,12 @@ class ProfileManagerCreateManagedProfileRequest(BaseModel):
             "isServiceProfile": obj.get("isServiceProfile") if obj.get("isServiceProfile") is not None else False,
             "type": obj.get("type"),
             "notificationsWebhook": obj.get("notificationsWebhook"),
-            "display": BoostGetBoostRecipients200ResponseInnerToDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
+            "display": ProfileCreateServiceProfileRequestDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
+            "highlightedCredentials": obj.get("highlightedCredentials"),
             "role": obj.get("role") if obj.get("role") is not None else '',
-            "dob": obj.get("dob") if obj.get("dob") is not None else ''
+            "dob": obj.get("dob") if obj.get("dob") is not None else '',
+            "country": obj.get("country"),
+            "approved": obj.get("approved")
         })
         return _obj
 

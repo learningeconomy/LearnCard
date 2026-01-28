@@ -176,7 +176,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **did_metadata_get_did_metadata**
-> DidMetadataAddDidMetadataRequest did_metadata_get_did_metadata(id)
+> DidMetadataGetDidMetadata200Response did_metadata_get_did_metadata(id)
 
 Get DID Metadata
 
@@ -188,7 +188,7 @@ Get DID Metadata
 
 ```python
 import openapi_client
-from openapi_client.models.did_metadata_add_did_metadata_request import DidMetadataAddDidMetadataRequest
+from openapi_client.models.did_metadata_get_did_metadata200_response import DidMetadataGetDidMetadata200Response
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -234,7 +234,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**DidMetadataAddDidMetadataRequest**](DidMetadataAddDidMetadataRequest.md)
+[**DidMetadataGetDidMetadata200Response**](DidMetadataGetDidMetadata200Response.md)
 
 ### Authorization
 

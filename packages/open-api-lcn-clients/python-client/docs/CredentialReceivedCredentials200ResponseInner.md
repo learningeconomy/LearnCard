@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **var_from** | **str** |  | 
 **sent** | **datetime** |  | 
 **received** | **datetime** |  | [optional] 
+**metadata** | **Dict[str, object]** |  | [optional] 
 
 ## Example
 
