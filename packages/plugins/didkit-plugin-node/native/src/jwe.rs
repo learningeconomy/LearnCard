@@ -101,11 +101,25 @@ impl JWE {
             };
 
             for key_agreement in key_agreements {
-                // Try to extract X25519 public key
+                // Try to extract X25519 public key from various verification method encodings
                 let recipient_x25519_opt: Option<X25519Public> = match &key_agreement {
                     didkit::ssi::did::VerificationMethod::Map(vm) => {
-                        // Try publicKeyJwk
-                        if let Some(ref jwk) = vm.public_key_jwk {
+                        // 1) publicKeyBase58 (X25519KeyAgreementKey2019 format)
+                        if let Some(ref pk_b58) = vm.public_key_base58 {
+                            // Decode base58 to get raw X25519 bytes
+                            if let Ok(decoded) = bs58::decode(pk_b58).into_vec() {
+                                if decoded.len() == 32 {
+                                    <[u8; 32]>::try_from(&decoded[..])
+                                        .ok()
+                                        .map(X25519Public::from)
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
+                        // 2) publicKeyJwk with crv X25519
+                        } else if let Some(ref jwk) = vm.public_key_jwk {
                             match &jwk.params {
                                 Params::OKP(okp) if okp.curve == "X25519" => {
                                     if okp.public_key.0.len() == 32 {
@@ -120,8 +134,8 @@ impl JWE {
                                 }
                                 _ => None,
                             }
+                        // 3) publicKeyMultibase (Multikey format)
                         } else if let Some(ref props) = vm.property_set {
-                            // Try publicKeyMultibase
                             if let Some(serde_json::Value::String(multibase_str)) = props.get("publicKeyMultibase") {
                                 // Decode multibase (typically base58btc for X25519)
                                 if let Ok((_, bytes)) = multibase::decode(multibase_str) {

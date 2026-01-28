@@ -32,6 +32,7 @@ byteorder = "1"
 base64 = "0.21"
 anyhow = "1"
 multibase = "0.9"
+bs58 = "0.5"
 libipld = { version = "0.16", features = ["serde-codec"] }
 unsigned-varint = "0.7.0"
 
