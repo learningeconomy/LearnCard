@@ -15,7 +15,9 @@ import {
     DEFAULT_ARCHIVE_FILTER,
     useMarkAllNotificationsRead,
     useUpdateNotification,
+    useWallet,
 } from 'learn-card-base';
+import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
@@ -38,13 +40,10 @@ export const NotificationsSubHeader: React.FC<{
         DEFAULT_ARCHIVE_OPTIONS,
         DEFAULT_ARCHIVE_FILTER
     );
-    const { data: activeData } = useGetUserNotifications(
-        DEFAULT_ACTIVE_OPTIONS,
-        DEFAULT_ACTIVE_FILTER
-    );
     const numberArchived = data?.pages[0]?.notifications?.length;
 
     const history = useHistory();
+    const { initWallet } = useWallet();
     const {
         mutate: markAllNotificationsRead,
         isLoading: markAllNotificationsReadLoading,
@@ -52,15 +51,47 @@ export const NotificationsSubHeader: React.FC<{
     } = useMarkAllNotificationsRead();
     const { mutateAsync: updateNotification } = useUpdateNotification();
 
+    const fetchAllActiveNotifications = async () => {
+        const wallet = await initWallet();
+        if (!wallet) return [];
+
+        const allNotifications: NotificationType[] = [];
+        let cursor: string | undefined;
+        let hasMore = true;
+
+        while (hasMore) {
+            const page = await wallet.invoke.getNotifications(
+                {
+                    ...DEFAULT_ACTIVE_OPTIONS,
+                    cursor,
+                },
+                DEFAULT_ACTIVE_FILTER
+            );
+
+            if (!page) break;
+
+            allNotifications.push(...(page.notifications ?? []));
+            hasMore = page.hasMore;
+            cursor = page.cursor;
+        }
+
+        return allNotifications;
+    };
+
     const handleMarkAllRead = async () => {
-        const activeNotifications = activeData?.pages?.flatMap(page => page.notifications) ?? [];
+        const activeNotifications = await fetchAllActiveNotifications();
 
         // Mark notifications read on LCA API
         await markAllNotificationsRead();
 
         // Archive all active notifications
+        const notificationsWithIds = activeNotifications.filter(
+            (notification): notification is NotificationType & { _id: string } =>
+                Boolean(notification._id)
+        );
+
         await Promise.all(
-            activeNotifications.map(notification =>
+            notificationsWithIds.map(notification =>
                 updateNotification({
                     notificationId: notification._id,
                     payload: { archived: true, read: true },
