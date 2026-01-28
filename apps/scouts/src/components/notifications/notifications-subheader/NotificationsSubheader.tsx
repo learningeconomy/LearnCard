@@ -9,23 +9,28 @@ import X from 'learn-card-base/svgs/X';
 
 import {
     useGetUserNotifications,
+    DEFAULT_ACTIVE_OPTIONS,
+    DEFAULT_ACTIVE_FILTER,
     DEFAULT_ARCHIVE_OPTIONS,
     DEFAULT_ARCHIVE_FILTER,
     useMarkAllNotificationsRead,
+    useUpdateNotification,
 } from 'learn-card-base';
 
-export const NotificationsSubHeader: React.FC<{ 
-    notificationCount: number, 
-    isEmptyState: boolean,
-    setTab: React.Dispatch<React.SetStateAction<string>>,
-    tab: string
- }> = ({
-    notificationCount,
-    isEmptyState,
-    setTab,
-    tab
-}) => {
-    const { data, isLoading } = useGetUserNotifications(DEFAULT_ARCHIVE_OPTIONS, DEFAULT_ARCHIVE_FILTER);
+export const NotificationsSubHeader: React.FC<{
+    notificationCount: number;
+    isEmptyState: boolean;
+    setTab: React.Dispatch<React.SetStateAction<string>>;
+    tab: string;
+}> = ({ notificationCount, isEmptyState, setTab, tab }) => {
+    const { data, isLoading } = useGetUserNotifications(
+        DEFAULT_ARCHIVE_OPTIONS,
+        DEFAULT_ARCHIVE_FILTER
+    );
+    const { data: activeData } = useGetUserNotifications(
+        DEFAULT_ACTIVE_OPTIONS,
+        DEFAULT_ACTIVE_FILTER
+    );
     const numberArchived = data?.pages[0]?.notifications?.length;
     const history = useHistory();
     const {
@@ -33,10 +38,24 @@ export const NotificationsSubHeader: React.FC<{
         isLoading: markAllNotificationsReadLoading,
         isSuccess: markAllNotificationsReadSuccess,
     } = useMarkAllNotificationsRead();
+    const { mutateAsync: updateNotification } = useUpdateNotification();
 
     const handleMarkAllRead = async () => {
+        const activeNotifications = activeData?.pages?.flatMap(page => page.notifications) ?? [];
+
         // Mark notifications read on LCA API
         await markAllNotificationsRead();
+
+        // Archive all active notifications
+        await Promise.all(
+            activeNotifications.map(notification =>
+                updateNotification({
+                    notificationId: notification._id,
+                    payload: { archived: true, read: true },
+                })
+            )
+        );
+
         if (Capacitor.isNativePlatform()) {
             // Clear badge count on native as well
             const badgeClear = await Badge?.clear?.();
@@ -83,36 +102,46 @@ export const NotificationsSubHeader: React.FC<{
                         </p>
                     </IonCol>
                 </IonRow>
-                {!isEmptyState && <button
-                    onClick={handleMarkAllRead}
-                    className="text-[14px] text-grayscale-800 flex items-center justify-center font-semibold min-w-[140px] rounded-[36px] border-solid border-[1px] border-grayscale-200 py-[7px] px-[20px]"
-                >
-                    Archive All <X className="ml-[5px] w-[15px] h-[15px]" />
-                </button>}
+                {!isEmptyState && (
+                    <button
+                        onClick={handleMarkAllRead}
+                        className="text-[14px] text-grayscale-800 flex items-center justify-center font-semibold min-w-[140px] rounded-[36px] border-solid border-[1px] border-grayscale-200 py-[7px] px-[20px]"
+                    >
+                        Archive All <X className="ml-[5px] w-[15px] h-[15px]" />
+                    </button>
+                )}
             </IonGrid>
             <div className="w-full flex items-center justify-center px-3">
-            <IonRow class="w-full max-w-[600px]">
-                <IonCol className="flex items-center justify-start w-full">
-                    <button
-                        onClick={() => {
-                            setTab('active');
-                        }}
-                        className={`pr-4 text-grayscale-600 text-[14px] font-semibold ${tab === 'active' ? 'text-indigo-500 text-center rounded-[50px] px-[15px] py-[5px] border-solid border-[1px] border-[rgba(99, 102, 241, 0.40)] mr-[15px]' : ''}`}
-                    >
-                        All
-                    </button>
-                    <button
-                        onClick={() => {
-                            setTab('archived');
-                        }}
-                        className={`pr-4 text-grayscale-600 text-[14px] font-semibold ${tab === 'archived' ? 'text-indigo-500 text-center rounded-[50px] px-[15px] py-[5px] border-solid border-[1px] border-[rgba(99, 102, 241, 0.40)] ' : ''}`}
-                    >
-                    {!isLoading ? numberArchived : ''} Archived
-                    </button>
-                </IonCol>
-            </IonRow>
+                <IonRow class="w-full max-w-[600px]">
+                    <IonCol className="flex items-center justify-start w-full">
+                        <button
+                            onClick={() => {
+                                setTab('active');
+                            }}
+                            className={`pr-4 text-grayscale-600 text-[14px] font-semibold ${
+                                tab === 'active'
+                                    ? 'text-indigo-500 text-center rounded-[50px] px-[15px] py-[5px] border-solid border-[1px] border-[rgba(99, 102, 241, 0.40)] mr-[15px]'
+                                    : ''
+                            }`}
+                        >
+                            All
+                        </button>
+                        <button
+                            onClick={() => {
+                                setTab('archived');
+                            }}
+                            className={`pr-4 text-grayscale-600 text-[14px] font-semibold ${
+                                tab === 'archived'
+                                    ? 'text-indigo-500 text-center rounded-[50px] px-[15px] py-[5px] border-solid border-[1px] border-[rgba(99, 102, 241, 0.40)] '
+                                    : ''
+                            }`}
+                        >
+                            {!isLoading ? numberArchived : ''} Archived
+                        </button>
+                    </IonCol>
+                </IonRow>
+            </div>
         </div>
-    </div>
     );
 };
 

@@ -9,9 +9,12 @@ import X from 'learn-card-base/svgs/X';
 
 import {
     useGetUserNotifications,
+    DEFAULT_ACTIVE_OPTIONS,
+    DEFAULT_ACTIVE_FILTER,
     DEFAULT_ARCHIVE_OPTIONS,
     DEFAULT_ARCHIVE_FILTER,
     useMarkAllNotificationsRead,
+    useUpdateNotification,
 } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
@@ -35,6 +38,10 @@ export const NotificationsSubHeader: React.FC<{
         DEFAULT_ARCHIVE_OPTIONS,
         DEFAULT_ARCHIVE_FILTER
     );
+    const { data: activeData } = useGetUserNotifications(
+        DEFAULT_ACTIVE_OPTIONS,
+        DEFAULT_ACTIVE_FILTER
+    );
     const numberArchived = data?.pages[0]?.notifications?.length;
 
     const history = useHistory();
@@ -43,10 +50,23 @@ export const NotificationsSubHeader: React.FC<{
         isLoading: markAllNotificationsReadLoading,
         isSuccess: markAllNotificationsReadSuccess,
     } = useMarkAllNotificationsRead();
+    const { mutateAsync: updateNotification } = useUpdateNotification();
 
     const handleMarkAllRead = async () => {
+        const activeNotifications = activeData?.pages?.flatMap(page => page.notifications) ?? [];
+
         // Mark notifications read on LCA API
         await markAllNotificationsRead();
+
+        // Archive all active notifications
+        await Promise.all(
+            activeNotifications.map(notification =>
+                updateNotification({
+                    notificationId: notification._id,
+                    payload: { archived: true, read: true },
+                })
+            )
+        );
         if (Capacitor.isNativePlatform()) {
             // Clear badge count on native as well
             const badgeClear = await Badge?.clear?.();
