@@ -9,6 +9,7 @@ import {
 } from '../../../components/new-ai-session/newAiSession.helpers';
 
 import { chatBotStore } from '../../../stores/chatBotStore';
+import { resetChatStores } from 'learn-card-base/stores/nanoStores/chatStore';
 import { ChatBotQuestionsEnum } from '../../../components/new-ai-session/NewAiSessionChatBot/newAiSessionChatbot.helpers';
 
 export const AiInsightsPromptBox: React.FC = () => {
@@ -25,6 +26,8 @@ export const AiInsightsPromptBox: React.FC = () => {
     const handleSubmitPrompt = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (promptIsEmpty) return;
+        resetChatStores();
+        chatBotStore.set.resetStore();
         setMode(AiSessionMode.insights);
         setChatBotQA([
             {

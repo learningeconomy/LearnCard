@@ -10,15 +10,18 @@ import {
 } from '../../../../components/new-ai-session/newAiSession.helpers';
 
 import { chatBotStore } from '../../../../stores/chatBotStore';
+import { resetChatStores } from 'learn-card-base/stores/nanoStores/chatStore';
 import { ChatBotQuestionsEnum } from '../../../../components/new-ai-session/NewAiSessionChatBot/newAiSessionChatbot.helpers';
 
 export const AiInsightsPromptListItem: React.FC<{ prompt: string }> = ({ prompt }) => {
     const history = useHistory();
+
+    const setMode = chatBotStore.set.setMode;
     const setChatBotQA = chatBotStore.set.setChatBotQA;
     const setInternalAiChatBot = chatBotStore.set.setStartInternalAiChatBot;
-    const setMode = chatBotStore.set.setMode;
 
     const handlePromptClick = () => {
+        resetChatStores();
         setMode(AiSessionMode.insights);
         setChatBotQA([
             {
