@@ -18,6 +18,21 @@ export const sessionEnded = atom(false);
 export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
 
+export function resetChatStores() {
+    messages.set([]);
+    currentThreadId.set(null);
+    isTyping.set(false);
+    isLoading.set(false);
+    isEndingSession.set(false);
+    showEndingSessionLoader.set(false);
+    activeQuestions.set([]);
+    suggestedTopics.set([]);
+    topicCredentials.set([]);
+    sessionEnded.set(false);
+    planReady.set(false);
+    planReadyThread.set(null);
+}
+
 export const BACKEND_URL = 'https://api.learncloud.ai';
 // export const BACKEND_URL = 'http://localhost:3001';
 
