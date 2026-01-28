@@ -67,6 +67,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const consentedContract = consentedContracts?.find(c => c?.contract?.uri === uri);
 
     const [step, setStep] = useState(Step.landing);
+    const [userClickedContinue, setUserClickedContinue] = useState(false);
 
     const {
         data: contractDetails,
@@ -87,6 +88,74 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             newModal(<ConsentFlowError errorType={errorType} uri={uri} />);
         }
     }, [error]);
+
+    // Handle navigation after user clicks Continue AND consent query completes
+    useEffect(() => {
+        if (!userClickedContinue || consentedContractLoading) return;
+
+        const handleNavigation = async () => {
+            const hasCredentialFrontDoor = contractDetails?.frontDoorBoostUri;
+
+            // User already consented - redirect to returnTo with credentials
+            if (login && returnTo && typeof returnTo === 'string' && consentedContract) {
+                if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
+                    const wallet = await initWallet();
+
+                    const urlObj = new URL(returnTo);
+                    urlObj.searchParams.set('did', wallet.id.did());
+
+                    if (consentedContract?.contract?.owner?.did) {
+                        const unsignedDelegateCredential = wallet.invoke.newCredential({
+                            type: 'delegate',
+                            subject: consentedContract?.contract?.owner.did,
+                            access: ['read', 'write'],
+                        });
+
+                        const delegateCredential = await wallet.invoke.issueCredential(
+                            unsignedDelegateCredential
+                        );
+
+                        const unsignedDidAuthVp: any = await wallet.invoke.newPresentation(
+                            delegateCredential
+                        );
+
+                        if (uri && typeof uri === 'string') {
+                            unsignedDidAuthVp.contractUri = uri;
+                        }
+
+                        const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                            proofPurpose: 'authentication',
+                            proofFormat: 'jwt',
+                        })) as any as string;
+
+                        urlObj.searchParams.set('vp', vp);
+                    }
+
+                    window.location.href = urlObj.toString();
+                    return;
+                }
+            }
+
+            // User has NOT consented - proceed to sync-data flow
+            if (hasCredentialFrontDoor) {
+                setStep(Step.credFrontDoor);
+            } else if (returnTo) {
+                history.push(
+                    `/consent-flow-sync-data?uri=${uri}&returnTo=${returnTo}${
+                        recipientToken ? `&recipientToken=${recipientToken}` : ''
+                    }`
+                );
+            } else {
+                history.push(
+                    `/consent-flow-sync-data?uri=${uri}${
+                        recipientToken ? `&recipientToken=${recipientToken}` : ''
+                    }`
+                );
+            }
+        };
+
+        handleNavigation();
+    }, [userClickedContinue, consentedContractLoading, consentedContract, login, returnTo, contractDetails, uri, recipientToken, history]);
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
@@ -195,84 +264,11 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         />
                         <button
                             type="button"
-                            onClick={async () => {
-                                if (
-                                    login &&
-                                    returnTo &&
-                                    typeof returnTo === 'string' &&
-                                    !consentedContractLoading &&
-                                    consentedContract
-                                ) {
-                                    if (
-                                        returnTo.startsWith('http://') ||
-                                        returnTo.startsWith('https://')
-                                    ) {
-                                        const wallet = await initWallet();
-
-                                        // add user's did to returnTo url
-                                        const urlObj = new URL(returnTo);
-                                        urlObj.searchParams.set('did', wallet.id.did());
-                                        if (consentedContract?.contract?.owner?.did) {
-                                            const unsignedDelegateCredential =
-                                                wallet.invoke.newCredential({
-                                                    type: 'delegate',
-                                                    subject: consentedContract?.contract?.owner.did,
-                                                    access: ['read', 'write'],
-                                                });
-
-                                            const delegateCredential =
-                                                await wallet.invoke.issueCredential(
-                                                    unsignedDelegateCredential
-                                                );
-
-                                            const unsignedDidAuthVp: any =
-                                                await wallet.invoke.newPresentation(
-                                                    delegateCredential
-                                                );
-
-                                            // Add contractUri to VP before signing for xAPI tracking
-                                            if (uri && typeof uri === 'string') {
-                                                unsignedDidAuthVp.contractUri = uri;
-                                            }
-
-                                            const vp = (await wallet.invoke.issuePresentation(
-                                                unsignedDidAuthVp,
-                                                {
-                                                    proofPurpose: 'authentication',
-                                                    proofFormat: 'jwt',
-                                                }
-                                            )) as any as string;
-
-                                            urlObj.searchParams.set('vp', vp);
-                                        }
-
-                                        window.location.href = urlObj.toString();
-
-                                        return;
-                                    }
-                                }
-
-                                if (hasCredentialFrontDoor) {
-                                    setStep(Step.credFrontDoor);
-                                } else if (returnTo) {
-                                    history.push(
-                                        `/consent-flow-sync-data?uri=${uri}&returnTo=${returnTo}${
-                                            recipientToken
-                                                ? `&recipientToken=${recipientToken}`
-                                                : ''
-                                        }`
-                                    );
-                                } else {
-                                    history.push(
-                                        `/consent-flow-sync-data?uri=${uri}${
-                                            recipientToken
-                                                ? `&recipientToken=${recipientToken}`
-                                                : ''
-                                        }`
-                                    );
-                                }
-                            }}
-                            className="bg-emerald-700 text-grayscale-50 text-[16px] font-semibold font-poppins normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom"
+                            disabled={consentedContractLoading}
+                            onClick={() => setUserClickedContinue(true)}
+                            className={`bg-emerald-700 text-grayscale-50 text-[16px] font-semibold font-poppins normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom ${
+                                consentedContractLoading ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                         >
                             Continue as {currentUser.name}
                         </button>

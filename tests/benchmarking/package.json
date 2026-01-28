@@ -1,0 +1,19 @@
+{
+    "name": "@learncard/benchmarking",
+    "version": "1.0.1",
+    "private": true,
+    "description": "Performance benchmarks for LearnCard SDK",
+    "type": "commonjs",
+    "scripts": {
+        "benchmark": "node benchmark.js"
+    },
+    "dependencies": {
+        "@learncard/init": "workspace:*",
+        "@learncard/didkit-plugin-node": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.3.3"
+    }
+}

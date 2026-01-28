@@ -434,10 +434,9 @@ Use `{{variableName}}` syntax in your credential template:
 const templatedCredential = {
   '@context': [
     'https://www.w3.org/2018/credentials/v1',
-    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
-    'https://ctx.learncard.com/boosts/1.0.3.json',
+    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json'
   ],
-  type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+  type: ['VerifiableCredential', 'OpenBadgeCredential'],
   issuer: 'did:web:example.com',
   name: 'Certificate for {{courseName}}',
   credentialSubject: {

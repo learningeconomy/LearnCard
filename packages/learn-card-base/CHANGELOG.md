@@ -1,5 +1,46 @@
 # learn-card-base
 
+## 0.1.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.9
+
+## 0.1.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.8
+
+## 0.1.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.7
+
+## 0.1.9
+
+### Patch Changes
+
+-   [#952](https://github.com/learningeconomy/LearnCard/pull/952) [`e41a15b2b2850fc3c562b254b3aef707d34e5437`](https://github.com/learningeconomy/LearnCard/commit/e41a15b2b2850fc3c562b254b3aef707d34e5437) Thanks [@Custard7](https://github.com/Custard7)! - fix: Encrypt for Recipient with SA
+
+## 0.1.8
+
+### Patch Changes
+
+-   [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
+
+-   [#934](https://github.com/learningeconomy/LearnCard/pull/934) [`6319f43e11a231396f08b41a0bafb4198b4622a0`](https://github.com/learningeconomy/LearnCard/commit/6319f43e11a231396f08b41a0bafb4198b4622a0) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1524] fix: Suppress toast displaying "Registration: no valid private key error" on login screen
+
+-   [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
+
+-   [#938](https://github.com/learningeconomy/LearnCard/pull/938) [`20c48c727aade41921e226e3f26922d3798c7b5e`](https://github.com/learningeconomy/LearnCard/commit/20c48c727aade41921e226e3f26922d3798c7b5e) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1498] - 🚀 Migrate Capacitor & Plugins from v7 → v8 + 🔥 Firebase v12
+
+-   [#938](https://github.com/learningeconomy/LearnCard/pull/938) [`20c48c727aade41921e226e3f26922d3798c7b5e`](https://github.com/learningeconomy/LearnCard/commit/20c48c727aade41921e226e3f26922d3798c7b5e) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1498] - 🚀 Migrate Capacitor & Plugins from v7 → v8 + 🔥 Firebase v12
+
 ## 0.1.7
 
 ### Patch Changes

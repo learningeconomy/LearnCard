@@ -109,6 +109,7 @@ functions:
         events:
             - httpApi: GET /skills/{skillId}
             - httpApi: GET /frameworks/{frameworkId}
+            - httpApi: GET /frameworks/{frameworkId}/skills/{skillId}
 
 resources:
     Resources:

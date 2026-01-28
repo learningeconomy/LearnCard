@@ -1,5 +1,26 @@
 # @welibraryos/lca-api-service
 
+## 1.1.9
+
+### Patch Changes
+
+-   [`175a828f712da5b44eeb3c242e8fd604736df073`](https://github.com/learningeconomy/LearnCard/commit/175a828f712da5b44eeb3c242e8fd604736df073) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add debug logging
+
+## 1.1.8
+
+### Patch Changes
+
+-   [`c04ff8e86677b7f88fb2858be2b9b3f8bb28f427`](https://github.com/learningeconomy/LearnCard/commit/c04ff8e86677b7f88fb2858be2b9b3f8bb28f427) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Deployed Lambda issue
+
+## 1.1.7
+
+### Patch Changes
+
+-   Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
+    -   @learncard/didkit-plugin-node@0.2.0
+    -   @learncard/init@2.3.0
+    -   @learncard/didkit-plugin@1.7.0
+
 ## 1.1.6
 
 ### Patch Changes

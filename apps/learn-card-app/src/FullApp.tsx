@@ -27,6 +27,7 @@ import NetworkListener from './components/network-listener/NetworkListener';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
 
+import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
 import localforage from 'localforage';
 
@@ -164,6 +165,7 @@ const FullApp: React.FC = () => {
                             <IonApp>
                                 <div id="modal-mid-root"></div>
                                 <Toast />
+                                <SdkActivityIndicator />
                                 <NetworkListener />
                                 <AppUrlListener />
                                 <PushNotificationListener />

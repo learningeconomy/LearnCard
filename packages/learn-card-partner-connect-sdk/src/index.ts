@@ -28,6 +28,7 @@ import type {
     CredentialSearchResponse,
     CredentialSpecificResponse,
     ConsentResponse,
+    RequestConsentOptions,
     TemplateIssueResponse,
     AppEvent,
     AppEventResponse,
@@ -393,14 +394,29 @@ export class PartnerConnect {
      *
      * @example
      * ```typescript
+     * // Without redirect (default) - returns VP in response if app owns the contract
      * const response = await learnCard.requestConsent('lc:network:network.learncard.com/trpc:contract:abc123');
      * if (response.granted) {
      *   console.log('User granted consent');
+     *   if (response.vp) {
+     *     console.log('VP:', response.vp);
+     *   }
      * }
+     *
+     * // With redirect - redirects to contract's redirectUrl with VP in URL params
+     * const response = await learnCard.requestConsent('lc:network:network.learncard.com/trpc:contract:abc123', { redirect: true });
      * ```
      */
-    public requestConsent(contractUri: string): Promise<ConsentResponse> {
-        return this.sendMessage<ConsentResponse>('REQUEST_CONSENT', { contractUri });
+    public requestConsent(
+        contractUri: string,
+        options: RequestConsentOptions = {}
+    ): Promise<ConsentResponse> {
+        const { redirect = false } = options;
+
+        return this.sendMessage<ConsentResponse>('REQUEST_CONSENT', {
+            contractUri,
+            redirect,
+        });
     }
 
     /**

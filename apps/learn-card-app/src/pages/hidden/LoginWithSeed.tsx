@@ -8,6 +8,7 @@ import { walletStore } from 'learn-card-base/stores/walletStore';
 import { IonCol, IonInput } from '@ionic/react';
 
 import { setAuthToken } from 'learn-card-base/helpers/authHelpers';
+import { setPlatformPrivateKey } from 'learn-card-base/security/platformPrivateKeyStorage';
 
 const LoginWithSeed: React.FC = () => {
     const history = useHistory();
@@ -35,6 +36,9 @@ const LoginWithSeed: React.FC = () => {
             await setCurrentUser(dummyUser);
 
             currentUserStore.set.currentUser(dummyUser);
+
+            // Store private key in secure web storage (IndexedDB) for persistence across page navigations
+            await setPlatformPrivateKey(seed);
 
             const wallet = await initWallet(seed);
             if (wallet) {

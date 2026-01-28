@@ -1,6 +1,8 @@
 import { useEffect, useCallback, useRef } from 'react';
 import type { AppEvent, SendCredentialEvent } from '@learncard/types';
 
+import sdkActivityStore from '../../stores/sdkActivityStore';
+
 // Re-export for convenience
 export type { AppEvent, SendCredentialEvent };
 
@@ -61,6 +63,7 @@ export interface RequestIdentityPayload {
 
 export interface RequestConsentPayload {
     contractUri: string;
+    redirect?: boolean;
 }
 
 export interface SendCredentialPayload {
@@ -282,6 +285,9 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
             // Step 3: Execute Handler & Send Response
             // ================================================================
 
+            // Show activity indicator while processing
+            sdkActivityStore.set.startActivity();
+
             try {
                 const result = await handler({
                     origin: event.origin,
@@ -319,7 +325,10 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
                     code: 'UNKNOWN_ERROR',
                     message: error instanceof Error ? error.message : 'Unknown error occurred',
                 });
+                // Hide activity indicator on error
+                sdkActivityStore.set.endActivity();
             }
+            // Note: endActivity() is called by handlers when they show their UI
         },
         [trustedOrigins, debug]
     );
