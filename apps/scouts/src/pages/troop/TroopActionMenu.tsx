@@ -49,8 +49,8 @@ const TroopActionMenu: React.FC<TroopActionMenuProps> = ({
     });
 
     const handleDelete = async () => {
-        await handleDeleteBoost?.();
         handleCloseModal?.();
+        await handleDeleteBoost?.();
     };
 
     const presentShareBoostLink = () => {
@@ -59,18 +59,17 @@ const TroopActionMenu: React.FC<TroopActionMenuProps> = ({
     };
 
     const handleShare = async () => {
-        handleCloseModal?.();
         presentShareBoostLink();
     };
 
     const _handleEdit = async () => {
-        handleEdit?.();
         handleCloseModal?.();
+        handleEdit?.();
     };
 
     const handleAddMember = async () => {
-        handleInviteMember?.();
         handleCloseModal?.();
+        handleInviteMember?.();
     };
 
     const boostMenuOptions: {
@@ -109,8 +108,8 @@ const TroopActionMenu: React.FC<TroopActionMenuProps> = ({
                 title: 'My ID Details',
                 icon: <IdentificationCard className="text-grayscale-900" />,
                 onClick: () => {
-                    handleDetails?.();
                     handleCloseModal?.();
+                    handleDetails?.();
                 },
             }
         );
