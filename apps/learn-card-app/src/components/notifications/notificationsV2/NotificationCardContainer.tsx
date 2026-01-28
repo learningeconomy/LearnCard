@@ -81,11 +81,6 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                 payload: { archived: !notification?.archived, read: true },
             },
             {
-                onSuccess: async () => {
-                    await queryClient.invalidateQueries({
-                        queryKey: ['useGetUserNotifications', switchedDid ?? ''],
-                    });
-                },
                 onError: error => {
                     console.error('Error archiving notification:', error);
                 },
