@@ -74,8 +74,8 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     const { mutate: markNotificationAsRead } = useMarkNotificationRead();
     const { refetch: refetchCurrentLCNUser } = useGetCurrentLCNUser();
 
-    const handleArchiveNotification = async () => {
-        await updateNotification(
+    const handleArchiveNotification = () => {
+        updateNotification(
             {
                 notificationId: notification?._id,
                 payload: { archived: !notification?.archived, read: true },
