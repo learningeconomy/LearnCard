@@ -400,7 +400,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             {/* Header */}
             <IonHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
-                    <div className="flex items-center justify-normal ion-padding">
+                    <div className="flex items-center justify-normal ion-padding safe-area-top-margin">
                         <div className="h-[65px] w-[65px] mr-3">
                             <img
                                 className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"

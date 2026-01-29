@@ -513,7 +513,7 @@ const AppListingPage: React.FC = () => {
 
                         <div className="relative max-w-4xl mx-auto px-4 pt-12 pb-8">
                             {/* App Header */}
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 safe-area-top-margin">
                                 <div className="w-28 h-28 rounded-[28px] overflow-hidden bg-white shadow-xl flex-shrink-0 border border-grayscale-100">
                                     <img
                                         src={listing.icon_url}
