@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore } from '@nanostores/react';
 
 import { ProfilePicture } from 'learn-card-base';
+import MessageWithArtifact from './MessageWithArtifact';
 import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
 import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/MarkdownRenderer';
@@ -22,10 +23,17 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
 
         const mode = chatBotStore.useTracked.mode();
 
-        const assistantBubbleStyles = 'bg-grayscale-100 mr-auto !max-w-full px-4';
+        let assistantBubbleStyles = 'bg-grayscale-100 mr-auto !max-w-full px-4';
         const userBubbleStyles = 'bg-cyan-50 px-4';
 
-        if (message.content === '') return null;
+        if (message.content === '' && !message?.artifact) return null;
+
+        let text = <MarkdownRenderer>{message.content}</MarkdownRenderer>;
+
+        if (message.artifact) {
+            assistantBubbleStyles = 'bg-indigo-50 mr-auto !max-w-full px-4';
+            text = <MessageWithArtifact message={message} />;
+        }
 
         return (
             <div className="w-full flex items-center justify-end">
@@ -43,7 +51,7 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
                         message.role === 'assistant' ? assistantBubbleStyles : userBubbleStyles
                     } rounded-3xl mb-4 text-grayscale-900 flex-shrink min-w-0 prose prose-h1:mb-2 prose-p:mt-0 prose-li:my-0 prose-li:leading-6 prose-pre:bg-transparent prose-pre:p-0 prose-code:shadow prose-code:rounded prose-code:py-2!`}
                 >
-                    <MarkdownRenderer>{message.content}</MarkdownRenderer>
+                    {text}
                 </div>
                 {message.role !== 'assistant' && !$isTyping && (
                     <div className="ml-2 self-stretch flex items-end pb-5">

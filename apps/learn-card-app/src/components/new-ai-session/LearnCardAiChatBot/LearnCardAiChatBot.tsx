@@ -379,11 +379,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                         className="w-full"
                                     >
                                         <MessageWithQuestions message={msg} />
-                                        {index < messagesToShow.length - 1 &&
+                                        {/* {index < messagesToShow.length - 1 &&
                                             msg.role === 'assistant' &&
                                             messagesToShow[index + 1].role === 'assistant' && (
-                                                <hr className="border-black w-full my-4" />
-                                            )}
+                                                <hr className="border-grayscale-100 w-full my-4" />
+                                            )} */}
 
                                         {typing && index === messagesToShow.length - 1 && (
                                             <div className="py-4 px-2 rounded-lg mb-4 flex items-center gap-2">
