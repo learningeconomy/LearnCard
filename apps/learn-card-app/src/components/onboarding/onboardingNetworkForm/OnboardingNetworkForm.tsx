@@ -115,15 +115,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             return newErrors;
         });
         updateFormData({ dob: date });
-        if (date) {
-            const age = calculateAge(date);
-            if (isNaN(age) || age < 13) {
-                setErrors(prev => ({
-                    ...prev,
-                    dob: ['You must be at least 13 years old'],
-                }));
-            }
-        }
+
     };
     const handleCountrySelect = (selectedCountry: string) => {
         updateFormData({ country: selectedCountry });
@@ -536,7 +528,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             // Show modal if under 13 before running Zod, to ensure UX triggers
             const age = dob ? calculateAge(dob) : Number.NaN;
             if (!Number.isNaN(age) && age < 13) {
-                setErrors(prev => ({ ...prev, dob: [' You must be at least 13 years old.'] }));
                 presentUnderageModal();
                 return;
             }
@@ -605,7 +596,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         } else {
             const age = dob ? calculateAge(dob) : Number.NaN;
             if (!Number.isNaN(age) && age < 13) {
-                setErrors(prev => ({ ...prev, dob: [' You must be at least 13 years old.'] }));
                 presentUnderageModal();
                 return;
             }

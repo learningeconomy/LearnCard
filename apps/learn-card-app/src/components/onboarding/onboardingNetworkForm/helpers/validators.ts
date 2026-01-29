@@ -11,8 +11,8 @@ export const StateValidator = z.object({
     dob: z
         .string()
         .nonempty(' Date of birth is required.')
-        .refine(dob => !Number.isNaN(calculateAge(dob)) && calculateAge(dob) >= 13, {
-            message: ' You must be at least 13 years old.',
+        .refine(dob => !Number.isNaN(calculateAge(dob)), {
+            message: ' Invalid date of birth.',
         }),
     country: z.string().nonempty(' Country is required.'),
 });
