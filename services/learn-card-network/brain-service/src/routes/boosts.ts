@@ -1606,6 +1606,10 @@ export const boostsRouter = t.router({
             } = input;
 
             const decodedUri = decodeURIComponent(uri);
+            console.log('[BrainService] getPaginatedBoostRecipientsWithChildren called');
+            console.log('[BrainService] URI:', decodedUri);
+            console.log('[BrainService] boostQuery:', JSON.stringify(boostQuery, null, 2));
+
             const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });

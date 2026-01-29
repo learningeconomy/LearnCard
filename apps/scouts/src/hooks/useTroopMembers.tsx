@@ -52,7 +52,7 @@ export const useTroopMembers = (credential: VC, tab?: MemberTabsEnum, boostUri?:
     const { data: scoutRecipients } = useGetBoostRecipients(scoutBoostUri, !skipMembers);
     const { data: leaderRecipients } = useGetBoostRecipients(troopBoostUri, !skipMembers);
     const { data: currentBoostRecipients } = useGetBoostRecipients(uri, !skipMembers);
-
+console.log('///current BoostRecipeients', currentBoostRecipients)
     const getBoostPermissionsAsync = async (profileId: string) => {
         const wallet = await initWallet();
         return wallet.invoke.getBoostPermissions(uri, profileId);

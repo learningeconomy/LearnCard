@@ -337,6 +337,7 @@ export const getBoostRecipients = async (
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
+
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
@@ -350,6 +351,14 @@ export const getBoostRecipients = async (
             .limit(limit)
             .run()
     );
+
+    console.log('[AccessLayer] getBoostRecipients results for boostId:', boost.id);
+    console.log('[AccessLayer] Result count:', results.length);
+    results.forEach(r => {
+        if (r.received?.status === 'revoked') {
+             console.log('[AccessLayer] FOUND REVOKED in getBoostRecipients!', r.recipient?.profileId);
+        }
+    });
 
     const resultsWithIds = results.map(({ sender, sent, received, credential }) => ({
         sent: sent.date,
@@ -413,9 +422,6 @@ export const getBoostRecipientsSkipLimit = async (
                 { identifier: 'recipient', model: Profile },
             ],
         })
-        // Filter out revoked credentials
-        .where('received IS NULL OR received.status IS NULL OR received.status <> "revoked"');
-
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
@@ -430,7 +436,9 @@ export const getBoostRecipientsSkipLimit = async (
             .run()
     );
 
-    const resultsWithIds = results.map(({ sender, sent, received, credential }) => ({
+    const filteredResults = results.filter(r => r.received?.status !== 'revoked');
+
+    const resultsWithIds = filteredResults.map(({ sender, sent, received, credential }) => ({
         to: sent.to,
         from: sender.profileId,
         received: received?.date,
@@ -1344,6 +1352,9 @@ export const getBoostRecipientsWithChildren = async (
         domain: string;
     }
 ): Promise<Array<Omit<BoostRecipientInfo, 'uri'> & { boostUris: string[] }>> => {
+    console.log('[AccessLayer] getBoostRecipientsWithChildren called');
+    console.log('[AccessLayer] boostQuery:', JSON.stringify(boostQuery, null, 2));
+    
     // Convert queries for Neo4j compatibility
     const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
     const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
