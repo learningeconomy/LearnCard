@@ -5,6 +5,15 @@ export type StructuredResponse = {
     questions: string[];
 };
 
+export type InsightArtifact = {
+    id: string;
+    title: string;
+    summary: string;
+    category: string;
+    question: string;
+    claimed: boolean;
+};
+
 export type ChatMessage = {
     role: Role;
     content: string | null;
@@ -17,6 +26,7 @@ export type ChatMessage = {
             arguments: string;
         };
     }[];
+    artifact?: InsightArtifact;
 };
 
 export type Thread = {

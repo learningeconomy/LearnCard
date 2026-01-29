@@ -492,6 +492,25 @@ export function connectWebSocket() {
                 isLoading.set(false);
                 isTyping.set(true);
             }
+
+            if (data.event === 'artifact_suggestion') {
+                console.log('artifact_suggestion', data.artifact);
+
+                const existing = messages
+                    .get()
+                    .some(m => m.role === 'assistant' && m.artifact?.title === data.artifact.title);
+
+                if (existing) return;
+
+                messages.set([
+                    ...messages.get(),
+                    {
+                        role: 'assistant',
+                        content: null,
+                        artifact: { ...data.artifact, claimed: false },
+                    },
+                ]);
+            }
         } catch (error) {
             console.error('WebSocket message error:', error);
         }
