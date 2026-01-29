@@ -68,11 +68,10 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
 
         setLoading(true);
         try {
-            const connections = await wallet.invoke.getConnections();
-            setConnections(connections);
+            const paginated = await wallet.invoke.getPaginatedConnections({ limit: 100 });
+            setConnections(paginated?.records ?? []);
             setLoading(false);
         } catch (e) {
-            console.log('getConnections::error', e);
             setLoading(false);
         }
     };
@@ -132,7 +131,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                         placeholder="Search LearnCard Network..."
                                         value={search}
                                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base"
-                                        onIonInput={e => handleSearch(e?.detail?.value)}
+                                        onIonInput={e => handleSearch(e?.detail?.value ?? '')}
                                         debounce={500}
                                         type="text"
                                     />
@@ -157,11 +156,10 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                 )}
                 {!loading && connections.length > 0 && search?.length === 0 && (
                     <BoostAddressBookContactList
-                        state={state}
-                        setState={setState}
+                        state={state as unknown as BoostCMSState}
+                        setState={setState as unknown as React.Dispatch<React.SetStateAction<BoostCMSState>>}
                         contacts={connections}
                         mode={BoostAddressBookEditMode.edit}
-                        viewMode={BoostAddressBookViewMode.full}
                         _issueTo={_issueTo}
                         _setIssueTo={_setIssueTo}
                     />
@@ -197,11 +195,10 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                     searchResults?.length > 0 &&
                     !searchLoading && (
                         <BoostAddressBookContactList
-                            state={state}
-                            setState={setState}
+                            state={state as unknown as BoostCMSState}
+                            setState={setState as unknown as React.Dispatch<React.SetStateAction<BoostCMSState>>}
                             contacts={searchResults}
                             mode={BoostAddressBookEditMode.edit}
-                            viewMode={BoostAddressBookViewMode.full}
                             _issueTo={_issueTo}
                             _setIssueTo={_setIssueTo}
                         />

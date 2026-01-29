@@ -5,7 +5,10 @@ import NewAiSessionContainer from '../components/new-ai-session/NewAiSessionCont
 import { ModalTypes, useGetCredentialList, useModal } from 'learn-card-base';
 import { useConsentFlowByUri } from '../pages/consentFlow/useConsentFlow';
 
-import { aiPassportApps } from '../components/ai-passport-apps/aiPassport-apps.helpers';
+import {
+    aiPassportApps,
+    areAiPassportAppsAvailable,
+} from '../components/ai-passport-apps/aiPassport-apps.helpers';
 
 export const useAiSession = () => {
     const { newModal } = useModal();
@@ -30,10 +33,17 @@ export const useAiSession = () => {
 };
 
 export const useHasConsentedToAiApp = () => {
+    const aiAppsAvailable = areAiPassportAppsAvailable();
     const [chatGPTApp, claudeApp, geminiApp] = aiPassportApps;
-    const { hasConsented: chatGPTHasConsented } = useConsentFlowByUri(chatGPTApp.contractUri); // chatGPT
-    const { hasConsented: claudeHasConsented } = useConsentFlowByUri(claudeApp.contractUri); // claude
-    const { hasConsented: geminiHasConsented } = useConsentFlowByUri(geminiApp.contractUri); // gemini
+    const { hasConsented: chatGPTHasConsented } = useConsentFlowByUri(
+        aiAppsAvailable ? chatGPTApp.contractUri : undefined
+    ); // chatGPT
+    const { hasConsented: claudeHasConsented } = useConsentFlowByUri(
+        aiAppsAvailable ? claudeApp.contractUri : undefined
+    ); // claude
+    const { hasConsented: geminiHasConsented } = useConsentFlowByUri(
+        aiAppsAvailable ? geminiApp.contractUri : undefined
+    ); // gemini
 
     const hasConsentedToAiApps = chatGPTHasConsented || claudeHasConsented || geminiHasConsented;
 

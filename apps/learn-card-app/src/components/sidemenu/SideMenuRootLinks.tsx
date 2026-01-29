@@ -90,7 +90,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     let rootLinks: any = null;
 
     rootLinks = walletLink?.map(link => {
-        if (link.label === 'Admin Tools' && !hasAdminAccess) return <></>;
+        if (link.label === 'Admin Tools' && !hasAdminAccess) return null;
 
         const IconComponent = iconSet[link.id as keyof typeof iconSet];
         const linkPath = link.path;
@@ -111,13 +111,14 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
         if (link.label === 'Personalize') {
             linkEl = (
-                <li
+                <button
+                    type="button"
                     onClick={() => handlePersonalizeMyAi()}
                     className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
                     {link.label}
-                </li>
+                </button>
             );
         }
 
@@ -148,12 +149,12 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
         return (
             <IonMenuToggle key={link.id} autoHide={false} className="w-full">
-                <li
+                <div
                     onClick={() => setActiveTab(linkPath)}
                     className="flex items-center justify-center px-2 py-0"
                 >
                     {linkEl}
-                </li>
+                </div>
             </IonMenuToggle>
         );
     });
