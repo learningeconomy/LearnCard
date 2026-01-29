@@ -200,7 +200,7 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
 
         if (featureType === 'peer-badges') {
             return `// Issue "${template.name}" peer badge
-const result = await learnCard.initiateTemplateIssuance('${template.boostUri}');`;
+const result = await learnCard.initiateTemplateIssue('${template.boostUri}');`;
         }
 
         if (hasVariables) {

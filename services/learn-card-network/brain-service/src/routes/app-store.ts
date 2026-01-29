@@ -1451,11 +1451,13 @@ export const appStoreRouter = t.router({
             const limit = input?.limit ?? 25;
 
             // Get listings with optional status filter, or all statuses if not specified
+            // Admin can see all listings including demoted ones
             const results = await getListedApps({
                 limit: limit + 1,
                 cursor: input?.cursor,
                 status: input?.status,
                 includeAllStatuses: !input?.status, // Include all if no specific status filter
+                excludeDemoted: false, // Admin can see demoted listings
             });
 
             const hasMore = results.length > limit;

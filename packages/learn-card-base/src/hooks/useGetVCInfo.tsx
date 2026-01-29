@@ -89,7 +89,7 @@ export const useGetVCInfo = (
         Boolean(issuerAppSlug)
     );
 
-    const issueeProfileId = getProfileIdFromLCNDidWeb(issueeName);
+    const issueeProfileId = getProfileIdFromLCNDidWeb(issueeDid);
     const { data: issueeProfile, isLoading: issueeProfileLoading } = useGetProfile(
         issueeProfileId!,
         Boolean(issueeProfileId)
@@ -102,8 +102,7 @@ export const useGetVCInfo = (
         issuerDid === currentUserDidKey || issuerDid === currentLCNUser?.did;
     if (issuerAppSlug) {
         issuerName =
-            issuerAppListing?.display_name ||
-            (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
+            issuerAppListing?.display_name || (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
         issuerLink = issuerAppListing?.listing_id
             ? `/app/${issuerAppListing.listing_id}`
             : undefined;
@@ -201,8 +200,13 @@ export const useGetVCInfo = (
         }
     }
 
-    // If subject is not current user, fallback again for image
-    if (currentUser && issueeDid !== currentUserDidKey && issueeDid !== currentLCNUser?.did) {
+    // If subject is not current user, fallback again for image if not already resolved
+    if (
+        currentUser &&
+        issueeDid !== currentUserDidKey &&
+        issueeDid !== currentLCNUser?.did &&
+        !issueeProfile
+    ) {
         issueeName = getCredentialSubjectName(vc)!;
         const subjectImage = getSubjectImage(vc);
 

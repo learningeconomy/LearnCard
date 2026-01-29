@@ -27,6 +27,14 @@
                 "script": "build:docker"
             }
         },
+        "start:docker": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "start:docker"
+            }
+        },
         "serverless-deploy": {
             "executor": "nx:run-script",
             "inputs": ["source"],

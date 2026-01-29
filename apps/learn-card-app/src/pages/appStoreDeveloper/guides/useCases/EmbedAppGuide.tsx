@@ -5254,7 +5254,7 @@ await learnCard.launchFeature('${path}');`;
     );
 };
 
-// Peer-to-Peer Badges Setup (for initiateTemplateIssuance)
+// Peer-to-Peer Badges Setup (for initiateTemplateIssue)
 const PeerBadgesSetup: React.FC<{
     onComplete: () => void;
     onBack: () => void;
@@ -5271,7 +5271,7 @@ const PeerBadgesSetup: React.FC<{
 
                 <p className="text-gray-600">
                     Create badge templates that users can send to each other using{' '}
-                    <code className="bg-gray-100 px-1 rounded">initiateTemplateIssuance</code>.
+                    <code className="bg-gray-100 px-1 rounded">initiateTemplateIssue</code>.
                 </p>
             </div>
 
@@ -5309,7 +5309,7 @@ const PeerBadgesSetup: React.FC<{
                         <span>
                             In your app, call{' '}
                             <code className="bg-gray-100 px-1 rounded">
-                                initiateTemplateIssuance
+                                initiateTemplateIssue
                             </code>{' '}
                             with a template URI
                         </span>
@@ -6099,7 +6099,7 @@ async function issueCredentialByAlias(templateAlias: string, templateData?: Reco
 // PEER-TO-PEER BADGES - Template Configuration
 // ============================================================
 // Your available badge templates that users can send to each other.
-// Each template has a unique URI that you pass to initiateTemplateIssuance.
+// Each template has a unique URI that you pass to initiateTemplateIssue.
 //
 // LLM INTEGRATION NOTE: Use these template URIs when calling sendPeerBadge().
 // Match the badge type to the user's intent (e.g., "thank you" -> gratitude badge).
@@ -6122,7 +6122,7 @@ function findPeerBadgeTemplate(query: string) {
 // Let users send badges to each other within your app
 // 
 // How it works:
-//   1. Your app calls initiateTemplateIssuance with a template URI
+//   1. Your app calls initiateTemplateIssue with a template URI
 //   2. User selects a recipient from their contacts
 //   3. Badge is sent from your app on behalf of the user
 
@@ -6132,7 +6132,7 @@ function findPeerBadgeTemplate(query: string) {
  */
 async function sendPeerBadge(templateUri: string) {
     try {
-        await learnCard.initiateTemplateIssuance(templateUri);
+        await learnCard.initiateTemplateIssue(templateUri);
         
         console.log('Peer badge flow initiated with template:', templateUri);
     } catch (error) {

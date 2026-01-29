@@ -154,6 +154,17 @@ export interface CredentialSpecificResponse {
 }
 
 /**
+ * Options for REQUEST_CONSENT action
+ */
+export interface RequestConsentOptions {
+    /**
+     * If true, redirect to contract's redirectUrl with VP after consent.
+     * Default: false
+     */
+    redirect?: boolean;
+}
+
+/**
  * Response from REQUEST_CONSENT action
  */
 export interface ConsentResponse {

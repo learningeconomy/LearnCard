@@ -47,22 +47,17 @@ export async function issueCredentialWithSigningAuthority(
 
         if (!IS_TEST_ENVIRONMENT) console.log('Issuer Endpoint: ', issuerEndpoint);
 
+        const subjectId = Array.isArray(credential?.credentialSubject)
+            ? credential?.credentialSubject[0]?.id
+            : credential?.credentialSubject?.id;
+
         const ownerDid =
             ownerDidOverride ?? getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
 
         const encryption = encrypt
             ? {
-                recipients: [
-                    learnCard.id.did(),
-                    ...(ownerDidOverride
-                        ? [
-                            Array.isArray(credential.credentialSubject)
-                                ? credential.credentialSubject[0]?.id
-                                : credential.credentialSubject.id,
-                        ]
-                        : []),
-                ],
-            }
+                  recipients: [learnCard.id.did(), ...(subjectId ? [subjectId] : [])],
+              }
             : undefined;
 
         // Create an AbortController instance and get the signal

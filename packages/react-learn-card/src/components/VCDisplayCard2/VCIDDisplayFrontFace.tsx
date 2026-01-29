@@ -26,6 +26,7 @@ type VCIDDisplayFrontFaceProps = {
     hideQRCode?: boolean;
     qrCodeOnClick?: () => void;
     customIDDescription?: React.ReactNode;
+    unknownVerifierTitle?: string;
 };
 
 const VERIFIER_STATES = {
@@ -47,6 +48,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
     hideQRCode = false,
     qrCodeOnClick,
     customIDDescription,
+    unknownVerifierTitle,
 }) => {
     const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
@@ -61,6 +63,8 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
+    } else if (unknownVerifierTitle) {
+        verifierState = VERIFIER_STATES.trustedVerifier;
     } else {
         if (knownDIDRegistry?.source === 'trusted') {
             verifierState = VERIFIER_STATES.trustedVerifier;
@@ -155,9 +159,9 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.trustedVerifier && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-blue-light flex gap-[3px] items-center">
+                                    <span className="uppercase font-poppins text-base font-[500] text-blue-light flex gap-[3px] items-center text-center">
                                         <VerifiedBadge className="w-[20px] h-[20px]" />
-                                        Trusted Issuer
+                                        {unknownVerifierTitle ?? 'Trusted Issuer'}
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.unknownVerifier && (
