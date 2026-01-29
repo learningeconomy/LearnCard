@@ -311,3 +311,4 @@ export * from './Tag';
 export * from './Integration';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
+export * from './EdlinkConnection';

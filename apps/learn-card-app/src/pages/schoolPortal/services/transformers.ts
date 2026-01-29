@@ -82,6 +82,7 @@ export const transformOnboardingData = (data: EdlinkIntegrationData): LMSConnect
 
     return {
         id: integration.id,
+        integrationId: integration.id,
         sourceId: integration.source.id,
         provider: 'other', // Would need separate API call to get provider details
         providerName: 'LMS',
@@ -100,6 +101,7 @@ export const transformIntegration = (integration: EdlinkIntegration): LMSConnect
 
     return {
         id: integration.id,
+        integrationId: integration.id,
         sourceId: integration.source.id,
         provider,
         providerName: integration.provider.name || formatProviderName(provider),

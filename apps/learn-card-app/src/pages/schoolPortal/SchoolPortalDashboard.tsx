@@ -1,37 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { IonPage, IonContent } from '@ionic/react';
-import { Link2 } from 'lucide-react';
+import { Link2, Loader2 } from 'lucide-react';
 
 import { ConnectionsSidebar, ConnectionDetail, ConnectExistingModal } from './components';
 import { useEdlinkOnboarding } from './hooks';
-import type { LMSConnection } from './types';
-
-// LocalStorage key for persisting connections
-const CONNECTIONS_STORAGE_KEY = 'schoolPortal_connections';
+import { edlinkApi } from './api/client';
+import type { LMSConnection, LMSProvider, ConnectionStatus } from './types';
 
 const SchoolPortalDashboard: React.FC = () => {
-    const [connections, setConnections] = useState<LMSConnection[]>(() => {
-        // Load from localStorage on mount
-        const stored = localStorage.getItem(CONNECTIONS_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
-    });
+    const [connections, setConnections] = useState<LMSConnection[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedConnection, setSelectedConnection] = useState<LMSConnection | null>(null);
     const [isExistingModalOpen, setIsExistingModalOpen] = useState(false);
 
-    // Persist connections to localStorage
-    useEffect(() => {
-        localStorage.setItem(CONNECTIONS_STORAGE_KEY, JSON.stringify(connections));
-    }, [connections]);
+    // Fetch connections from backend on mount
+    const fetchConnections = useCallback(async () => {
+        try {
+            const data = await edlinkApi.edlink.getConnections.query();
+            // Map backend type to frontend type
+            const mapped: LMSConnection[] = data.map(c => ({
+                ...c,
+                provider: c.provider as LMSProvider,
+                status: c.status as ConnectionStatus,
+            }));
+            setConnections(mapped);
+        } catch (error) {
+            console.error('Failed to fetch connections:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
-    const handleConnectionSuccess = (connection: LMSConnection) => {
-        setConnections(prev => {
-            // Avoid duplicates
-            if (prev.some(c => c.id === connection.id)) {
-                return prev;
-            }
-            return [...prev, connection];
-        });
-        setSelectedConnection(connection);
+    useEffect(() => {
+        fetchConnections();
+    }, [fetchConnections]);
+
+    const handleConnectionSuccess = async (connection: LMSConnection) => {
+        try {
+            // Save to backend
+            await edlinkApi.edlink.createConnection.mutate({
+                id: connection.id,
+                integrationId: connection.integrationId,
+                sourceId: connection.sourceId,
+                accessToken: connection.accessToken || '',
+                provider: connection.provider,
+                providerName: connection.providerName,
+                institutionName: connection.institutionName,
+                status: connection.status,
+                connectedAt: connection.connectedAt,
+            });
+            // Refetch to get updated list
+            await fetchConnections();
+            setSelectedConnection(connection);
+        } catch (error) {
+            console.error('Failed to save connection:', error);
+            // Still update local state for UX
+            setConnections(prev => {
+                if (prev.some(c => c.id === connection.id)) return prev;
+                return [...prev, connection];
+            });
+            setSelectedConnection(connection);
+        }
     };
 
     const { startOnboarding } = useEdlinkOnboarding({
@@ -77,16 +106,24 @@ const SchoolPortalDashboard: React.FC = () => {
                         ) : (
                             <div className="h-full flex items-center justify-center">
                                 <div className="text-center">
-                                    <Link2 className="w-14 h-14 text-gray-300 mx-auto mb-3" />
+                                    {isLoading ? (
+                                        <Loader2 className="w-14 h-14 text-gray-300 mx-auto mb-3 animate-spin" />
+                                    ) : (
+                                        <Link2 className="w-14 h-14 text-gray-300 mx-auto mb-3" />
+                                    )}
                                     <h3 className="text-base font-medium text-gray-500 mb-1">
-                                        {connections.length === 0
-                                            ? 'Connect your first LMS'
-                                            : 'Select a connection'}
+                                        {isLoading
+                                            ? 'Loading connections...'
+                                            : connections.length === 0
+                                              ? 'Connect your first LMS'
+                                              : 'Select a connection'}
                                     </h3>
                                     <p className="text-sm text-gray-400">
-                                        {connections.length === 0
-                                            ? 'Click "Connect LMS" to get started with Ed.link'
-                                            : 'Choose an LMS connection from the sidebar'}
+                                        {isLoading
+                                            ? ''
+                                            : connections.length === 0
+                                              ? 'Click "Connect LMS" to get started with Ed.link'
+                                              : 'Choose an LMS connection from the sidebar'}
                                     </p>
                                 </div>
                             </div>

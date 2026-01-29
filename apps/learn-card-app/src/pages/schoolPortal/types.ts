@@ -8,6 +8,7 @@ export type ConnectionStatus = 'CONNECTED' | 'SYNCING' | 'ERROR' | 'PENDING_APPR
 
 export interface LMSConnection {
     id: string;
+    integrationId: string;
     sourceId: string;
     provider: LMSProvider;
     providerName: string;

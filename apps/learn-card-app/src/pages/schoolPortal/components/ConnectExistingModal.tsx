@@ -37,6 +37,7 @@ export const ConnectExistingModal: React.FC<ConnectExistingModalProps> = ({
 
         const connection: LMSConnection = {
             id: formData.integrationId,
+            integrationId: formData.integrationId,
             sourceId: formData.sourceId,
             provider: formData.provider,
             providerName: PROVIDER_OPTIONS.find(p => p.value === formData.provider)?.label || 'LMS',
