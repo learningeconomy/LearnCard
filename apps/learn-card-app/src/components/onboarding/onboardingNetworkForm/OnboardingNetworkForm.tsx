@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import moment from 'moment';
 import DatePickerInput from '../../date-picker/DatePickerInput';
 
@@ -98,6 +99,10 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
     const { isDesktop, isMobile } = useDeviceTypeByWidth();
+    const flags = useFlags();
+    const schoolCodes = (flags?.underageSchoolCodes as string[]) || [];
+
+    console.log('//schoolCodes', schoolCodes, flags)
 
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
@@ -383,6 +388,10 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     };
 
     const presentUnderageModal = () => {
+        const onBypass = (_code: string) => {
+            closeModal();
+            handleUpdateUser({ bypassAgeCheck: true });
+        };
         const onAdult = () => {
             // Present intermediate confirmation modal before logging out
             newModal(
@@ -472,6 +481,8 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
                 onBack={closeModal}
                 onAdult={onAdult}
                 isLoggingOut={isLoggingOut}
+                schoolCodes={schoolCodes}
+                onBypass={onBypass}
             />,
             {
                 sectionClassName:
@@ -519,7 +530,10 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         );
     };
 
-    const handleUpdateUser = async (options?: { skipUsConsentCheck?: boolean }) => {
+    const handleUpdateUser = async (options?: {
+        skipUsConsentCheck?: boolean;
+        bypassAgeCheck?: boolean;
+    }) => {
         const typeOfLogin = authStore.get.typeOfLogin();
         console.log('//handleUpdateUser');
 
@@ -527,7 +541,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
         if (typeOfLogin === SocialLoginTypes.apple) {
             // Show modal if under 13 before running Zod, to ensure UX triggers
             const age = dob ? calculateAge(dob) : Number.NaN;
-            if (!Number.isNaN(age) && age < 13) {
+            if (!Number.isNaN(age) && age < 13 && !options?.bypassAgeCheck) {
                 presentUnderageModal();
                 return;
             }
@@ -595,7 +609,7 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
             // ! APPLE HOT FIX
         } else {
             const age = dob ? calculateAge(dob) : Number.NaN;
-            if (!Number.isNaN(age) && age < 13) {
+            if (!Number.isNaN(age) && age < 13 && !options?.bypassAgeCheck) {
                 presentUnderageModal();
                 return;
             }
