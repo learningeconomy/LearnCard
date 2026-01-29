@@ -5,8 +5,7 @@ import { useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
 
-import SendIcon from 'learn-card-base/svgs/SendIcon';
-import TickSquareIcon from 'learn-card-base/svgs/TickSquareIcon';
+import { ArrowUp } from 'lucide-react';
 
 import {
     currentThreadId,
@@ -253,9 +252,9 @@ const ChatInput: React.FC = () => {
         <>
             {showFinishButton && <FinishSessionButton />}
             <div className="flex flex-col gap-[10px] p-[15px] sm:p-0">
-                <div className="flex rounded-[15px] overflow-hidden w-full sm:shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)] items-center">
+                <div className="flex rounded-[15px] overflow-hidden w-full items-center border-[1px] border-grayscale-200 border-solid">
                     <form
-                        className="flex-1 flex items-center bg-white sm:py-[15px] sm:px-[20px] sm:gap-[15px] sm:border-r border-grayscale-200"
+                        className="flex-1 flex items-center bg-white sm:py-[15px] sm:px-[20px] sm:gap-[15px]"
                         // className="flex items-end gap-3 w-full p-5 bg-white rounded-2xl shadow-[0px_4px_10px_0px_rgba(0,0,0,0.2)]"
                         onSubmit={e => {
                             e.preventDefault();
@@ -265,7 +264,7 @@ const ChatInput: React.FC = () => {
                     >
                         <textarea
                             rows={1}
-                            className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto"
+                            className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto "
                             value={input}
                             onChange={e => {
                                 setInput(e.target.value);
@@ -277,7 +276,7 @@ const ChatInput: React.FC = () => {
                             }}
                             onKeyDown={handleKeyPress}
                             // disabled={$isTyping}
-                            placeholder={'Type a message...'}
+                            placeholder={'Ask anything...'}
                             style={{ resize: 'none' }}
                             ref={el => {
                                 if (el) {
@@ -288,15 +287,13 @@ const ChatInput: React.FC = () => {
                         ></textarea>
                         <button
                             type="submit"
-                            className={`bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-white p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-[15px]`}
+                            className={`bg-${primaryColor} hover:bg-${primaryColor} disabled:bg-grayscale-400 p-[7px] sm:p-[10px] disabled:opacity-50 hover:cursor-pointer disabled:hover:cursor-not-allowed rounded-full phone:!mr-[8px]`}
                             disabled={disableSend}
                         >
                             {$isTyping ? (
                                 <CustomSpinner className="text-gray-700 h-[30px] w-[30px]" />
                             ) : (
-                                <SendIcon
-                                    className={disableSend ? 'text-grayscale-400' : 'text-white'}
-                                />
+                                <ArrowUp className={disableSend ? 'text-white' : 'text-white'} />
                             )}
                         </button>
                     </form>
