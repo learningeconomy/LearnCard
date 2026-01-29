@@ -196,3 +196,38 @@ export const getIncomingCredentialsForProfile = async (
         };
     });
 };
+
+/**
+ * Get a credential instance for a specific boost and profile.
+ * This is used to find the credential that was issued when a profile claimed a boost.
+ */
+export const getCredentialInstanceForBoostAndProfile = async (
+    boostId: string,
+    profileId: string
+): Promise<CredentialInstance | null> => {
+    const { Boost } = await import('@models');
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        credential: CredentialType;
+    }>(
+        await new QueryBuilder()
+            .match({
+                related: [
+                    { identifier: 'boost', model: Boost, where: { id: boostId } },
+                    { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                    { identifier: 'credential', model: Credential },
+                    Credential.getRelationshipByAlias('credentialReceived'),
+                    { identifier: 'profile', model: Profile, where: { profileId } },
+                ],
+            })
+            .return('credential')
+            .limit(1)
+            .run()
+    );
+
+    if (results.length === 0) {
+        return null;
+    }
+
+    return Credential.findOne({ where: { id: results[0]!.credential.id } });
+};

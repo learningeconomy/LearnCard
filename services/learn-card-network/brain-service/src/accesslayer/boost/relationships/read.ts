@@ -332,7 +332,8 @@ export const getBoostRecipients = async (
             ],
         })
         .with('sender, sent, received, recipient, credential')
-        .where(whereClause);
+        // Filter out revoked credentials
+        .where(`${whereClause}${whereClause ? ' AND ' : ''}(received IS NULL OR received.status IS NULL OR received.status <> "revoked")`);
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
@@ -411,7 +412,9 @@ export const getBoostRecipientsSkipLimit = async (
                 },
                 { identifier: 'recipient', model: Profile },
             ],
-        });
+        })
+        // Filter out revoked credentials
+        .where('received IS NULL OR received.status IS NULL OR received.status <> "revoked"');
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -476,7 +479,9 @@ export const countBoostRecipients = async (
                 },
                 { identifier: 'recipient', model: Profile },
             ],
-        });
+        })
+        // Filter out revoked credentials
+        .where('received IS NULL OR received.status IS NULL OR received.status <> "revoked"');
 
     const result = await query.return('COUNT(DISTINCT sent.to) AS count').run();
 
