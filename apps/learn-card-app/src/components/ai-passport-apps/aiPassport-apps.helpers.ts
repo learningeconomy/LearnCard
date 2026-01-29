@@ -1,6 +1,6 @@
 import ChatGPTAppBG from '../../assets/images/chatGpt-app-bg.png';
 
-import { LaunchPadAppListItem } from 'learn-card-base';
+import { LaunchPadAppListItem, LEARNCARD_AI_URL } from 'learn-card-base';
 
 // this is an internal app ranking
 // ex:
@@ -48,7 +48,7 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
         appStoreID: AiPassportAppStoreIDs.learncardapp,
         contractUri: AiPassportAppContractUri.learncardapp,
         privacyPolicyUrl: 'https://openai.com/policies/row-privacy-policy/',
-        url: 'https://api.learncloud.ai',
+        url: LEARNCARD_AI_URL,
     },
     {
         id: 2,

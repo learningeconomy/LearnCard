@@ -3,6 +3,7 @@ import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 import { auth } from './authStore';
 import { showErrorModal } from './ErrorModalStore';
 import { showToast } from './toastStore';
+import { LEARNCARD_AI_URL } from '../../constants/Networks';
 
 export const messages = atom<ChatMessage[]>([]);
 export const threads = atom<Thread[]>([]);
@@ -33,8 +34,7 @@ export function resetChatStores() {
     planReadyThread.set(null);
 }
 
-export const BACKEND_URL = 'https://api.learncloud.ai';
-// export const BACKEND_URL = 'http://localhost:3001';
+export const BACKEND_URL = LEARNCARD_AI_URL;
 
 interface TopicCredential {
     uri: string;

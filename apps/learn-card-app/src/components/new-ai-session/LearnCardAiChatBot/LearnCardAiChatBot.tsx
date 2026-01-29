@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import { useDeviceTypeByWidth, LEARNCARD_AI_URL } from 'learn-card-base';
 
 import ChatInput from './ChatInput';
 import CaretDown from '../../svgs/CaretDown';
@@ -28,8 +28,7 @@ import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
-export const BACKEND_URL = 'https://api.learncloud.ai';
-// export const BACKEND_URL = 'http://localhost:3001';
+export const BACKEND_URL = LEARNCARD_AI_URL;
 
 type LearnCardAiChatBotProps = {
     initialMessages: ChatMessage[];
