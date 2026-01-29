@@ -98,6 +98,11 @@ const DeveloperPortalRoutes = lazyWithRetry(
 const AppStoreAdminDashboard = lazyWithRetry(
     () => import('./pages/appStoreAdmin/AdminDashboard')
 );
+
+// School Portal (EdLink POC)
+const SchoolPortalDashboard = lazyWithRetry(
+    () => import('./pages/schoolPortal/SchoolPortalDashboard')
+);
 const DeveloperPortalProvider = lazyWithRetry(
     () => import('./pages/appStoreDeveloper/DeveloperPortalContext').then(m => ({ default: m.DeveloperPortalProvider }))
 );
@@ -168,6 +173,7 @@ export const Routes: React.FC = () => {
                         />
                         <SentryRoute exact path="/auth/handoff" component={AuthHandoff} />
                         <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
+                        <SentryRoute exact path="/school-portal" component={SchoolPortalDashboard} />
                         <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />
                         <PrivateRoute
                             exact
