@@ -86,7 +86,9 @@ export const useUpdateNotification = () => {
                 const res = await wallet?.invoke?.updateNotificationMeta(notificationId, payload);
                 return res;
             } catch (error) {
-                return Promise.reject(new Error(error as string));
+                return Promise.reject(
+                    new Error(error instanceof Error ? error.message : String(error))
+                );
             }
         },
         onMutate: async (updatedNotification: UpdateNotificationVariables) => {
