@@ -102,7 +102,6 @@ const OnboardingNetworkForm: React.FC<OnboardingNetworkFormProps> = ({
     const flags = useFlags();
     const schoolCodes = (flags?.underageSchoolCodes as string[]) || [];
 
-    console.log('//schoolCodes', schoolCodes, flags)
 
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
