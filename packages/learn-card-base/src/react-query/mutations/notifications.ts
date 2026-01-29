@@ -95,8 +95,7 @@ export const useUpdateNotification = () => {
             const cacheDid = switchedDid ?? '';
 
             const isArchiving = updatedNotification?.payload?.archived;
-            console.log('update notification', updatedNotification);
-            console.log('isArchiving', isArchiving);
+
             // 1. Define both query keys
             const activeQueryKey = [
                 'useGetUserNotifications',
