@@ -1,4 +1,5 @@
 import { atom } from 'nanostores';
+import { v4 as uuid } from 'uuid';
 import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 import { auth } from './authStore';
 import { showErrorModal } from './ErrorModalStore';
@@ -507,7 +508,7 @@ export function connectWebSocket() {
                     {
                         role: 'assistant',
                         content: null,
-                        artifact: { ...data.artifact, claimed: false },
+                        artifact: { ...data.artifact, id: uuid(), claimed: false },
                     },
                 ]);
             }
@@ -545,6 +546,25 @@ export function connectWebSocket() {
     };
 
     return ws;
+}
+
+// Function to update artifact claimed status by artifact ID
+export function updateArtifactClaimedStatus(artifactId: string, claimed: boolean) {
+    const currentMessages = messages.get();
+    const updatedMessages = currentMessages.map(msg => {
+        if (msg.artifact && msg.artifact.id === artifactId) {
+            return {
+                ...msg,
+                artifact: {
+                    ...msg.artifact,
+                    claimed: claimed,
+                },
+            };
+        }
+        return msg;
+    });
+
+    messages.set(updatedMessages);
 }
 
 // Function to send message in response to a selected question

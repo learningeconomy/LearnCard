@@ -12,6 +12,7 @@ export type InsightArtifact = {
     category: string;
     question: string;
     claimed: boolean;
+    narrative: string;
 };
 
 export type ChatMessage = {
