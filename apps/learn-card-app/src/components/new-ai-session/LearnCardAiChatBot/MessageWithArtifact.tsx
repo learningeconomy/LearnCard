@@ -26,6 +26,8 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
     const narrative = artifact?.narrative as string;
     const achievementType = constructCustomBoostType(categoryType, title);
 
+    const [claimed, setClaimed] = useState<boolean>(artifact?.claimed ?? false);
+
     const [state, setState] = useState<BoostCMSState>({
         ...initialBoostCMSState,
         basicInfo: {
@@ -47,22 +49,26 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
 
         // Update the artifact claimed status to true
         if (artifact?.id) {
-            updateArtifactClaimedStatus(artifact.id, true);
+            setClaimed(true);
         }
     };
 
-    const claimed = artifact?.claimed;
     const statusText = claimed ? 'Claimed' : 'Yes';
 
     return (
         <>
             <MarkdownRenderer>{message?.artifact?.question}</MarkdownRenderer>
             <button
-                className="w-full bg-indigo-500 text-white px-4 py-2 font-semibold rounded-full"
+                className={`w-full gap-2 flex items-center justify-center px-4 py-2 font-semibold rounded-full ${
+                    claimed ? 'bg-grayscale-200 text-grayscale-500' : 'bg-indigo-500 text-white'
+                }`}
                 onClick={handleYes}
+                disabled={isPending || claimed}
             >
                 {isPending ? (
-                    <IonSpinner name="crescent" color="grayscale-100" className="w-24 h-24" />
+                    <>
+                        <IonSpinner name="crescent" /> Claiming...
+                    </>
                 ) : (
                     statusText
                 )}
