@@ -93,7 +93,8 @@ export const useUpdateNotification = () => {
             const cacheDid = switchedDid ?? '';
 
             const isArchiving = updatedNotification?.payload?.archived;
-
+            console.log('update notification', updatedNotification);
+            console.log('isArchiving', isArchiving);
             // 1. Define both query keys
             const activeQueryKey = [
                 'useGetUserNotifications',
@@ -116,10 +117,14 @@ export const useUpdateNotification = () => {
 
             // 3. Get the current data for the active tab
             const currentTabData = queryClient.getQueryData<InfiniteData<PageType>>(activeQueryKey);
+            const currentArchiveData =
+                queryClient.getQueryData<InfiniteData<PageType>>(archiveQueryKey);
             const notificationToArchive = currentTabData?.pages
                 ?.flatMap(page => page.notifications)
                 ?.find(notification => notification?._id === updatedNotification.notificationId);
-
+            const notificationToUnarchive = currentArchiveData?.pages
+                ?.flatMap(page => page.notifications)
+                ?.find(notification => notification?._id === updatedNotification.notificationId);
             if (isArchiving) {
                 // Remove from active
                 if (currentTabData?.pages?.[0]?.notifications) {
@@ -177,6 +182,49 @@ export const useUpdateNotification = () => {
                         pageParams: [undefined],
                     });
                 }
+            } else if (!isArchiving) {
+                // Remove from archive cache
+                const archiveData =
+                    queryClient.getQueryData<PaginatedNotificationsType>(archiveQueryKey);
+                if (currentArchiveData?.pages?.[0]?.notifications) {
+                    const updatedArchivePages = currentArchiveData.pages.map((page: PageType) => ({
+                        ...page,
+                        notifications: page.notifications.filter(
+                            (n: NotificationType) => n?._id !== updatedNotification.notificationId
+                        ),
+                    }));
+
+                    queryClient.setQueryData<PaginatedNotificationsType>(archiveQueryKey, {
+                        ...currentArchiveData,
+                        pages: updatedArchivePages,
+                    });
+                }
+
+                // Add back to active cache
+                const activeData =
+                    queryClient.getQueryData<PaginatedNotificationsType>(activeQueryKey);
+                if (activeData?.pages?.[0]?.notifications && notificationToUnarchive) {
+                    const updatedActivePages = activeData.pages.map((page: PageType, i: number) =>
+                        i === 0
+                            ? {
+                                  ...page,
+                                  notifications: [
+                                      {
+                                          ...notificationToUnarchive,
+                                          archived: false,
+                                          read: true,
+                                      },
+                                      ...page.notifications,
+                                  ],
+                              }
+                            : page
+                    );
+
+                    queryClient.setQueryData<PaginatedNotificationsType>(activeQueryKey, {
+                        ...activeData,
+                        pages: updatedActivePages,
+                    });
+                }
             } else if (updatedNotification?.payload?.read) {
                 // Handle marking as read
                 if (currentTabData?.pages?.[0]?.notifications) {
@@ -199,6 +247,7 @@ export const useUpdateNotification = () => {
             // 4. Return the previous data
             return { previousData: currentTabData };
         },
+
         onSuccess: async () => {
             const resolvedDid = switchedProfileStore.use.switchedDid() ?? '';
             queryClient.invalidateQueries({
