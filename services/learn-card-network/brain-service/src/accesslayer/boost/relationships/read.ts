@@ -1435,6 +1435,15 @@ export const getBoostRecipientsWithChildren = async (
     }>(await _query.run());
 
     // Process results and group by profile, filtering out revoked credentials
+    // Debug: log results with status info
+    console.log('[getBoostRecipientsWithChildren] Total results before filter:', results.length);
+    const revokedResults = results.filter(({ received }) => received?.status === 'revoked');
+    console.log('[getBoostRecipientsWithChildren] Revoked results:', revokedResults.map(r => ({ 
+        to: r.sent?.to, 
+        status: r.received?.status,
+        boostId: r.relevantBoost?.id 
+    })));
+    
     const resultsWithIds = results
         .filter(({ received }) => received?.status !== 'revoked')
         .map(({ relevantBoost, sender, sent, received, credential }) => {
