@@ -9,6 +9,8 @@ import {
     getIssuerDid,
     getIssuerName,
     getProfileIdFromLCNDidWeb,
+    getAppSlugFromDidWeb,
+    isAppDidWeb,
     getIssuerImage,
     getCredentialSubjectName,
     getSubjectImage,
@@ -24,7 +26,11 @@ import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 
 import useCurrentUser from './useGetCurrentUser';
 import useGetCurrentLCNUser from './useGetCurrentLCNUser';
-import { useGetDid, useGetProfile } from 'learn-card-base/react-query/queries/queries';
+import {
+    useGetDid,
+    useGetProfile,
+    useGetAppStoreListingBySlug,
+} from 'learn-card-base/react-query/queries/queries';
 
 import { UnsignedAchievementCredential, UnsignedVC, VC } from '@learncard/types';
 import {
@@ -60,6 +66,8 @@ export const useGetVCInfo = (
     // --- Basic VC fields ---
     const credentialSubject = getCredentialSubject(vc);
     const issuerDid = getIssuerDid(vc);
+    const issuerAppSlug = getAppSlugFromDidWeb(issuerDid);
+    const issuerIsApp = isAppDidWeb(issuerDid);
 
     // --- Initial values ---
     let issuerName = getIssuerName(vc);
@@ -67,12 +75,18 @@ export const useGetVCInfo = (
     let issueeDid = credentialSubject?.id ?? '';
     let issueeName = getCredentialSubjectName(vc);
     let subjectProfileImageElement: React.ReactNode;
+    let issuerLink: string | undefined;
 
     // --- Profile lookups ---
     const issuerProfileId = getProfileIdFromLCNDidWeb(issuerDid);
     const { data: issuerProfile, isLoading: issuerProfileLoading } = useGetProfile(
         issuerProfileId!,
         Boolean(issuerProfileId)
+    );
+
+    const { data: issuerAppListing, isLoading: issuerAppLoading } = useGetAppStoreListingBySlug(
+        issuerAppSlug,
+        Boolean(issuerAppSlug)
     );
 
     const issueeProfileId = getProfileIdFromLCNDidWeb(issueeName);
@@ -86,7 +100,26 @@ export const useGetVCInfo = (
     // ========================================================================
     const isCurrentUserIssuer =
         issuerDid === currentUserDidKey || issuerDid === currentLCNUser?.did;
-    if (issuerProfileId) {
+    if (issuerAppSlug) {
+        issuerName =
+            issuerAppListing?.display_name ||
+            (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
+        issuerLink = issuerAppListing?.listing_id
+            ? `/app/${issuerAppListing.listing_id}`
+            : undefined;
+
+        issuerProfileImageElement = issuerAppListing?.icon_url ? (
+            <UserProfilePicture
+                user={{ name: issuerName, image: issuerAppListing.icon_url }}
+                customImageClass="w-full h-full object-cover"
+                customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
+            />
+        ) : (
+            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
+                {getEmojiFromDidString(issuerDid!)}
+            </div>
+        );
+    } else if (issuerProfileId) {
         // Issuer has LCN profile
         issuerName =
             issuerProfile?.displayName || (issuerProfileLoading ? 'Loading...' : issuerDid);
@@ -314,6 +347,9 @@ export const useGetVCInfo = (
         issuerProfileImageElement,
         issuerProfile,
         issuerDid,
+        issuerLink,
+        issuerIsApp,
+        issuerAppListing,
         isCurrentUserIssuer,
 
         // subject

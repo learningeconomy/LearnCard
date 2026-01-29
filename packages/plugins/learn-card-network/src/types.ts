@@ -703,6 +703,7 @@ export type LearnCardNetworkPluginMethods = {
         promotionLevel?: PromotionLevel;
     }) => Promise<PaginatedAppStoreListings>;
     getPublicAppStoreListing: (listingId: string) => Promise<AppStoreListing | undefined>;
+    getPublicAppStoreListingBySlug: (slug: string) => Promise<AppStoreListing | undefined>;
     getAppStoreListingInstallCount: (listingId: string) => Promise<number>;
 
     installApp: (listingId: string) => Promise<boolean>;

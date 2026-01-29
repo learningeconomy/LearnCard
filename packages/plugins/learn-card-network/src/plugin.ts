@@ -1759,6 +1759,10 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.getPublicListing.query({ listingId });
             },
 
+            getPublicAppStoreListingBySlug: async (_learnCard, slug) => {
+                return client.appStore.getPublicListingBySlug.query({ slug });
+            },
+
             getAppStoreListingInstallCount: async (_learnCard, listingId) => {
                 return client.appStore.getListingInstallCount.query({ listingId });
             },

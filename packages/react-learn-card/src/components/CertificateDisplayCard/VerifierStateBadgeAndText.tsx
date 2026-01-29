@@ -8,6 +8,7 @@ export const VERIFIER_STATES = {
     selfVerified: 'Self Issued',
     trustedVerifier: 'Trusted Issuer',
     unknownVerifier: 'Unknown Issuer',
+    appIssuer: 'Trusted App',
     untrustedVerifier: 'Untrusted Issuer',
 } as const;
 export type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
@@ -39,6 +40,12 @@ export const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps>
                 <span className="uppercase font-poppins text-[12px] font-[500] text-orange-500 flex gap-[3px] items-center">
                     <UnknownVerifierBadge />
                     Unknown Issuer
+                </span>
+            )}
+            {verifierState === VERIFIER_STATES.appIssuer && (
+                <span className="uppercase font-poppins text-[12px] font-[500] text-cyan-501 flex gap-[3px] items-center">
+                    <VerifiedBadge />
+                    Trusted App
                 </span>
             )}
             {verifierState === VERIFIER_STATES.untrustedVerifier && (

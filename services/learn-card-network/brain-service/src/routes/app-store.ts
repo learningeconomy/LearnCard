@@ -932,6 +932,29 @@ export const appStoreRouter = t.router({
             return transformListingForResponse(listing);
         }),
 
+    getPublicListingBySlug: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'GET',
+                path: '/app-store/public/listing/slug/{slug}',
+                tags: ['App Store'],
+                summary: 'Get Public App Listing by Slug',
+                description: 'Get a publicly listed app by slug',
+            },
+        })
+        .input(z.object({ slug: z.string() }))
+        .output(AppStoreListingResponseValidator.optional())
+        .query(async ({ input }) => {
+            const listing = await readAppStoreListingBySlug(input.slug);
+
+            if (!listing) {
+                return undefined;
+            }
+
+            return transformListingForResponse(listing);
+        }),
+
     getListingInstallCount: openRoute
         .meta({
             openapi: {

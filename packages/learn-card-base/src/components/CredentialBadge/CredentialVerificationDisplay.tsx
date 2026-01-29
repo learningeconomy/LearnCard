@@ -7,6 +7,7 @@ import UnknownCertIcon from 'learn-card-base/svgs/UnknownCertIcon';
 import UntrustedCertIcon from 'learn-card-base/svgs/UntrustedCertIcon';
 import { AchievementCredential, VC, CredentialInfo } from '@learncard/types';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
+import { isAppDidWeb } from 'learn-card-base/helpers/credentialHelpers';
 
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
@@ -34,6 +35,7 @@ const VERIFIER_STATES = {
     selfVerified: 'Self Issued',
     trustedVerifier: 'Trusted Issuer',
     unknownVerifier: 'Unknown Issuer',
+    appIssuer: 'Trusted App',
     untrustedVerifier: 'Untrusted Issuer',
 } as const;
 type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
@@ -65,6 +67,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     } = getInfoFromCredential(credential, 'MMM dd, yyyy', { uppercaseDate: false });
     const issuerDid =
         typeof credential?.issuer === 'string' ? credential?.issuer : credential?.issuer?.id;
+    const isAppIssuer = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
     if (
@@ -82,9 +85,13 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         } else if (knownDIDRegistry?.source === 'untrusted') {
             verifierState = VERIFIER_STATES.untrustedVerifier;
         } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuer
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuer
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         }
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
@@ -137,6 +144,20 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         }
 
         return <UnknownCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
+    }
+    if (verifierState === VERIFIER_STATES.appIssuer) {
+        if (showText) {
+            return (
+                <p
+                    className={`text-cyan-600 flex items-center font-poppins font-[500] text-base uppercase ${className}`}
+                >
+                    <TrustedCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} /> App
+                    Issuer
+                </p>
+            );
+        }
+
+        return <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
     }
     if (verifierState === VERIFIER_STATES.untrustedVerifier) {
         if (showText) {
