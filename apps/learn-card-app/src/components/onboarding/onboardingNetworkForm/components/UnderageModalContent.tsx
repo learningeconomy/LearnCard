@@ -92,13 +92,9 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                                     error ? 'border-red-500 border' : ''
                                 }`}
                             />
-                            {code && !isValidating && !error && (
+                            {code && !isValidating && error && (
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                    {schoolCodes.includes(code.trim().toUpperCase()) ? (
-                                        <Checkmark className="w-5 h-5 text-emerald-600" />
-                                    ) : (
-                                        <X className="w-5 h-5 text-red-500" />
-                                    )}
+                                    <X className="w-5 h-5 text-red-500" />
                                 </div>
                             )}
                         </div>
