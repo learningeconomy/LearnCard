@@ -1,9 +1,10 @@
-import { QueryBuilder } from 'neogma';
+import { QueryBuilder, BindParam } from 'neogma';
 
 import { CredentialInstance, Credential, Boost, Profile, ClaimHook, Role } from '@models';
 import { ProfileType } from 'types/profile';
 import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
 import { getBoostIdForCredentialInstance } from '@accesslayer/credential/relationships/read';
+import { getBoostConnectionSourceKey } from '@helpers/connection.helpers';
 
 /**
  * Reverse the effects of GRANT_PERMISSIONS claim hooks when a credential is revoked.
@@ -142,6 +143,40 @@ const processAdminRevokeHooks = async (
  * @param profile The profile whose credential is being revoked
  * @param credential The credential instance being revoked
  */
+/**
+ * Remove/Cleanup CONNECTED_WITH relationships for the revoked profile that were sourced from the boost.
+ */
+const processConnectionRevoke = async (
+    profile: ProfileType,
+    credential: CredentialInstance
+): Promise<void> => {
+    const boostId = await getBoostIdForCredentialInstance(credential);
+    if (!boostId) return;
+
+    // Pattern is `boost:${boostId}`.
+    const sourceKey = getBoostConnectionSourceKey(boostId);
+
+    await new QueryBuilder(new BindParam({ sourceKey }))
+        .match({
+             model: Profile,
+             where: { profileId: profile.profileId },
+             identifier: 'p'
+        })
+        .match({
+            related: [
+                { identifier: 'p' },
+                { ...Profile.getRelationshipByAlias('connectedWith'), direction: 'both', identifier: 'r' },
+                { identifier: 'other' }
+            ]
+        })
+        .where(`$sourceKey IN r.sources`)
+        .set(`r.sources = [x IN r.sources WHERE x <> $sourceKey]`)
+        .with('r')
+        .where('size(r.sources) = 0')
+        .delete('r')
+        .run();
+};
+
 export const processRevokeHooks = async (
     profile: ProfileType,
     credential: CredentialInstance
@@ -150,6 +185,7 @@ export const processRevokeHooks = async (
         processPermissionsRevokeHooks(profile, credential),
         processAdminRevokeHooks(profile, credential),
         processAutoConnectRevokeHooks(profile, credential),
+        processConnectionRevoke(profile, credential)
     ]);
 
     try {
