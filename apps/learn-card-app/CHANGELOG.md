@@ -1,5 +1,55 @@
 # Changelog
 
+## 1.94.19
+
+### Patch Changes
+
+-   [#953](https://github.com/learningeconomy/LearnCard/pull/953) [`819bd73226ee1da96109c720543a2fe605381fdd`](https://github.com/learningeconomy/LearnCard/commit/819bd73226ee1da96109c720543a2fe605381fdd) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1476] Open trusted issuer links in in-app browser on native
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.9
+
+## 1.94.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.8
+
+## 1.94.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.1.7
+    -   @learncard/react@2.9.8
+    -   @learncard/open-badge-v2-plugin@1.1.5
+
+## 1.94.16
+
+### Patch Changes
+
+-   [#955](https://github.com/learningeconomy/LearnCard/pull/955) [`20868790b68a41fbe001e29ecd98719a988b9e22`](https://github.com/learningeconomy/LearnCard/commit/20868790b68a41fbe001e29ecd98719a988b9e22) Thanks [@Custard7](https://github.com/Custard7)! - fix: Embed Full Screen missing credential acceptance
+
+## 1.94.15
+
+### Patch Changes
+
+-   [#950](https://github.com/learningeconomy/LearnCard/pull/950) [`268ef541499f53b4809f7e4ef4c8da5551aae09e`](https://github.com/learningeconomy/LearnCard/commit/268ef541499f53b4809f7e4ef4c8da5551aae09e) Thanks [@Custard7](https://github.com/Custard7)! - Add app id
+
+## 1.94.14
+
+### Patch Changes
+
+-   [#949](https://github.com/learningeconomy/LearnCard/pull/949) [`f797ad95a9324dd56bc3d22e4e2b07caa0c53d94`](https://github.com/learningeconomy/LearnCard/commit/f797ad95a9324dd56bc3d22e4e2b07caa0c53d94) Thanks [@Custard7](https://github.com/Custard7)! - feat: Enhance Partner Connect
+
+-   [#938](https://github.com/learningeconomy/LearnCard/pull/938) [`20c48c727aade41921e226e3f26922d3798c7b5e`](https://github.com/learningeconomy/LearnCard/commit/20c48c727aade41921e226e3f26922d3798c7b5e) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1498] - 🚀 Migrate Capacitor & Plugins from v7 → v8 + 🔥 Firebase v12
+
+-   [#938](https://github.com/learningeconomy/LearnCard/pull/938) [`20c48c727aade41921e226e3f26922d3798c7b5e`](https://github.com/learningeconomy/LearnCard/commit/20c48c727aade41921e226e3f26922d3798c7b5e) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1498] - 🚀 Migrate Capacitor & Plugins from v7 → v8 + 🔥 Firebase v12
+
+-   Updated dependencies [[`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be), [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be)]:
+    -   @learncard/react@2.9.7
+
 ## 1.94.13
 
 ### Patch Changes

@@ -7,6 +7,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
+import sdkActivityStore from '../../stores/sdkActivityStore';
 
 interface LaunchConfig {
     url?: string;
@@ -59,24 +60,84 @@ export function useLearnCardMessageHandlers({
     );
 
     /**
+     * Generate a consent VP and redirect to the contract's redirect URL in a new tab.
+     * Returns true if redirect was successful, false otherwise.
+     */
+    const generateVpAndRedirect = useCallback(
+        async (
+            wallet: Awaited<ReturnType<typeof initWallet>>,
+            contract: { redirectUrl?: string; owner?: { did?: string }; uri?: string }
+        ): Promise<boolean> => {
+            if (!wallet || !contract.redirectUrl) {
+                return false;
+            }
+
+            try {
+                const urlObj = new URL(contract.redirectUrl);
+                urlObj.searchParams.set('did', wallet.id.did());
+
+                if (contract.owner?.did) {
+                    const unsignedDelegateCredential = wallet.invoke.newCredential({
+                        type: 'delegate',
+                        subject: contract.owner.did,
+                        access: ['read', 'write'],
+                    });
+
+                    const delegateCredential = await wallet.invoke.issueCredential(
+                        unsignedDelegateCredential
+                    );
+
+                    const unsignedDidAuthVp: UnsignedVP & { contractUri?: string } =
+                        await wallet.invoke.newPresentation(delegateCredential);
+
+                    if (contract.uri) {
+                        unsignedDidAuthVp.contractUri = contract.uri;
+                    }
+
+                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                        proofPurpose: 'authentication',
+                        proofFormat: 'jwt',
+                    })) as unknown as string;
+
+                    urlObj.searchParams.set('vp', vp);
+                }
+
+                log('Opening redirect in new tab:', urlObj.toString());
+                window.open(urlObj.toString(), '_blank', 'noopener,noreferrer');
+                return true;
+            } catch (error) {
+                logError('Failed to generate VP for redirect:', error);
+                return false;
+            }
+        },
+        [log, logError]
+    );
+
+    /**
      * Imperative function to show consent flow and return result
      */
     const showConsentFlow = useCallback(
-        async (contractUri: string): Promise<boolean> => {
+        async (
+            contractUri: string,
+            options?: { redirect?: boolean }
+        ): Promise<{ granted: boolean }> => {
+            const { redirect = false } = options ?? {};
+
             return new Promise(async resolve => {
                 try {
-                    // Fetch the contract using LearnCard wallet
                     const wallet = await initWallet();
                     if (!wallet) {
                         logError('Wallet not initialized');
-                        resolve(false);
+                        sdkActivityStore.set.endActivity();
+                        resolve({ granted: false });
                         return;
                     }
 
                     const contract = await wallet.invoke.getContract(contractUri);
                     if (!contract) {
                         logError('Contract not found:', contractUri);
-                        resolve(false);
+                        sdkActivityStore.set.endActivity();
+                        resolve({ granted: false });
                         return;
                     }
 
@@ -85,30 +146,45 @@ export function useLearnCardMessageHandlers({
                         c => c?.contract?.uri === contractUri && c?.status !== 'withdrawn'
                     );
 
+                    const isPostConsent = !!consentedContract;
+
+                    // If already consented, handle redirect if requested
+                    if (isPostConsent) {
+                        log('User already consented to contract');
+                        sdkActivityStore.set.endActivity();
+
+                        if (redirect && contract.redirectUrl) {
+                            const success = await generateVpAndRedirect(wallet, contract);
+                            resolve({ granted: success });
+                            return;
+                        }
+
+                        resolve({ granted: true });
+                        return;
+                    }
+
+                    // Not yet consented - show modal
                     const successCallback = () => {
                         log('Consent flow completed');
-                        resolve(true);
+                        resolve({ granted: true });
                         closeModal();
                     };
 
                     const handleCancel = () => {
                         log('Consent flow cancelled');
-                        resolve(false);
+                        resolve({ granted: false });
                     };
 
-                    const isPostConsent = !!consentedContract;
-                    if (isPostConsent) {
-                        resolve(true);
-                        return;
-                    }
-
-                    // Open the consent flow modal
                     const consentFlowElement = React.createElement(FullScreenConsentFlow, {
                         contractDetails: contract,
-                        isPostConsent,
+                        isPostConsent: false,
                         hideProfileButton: true,
-                        successCallback: successCallback,
+                        disableRedirect: !redirect,
+                        successCallback,
                     });
+
+                    // Hide activity indicator before showing modal
+                    sdkActivityStore.set.endActivity();
 
                     newModal(
                         consentFlowElement,
@@ -117,11 +193,12 @@ export function useLearnCardMessageHandlers({
                     );
                 } catch (error) {
                     logError('Failed to fetch consent contract:', error);
-                    resolve(false);
+                    sdkActivityStore.set.endActivity();
+                    resolve({ granted: false });
                 }
             });
         },
-        [initWallet, newModal, closeModal, consentedContracts, log, logError]
+        [initWallet, newModal, closeModal, consentedContracts, log, logError, generateVpAndRedirect]
     );
 
     const handlers = useMemo(
@@ -133,12 +210,14 @@ export function useLearnCardMessageHandlers({
                     const learnCard = await initWallet();
 
                     if (!learnCard) {
+                        sdkActivityStore.set.endActivity();
                         throw new Error('LearnCard wallet not initialized. Cannot login.');
                     }
 
                     const did = await learnCard.id.did();
                     const profile = await learnCard.invoke.getProfile();
 
+                    sdkActivityStore.set.endActivity();
                     return {
                         did,
                         profile,
@@ -167,6 +246,7 @@ export function useLearnCardMessageHandlers({
                                     'Skipping consent for installed app with request_identity permission'
                                 );
                                 // addTrustedOrigin(origin, appName);
+                                sdkActivityStore.set.endActivity();
                                 resolve(true);
                                 return;
                             }
@@ -194,6 +274,9 @@ export function useLearnCardMessageHandlers({
                             // Extract app name from origin if not provided
                             const displayAppName = appName || new URL(origin).hostname;
 
+                            // Hide activity indicator before showing modal
+                            sdkActivityStore.set.endActivity();
+
                             // Open the login consent modal
                             newModal(
                                 React.createElement(LoginConsentModal, {
@@ -211,6 +294,7 @@ export function useLearnCardMessageHandlers({
                             );
                         } catch (error) {
                             logError('Failed to show login consent modal:', error);
+                            sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
                     });
@@ -219,6 +303,7 @@ export function useLearnCardMessageHandlers({
                     const learnCard = await initWallet();
 
                     if (!learnCard) {
+                        sdkActivityStore.set.endActivity();
                         throw new Error('LearnCard wallet not initialized. Cannot login.');
                     }
 
@@ -229,6 +314,7 @@ export function useLearnCardMessageHandlers({
                     });
 
                     log('Minted delegated token');
+                    sdkActivityStore.set.endActivity();
 
                     if (typeof jwt === 'string') return jwt;
 
@@ -236,9 +322,12 @@ export function useLearnCardMessageHandlers({
                 },
 
                 // Consent handlers
-                showConsentModal: async (contractUri: string) => {
-                    log('Consent requested for contract:', contractUri);
-                    return showConsentFlow(contractUri);
+                showConsentModal: async (
+                    contractUri: string,
+                    options?: { redirect?: boolean }
+                ) => {
+                    log('Consent requested for contract:', contractUri, options);
+                    return showConsentFlow(contractUri, options);
                 },
 
                 // Credential handlers
@@ -285,6 +374,9 @@ export function useLearnCardMessageHandlers({
                                 resolve(false);
                             };
 
+                            // Hide activity indicator before showing modal
+                            sdkActivityStore.set.endActivity();
+
                             // Open the credential acceptance modal
                             newModal(
                                 React.createElement(CredentialAcceptanceModal, {
@@ -302,6 +394,7 @@ export function useLearnCardMessageHandlers({
                             );
                         } catch (error) {
                             logError('Failed to show credential acceptance modal:', error);
+                            sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
                     });
@@ -315,6 +408,7 @@ export function useLearnCardMessageHandlers({
                         'LearnCloud',
                         true
                     );
+                    sdkActivityStore.set.endActivity();
                     return stored.credentialUri;
                 },
                 getCredentialById: async (id: string) => {
@@ -322,6 +416,7 @@ export function useLearnCardMessageHandlers({
                     const learnCard = await initWallet();
 
                     if (!learnCard) {
+                        sdkActivityStore.set.endActivity();
                         throw new Error(
                             'LearnCard wallet not initialized. Cannot fetch credential.'
                         );
@@ -330,18 +425,21 @@ export function useLearnCardMessageHandlers({
                     const credential = await learnCard.read.get(id);
 
                     log('Fetched credential:', credential);
+                    sdkActivityStore.set.endActivity();
                     return credential;
                 },
                 searchCredentials: async (query: any) => {
                     const learnCard = await initWallet();
 
                     if (!learnCard) {
+                        sdkActivityStore.set.endActivity();
                         throw new Error(
                             'LearnCard wallet not initialized. Cannot search credentials.'
                         );
                     }
 
                     if (!learnCard.index.LearnCloud.getPage) {
+                        sdkActivityStore.set.endActivity();
                         throw new Error(
                             'LearnCard wallet index not initialized. Cannot search credentials.'
                         );
@@ -358,6 +456,7 @@ export function useLearnCardMessageHandlers({
                     );
 
                     log('Resolved credentials:', resolvedCredentials);
+                    sdkActivityStore.set.endActivity();
                     return resolvedCredentials;
                 },
                 showShareCredentialModal: async (credential: any) => {
@@ -387,6 +486,9 @@ export function useLearnCardMessageHandlers({
                                 resolve(false);
                             };
 
+                            // Hide activity indicator before showing modal
+                            sdkActivityStore.set.endActivity();
+
                             // Open the share credential modal
                             newModal(
                                 React.createElement(ShareCredentialModal, {
@@ -404,6 +506,7 @@ export function useLearnCardMessageHandlers({
                             );
                         } catch (error) {
                             logError('Failed to show share credential modal:', error);
+                            sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
                     });
@@ -477,6 +580,9 @@ export function useLearnCardMessageHandlers({
                                 resolve(null);
                             };
 
+                            // Hide activity indicator before showing modal
+                            sdkActivityStore.set.endActivity();
+
                             // Open the VPR share modal
                             newModal(
                                 React.createElement(VprShareModal, {
@@ -494,6 +600,7 @@ export function useLearnCardMessageHandlers({
                             );
                         } catch (error) {
                             logError('Failed to show VPR modal:', error);
+                            sdkActivityStore.set.endActivity();
                             resolve(null);
                         }
                     });
@@ -546,6 +653,9 @@ export function useLearnCardMessageHandlers({
                                 resolve(null);
                             };
 
+                            // Hide activity indicator before showing modal
+                            sdkActivityStore.set.endActivity();
+
                             // Open the sign credential modal
                             newModal(
                                 React.createElement(SignCredentialModal, {
@@ -563,6 +673,7 @@ export function useLearnCardMessageHandlers({
                             );
                         } catch (error) {
                             logError('Failed to show sign credential modal:', error);
+                            sdkActivityStore.set.endActivity();
                             resolve(null);
                         }
                     });
@@ -574,6 +685,7 @@ export function useLearnCardMessageHandlers({
                     const learnCard = await initWallet();
 
                     if (!learnCard) {
+                        sdkActivityStore.set.endActivity();
                         throw new Error(
                             'LearnCard wallet not initialized. Cannot sign presentation.'
                         );
@@ -592,9 +704,11 @@ export function useLearnCardMessageHandlers({
                         });
 
                         log('Signed presentation:', signedPresentation);
+                        sdkActivityStore.set.endActivity();
                         return signedPresentation;
                     } catch (error) {
                         logError('Error signing presentation:', error);
+                        sdkActivityStore.set.endActivity();
                         return null;
                     }
                 },
@@ -609,6 +723,7 @@ export function useLearnCardMessageHandlers({
                     if (onNavigate) {
                         onNavigate();
                     }
+                    sdkActivityStore.set.endActivity();
                 },
 
                 // Boost template issue handler
@@ -618,6 +733,7 @@ export function useLearnCardMessageHandlers({
                             const learnCard = await initWallet();
                             if (!learnCard) {
                                 logError('Wallet not initialized');
+                                sdkActivityStore.set.endActivity();
                                 resolve(false);
                                 return;
                             }
@@ -625,6 +741,7 @@ export function useLearnCardMessageHandlers({
                             const profileId = (await learnCard.invoke.getProfile())?.profileId;
                             if (!profileId) {
                                 logError('Profile ID not found');
+                                sdkActivityStore.set.endActivity();
                                 resolve(false);
                                 return;
                             }
@@ -633,6 +750,7 @@ export function useLearnCardMessageHandlers({
                             const boost = await learnCard.invoke.getBoost(templateId);
                             if (!boost) {
                                 logError('Boost template not found:', templateId);
+                                sdkActivityStore.set.endActivity();
                                 resolve(false);
                                 return;
                             }
@@ -666,6 +784,9 @@ export function useLearnCardMessageHandlers({
                                     did: recipient,
                                 })) || [];
 
+                            // Hide activity indicator before showing modal
+                            sdkActivityStore.set.endActivity();
+
                             // Open the short boost modal
                             newModal(
                                 React.createElement(ShortBoostUserOptions, {
@@ -694,6 +815,7 @@ export function useLearnCardMessageHandlers({
                             );
                         } catch (error) {
                             logError('Failed to show boost issue modal:', error);
+                            sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
                     });
@@ -703,6 +825,7 @@ export function useLearnCardMessageHandlers({
                         const learnCard = await initWallet();
                         if (!learnCard) {
                             logError('Wallet not initialized');
+                            sdkActivityStore.set.endActivity();
                             return false;
                         }
 
@@ -711,6 +834,7 @@ export function useLearnCardMessageHandlers({
 
                         if (!boost) {
                             logError('Boost template not found:', templateId);
+                            sdkActivityStore.set.endActivity();
                             return false;
                         }
 
@@ -718,9 +842,11 @@ export function useLearnCardMessageHandlers({
                         // This covers: admin status, explicit canIssue permission, or defaultPermissions.canIssue
                         const permissions = await learnCard.invoke.getBoostPermissions(templateId);
 
+                        sdkActivityStore.set.endActivity();
                         return Boolean(permissions?.canIssue);
                     } catch (error) {
                         logError('Failed to check issue permission:', error);
+                        sdkActivityStore.set.endActivity();
                         return false;
                     }
                 },
@@ -730,9 +856,13 @@ export function useLearnCardMessageHandlers({
                     ? async (listingId: string, event: AppEvent) => {
                         const learnCard = await initWallet();
 
-                        if (!learnCard) throw new Error('Wallet not initialized');
+                        if (!learnCard) {
+                            sdkActivityStore.set.endActivity();
+                            throw new Error('Wallet not initialized');
+                        }
 
                         if (!learnCard.invoke.sendAppEvent) {
+                            sdkActivityStore.set.endActivity();
                             throw new Error('sendAppEvent not available - rebuild types');
                         }
 
@@ -746,6 +876,7 @@ export function useLearnCardMessageHandlers({
                             );
                         }
 
+                        sdkActivityStore.set.endActivity();
                         return result;
                     }
                     : undefined,

@@ -31,7 +31,7 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', 'p-limit']
+        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', '*.node', 'p-limit']
         sourcemap: external
         target: 'node20'
         watch:
@@ -86,6 +86,9 @@ package:
   patterns: 
     - '!node_modules/**'
     - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+    - 'node_modules/@learncard/didkit-plugin-node/*.node'
+    - 'node_modules/@learncard/didkit-plugin-node/package.json'
+    - 'node_modules/@learncard/didkit-plugin-node/dist/**'
     - 'src/swagger-ui'
 
 provider:
@@ -126,6 +129,7 @@ provider:
         SMART_RESUME_CONTRACT_URI: ${env:SMART_RESUME_CONTRACT_URI, ""}
         LOGIN_PROVIDER_DID: ${env:LOGIN_PROVIDER_DID, ""}
         APP_STORE_ADMIN_PROFILE_IDS: ${env:APP_STORE_ADMIN_PROFILE_IDS, ""}
+        APP_BRAND: ${env:APP_BRAND, 'scouts'}
     tracing:
         apiGateway: true
         lambda: true
@@ -189,6 +193,7 @@ functions:
         events:
             - httpApi: GET /skills/{skillId}
             - httpApi: GET /frameworks/{frameworkId}
+            - httpApi: GET /frameworks/{frameworkId}/skills/{skillId}
 
 resources:
     Resources:

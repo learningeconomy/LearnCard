@@ -13,6 +13,7 @@ The LearnCard App Store allows third-party applications to be embedded within th
 -   **Authenticate users** via Single Sign-On (SSO)
 -   **Issue credentials** directly to the user's wallet
 -   **Request credentials** for verification or gating
+-   **Request consent** for data sharing agreements and terms acceptance
 
 This is ideal for:
 
@@ -232,6 +233,82 @@ async function sendThankYouBadge() {
 
 {% hint style="info" %}
 Peer badges are sent **from the user** to another person, not from your app. This is ideal for recognition, gratitude, or social features within your app.
+{% endhint %}
+
+### `requestConsent(contractUri, options?)`
+
+Request user consent for a ConsentFlow contract. This is useful when your app needs explicit user permission for data sharing, terms acceptance, or other consent-based flows.
+
+**Parameters:**
+
+| Parameter     | Type                      | Required | Description                                           |
+| ------------- | ------------------------- | -------- | ----------------------------------------------------- |
+| `contractUri` | `string`                  | Yes      | The URI of the ConsentFlow contract                   |
+| `options`     | `RequestConsentOptions`   | No       | Additional options for the consent flow               |
+
+**Options:**
+
+| Option     | Type      | Default | Description                                                                 |
+| ---------- | --------- | ------- | --------------------------------------------------------------------------- |
+| `redirect` | `boolean` | `false` | If `true`, redirects to the contract's configured URL after consent granted |
+
+**Returns:** `Promise<ConsentResponse>`
+
+```typescript
+interface ConsentResponse {
+    granted: boolean; // Whether the user granted consent
+}
+```
+
+**Basic Example:**
+
+```typescript
+// Request consent for a data sharing agreement
+const result = await learnCard.requestConsent('urn:lc:contract:my-data-agreement');
+
+if (result.granted) {
+    console.log('User granted consent!');
+    // Proceed with data access
+} else {
+    console.log('User declined consent');
+}
+```
+
+**With Redirect:**
+
+```typescript
+// Request consent and redirect to your callback URL after approval
+const result = await learnCard.requestConsent('urn:lc:contract:my-agreement', {
+    redirect: true,
+});
+
+// If redirect is true and user consents, they will be redirected
+// to the contract's configured redirectUrl with a VP (Verifiable Presentation)
+// containing proof of consent
+```
+
+**How Redirect Works:**
+
+When `redirect: true` is set and the user grants consent:
+
+1. LearnCard generates a Verifiable Presentation (VP) proving consent
+2. User is redirected to the contract's `redirectUrl`
+3. The VP and user's DID are appended as URL parameters
+4. Your server can verify the VP to confirm consent
+
+The redirect URL will include:
+- `did` - The user's DID
+- `vp` - A signed Verifiable Presentation (JWT format)
+
+**Use Cases:**
+
+- **Terms of Service** - Require users to accept terms before accessing features
+- **Data Sharing Agreements** - Get explicit consent before sharing data with third parties
+- **Privacy Policies** - Track user acknowledgment of privacy policies
+- **OAuth-like Flows** - Use redirect mode for server-side consent verification
+
+{% hint style="info" %}
+If the user has already consented to a contract, calling `requestConsent` will return `{ granted: true }` immediately without showing the consent modal again.
 {% endhint %}
 
 ## User Experience Flow

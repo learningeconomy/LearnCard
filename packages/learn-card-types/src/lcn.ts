@@ -1,4 +1,4 @@
-import type {} from 'zod-openapi';
+import type { } from 'zod-openapi';
 import { z } from 'zod';
 
 import { PaginationResponseValidator } from './mongo';
