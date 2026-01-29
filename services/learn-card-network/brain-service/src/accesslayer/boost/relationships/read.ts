@@ -1434,18 +1434,20 @@ export const getBoostRecipientsWithChildren = async (
         credential?: CredentialInstance;
     }>(await _query.run());
 
-    // Process results and group by profile
-    const resultsWithIds = results.map(({ relevantBoost, sender, sent, received, credential }) => {
-        const boostId = relevantBoost.id;
-        return {
-            sent: sent.date,
-            to: sent.to,
-            from: sender.profileId,
-            received: received?.date,
-            boostUri: getBoostUri(boostId, domain),
-            ...(credential && { uri: getCredentialUri(credential.id, domain) }),
-        };
-    });
+    // Process results and group by profile, filtering out revoked credentials
+    const resultsWithIds = results
+        .filter(({ received }) => received?.status !== 'revoked')
+        .map(({ relevantBoost, sender, sent, received, credential }) => {
+            const boostId = relevantBoost.id;
+            return {
+                sent: sent.date,
+                to: sent.to,
+                from: sender.profileId,
+                received: received?.date,
+                boostUri: getBoostUri(boostId, domain),
+                ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+            };
+        });
 
     // Get profile data for recipients (this should be a small set thanks to the limit)
     const recipientIds = [...new Set(resultsWithIds.map(result => result.to))];

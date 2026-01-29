@@ -868,6 +868,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return result;
             },
+            revokeBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+                await ensureUser();
+
+                return client.boost.revokeBoostRecipient.mutate({ boostUri, recipientProfileId });
+            },
             deleteBoost: async (_learnCard, uri) => {
                 await ensureUser();
 

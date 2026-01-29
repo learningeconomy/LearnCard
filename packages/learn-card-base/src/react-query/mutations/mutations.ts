@@ -366,10 +366,10 @@ export const useRevokeBoostRecipient = () => {
         mutationFn: async ({ boostUri, recipientProfileId }) => {
             try {
                 const wallet = await initWallet();
-                const result = await (wallet?.invoke as any)?.revokeBoostRecipient({
+                const result = await (wallet?.invoke as any)?.revokeBoostRecipient(
                     boostUri,
-                    recipientProfileId,
-                });
+                    recipientProfileId
+                );
 
                 return result;
             } catch (error) {
@@ -389,6 +389,10 @@ export const useRevokeBoostRecipient = () => {
             });
             queryClient.invalidateQueries({
                 queryKey: ['boosts'],
+            });
+            // Invalidate Scouts app member list query
+            queryClient.invalidateQueries({
+                queryKey: ['useNetworkMembers'],
             });
         },
     });
