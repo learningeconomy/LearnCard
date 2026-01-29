@@ -216,10 +216,14 @@ export const getCredentialInstanceForBoostAndProfile = async (
                     { identifier: 'boost', model: Boost, where: { id: boostId } },
                     { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
                     { identifier: 'credential', model: Credential },
-                    Credential.getRelationshipByAlias('credentialReceived'),
+                    {
+                        ...Credential.getRelationshipByAlias('credentialReceived'),
+                        identifier: 'received',
+                    },
                     { identifier: 'profile', model: Profile, where: { profileId } },
                 ],
             })
+            .where('received.status IS NULL OR received.status <> "revoked"')
             .return('credential')
             .limit(1)
             .run()
