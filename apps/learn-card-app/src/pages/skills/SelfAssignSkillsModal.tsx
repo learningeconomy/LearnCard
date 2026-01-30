@@ -3,6 +3,7 @@ import {
     useModal,
     useListMySkillFrameworks,
     useSearchFrameworkSkills,
+    useSemanticSearchFrameworkSkills,
     ModalTypes,
     conditionalPluralize,
     useManageSelfAssignedSkillsBoost,
@@ -49,8 +50,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const selfAssignedSkillFramework = frameworks[0]; // TODO arbitrary for now
     const frameworkId = selfAssignedSkillFramework?.id;
 
-    // TODO this will be replaced an an AI powered search
-    const { data: searchResultsApiData, isLoading: searchLoading } = useSearchFrameworkSkills(
+    const { data: suggestedApiData, isLoading: suggestedLoading } = useSearchFrameworkSkills(
         frameworkId,
         {
             // $or: [
@@ -72,11 +72,24 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         }
     );
 
+    const { data: semanticResultsApiData, isLoading: semanticLoading } =
+        useSemanticSearchFrameworkSkills(frameworkId, searchInput, { limit: 25 });
+
+    const searchLoading = Boolean(searchInput?.trim()) ? semanticLoading : suggestedLoading;
+
+    const resultsToShow = Boolean(searchInput?.trim()) ? semanticResultsApiData : suggestedApiData;
+
     const suggestedSkills =
         // @ts-ignore
-        searchResultsApiData?.records?.map((record: ApiSkillNode) =>
-            convertApiSkillNodeToSkillTreeNode(record)
-        ) || [];
+        (resultsToShow as any)?.records
+            ? // Paginated results shape (string search)
+              (resultsToShow as any)?.records?.map((record: ApiSkillNode) =>
+                  convertApiSkillNodeToSkillTreeNode(record)
+              )
+            : // Array results shape (semantic search)
+              (resultsToShow as any)?.map((record: ApiSkillNode) =>
+                  convertApiSkillNodeToSkillTreeNode(record)
+              ) || [];
 
     const handleToggleSelect = (skillId: string) => {
         const isAlreadySelected = selectedSkills.some(s => s.id === skillId);
