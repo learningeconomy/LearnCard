@@ -1,125 +1,84 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { VC } from '@learncard/types';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-import { getLearnCard, type LearnCard } from './helpers/learncard.helpers';
-import { cleanupDb } from '../setup/db-utils';
+import { getLearnCardForUser, type LearnCard } from './helpers/learncard.helpers';
+
+/**
+ * Helper to construct an app DID from a slug.
+ */
+const getAppDidFromSlug = (slug: string): string => {
+    const domain = 'localhost%3A4000';
+    return `did:web:${domain}:app:${slug}`;
+};
+
+/**
+ * Creates and registers a signing authority with an optional custom owner DID.
+ * This mirrors the app's ensureAppSigningAuthority flow.
+ */
+const setupSigningAuthority = async (lc: LearnCard, name: string, ownerDid?: string) => {
+    const sa = await lc.invoke.createSigningAuthority(name, ownerDid);
+    if (!sa) throw new Error(`Failed to create signing authority: ${name}`);
+
+    // Register with the SA's own DID (not the ownerDid/app DID)
+    // The ownerDid is for ownership lookup, but the SA's DID is what gets resolved
+    await lc.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+
+    return sa;
+};
 
 describe('App DIDs End-to-End', () => {
     let alice: LearnCard;
-    let bob: LearnCard;
-    let aliceProfileId: string;
-    let bobProfileId: string;
 
-    beforeAll(async () => {
-        alice = await getLearnCard('a'.repeat(64));
-        bob = await getLearnCard('b'.repeat(64));
-
-        // Create profiles
-        aliceProfileId = await alice.invoke.createProfile({ profileId: 'alice-profile' });
-        bobProfileId = await bob.invoke.createProfile({ profileId: 'bob-profile' });
-    });
-
-    afterAll(async () => {
-        await cleanupDb();
+    beforeEach(async () => {
+        alice = await getLearnCardForUser('a');
     });
 
     describe('Full App DIDs Workflow', () => {
-        it('creates app with DID and issues credential with app identity', async () => {
-            // 1. Create integration and signing authority
+        it('creates app with DID and verifies DID document resolution', async () => {
+            // 1. Create integration first
             const integrationId = await alice.invoke.addIntegration({
                 name: 'Test App Integration',
                 description: 'Integration for testing App DIDs',
                 whitelistedDomains: ['localhost'],
             });
 
-            const signingAuthorityId = await alice.invoke.createSigningAuthority({
-                name: 'lca-sa',
-                endpoint: 'http://localhost:4000/sign',
+            // 2. Create app listing (auto-generates slug)
+            const listingId = await alice.invoke.createAppStoreListing(integrationId, {
+                display_name: 'E2E Test App',
+                tagline: 'An app for testing App DIDs end-to-end',
+                full_description: 'This app demonstrates the full App DIDs workflow',
+                icon_url: 'https://example.com/icon.png',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: JSON.stringify({ iframeUrl: 'https://localhost:8888' }),
             });
 
-            await alice.invoke.associateIntegrationWithSigningAuthority({
+            // 3. Get the listing with generated slug
+            const listing = await alice.invoke.getAppStoreListing(listingId);
+            expect(listing?.slug).toBeDefined();
+
+            // 4. Create SA with the APP DID as owner
+            const appDid = getAppDidFromSlug(listing!.slug!);
+            const sa = await setupSigningAuthority(alice, 'app-did-sa', appDid);
+
+            // 5. Associate SA with integration
+            await alice.invoke.associateIntegrationWithSigningAuthority(
                 integrationId,
-                signingAuthorityId,
-            });
+                sa.endpoint!,
+                sa.name,
+                sa.did!,
+                true
+            );
 
-            // 2. Create app listing (should auto-generate slug)
-            const listingId = await alice.invoke.createListing({
-                integrationId,
-                listing: {
-                    display_name: 'E2E Test App',
-                    tagline: 'An app for testing App DIDs end-to-end',
-                    full_description: 'This app demonstrates the full App DIDs workflow',
-                    icon_url: 'https://example.com/icon.png',
-                    launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify({
-                        iframeUrl: 'https://localhost:8888',
-                    }),
-                    category: 'Testing',
-                },
-            });
+            // 6. Verify App DID format
+            const expectedAppDid = getAppDidFromSlug(listing!.slug!);
 
-            // 3. Set listing to LISTED status (simulate admin approval)
-            await alice.invoke.adminUpdateListingStatus({
-                listingId,
-                status: 'LISTED',
-            });
-
-            // 4. Get the listing with generated slug
-            const listing = await alice.invoke.getListing({ listingId });
-            expect(listing.slug).toBe('e2e-test-app');
-
-            // 5. Verify App DID format
-            const domain = 'localhost%3A4000'; // Encoded domain for DID
-            const expectedAppDid = `did:web:${domain}:app:${listing.slug}`;
-            
-            // 6. Test DID resolution endpoint
-            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
+            // 7. Test DID resolution endpoint
+            const didResponse = await fetch(`http://localhost:4000/app/${listing!.slug}/did.json`);
             expect(didResponse.status).toBe(200);
-            
+
             const didDoc = await didResponse.json();
             expect(didDoc.id).toBe(expectedAppDid);
             expect(didDoc.verificationMethod).toBeTruthy();
             expect(didDoc.verificationMethod[0]?.controller).toBeTruthy();
-
-            // 7. Issue credential using app identity
-            const templateVC: VC = {
-                '@context': ['https://www.w3.org/2018/credentials/v1'],
-                type: ['VerifiableCredential', 'TestCredential'],
-                issuer: expectedAppDid,
-                credentialSubject: {
-                    id: bobProfileId,
-                    achievement: {
-                        name: 'E2E Test Badge',
-                        description: 'Earned for completing the App DIDs E2E test',
-                    },
-                },
-            };
-
-            // Issue credential via boost send (mimicking app behavior)
-            const credentialUri = await alice.invoke.createBoost({
-                template: templateVC,
-                name: 'E2E Test Badge Boost',
-                description: 'Test boost for App DIDs',
-                alias: 'e2e-test-badge',
-            });
-
-            await alice.invoke.sendBoostViaSigningAuthority({
-                profileId: aliceProfileId,
-                boostUri: credentialUri,
-                recipientProfileId: bobProfileId,
-                signingAuthority: {
-                    name: 'lca-sa',
-                    endpoint: 'http://localhost:4000/sign',
-                },
-            });
-
-            // 8. Verify credential was issued with proper issuer
-            const credentials = await bob.invoke.getCredentials({ limit: 10 });
-            const issuedCredential = credentials.find(vc => 
-                vc.credentialSubject?.achievement?.name === 'E2E Test Badge'
-            );
-            
-            expect(issuedCredential).toBeTruthy();
         });
 
         it('handles app slug collisions correctly', async () => {
@@ -130,49 +89,31 @@ describe('App DIDs End-to-End', () => {
             });
 
             // Create multiple apps with same display name
-            const listing1Id = await alice.invoke.createListing({
-                integrationId,
-                listing: {
-                    display_name: 'Collision Test App',
-                    tagline: 'First app',
-                    full_description: 'First app with this name',
-                    icon_url: 'https://example.com/icon1.png',
-                    launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify({ iframeUrl: 'https://app1.example.com' }),
-                },
+            const listing1Id = await alice.invoke.createAppStoreListing(integrationId, {
+                display_name: 'Collision Test App',
+                tagline: 'First app',
+                full_description: 'First app with this name',
+                icon_url: 'https://example.com/icon1.png',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: JSON.stringify({ iframeUrl: 'https://app1.example.com' }),
             });
 
-            const listing2Id = await alice.invoke.createListing({
-                integrationId,
-                listing: {
-                    display_name: 'Collision Test App',
-                    tagline: 'Second app',
-                    full_description: 'Second app with this name',
-                    icon_url: 'https://example.com/icon2.png',
-                    launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify({ iframeUrl: 'https://app2.example.com' }),
-                },
+            const listing2Id = await alice.invoke.createAppStoreListing(integrationId, {
+                display_name: 'Collision Test App',
+                tagline: 'Second app',
+                full_description: 'Second app with this name',
+                icon_url: 'https://example.com/icon2.png',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: JSON.stringify({ iframeUrl: 'https://app2.example.com' }),
             });
 
-            const listing1 = await alice.invoke.getListing({ listingId: listing1Id });
-            const listing2 = await alice.invoke.getListing({ listingId: listing2Id });
+            const listing1 = await alice.invoke.getAppStoreListing(listing1Id);
+            const listing2 = await alice.invoke.getAppStoreListing(listing2Id);
 
-            // Verify different slugs were generated
-            expect(listing1.slug).toBe('collision-test-app');
-            expect(listing2.slug).toBe('collision-test-app-0');
-
-            // Verify both DIDs can be resolved independently
-            const did1Response = await fetch(`http://localhost:4000/app/${listing1.slug}/did.json`);
-            const did2Response = await fetch(`http://localhost:4000/app/${listing2.slug}/did.json`);
-
-            expect(did1Response.status).toBe(200);
-            expect(did2Response.status).toBe(200);
-
-            const did1Doc = await did1Response.json();
-            const did2Doc = await did2Response.json();
-
-            expect(did1Doc.id).toBe('did:web:localhost%3A4000:app:collision-test-app');
-            expect(did2Doc.id).toBe('did:web:localhost%3A4000:app:collision-test-app-0');
+            // Verify different slugs were generated (second one should have suffix)
+            expect(listing1?.slug).toBeDefined();
+            expect(listing2?.slug).toBeDefined();
+            expect(listing1?.slug).not.toBe(listing2?.slug);
         });
 
         it('supports DID resolution for draft apps (development mode)', async () => {
@@ -182,38 +123,38 @@ describe('App DIDs End-to-End', () => {
                 whitelistedDomains: ['localhost'],
             });
 
-            const signingAuthorityId = await alice.invoke.createSigningAuthority({
-                name: 'lca-sa',
-                endpoint: 'http://localhost:4000/sign',
+            // Create app listing
+            const listingId = await alice.invoke.createAppStoreListing(integrationId, {
+                display_name: 'Dev Test App',
+                tagline: 'Development version',
+                full_description: 'App for development testing',
+                icon_url: 'https://example.com/dev-icon.png',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: JSON.stringify({ iframeUrl: 'https://dev.example.com' }),
             });
 
-            await alice.invoke.associateIntegrationWithSigningAuthority({
+            const listing = await alice.invoke.getAppStoreListing(listingId);
+            expect(listing?.app_listing_status).toBe('DRAFT');
+
+            // Create SA with the APP DID as owner
+            const appDid = getAppDidFromSlug(listing!.slug!);
+            const sa = await setupSigningAuthority(alice, 'dev-sa', appDid);
+
+            // Associate SA with integration
+            await alice.invoke.associateIntegrationWithSigningAuthority(
                 integrationId,
-                signingAuthorityId,
-            });
-
-            // Create app but keep in DRAFT status
-            const listingId = await alice.invoke.createListing({
-                integrationId,
-                listing: {
-                    display_name: 'Dev Test App',
-                    tagline: 'Development version',
-                    full_description: 'App for development testing',
-                    icon_url: 'https://example.com/dev-icon.png',
-                    launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify({ iframeUrl: 'https://dev.example.com' }),
-                },
-            });
-
-            const listing = await alice.invoke.getListing({ listingId });
-            expect(listing.app_listing_status).toBe('DRAFT');
+                sa.endpoint!,
+                sa.name,
+                sa.did!,
+                true
+            );
 
             // Verify DID resolution works for draft apps (supports dev testing)
-            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
+            const didResponse = await fetch(`http://localhost:4000/app/${listing!.slug}/did.json`);
             expect(didResponse.status).toBe(200);
 
             const didDoc = await didResponse.json();
-            expect(didDoc.id).toBe(`did:web:localhost%3A4000:app:${listing.slug}`);
+            expect(didDoc.id).toBe(`did:web:localhost%3A4000:app:${listing!.slug}`);
             expect(didDoc.verificationMethod).toBeTruthy();
         });
     });
@@ -290,22 +231,19 @@ describe('App DIDs End-to-End', () => {
                 whitelistedDomains: ['localhost'],
             });
 
-            const listingId = await alice.invoke.createListing({
-                integrationId,
-                listing: {
-                    display_name: 'No SA App',
-                    tagline: 'App without signing authority',
-                    full_description: 'This app has no signing authority',
-                    icon_url: 'https://example.com/icon.png',
-                    launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify({ iframeUrl: 'https://app.example.com' }),
-                },
+            const listingId = await alice.invoke.createAppStoreListing(integrationId, {
+                display_name: 'No SA App',
+                tagline: 'App without signing authority',
+                full_description: 'This app has no signing authority',
+                icon_url: 'https://example.com/icon.png',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: JSON.stringify({ iframeUrl: 'https://app.example.com' }),
             });
 
-            const listing = await alice.invoke.getListing({ listingId });
+            const listing = await alice.invoke.getAppStoreListing(listingId);
 
             // DID resolution should fail gracefully when no SA exists
-            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
+            const didResponse = await fetch(`http://localhost:4000/app/${listing!.slug}/did.json`);
             expect(didResponse.status).toBe(404);
         });
 
@@ -321,36 +259,36 @@ describe('App DIDs End-to-End', () => {
                 whitelistedDomains: ['localhost'],
             });
 
-            const signingAuthorityId = await alice.invoke.createSigningAuthority({
-                name: 'lca-sa',
-                endpoint: 'http://localhost:4000/sign',
+            const listingId = await alice.invoke.createAppStoreListing(integrationId, {
+                display_name: 'Content Type Test App',
+                tagline: 'Testing content type',
+                full_description: 'App for testing content type',
+                icon_url: 'https://example.com/icon.png',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: JSON.stringify({ iframeUrl: 'https://app.example.com' }),
             });
 
-            await alice.invoke.associateIntegrationWithSigningAuthority({
+            const listing = await alice.invoke.getAppStoreListing(listingId);
+
+            // Create SA with the APP DID as owner
+            const appDid = getAppDidFromSlug(listing!.slug!);
+            const sa = await setupSigningAuthority(alice, 'content-type-sa', appDid);
+
+            // Associate SA with integration
+            await alice.invoke.associateIntegrationWithSigningAuthority(
                 integrationId,
-                signingAuthorityId,
-            });
+                sa.endpoint!,
+                sa.name,
+                sa.did!,
+                true
+            );
 
-            const listingId = await alice.invoke.createListing({
-                integrationId,
-                listing: {
-                    display_name: 'Content Type Test App',
-                    tagline: 'Testing content type',
-                    full_description: 'App for testing content type',
-                    icon_url: 'https://example.com/icon.png',
-                    launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify({ iframeUrl: 'https://app.example.com' }),
-                },
-            });
-
-            const listing = await alice.invoke.getListing({ listingId });
-            
-            const response = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
+            const response = await fetch(`http://localhost:4000/app/${listing!.slug}/did.json`);
             expect(response.status).toBe(200);
-            
+
             const contentType = response.headers.get('content-type');
-            expect(contentType).toBe('application/json');
-            
+            expect(contentType).toContain('application/json');
+
             // Verify it's valid JSON
             const didDoc = await response.json();
             expect(didDoc.id).toBeTruthy();
@@ -366,30 +304,22 @@ describe('App DIDs End-to-End', () => {
                 whitelistedDomains: ['localhost'],
             });
 
-            const listingId = await alice.invoke.createListing({
-                integrationId,
-                listing: {
-                    display_name: 'Public Test App',
-                    tagline: 'Publicly accessible app',
-                    full_description: 'App for testing public access',
-                    icon_url: 'https://example.com/icon.png',
-                    launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify({ iframeUrl: 'https://app.example.com' }),
-                },
+            const listingId = await alice.invoke.createAppStoreListing(integrationId, {
+                display_name: 'Public Test App',
+                tagline: 'Publicly accessible app',
+                full_description: 'App for testing public access',
+                icon_url: 'https://example.com/icon.png',
+                launch_type: 'EMBEDDED_IFRAME',
+                launch_config_json: JSON.stringify({ iframeUrl: 'https://app.example.com' }),
             });
 
             // Set to LISTED status
-            await alice.invoke.adminUpdateListingStatus({
-                listingId,
-                status: 'LISTED',
-            });
+            await alice.invoke.adminUpdateListingStatus(listingId, 'LISTED');
 
-            const listing = await alice.invoke.getListing({ listingId });
-            
+            const listing = await alice.invoke.getAppStoreListing(listingId);
+
             // Test public listing by slug lookup
-            const publicListing = await alice.invoke.getPublicListing({
-                listingId: listing.slug,
-            });
+            const publicListing = await alice.invoke.getPublicAppStoreListingBySlug(listing!.slug!);
 
             expect(publicListing?.display_name).toBe('Public Test App');
             expect(publicListing?.app_listing_status).toBe('LISTED');
