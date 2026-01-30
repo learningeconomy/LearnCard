@@ -10,6 +10,7 @@ import PersonBadge from '../svgs/PersonBadge';
 import RedFlag from '../svgs/RedFlag';
 
 import { getInfoFromCredential } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from 'learn-card-base/helpers/credentialHelpers';
 
 import { VC } from '@learncard/types';
 import { BoostAchievementCredential } from '../../types';
@@ -56,7 +57,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
-    const isAppIssuerDid = issuerDid?.includes(':app:');
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {

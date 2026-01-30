@@ -35,6 +35,17 @@ const encodeKey = (key: Uint8Array) => {
     return base58btc.encode(bytes);
 };
 
+// Validate app slug to prevent injection attacks
+const isValidAppSlug = (slug: string): boolean => {
+    // App slugs should only contain lowercase letters, numbers, and hyphens
+    // Should not start or end with hyphen, and have reasonable length
+    const slugPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+    return typeof slug === 'string' && 
+           slug.length >= 1 && 
+           slug.length <= 100 && 
+           slugPattern.test(slug);
+};
+
 // Extract Ed25519 public key bytes and a JWK from a verification method that may
 // have either publicKeyJwk (2018) or publicKeyMultibase/Multikey (2020).
 const extractEd25519FromVerificationMethod = (vm: any): { bytes: Uint8Array; jwk: JWK } => {
@@ -249,6 +260,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
     fastify.get('/app/:slug/did.json', async (request, reply) => {
         const { slug } = request.params as { slug: string };
+
+        // Validate slug to prevent injection attacks
+        if (!isValidAppSlug(slug)) {
+            return reply.status(400).send({ error: 'Invalid app slug format' });
+        }
 
         const cachedResult = await getDidDocForApp(slug);
 

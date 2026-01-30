@@ -8,6 +8,7 @@ import {
     getInfoFromCredential,
     getNameFromProfile,
 } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from 'learn-card-base/helpers/credentialHelpers';
 import { truncateWithEllipsis } from '../../helpers/string.helpers';
 import { Profile, VC } from '@learncard/types';
 import VerifierStateBadgeAndText, {
@@ -90,7 +91,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
-    const isAppIssuerDid = issuerDid?.includes(':app:');
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {

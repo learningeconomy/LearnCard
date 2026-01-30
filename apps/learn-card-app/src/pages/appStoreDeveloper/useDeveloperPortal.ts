@@ -51,6 +51,13 @@ export const useDeveloperPortal = () => {
                 return await wallet.invoke.createSigningAuthority(name, appDid);
             } catch (error) {
                 console.warn('Failed to create app signing authority', error);
+                // Re-throw error for critical failures that would prevent credential issuance
+                if (error instanceof Error && 
+                    (error.message.includes('unauthorized') || 
+                     error.message.includes('forbidden') ||
+                     error.message.includes('authentication'))) {
+                    throw error;
+                }
                 return null;
             }
         };
@@ -59,7 +66,10 @@ export const useDeveloperPortal = () => {
             (await createAuthority(baseName)) ??
             (await createAuthority(buildFallbackSigningAuthorityName(baseName)));
 
-        if (!authority?.endpoint || !authority?.name || !authority?.did) return;
+        if (!authority?.endpoint || !authority?.name || !authority?.did) {
+            console.error('Failed to create signing authority for app. Credential issuance will fail.');
+            throw new Error('Unable to create app signing authority - required for credential issuance');
+        }
 
         try {
             await wallet.invoke.registerSigningAuthority(
@@ -76,7 +86,9 @@ export const useDeveloperPortal = () => {
                 true
             );
         } catch (error) {
-            console.warn('Failed to register app signing authority', error);
+            console.error('Failed to register app signing authority', error);
+            // Registration/association failures are critical - they prevent credential issuance
+            throw new Error('Failed to register app signing authority - credential issuance will not work');
         }
     };
 

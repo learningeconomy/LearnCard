@@ -15,6 +15,7 @@ import {
     getCategoryLightColor,
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from 'learn-card-base/helpers/credentialHelpers';
 
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
@@ -111,7 +112,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
-    const isAppIssuerDid = issuerDid?.includes(':app:');
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
     const hideAwardedTo =
