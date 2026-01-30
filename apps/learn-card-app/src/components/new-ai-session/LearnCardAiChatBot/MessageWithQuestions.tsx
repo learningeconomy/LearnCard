@@ -26,7 +26,7 @@ export const MessageWithQuestions: React.FC<MessageProps> = React.memo(
         let assistantBubbleStyles = 'bg-grayscale-100 mr-auto !max-w-full px-4';
         const userBubbleStyles = 'bg-cyan-50 px-4';
 
-        if (message.content === '' && !message?.artifact) return null;
+        if (!message.content && !message?.artifact) return null;
 
         let text = <MarkdownRenderer>{message.content}</MarkdownRenderer>;
 
