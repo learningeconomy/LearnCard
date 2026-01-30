@@ -331,9 +331,9 @@ export const getBoostRecipients = async (
                 { identifier: 'recipient' },
             ],
         })
-        .with('sender, sent, received, recipient, credential');
-        // Filter out revoked credentials
-        // .where(`${whereClause}${whereClause ? ' AND ' : ''}(received IS NULL OR received.status IS NULL OR received.status <> "revoked")`);
+        .with('sender, sent, received, recipient, credential')
+        // Filter out revoked credentials using WITH barrier pattern
+        .where(`(received IS NULL OR coalesce(received.status, '') <> 'revoked')${whereClause ? ' AND ' + whereClause : ''}`);
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
@@ -352,9 +352,7 @@ export const getBoostRecipients = async (
             .run()
     );
 
-    const filteredResults = results.filter(r => r.received?.status !== 'revoked');
-
-    const resultsWithIds = filteredResults.map(({ sender, sent, received, credential }) => ({
+    const resultsWithIds = results.map(({ sender, sent, received, credential }) => ({
         sent: sent.date,
         to: sent.to,
         from: sender.profileId,
@@ -416,6 +414,10 @@ export const getBoostRecipientsSkipLimit = async (
                 { identifier: 'recipient', model: Profile },
             ],
         })
+        // Use WITH barrier pattern to properly filter revoked credentials
+        .with('sender, sent, received, credential')
+        .where(`received IS NULL OR coalesce(received.status, '') <> 'revoked'`);
+
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
@@ -430,9 +432,7 @@ export const getBoostRecipientsSkipLimit = async (
             .run()
     );
 
-    const filteredResults = results.filter(r => r.received?.status !== 'revoked');
-
-    const resultsWithIds = filteredResults.map(({ sender, sent, received, credential }) => ({
+    const resultsWithIds = results.map(({ sender, sent, received, credential }) => ({
         to: sent.to,
         from: sender.profileId,
         received: received?.date,
