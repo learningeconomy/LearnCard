@@ -202,6 +202,50 @@ export const skillsRouter = t.router({
                 cursor: result.cursor,
             };
         }),
+
+    semanticSearchFrameworkSkills: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/skills/frameworks/{frameworkId}/semantic-search',
+                tags: ['Skills'],
+                summary: 'Semantic search skills in a framework',
+                description:
+                    'Returns a list of skills related to the query using embeddings/vector search when configured. Falls back to basic text search when embeddings are unavailable.',
+            },
+            requiredScope: 'skills:read',
+        })
+        .input(
+            z.object({
+                frameworkId: z.string(),
+                query: z.string(),
+                limit: z.number().int().min(1).max(200).default(25),
+            })
+        )
+        .output(z.array(SkillValidator.omit({ createdAt: true, updatedAt: true })))
+        .query(async ({ input }) => {
+            const { frameworkId, query, limit } = input;
+
+            const normalizedQuery = query.trim();
+            if (!normalizedQuery) return [];
+
+            const provider = getSkillsProvider();
+            const results = provider.searchSkills
+                ? await provider.searchSkills(frameworkId, normalizedQuery)
+                : [];
+
+            return results.slice(0, limit).map(skill => ({
+                id: skill.id,
+                statement: skill.statement,
+                description: skill.description ?? undefined,
+                code: skill.code ?? undefined,
+                icon: skill.icon ?? undefined,
+                type: skill.type ?? 'competency',
+                status: (skill.status as any) ?? 'active',
+                frameworkId,
+            }));
+        }),
     syncFrameworkSkills: profileRoute
         .meta({
             openapi: {

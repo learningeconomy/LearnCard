@@ -9,6 +9,8 @@ export type ProviderId = 'neo4j' | 'opensalt' | 'dummy' | (string & {});
 export type SkillsProviderOptions = {
     baseUrl?: string;
     apiKey?: string;
+    embeddingsBaseUrl?: string;
+    embeddingsApiKey?: string;
 };
 
 // Minimal framework representation independent of storage provider
@@ -56,6 +58,8 @@ export interface SkillsProvider {
         updates: Partial<Skill>
     ): Promise<Skill | null>;
     deleteSkill?(frameworkId: string, skillId: string): Promise<void>;
+
+    searchSkills?(frameworkId: string, query: string): Promise<Skill[]>;
 
     // Convenience builder to produce OBv3-compatible alignment entries
     buildObv3Alignments(

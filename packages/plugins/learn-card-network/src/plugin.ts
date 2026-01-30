@@ -1607,6 +1607,15 @@ export async function getLearnCardNetworkPlugin(
                     ...options,
                 });
             },
+            semanticSearchFrameworkSkills: async (_learnCard, frameworkId, query, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.semanticSearchFrameworkSkills.query({
+                    frameworkId,
+                    query,
+                    ...options,
+                });
+            },
             updateSkillFramework: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.update.mutate(input);

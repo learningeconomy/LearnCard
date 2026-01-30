@@ -979,6 +979,23 @@ export const useSearchFrameworkSkills = (
     });
 };
 
+export const useSemanticSearchFrameworkSkills = (
+    frameworkId: string,
+    query: string,
+    options?: { limit?: number }
+) => {
+    const { initWallet } = useWallet();
+
+    return useQuery({
+        queryKey: ['semanticSearchFrameworkSkills', frameworkId, query, options],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return wallet.invoke.semanticSearchFrameworkSkills(frameworkId, query, options);
+        },
+        enabled: !!frameworkId && !!query?.trim(),
+    });
+};
+
 export const useGetSkill = (frameworkId: string, skillId: string) => {
     const { initWallet } = useWallet();
 

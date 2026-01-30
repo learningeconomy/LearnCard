@@ -638,6 +638,11 @@ export type LearnCardNetworkPluginMethods = {
         query: SkillQuery,
         options?: { limit?: number; cursor?: string | null }
     ) => Promise<{ records: SkillType[]; hasMore: boolean; cursor: string | null }>;
+    semanticSearchFrameworkSkills: (
+        frameworkId: string,
+        query: string,
+        options?: { limit?: number }
+    ) => Promise<Omit<SkillType, 'createdAt' | 'updatedAt'>[]>;
     updateSkillFramework: (input: UpdateSkillFrameworkInput) => Promise<SkillFrameworkType>;
     deleteSkillFramework: (id: string) => Promise<{ success: boolean }>;
     replaceSkillFrameworkSkills: (
