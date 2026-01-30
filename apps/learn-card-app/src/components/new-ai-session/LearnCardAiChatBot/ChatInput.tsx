@@ -245,8 +245,7 @@ const ChatInput: React.FC = () => {
     };
 
     const disableSend = !input.trim() || $isTyping;
-    const showFinishButton =
-        (mode === AiSessionMode.insights && !$isTyping) || (!showContinue && !$isTyping);
+    const showFinishButton = mode === AiSessionMode.insights || (!showContinue && !$isTyping);
 
     return (
         <>

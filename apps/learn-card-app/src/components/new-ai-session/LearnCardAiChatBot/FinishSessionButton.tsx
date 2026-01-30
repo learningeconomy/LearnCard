@@ -14,6 +14,7 @@ import {
     isEndingSession,
     closeInsightsSession,
     resetChatStores,
+    isTyping,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { chatBotStore } from '../../../stores/chatBotStore';
 import { AiSessionMode } from '../newAiSession.helpers';
@@ -26,6 +27,7 @@ const FinishSessionButton: React.FC = () => {
     const $currentThreadId = useStore(currentThreadId);
     const $threads = useStore(threads);
     const $isEndingSession = useStore(isEndingSession);
+    const $isTyping = useStore(isTyping);
 
     const mode = chatBotStore.useTracked.mode();
     const qa = chatBotStore.useTracked.chatBotQA();
@@ -37,6 +39,7 @@ const FinishSessionButton: React.FC = () => {
     // Check if session has ended - either via atom or by checking for summary credentials
     const thread = $threads.find(t => t.id === $currentThreadId);
     const hasSessionEnded = $sessionEnded || (thread?.summaries && thread.summaries.length > 0);
+    const isSessionTyping = $isTyping;
 
     if (hasSessionEnded || $isEndingSession) return <></>;
 
@@ -65,12 +68,14 @@ const FinishSessionButton: React.FC = () => {
                         {promptTitle}
                     </p>
                 </div>
-                <button
-                    onClick={handleFinish}
-                    className="w-[24px] h-[24px] flex items-center justify-center text-grayscale-600"
-                >
-                    <X />
-                </button>
+                {!isSessionTyping && (
+                    <button
+                        onClick={handleFinish}
+                        className="w-[24px] h-[24px] flex items-center justify-center text-grayscale-600"
+                    >
+                        <X />
+                    </button>
+                )}
             </div>
         );
     }
