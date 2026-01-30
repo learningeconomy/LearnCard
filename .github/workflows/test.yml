@@ -3,6 +3,12 @@ name: Test Runner
 on:
   pull_request:
     types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to test'
+        required: true
+        default: 'changeset-release/main'
 
 jobs:
   Test:
@@ -32,10 +38,10 @@ jobs:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
-  # Run E2E tests on changeset release PRs
+  # Run E2E tests on changeset release PRs or manual trigger
   # SSHs into EC2 to run Playwright tests against the branch
   e2e-tests:
-    if: github.head_ref == 'changeset-release/main'
+    if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -85,7 +91,7 @@ jobs:
           script: |
             cd ~/learncard-e2e-runner
             git pull origin main
-            ./scripts/sync-repo.sh ${{ github.head_ref }}
+            ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
             ./scripts/run-tests.sh
 
       - name: Download Playwright report from EC2
