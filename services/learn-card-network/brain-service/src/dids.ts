@@ -6,6 +6,7 @@ import { base58btc } from 'multiformats/bases/base58';
 
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { getAppDidWeb, getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
+import { isValidAppSlug } from '@helpers/slug.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
     getPrimarySigningAuthorityForIntegration,
@@ -33,17 +34,6 @@ const encodeKey = (key: Uint8Array) => {
     bytes[1] = 0x01;
     bytes.set(key, 2);
     return base58btc.encode(bytes);
-};
-
-// Validate app slug to prevent injection attacks
-const isValidAppSlug = (slug: string): boolean => {
-    // App slugs should only contain lowercase letters, numbers, and hyphens
-    // Should not start or end with hyphen, and have reasonable length
-    const slugPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
-    return typeof slug === 'string' && 
-           slug.length >= 1 && 
-           slug.length <= 100 && 
-           slugPattern.test(slug);
 };
 
 // Validate manager ID to prevent injection attacks

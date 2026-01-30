@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { randomInt, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { LCNNotificationTypeEnumValidator, UnsignedVC } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
@@ -8,6 +7,7 @@ import { t, openRoute, profileRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
+import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
@@ -310,54 +310,6 @@ const transformInputForStorage = (input: any): any => {
     }
 
     return result;
-};
-
-const MAX_APP_SLUG_LENGTH = 50;
-
-const normalizeAppSlug = (value: string): string => {
-    const normalized = value
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-
-    const trimmed = normalized.slice(0, MAX_APP_SLUG_LENGTH).replace(/-+$/g, '');
-
-    return trimmed || 'app';
-};
-
-const appendSlugSuffix = (base: string, suffix: string): string => {
-    const availableLength = MAX_APP_SLUG_LENGTH - suffix.length;
-    const trimmedBase = base.slice(0, Math.max(availableLength, 0)).replace(/-+$/g, '');
-    const safeBase = trimmedBase || 'app';
-
-    return `${safeBase}${suffix}`.slice(0, MAX_APP_SLUG_LENGTH);
-};
-
-const getAvailableAppSlug = async (displayName: string, listingId?: string): Promise<string> => {
-    const baseSlug = normalizeAppSlug(displayName);
-
-    const candidates = [baseSlug];
-    for (let suffix = 0; suffix <= 8; suffix += 1) {
-        candidates.push(appendSlugSuffix(baseSlug, `-${suffix}`));
-    }
-
-    for (const candidate of candidates) {
-        const existing = await readAppStoreListingBySlug(candidate);
-
-        if (!existing || (listingId && existing.listing_id === listingId)) {
-            return candidate;
-        }
-    }
-
-    const randomCandidate = appendSlugSuffix(baseSlug, `-${randomInt(0, 100001)}`);
-    const randomExisting = await readAppStoreListingBySlug(randomCandidate);
-
-    if (!randomExisting || (listingId && randomExisting.listing_id === listingId)) {
-        return randomCandidate;
-    }
-
-    return appendSlugSuffix(baseSlug, `-${randomUUID()}`);
 };
 
 // Regular update validator - excludes admin-only fields, all fields optional
