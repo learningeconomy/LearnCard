@@ -9,18 +9,24 @@ import {
     NewAiSessionStepEnum,
 } from '../../../../components/new-ai-session/newAiSession.helpers';
 
+import useLCNGatedAction from '../../../../components/network-prompts/hooks/useLCNGatedAction';
+
 import { chatBotStore } from '../../../../stores/chatBotStore';
 import { resetChatStores } from 'learn-card-base/stores/nanoStores/chatStore';
 import { ChatBotQuestionsEnum } from '../../../../components/new-ai-session/NewAiSessionChatBot/newAiSessionChatbot.helpers';
 
 export const AiInsightsPromptListItem: React.FC<{ prompt: string }> = ({ prompt }) => {
     const history = useHistory();
+    const { gate } = useLCNGatedAction();
 
     const setMode = chatBotStore.set.setMode;
     const setChatBotQA = chatBotStore.set.setChatBotQA;
     const setInternalAiChatBot = chatBotStore.set.setStartInternalAiChatBot;
 
-    const handlePromptClick = () => {
+    const handlePromptClick = async () => {
+        const { prompted } = await gate();
+        if (prompted) return;
+
         resetChatStores();
         setMode(AiSessionMode.insights);
         setChatBotQA([
