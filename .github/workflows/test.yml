@@ -32,11 +32,10 @@ jobs:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
-  # Run E2E tests on changeset release PRs (or test branch for testing)
+  # Run E2E tests on changeset release PRs
   # SSHs into EC2 to run Playwright tests against the branch
-  # TODO: Change condition to only 'changeset-release/main' when going live
   e2e-tests:
-    if: github.head_ref == 'lc-1516-e2e-tests' || github.head_ref == 'changeset-release/main'
+    if: github.head_ref == 'changeset-release/main'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
