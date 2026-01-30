@@ -1,3 +1,4 @@
+import { useHistory } from 'react-router-dom';
 import { useStore } from '@nanostores/react';
 import { useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
 
@@ -19,6 +20,7 @@ import { AiSessionMode } from '../newAiSession.helpers';
 import { ChatBotQuestionsEnum } from '../NewAiSessionChatBot/newAiSessionChatbot.helpers';
 
 const FinishSessionButton: React.FC = () => {
+    const history = useHistory();
     const { closeAllModals } = useModal();
     const $sessionEnded = useStore(sessionEnded);
     const $currentThreadId = useStore(currentThreadId);
@@ -45,6 +47,7 @@ const FinishSessionButton: React.FC = () => {
             await closeInsightsSession();
             chatBotStore.set.resetStore();
             resetChatStores();
+            history.push('/ai/insights');
             return;
         }
         finishSession(async () => {
