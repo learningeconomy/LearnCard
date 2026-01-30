@@ -2,32 +2,14 @@ import React, { useState } from 'react';
 import { ChevronLeft, Calendar, Award, Loader2, Clock, RefreshCw, CheckCircle } from 'lucide-react';
 
 import { StatusBadge } from './StatusBadge';
-import { getClasses, getEnrollments, EDLINK_CONFIG } from '../services';
-import type { LMSConnection, EdlinkEnrollment, EdlinkClass, EdlinkPerson } from '../types';
+import { edlinkApi } from '../api/client';
+import type { LMSConnection } from '../types';
+import type { EdlinkCompletionsResponse } from '@learncard/types';
 
 interface ConnectionDetailProps {
     connection: LMSConnection;
     onBack: () => void;
     onStatusChange?: (connectionId: string, newStatus: LMSConnection['status']) => void;
-}
-
-// Completion data structure
-interface CompletionData {
-    classes: EdlinkClass[];
-    people: Map<string, EdlinkPerson>;
-    completions: Array<{
-        className: string;
-        assignmentTitle: string;
-        personName: string;
-        personEmail: string | null;
-        gradedDate: string | null;
-        grade: number | null;
-    }>;
-    courseCompletions: Array<{
-        personName: string;
-        personEmail: string | null;
-        className: string;
-    }>;
 }
 
 export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
@@ -37,7 +19,7 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 }) => {
     const [isCheckingStatus, setIsCheckingStatus] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [completionData, setCompletionData] = useState<CompletionData | null>(null);
+    const [completionData, setCompletionData] = useState<EdlinkCompletionsResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     // Reset state when connection changes
@@ -54,13 +36,12 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
 
     const isPendingApproval = connection.status === 'PENDING_APPROVAL';
 
-    // Check if integration is approved
+    // Check if integration is approved (still needs direct check for status)
     const handleCheckStatus = async () => {
-        if (!connection.accessToken) return;
-
         setIsCheckingStatus(true);
         try {
-            await getClasses(connection.accessToken);
+            // Try to fetch completions - if it works, integration is approved
+            await edlinkApi.edlink.getCompletions.query({ connectionId: connection.id });
             onStatusChange?.(connection.id, 'CONNECTED');
         } catch {
             console.log('Integration still pending approval');
@@ -69,88 +50,16 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
         }
     };
 
-    // Fetch completion data: who completed what assignments
+    // Fetch completion data from backend
     const handleFetchCompletions = async () => {
-        if (!connection.accessToken) return;
-
         setIsLoading(true);
         setError(null);
 
-        const headers = {
-            Authorization: `Bearer ${connection.accessToken}`,
-            'Content-Type': 'application/json',
-        };
-
         try {
-            // 1. Fetch classes
-            const classes = await getClasses(connection.accessToken);
-
-            // 2. Fetch people for email/name mapping
-            const peopleResponse = await fetch(`${EDLINK_CONFIG.GRAPH_API_BASE}/people`, { headers });
-            const peopleData = await peopleResponse.json();
-            const people = new Map<string, EdlinkPerson>();
-            (peopleData.$data || []).forEach((p: EdlinkPerson) => people.set(p.id, p));
-
-            // 3. Fetch enrollments for course completions
-            const enrollments = await getEnrollments(connection.accessToken);
-            const courseCompletions = enrollments
-                .filter((e: EdlinkEnrollment) => e.state === 'completed')
-                .map((e: EdlinkEnrollment) => ({
-                    personName: e.person?.display_name || `${e.person?.first_name} ${e.person?.last_name}`,
-                    personEmail: e.person?.email || null,
-                    className: e.class?.name || 'Unknown',
-                }));
-
-            // 4. For each class, fetch assignments and their submissions
-            const completions: CompletionData['completions'] = [];
-
-            for (const cls of classes) {
-                // Fetch assignments
-                const assignmentsResponse = await fetch(
-                    `${EDLINK_CONFIG.GRAPH_API_BASE}/classes/${cls.id}/assignments`,
-                    { headers }
-                );
-                if (!assignmentsResponse.ok) continue;
-
-                const assignmentsData = await assignmentsResponse.json();
-                const assignments = assignmentsData.$data || [];
-
-                // Fetch submissions for each assignment
-                for (const assignment of assignments) {
-                    const submissionsResponse = await fetch(
-                        `${EDLINK_CONFIG.GRAPH_API_BASE}/classes/${cls.id}/assignments/${assignment.id}/submissions`,
-                        { headers }
-                    );
-                    if (!submissionsResponse.ok) continue;
-
-                    const submissionsData = await submissionsResponse.json();
-                    const submissions = submissionsData.$data || [];
-
-                    // Find returned (completed) submissions
-                    for (const sub of submissions) {
-                        if (sub.state !== 'returned') continue;
-
-                        const personId = sub.person_id || sub.person?.id;
-                        const person = personId ? people.get(personId) : null;
-
-                        // Skip teachers
-                        if (person?.roles?.includes('teacher')) continue;
-
-                        completions.push({
-                            className: cls.name,
-                            assignmentTitle: assignment.title,
-                            personName: person?.display_name || person?.first_name || 'Unknown',
-                            personEmail: person?.email || null,
-                            gradedDate: sub.graded_date,
-                            grade: sub.grade,
-                        });
-                    }
-                }
-            }
-
-            setCompletionData({ classes, people, completions, courseCompletions });
+            const data = await edlinkApi.edlink.getCompletions.query({ connectionId: connection.id });
+            setCompletionData(data);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to fetch data');
+            setError(err instanceof Error ? err.message : 'Failed to fetch completions');
         } finally {
             setIsLoading(false);
         }
@@ -250,18 +159,22 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
                             {completionData && (
                                 <div className="mt-4 space-y-4">
                                     {/* Summary */}
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-3 gap-3">
                                         <div className="p-3 bg-blue-50 rounded-lg text-center">
-                                            <p className="text-2xl font-bold text-blue-700">{completionData.classes.length}</p>
+                                            <p className="text-2xl font-bold text-blue-700">{completionData.summary.classes}</p>
                                             <p className="text-xs text-blue-500">Classes</p>
                                         </div>
+                                        <div className="p-3 bg-purple-50 rounded-lg text-center">
+                                            <p className="text-2xl font-bold text-purple-700">{completionData.summary.courseCompletions}</p>
+                                            <p className="text-xs text-purple-500">Courses</p>
+                                        </div>
                                         <div className="p-3 bg-emerald-50 rounded-lg text-center">
-                                            <p className="text-2xl font-bold text-emerald-700">{completionData.completions.length}</p>
-                                            <p className="text-xs text-emerald-500">Completions</p>
+                                            <p className="text-2xl font-bold text-emerald-700">{completionData.summary.assignmentCompletions}</p>
+                                            <p className="text-xs text-emerald-500">Assignments</p>
                                         </div>
                                     </div>
 
-                                    {/* Course Completions (enrollment state = completed) */}
+                                    {/* Course Completions */}
                                     {completionData.courseCompletions.length > 0 && (
                                         <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                                             <p className="text-sm font-medium text-purple-700 mb-2">
@@ -281,13 +194,13 @@ export const ConnectionDetail: React.FC<ConnectionDetailProps> = ({
                                     )}
 
                                     {/* Assignment Completions */}
-                                    {completionData.completions.length > 0 ? (
+                                    {completionData.assignmentCompletions.length > 0 ? (
                                         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                                             <p className="text-sm font-medium text-emerald-700 mb-2">
                                                 Assignment Completions
                                             </p>
                                             <div className="space-y-1 max-h-64 overflow-y-auto">
-                                                {completionData.completions.map((c, i) => (
+                                                {completionData.assignmentCompletions.map((c, i) => (
                                                     <div key={i} className="text-xs bg-white p-2 rounded">
                                                         <div className="flex justify-between">
                                                             <div>

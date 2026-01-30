@@ -1,12 +1,18 @@
 import { z } from 'zod';
-import { EdlinkConnectionValidator, EdlinkConnection } from '@learncard/types';
+import {
+    EdlinkConnectionValidator,
+    EdlinkConnection,
+    EdlinkCompletionsResponseValidator,
+} from '@learncard/types';
 
 import { t, openRoute } from '@routes';
 import {
     createEdlinkConnection,
     getEdlinkConnections,
+    getEdlinkConnectionById,
     deleteEdlinkConnection,
 } from '@accesslayer/edlink-connection';
+import { getEdlinkCompletions } from '@helpers/edlink.helpers';
 
 export const edlinkRouter = t.router({
     createConnection: openRoute
@@ -54,6 +60,26 @@ export const edlinkRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input }) => {
             return deleteEdlinkConnection(input.id);
+        }),
+
+    getCompletions: openRoute
+        .meta({
+            openapi: {
+                method: 'GET',
+                path: '/edlink/connections/{connectionId}/completions',
+                tags: ['Edlink'],
+                summary: 'Get assignment and course completions for a connection',
+            },
+        })
+        .input(z.object({ connectionId: z.string() }))
+        .output(EdlinkCompletionsResponseValidator)
+        .query(async ({ input }) => {
+            const connection = await getEdlinkConnectionById(input.connectionId);
+            if (!connection) {
+                throw new Error('Connection not found');
+            }
+
+            return getEdlinkCompletions(connection.dataValues.accessToken);
         }),
 });
 
