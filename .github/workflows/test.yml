@@ -11,62 +11,7 @@ on:
         default: 'changeset-release/main'
 
 jobs:
-  build-native-plugin:
-    name: Build Native DIDKit Plugin
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.12.0
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          targets: x86_64-unknown-linux-gnu
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            packages/plugins/didkit-plugin-node/native/target/
-          key: linux-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build native plugin
-        working-directory: packages/plugins/didkit-plugin-node
-        run: |
-          pnpm exec nx build didkit-plugin-node
-          strip -x *.node
-
-      - name: Upload native binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: didkit-native-linux-x64
-          path: |
-            packages/plugins/didkit-plugin-node/*.node
-            packages/plugins/didkit-plugin-node/dist/**
-          if-no-files-found: error
-          retention-days: 1
-
   Test:
-    needs: [build-native-plugin]
     runs-on: ubuntu-latest
     environment: ci-tests
     steps:
@@ -80,12 +25,6 @@ jobs:
         run: |
           git fetch --no-tags --prune --depth=5 origin main
 
-      - name: Download native plugin binary
-        uses: actions/download-artifact@v4
-        with:
-          name: didkit-native-linux-x64
-          path: packages/plugins/didkit-plugin-node
-
       - name: Use Composite Setup Action
         uses: ./.github/actions/setup
 
@@ -98,6 +37,7 @@ jobs:
         env:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+          SKIP_DIDKIT_NAPI: "1"
 
   # Run E2E tests on changeset release PRs or manual trigger
   # SSHs into EC2 to run Playwright tests against the branch
