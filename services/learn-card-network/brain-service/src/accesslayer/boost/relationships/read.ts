@@ -331,9 +331,9 @@ export const getBoostRecipients = async (
                 { identifier: 'recipient' },
             ],
         })
-        .with('sender, sent, received, recipient, credential')
+        .with('sender, sent, received, recipient, credential');
         // Filter out revoked credentials
-        .where(`${whereClause}${whereClause ? ' AND ' : ''}(received IS NULL OR received.status IS NULL OR received.status <> "revoked")`);
+        // .where(`${whereClause}${whereClause ? ' AND ' : ''}(received IS NULL OR received.status IS NULL OR received.status <> "revoked")`);
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
@@ -352,15 +352,9 @@ export const getBoostRecipients = async (
             .run()
     );
 
-    console.log('[AccessLayer] getBoostRecipients results for boostId:', boost.id);
-    console.log('[AccessLayer] Result count:', results.length);
-    results.forEach(r => {
-        if (r.received?.status === 'revoked') {
-             console.log('[AccessLayer] FOUND REVOKED in getBoostRecipients!', r.recipient?.profileId);
-        }
-    });
+    const filteredResults = results.filter(r => r.received?.status !== 'revoked');
 
-    const resultsWithIds = results.map(({ sender, sent, received, credential }) => ({
+    const resultsWithIds = filteredResults.map(({ sender, sent, received, credential }) => ({
         sent: sent.date,
         to: sent.to,
         from: sender.profileId,
@@ -459,40 +453,25 @@ export const countBoostRecipients = async (
     boost: BoostInstance,
     { includeUnacceptedBoosts = true }: { includeUnacceptedBoosts?: boolean }
 ): Promise<number> => {
-    const query = new QueryBuilder()
-        .match({
-            related: [
-                { identifier: 'source', model: Boost, where: { id: boost.id } },
-                {
-                    ...Credential.getRelationshipByAlias('instanceOf'),
-                    identifier: 'instanceOf',
-                    direction: 'in',
-                },
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Profile.getRelationshipByAlias('credentialSent'),
-                    identifier: 'sent',
-                    direction: 'in',
-                },
-                { identifier: 'sender', model: Profile },
-            ],
-        })
-        .match({
-            optional: includeUnacceptedBoosts,
-            related: [
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Credential.getRelationshipByAlias('credentialReceived'),
-                    identifier: 'received',
-                },
-                { identifier: 'recipient', model: Profile },
-            ],
-        })
-        // Filter out revoked credentials
-        .where('received IS NULL OR received.status IS NULL OR received.status <> "revoked"');
+    // Use raw Cypher to bypass potential QueryBuilder issues with OPTIONAL MATCH + WHERE
+    const cypher = includeUnacceptedBoosts
+        ? `
+            MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
+            MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
+            OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
+            WITH DISTINCT sent.to AS recipientId, received
+            WHERE received IS NULL OR coalesce(received.status, '') <> 'revoked'
+            RETURN COUNT(DISTINCT recipientId) AS count
+          `
+        : `
+            MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
+            MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
+            MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
+            WHERE coalesce(received.status, '') <> 'revoked'
+            RETURN COUNT(DISTINCT sent.to) AS count
+          `;
 
-    const result = await query.return('COUNT(DISTINCT sent.to) AS count').run();
-
+    const result = await neogma.queryRunner.run(cypher, { boostId: boost.id });
     return Number(result.records[0]?.get('count') ?? 0);
 };
 
