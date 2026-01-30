@@ -908,7 +908,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
     // The backend should handle thread finalization if a new 'start_topic' arrives for a DID with an existing active thread.
 
     const messageToSend = {
-        action: mode === AiSessionMode?.tutor,
+        action: 'start_topic',
         topic,
         did, // Include DID for backend processing
         mode,
