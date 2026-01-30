@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 
 import useVerifyCredential from 'learn-card-base/hooks/useVerifyCredential';
-import { useGetBoost, useGetBoostPermissions, useGetCurrentLCNUser } from 'learn-card-base';
+import { useGetBoost, useGetBoostRecipients, useGetCurrentLCNUser } from 'learn-card-base';
 
 import { isCredentialExpired } from '../../components/boost/boostHelpers';
 import { VC, VerificationStatusEnum } from '@learncard/types';
@@ -24,54 +24,48 @@ type TroopIdStatusButtonProps = {
     otherUserProfileID?: string;
 };
 
-// ! TEMPORARY WAY OF CHECKING IF AN ID IS VALID !!
-// TODO: implement Revocation !!
-export const isTroopIDRevokedFake = (isError: boolean, error: any): boolean => {
-    if (isError && error instanceof Error && error?.message.includes(`Could not find boost`)) {
-        return true;
-    }
+// Proper revocation check using the recipients list
+// Revoked users are filtered out by the backend, so if the user isn't in the list, they're revoked
 
-    return false;
-};
-
-export const useIsTroopIDRevokedFake = (
+export const useIsTroopIDRevoked = (
     credential: VC,
-    isError: boolean,
-    error: any,
     otherUserProfileID?: string,
     boostUri?: string
-) => {
+): boolean | undefined => {
     const { currentLCNUser } = useGetCurrentLCNUser();
-    const myProfileId = currentLCNUser?.profileId;
+    const profileId = otherUserProfileID ?? currentLCNUser?.profileId;
     const _boostUri = credential?.boostId || boostUri;
 
-    const { data: permissions, isError: isPermissionsError } = useGetBoostPermissions(
-        _boostUri,
-        otherUserProfileID ?? myProfileId
-    );
-    const isRevoked = isTroopIDRevokedFake(isError, error);
+    const { data: recipients, isLoading, isError } = useGetBoostRecipients(_boostUri);
 
-    // # if the boost is not found, the ID has been revoked!
-    if (isRevoked) return true;
+    // Still loading - return undefined to indicate unknown state
+    if (isLoading) return undefined;
 
-    // # if the user has no permissions for this boost, their ID is revoked!
-    if (isPermissionsError || !permissions?.role) return true;
+    // Error fetching recipients - could be boost doesn't exist (revoked/deleted boost)
+    if (isError) return true;
 
-    // # if the user has permissions for this boost, their ID is valid!
-    if (
-        permissions?.role === 'creator' ||
-        permissions?.role === 'Director' ||
-        permissions?.role === 'Global Admin' ||
-        permissions?.role === 'Leader' ||
-        permissions?.role === 'Scout'
-    ) {
-        return false;
-    }
+    // No recipients data yet - return undefined
+    if (!recipients) return undefined;
 
-    return true;
+    // Check if the user is in the recipients list
+    // If not in the list, they're revoked (since revoked users are filtered out by the backend)
+    const isInRecipients = recipients.some(r => r.to.profileId === profileId);
+    return !isInRecipients;
 };
-// TODO: implement Revocation !!
-// ! TEMPORARY WAY OF CHECKING IF AN ID IS VALID !!
+
+// Legacy compatibility - deprecated, use useIsTroopIDRevoked instead
+/** @deprecated Use useIsTroopIDRevoked instead */
+export const useIsTroopIDRevokedFake = (
+    credential: VC,
+    _isError: boolean,
+    _error: any,
+    otherUserProfileID?: string,
+    boostUri?: string
+): boolean => {
+    const result = useIsTroopIDRevoked(credential, otherUserProfileID, boostUri);
+    // Return false for undefined (loading) to maintain backwards compatibility
+    return result ?? false;
+};
 
 const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
     credential,

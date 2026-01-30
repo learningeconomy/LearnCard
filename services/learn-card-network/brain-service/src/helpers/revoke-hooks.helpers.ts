@@ -151,30 +151,34 @@ const processConnectionRevoke = async (
     credential: CredentialInstance
 ): Promise<void> => {
     const boostId = await getBoostIdForCredentialInstance(credential);
-    if (!boostId) return;
+    if (!boostId) {
+        console.log('[processConnectionRevoke] No boostId found for credential', credential.id);
+        return;
+    }
 
     // Pattern is `boost:${boostId}`.
     const sourceKey = getBoostConnectionSourceKey(boostId);
+    console.log('[processConnectionRevoke] Removing connections for profile', profile.profileId, 'with sourceKey', sourceKey);
 
-    await new QueryBuilder(new BindParam({ sourceKey }))
-        .match({
-             model: Profile,
-             where: { profileId: profile.profileId },
-             identifier: 'p'
-        })
-        .match({
-            related: [
-                { identifier: 'p' },
-                { ...Profile.getRelationshipByAlias('connectedWith'), direction: 'both', identifier: 'r' },
-                { identifier: 'other' }
-            ]
-        })
-        .where(`$sourceKey IN r.sources`)
-        .set(`r.sources = [x IN r.sources WHERE x <> $sourceKey]`)
-        .with('r')
-        .where('size(r.sources) = 0')
-        .delete('r')
-        .run();
+    // Use raw Cypher for reliability (avoiding QueryBuilder issues with OPTIONAL MATCH + WHERE)
+    const cypher = `
+        MATCH (p:Profile {profileId: $profileId})-[r:CONNECTED_WITH]-(other:Profile)
+        WHERE r.sources IS NOT NULL AND $sourceKey IN r.sources
+        SET r.sources = [x IN r.sources WHERE x <> $sourceKey]
+        WITH r
+        WHERE size(r.sources) = 0
+        DELETE r
+        RETURN count(r) as deletedCount
+    `;
+
+    const { neogma } = await import('@instance');
+    const result = await neogma.queryRunner.run(cypher, { 
+        profileId: profile.profileId,
+        sourceKey 
+    });
+    
+    const deletedCount = result.records[0]?.get('deletedCount') ?? 0;
+    console.log('[processConnectionRevoke] Deleted', deletedCount, 'connection(s)');
 };
 
 export const processRevokeHooks = async (
