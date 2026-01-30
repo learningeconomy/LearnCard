@@ -1,4 +1,4 @@
-import type { } from 'zod-openapi';
+import type {} from 'zod-openapi';
 import { z } from 'zod';
 
 import { PaginationResponseValidator } from './mongo';
@@ -1267,6 +1267,15 @@ export const PaginatedLCNIntegrationsValidator = PaginationResponseValidator.ext
 });
 
 export type PaginatedLCNIntegrationsType = z.infer<typeof PaginatedLCNIntegrationsValidator>;
+
+export const IntegrationSigningAuthorityValidator = z.object({
+    endpoint: z.string(),
+    name: z.string(),
+    did: z.string(),
+    isPrimary: z.boolean(),
+});
+
+export type IntegrationSigningAuthorityType = z.infer<typeof IntegrationSigningAuthorityValidator>;
 
 export const ClaimTokenValidator = z.object({
     token: z.string(),

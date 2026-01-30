@@ -4,10 +4,17 @@ import { z } from 'zod';
 import { t, profileRoute } from '@routes';
 
 import { createIntegration } from '@accesslayer/integration/create';
-import { readIntegrationById, getIntegrationsForProfile, countIntegrationsForProfile } from '@accesslayer/integration/read';
+import {
+    readIntegrationById,
+    getIntegrationsForProfile,
+    countIntegrationsForProfile,
+} from '@accesslayer/integration/read';
 import { updateIntegration as updateIntegrationAccess } from '@accesslayer/integration/update';
 import { deleteIntegration as deleteIntegrationAccess } from '@accesslayer/integration/delete';
-import { associateIntegrationWithProfile, associateIntegrationWithSigningAuthority } from '@accesslayer/integration/relationships/create';
+import {
+    associateIntegrationWithProfile,
+    associateIntegrationWithSigningAuthority,
+} from '@accesslayer/integration/relationships/create';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
     LCNIntegrationValidator,
@@ -16,7 +23,11 @@ import {
     LCNIntegrationQueryValidator,
     PaginatedLCNIntegrationsValidator,
 } from '@learncard/types';
-import { getSigningAuthoritiesForIntegration, getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import {
+    getSigningAuthoritiesForIntegration,
+    getSigningAuthorityForUserByName,
+    getPrimarySigningAuthorityForIntegration,
+} from '@accesslayer/signing-authority/relationships/read';
 
 export const integrationsRouter = t.router({
     addIntegration: profileRoute
@@ -217,9 +228,9 @@ export const integrationsRouter = t.router({
             return true;
         }),
 
-     associateIntegrationWithSigningAuthority: profileRoute
-        .meta({ 
-            openapi: {  
+    associateIntegrationWithSigningAuthority: profileRoute
+        .meta({
+            openapi: {
                 protect: true,
                 method: 'POST',
                 path: '/integration/{integrationId}/associate-with-signing-authority',
@@ -265,19 +276,84 @@ export const integrationsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
             }
 
-
-             const existingSa = await getSigningAuthorityForUserByName(ctx.user.profile, endpoint, name);
-             if (!existingSa) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Signing Authority not found or owned by user. Please register the signing authority with your profile before associating with an integration.' });
-             }
+            const existingSa = await getSigningAuthorityForUserByName(
+                ctx.user.profile,
+                endpoint,
+                name
+            );
+            if (!existingSa) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message:
+                        'Signing Authority not found or owned by user. Please register the signing authority with your profile before associating with an integration.',
+                });
+            }
             const existingSas = await getSigningAuthoritiesForIntegration(integration);
             const setAsPrimary = isPrimary ?? existingSas.length === 0;
-            await associateIntegrationWithSigningAuthority(integration.id, input.endpoint, { name, did, isPrimary: setAsPrimary });
+            await associateIntegrationWithSigningAuthority(integration.id, input.endpoint, {
+                name,
+                did,
+                isPrimary: setAsPrimary,
+            });
 
             return true;
         }),
 
+    getIntegrationSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/integration/{id}/signing-authority',
+                tags: ['Integrations'],
+                summary: 'Get Integration Signing Authority',
+                description: 'Get the primary signing authority for an integration',
+            },
+            requiredScope: 'integrations:read',
+        })
+        .input(z.object({ id: z.string() }))
+        .output(
+            z
+                .object({
+                    endpoint: z.string(),
+                    name: z.string(),
+                    did: z.string(),
+                    isPrimary: z.boolean(),
+                })
+                .optional()
+        )
+        .query(async ({ input, ctx }) => {
+            const associated = await isIntegrationAssociatedWithProfile(
+                input.id,
+                ctx.user.profile.profileId
+            );
 
+            if (!associated) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'This Integration is not associated with you!',
+                });
+            }
+
+            const integration = await readIntegrationById(input.id);
+
+            if (!integration) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+            }
+
+            const primarySa = await getPrimarySigningAuthorityForIntegration(integration);
+
+            if (!primarySa) {
+                return undefined;
+            }
+
+            return {
+                endpoint: primarySa.signingAuthority.endpoint,
+                name: primarySa.relationship.name,
+                did: primarySa.relationship.did,
+                isPrimary: primarySa.relationship.isPrimary ?? true,
+            };
+        }),
 });
 
 export type IntegrationsRouter = typeof integrationsRouter;

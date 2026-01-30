@@ -1704,6 +1704,13 @@ export async function getLearnCardNetworkPlugin(
                     isPrimary,
                 });
             },
+            getIntegrationSigningAuthority: async (_learnCard, integrationId) => {
+                await ensureUser();
+
+                return client.integrations.getIntegrationSigningAuthority.query({
+                    id: integrationId,
+                });
+            },
 
             // App Store
             createAppStoreListing: async (_learnCard, integrationId, listing) => {
@@ -1828,7 +1835,11 @@ export async function getLearnCardNetworkPlugin(
             addBoostToApp: async (_learnCard, listingId, boostUri, templateAlias) => {
                 await ensureUser();
 
-                return client.appStore.addBoostToListing.mutate({ listingId, boostUri, templateAlias });
+                return client.appStore.addBoostToListing.mutate({
+                    listingId,
+                    boostUri,
+                    templateAlias,
+                });
             },
 
             removeBoostFromApp: async (_learnCard, listingId, templateAlias) => {

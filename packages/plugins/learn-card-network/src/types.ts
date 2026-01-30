@@ -677,6 +677,15 @@ export type LearnCardNetworkPluginMethods = {
         did: string,
         isPrimary?: boolean
     ) => Promise<boolean>;
+    getIntegrationSigningAuthority: (integrationId: string) => Promise<
+        | {
+              endpoint: string;
+              name: string;
+              did: string;
+              isPrimary: boolean;
+          }
+        | undefined
+    >;
 
     // App Store
     createAppStoreListing: (
@@ -727,7 +736,9 @@ export type LearnCardNetworkPluginMethods = {
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;
     removeBoostFromApp: (listingId: string, templateAlias: string) => Promise<boolean>;
-    getAppBoosts: (listingId: string) => Promise<Array<{ templateAlias: string; boostUri: string }>>;
+    getAppBoosts: (
+        listingId: string
+    ) => Promise<Array<{ templateAlias: string; boostUri: string }>>;
 
     // App Events (discriminated union)
     sendAppEvent: (listingId: string, event: AppEvent) => Promise<AppEventResponse>;
