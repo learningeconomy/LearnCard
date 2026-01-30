@@ -9,6 +9,7 @@ import {
     constructCustomBoostType,
     useWallet,
     useGetCurrentLCNUser,
+    newCredsStore,
 } from 'learn-card-base';
 
 import { useAddCredentialToWallet } from '../../boost/mutations';
@@ -74,6 +75,14 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
 
             await addCredentialToWallet({ uri: issuedVcUri });
+
+            // sync new creds state
+            const addNewCreds = newCredsStore.set.addNewCreds;
+            if (issuedVcUri && categoryType) {
+                addNewCreds({
+                    [categoryType]: [issuedVcUri],
+                });
+            }
 
             // Update the artfact claimed status to true
             if (artifact?.id) setClaimed(true);

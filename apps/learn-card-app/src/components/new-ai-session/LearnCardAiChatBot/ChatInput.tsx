@@ -264,7 +264,7 @@ const ChatInput: React.FC = () => {
                     >
                         <textarea
                             rows={1}
-                            className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto "
+                            className="flex-1 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[5px] py-[15px] focus:outline-none disabled:opacity-60 resize-none overflow-y-auto phone:!pl-[12px]"
                             value={input}
                             onChange={e => {
                                 setInput(e.target.value);
