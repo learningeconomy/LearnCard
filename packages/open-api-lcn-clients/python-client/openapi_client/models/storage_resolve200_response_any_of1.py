@@ -31,6 +31,7 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
     read: StorageResolve200ResponseAnyOf1Read
     write: StorageResolve200ResponseAnyOf1Write
     denied_writers: Optional[List[StrictStr]] = Field(default=None, alias="deniedWriters")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["read", "write", "deniedWriters"]
 
     model_config = ConfigDict(
@@ -63,8 +64,10 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -78,6 +81,11 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of write
         if self.write:
             _dict['write'] = self.write.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
         return _dict
 
     @classmethod
@@ -94,6 +102,11 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
             "write": StorageResolve200ResponseAnyOf1Write.from_dict(obj["write"]) if obj.get("write") is not None else None,
             "deniedWriters": obj.get("deniedWriters")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

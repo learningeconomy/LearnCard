@@ -36,7 +36,8 @@ class TestProfileGenerateInviteRequest(unittest.TestCase):
         if include_optional:
             return ProfileGenerateInviteRequest(
                 expiration = 1.337,
-                challenge = ''
+                challenge = '',
+                max_uses = 0
             )
         else:
             return ProfileGenerateInviteRequest(

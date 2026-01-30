@@ -74,6 +74,16 @@ class AuthGrantsGetAuthGrantsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
+        # set to None if limit (nullable) is None
+        # and model_fields_set contains the field
+        if self.limit is None and "limit" in self.model_fields_set:
+            _dict['limit'] = None
+
+        # set to None if cursor (nullable) is None
+        # and model_fields_set contains the field
+        if self.cursor is None and "cursor" in self.model_fields_set:
+            _dict['cursor'] = None
+
         return _dict
 
     @classmethod

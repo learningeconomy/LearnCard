@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 **terms** | [**ContractsGetTermsTransactionHistoryRequestQueryTerms**](ContractsGetTermsTransactionHistoryRequestQueryTerms.md) |  | [optional] 
 **action** | [**ContractsGetTermsTransactionHistoryRequestQueryAction**](ContractsGetTermsTransactionHistoryRequestQueryAction.md) |  | [optional] 
 **var_date** | [**ContractsGetTermsTransactionHistoryRequestQueryDate**](ContractsGetTermsTransactionHistoryRequestQueryDate.md) |  | [optional] 
-**expires_at** | [**ContractsGetTermsTransactionHistoryRequestQueryDate**](ContractsGetTermsTransactionHistoryRequestQueryDate.md) |  | [optional] 
+**expires_at** | [**ContractsGetTermsTransactionHistoryRequestQueryExpiresAt**](ContractsGetTermsTransactionHistoryRequestQueryExpiresAt.md) |  | [optional] 
 **one_time** | **bool** |  | [optional] 
 
 ## Example

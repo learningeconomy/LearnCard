@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to import BoostGetBoostRecipients200ResponseInnerTo
-from openapi_client.models.boost_get_children_profile_managers200_response_records_inner import BoostGetChildrenProfileManagers200ResponseRecordsInner
+from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+from openapi_client.models.profile_get_available_profiles200_response_records_inner_manager import ProfileGetAvailableProfiles200ResponseRecordsInnerManager
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,8 +28,9 @@ class ProfileGetAvailableProfiles200ResponseRecordsInner(BaseModel):
     """
     ProfileGetAvailableProfiles200ResponseRecordsInner
     """ # noqa: E501
-    profile: BoostGetBoostRecipients200ResponseInnerTo
-    manager: Optional[BoostGetChildrenProfileManagers200ResponseRecordsInner] = None
+    profile: BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+    manager: Optional[ProfileGetAvailableProfiles200ResponseRecordsInnerManager] = None
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["profile", "manager"]
 
     model_config = ConfigDict(
@@ -62,8 +63,10 @@ class ProfileGetAvailableProfiles200ResponseRecordsInner(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -77,6 +80,11 @@ class ProfileGetAvailableProfiles200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of manager
         if self.manager:
             _dict['manager'] = self.manager.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
         return _dict
 
     @classmethod
@@ -89,9 +97,14 @@ class ProfileGetAvailableProfiles200ResponseRecordsInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "profile": BoostGetBoostRecipients200ResponseInnerTo.from_dict(obj["profile"]) if obj.get("profile") is not None else None,
-            "manager": BoostGetChildrenProfileManagers200ResponseRecordsInner.from_dict(obj["manager"]) if obj.get("manager") is not None else None
+            "profile": BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(obj["profile"]) if obj.get("profile") is not None else None,
+            "manager": ProfileGetAvailableProfiles200ResponseRecordsInnerManager.from_dict(obj["manager"]) if obj.get("manager") is not None else None
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

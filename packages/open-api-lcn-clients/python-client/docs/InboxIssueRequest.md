@@ -6,7 +6,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **recipient** | [**InboxIssueRequestRecipient**](InboxIssueRequestRecipient.md) |  | 
-**credential** | [**InboxIssueRequestCredential**](InboxIssueRequestCredential.md) |  | 
+**credential** | [**InboxIssueRequestCredential**](InboxIssueRequestCredential.md) |  | [optional] 
+**template_uri** | **str** | URI of a boost template to use for issuance. The boost credential will be resolved and used. Mutually exclusive with credential field. | [optional] 
 **configuration** | [**InboxIssueRequestConfiguration**](InboxIssueRequestConfiguration.md) |  | [optional] 
 
 ## Example

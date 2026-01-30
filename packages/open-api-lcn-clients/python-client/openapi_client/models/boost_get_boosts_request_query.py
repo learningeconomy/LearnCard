@@ -13,116 +13,122 @@
 
 
 from __future__ import annotations
+from inspect import getfullargspec
+import json
 import pprint
 import re  # noqa: F401
-import json
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
+from typing import Optional
+from openapi_client.models.boost_get_boosts_request_query_any_of import BoostGetBoostsRequestQueryAnyOf
+from openapi_client.models.boost_get_boosts_request_query_any_of_or_inner import BoostGetBoostsRequestQueryAnyOfOrInner
+from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
+from typing_extensions import Literal, Self
+from pydantic import Field
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool
-from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_boosts_request_query_status import BoostGetBoostsRequestQueryStatus
-from openapi_client.models.boost_get_boosts_request_query_uri import BoostGetBoostsRequestQueryUri
-from typing import Optional, Set
-from typing_extensions import Self
+BOOSTGETBOOSTSREQUESTQUERY_ANY_OF_SCHEMAS = ["BoostGetBoostsRequestQueryAnyOf", "BoostGetBoostsRequestQueryAnyOfOrInner"]
 
 class BoostGetBoostsRequestQuery(BaseModel):
     """
     BoostGetBoostsRequestQuery
-    """ # noqa: E501
-    uri: Optional[BoostGetBoostsRequestQueryUri] = None
-    name: Optional[BoostGetBoostsRequestQueryUri] = None
-    type: Optional[BoostGetBoostsRequestQueryUri] = None
-    category: Optional[BoostGetBoostsRequestQueryUri] = None
-    meta: Optional[Dict[str, BoostGetBoostsRequestQueryUri]] = None
-    status: Optional[BoostGetBoostsRequestQueryStatus] = None
-    auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
-    __properties: ClassVar[List[str]] = ["uri", "name", "type", "category", "meta", "status", "autoConnectRecipients"]
+    """
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        validate_assignment=True,
-        protected_namespaces=(),
-    )
+    # data type: BoostGetBoostsRequestQueryAnyOf
+    anyof_schema_1_validator: Optional[BoostGetBoostsRequestQueryAnyOf] = None
+    # data type: BoostGetBoostsRequestQueryAnyOfOrInner
+    anyof_schema_2_validator: Optional[BoostGetBoostsRequestQueryAnyOfOrInner] = None
+    if TYPE_CHECKING:
+        actual_instance: Optional[Union[BoostGetBoostsRequestQueryAnyOf, BoostGetBoostsRequestQueryAnyOfOrInner]] = None
+    else:
+        actual_instance: Any = None
+    any_of_schemas: Set[str] = { "BoostGetBoostsRequestQueryAnyOf", "BoostGetBoostsRequestQueryAnyOfOrInner" }
 
+    model_config = {
+        "validate_assignment": True,
+        "protected_namespaces": (),
+    }
 
-    def to_str(self) -> str:
-        """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.model_dump(by_alias=True))
+    def __init__(self, *args, **kwargs) -> None:
+        if args:
+            if len(args) > 1:
+                raise ValueError("If a position argument is used, only 1 is allowed to set `actual_instance`")
+            if kwargs:
+                raise ValueError("If a position argument is used, keyword arguments cannot be used.")
+            super().__init__(actual_instance=args[0])
+        else:
+            super().__init__(**kwargs)
+
+    @field_validator('actual_instance')
+    def actual_instance_must_validate_anyof(cls, v):
+        instance = BoostGetBoostsRequestQuery.model_construct()
+        error_messages = []
+        # validate data type: BoostGetBoostsRequestQueryAnyOf
+        if not isinstance(v, BoostGetBoostsRequestQueryAnyOf):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostGetBoostsRequestQueryAnyOf`")
+        else:
+            return v
+
+        # validate data type: BoostGetBoostsRequestQueryAnyOfOrInner
+        if not isinstance(v, BoostGetBoostsRequestQueryAnyOfOrInner):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostGetBoostsRequestQueryAnyOfOrInner`")
+        else:
+            return v
+
+        if error_messages:
+            # no match
+            raise ValueError("No match found when setting the actual_instance in BoostGetBoostsRequestQuery with anyOf schemas: BoostGetBoostsRequestQueryAnyOf, BoostGetBoostsRequestQueryAnyOfOrInner. Details: " + ", ".join(error_messages))
+        else:
+            return v
+
+    @classmethod
+    def from_dict(cls, obj: Dict[str, Any]) -> Self:
+        return cls.from_json(json.dumps(obj))
+
+    @classmethod
+    def from_json(cls, json_str: str) -> Self:
+        """Returns the object represented by the json string"""
+        instance = cls.model_construct()
+        error_messages = []
+        # anyof_schema_1_validator: Optional[BoostGetBoostsRequestQueryAnyOf] = None
+        try:
+            instance.actual_instance = BoostGetBoostsRequestQueryAnyOf.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_2_validator: Optional[BoostGetBoostsRequestQueryAnyOfOrInner] = None
+        try:
+            instance.actual_instance = BoostGetBoostsRequestQueryAnyOfOrInner.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+
+        if error_messages:
+            # no match
+            raise ValueError("No match found when deserializing the JSON string into BoostGetBoostsRequestQuery with anyOf schemas: BoostGetBoostsRequestQueryAnyOf, BoostGetBoostsRequestQueryAnyOfOrInner. Details: " + ", ".join(error_messages))
+        else:
+            return instance
 
     def to_json(self) -> str:
-        """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        """Returns the JSON representation of the actual instance"""
+        if self.actual_instance is None:
+            return "null"
 
-    @classmethod
-    def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of BoostGetBoostsRequestQuery from a JSON string"""
-        return cls.from_dict(json.loads(json_str))
+        if hasattr(self.actual_instance, "to_json") and callable(self.actual_instance.to_json):
+            return self.actual_instance.to_json()
+        else:
+            return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Return the dictionary representation of the model using alias.
-
-        This has the following differences from calling pydantic's
-        `self.model_dump(by_alias=True)`:
-
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
-        """
-        excluded_fields: Set[str] = set([
-        ])
-
-        _dict = self.model_dump(
-            by_alias=True,
-            exclude=excluded_fields,
-            exclude_none=True,
-        )
-        # override the default output from pydantic by calling `to_dict()` of uri
-        if self.uri:
-            _dict['uri'] = self.uri.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of name
-        if self.name:
-            _dict['name'] = self.name.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of type
-        if self.type:
-            _dict['type'] = self.type.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of category
-        if self.category:
-            _dict['category'] = self.category.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of each value in meta (dict)
-        _field_dict = {}
-        if self.meta:
-            for _key_meta in self.meta:
-                if self.meta[_key_meta]:
-                    _field_dict[_key_meta] = self.meta[_key_meta].to_dict()
-            _dict['meta'] = _field_dict
-        # override the default output from pydantic by calling `to_dict()` of status
-        if self.status:
-            _dict['status'] = self.status.to_dict()
-        return _dict
-
-    @classmethod
-    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of BoostGetBoostsRequestQuery from a dict"""
-        if obj is None:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostGetBoostsRequestQueryAnyOf, BoostGetBoostsRequestQueryAnyOfOrInner]]:
+        """Returns the dict representation of the actual instance"""
+        if self.actual_instance is None:
             return None
 
-        if not isinstance(obj, dict):
-            return cls.model_validate(obj)
+        if hasattr(self.actual_instance, "to_dict") and callable(self.actual_instance.to_dict):
+            return self.actual_instance.to_dict()
+        else:
+            return self.actual_instance
 
-        _obj = cls.model_validate({
-            "uri": BoostGetBoostsRequestQueryUri.from_dict(obj["uri"]) if obj.get("uri") is not None else None,
-            "name": BoostGetBoostsRequestQueryUri.from_dict(obj["name"]) if obj.get("name") is not None else None,
-            "type": BoostGetBoostsRequestQueryUri.from_dict(obj["type"]) if obj.get("type") is not None else None,
-            "category": BoostGetBoostsRequestQueryUri.from_dict(obj["category"]) if obj.get("category") is not None else None,
-            "meta": dict(
-                (_k, BoostGetBoostsRequestQueryUri.from_dict(_v))
-                for _k, _v in obj["meta"].items()
-            )
-            if obj.get("meta") is not None
-            else None,
-            "status": BoostGetBoostsRequestQueryStatus.from_dict(obj["status"]) if obj.get("status") is not None else None,
-            "autoConnectRecipients": obj.get("autoConnectRecipients")
-        })
-        return _obj
+    def to_str(self) -> str:
+        """Returns the string representation of the actual instance"""
+        return pprint.pformat(self.model_dump())
 
 
