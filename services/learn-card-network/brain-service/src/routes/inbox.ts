@@ -34,11 +34,17 @@ import {
 } from '@accesslayer/inbox-credential/read';
 import { readIntegrationByPublishableKey } from '@accesslayer/integration/read';
 import {
-    getPrimarySigningAuthorityForIntegration,
-    getSigningAuthoritiesForIntegrationByName,
+    getPrimarySigningAuthorityForListing,
+    getSigningAuthoritiesForListingByName,
     getSigningAuthorityForUserByName,
 } from '@accesslayer/signing-authority/relationships/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
+import {
+    readAppStoreListingById,
+    readAppStoreListingBySlug,
+    getListingsForIntegration,
+} from '@accesslayer/app-store-listing/read';
+import { getIntegrationForListing } from '@accesslayer/app-store-listing/relationships/read';
 import { isDomainWhitelisted } from '@helpers/integrations.helpers';
 import { getContactMethodsForProfile } from '@accesslayer/contact-method/read';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
@@ -473,14 +479,54 @@ export const inboxRouter = t.router({
             if (!isDomainWhitelisted(domain, integration.whitelistedDomains))
                 throw new TRPCError({ code: 'UNAUTHORIZED' });
 
+            const { listingId, listingSlug } = configuration;
+            let listing = null;
+
+            if (listingId || listingSlug) {
+                listing = listingId
+                    ? await readAppStoreListingById(listingId)
+                    : await readAppStoreListingBySlug(listingSlug || '');
+
+                if (!listing)
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+
+                const listingIntegration = await getIntegrationForListing(listing.listing_id);
+                if (!listingIntegration || listingIntegration.id !== integration.id) {
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'Listing is not associated with this integration',
+                    });
+                }
+            } else {
+                const listings = await getListingsForIntegration(integration.id, { limit: 2 });
+                if (!listings.length) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'No listings found for this integration',
+                    });
+                }
+                if (listings.length > 1) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message:
+                            'Multiple listings found. Provide listingId or listingSlug in configuration.',
+                    });
+                }
+                listing = listings[0] ?? null;
+            }
+
+            if (!listing) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+            }
+
             const signingAuthorityRel = configuration?.signingAuthorityName
                 ? (
-                      await getSigningAuthoritiesForIntegrationByName(
-                          integration,
+                      await getSigningAuthoritiesForListingByName(
+                          listing,
                           configuration.signingAuthorityName.toLowerCase()
                       )
                   ).at(0)
-                : await getPrimarySigningAuthorityForIntegration(integration);
+                : await getPrimarySigningAuthorityForListing(listing);
 
             if (!signingAuthorityRel)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Signing Authority not found' });

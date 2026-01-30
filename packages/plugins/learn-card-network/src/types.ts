@@ -670,14 +670,14 @@ export type LearnCardNetworkPluginMethods = {
     countIntegrations: (options?: { query?: LCNIntegrationQueryType }) => Promise<number>;
     updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
     deleteIntegration: (id: string) => Promise<boolean>;
-    associateIntegrationWithSigningAuthority: (
-        integrationId: string,
+    associateListingWithSigningAuthority: (
+        listingId: string,
         endpoint: string,
         name: string,
         did: string,
         isPrimary?: boolean
     ) => Promise<boolean>;
-    getIntegrationSigningAuthority: (integrationId: string) => Promise<
+    getListingSigningAuthority: (listingId: string) => Promise<
         | {
               endpoint: string;
               name: string;

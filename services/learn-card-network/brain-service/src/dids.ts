@@ -9,11 +9,10 @@ import { getAppDidWeb, getDidWeb, getManagedDidWeb } from '@helpers/did.helpers'
 import { isValidAppSlug } from '@helpers/slug.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
-    getPrimarySigningAuthorityForIntegration,
+    getPrimarySigningAuthorityForListing,
     getSigningAuthoritiesForUser,
 } from '@accesslayer/signing-authority/relationships/read';
 import { readAppStoreListingBySlug } from '@accesslayer/app-store-listing/read';
-import { getIntegrationForListing } from '@accesslayer/app-store-listing/relationships/read';
 import {
     getDidDocForProfile,
     getDidDocForProfileManager,
@@ -39,7 +38,8 @@ const encodeKey = (key: Uint8Array) => {
 // Validate manager ID to prevent injection attacks
 const isValidManagerId = (id: string): boolean => {
     // Manager IDs should be valid UUIDs
-    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return typeof id === 'string' && uuidPattern.test(id);
 };
 
@@ -275,10 +275,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         const listing = await readAppStoreListingBySlug(slug);
         if (!listing) return reply.status(404).send();
 
-        const integration = await getIntegrationForListing(listing.listing_id);
-        if (!integration) return reply.status(404).send();
-
-        const signingAuthority = await getPrimarySigningAuthorityForIntegration(integration);
+        const signingAuthority = await getPrimarySigningAuthorityForListing(listing);
         if (!signingAuthority) return reply.status(404).send();
 
         const authorityDid = signingAuthority.relationship.did;
@@ -326,7 +323,10 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 ...existingKA.filter(ka => ka?.id !== primaryKAId),
             ];
         } catch (e) {
-            request.log?.warn({ err: e }, 'Failed to set 2019 keyAgreement on app did:web document');
+            request.log?.warn(
+                { err: e },
+                'Failed to set 2019 keyAgreement on app did:web document'
+            );
         }
 
         await setDidDocForApp(slug, finalDoc);

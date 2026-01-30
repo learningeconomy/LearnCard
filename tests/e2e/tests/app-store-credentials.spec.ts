@@ -14,25 +14,22 @@ let boostUri: string;
 /**
  * Creates and registers a signing authority with an optional custom owner DID.
  * This mirrors the app's ensureAppSigningAuthority flow.
- * 
+ *
  * - ownerDid: Used by the signing service for ownership lookup
  * - sa.did: Used for DID document resolution
  */
 const setupSigningAuthority = async (lc: LearnCard, name: string, ownerDid?: string) => {
     const sa = await lc.invoke.createSigningAuthority(name, ownerDid);
     if (!sa) throw new Error(`Failed to create signing authority: ${name}`);
+    if (!sa.endpoint || !sa.did) throw new Error(`Signing authority missing data: ${name}`);
 
     // Register with the SA's own DID (not the ownerDid/app DID)
     // The ownerDid is for ownership lookup, but the SA's DID is what gets resolved
-    await lc.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+    await lc.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
 
     return sa;
 };
 
-/**
- * Sets up an integration without a signing authority.
- * The SA will be added later after the listing is created (to get the app DID).
- */
 const setupIntegration = async (lc: LearnCard, name: string) => {
     const id = await lc.invoke.addIntegration({
         name,
@@ -41,23 +38,6 @@ const setupIntegration = async (lc: LearnCard, name: string) => {
     });
 
     return id;
-};
-
-/**
- * Associates an existing signing authority with an integration.
- */
-const associateSigningAuthorityWithIntegration = async (
-    lc: LearnCard,
-    integrationId: string,
-    sa: { endpoint?: string; name: string; did?: string }
-) => {
-    await lc.invoke.associateIntegrationWithSigningAuthority(
-        integrationId,
-        sa.endpoint!,
-        sa.name,
-        sa.did!,
-        true
-    );
 };
 
 const testListingData = {
@@ -93,8 +73,14 @@ describe('App Store Credential Issuance E2E Tests', () => {
         const appDid = getAppDidFromSlug(listing.slug);
         const sa = await setupSigningAuthority(appOwner, 'test-sa', appDid);
 
-        // 5. Associate SA with integration
-        await associateSigningAuthorityWithIntegration(appOwner, integrationId, sa);
+        // 5. Associate SA with listing
+        await appOwner.invoke.associateListingWithSigningAuthority(
+            listingId,
+            sa.endpoint,
+            sa.name,
+            sa.did,
+            true
+        );
 
         // 6. Set listing to LISTED so it can be installed
         await appOwner.invoke.adminUpdateListingStatus(listingId, 'LISTED');
@@ -233,9 +219,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
         it('should issue credential with app DID as issuer and verify successfully', async () => {
             // Get the listing to verify it has a slug
             const listing = await appOwner.invoke.getAppStoreListing(listingId);
-            expect(listing).toBeDefined();
-            expect(listing?.slug).toBeDefined();
-            expect(listing?.slug).toBe('test-app');
+            if (!listing?.slug) throw new Error('Listing slug not set');
 
             // Issue credential - this uses the app's signing authority
             const result = await appUser.invoke.sendAppEvent(listingId, {
@@ -251,10 +235,9 @@ describe('App Store Credential Issuance E2E Tests', () => {
             expect(credential).toBeDefined();
 
             // Verify the issuer is the app DID (not the profile DID)
-            const expectedAppDid = getAppDidFromSlug(listing!.slug!);
-            const issuerId = typeof credential.issuer === 'string'
-                ? credential.issuer
-                : credential.issuer?.id;
+            const expectedAppDid = getAppDidFromSlug(listing.slug);
+            const issuerId =
+                typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
 
             expect(issuerId).toBe(expectedAppDid);
 
@@ -265,21 +248,21 @@ describe('App Store Credential Issuance E2E Tests', () => {
 
         it('should generate correct app DID format from slug', async () => {
             const listing = await appOwner.invoke.getAppStoreListing(listingId);
-            expect(listing).toBeDefined();
+            if (!listing?.slug) throw new Error('Listing slug not set');
 
             // Verify the DID document endpoint works
-            const didResponse = await fetch(`http://localhost:4000/app/${listing!.slug}/did.json`);
+            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
             expect(didResponse.status).toBe(200);
 
             const didDoc = await didResponse.json();
-            const expectedAppDid = getAppDidFromSlug(listing!.slug!);
+            const expectedAppDid = getAppDidFromSlug(listing.slug);
 
             expect(didDoc.id).toBe(expectedAppDid);
         });
 
         it('should allow third party to verify credential signed by app DID', async () => {
             const listing = await appOwner.invoke.getAppStoreListing(listingId);
-            expect(listing?.slug).toBeDefined();
+            if (!listing?.slug) throw new Error('Listing slug not set');
 
             // Issue credential
             const result = await appUser.invoke.sendAppEvent(listingId, {
@@ -294,15 +277,13 @@ describe('App Store Credential Issuance E2E Tests', () => {
             // A third party (user c) should be able to verify the credential
             const verifier = await getLearnCardForUser('c');
             const verification = await verifier.invoke.verifyCredential(credential);
-
             expect(verification.errors).toHaveLength(0);
             expect(verification.checks).toContain('proof');
 
             // Confirm the issuer is the app DID
-            const expectedAppDid = getAppDidFromSlug(listing!.slug!);
-            const issuerId = typeof credential.issuer === 'string'
-                ? credential.issuer
-                : credential.issuer?.id;
+            const expectedAppDid = getAppDidFromSlug(listing.slug);
+            const issuerId =
+                typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
 
             expect(issuerId).toBe(expectedAppDid);
         });
@@ -316,23 +297,8 @@ describe('App Store Credential Issuance E2E Tests', () => {
         it('should issue credential with profile DID when listing has no slug', async () => {
             // Create a fresh integration and listing for this test
             const legacyOwner = await getLearnCardForUser('d');
-            const legacySa = await setupSigningAuthority(legacyOwner, 'legacy-sa');
+            const legacyIntegrationId = await setupIntegration(legacyOwner, 'legacy-app');
 
-            const legacyIntegrationId = await legacyOwner.invoke.addIntegration({
-                name: 'legacy-app',
-                description: 'Legacy app without slug',
-                whitelistedDomains: ['example.com'],
-            });
-
-            await legacyOwner.invoke.associateIntegrationWithSigningAuthority(
-                legacyIntegrationId,
-                legacySa.endpoint!,
-                legacySa.name,
-                legacySa.did!,
-                true
-            );
-
-            // Create listing - slug will be auto-generated
             const legacyListingId = await legacyOwner.invoke.createAppStoreListing(
                 legacyIntegrationId,
                 {
@@ -340,14 +306,6 @@ describe('App Store Credential Issuance E2E Tests', () => {
                     display_name: 'Legacy App',
                 }
             );
-
-            // Clear the slug to simulate legacy behavior
-            // This requires direct database access or an admin API
-            // For now, we verify that WITH a slug, app DID is used (tested above)
-            // The brain-service code path for no-slug falls back to profile DID:
-            //   const issuerDid = listing.slug
-            //     ? getAppDidWeb(ctx.domain, listing.slug)
-            //     : getDidWeb(ctx.domain, integrationOwner.profileId);
 
             const listing = await legacyOwner.invoke.getAppStoreListing(legacyListingId);
 
@@ -405,7 +363,7 @@ describe('App Store Credential Issuance E2E Tests', () => {
             // Install app as appUser
             await appUser.invoke.installApp(noSaListingId);
 
-            // sendAppEvent should fail because the integration has no signing authority
+            // sendAppEvent should fail because the listing has no signing authority
             await expect(
                 appUser.invoke.sendAppEvent(noSaListingId, {
                     type: 'send-credential',

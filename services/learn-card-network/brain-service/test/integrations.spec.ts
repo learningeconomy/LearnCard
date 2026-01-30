@@ -2,7 +2,7 @@ import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
 
-import { Integration, Profile, SigningAuthority } from '@models';
+import { Integration, Profile } from '@models';
 
 import { createIntegration } from '@accesslayer/integration/create';
 import {
@@ -13,19 +13,9 @@ import {
 } from '@accesslayer/integration/read';
 import { updateIntegration as updateIntegrationAccess } from '@accesslayer/integration/update';
 import { deleteIntegration as deleteIntegrationAccess } from '@accesslayer/integration/delete';
-import {
-    associateIntegrationWithProfile,
-    associateIntegrationWithSigningAuthority,
-} from '@accesslayer/integration/relationships/create';
-import {
-    deleteIntegrationProfileRelationship,
-    deleteIntegrationSigningAuthorityRelationship,
-} from '@accesslayer/integration/relationships/delete';
-import {
-    isIntegrationAssociatedWithProfile,
-    isIntegrationUsingSigningAuthority,
-} from '@accesslayer/integration/relationships/read';
-import { upsertSigningAuthority } from '@accesslayer/signing-authority/create';
+import { associateIntegrationWithProfile } from '@accesslayer/integration/relationships/create';
+import { deleteIntegrationProfileRelationship } from '@accesslayer/integration/relationships/delete';
+import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -56,14 +46,12 @@ const seedIntegrationViaRouter = async (
 };
 
 describe('Integrations', () => {
-
     beforeAll(async () => {
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
     });
 
     describe('Access Layer', () => {
-
         beforeEach(async () => {
             await Integration.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
@@ -97,7 +85,10 @@ describe('Integrations', () => {
             expect(byName?.id).toBe(created.id);
 
             const oldKey = byId?.publishableKey;
-            await updateIntegrationAccess(byId!, { description: 'Updated', rotatePublishableKey: true });
+            await updateIntegrationAccess(byId!, {
+                description: 'Updated',
+                rotatePublishableKey: true,
+            });
 
             const afterUpdate = await readIntegrationById(created.id);
             expect(afterUpdate?.description).toBe('Updated');
@@ -112,44 +103,59 @@ describe('Integrations', () => {
             const a1 = await createIntegration(makeIntegrationInput('Alpha'));
             const a2 = await createIntegration(makeIntegrationInput('AlphaBeta'));
             const b1 = await createIntegration(makeIntegrationInput('Gamma'));
-    
+
             await associateIntegrationWithProfile(a1.id, 'usera');
             await associateIntegrationWithProfile(a2.id, 'usera');
             await associateIntegrationWithProfile(b1.id, 'userb');
 
-            const allA = await getIntegrationsForProfile({ profileId: 'usera' }, {
-                limit: 10,
-            });
+            const allA = await getIntegrationsForProfile(
+                { profileId: 'usera' },
+                {
+                    limit: 10,
+                }
+            );
             expect(allA.length).toBe(2);
 
-            const allB = await getIntegrationsForProfile({ profileId: 'userb' }, {
-                limit: 10,
-            });
+            const allB = await getIntegrationsForProfile(
+                { profileId: 'userb' },
+                {
+                    limit: 10,
+                }
+            );
             expect(allB.length).toBe(1);
 
             const countAAll = await countIntegrationsForProfile({ profileId: 'usera' }, {});
             expect(countAAll).toBe(2);
 
-            const countAAlpha = await countIntegrationsForProfile({ profileId: 'usera' }, {
-                query: { name: { $regex: '/^Alpha/' } as any },
-            });
+            const countAAlpha = await countIntegrationsForProfile(
+                { profileId: 'usera' },
+                {
+                    query: { name: { $regex: '/^Alpha/' } as any },
+                }
+            );
             expect(countAAlpha).toBe(2);
 
-            const filteredA = await getIntegrationsForProfile({ profileId: 'usera' }, {
-                limit: 10,
-                query: { name: { $regex: '/^Alpha/' } as any },
-            });
+            const filteredA = await getIntegrationsForProfile(
+                { profileId: 'usera' },
+                {
+                    limit: 10,
+                    query: { name: { $regex: '/^Alpha/' } as any },
+                }
+            );
             expect(filteredA.length).toBe(2);
 
-            const filteredB = await getIntegrationsForProfile({ profileId: 'usera' }, {
-                limit: 10,
-                query: { name: { $in: ['Alpha'] } as any },
-            });
+            const filteredB = await getIntegrationsForProfile(
+                { profileId: 'usera' },
+                {
+                    limit: 10,
+                    query: { name: { $in: ['Alpha'] } as any },
+                }
+            );
             expect(filteredB.length).toBe(1);
             expect(filteredB[0]?.name).toBe('Alpha');
         });
 
-        it('relationship helpers work for Profile and SigningAuthority', async () => {
+        it('relationship helpers work for Profile', async () => {
             const integ = await createIntegration(makeIntegrationInput('RelTest'));
 
             // Profile relationship
@@ -161,25 +167,6 @@ describe('Integrations', () => {
             const deletedRel = await deleteIntegrationProfileRelationship(integ.id, 'usera');
             expect(deletedRel).toBe(true);
             expect(await isIntegrationAssociatedWithProfile(integ.id, 'usera')).toBe(false);
-
-            // Signing Authority relationship
-            const saEndpoint = 'https://signing.example.com';
-            await upsertSigningAuthority(saEndpoint);
-
-            expect(await isIntegrationUsingSigningAuthority(integ.id, saEndpoint)).toBe(false);
-
-            await associateIntegrationWithSigningAuthority(integ.id, saEndpoint, {
-                name: 'Primary',
-                did: 'did:test:123',
-                isPrimary: true,
-            });
-
-            expect(await isIntegrationUsingSigningAuthority(integ.id, saEndpoint)).toBe(true);
-            expect(await isIntegrationUsingSigningAuthority(integ.id, saEndpoint, 'Primary')).toBe(true);
-
-            const delSa = await deleteIntegrationSigningAuthorityRelationship(integ.id, saEndpoint, 'Primary');
-            expect(delSa).toBe(true);
-            expect(await isIntegrationUsingSigningAuthority(integ.id, saEndpoint)).toBe(false);
         });
     });
 
@@ -193,7 +180,6 @@ describe('Integrations', () => {
         beforeEach(async () => {
             await Integration.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} });
 
             await seedProfile(userA, 'usera');
             await seedProfile(userB, 'userb');
@@ -213,11 +199,15 @@ describe('Integrations', () => {
                 ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 
                 await expect(
-                    userA.clients.partialAuth.integrations.addIntegration(makeIntegrationInput('Partial'))
+                    userA.clients.partialAuth.integrations.addIntegration(
+                        makeIntegrationInput('Partial')
+                    )
                 ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 
                 await expect(
-                    userC.clients.fullAuth.integrations.addIntegration(makeIntegrationInput('NoProfile'))
+                    userC.clients.fullAuth.integrations.addIntegration(
+                        makeIntegrationInput('NoProfile')
+                    )
                 ).rejects.toMatchObject({ code: 'NOT_FOUND' });
             });
 
@@ -261,7 +251,9 @@ describe('Integrations', () => {
                     ids.push(await seedIntegrationViaRouter(userA, name));
                 }
 
-                const page1 = await userA.clients.fullAuth.integrations.getIntegrations({ limit: 2 });
+                const page1 = await userA.clients.fullAuth.integrations.getIntegrations({
+                    limit: 2,
+                });
                 expect(page1.records.length).toBe(2);
                 expect(page1.hasMore).toBe(true);
                 expect(typeof page1.cursor === 'string').toBe(true);
@@ -329,7 +321,9 @@ describe('Integrations', () => {
 
                 const after = await userA.clients.fullAuth.integrations.getIntegration({ id });
                 expect(after?.description).toBe('Updated');
-                expect(after?.publishableKey && after.publishableKey).not.toBe(before?.publishableKey);
+                expect(after?.publishableKey && after.publishableKey).not.toBe(
+                    before?.publishableKey
+                );
             });
         });
 
@@ -349,41 +343,5 @@ describe('Integrations', () => {
                 expect(after).toBeNull();
             });
         });
-
-        describe('associateIntegrationWithSigningAuthority', () => {
-
-            it('rejects associating integration with signing authority if the profile does not already have signing authority registered', async () => {
-                const id = await seedIntegrationViaRouter(userA, 'Associate');
-
-                await expect(
-                    userA.clients.fullAuth.integrations.associateIntegrationWithSigningAuthority({
-                        integrationId: id,
-                        endpoint: 'https://example.com',
-                        name: 'example',
-                        did: 'did:example:123',
-                    })
-                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
-            });
-
-            it('associates integration with signing authority', async () => {
-                const id = await seedIntegrationViaRouter(userA, 'Associate');
-
-                await userA.clients.fullAuth.profile.registerSigningAuthority({
-                    endpoint: 'https://example.com',
-                    name: 'example',
-                    did: 'did:example:123',
-                });
-
-                const ok = await userA.clients.fullAuth.integrations.associateIntegrationWithSigningAuthority({
-                    integrationId: id,
-                    endpoint: 'https://example.com',
-                    name: 'example',
-                    did: 'did:example:123',
-                });
-                expect(ok).toBe(true);
-            });
-        });
-
     });
-
-})
+});

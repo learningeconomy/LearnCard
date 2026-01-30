@@ -17,10 +17,11 @@ const getAppDidFromSlug = (slug: string): string => {
 const setupSigningAuthority = async (lc: LearnCard, name: string, ownerDid?: string) => {
     const sa = await lc.invoke.createSigningAuthority(name, ownerDid);
     if (!sa) throw new Error(`Failed to create signing authority: ${name}`);
+    if (!sa.endpoint || !sa.did) throw new Error(`Signing authority missing data: ${name}`);
 
     // Register with the SA's own DID (not the ownerDid/app DID)
     // The ownerDid is for ownership lookup, but the SA's DID is what gets resolved
-    await lc.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+    await lc.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
 
     return sa;
 };
@@ -53,26 +54,26 @@ describe('App DIDs End-to-End', () => {
 
             // 3. Get the listing with generated slug
             const listing = await alice.invoke.getAppStoreListing(listingId);
-            expect(listing?.slug).toBeDefined();
+            if (!listing?.slug) throw new Error('Listing slug not set');
 
             // 4. Create SA with the APP DID as owner
-            const appDid = getAppDidFromSlug(listing!.slug!);
+            const appDid = getAppDidFromSlug(listing.slug);
             const sa = await setupSigningAuthority(alice, 'app-did-sa', appDid);
 
-            // 5. Associate SA with integration
-            await alice.invoke.associateIntegrationWithSigningAuthority(
-                integrationId,
-                sa.endpoint!,
+            // 5. Associate SA with listing
+            await alice.invoke.associateListingWithSigningAuthority(
+                listingId,
+                sa.endpoint,
                 sa.name,
-                sa.did!,
+                sa.did,
                 true
             );
 
             // 6. Verify App DID format
-            const expectedAppDid = getAppDidFromSlug(listing!.slug!);
+            const expectedAppDid = getAppDidFromSlug(listing.slug);
 
             // 7. Test DID resolution endpoint
-            const didResponse = await fetch(`http://localhost:4000/app/${listing!.slug}/did.json`);
+            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
             expect(didResponse.status).toBe(200);
 
             const didDoc = await didResponse.json();
@@ -134,27 +135,28 @@ describe('App DIDs End-to-End', () => {
             });
 
             const listing = await alice.invoke.getAppStoreListing(listingId);
-            expect(listing?.app_listing_status).toBe('DRAFT');
+            if (!listing?.slug) throw new Error('Listing slug not set');
+            expect(listing.app_listing_status).toBe('DRAFT');
 
             // Create SA with the APP DID as owner
-            const appDid = getAppDidFromSlug(listing!.slug!);
+            const appDid = getAppDidFromSlug(listing.slug);
             const sa = await setupSigningAuthority(alice, 'dev-sa', appDid);
 
-            // Associate SA with integration
-            await alice.invoke.associateIntegrationWithSigningAuthority(
-                integrationId,
-                sa.endpoint!,
+            // Associate SA with listing
+            await alice.invoke.associateListingWithSigningAuthority(
+                listingId,
+                sa.endpoint,
                 sa.name,
-                sa.did!,
+                sa.did,
                 true
             );
 
             // Verify DID resolution works for draft apps (supports dev testing)
-            const didResponse = await fetch(`http://localhost:4000/app/${listing!.slug}/did.json`);
+            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
             expect(didResponse.status).toBe(200);
 
             const didDoc = await didResponse.json();
-            expect(didDoc.id).toBe(`did:web:localhost%3A4000:app:${listing!.slug}`);
+            expect(didDoc.id).toBe(`did:web:localhost%3A4000:app:${listing.slug}`);
             expect(didDoc.verificationMethod).toBeTruthy();
         });
     });
@@ -173,7 +175,7 @@ describe('App DIDs End-to-End', () => {
                 const response = await fetch(`http://localhost:4000/app/${slug}/did.json`);
                 // Should return 404 or 400, not succeed with file contents
                 expect([400, 404, 422]).toContain(response.status);
-                
+
                 // Verify response doesn't contain filesystem content
                 if (response.status !== 404) {
                     const text = await response.text();
@@ -198,7 +200,9 @@ describe('App DIDs End-to-End', () => {
             ];
 
             for (const slug of invalidSlugs) {
-                const response = await fetch(`http://localhost:4000/app/${encodeURIComponent(slug)}/did.json`);
+                const response = await fetch(
+                    `http://localhost:4000/app/${encodeURIComponent(slug)}/did.json`
+                );
                 expect([400, 404, 422]).toContain(response.status);
             }
         });
@@ -241,9 +245,10 @@ describe('App DIDs End-to-End', () => {
             });
 
             const listing = await alice.invoke.getAppStoreListing(listingId);
+            if (!listing?.slug) throw new Error('Listing slug not set');
 
             // DID resolution should fail gracefully when no SA exists
-            const didResponse = await fetch(`http://localhost:4000/app/${listing!.slug}/did.json`);
+            const didResponse = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
             expect(didResponse.status).toBe(404);
         });
 
@@ -269,21 +274,22 @@ describe('App DIDs End-to-End', () => {
             });
 
             const listing = await alice.invoke.getAppStoreListing(listingId);
+            if (!listing?.slug) throw new Error('Listing slug not set');
 
             // Create SA with the APP DID as owner
-            const appDid = getAppDidFromSlug(listing!.slug!);
+            const appDid = getAppDidFromSlug(listing.slug);
             const sa = await setupSigningAuthority(alice, 'content-type-sa', appDid);
 
-            // Associate SA with integration
-            await alice.invoke.associateIntegrationWithSigningAuthority(
-                integrationId,
-                sa.endpoint!,
+            // Associate SA with listing
+            await alice.invoke.associateListingWithSigningAuthority(
+                listingId,
+                sa.endpoint,
                 sa.name,
-                sa.did!,
+                sa.did,
                 true
             );
 
-            const response = await fetch(`http://localhost:4000/app/${listing!.slug}/did.json`);
+            const response = await fetch(`http://localhost:4000/app/${listing.slug}/did.json`);
             expect(response.status).toBe(200);
 
             const contentType = response.headers.get('content-type');
@@ -317,9 +323,10 @@ describe('App DIDs End-to-End', () => {
             await alice.invoke.adminUpdateListingStatus(listingId, 'LISTED');
 
             const listing = await alice.invoke.getAppStoreListing(listingId);
+            if (!listing?.slug) throw new Error('Listing slug not set');
 
             // Test public listing by slug lookup
-            const publicListing = await alice.invoke.getPublicAppStoreListingBySlug(listing!.slug!);
+            const publicListing = await alice.invoke.getPublicAppStoreListingBySlug(listing.slug);
 
             expect(publicListing?.display_name).toBe('Public Test App');
             expect(publicListing?.app_listing_status).toBe('LISTED');

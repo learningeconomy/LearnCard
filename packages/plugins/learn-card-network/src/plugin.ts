@@ -1686,9 +1686,16 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.integrations.deleteIntegration.mutate({ id });
             },
-            associateIntegrationWithSigningAuthority: async (
+
+            // App Store
+            createAppStoreListing: async (_learnCard, integrationId, listing) => {
+                await ensureUser();
+
+                return client.appStore.createListing.mutate({ integrationId, listing });
+            },
+            associateListingWithSigningAuthority: async (
                 _learnCard,
-                integrationId,
+                listingId,
                 endpoint,
                 name,
                 did,
@@ -1696,27 +1703,18 @@ export async function getLearnCardNetworkPlugin(
             ) => {
                 await ensureUser();
 
-                return client.integrations.associateIntegrationWithSigningAuthority.mutate({
-                    integrationId,
+                return client.appStore.associateListingWithSigningAuthority.mutate({
+                    listingId,
                     endpoint,
                     name,
                     did,
                     isPrimary,
                 });
             },
-            getIntegrationSigningAuthority: async (_learnCard, integrationId) => {
+            getListingSigningAuthority: async (_learnCard, listingId) => {
                 await ensureUser();
 
-                return client.integrations.getIntegrationSigningAuthority.query({
-                    id: integrationId,
-                });
-            },
-
-            // App Store
-            createAppStoreListing: async (_learnCard, integrationId, listing) => {
-                await ensureUser();
-
-                return client.appStore.createListing.mutate({ integrationId, listing });
+                return client.appStore.getListingSigningAuthority.query({ listingId });
             },
 
             getAppStoreListing: async (_learnCard, listingId) => {

@@ -11,10 +11,7 @@ import {
 } from '@accesslayer/integration/read';
 import { updateIntegration as updateIntegrationAccess } from '@accesslayer/integration/update';
 import { deleteIntegration as deleteIntegrationAccess } from '@accesslayer/integration/delete';
-import {
-    associateIntegrationWithProfile,
-    associateIntegrationWithSigningAuthority,
-} from '@accesslayer/integration/relationships/create';
+import { associateIntegrationWithProfile } from '@accesslayer/integration/relationships/create';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
     LCNIntegrationValidator,
@@ -23,11 +20,6 @@ import {
     LCNIntegrationQueryValidator,
     PaginatedLCNIntegrationsValidator,
 } from '@learncard/types';
-import {
-    getSigningAuthoritiesForIntegration,
-    getSigningAuthorityForUserByName,
-    getPrimarySigningAuthorityForIntegration,
-} from '@accesslayer/signing-authority/relationships/read';
 
 export const integrationsRouter = t.router({
     addIntegration: profileRoute
@@ -226,133 +218,6 @@ export const integrationsRouter = t.router({
             await deleteIntegrationAccess(input.id);
 
             return true;
-        }),
-
-    associateIntegrationWithSigningAuthority: profileRoute
-        .meta({
-            openapi: {
-                protect: true,
-                method: 'POST',
-                path: '/integration/{integrationId}/associate-with-signing-authority',
-                tags: ['Integrations'],
-                summary: 'Associate Integration with Signing Authority',
-                description: 'Associate an Integration with a Signing Authority',
-            },
-            requiredScope: 'integrations:write',
-        })
-        .input(
-            z.object({
-                integrationId: z.string(),
-                endpoint: z.string(),
-                name: z
-                    .string()
-                    .max(15)
-                    .regex(/^[a-z0-9-]+$/, {
-                        message:
-                            'The input string must contain only lowercase letters, numbers, and hyphens.',
-                    }),
-                did: z.string(),
-                isPrimary: z.boolean().optional(),
-            })
-        )
-        .output(z.boolean())
-        .mutation(async ({ input, ctx }) => {
-            const { integrationId, endpoint, name, did, isPrimary } = input;
-            const associated = await isIntegrationAssociatedWithProfile(
-                integrationId,
-                ctx.user.profile.profileId
-            );
-
-            if (!associated) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'Integration does not exist or is not associated with your profile.',
-                });
-            }
-
-            const integration = await readIntegrationById(integrationId);
-
-            if (!integration) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
-            }
-
-            const existingSa = await getSigningAuthorityForUserByName(
-                ctx.user.profile,
-                endpoint,
-                name
-            );
-            if (!existingSa) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message:
-                        'Signing Authority not found or owned by user. Please register the signing authority with your profile before associating with an integration.',
-                });
-            }
-            const existingSas = await getSigningAuthoritiesForIntegration(integration);
-            const setAsPrimary = isPrimary ?? existingSas.length === 0;
-            await associateIntegrationWithSigningAuthority(integration.id, input.endpoint, {
-                name,
-                did,
-                isPrimary: setAsPrimary,
-            });
-
-            return true;
-        }),
-
-    getIntegrationSigningAuthority: profileRoute
-        .meta({
-            openapi: {
-                protect: true,
-                method: 'GET',
-                path: '/integration/{id}/signing-authority',
-                tags: ['Integrations'],
-                summary: 'Get Integration Signing Authority',
-                description: 'Get the primary signing authority for an integration',
-            },
-            requiredScope: 'integrations:read',
-        })
-        .input(z.object({ id: z.string() }))
-        .output(
-            z
-                .object({
-                    endpoint: z.string(),
-                    name: z.string(),
-                    did: z.string(),
-                    isPrimary: z.boolean(),
-                })
-                .optional()
-        )
-        .query(async ({ input, ctx }) => {
-            const associated = await isIntegrationAssociatedWithProfile(
-                input.id,
-                ctx.user.profile.profileId
-            );
-
-            if (!associated) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'This Integration is not associated with you!',
-                });
-            }
-
-            const integration = await readIntegrationById(input.id);
-
-            if (!integration) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
-            }
-
-            const primarySa = await getPrimarySigningAuthorityForIntegration(integration);
-
-            if (!primarySa) {
-                return undefined;
-            }
-
-            return {
-                endpoint: primarySa.signingAuthority.endpoint,
-                name: primarySa.relationship.name,
-                did: primarySa.relationship.did,
-                isPrimary: primarySa.relationship.isPrimary ?? true,
-            };
         }),
 });
 

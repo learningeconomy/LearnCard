@@ -45,10 +45,12 @@ import {
 import { readIntegrationById } from '@accesslayer/integration/read';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
-    getPrimarySigningAuthorityForIntegration,
+    getPrimarySigningAuthorityForListing,
     getPrimarySigningAuthorityForUser,
+    getSigningAuthoritiesForListing,
+    getSigningAuthorityForUserByName,
 } from '@accesslayer/signing-authority/relationships/read';
-import { associateIntegrationWithSigningAuthority } from '@accesslayer/integration/relationships/create';
+import { associateListingWithSigningAuthority } from '@accesslayer/app-store-listing/relationships/create';
 import {
     AppListingStatus,
     LaunchType,
@@ -458,8 +460,8 @@ const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
     }
 
-    // Get signing authority for the integration
-    const sa = await getPrimarySigningAuthorityForIntegration(integration);
+    // Get signing authority for the listing
+    const sa = await getPrimarySigningAuthorityForListing(listing);
     if (!sa) {
         throw new TRPCError({
             code: 'NOT_FOUND',
@@ -738,6 +740,107 @@ export const appStoreRouter = t.router({
             }
 
             return updateAppStoreListing(listing, storageUpdates);
+        }),
+
+    associateListingWithSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/associate-with-signing-authority',
+                tags: ['App Store'],
+                summary: 'Associate Listing with Signing Authority',
+                description: 'Associate an App Store Listing with a Signing Authority',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                endpoint: z.string(),
+                name: z
+                    .string()
+                    .max(15)
+                    .regex(/^[a-z0-9-]+$/, {
+                        message:
+                            'The input string must contain only lowercase letters, numbers, and hyphens.',
+                    }),
+                did: z.string(),
+                isPrimary: z.boolean().optional(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listingId, endpoint, name, did, isPrimary } = input;
+
+            const { listing } = await verifyListingOwnership(listingId, ctx.user.profile.profileId);
+
+            const existingSa = await getSigningAuthorityForUserByName(
+                ctx.user.profile,
+                endpoint,
+                name
+            );
+            if (!existingSa) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message:
+                        'Signing Authority not found or owned by user. Please register the signing authority with your profile before associating with a listing.',
+                });
+            }
+
+            const existingSas = await getSigningAuthoritiesForListing(listing);
+            const setAsPrimary = isPrimary ?? existingSas.length === 0;
+
+            await associateListingWithSigningAuthority(listing.listing_id, endpoint, {
+                name,
+                did,
+                isPrimary: setAsPrimary,
+            });
+
+            return true;
+        }),
+
+    getListingSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/listing/{listingId}/signing-authority',
+                tags: ['App Store'],
+                summary: 'Get Listing Signing Authority',
+                description: 'Get the primary signing authority for an App Store Listing',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(
+            z
+                .object({
+                    endpoint: z.string(),
+                    name: z.string(),
+                    did: z.string(),
+                    isPrimary: z.boolean(),
+                })
+                .optional()
+        )
+        .query(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            const primarySa = await getPrimarySigningAuthorityForListing(listing);
+
+            if (!primarySa) {
+                return undefined;
+            }
+
+            return {
+                endpoint: primarySa.signingAuthority.endpoint,
+                name: primarySa.relationship.name,
+                did: primarySa.relationship.did,
+                isPrimary: primarySa.relationship.isPrimary ?? true,
+            };
         }),
 
     submitForReview: profileRoute
@@ -1106,7 +1209,7 @@ export const appStoreRouter = t.router({
         )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            const { integration } = await verifyListingOwnership(
+            const { listing } = await verifyListingOwnership(
                 input.listingId,
                 ctx.user.profile.profileId
             );
@@ -1124,14 +1227,14 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            // Auto-setup signing authority for integration if not already configured
-            const existingSa = await getPrimarySigningAuthorityForIntegration(integration);
+            // Auto-setup signing authority for listing if not already configured
+            const existingSa = await getPrimarySigningAuthorityForListing(listing);
             if (!existingSa) {
                 // Try to use the user's primary signing authority
                 const userSa = await getPrimarySigningAuthorityForUser(ctx.user.profile);
                 if (userSa) {
-                    await associateIntegrationWithSigningAuthority(
-                        integration.id,
+                    await associateListingWithSigningAuthority(
+                        listing.listing_id,
                         userSa.signingAuthority.endpoint,
                         {
                             name: userSa.relationship.name,

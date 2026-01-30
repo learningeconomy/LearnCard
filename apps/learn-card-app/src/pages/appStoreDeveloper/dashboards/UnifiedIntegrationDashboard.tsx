@@ -189,31 +189,45 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const [listingToUpgrade, setListingToUpgrade] = useState<AppStoreListing | null>(null);
 
     // Hooks for app DID upgrade detection
-    const {
-        useListingsForIntegration,
-        useIntegrationSigningAuthority,
-        useUpgradeAppToAppDid,
-        checkAppNeedsUpgrade,
-    } = useDeveloperPortal();
+    const { useListingsForIntegration, useUpgradeAppToAppDid, checkAppNeedsUpgrade } =
+        useDeveloperPortal();
 
     const { data: appListings } = useListingsForIntegration(integration.id);
-    const { data: integrationSa } = useIntegrationSigningAuthority(integration.id);
     const upgradeAppMutation = useUpgradeAppToAppDid();
 
     // Check if any app listing needs upgrade
     useEffect(() => {
         if (!appListings?.length || hasDeclinedUpgrade) return;
 
-        // Find the first listing that needs upgrade
-        const needsUpgrade = appListings.find(listing =>
-            checkAppNeedsUpgrade(listing, integrationSa)
-        );
+        let isActive = true;
 
-        if (needsUpgrade) {
-            setListingToUpgrade(needsUpgrade);
-            setShowUpgradeDialog(true);
-        }
-    }, [appListings, integrationSa, hasDeclinedUpgrade, checkAppNeedsUpgrade]);
+        const checkListings = async () => {
+            try {
+                const wallet = await initWalletRef.current();
+
+                for (const listing of appListings) {
+                    const signingAuthority = await wallet.invoke.getListingSigningAuthority(
+                        listing.listing_id
+                    );
+
+                    if (checkAppNeedsUpgrade(listing, signingAuthority ?? null)) {
+                        if (!isActive) return;
+                        setListingToUpgrade(listing);
+                        setShowUpgradeDialog(true);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to check listing signing authorities:', error);
+            }
+        };
+
+        checkListings();
+
+        return () => {
+            isActive = false;
+        };
+    }, [appListings, hasDeclinedUpgrade, checkAppNeedsUpgrade]);
 
     const handleUpgrade = async (): Promise<boolean> => {
         if (!listingToUpgrade) return false;
@@ -221,7 +235,6 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
         try {
             await upgradeAppMutation.mutateAsync({
                 listingId: listingToUpgrade.listing_id,
-                integrationId: integration.id,
             });
             presentToast('App upgraded successfully!', {
                 type: ToastTypeEnum.Success,

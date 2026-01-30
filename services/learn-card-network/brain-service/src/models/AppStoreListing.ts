@@ -6,6 +6,7 @@ import { Integration, IntegrationInstance } from './Integration';
 import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
 import { Credential, CredentialInstance } from './Credential';
+import { SigningAuthority, SigningAuthorityInstance } from './SigningAuthority';
 import {
     FlatAppStoreListingType,
     AppListingStatus,
@@ -30,8 +31,26 @@ export type AppStoreListingRelationships = {
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
         CredentialInstance,
-        { to: string; date: string; metadata?: Record<string, unknown>; activityId?: string; integrationId?: string },
-        { to: string; date: string; metadata?: Record<string, unknown>; activityId?: string; integrationId?: string }
+        {
+            to: string;
+            date: string;
+            metadata?: Record<string, unknown>;
+            activityId?: string;
+            integrationId?: string;
+        },
+        {
+            to: string;
+            date: string;
+            metadata?: Record<string, unknown>;
+            activityId?: string;
+            integrationId?: string;
+        }
+    >;
+    usesSigningAuthority: ModelRelatedNodesI<
+        typeof SigningAuthority,
+        SigningAuthorityInstance,
+        { name: string; did: string; isPrimary?: boolean },
+        { name: string; did: string; isPrimary?: boolean }
     >;
 };
 
@@ -111,6 +130,19 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
                 properties: {
                     to: { property: 'to', schema: { type: 'string', required: true } },
                     date: { property: 'date', schema: { type: 'string', required: true } },
+                },
+            },
+            usesSigningAuthority: {
+                model: SigningAuthority,
+                direction: 'out',
+                name: 'USES_SIGNING_AUTHORITY',
+                properties: {
+                    name: { property: 'name', schema: { type: 'string', required: true } },
+                    did: { property: 'did', schema: { type: 'string', required: true } },
+                    isPrimary: {
+                        property: 'isPrimary',
+                        schema: { type: 'boolean', required: false },
+                    },
                 },
             },
         },
