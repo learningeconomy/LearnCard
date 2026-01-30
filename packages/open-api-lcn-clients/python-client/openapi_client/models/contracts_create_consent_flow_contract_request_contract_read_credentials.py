@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.storage_resolve200_response_any_of_any_of_read_credentials_categories_value import StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue
+from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value import ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,7 +27,7 @@ class ContractsCreateConsentFlowContractRequestContractReadCredentials(BaseModel
     """
     ContractsCreateConsentFlowContractRequestContractReadCredentials
     """ # noqa: E501
-    categories: Optional[Dict[str, StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue]] = None
+    categories: Optional[Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]] = None
     __properties: ClassVar[List[str]] = ["categories"]
 
     model_config = ConfigDict(
@@ -89,7 +89,7 @@ class ContractsCreateConsentFlowContractRequestContractReadCredentials(BaseModel
 
         _obj = cls.model_validate({
             "categories": dict(
-                (_k, StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue.from_dict(_v))
+                (_k, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.from_dict(_v))
                 for _k, _v in obj["categories"].items()
             )
             if obj.get("categories") is not None

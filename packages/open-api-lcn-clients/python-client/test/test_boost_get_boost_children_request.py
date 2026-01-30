@@ -39,16 +39,7 @@ class TestBoostGetBoostChildrenRequest(unittest.TestCase):
                 cursor = '',
                 sort = '',
                 uri = '',
-                query = openapi_client.models.boost_get_boosts_request_query.boost_getBoosts_request_query(
-                    uri = null, 
-                    name = null, 
-                    type = null, 
-                    category = null, 
-                    meta = {
-                        'key' : null
-                        }, 
-                    status = null, 
-                    auto_connect_recipients = True, ),
+                query = None,
                 number_of_generations = 1.337
             )
         else:

@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.boost_create_boost_request_claim_permissions import BoostCreateBoostRequestClaimPermissions
 from openapi_client.models.boost_create_boost_request_credential import BoostCreateBoostRequestCredential
 from typing import Optional, Set
 from typing_extensions import Self
@@ -35,7 +36,8 @@ class BoostUpdateBoostRequestUpdates(BaseModel):
     meta: Optional[Dict[str, Any]] = None
     allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     credential: Optional[BoostCreateBoostRequestCredential] = None
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "credential"]
+    default_permissions: Optional[BoostCreateBoostRequestClaimPermissions] = Field(default=None, alias="defaultPermissions")
+    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "credential", "defaultPermissions"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -43,8 +45,8 @@ class BoostUpdateBoostRequestUpdates(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['DRAFT', 'LIVE']):
-            raise ValueError("must be one of enum values ('DRAFT', 'LIVE')")
+        if value not in set(['DRAFT', 'PROVISIONAL', 'LIVE']):
+            raise ValueError("must be one of enum values ('DRAFT', 'PROVISIONAL', 'LIVE')")
         return value
 
     model_config = ConfigDict(
@@ -89,6 +91,24 @@ class BoostUpdateBoostRequestUpdates(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of credential
         if self.credential:
             _dict['credential'] = self.credential.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of default_permissions
+        if self.default_permissions:
+            _dict['defaultPermissions'] = self.default_permissions.to_dict()
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if type (nullable) is None
+        # and model_fields_set contains the field
+        if self.type is None and "type" in self.model_fields_set:
+            _dict['type'] = None
+
+        # set to None if category (nullable) is None
+        # and model_fields_set contains the field
+        if self.category is None and "category" in self.model_fields_set:
+            _dict['category'] = None
+
         return _dict
 
     @classmethod
@@ -108,7 +128,8 @@ class BoostUpdateBoostRequestUpdates(BaseModel):
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
             "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
-            "credential": BoostCreateBoostRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None
+            "credential": BoostCreateBoostRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
+            "defaultPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["defaultPermissions"]) if obj.get("defaultPermissions") is not None else None
         })
         return _obj
 

@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_boosts_request_query_uri import BoostGetBoostsRequestQueryUri
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,16 +27,16 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
     """
     ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions
     """ # noqa: E501
-    role: Optional[BoostGetBoostsRequestQueryUri] = None
+    role: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
     can_edit: Optional[StrictBool] = Field(default=None, alias="canEdit")
     can_issue: Optional[StrictBool] = Field(default=None, alias="canIssue")
     can_revoke: Optional[StrictBool] = Field(default=None, alias="canRevoke")
     can_manage_permissions: Optional[StrictBool] = Field(default=None, alias="canManagePermissions")
-    can_issue_children: Optional[BoostGetBoostsRequestQueryUri] = Field(default=None, alias="canIssueChildren")
-    can_create_children: Optional[BoostGetBoostsRequestQueryUri] = Field(default=None, alias="canCreateChildren")
-    can_edit_children: Optional[BoostGetBoostsRequestQueryUri] = Field(default=None, alias="canEditChildren")
-    can_revoke_children: Optional[BoostGetBoostsRequestQueryUri] = Field(default=None, alias="canRevokeChildren")
-    can_manage_children_permissions: Optional[BoostGetBoostsRequestQueryUri] = Field(default=None, alias="canManageChildrenPermissions")
+    can_issue_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canIssueChildren")
+    can_create_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canCreateChildren")
+    can_edit_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canEditChildren")
+    can_revoke_children: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canRevokeChildren")
+    can_manage_children_permissions: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canManageChildrenPermissions")
     can_manage_children_profiles: Optional[StrictBool] = Field(default=None, alias="canManageChildrenProfiles")
     can_view_analytics: Optional[StrictBool] = Field(default=None, alias="canViewAnalytics")
     __properties: ClassVar[List[str]] = ["role", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
@@ -110,16 +110,16 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "role": BoostGetBoostsRequestQueryUri.from_dict(obj["role"]) if obj.get("role") is not None else None,
+            "role": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["role"]) if obj.get("role") is not None else None,
             "canEdit": obj.get("canEdit"),
             "canIssue": obj.get("canIssue"),
             "canRevoke": obj.get("canRevoke"),
             "canManagePermissions": obj.get("canManagePermissions"),
-            "canIssueChildren": BoostGetBoostsRequestQueryUri.from_dict(obj["canIssueChildren"]) if obj.get("canIssueChildren") is not None else None,
-            "canCreateChildren": BoostGetBoostsRequestQueryUri.from_dict(obj["canCreateChildren"]) if obj.get("canCreateChildren") is not None else None,
-            "canEditChildren": BoostGetBoostsRequestQueryUri.from_dict(obj["canEditChildren"]) if obj.get("canEditChildren") is not None else None,
-            "canRevokeChildren": BoostGetBoostsRequestQueryUri.from_dict(obj["canRevokeChildren"]) if obj.get("canRevokeChildren") is not None else None,
-            "canManageChildrenPermissions": BoostGetBoostsRequestQueryUri.from_dict(obj["canManageChildrenPermissions"]) if obj.get("canManageChildrenPermissions") is not None else None,
+            "canIssueChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canIssueChildren"]) if obj.get("canIssueChildren") is not None else None,
+            "canCreateChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canCreateChildren"]) if obj.get("canCreateChildren") is not None else None,
+            "canEditChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canEditChildren"]) if obj.get("canEditChildren") is not None else None,
+            "canRevokeChildren": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canRevokeChildren"]) if obj.get("canRevokeChildren") is not None else None,
+            "canManageChildrenPermissions": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["canManageChildrenPermissions"]) if obj.get("canManageChildrenPermissions") is not None else None,
             "canManageChildrenProfiles": obj.get("canManageChildrenProfiles"),
             "canViewAnalytics": obj.get("canViewAnalytics")
         })

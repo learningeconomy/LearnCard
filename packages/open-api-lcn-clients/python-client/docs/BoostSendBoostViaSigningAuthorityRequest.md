@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **boost_uri** | **str** |  | 
 **signing_authority** | [**BoostSendBoostViaSigningAuthorityRequestSigningAuthority**](BoostSendBoostViaSigningAuthorityRequestSigningAuthority.md) |  | 
+**template_data** | **Dict[str, object]** |  | [optional] 
 **options** | [**BoostSendBoostRequestOptions**](BoostSendBoostRequestOptions.md) |  | [optional] 
 
 ## Example

@@ -17,8 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,7 +29,8 @@ class ProfileGenerateInviteRequest(BaseModel):
     """ # noqa: E501
     expiration: Optional[Union[StrictFloat, StrictInt]] = 2592000
     challenge: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["expiration", "challenge"]
+    max_uses: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=0)]] = Field(default=1, alias="maxUses")
+    __properties: ClassVar[List[str]] = ["expiration", "challenge", "maxUses"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -69,6 +71,11 @@ class ProfileGenerateInviteRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if challenge (nullable) is None
+        # and model_fields_set contains the field
+        if self.challenge is None and "challenge" in self.model_fields_set:
+            _dict['challenge'] = None
+
         return _dict
 
     @classmethod
@@ -82,7 +89,8 @@ class ProfileGenerateInviteRequest(BaseModel):
 
         _obj = cls.model_validate({
             "expiration": obj.get("expiration") if obj.get("expiration") is not None else 2592000,
-            "challenge": obj.get("challenge")
+            "challenge": obj.get("challenge"),
+            "maxUses": obj.get("maxUses") if obj.get("maxUses") is not None else 1
         })
         return _obj
 

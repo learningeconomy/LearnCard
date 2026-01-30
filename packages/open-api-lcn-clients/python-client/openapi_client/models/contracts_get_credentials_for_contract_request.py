@@ -29,7 +29,7 @@ class ContractsGetCredentialsForContractRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = 25
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
-    terms_uri: StrictStr = Field(alias="termsUri")
+    terms_uri: Optional[StrictStr] = Field(alias="termsUri")
     include_received: Optional[StrictBool] = Field(default=True, alias="includeReceived")
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "termsUri", "includeReceived"]
 
@@ -72,6 +72,21 @@ class ContractsGetCredentialsForContractRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if cursor (nullable) is None
+        # and model_fields_set contains the field
+        if self.cursor is None and "cursor" in self.model_fields_set:
+            _dict['cursor'] = None
+
+        # set to None if sort (nullable) is None
+        # and model_fields_set contains the field
+        if self.sort is None and "sort" in self.model_fields_set:
+            _dict['sort'] = None
+
+        # set to None if terms_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.terms_uri is None and "terms_uri" in self.model_fields_set:
+            _dict['termsUri'] = None
+
         return _dict
 
     @classmethod

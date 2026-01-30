@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_send_boost_request_credential_any_of_context_inner import BoostSendBoostRequestCredentialAnyOfContextInner
+from openapi_client.models.boost_send_request_template_credential_any_of_context_inner import BoostSendRequestTemplateCredentialAnyOfContextInner
 from openapi_client.models.did_metadata_add_did_metadata_request_verification_method_inner_any_of_public_key_jwk import DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,15 +28,16 @@ class DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOf(BaseModel):
     """
     DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOf
     """ # noqa: E501
-    context: Optional[List[BoostSendBoostRequestCredentialAnyOfContextInner]] = Field(default=None, alias="@context")
-    id: StrictStr
-    type: StrictStr
-    controller: StrictStr
+    context: Optional[List[BoostSendRequestTemplateCredentialAnyOfContextInner]] = Field(default=None, alias="@context")
+    id: Optional[StrictStr]
+    type: Optional[StrictStr]
+    controller: Optional[StrictStr]
     public_key_jwk: Optional[DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk] = Field(default=None, alias="publicKeyJwk")
     public_key_base58: Optional[StrictStr] = Field(default=None, alias="publicKeyBase58")
+    public_key_multibase: Optional[StrictStr] = Field(default=None, alias="publicKeyMultibase")
     block_chain_account_id: Optional[StrictStr] = Field(default=None, alias="blockChainAccountId")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["@context", "id", "type", "controller", "publicKeyJwk", "publicKeyBase58", "blockChainAccountId"]
+    __properties: ClassVar[List[str]] = ["@context", "id", "type", "controller", "publicKeyJwk", "publicKeyBase58", "publicKeyMultibase", "blockChainAccountId"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -94,6 +95,36 @@ class DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
+        # set to None if id (nullable) is None
+        # and model_fields_set contains the field
+        if self.id is None and "id" in self.model_fields_set:
+            _dict['id'] = None
+
+        # set to None if type (nullable) is None
+        # and model_fields_set contains the field
+        if self.type is None and "type" in self.model_fields_set:
+            _dict['type'] = None
+
+        # set to None if controller (nullable) is None
+        # and model_fields_set contains the field
+        if self.controller is None and "controller" in self.model_fields_set:
+            _dict['controller'] = None
+
+        # set to None if public_key_base58 (nullable) is None
+        # and model_fields_set contains the field
+        if self.public_key_base58 is None and "public_key_base58" in self.model_fields_set:
+            _dict['publicKeyBase58'] = None
+
+        # set to None if public_key_multibase (nullable) is None
+        # and model_fields_set contains the field
+        if self.public_key_multibase is None and "public_key_multibase" in self.model_fields_set:
+            _dict['publicKeyMultibase'] = None
+
+        # set to None if block_chain_account_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.block_chain_account_id is None and "block_chain_account_id" in self.model_fields_set:
+            _dict['blockChainAccountId'] = None
+
         return _dict
 
     @classmethod
@@ -106,12 +137,13 @@ class DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOf(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "@context": [BoostSendBoostRequestCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
+            "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "type": obj.get("type"),
             "controller": obj.get("controller"),
             "publicKeyJwk": DidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOfPublicKeyJwk.from_dict(obj["publicKeyJwk"]) if obj.get("publicKeyJwk") is not None else None,
             "publicKeyBase58": obj.get("publicKeyBase58"),
+            "publicKeyMultibase": obj.get("publicKeyMultibase"),
             "blockChainAccountId": obj.get("blockChainAccountId")
         })
         # store additional fields in additional_properties

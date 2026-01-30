@@ -37,14 +37,14 @@ class TestContractsGetTermsTransactionHistory200ResponseRecordsInner(unittest.Te
             return ContractsGetTermsTransactionHistory200ResponseRecordsInner(
                 expires_at = '',
                 one_time = True,
-                terms = openapi_client.models.storage_resolve_200_response_any_of_1.storage_resolve_200_response_anyOf_1(
-                    read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
+                terms = openapi_client.models.contracts_get_terms_transaction_history_200_response_records_inner_terms.contracts_getTermsTransactionHistory_200_response_records_inner_terms(
+                    read = openapi_client.models.contracts_get_consented_contracts_200_response_records_inner_terms_read.contracts_getConsentedContracts_200_response_records_inner_terms_read(
                         anonymize = True, 
-                        credentials = openapi_client.models.storage_resolve_200_response_any_of_1_read_credentials.storage_resolve_200_response_anyOf_1_read_credentials(
+                        credentials = openapi_client.models.contracts_get_consented_contracts_200_response_records_inner_terms_read_credentials.contracts_getConsentedContracts_200_response_records_inner_terms_read_credentials(
                             share_all = True, 
                             sharing = True, 
                             categories = {
-                                'key' : openapi_client.models.storage_resolve_200_response_any_of_1_read_credentials_categories_value.storage_resolve_200_response_anyOf_1_read_credentials_categories_value(
+                                'key' : openapi_client.models.contracts_get_consented_contracts_200_response_records_inner_terms_read_credentials_categories_value.contracts_getConsentedContracts_200_response_records_inner_terms_read_credentials_categories_value(
                                     sharing = True, 
                                     shared = [
                                         ''
@@ -55,8 +55,8 @@ class TestContractsGetTermsTransactionHistory200ResponseRecordsInner(unittest.Te
                         personal = {
                             'key' : ''
                             }, ), 
-                    write = openapi_client.models.storage_resolve_200_response_any_of_1_write.storage_resolve_200_response_anyOf_1_write(
-                        credentials = openapi_client.models.storage_resolve_200_response_any_of_1_write_credentials.storage_resolve_200_response_anyOf_1_write_credentials(
+                    write = openapi_client.models.contracts_get_terms_transaction_history_200_response_records_inner_terms_write.contracts_getTermsTransactionHistory_200_response_records_inner_terms_write(
+                        credentials = openapi_client.models.contracts_get_terms_transaction_history_200_response_records_inner_terms_write_credentials.contracts_getTermsTransactionHistory_200_response_records_inner_terms_write_credentials(
                             categories = {
                                 'key' : True
                                 }, ), 

@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
 from pydantic import StrictStr
+from typing import Optional
 from openapi_client.models.workflows_participate_in_exchange200_response import WorkflowsParticipateInExchange200Response
 from openapi_client.models.workflows_participate_in_exchange_request import WorkflowsParticipateInExchangeRequest
 
@@ -41,8 +42,8 @@ class WorkflowsApi:
     @validate_call
     def workflows_participate_in_exchange(
         self,
-        local_workflow_id: StrictStr,
-        local_exchange_id: StrictStr,
+        local_workflow_id: Optional[StrictStr],
+        local_exchange_id: Optional[StrictStr],
         workflows_participate_in_exchange_request: WorkflowsParticipateInExchangeRequest,
         _request_timeout: Union[
             None,
@@ -120,8 +121,8 @@ class WorkflowsApi:
     @validate_call
     def workflows_participate_in_exchange_with_http_info(
         self,
-        local_workflow_id: StrictStr,
-        local_exchange_id: StrictStr,
+        local_workflow_id: Optional[StrictStr],
+        local_exchange_id: Optional[StrictStr],
         workflows_participate_in_exchange_request: WorkflowsParticipateInExchangeRequest,
         _request_timeout: Union[
             None,
@@ -199,8 +200,8 @@ class WorkflowsApi:
     @validate_call
     def workflows_participate_in_exchange_without_preload_content(
         self,
-        local_workflow_id: StrictStr,
-        local_exchange_id: StrictStr,
+        local_workflow_id: Optional[StrictStr],
+        local_exchange_id: Optional[StrictStr],
         workflows_participate_in_exchange_request: WorkflowsParticipateInExchangeRequest,
         _request_timeout: Union[
             None,

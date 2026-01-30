@@ -38,8 +38,8 @@ class TestClaimHookGetClaimHooksForBoost200ResponseRecordsInner(unittest.TestCas
                 id = '',
                 created_at = '',
                 updated_at = '',
-                type = 'ADD_ADMIN',
-                data = openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of_1_data.claimHook_createClaimHook_request_hook_oneOf_1_data(
+                type = 'AUTO_CONNECT',
+                data = openapi_client.models.claim_hook_get_claim_hooks_for_boost_200_response_records_inner_all_of_one_of_2_data.claimHook_getClaimHooksForBoost_200_response_records_inner_allOf_oneOf_2_data(
                     claim_uri = '', 
                     target_uri = '', )
             )
@@ -48,8 +48,8 @@ class TestClaimHookGetClaimHooksForBoost200ResponseRecordsInner(unittest.TestCas
                 id = '',
                 created_at = '',
                 updated_at = '',
-                type = 'ADD_ADMIN',
-                data = openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of_1_data.claimHook_createClaimHook_request_hook_oneOf_1_data(
+                type = 'AUTO_CONNECT',
+                data = openapi_client.models.claim_hook_get_claim_hooks_for_boost_200_response_records_inner_all_of_one_of_2_data.claimHook_getClaimHooksForBoost_200_response_records_inner_allOf_oneOf_2_data(
                     claim_uri = '', 
                     target_uri = '', ),
         )

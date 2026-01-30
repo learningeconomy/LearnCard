@@ -5,18 +5,18 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**context** | [**List[BoostSendBoostRequestCredentialAnyOfContextInner]**](BoostSendBoostRequestCredentialAnyOfContextInner.md) |  | 
+**context** | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md) |  | 
 **id** | **str** |  | [optional] 
-**type** | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.md) |  | 
+**type** | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |  | 
 **verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |  | [optional] 
 **holder** | **str** |  | [optional] 
-**proof** | [**BoostSendBoostRequestCredentialAnyOfProof**](BoostSendBoostRequestCredentialAnyOfProof.md) |  | 
+**proof** | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md) |  | 
 **protected** | **str** |  | 
 **iv** | **str** |  | 
 **ciphertext** | **str** |  | 
 **tag** | **str** |  | 
 **aad** | **str** |  | [optional] 
-**recipients** | [**List[BoostSendBoostRequestCredentialAnyOf1RecipientsInner]**](BoostSendBoostRequestCredentialAnyOf1RecipientsInner.md) |  | [optional] 
+**recipients** | [**List[CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner]**](CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner.md) |  | [optional] 
 
 ## Example
 

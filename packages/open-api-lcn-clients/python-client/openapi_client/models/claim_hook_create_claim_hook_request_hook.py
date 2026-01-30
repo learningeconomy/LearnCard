@@ -19,11 +19,12 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, f
 from typing import Any, List, Optional
 from openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of import ClaimHookCreateClaimHookRequestHookOneOf
 from openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of1 import ClaimHookCreateClaimHookRequestHookOneOf1
+from openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of2 import ClaimHookCreateClaimHookRequestHookOneOf2
 from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-CLAIMHOOKCREATECLAIMHOOKREQUESTHOOK_ONE_OF_SCHEMAS = ["ClaimHookCreateClaimHookRequestHookOneOf", "ClaimHookCreateClaimHookRequestHookOneOf1"]
+CLAIMHOOKCREATECLAIMHOOKREQUESTHOOK_ONE_OF_SCHEMAS = ["ClaimHookCreateClaimHookRequestHookOneOf", "ClaimHookCreateClaimHookRequestHookOneOf1", "ClaimHookCreateClaimHookRequestHookOneOf2"]
 
 class ClaimHookCreateClaimHookRequestHook(BaseModel):
     """
@@ -33,8 +34,10 @@ class ClaimHookCreateClaimHookRequestHook(BaseModel):
     oneof_schema_1_validator: Optional[ClaimHookCreateClaimHookRequestHookOneOf] = None
     # data type: ClaimHookCreateClaimHookRequestHookOneOf1
     oneof_schema_2_validator: Optional[ClaimHookCreateClaimHookRequestHookOneOf1] = None
-    actual_instance: Optional[Union[ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1]] = None
-    one_of_schemas: Set[str] = { "ClaimHookCreateClaimHookRequestHookOneOf", "ClaimHookCreateClaimHookRequestHookOneOf1" }
+    # data type: ClaimHookCreateClaimHookRequestHookOneOf2
+    oneof_schema_3_validator: Optional[ClaimHookCreateClaimHookRequestHookOneOf2] = None
+    actual_instance: Optional[Union[ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1, ClaimHookCreateClaimHookRequestHookOneOf2]] = None
+    one_of_schemas: Set[str] = { "ClaimHookCreateClaimHookRequestHookOneOf", "ClaimHookCreateClaimHookRequestHookOneOf1", "ClaimHookCreateClaimHookRequestHookOneOf2" }
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -67,12 +70,17 @@ class ClaimHookCreateClaimHookRequestHook(BaseModel):
             error_messages.append(f"Error! Input type `{type(v)}` is not `ClaimHookCreateClaimHookRequestHookOneOf1`")
         else:
             match += 1
+        # validate data type: ClaimHookCreateClaimHookRequestHookOneOf2
+        if not isinstance(v, ClaimHookCreateClaimHookRequestHookOneOf2):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `ClaimHookCreateClaimHookRequestHookOneOf2`")
+        else:
+            match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in ClaimHookCreateClaimHookRequestHook with oneOf schemas: ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in ClaimHookCreateClaimHookRequestHook with oneOf schemas: ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1, ClaimHookCreateClaimHookRequestHookOneOf2. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in ClaimHookCreateClaimHookRequestHook with oneOf schemas: ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in ClaimHookCreateClaimHookRequestHook with oneOf schemas: ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1, ClaimHookCreateClaimHookRequestHookOneOf2. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -99,13 +107,19 @@ class ClaimHookCreateClaimHookRequestHook(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
+        # deserialize data into ClaimHookCreateClaimHookRequestHookOneOf2
+        try:
+            instance.actual_instance = ClaimHookCreateClaimHookRequestHookOneOf2.from_json(json_str)
+            match += 1
+        except (ValidationError, ValueError) as e:
+            error_messages.append(str(e))
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into ClaimHookCreateClaimHookRequestHook with oneOf schemas: ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into ClaimHookCreateClaimHookRequestHook with oneOf schemas: ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1, ClaimHookCreateClaimHookRequestHookOneOf2. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into ClaimHookCreateClaimHookRequestHook with oneOf schemas: ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into ClaimHookCreateClaimHookRequestHook with oneOf schemas: ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1, ClaimHookCreateClaimHookRequestHookOneOf2. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -119,7 +133,7 @@ class ClaimHookCreateClaimHookRequestHook(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], ClaimHookCreateClaimHookRequestHookOneOf, ClaimHookCreateClaimHookRequestHookOneOf1, ClaimHookCreateClaimHookRequestHookOneOf2]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

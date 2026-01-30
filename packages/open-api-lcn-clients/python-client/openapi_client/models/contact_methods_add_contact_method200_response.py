@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -26,9 +26,10 @@ class ContactMethodsAddContactMethod200Response(BaseModel):
     """
     ContactMethodsAddContactMethod200Response
     """ # noqa: E501
-    message: StrictStr
-    contact_method_id: StrictStr = Field(alias="contactMethodId")
+    message: Optional[StrictStr]
+    contact_method_id: Optional[StrictStr] = Field(alias="contactMethodId")
     verification_required: StrictBool = Field(alias="verificationRequired")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["message", "contactMethodId", "verificationRequired"]
 
     model_config = ConfigDict(
@@ -61,8 +62,10 @@ class ContactMethodsAddContactMethod200Response(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -70,6 +73,21 @@ class ContactMethodsAddContactMethod200Response(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if message (nullable) is None
+        # and model_fields_set contains the field
+        if self.message is None and "message" in self.model_fields_set:
+            _dict['message'] = None
+
+        # set to None if contact_method_id (nullable) is None
+        # and model_fields_set contains the field
+        if self.contact_method_id is None and "contact_method_id" in self.model_fields_set:
+            _dict['contactMethodId'] = None
+
         return _dict
 
     @classmethod
@@ -86,6 +104,11 @@ class ContactMethodsAddContactMethod200Response(BaseModel):
             "contactMethodId": obj.get("contactMethodId"),
             "verificationRequired": obj.get("verificationRequired")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

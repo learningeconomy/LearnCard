@@ -38,7 +38,7 @@ class BoostSendBoostRequestCredentialAnyOf(BaseModel):
     """ # noqa: E501
     context: List[BoostSendBoostRequestCredentialAnyOfContextInner] = Field(alias="@context")
     id: Optional[StrictStr] = None
-    type: Annotated[List[StrictStr], Field(min_length=1)]
+    type: Annotated[List[Optional[StrictStr]], Field(min_length=1)]
     issuer: BoostSendBoostRequestCredentialAnyOfIssuer
     credential_subject: BoostSendBoostRequestCredentialAnyOfCredentialSubject = Field(alias="credentialSubject")
     refresh_service: Optional[BoostSendBoostRequestCredentialAnyOfRefreshService] = Field(default=None, alias="refreshService")
@@ -136,6 +136,41 @@ class BoostSendBoostRequestCredentialAnyOf(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
+
+        # set to None if id (nullable) is None
+        # and model_fields_set contains the field
+        if self.id is None and "id" in self.model_fields_set:
+            _dict['id'] = None
+
+        # set to None if issuance_date (nullable) is None
+        # and model_fields_set contains the field
+        if self.issuance_date is None and "issuance_date" in self.model_fields_set:
+            _dict['issuanceDate'] = None
+
+        # set to None if expiration_date (nullable) is None
+        # and model_fields_set contains the field
+        if self.expiration_date is None and "expiration_date" in self.model_fields_set:
+            _dict['expirationDate'] = None
+
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if description (nullable) is None
+        # and model_fields_set contains the field
+        if self.description is None and "description" in self.model_fields_set:
+            _dict['description'] = None
+
+        # set to None if valid_from (nullable) is None
+        # and model_fields_set contains the field
+        if self.valid_from is None and "valid_from" in self.model_fields_set:
+            _dict['validFrom'] = None
+
+        # set to None if valid_until (nullable) is None
+        # and model_fields_set contains the field
+        if self.valid_until is None and "valid_until" in self.model_fields_set:
+            _dict['validUntil'] = None
 
         return _dict
 

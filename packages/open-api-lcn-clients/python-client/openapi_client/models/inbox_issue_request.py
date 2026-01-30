@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.inbox_issue_request_configuration import InboxIssueRequestConfiguration
 from openapi_client.models.inbox_issue_request_credential import InboxIssueRequestCredential
@@ -30,9 +30,10 @@ class InboxIssueRequest(BaseModel):
     InboxIssueRequest
     """ # noqa: E501
     recipient: InboxIssueRequestRecipient
-    credential: InboxIssueRequestCredential
+    credential: Optional[InboxIssueRequestCredential] = None
+    template_uri: Optional[StrictStr] = Field(default=None, description="URI of a boost template to use for issuance. The boost credential will be resolved and used. Mutually exclusive with credential field.", alias="templateUri")
     configuration: Optional[InboxIssueRequestConfiguration] = None
-    __properties: ClassVar[List[str]] = ["recipient", "credential", "configuration"]
+    __properties: ClassVar[List[str]] = ["recipient", "credential", "templateUri", "configuration"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -96,6 +97,7 @@ class InboxIssueRequest(BaseModel):
         _obj = cls.model_validate({
             "recipient": InboxIssueRequestRecipient.from_dict(obj["recipient"]) if obj.get("recipient") is not None else None,
             "credential": InboxIssueRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
+            "templateUri": obj.get("templateUri"),
             "configuration": InboxIssueRequestConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
         })
         return _obj
