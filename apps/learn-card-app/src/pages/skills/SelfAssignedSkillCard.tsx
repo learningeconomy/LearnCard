@@ -1,5 +1,6 @@
 import React from 'react';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
+import SelfVerifiedCertIcon from 'learn-card-base/svgs/SelfVerifiedCertIcon';
 import { useGetSkill } from 'learn-card-base';
 
 type SelfAssignedSkillCardProps = {
@@ -16,9 +17,13 @@ const SelfAssignedSkillCard: React.FC<SelfAssignedSkillCardProps> = ({ skillId, 
                 <CompetencyIcon icon={skillData?.icon} size="super-big" />
             </div>
             <div className="text-grayscale-900 flex items-center justify-center px-[15px] flex-1 flex-col gap-[5px]">
-                <p>{skillData?.statement}</p>
-                <p className="text-[14px] text-emerald-500">Self-Assigned</p>
-                <p>...</p>
+                <p className="line-clamp-2 text-grayscale-800 font-poppins text-[14px] font-[600]">
+                    {skillData?.statement}
+                </p>
+                <p className="font-[600] text-[12px] text-emerald-500 flex items-center gap-[3px]">
+                    <SelfVerifiedCertIcon className="w-[14px] h-[14px]" /> Self-Assigned
+                </p>
+                {/* <AlignmentSkillsCount /> */}
             </div>
         </div>
     );
