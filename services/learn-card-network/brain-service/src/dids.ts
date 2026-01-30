@@ -46,6 +46,13 @@ const isValidAppSlug = (slug: string): boolean => {
            slugPattern.test(slug);
 };
 
+// Validate manager ID to prevent injection attacks
+const isValidManagerId = (id: string): boolean => {
+    // Manager IDs should be valid UUIDs
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return typeof id === 'string' && uuidPattern.test(id);
+};
+
 // Extract Ed25519 public key bytes and a JWK from a verification method that may
 // have either publicKeyJwk (2018) or publicKeyMultibase/Multikey (2020).
 const extractEd25519FromVerificationMethod = (vm: any): { bytes: Uint8Array; jwk: JWK } => {
@@ -347,6 +354,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
     fastify.get('/manager/:id/did.json', async (request, reply) => {
         const { id } = request.params as { id: string };
+
+        // Validate manager ID to prevent injection attacks
+        if (!isValidManagerId(id)) {
+            return reply.status(400).send({ error: 'Invalid manager ID format' });
+        }
 
         const cachedResult = await getDidDocForProfileManager(id);
 
