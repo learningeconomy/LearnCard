@@ -7,10 +7,16 @@ import {
     useCreateBoost,
     BoostCategoryOptionsEnum,
     constructCustomBoostType,
-    updateArtifactClaimedStatus,
+    useWallet,
+    useGetCurrentLCNUser,
 } from 'learn-card-base';
-import { getDefaultDisplayType } from '../../boost/boostHelpers';
-import { initialBoostCMSState, BoostCMSState } from '../../boost/boost';
+
+import { useAddCredentialToWallet } from '../../boost/mutations';
+import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
+
+import { getDefaultDisplayType, sendBoostCredential } from '../../boost/boostHelpers';
+import { initialBoostCMSState, BoostCMSState, LCNBoostStatusEnum } from '../../boost/boost';
+
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
 interface MessageProps {
@@ -18,7 +24,12 @@ interface MessageProps {
 }
 
 export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+
     const { mutateAsync: createBoost, isPending } = useCreateBoost();
+    const { mutate: addCredentialToWallet } = useAddCredentialToWallet();
 
     const artifact = message?.artifact;
     const title = artifact?.title as string;
@@ -27,6 +38,7 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
     const achievementType = constructCustomBoostType(categoryType, title);
 
     const [claimed, setClaimed] = useState<boolean>(artifact?.claimed ?? false);
+    const [isSaving, setIsSaving] = useState<boolean>(false);
 
     const [state, setState] = useState<BoostCMSState>({
         ...initialBoostCMSState,
@@ -44,12 +56,36 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
         },
     });
 
-    const handleYes = () => {
-        console.log(state);
+    const handleYes = async () => {
+        try {
+            setIsSaving(true);
+            const { boostUri } = await createBoost({
+                state: state,
+                status: LCNBoostStatusEnum.live,
+            });
 
-        // Update the artifact claimed status to true
-        if (artifact?.id) {
-            setClaimed(true);
+            const wallet = await initWallet();
+
+            const { sentBoost } = await sendBoostCredential(
+                wallet,
+                currentLCNUser?.profileId,
+                boostUri
+            );
+            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
+
+            await addCredentialToWallet({ uri: issuedVcUri });
+
+            // Update the artfact claimed status to true
+            if (artifact?.id) setClaimed(true);
+
+            presentToast(`Credential added to LearnCard`, {
+                duration: 3000,
+                type: ToastTypeEnum.Success,
+            });
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -63,9 +99,9 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
                     claimed ? 'bg-grayscale-200 text-grayscale-500' : 'bg-indigo-500 text-white'
                 }`}
                 onClick={handleYes}
-                disabled={isPending || claimed}
+                disabled={isSaving || claimed}
             >
-                {isPending ? (
+                {isSaving ? (
                     <>
                         <IonSpinner name="crescent" /> Claiming...
                     </>
