@@ -231,9 +231,30 @@ export const skillsRouter = t.router({
             if (!normalizedQuery) return [];
 
             const provider = getSkillsProvider();
-            const results = provider.searchSkills
-                ? await provider.searchSkills(frameworkId, normalizedQuery)
-                : [];
+            let results: any[] = [];
+            try {
+                results = provider.searchSkills
+                    ? await provider.searchSkills(frameworkId, normalizedQuery)
+                    : [];
+            } catch {
+                const fallback = await searchSkillsInFramework(
+                    frameworkId,
+                    normalizedQuery,
+                    limit,
+                    null
+                );
+                results = fallback.records;
+            }
+
+            if (!results || results.length === 0) {
+                const fallback = await searchSkillsInFramework(
+                    frameworkId,
+                    normalizedQuery,
+                    limit,
+                    null
+                );
+                results = fallback.records;
+            }
 
             return results.slice(0, limit).map(skill => ({
                 id: skill.id,
