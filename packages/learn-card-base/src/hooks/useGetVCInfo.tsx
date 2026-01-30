@@ -10,7 +10,6 @@ import {
     getIssuerName,
     getProfileIdFromLCNDidWeb,
     getAppSlugFromDidWeb,
-    isAppDidWeb,
     getIssuerImage,
     getCredentialSubjectName,
     getSubjectImage,
@@ -22,6 +21,7 @@ import {
     getCredentialSubjectAchievementData,
     getEndorsements,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { isAppDidWeb } from '@learncard/helpers';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 
 import useCurrentUser from './useGetCurrentUser';

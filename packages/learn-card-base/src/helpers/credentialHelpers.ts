@@ -650,9 +650,8 @@ export const getAppSlugFromDidWeb = (did?: string) => {
     return did?.match(LCN_APP_DID_WEB_REGEX)?.[1];
 };
 
-export const isAppDidWeb = (did?: string): boolean => {
-    return Boolean(getAppSlugFromDidWeb(did));
-};
+// Re-export isAppDidWeb from @learncard/helpers to maintain single source of truth
+export { isAppDidWeb } from '@learncard/helpers';
 const getFallBackImage = (credCategory: string) => {
     if (credCategory === 'Skill') return 'https://cdn.filestackcontent.com/pzfIWTKQTAuuzvLrySGX';
     if (credCategory === 'Experiences')

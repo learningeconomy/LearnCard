@@ -7,7 +7,7 @@ import UnknownCertIcon from 'learn-card-base/svgs/UnknownCertIcon';
 import UntrustedCertIcon from 'learn-card-base/svgs/UntrustedCertIcon';
 import { AchievementCredential, VC, CredentialInfo } from '@learncard/types';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
-import { isAppDidWeb } from 'learn-card-base/helpers/credentialHelpers';
+import { isAppDidWeb } from '@learncard/helpers';
 
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,

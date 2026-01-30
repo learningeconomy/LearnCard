@@ -10,7 +10,7 @@ import PersonBadge from '../svgs/PersonBadge';
 import RedFlag from '../svgs/RedFlag';
 
 import { getInfoFromCredential } from '../../helpers/credential.helpers';
-import { isAppDidWeb } from 'learn-card-base/helpers/credentialHelpers';
+import { isAppDidWeb } from '@learncard/helpers';
 
 import { VC } from '@learncard/types';
 import { BoostAchievementCredential } from '../../types';
