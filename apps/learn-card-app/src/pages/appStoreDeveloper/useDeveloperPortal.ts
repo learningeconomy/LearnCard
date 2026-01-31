@@ -9,7 +9,6 @@ import type {
     AppListingStatus,
     PromotionLevel,
 } from '@learncard/types';
-import { isAppDidWeb } from '@learncard/helpers';
 import { getAppDidFromSlug } from './utils/appDid';
 
 // Type for integration signing authority info
@@ -57,7 +56,9 @@ export const useDeveloperPortal = () => {
 
         const createAuthority = async (name: string) => {
             try {
-                return await wallet.invoke.createSigningAuthority(name, appDid);
+                const created = await wallet.invoke.createSigningAuthority(name, appDid);
+
+                return created || null;
             } catch (error) {
                 console.warn('Failed to create app signing authority', error);
                 // Re-throw error for critical failures that would prevent credential issuance
@@ -74,7 +75,7 @@ export const useDeveloperPortal = () => {
         };
 
         const authority =
-            (await createAuthority(baseName)) ??
+            (await createAuthority(baseName)) ||
             (await createAuthority(buildFallbackSigningAuthorityName(baseName)));
 
         if (!authority?.endpoint || !authority?.name || !authority?.did) {
@@ -456,11 +457,6 @@ export const useDeveloperPortal = () => {
 
         // Case 2: Has slug but missing signing authority
         if (!signingAuthority) return true;
-
-        // Case 3: Has slug but signing authority is not an app DID
-        if (signingAuthority?.did && !isAppDidWeb(signingAuthority.did)) {
-            return true;
-        }
 
         return false;
     };
