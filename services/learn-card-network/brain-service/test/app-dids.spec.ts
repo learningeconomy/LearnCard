@@ -3,14 +3,19 @@ import { describe, it, beforeEach, afterAll, expect } from 'vitest';
 import { AppStoreListing, Integration, Profile, SigningAuthority } from '@models';
 
 import { createAppStoreListing } from '@accesslayer/app-store-listing/create';
-import { readAppStoreListingById, readAppStoreListingBySlug } from '@accesslayer/app-store-listing/read';
+import {
+    readAppStoreListingById,
+    readAppStoreListingBySlug,
+} from '@accesslayer/app-store-listing/read';
 import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
 import { getIntegrationForListing } from '@accesslayer/app-store-listing/relationships/read';
-import { associateListingWithIntegration } from '@accesslayer/app-store-listing/relationships/create';
+import {
+    associateListingWithIntegration,
+    associateListingWithSigningAuthority,
+} from '@accesslayer/app-store-listing/relationships/create';
 import { createIntegration } from '@accesslayer/integration/create';
-import { associateIntegrationWithSigningAuthority } from '@accesslayer/integration/relationships/create';
 import { createSigningAuthority } from '@accesslayer/signing-authority/create';
-import { getPrimarySigningAuthorityForIntegration } from '@accesslayer/signing-authority/relationships/read';
+import { getPrimarySigningAuthorityForListing } from '@accesslayer/signing-authority/relationships/read';
 import { getAppDidWeb } from '@helpers/did.helpers';
 import { normalizeAppSlug, isValidAppSlug } from '@helpers/slug.helpers';
 
@@ -49,9 +54,9 @@ describe('App DIDs Access Layer', () => {
         it('creates listing with slug field', async () => {
             const slug = 'test-app-slug';
             const listing = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug,
-                    display_name: 'Test App With Slug' 
+                    display_name: 'Test App With Slug',
                 })
             );
 
@@ -72,14 +77,14 @@ describe('App DIDs Access Layer', () => {
         it('supports reading listing by slug', async () => {
             const slug = 'readable-slug';
             const created = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug,
-                    display_name: 'Readable App' 
+                    display_name: 'Readable App',
                 })
             );
 
             const bySlug = await readAppStoreListingBySlug(slug);
-            
+
             expect(bySlug).toBeTruthy();
             expect(bySlug?.listing_id).toBe(created.listing_id);
             expect(bySlug?.display_name).toBe('Readable App');
@@ -92,16 +97,16 @@ describe('App DIDs Access Layer', () => {
 
         it('handles multiple listings with different slugs', async () => {
             const listing1 = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug: 'first-app',
-                    display_name: 'First App' 
+                    display_name: 'First App',
                 })
             );
-            
+
             const listing2 = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug: 'second-app',
-                    display_name: 'Second App' 
+                    display_name: 'Second App',
                 })
             );
 
@@ -114,15 +119,15 @@ describe('App DIDs Access Layer', () => {
 
         it('updates listing slug', async () => {
             const listing = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug: 'original-slug',
-                    display_name: 'Original App' 
+                    display_name: 'Original App',
                 })
             );
 
-            await updateAppStoreListing(listing, { 
+            await updateAppStoreListing(listing, {
                 slug: 'updated-slug',
-                display_name: 'Updated App'
+                display_name: 'Updated App',
             });
 
             const originalSlugResult = await readAppStoreListingBySlug('original-slug');
@@ -139,7 +144,7 @@ describe('App DIDs Access Layer', () => {
             const domain = 'localhost%3A4000';
             const slug = 'test-app';
             const expectedDid = 'did:web:localhost%3A4000:app:test-app';
-            
+
             const appDid = getAppDidWeb(domain, slug);
             expect(appDid).toBe(expectedDid);
         });
@@ -147,8 +152,16 @@ describe('App DIDs Access Layer', () => {
         it('handles different domain formats', () => {
             const testCases = [
                 { domain: 'example.com', slug: 'app', expected: 'did:web:example.com:app:app' },
-                { domain: 'sub.domain.com', slug: 'my-app', expected: 'did:web:sub.domain.com:app:my-app' },
-                { domain: 'localhost%3A8080', slug: 'dev-app', expected: 'did:web:localhost%3A8080:app:dev-app' },
+                {
+                    domain: 'sub.domain.com',
+                    slug: 'my-app',
+                    expected: 'did:web:sub.domain.com:app:my-app',
+                },
+                {
+                    domain: 'localhost%3A8080',
+                    slug: 'dev-app',
+                    expected: 'did:web:localhost%3A8080:app:dev-app',
+                },
             ];
 
             for (const { domain, slug, expected } of testCases) {
@@ -184,9 +197,10 @@ describe('App DIDs Access Layer', () => {
         });
 
         it('truncates very long names to max length', () => {
-            const longName = 'This is an extremely long app name that should be handled gracefully by the slug generation system';
+            const longName =
+                'This is an extremely long app name that should be handled gracefully by the slug generation system';
             const result = normalizeAppSlug(longName);
-            
+
             expect(result).toBeTruthy();
             expect(result.length).toBeLessThanOrEqual(50); // MAX_APP_SLUG_LENGTH
             expect(result).not.toContain(' ');
@@ -202,15 +216,15 @@ describe('App DIDs Access Layer', () => {
     describe('App Listing Status Handling', () => {
         it('creates listings with different statuses', async () => {
             const statuses = ['DRAFT', 'PENDING_REVIEW', 'LISTED', 'ARCHIVED'] as const;
-            
+
             const createdListings = [];
-            
+
             for (const status of statuses) {
                 const listing = await createAppStoreListing(
-                    makeListingInput({ 
+                    makeListingInput({
                         slug: `${status.toLowerCase().replace('_', '-')}-app`,
                         display_name: `${status} App`,
-                        app_listing_status: status 
+                        app_listing_status: status,
                     })
                 );
                 createdListings.push({ listing, status });
@@ -225,9 +239,9 @@ describe('App DIDs Access Layer', () => {
 
         it('updates listing status', async () => {
             const listing = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug: 'status-test-app',
-                    app_listing_status: 'DRAFT' 
+                    app_listing_status: 'DRAFT',
                 })
             );
 
@@ -242,12 +256,12 @@ describe('App DIDs Access Layer', () => {
         it('supports slug lookup for all statuses', async () => {
             // App DIDs should be resolvable for all statuses to support dev/test apps
             const statuses = ['DRAFT', 'LISTED', 'ARCHIVED'] as const;
-            
+
             for (const status of statuses) {
                 const listing = await createAppStoreListing(
-                    makeListingInput({ 
+                    makeListingInput({
                         slug: `status-${status.toLowerCase()}-app`,
-                        app_listing_status: status 
+                        app_listing_status: status,
                     })
                 );
 
@@ -259,14 +273,7 @@ describe('App DIDs Access Layer', () => {
 
     describe('Slug Validation (Security)', () => {
         it('validates correct slug formats', () => {
-            const validSlugs = [
-                'a',
-                'test-app',
-                'my-cool-app-123',
-                '123app',
-                'app123',
-                'a1b2c3',
-            ];
+            const validSlugs = ['a', 'test-app', 'my-cool-app-123', '123app', 'app123', 'a1b2c3'];
 
             for (const slug of validSlugs) {
                 expect(isValidAppSlug(slug)).toBe(true);
@@ -275,16 +282,16 @@ describe('App DIDs Access Layer', () => {
 
         it('rejects invalid slug formats', () => {
             const invalidSlugs = [
-                '',                      // Empty
-                '-test',                 // Starts with hyphen
-                'test-',                 // Ends with hyphen
-                'Test-App',              // Uppercase
-                'test_app',              // Underscore
-                'test app',              // Space
-                'test.app',              // Period
-                '../../../etc/passwd',   // Path traversal attempt
-                'app<script>',           // XSS attempt
-                'app;DROP TABLE',        // SQL injection attempt
+                '', // Empty
+                '-test', // Starts with hyphen
+                'test-', // Ends with hyphen
+                'Test-App', // Uppercase
+                'test_app', // Underscore
+                'test app', // Space
+                'test.app', // Period
+                '../../../etc/passwd', // Path traversal attempt
+                'app<script>', // XSS attempt
+                'app;DROP TABLE', // SQL injection attempt
             ];
 
             for (const slug of invalidSlugs) {
@@ -295,7 +302,7 @@ describe('App DIDs Access Layer', () => {
         it('rejects slugs that are too long', () => {
             const longSlug = 'a'.repeat(101);
             expect(isValidAppSlug(longSlug)).toBe(false);
-            
+
             const maxSlug = 'a'.repeat(100);
             expect(isValidAppSlug(maxSlug)).toBe(true);
         });
@@ -308,7 +315,7 @@ describe('App DIDs Access Layer', () => {
         });
     });
 
-    describe('Integration with Signing Authorities', () => {
+    describe('Listing with Signing Authorities', () => {
         it('creates signing authority with endpoint', async () => {
             const endpoint = 'https://example.com/sign';
             const sa = await createSigningAuthority(endpoint);
@@ -328,18 +335,19 @@ describe('App DIDs Access Layer', () => {
             expect(integration.whitelistedDomains).toContain('localhost');
         });
 
-        it('associates integration with signing authority', async () => {
+        it('associates listing with signing authority', async () => {
             const endpoint = 'https://example.com/sign';
             await createSigningAuthority(endpoint);
 
-            const integration = await createIntegration({
-                name: 'SA Test Integration',
-                description: 'Integration for SA testing',
-                whitelistedDomains: ['example.com'],
-            });
+            const listing = await createAppStoreListing(
+                makeListingInput({
+                    slug: 'sa-test-app',
+                    display_name: 'SA Test App',
+                })
+            );
 
-            const result = await associateIntegrationWithSigningAuthority(
-                integration.id,
+            const result = await associateListingWithSigningAuthority(
+                listing.listing_id,
                 endpoint,
                 { name: 'app-sa', did: 'did:key:test123', isPrimary: true }
             );
@@ -347,23 +355,24 @@ describe('App DIDs Access Layer', () => {
             expect(result).toBe(true);
         });
 
-        it('retrieves primary signing authority for integration', async () => {
+        it('retrieves primary signing authority for listing', async () => {
             const endpoint = 'https://example.com/sign';
             await createSigningAuthority(endpoint);
 
-            const integration = await createIntegration({
-                name: 'Primary SA Test',
-                description: 'Integration for primary SA testing',
-                whitelistedDomains: ['example.com'],
-            });
-
-            await associateIntegrationWithSigningAuthority(
-                integration.id,
-                endpoint,
-                { name: 'primary-sa', did: 'did:key:primary123', isPrimary: true }
+            const listing = await createAppStoreListing(
+                makeListingInput({
+                    slug: 'primary-sa-app',
+                    display_name: 'Primary SA Test App',
+                })
             );
 
-            const primarySa = await getPrimarySigningAuthorityForIntegration(integration);
+            await associateListingWithSigningAuthority(listing.listing_id, endpoint, {
+                name: 'primary-sa',
+                did: 'did:key:primary123',
+                isPrimary: true,
+            });
+
+            const primarySa = await getPrimarySigningAuthorityForListing(listing);
 
             expect(primarySa).toBeTruthy();
             expect(primarySa?.relationship.name).toBe('primary-sa');
@@ -381,9 +390,9 @@ describe('App DIDs Access Layer', () => {
             });
 
             const listing = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug: 'integration-test-app',
-                    display_name: 'Integration Test App' 
+                    display_name: 'Integration Test App',
                 })
             );
 
@@ -398,9 +407,9 @@ describe('App DIDs Access Layer', () => {
 
         it('returns null for listing without integration', async () => {
             const listing = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug: 'no-integration-app',
-                    display_name: 'No Integration App' 
+                    display_name: 'No Integration App',
                 })
             );
 
@@ -410,49 +419,36 @@ describe('App DIDs Access Layer', () => {
     });
 
     describe('Full App DID Resolution Chain', () => {
-        it('sets up complete chain: listing → integration → signing authority', async () => {
+        it('sets up complete chain: listing → signing authority', async () => {
             // This test verifies the complete data structure needed for app DID resolution
-            
+
             // 1. Create signing authority
             const endpoint = 'https://example.com/sign';
             await createSigningAuthority(endpoint);
 
-            // 2. Create integration
-            const integration = await createIntegration({
-                name: 'Full Chain Integration',
-                description: 'Complete chain test',
-                whitelistedDomains: ['example.com'],
-            });
-
-            // 3. Associate SA with integration (with DID for credential issuance)
-            const saDid = 'did:key:fullchain123';
-            await associateIntegrationWithSigningAuthority(
-                integration.id,
-                endpoint,
-                { name: 'chain-sa', did: saDid, isPrimary: true }
-            );
-
-            // 4. Create listing with slug
+            // 2. Create listing with slug
             const slug = 'full-chain-app';
             const listing = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug,
                     display_name: 'Full Chain App',
-                    app_listing_status: 'LISTED'
+                    app_listing_status: 'LISTED',
                 })
             );
 
-            // 5. Associate listing with integration
-            await associateListingWithIntegration(listing.listing_id, integration.id);
+            // 3. Associate SA with listing (with DID for credential issuance)
+            const saDid = 'did:key:fullchain123';
+            await associateListingWithSigningAuthority(listing.listing_id, endpoint, {
+                name: 'chain-sa',
+                did: saDid,
+                isPrimary: true,
+            });
 
             // Verify complete chain
             const retrievedListing = await readAppStoreListingBySlug(slug);
             expect(retrievedListing).toBeTruthy();
 
-            const retrievedIntegration = await getIntegrationForListing(retrievedListing!.listing_id);
-            expect(retrievedIntegration).toBeTruthy();
-
-            const primarySa = await getPrimarySigningAuthorityForIntegration(retrievedIntegration!);
+            const primarySa = await getPrimarySigningAuthorityForListing(retrievedListing!);
             expect(primarySa).toBeTruthy();
             expect(primarySa?.relationship.did).toBe(saDid);
 
@@ -473,9 +469,9 @@ describe('App DIDs Access Layer', () => {
 
         it('handles special characters in display_name', async () => {
             const listing = await createAppStoreListing(
-                makeListingInput({ 
+                makeListingInput({
                     slug: 'special-chars-app',
-                    display_name: 'App with émojis 🚀 & spëcial chârs!' 
+                    display_name: 'App with émojis 🚀 & spëcial chârs!',
                 })
             );
 
@@ -484,16 +480,12 @@ describe('App DIDs Access Layer', () => {
 
         it('handles slugs at boundary lengths', async () => {
             // Single character slug
-            const singleCharListing = await createAppStoreListing(
-                makeListingInput({ slug: 'a' })
-            );
+            const singleCharListing = await createAppStoreListing(makeListingInput({ slug: 'a' }));
             expect(singleCharListing.slug).toBe('a');
 
             // Max length slug (100 chars)
             const maxSlug = 'a'.repeat(100);
-            const maxListing = await createAppStoreListing(
-                makeListingInput({ slug: maxSlug })
-            );
+            const maxListing = await createAppStoreListing(makeListingInput({ slug: maxSlug }));
             expect(maxListing.slug).toBe(maxSlug);
         });
     });

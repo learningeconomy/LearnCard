@@ -55,7 +55,6 @@ describe('Integrations', () => {
         beforeEach(async () => {
             await Integration.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} });
 
             await seedProfile(userA, 'usera');
             await seedProfile(userB, 'userb');
@@ -64,7 +63,6 @@ describe('Integrations', () => {
         afterAll(async () => {
             await Integration.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} });
         });
 
         it('create/read by id/name, update fields and rotate key, delete', async () => {
@@ -189,7 +187,6 @@ describe('Integrations', () => {
         afterAll(async () => {
             await Integration.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} });
         });
 
         describe('addIntegration', () => {
