@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNNotificationTypeEnumValidator, UnsignedVC } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 
 import { t, openRoute, profileRoute } from '@routes';
@@ -46,6 +47,7 @@ import { readIntegrationById } from '@accesslayer/integration/read';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
     getPrimarySigningAuthorityForListing,
+    getPrimarySigningAuthorityForIntegration,
     getPrimarySigningAuthorityForUser,
     getSigningAuthoritiesForListing,
     getSigningAuthorityForUserByName,
@@ -56,6 +58,11 @@ import {
     LaunchType,
     PromotionLevel,
     AppStoreListingValidator,
+} from 'types/app-store-listing';
+import type {
+    AppStoreListingCreateType,
+    AppStoreListingType,
+    AppStoreListingUpdateType,
 } from 'types/app-store-listing';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
@@ -225,26 +232,43 @@ const iframeUrlRefinement = (
     }
 };
 
-// Helper to transform listing for API response (JSON strings -> arrays)
-const transformListingForResponse = (listing: any) => {
-    const result = { ...listing };
+type AppStoreListingResponse<T extends AppStoreListingType> = Omit<
+    T,
+    'highlights_json' | 'screenshots_json'
+> & {
+    highlights?: string[];
+    screenshots?: string[];
+};
 
-    if (result.highlights_json) {
+type ListingStorageInput<T extends Record<string, unknown>> = Omit<
+    T,
+    'highlights' | 'screenshots'
+> & {
+    highlights_json?: string;
+    screenshots_json?: string;
+};
+
+// Helper to transform listing for API response (JSON strings -> arrays)
+const transformListingForResponse = <T extends AppStoreListingType & Record<string, unknown>>(
+    listing: T
+): AppStoreListingResponse<T> => {
+    const { highlights_json, screenshots_json, ...rest } = listing;
+    const result = { ...rest } as AppStoreListingResponse<T>;
+
+    if (highlights_json) {
         try {
-            result.highlights = JSON.parse(result.highlights_json);
+            result.highlights = JSON.parse(highlights_json);
         } catch {
             result.highlights = [];
         }
-        delete result.highlights_json;
     }
 
-    if (result.screenshots_json) {
+    if (screenshots_json) {
         try {
-            result.screenshots = JSON.parse(result.screenshots_json);
+            result.screenshots = JSON.parse(screenshots_json);
         } catch {
             result.screenshots = [];
         }
-        delete result.screenshots_json;
     }
 
     return result;
@@ -252,12 +276,14 @@ const transformListingForResponse = (listing: any) => {
 
 // Helper to transform input for storage (arrays -> JSON strings)
 // Validates that arrays are properly formatted before stringifying
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const transformInputForStorage = (input: any): any => {
-    const result = { ...input };
+const transformInputForStorage = <T extends Record<string, unknown>>(
+    input: T
+): ListingStorageInput<T> => {
+    const { highlights, screenshots, ...rest } = input;
+    const result = { ...rest } as ListingStorageInput<T>;
 
-    if (result.highlights !== undefined) {
-        if (!Array.isArray(result.highlights)) {
+    if (highlights !== undefined) {
+        if (!Array.isArray(highlights)) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'highlights must be an array of strings',
@@ -265,7 +291,7 @@ const transformInputForStorage = (input: any): any => {
         }
 
         // Validate each highlight is a string
-        const validHighlights = result.highlights.every(
+        const validHighlights = highlights.every(
             (h: unknown): h is string => typeof h === 'string'
         );
 
@@ -276,12 +302,11 @@ const transformInputForStorage = (input: any): any => {
             });
         }
 
-        result.highlights_json = JSON.stringify(result.highlights);
-        delete result.highlights;
+        result.highlights_json = JSON.stringify(highlights);
     }
 
-    if (result.screenshots !== undefined) {
-        if (!Array.isArray(result.screenshots)) {
+    if (screenshots !== undefined) {
+        if (!Array.isArray(screenshots)) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'screenshots must be an array of URLs',
@@ -289,7 +314,7 @@ const transformInputForStorage = (input: any): any => {
         }
 
         // Validate each screenshot is a valid URL string
-        const validScreenshots = result.screenshots.every((s: unknown): s is string => {
+        const validScreenshots = screenshots.every((s: unknown): s is string => {
             if (typeof s !== 'string') return false;
 
             try {
@@ -307,8 +332,7 @@ const transformInputForStorage = (input: any): any => {
             });
         }
 
-        result.screenshots_json = JSON.stringify(result.screenshots);
-        delete result.screenshots;
+        result.screenshots_json = JSON.stringify(screenshots);
     }
 
     return result;
@@ -460,8 +484,23 @@ const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
     }
 
-    // Get signing authority for the listing
-    const sa = await getPrimarySigningAuthorityForListing(listing);
+    // Get integration owner for signing
+    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
+    if (!integrationOwner) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+    }
+
+    // Get signing authority for the listing, falling back to legacy integration SA or owner SA
+    const listingSa = await getPrimarySigningAuthorityForListing(listing);
+    const integrationSa = listingSa
+        ? undefined
+        : await getPrimarySigningAuthorityForIntegration(integration.id);
+    const ownerSa =
+        listingSa || integrationSa
+            ? undefined
+            : await getPrimarySigningAuthorityForUser(integrationOwner);
+    const sa = listingSa ?? integrationSa ?? ownerSa;
+
     if (!sa) {
         throw new TRPCError({
             code: 'NOT_FOUND',
@@ -469,15 +508,15 @@ const handleSendCredentialEvent = async (
         });
     }
 
-    // Get integration owner for signing
-    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
-    if (!integrationOwner) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
-    }
-
     // Get the target profile (the user making the request)
     const targetProfile = await getProfilesByProfileIds([profile.profileId]);
     if (!targetProfile.length) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
+
+    const target = targetProfile[0];
+
+    if (!target) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
     }
 
@@ -507,7 +546,7 @@ const handleSendCredentialEvent = async (
                 ? { ...unsignedVc.issuer, id: issuerDid }
                 : { id: issuerDid };
 
-        const targetDid = getDidWeb(ctx.domain, targetProfile[0]!.profileId);
+        const targetDid = getDidWeb(ctx.domain, target.profileId);
 
         if (Array.isArray(unsignedVc.credentialSubject)) {
             unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
@@ -533,7 +572,7 @@ const handleSendCredentialEvent = async (
     }
 
     // Issue via signing authority
-    let credential;
+    let credential: VC | JWE;
 
     try {
         credential = await issueCredentialWithSigningAuthority(
@@ -556,8 +595,8 @@ const handleSendCredentialEvent = async (
     const activityId = await logCredentialSent({
         actorProfileId: integrationOwner.profileId,
         recipientType: 'profile',
-        recipientIdentifier: targetProfile[0]!.profileId,
-        recipientProfileId: targetProfile[0]!.profileId,
+        recipientIdentifier: target.profileId,
+        recipientProfileId: target.profileId,
         boostUri,
         integrationId: integration.id,
         listingId,
@@ -568,7 +607,7 @@ const handleSendCredentialEvent = async (
     // Send to user's wallet
     const credentialUri = await sendBoost({
         from: integrationOwner,
-        to: targetProfile[0]!,
+        to: target,
         boost,
         credential,
         domain: ctx.domain,
@@ -610,11 +649,13 @@ export const appStoreRouter = t.router({
             await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
 
             // New listings always start as DRAFT with STANDARD promotion
-            const storageData = transformInputForStorage({
+            const listingInput = {
                 ...input.listing,
                 app_listing_status: 'DRAFT',
                 promotion_level: 'STANDARD',
-            });
+            } as AppStoreListingCreateType;
+
+            const storageData = transformInputForStorage<AppStoreListingCreateType>(listingInput);
 
             const slug = await getAvailableAppSlug(storageData.display_name);
             const listing = await createAppStoreListing({
@@ -732,7 +773,11 @@ export const appStoreRouter = t.router({
                 ctx.user.profile.profileId
             );
 
-            const storageUpdates = transformInputForStorage(input.updates);
+            const storageUpdates = transformInputForStorage<
+                AppStoreListingUpdateType & { slug?: string }
+            >({
+                ...input.updates,
+            });
 
             if (!listing.slug) {
                 const displayName = storageUpdates.display_name ?? listing.display_name;
