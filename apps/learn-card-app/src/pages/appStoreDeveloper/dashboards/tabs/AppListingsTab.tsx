@@ -138,6 +138,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
         try {
             await updateListingMutation.mutateAsync({
                 listingId: editingListing.listing_id,
+                integrationId: integration.id,
                 updates: {
                     display_name: editForm.display_name,
                     tagline: editForm.tagline,

@@ -14,10 +14,12 @@ import {
     switchedProfileStore,
     LEARNCARD_NETWORK_API_URL,
 } from 'learn-card-base';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import {
     Boost,
     BoostRecipientInfo,
     LCNProfile,
+    AppStoreListing,
     SentCredentialInfo,
     VC,
     PaginationOptionsType,
@@ -733,6 +735,46 @@ export const useGetProfile = (
             }
 
             return null;
+        },
+    });
+};
+
+export const useGetAppStoreListingBySlug = (
+    slug?: string,
+    enabled = true
+): UseQueryResult<AppStoreListing | undefined> => {
+    const { initWallet } = useWallet();
+
+    return useQuery<AppStoreListing | undefined>({
+        enabled: enabled && Boolean(slug),
+        queryKey: ['getPublicAppStoreListingBySlug', slug],
+        queryFn: async () => {
+            if (!slug) return undefined;
+
+            const wallet = await initWallet();
+
+            if (wallet?.invoke?.getPublicAppStoreListingBySlug) {
+                try {
+                    return await wallet.invoke.getPublicAppStoreListingBySlug(slug);
+                } catch (error) {
+                    console.warn('Failed to load app listing by slug', error);
+                }
+            }
+
+            const networkUrl = networkStore.get.networkUrl() || LEARNCARD_NETWORK_API_URL;
+
+            try {
+                const response = await fetch(
+                    `${networkUrl}/app-store/public/listing/slug/${slug}`
+                );
+
+                if (!response.ok) return undefined;
+
+                return (await response.json()) as AppStoreListing;
+            } catch (error) {
+                console.warn('Failed to load app listing by slug', error);
+                return undefined;
+            }
         },
     });
 };

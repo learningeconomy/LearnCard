@@ -22,19 +22,20 @@ export const signingAuthorityRouter = t.router({
                     "This route is used to create a new signing authority that can sign credentials on the current user's behalf",
             },
         })
-        .input(z.object({ name: z.string() }))
+        .input(z.object({ name: z.string(), ownerDid: z.string().optional() }))
         .output(MongoSigningAuthorityValidator.omit({ seed: true }))
         .mutation(async ({ input, ctx }) => {
             
-            const { name } = input;
+            const { name, ownerDid } = input;
+            const targetDid = ownerDid ?? ctx.user.did;
 
-            if(await getSigningAuthorityForDid(ctx.user.did, name)) {
+            if(await getSigningAuthorityForDid(targetDid, name)) {
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: `Signing Authority with name, ${name}, already exists for user.`,
                 });
             }
-            const createdId = await createSigningAuthorityForDID(ctx.user.did, name);
+            const createdId = await createSigningAuthorityForDID(targetDid, name);
             if(!createdId) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',

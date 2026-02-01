@@ -130,6 +130,16 @@ The Template Alias is what you'll reference when issuing credentials from your a
 
 When you add a template to your listing, LearnCard automatically configures a signing authority. This allows credentials to be issued on behalf of your app with proper cryptographic signatures.
 
+### 4. App Issuer Identity
+
+App-issued credentials are signed as the app DID, not the integration owner's DID. The format is:
+
+```
+did:web:network.learncard.com:app:<slug>
+```
+
+In the LearnCard App, credentials issued by apps display the app name and icon (with a link back to the app listing).
+
 ## API Reference
 
 ### `sendCredential({ templateAlias, templateData? })`
@@ -138,10 +148,10 @@ Issue a credential to the current user.
 
 **Parameters:**
 
-| Parameter       | Type     | Required | Description                                      |
-| --------------- | -------- | -------- | ------------------------------------------------ |
+| Parameter       | Type     | Required | Description                                       |
+| --------------- | -------- | -------- | ------------------------------------------------- |
 | `templateAlias` | `string` | Yes      | The template alias configured in your app listing |
-| `templateData`  | `object` | No       | Values for template variables (e.g., `{{name}}`) |
+| `templateData`  | `object` | No       | Values for template variables (e.g., `{{name}}`)  |
 
 **Returns:** `Promise<SendCredentialResponse>`
 
@@ -331,7 +341,7 @@ When your app issues a credential:
 │  └────────────────────────────┘  │
 │                                  │
 │  JavaScript 101 Completion       │
-│  Awarded by YourApp              │
+│  By YourApp                      │
 │                                  │
 │  ┌────────────────────────────┐  │
 │  │     Accept Credential      │  │

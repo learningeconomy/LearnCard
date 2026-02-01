@@ -1,4 +1,4 @@
-import type { } from 'zod-openapi';
+import type {} from 'zod-openapi';
 import { z } from 'zod';
 
 import { PaginationResponseValidator } from './mongo';
@@ -1180,6 +1180,8 @@ export const ClaimInboxCredentialValidator = z.object({
         .object({
             publishableKey: z.string(),
             signingAuthorityName: z.string().optional(),
+            listingId: z.string().optional(),
+            listingSlug: z.string().optional(),
         })
         .optional(),
 });
