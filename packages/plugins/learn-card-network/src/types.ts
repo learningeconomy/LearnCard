@@ -161,6 +161,7 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<LCNProfile[]>;
     connectWith: (profileId: string) => Promise<boolean>;
+    connectWithExpiredInvite: (profileId: string) => Promise<boolean>;
     connectWithInvite: (profileId: string, challenge: string) => Promise<boolean>;
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
@@ -726,7 +727,9 @@ export type LearnCardNetworkPluginMethods = {
     // App Store Boost Management
     addBoostToApp: (listingId: string, boostUri: string, templateAlias: string) => Promise<boolean>;
     removeBoostFromApp: (listingId: string, templateAlias: string) => Promise<boolean>;
-    getAppBoosts: (listingId: string) => Promise<Array<{ templateAlias: string; boostUri: string }>>;
+    getAppBoosts: (
+        listingId: string
+    ) => Promise<Array<{ templateAlias: string; boostUri: string }>>;
 
     // App Events (discriminated union)
     sendAppEvent: (listingId: string, event: AppEvent) => Promise<AppEventResponse>;

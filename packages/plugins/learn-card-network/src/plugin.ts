@@ -367,6 +367,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.profile.connectWith.mutate({ profileId });
             },
+            connectWithExpiredInvite: async (_learnCard, profileId) => {
+                await ensureUser();
+
+                return client.profile.connectWithExpiredInvite.mutate({ profileId });
+            },
             cancelConnectionRequest: async (_learnCard, profileId) => {
                 await ensureUser();
 
@@ -1824,7 +1829,11 @@ export async function getLearnCardNetworkPlugin(
             addBoostToApp: async (_learnCard, listingId, boostUri, templateAlias) => {
                 await ensureUser();
 
-                return client.appStore.addBoostToListing.mutate({ listingId, boostUri, templateAlias });
+                return client.appStore.addBoostToListing.mutate({
+                    listingId,
+                    boostUri,
+                    templateAlias,
+                });
             },
 
             removeBoostFromApp: async (_learnCard, listingId, templateAlias) => {
