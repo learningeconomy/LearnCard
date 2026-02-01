@@ -25,6 +25,7 @@ type NotificationCardProps = {
 
 export const NOTIFICATION_TYPES = {
     CONNECTION_REQUEST: 'CONNECTION_REQUEST',
+    CONNECTION_REQUEST_EXPIRED_INVITE: 'CONNECTION_REQUEST_EXPIRED_INVITE',
     CONNECTION_ACCEPTED: 'CONNECTION_ACCEPTED',
     BOOST_RECEIVED: 'BOOST_RECEIVED',
     BOOST_ACCEPTED: 'BOOST_ACCEPTED',
@@ -242,8 +243,24 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         const actionStatus = notification?.actionStatus === 'COMPLETED' ? true : false;
         return (
             <ConnectionRequestCard
-                title={message?.body}
-                from={from}
+                title={message?.body ?? ''}
+                acceptStatus={actionStatus}
+                notification={notification}
+                handleRead={handleMarkAsRead}
+                handleCancelClick={handleArchiveNotification}
+                isLoading={acceptConnectionLoading}
+                handleButtonClick={handleConnectionRequest}
+                issueDate={displayDate}
+                cardLoading={isLoading}
+            />
+        );
+    }
+    /* Someone has sent you a connection request from an expired invite */
+    if (type === NOTIFICATION_TYPES.CONNECTION_REQUEST_EXPIRED_INVITE) {
+        const actionStatus = notification?.actionStatus === 'COMPLETED' ? true : false;
+        return (
+            <ConnectionRequestCard
+                title={message?.body ?? ''}
                 acceptStatus={actionStatus}
                 notification={notification}
                 handleRead={handleMarkAsRead}
@@ -259,7 +276,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     if (type === NOTIFICATION_TYPES.CONNECTION_ACCEPTED) {
         return (
             <ConnectionRequestCard
-                title={message?.body}
+                title={message?.body ?? ''}
                 handleRead={handleMarkAsRead}
                 acceptStatus={true}
                 notification={notification}
