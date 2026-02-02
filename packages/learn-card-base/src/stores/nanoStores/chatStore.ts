@@ -1,8 +1,10 @@
 import { atom } from 'nanostores';
+import { v4 as uuid } from 'uuid';
 import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 import { auth } from './authStore';
 import { showErrorModal } from './ErrorModalStore';
 import { showToast } from './toastStore';
+import { LEARNCARD_AI_URL } from '../../constants/Networks';
 
 export const messages = atom<ChatMessage[]>([]);
 export const threads = atom<Thread[]>([]);
@@ -18,7 +20,22 @@ export const sessionEnded = atom(false);
 export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
 
-export const BACKEND_URL = 'https://api.learncloud.ai';
+export function resetChatStores() {
+    messages.set([]);
+    currentThreadId.set(null);
+    isTyping.set(false);
+    isLoading.set(false);
+    isEndingSession.set(false);
+    showEndingSessionLoader.set(false);
+    activeQuestions.set([]);
+    suggestedTopics.set([]);
+    topicCredentials.set([]);
+    sessionEnded.set(false);
+    planReady.set(false);
+    planReadyThread.set(null);
+}
+
+export const BACKEND_URL = LEARNCARD_AI_URL;
 
 interface TopicCredential {
     uri: string;
@@ -26,6 +43,11 @@ interface TopicCredential {
     context: string;
     score: number;
     title: string;
+}
+
+export enum AiSessionMode {
+    tutor = 'ai-tutor',
+    insights = 'ai-insights',
 }
 
 let ws: WebSocket | null = null;
@@ -265,6 +287,16 @@ export function connectWebSocket() {
                 return;
             }
 
+            if (data.event === 'insights_ready') {
+                planReady.set(true);
+                planReadyThread.set(data.threadId);
+                currentThreadId.set(data.threadId);
+
+                isLoading.set(true);
+                isTyping.set(false);
+                return;
+            }
+
             // Handle conversation summary event
             if (data.event === 'conversation_summary') {
                 isTyping.set(false);
@@ -338,6 +370,12 @@ export function connectWebSocket() {
             if (data.error) {
                 console.error('Error:', data.error);
                 isTyping.set(false);
+                return;
+            }
+
+            if (data.event === 'assistant_typing') {
+                isLoading.set(false);
+                isTyping.set(true);
                 return;
             }
 
@@ -453,6 +491,26 @@ export function connectWebSocket() {
                 }
 
                 isLoading.set(false);
+                isTyping.set(true);
+            }
+
+            if (data.event === 'artifact_suggestion') {
+                console.log('artifact_suggestion', data.artifact);
+
+                const existing = messages
+                    .get()
+                    .some(m => m.role === 'assistant' && m.artifact?.title === data.artifact.title);
+
+                if (existing) return;
+
+                messages.set([
+                    ...messages.get(),
+                    {
+                        role: 'assistant',
+                        content: null,
+                        artifact: { ...data.artifact, id: uuid(), claimed: false },
+                    },
+                ]);
             }
         } catch (error) {
             console.error('WebSocket message error:', error);
@@ -488,6 +546,25 @@ export function connectWebSocket() {
     };
 
     return ws;
+}
+
+// Function to update artifact claimed status by artifact ID
+export function updateArtifactClaimedStatus(artifactId: string, claimed: boolean) {
+    const currentMessages = messages.get();
+    const updatedMessages = currentMessages.map(msg => {
+        if (msg.artifact && msg.artifact.id === artifactId) {
+            return {
+                ...msg,
+                artifact: {
+                    ...msg.artifact,
+                    claimed: claimed,
+                },
+            };
+        }
+        return msg;
+    });
+
+    messages.set(updatedMessages);
 }
 
 // Function to send message in response to a selected question
@@ -714,7 +791,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
 }
 
 // Function to initiate a new session plan for a topic
-export async function startTopic(topic: string) {
+export async function startTopic(topic: string, mode: AiSessionMode = AiSessionMode.tutor) {
     isTyping.set(true);
     isLoading.set(true);
     planReady.set(false);
@@ -834,6 +911,7 @@ export async function startTopic(topic: string) {
         action: 'start_topic',
         topic,
         did, // Include DID for backend processing
+        mode,
     };
 
     // Ensure WebSocket is ready before sending - retry if needed
@@ -845,6 +923,62 @@ export async function startTopic(topic: string) {
         }
     };
     sendMessage();
+}
+
+export async function startInsightsSession(topic: string, initialText?: string) {
+    isTyping.set(true);
+    isLoading.set(true);
+
+    planReady.set(false);
+    planReadyThread.set(null);
+
+    messages.set([
+        {
+            role: 'assistant',
+            content: '', // placeholder for streaming
+        },
+    ]);
+
+    activeQuestions.set([]);
+    sessionEnded.set(false);
+
+    const { did } = auth.get();
+    if (!did) {
+        isTyping.set(false);
+        isLoading.set(false);
+        showErrorModal('Authentication Required', 'Please sign in to start Insights.');
+        return;
+    }
+
+    disconnectWebSocket();
+    currentThreadId.set(null);
+
+    // Ensure WS connected
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        try {
+            await new Promise<void>((resolve, reject) => {
+                connectWebSocket();
+                onReady(resolve);
+                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
+            });
+        } catch (err) {
+            console.error('WS connect failed:', err);
+            isTyping.set(false);
+            isLoading.set(false);
+            showErrorModal('Connection Error', 'Could not connect to chat service.');
+            return;
+        }
+    }
+
+    const firstMessage = (initialText?.trim() || `Let's do insights on: ${topic}`).trim();
+
+    ws!.send(
+        JSON.stringify({
+            mode: AiSessionMode.insights,
+            topic,
+            message: { role: 'user', content: firstMessage },
+        })
+    );
 }
 
 // Function to continue after plan introduction
@@ -976,3 +1110,34 @@ currentThreadId.listen(threadId => {
         window.history.replaceState({}, '', url);
     }
 });
+
+export async function closeInsightsSession(threadId?: string) {
+    const activeThreadId = threadId || currentThreadId.get();
+
+    if (!activeThreadId) return;
+
+    const socket = connectWebSocket();
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        onReady(() => closeInsightsSession(activeThreadId));
+        return;
+    }
+
+    socket.send(
+        JSON.stringify({
+            action: 'close_insights_session',
+            threadId: activeThreadId,
+        })
+    );
+
+    // Optimistically reset state
+    messages.set([]);
+    currentThreadId.set(null);
+    planReady.set(false);
+    planReadyThread.set(null);
+    sessionEnded.set(false);
+    activeQuestions.set([]);
+    topicCredentials.set([]);
+
+    // Refresh thread list
+    loadThreads();
+}

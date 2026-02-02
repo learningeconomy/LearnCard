@@ -2,13 +2,16 @@ import { UnsignedVC } from '@learncard/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useModal, useToast, ToastTypeEnum, UploadTypesEnum } from 'learn-card-base';
+import { LEARNCARD_AI_URL } from '../../constants/Networks';
+
+export const BACKEND_URL = LEARNCARD_AI_URL;
 
 export const usePreloadAssessment = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async ({ did, summaryCredential }: { did: string; summaryCredential: any }) => {
-            const res = await fetch(`https://api.learncloud.ai/assessment?did=${did}`, {
+            const res = await fetch(`${BACKEND_URL}/assessment?did=${did}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ summaryCredential }),
@@ -38,7 +41,7 @@ type FinishAssessmentPayload = {
 export const useFinishAssessmentMutation = () => {
     return useMutation({
         mutationFn: async ({ did, assessmentQA, session, sessionUri }: FinishAssessmentPayload) => {
-            const response = await fetch(`https://api.learncloud.ai/finish-assessment?did=${did}`, {
+            const response = await fetch(`${BACKEND_URL}/finish-assessment?did=${did}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ assessmentQA, session, sessionUri }),
@@ -68,14 +71,11 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
             fileType: UploadTypesEnum;
         }) => {
             try {
-                const response = await fetch(
-                    `https://api.learncloud.ai/credentials/parse-file?did=${did}`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ file, fileType }),
-                    }
-                );
+                const response = await fetch(`${BACKEND_URL}/credentials/parse-file?did=${did}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file, fileType }),
+                });
 
                 const responseJson: {
                     vcs: { vc: UnsignedVC; metadata: { name: string; category: string } }[];

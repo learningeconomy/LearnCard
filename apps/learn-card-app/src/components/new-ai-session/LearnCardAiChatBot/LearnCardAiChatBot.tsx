@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import { useDeviceTypeByWidth, LEARNCARD_AI_URL } from 'learn-card-base';
 
 import ChatInput from './ChatInput';
 import CaretDown from '../../svgs/CaretDown';
@@ -19,15 +19,16 @@ import {
     isEndingSession,
     showEndingSessionLoader,
     disconnectWebSocket,
+    startInsightsSession,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
-import { sessionWrapUpText } from '../newAiSession.helpers';
+import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
-export const BACKEND_URL = 'https://api.learncloud.ai';
+export const BACKEND_URL = LEARNCARD_AI_URL;
 
 type LearnCardAiChatBotProps = {
     initialMessages: ChatMessage[];
@@ -35,6 +36,7 @@ type LearnCardAiChatBotProps = {
     initialTopicUri?: string | undefined;
     contractUri?: string | undefined;
     handleStartOver?: () => void;
+    mode?: AiSessionMode;
 };
 
 export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
@@ -43,6 +45,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     initialTopicUri: _initialTopicUri = undefined,
     contractUri = AiPassportAppContractUri.learncardapp,
     handleStartOver: _handleStartOver,
+    mode = AiSessionMode.tutor,
 }) => {
     const { isDesktop } = useDeviceTypeByWidth();
     const [showInitialMessages, setShowInitialMessages] = useState(true);
@@ -108,7 +111,12 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             if (!authState?.did) return; // Wait for auth to be ready
 
             setTopicInitialized(true);
-            startTopic(initialTopic);
+
+            if (mode === AiSessionMode.insights) {
+                startInsightsSession(initialTopic);
+            } else {
+                startTopic(initialTopic, mode);
+            }
         }
     }, [initialTopic, _initialTopicUri, topicInitialized, authState?.did]);
 
@@ -371,11 +379,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                         className="w-full"
                                     >
                                         <MessageWithQuestions message={msg} />
-                                        {index < messagesToShow.length - 1 &&
+                                        {/* {index < messagesToShow.length - 1 &&
                                             msg.role === 'assistant' &&
                                             messagesToShow[index + 1].role === 'assistant' && (
-                                                <hr className="border-black w-full my-4" />
-                                            )}
+                                                <hr className="border-grayscale-100 w-full my-4" />
+                                            )} */}
 
                                         {typing && index === messagesToShow.length - 1 && (
                                             <div className="py-4 px-2 rounded-lg mb-4 flex items-center gap-2">
