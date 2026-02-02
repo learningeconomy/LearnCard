@@ -159,22 +159,13 @@ const processConnectionRevoke = async (
     // Get all boost IDs that could have created connections for this credential
     // This mirrors the logic in ensureConnectionsForCredentialAcceptance
     const boostIdsQuery = `
-        // Get the claim boost
         MATCH (c:Credential { id: $credentialId })-[:INSTANCE_OF]->(cb:Boost)
-        
-        // Collect direct boost if autoConnectRecipients is true
         WITH cb, CASE WHEN cb.autoConnectRecipients = true THEN [cb.id] ELSE [] END as directIds
-        
-        // Collect parent boosts with autoConnectRecipients=true
         OPTIONAL MATCH (pb:Boost)-[:PARENT_OF*1..]->(cb)
         WHERE pb.autoConnectRecipients = true
         WITH cb, directIds, COLLECT(DISTINCT pb.id) as parentIds
-        
-        // Collect boosts from AUTO_CONNECT claim hooks
         OPTIONAL MATCH (cb)<-[:HOOK_FOR]-(ch:ClaimHook { type: 'AUTO_CONNECT' })-[:TARGET]->(tb:Boost)
         WITH directIds, parentIds, COLLECT(DISTINCT tb.id) as hookIds
-        
-        // Return all unique boost IDs
         RETURN directIds + parentIds + hookIds as boostIds
     `;
 
