@@ -1,5 +1,15 @@
 # @welibraryos/lca-api-service
 
+## 1.1.10
+
+### Patch Changes
+
+-   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow creating signing authorities for a non-self DID.
+
+    This is used for app issuer DIDs and remains secure because the target DID
+    must still publish the signing authority key in its DID document before
+    it can be used to issue credentials.
+
 ## 1.1.9
 
 ### Patch Changes
