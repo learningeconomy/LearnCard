@@ -3,7 +3,8 @@ import { QueryBuilder, BindParam } from 'neogma';
 import { Credential, Profile } from '@models';
 
 /**
- * Revoke a credential by setting its status to 'revoked' on the CREDENTIAL_RECEIVED relationship
+ * Revoke a credential by setting its status to 'revoked' on the CREDENTIAL_RECEIVED relationship.
+ * Handles both claimed credentials (existing relationship) and pending credentials (creates relationship).
  */
 export const revokeCredentialReceived = async (
     credentialId: string,
@@ -11,19 +12,15 @@ export const revokeCredentialReceived = async (
 ): Promise<boolean> => {
     const revokedAt = new Date().toISOString();
 
+    // Use MERGE to handle both cases:
+    // 1. Relationship exists (claimed credential) - update status
+    // 2. Relationship doesn't exist (pending credential) - create with revoked status
     const result = await new QueryBuilder(new BindParam({ revokedAt }))
-        .match({
-            related: [
-                { identifier: 'credential', model: Credential, where: { id: credentialId } },
-                {
-                    ...Credential.getRelationshipByAlias('credentialReceived'),
-                    identifier: 'received',
-                },
-                { identifier: 'profile', model: Profile, where: { profileId } },
-            ],
-        })
-        .set('received.status = "revoked"')
-        .set('received.revokedAt = $revokedAt')
+        .match({ identifier: 'credential', model: Credential, where: { id: credentialId } })
+        .match({ identifier: 'profile', model: Profile, where: { profileId } })
+        .raw(`MERGE (credential)-[received:${Credential.getRelationshipByAlias('credentialReceived').name}]->(profile)`)
+        .raw('ON CREATE SET received.status = "revoked", received.revokedAt = $revokedAt, received.date = $revokedAt')
+        .raw('ON MATCH SET received.status = "revoked", received.revokedAt = $revokedAt')
         .return('received')
         .run();
 

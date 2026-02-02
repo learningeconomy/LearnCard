@@ -13,6 +13,7 @@ enum TroopIdStatusEnum {
     Invalid,
     Expired,
     Revoked,
+    Pending,
 }
 
 type TroopIdStatusButtonProps = {
@@ -24,37 +25,69 @@ type TroopIdStatusButtonProps = {
     otherUserProfileID?: string;
 };
 
-// Proper revocation check using the recipients list
-// Revoked users are filtered out by the backend, so if the user isn't in the list, they're revoked
+// Status type for credential state
+export type TroopIdCredentialStatus = 'valid' | 'pending' | 'revoked' | undefined;
 
+/**
+ * Check the status of a troop ID credential.
+ * Returns: 'valid' (claimed), 'pending' (sent but not claimed), 'revoked', or undefined (loading)
+ */
+export const useTroopIDStatus = (
+    credential: VC,
+    otherUserProfileID?: string,
+    boostUri?: string
+): TroopIdCredentialStatus => {
+    const { currentLCNUser } = useGetCurrentLCNUser();
+    const profileId = otherUserProfileID ?? currentLCNUser?.profileId;
+    const _boostUri = credential?.boostId || boostUri;
+
+    // Query 1: Get claimed recipients only (default: includeUnacceptedBoosts=false)
+    const { 
+        data: claimedRecipients, 
+        isLoading: isLoadingClaimed, 
+        isError: isClaimedError 
+    } = useGetBoostRecipients(_boostUri, true, false);
+
+    // Query 2: Get all recipients including pending (includeUnacceptedBoosts=true)
+    const { 
+        data: allRecipients, 
+        isLoading: isLoadingAll, 
+        isError: isAllError 
+    } = useGetBoostRecipients(_boostUri, true, true);
+
+    // Still loading
+    if (isLoadingClaimed || isLoadingAll) return undefined;
+
+    // Error fetching - could be boost doesn't exist
+    if (isClaimedError || isAllError) return 'revoked';
+
+    // No data yet
+    if (!claimedRecipients || !allRecipients) return undefined;
+
+    // Check if user is in claimed recipients
+    const isInClaimedRecipients = claimedRecipients.some(r => r.to.profileId === profileId);
+    if (isInClaimedRecipients) return 'valid';
+
+    // Check if user is in all recipients (includes pending)
+    const isInAllRecipients = allRecipients.some(r => r.to.profileId === profileId);
+    if (isInAllRecipients) return 'pending';
+
+    // Not in any list - revoked
+    return 'revoked';
+};
+
+// Legacy compatibility wrapper
 export const useIsTroopIDRevoked = (
     credential: VC,
     otherUserProfileID?: string,
     boostUri?: string
 ): boolean | undefined => {
-    const { currentLCNUser } = useGetCurrentLCNUser();
-    const profileId = otherUserProfileID ?? currentLCNUser?.profileId;
-    const _boostUri = credential?.boostId || boostUri;
-
-    const { data: recipients, isLoading, isError } = useGetBoostRecipients(_boostUri);
-
-    // Still loading - return undefined to indicate unknown state
-    if (isLoading) return undefined;
-
-    // Error fetching recipients - could be boost doesn't exist (revoked/deleted boost)
-    if (isError) return true;
-
-    // No recipients data yet - return undefined
-    if (!recipients) return undefined;
-
-    // Check if the user is in the recipients list
-    // If not in the list, they're revoked (since revoked users are filtered out by the backend)
-    const isInRecipients = recipients.some(r => r.to.profileId === profileId);
-    return !isInRecipients;
+    const status = useTroopIDStatus(credential, otherUserProfileID, boostUri);
+    if (status === undefined) return undefined;
+    return status === 'revoked';
 };
 
-// Legacy compatibility - deprecated, use useIsTroopIDRevoked instead
-/** @deprecated Use useIsTroopIDRevoked instead */
+/** @deprecated Use useTroopIDStatus instead */
 export const useIsTroopIDRevokedFake = (
     credential: VC,
     _isError: boolean,
@@ -63,7 +96,6 @@ export const useIsTroopIDRevokedFake = (
     boostUri?: string
 ): boolean => {
     const result = useIsTroopIDRevoked(credential, otherUserProfileID, boostUri);
-    // Return false for undefined (loading) to maintain backwards compatibility
     return result ?? false;
 };
 
@@ -79,10 +111,10 @@ const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
     const { isLoading, error, isError } = useGetBoost(credential?.boostId);
 
     useEffect(() => {
-        verifyCredential(credential); // this will set worstVerificationStatus
+        verifyCredential(credential);
     }, [checkProof, credential]);
 
-    const isRevoked = useIsTroopIDRevokedFake(credential, isError, error, otherUserProfileID);
+    const credentialStatus = useTroopIDStatus(credential, otherUserProfileID);
 
     let status: TroopIdStatusEnum = TroopIdStatusEnum.Valid;
     if (isCredentialExpired(credential)) {
@@ -92,14 +124,11 @@ const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
         worstVerificationStatus !== VerificationStatusEnum.Success
     ) {
         status = TroopIdStatusEnum.Invalid;
-    }
-
-    // TODO: implement Revocation !!
-    else if (isRevoked) {
+    } else if (credentialStatus === 'revoked') {
         status = TroopIdStatusEnum.Revoked;
+    } else if (credentialStatus === 'pending') {
+        status = TroopIdStatusEnum.Pending;
     }
-    // TODO: implement Revocation !!
-    // ! TEMPORARY WAY OF DISPLAYING AN ID IS NO LONGER VALID !!
 
     let text: string;
     let buttonColor: string;
@@ -119,6 +148,10 @@ const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
         case TroopIdStatusEnum.Revoked:
             text = 'ID Revoked';
             buttonColor = 'bg-rose-500';
+            break;
+        case TroopIdStatusEnum.Pending:
+            text = 'Pending Acceptance';
+            buttonColor = 'bg-amber-500';
             break;
     }
 

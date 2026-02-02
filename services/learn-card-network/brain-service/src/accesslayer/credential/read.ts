@@ -200,6 +200,7 @@ export const getIncomingCredentialsForProfile = async (
 /**
  * Get a credential instance for a specific boost and profile.
  * This is used to find the credential that was issued when a profile claimed a boost.
+ * Looks via credentialSent (which exists for pending and claimed) and filters out revoked credentials.
  */
 export const getCredentialInstanceForBoostAndProfile = async (
     boostId: string,
@@ -207,6 +208,8 @@ export const getCredentialInstanceForBoostAndProfile = async (
 ): Promise<CredentialInstance | null> => {
     const { Boost } = await import('@models');
 
+    // Use credentialSent to find credentials (exists for both pending and claimed)
+    // Then optionally match credentialReceived to check revocation status
     const results = convertQueryResultToPropertiesObjectArray<{
         credential: CredentialType;
     }>(
@@ -217,13 +220,28 @@ export const getCredentialInstanceForBoostAndProfile = async (
                     { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
                     { identifier: 'credential', model: Credential },
                     {
+                        ...Profile.getRelationshipByAlias('credentialSent'),
+                        identifier: 'sent',
+                        direction: 'in',
+                    },
+                    { identifier: 'sender', model: Profile },
+                ],
+            })
+            .where(`sent.to = "${profileId}"`)
+            .match({
+                optional: true,
+                related: [
+                    { identifier: 'credential' },
+                    {
                         ...Credential.getRelationshipByAlias('credentialReceived'),
                         identifier: 'received',
                     },
-                    { identifier: 'profile', model: Profile, where: { profileId } },
+                    { identifier: 'recipient', model: Profile, where: { profileId } },
                 ],
             })
-            .where('received.status IS NULL OR received.status <> "revoked"')
+            // Use WITH barrier pattern for correct filtering
+            .with('credential, received')
+            .where('received IS NULL OR coalesce(received.status, "") <> "revoked"')
             .return('credential')
             .limit(1)
             .run()

@@ -22,7 +22,7 @@ import {
     useResolveBoost,
 } from 'learn-card-base';
 import { VC, VerificationItem, Boost } from '@learncard/types';
-import { useIsTroopIDRevokedFake } from './TroopIdStatusButton';
+import { useTroopIDStatus } from './TroopIdStatusButton';
 
 type TroopPageProps = {
     credential: VC;
@@ -68,11 +68,9 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
         boostSearchStore.set.contextCredential(credentialWithEdits);
     }, [credentialWithEdits]);
 
-    // ! TEMPORARY WAY OF DISPLAYING AN ID IS NO LONGER VALID !!
-    // TODO: implement Revocation !!
-    const isRevoked = useIsTroopIDRevokedFake(_credential, isError, error, undefined, _boostUri);
-    // TODO: implement Revocation !!
-    // ! TEMPORARY WAY OF DISPLAYING AN ID IS NO LONGER VALID !!
+    // Check credential status (valid, pending, revoked)
+    const credentialStatus = useTroopIDStatus(_credential, undefined, _boostUri);
+    const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
 
     const getScoutIdTypeFromBoost = (vc: VC) => {
         return vc?.credentialSubject?.achievement?.achievementType;
@@ -119,7 +117,7 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
                             boostUri={_boostUri}
                             handleShowIdDetails={() => setShowIdDetails(true)}
                         />
-                        {!isRevoked && (
+                        {!isRevokedOrPending && (
                             <>
                                 <TroopChildrenBox
                                     credential={credential}
@@ -144,7 +142,7 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
                 uri={_boostUri}
                 showIdDetails={showIdDetails}
                 handleShare={handleShare}
-                isRevoked={isRevoked}
+                isRevoked={isRevokedOrPending}
             />
         </section>
     );
