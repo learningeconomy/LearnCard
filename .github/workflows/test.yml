@@ -3,6 +3,12 @@ name: Test Runner
 on:
   pull_request:
     types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to test'
+        required: true
+        default: 'changeset-release/main'
 
 jobs:
   Test:
@@ -31,3 +37,106 @@ jobs:
         env:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+
+  # Run E2E tests on changeset release PRs or manual trigger
+  # SSHs into EC2 to run Playwright tests against the branch
+  e2e-tests:
+    if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Start EC2 instance
+        run: |
+          echo "Starting EC2 instance..."
+          curl -s "${{ secrets.E2E_EC2_LAMBDA_URL }}/start"
+
+      - name: Wait for EC2 to be ready
+        run: |
+          echo "Waiting for EC2 instance to be ready..."
+          for i in {1..30}; do
+            STATUS=$(curl -s "${{ secrets.E2E_EC2_LAMBDA_URL }}/status")
+            STATE=$(echo "$STATUS" | grep -i "^State:" | awk '{print $2}')
+            IP=$(echo "$STATUS" | grep -i "^Public IP:" | awk '{print $3}')
+
+            echo "Attempt $i: state=$STATE, ip=$IP"
+
+            if [ "$STATE" = "running" ] && [ -n "$IP" ]; then
+              echo "EC2 is running, waiting for SSH to be ready..."
+              for j in {1..30}; do
+                if nc -z -w5 "$IP" 22 2>/dev/null; then
+                  echo "SSH is ready at $IP"
+                  echo "E2E_EC2_IP=$IP" >> $GITHUB_ENV
+                  exit 0
+                fi
+                echo "  SSH not ready yet (attempt $j)..."
+                sleep 5
+              done
+              echo "Timeout waiting for SSH"
+              exit 1
+            fi
+
+            sleep 10
+          done
+          echo "Timeout waiting for EC2 to be ready"
+          exit 1
+
+      - name: Run E2E tests on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.E2E_EC2_IP }}
+          username: ${{ secrets.E2E_EC2_USERNAME }}
+          key: ${{ secrets.E2E_EC2_SSH_KEY }}
+          script_stop: true
+          command_timeout: 50m
+          script: |
+            cd ~/learncard-e2e-runner
+            git pull origin main
+            ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
+            ./scripts/run-tests.sh
+
+      - name: Download Playwright report from EC2
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p playwright-report test-results
+          echo "${{ secrets.E2E_EC2_SSH_KEY }}" > /tmp/ec2_key
+          chmod 600 /tmp/ec2_key
+          # Download HTML report
+          scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+            ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/playwright-report/* \
+            playwright-report/ || echo "Failed to download HTML report"
+          # Download JSON results (for job summary parsing)
+          scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+            ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/test-results/* \
+            test-results/ || echo "Failed to download test results"
+          rm /tmp/ec2_key
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
+      - name: Cleanup EC2 (docker down, prune)
+        if: always()
+        continue-on-error: true
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.E2E_EC2_IP }}
+          username: ${{ secrets.E2E_EC2_USERNAME }}
+          key: ${{ secrets.E2E_EC2_SSH_KEY }}
+          script_stop: false
+          command_timeout: 10m
+          script: |
+            cd ~/learncard-e2e-runner
+            ./scripts/cleanup.sh
+
+      - name: Stop EC2 instance
+        if: always()
+        run: |
+          echo "Stopping EC2 instance..."
+          curl -s "${{ secrets.E2E_EC2_LAMBDA_URL }}/stop"

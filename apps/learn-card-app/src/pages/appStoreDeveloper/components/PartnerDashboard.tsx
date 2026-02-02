@@ -98,8 +98,18 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
 
     const tabs = [
         { id: 'DRAFT' as Tab, label: 'Drafts', icon: FileEdit, count: draftListings.length },
-        { id: 'PENDING_REVIEW' as Tab, label: 'Pending', icon: Clock, count: pendingListings.length },
-        { id: 'LISTED' as Tab, label: 'Published', icon: CheckCircle2, count: listedListings.length },
+        {
+            id: 'PENDING_REVIEW' as Tab,
+            label: 'Pending',
+            icon: Clock,
+            count: pendingListings.length,
+        },
+        {
+            id: 'LISTED' as Tab,
+            label: 'Published',
+            icon: CheckCircle2,
+            count: listedListings.length,
+        },
         { id: 'ARCHIVED' as Tab, label: 'Rejected', icon: Archive, count: archivedListings.length },
     ];
 
@@ -109,21 +119,24 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
             {
                 number: 1,
                 title: 'Create',
-                description: 'Build your app listing with details, icon, screenshots, and integration settings.',
+                description:
+                    'Build your app listing with details, icon, screenshots, and integration settings.',
                 icon: Sparkles,
                 color: 'bg-violet-100 text-violet-600',
             },
             {
                 number: 2,
                 title: 'Submit',
-                description: 'Submit your listing for review. Our team will verify it meets our guidelines.',
+                description:
+                    'Submit your listing for review. Our team will verify it meets our guidelines.',
                 icon: Send,
                 color: 'bg-amber-100 text-amber-600',
             },
             {
                 number: 3,
                 title: 'Publish',
-                description: 'Once approved, your app goes live in the App Store for users to discover.',
+                description:
+                    'Once approved, your app goes live in the App Store for users to discover.',
                 icon: Rocket,
                 color: 'bg-emerald-100 text-emerald-600',
             },
@@ -136,12 +149,11 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         <Rocket className="w-8 h-8 text-white" />
                     </div>
 
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-                        Publish Your App
-                    </h2>
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-2">Publish Your App</h2>
 
                     <p className="text-gray-500 max-w-md mx-auto">
-                        Share your app with thousands of users. It only takes a few minutes to get started.
+                        Share your app with thousands of users. It only takes a few minutes to get
+                        started.
                     </p>
                 </div>
 
@@ -151,7 +163,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             key={step.number}
                             className="flex items-start gap-4 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm"
                         >
-                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${step.color}`}>
+                            <div
+                                className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${step.color}`}
+                            >
                                 <step.icon className="w-5 h-5" />
                             </div>
 
@@ -263,10 +277,18 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                     ) : filteredListings.length === 0 ? (
                         <div className="bg-white rounded-xl border border-gray-200 text-center py-12 px-4">
                             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                {activeTab === 'DRAFT' && <FileEdit className="w-6 h-6 text-gray-400" />}
-                                {activeTab === 'PENDING_REVIEW' && <Clock className="w-6 h-6 text-gray-400" />}
-                                {activeTab === 'LISTED' && <CheckCircle2 className="w-6 h-6 text-gray-400" />}
-                                {activeTab === 'ARCHIVED' && <Archive className="w-6 h-6 text-gray-400" />}
+                                {activeTab === 'DRAFT' && (
+                                    <FileEdit className="w-6 h-6 text-gray-400" />
+                                )}
+                                {activeTab === 'PENDING_REVIEW' && (
+                                    <Clock className="w-6 h-6 text-gray-400" />
+                                )}
+                                {activeTab === 'LISTED' && (
+                                    <CheckCircle2 className="w-6 h-6 text-gray-400" />
+                                )}
+                                {activeTab === 'ARCHIVED' && (
+                                    <Archive className="w-6 h-6 text-gray-400" />
+                                )}
                             </div>
 
                             <h3 className="text-sm font-medium text-gray-500 mb-1">
@@ -278,9 +300,11 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
 
                             <p className="text-xs text-gray-400">
                                 {activeTab === 'DRAFT' && 'Create a new listing to get started'}
-                                {activeTab === 'PENDING_REVIEW' && 'Submit drafts for review to see them here'}
+                                {activeTab === 'PENDING_REVIEW' &&
+                                    'Submit drafts for review to see them here'}
                                 {activeTab === 'LISTED' && 'Your approved apps will appear here'}
-                                {activeTab === 'ARCHIVED' && 'Rejected apps will appear here for review'}
+                                {activeTab === 'ARCHIVED' &&
+                                    'Rejected apps will appear here for review'}
                             </p>
                         </div>
                     ) : (
@@ -311,7 +335,11 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                                 {listing.display_name}
                                             </h4>
 
-                                            <StatusBadge status={listing.app_listing_status as AppListingStatus} />
+                                            <StatusBadge
+                                                status={
+                                                    listing.app_listing_status as AppListingStatus
+                                                }
+                                            />
                                         </div>
 
                                         <p className="text-xs text-gray-400 truncate mt-0.5">
@@ -354,7 +382,11 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         {selectedListing.display_name}
                                     </h3>
 
-                                    <StatusBadge status={selectedListing.app_listing_status as AppListingStatus} />
+                                    <StatusBadge
+                                        status={
+                                            selectedListing.app_listing_status as AppListingStatus
+                                        }
+                                    />
                                 </div>
 
                                 <p className="text-sm text-gray-500">{selectedListing.tagline}</p>
@@ -389,7 +421,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                             Category
                                         </label>
 
-                                        <p className="text-sm text-gray-600 mt-1">{selectedListing.category}</p>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {selectedListing.category}
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -426,7 +460,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     </button>
 
                                     <button
-                                        onClick={() => handleSubmitForReview(selectedListing.listing_id)}
+                                        onClick={() =>
+                                            handleSubmitForReview(selectedListing.listing_id)
+                                        }
                                         disabled={actionLoading === selectedListing.listing_id}
                                         className="flex items-center gap-2 px-3 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50"
                                     >
@@ -489,7 +525,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg flex-1">
                                         <CheckCircle2 className="w-4 h-4" />
 
-                                        <span className="text-sm">Your app is live in the App Store</span>
+                                        <span className="text-sm">
+                                            Your app is live in the App Store
+                                        </span>
                                     </div>
                                 </>
                             )}
@@ -510,7 +548,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         <div>
                             <Eye className="w-10 h-10 text-gray-300 mx-auto mb-2" />
 
-                            <p className="text-sm text-gray-500">Select a listing to view details</p>
+                            <p className="text-sm text-gray-500">
+                                Select a listing to view details
+                            </p>
                         </div>
                     </div>
                 )}

@@ -17,7 +17,6 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
-import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import {
     getCredentialName,
@@ -46,7 +45,7 @@ const ShareBoostLink: React.FC<{
 
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
-    const { mutate: shareEarnedBoost, loading: isLinkLoading } = useShareBoostMutation();
+    const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
     const categoryConfig =
         boostCategoryOptions?.[categoryType as string] ??
@@ -79,54 +78,46 @@ const ShareBoostLink: React.FC<{
         typeof cred?.credentialSubject?.id === 'string' ||
         cred?.credentialSubject?.id instanceof String;
 
-    const isLCNetworkUrlIssuer = isIssuerString
-        ? cred?.issuer?.includes(`did:web:scoutnetwork.org`)
-        : false;
-    const isLCNetworkUrlIssuee = isIssueeString
-        ? cred?.credentialSubject?.id?.includes(`did:web:scoutnetwork.org`)
-        : false;
-    if (isLCNetworkUrlIssuer) {
-        const regex = /(users:)(.*)/;
-        profileId = cred?.issuer?.match(regex)?.[2];
-    }
+    const issuerDid = isIssuerString ? (cred?.issuer as string) : (cred?.issuer?.id as string);
+    const issueeDid = isIssueeString
+        ? (cred?.credentialSubject?.id as string)
+        : (cred?.credentialSubject?.id as string);
 
-    const { data: profile, isLoading, isError } = useGetProfile(profileId);
-    const {
-        data: myProfile,
-        isLoading: myProfileLoading,
-        isError: myProfileError,
-    } = useGetProfile();
+    const issuerProfileId = issuerDid?.includes(':users:') ? issuerDid.split(':').pop() : undefined;
+    const issueeProfileId = issueeDid?.includes(':users:') ? issueeDid.split(':').pop() : undefined;
 
-    if (isLCNetworkUrlIssuer) {
-        issuerName = profile ? profile?.displayName : isLoading ? 'Loading...' : 'Unknown';
+    const { data: issuerProfile, isLoading: isIssuerLoading } = useGetProfile(issuerProfileId);
+    const { data: issueeProfile, isLoading: isIssueeLoading } = useGetProfile(issueeProfileId);
+    const { data: myProfile, isLoading: myProfileLoading } = useGetProfile();
+
+    if (issuerProfileId) {
+        issuerName = issuerProfile ? issuerProfile?.displayName : isIssuerLoading ? 'Loading...' : 'Unknown';
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
 
-    if (isLCNetworkUrlIssuee) {
-        issueeName = myProfile
-            ? myProfile?.displayName
-            : myProfileLoading
-            ? 'Loading...'
-            : 'Unknown';
-
-        issueeName = myProfile
-            ? myProfile?.displayName
-            : myProfileLoading
-            ? 'Loading...'
-            : 'Unknown';
-        subjectProfileImageElement = myProfile ? (
-            <ProfilePicture
-                customContainerClass="flex justify-center items-center h-[100px] w-[100px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[100px] min-h-[100px]"
-                customImageClass="flex justify-center items-center h-[100px] w-[100px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[100px] min-h-[100px]"
-            />
-        ) : (
-            <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(cred?.credentialSubject?.id)}
-            </div>
-        );
+    if (issueeProfileId) {
+        issueeName = issueeProfile ? issueeProfile?.displayName : isIssueeLoading ? 'Loading...' : 'Unknown';
     } else {
-        issueeName = cred?.credentialSubject?.id;
+        issueeName = myProfile ? myProfile?.displayName : myProfileLoading ? 'Loading...' : 'Unknown';
+    }
+
+    if (issueeProfileId || issueeDid?.includes('did:web:scoutnetwork.org')) {
+        subjectProfileImageElement =
+            issueeProfile || myProfile ? (
+                <ProfilePicture
+                    overrideSrc={!!(issueeProfile?.image || myProfile?.image)}
+                    overrideSrcURL={issueeProfile?.image || myProfile?.image}
+                    customContainerClass="flex justify-center items-center h-[100px] w-[100px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[100px] min-h-[100px]"
+                    customImageClass="flex justify-center items-center h-[100px] w-[100px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[100px] min-h-[100px]"
+                />
+            ) : (
+                <div className="flex flex-row items-center justify-center h-[100px] w-[100px] rounded-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
+                    {getEmojiFromDidString(issueeDid)}
+                </div>
+            );
+    } else {
+        issueeName = issueeDid;
     }
 
     const generateShareLink = async () => {
@@ -242,7 +233,7 @@ const ShareBoostLink: React.FC<{
 
                     <div className="w-full flex items-center justify-center">
                         <p className="text-white font-medium text-lg mb-4 flex items-center justify-center w-full">
-                            <IconComponent className="mr-1 h-[24px] w-[25px]" /> Verified{' '}
+                            <IconComponent className="mr-1 h-[24px] w-[25px]" />
                             {categoryTitle ?? 'Achievement'}
                         </p>
                     </div>
@@ -273,6 +264,9 @@ const ShareBoostLink: React.FC<{
                                     credential={cred}
                                     displayType={displayType}
                                     branding={BrandingEnum.scoutPass}
+                                    showBackgroundImage={false}
+                                    backgroundImage={''}
+                                    backgroundColor={''}
                                 />
                             )}
                         </div>
@@ -291,12 +285,8 @@ const ShareBoostLink: React.FC<{
                         </p>
                     </div>
 
-                    <div className="bg-white w-full flex items-center justify-center pt-4 pb-2">
+                    <div className="bg-white w-full flex items-center justify-center pt-4 pb-6">
                         <div className="bg-grayscale-300 h-[1px] w-[90%]" />
-                    </div>
-
-                    <div className="w-full flex items-center justify-center bg-white pb-2">
-                        <CredentialVerificationDisplay credential={cred} showText />
                     </div>
                 </div>
             </IonGrid>

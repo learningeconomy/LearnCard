@@ -8,6 +8,7 @@ import {
     getInfoFromCredential,
     getNameFromProfile,
 } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from '@learncard/helpers';
 import { truncateWithEllipsis } from '../../helpers/string.helpers';
 import { Profile, VC } from '@learncard/types';
 import VerifierStateBadgeAndText, {
@@ -31,6 +32,7 @@ type VC2FrontFaceInfoProps = {
     customThumbComponent?: React.ReactNode;
     knownDIDRegistry?: KnownDIDRegistryType;
     customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
 };
 
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
@@ -46,6 +48,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     customThumbComponent,
     knownDIDRegistry,
     customBodyContentSlot,
+    unknownVerifierTitle,
 }) => {
     const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 20);
     const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
@@ -87,21 +90,28 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
+    } else if (unknownVerifierTitle) {
+        verifierState = VERIFIER_STATES.trustedVerifier;
     } else {
         if (knownDIDRegistry?.source === 'trusted') {
             verifierState = VERIFIER_STATES.trustedVerifier;
         } else if (knownDIDRegistry?.source === 'untrusted') {
             verifierState = VERIFIER_STATES.untrustedVerifier;
         } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         }
     }
 
@@ -146,7 +156,10 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                         by <strong className="font-[700]">{issuerName}</strong>
                                     </span>
                                 </div>
-                                <VerifierStateBadgeAndText verifierState={verifierState} />
+                                <VerifierStateBadgeAndText
+                                    verifierState={verifierState}
+                                    unknownVerifierTitle={unknownVerifierTitle}
+                                />
                             </div>
                         </>
                     )}

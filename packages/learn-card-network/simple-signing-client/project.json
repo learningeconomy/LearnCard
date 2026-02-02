@@ -6,7 +6,7 @@
     "root": "packages/learn-card-network/simple-signing-client",
     "tags": [],
     "implicitDependencies": [
-        "simple-signing-service"
+        "simple-signing-service-app"
     ],
     "namedInputs": {
         "source": [

@@ -27,9 +27,9 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader(BaseModel):
     """
     BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader
     """ # noqa: E501
-    alg: StrictStr
-    iv: StrictStr
-    tag: StrictStr
+    alg: Optional[StrictStr]
+    iv: Optional[StrictStr]
+    tag: Optional[StrictStr]
     epk: Optional[BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeaderEpk] = None
     kid: Optional[StrictStr] = None
     apv: Optional[StrictStr] = None
@@ -78,6 +78,36 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of epk
         if self.epk:
             _dict['epk'] = self.epk.to_dict()
+        # set to None if alg (nullable) is None
+        # and model_fields_set contains the field
+        if self.alg is None and "alg" in self.model_fields_set:
+            _dict['alg'] = None
+
+        # set to None if iv (nullable) is None
+        # and model_fields_set contains the field
+        if self.iv is None and "iv" in self.model_fields_set:
+            _dict['iv'] = None
+
+        # set to None if tag (nullable) is None
+        # and model_fields_set contains the field
+        if self.tag is None and "tag" in self.model_fields_set:
+            _dict['tag'] = None
+
+        # set to None if kid (nullable) is None
+        # and model_fields_set contains the field
+        if self.kid is None and "kid" in self.model_fields_set:
+            _dict['kid'] = None
+
+        # set to None if apv (nullable) is None
+        # and model_fields_set contains the field
+        if self.apv is None and "apv" in self.model_fields_set:
+            _dict['apv'] = None
+
+        # set to None if apu (nullable) is None
+        # and model_fields_set contains the field
+        if self.apu is None and "apu" in self.model_fields_set:
+            _dict['apu'] = None
+
         return _dict
 
     @classmethod

@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **credential** | [**CredentialSendCredentialRequestCredential**](CredentialSendCredentialRequestCredential.md) |  | 
+**metadata** | **Dict[str, object]** |  | [optional] 
 
 ## Example
 

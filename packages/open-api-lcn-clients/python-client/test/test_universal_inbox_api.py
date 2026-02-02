@@ -26,6 +26,34 @@ class TestUniversalInboxApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
+    def test_inbox_approve_guardian_request(self) -> None:
+        """Test case for inbox_approve_guardian_request
+
+        Approve Guardian Request
+        """
+        pass
+
+    def test_inbox_approve_guardian_request_by_path(self) -> None:
+        """Test case for inbox_approve_guardian_request_by_path
+
+        Approve Guardian Request (GET)
+        """
+        pass
+
+    def test_inbox_claim(self) -> None:
+        """Test case for inbox_claim
+
+        Claim Universal Inbox Credential
+        """
+        pass
+
+    def test_inbox_finalize(self) -> None:
+        """Test case for inbox_finalize
+
+        Finalize Universal Inbox Credentials
+        """
+        pass
+
     def test_inbox_get_inbox_credential(self) -> None:
         """Test case for inbox_get_inbox_credential
 
@@ -44,6 +72,13 @@ class TestUniversalInboxApi(unittest.TestCase):
         """Test case for inbox_issue
 
         Issue Credential to Universal Inbox
+        """
+        pass
+
+    def test_inbox_send_guardian_approval_email(self) -> None:
+        """Test case for inbox_send_guardian_approval_email
+
+        Send Guardian Approval Email
         """
         pass
 

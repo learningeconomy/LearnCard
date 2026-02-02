@@ -37,7 +37,7 @@ class TestInboxIssue200Response(unittest.TestCase):
             return InboxIssue200Response(
                 issuance_id = '',
                 status = 'PENDING',
-                recipient = None,
+                recipient = openapi_client.models.inbox_issue_200_response_recipient.inbox_issue_200_response_recipient(),
                 claim_url = '',
                 recipient_did = ''
             )
@@ -45,7 +45,7 @@ class TestInboxIssue200Response(unittest.TestCase):
             return InboxIssue200Response(
                 issuance_id = '',
                 status = 'PENDING',
-                recipient = None,
+                recipient = openapi_client.models.inbox_issue_200_response_recipient.inbox_issue_200_response_recipient(),
         )
         """
 

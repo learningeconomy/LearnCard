@@ -1,23 +1,27 @@
-FROM node:20.10.0-slim
+# Using bullseye (Debian 11) to avoid native module build issues on Debian 12
+FROM node:20.10.0-bullseye-slim
 
-# Set working directory to /app
+# Skip native DIDKit build (uses WASM fallback)
+ENV SKIP_DIDKIT_NAPI=1
+
 WORKDIR /app
 
-# Sometimes we need python to build packages
-RUN apt-get update || : && apt-get install -y \
+# Install build dependencies and pnpm in one layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    build-essential
-
-# Install PNPM package manager
-RUN npm install -g pnpm
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g pnpm
 
 # Copy everything over from the source directory to the build directory
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
+COPY lib lib
 COPY packages/learn-card-core packages/learn-card-core
 COPY packages/plugins/crypto packages/plugins/crypto
 COPY packages/plugins/did-web-plugin packages/plugins/did-web-plugin
 COPY packages/plugins/didkey packages/plugins/didkey
 COPY packages/plugins/didkit packages/plugins/didkit
+COPY packages/plugins/didkit-plugin-node packages/plugins/didkit-plugin-node
 COPY packages/plugins/encryption packages/plugins/encryption
 COPY packages/plugins/expiration packages/plugins/expiration
 COPY packages/learn-card-helpers packages/learn-card-helpers
@@ -28,7 +32,6 @@ COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
 COPY services/learn-card-network/learn-cloud-service services/learn-card-network/learn-cloud-service
 
-# Install dependencies - Install inside container ensures parity on all machines
 RUN pnpm install --no-frozen-lockfile
 
 RUN pnpm exec nx build:docker learn-cloud-service

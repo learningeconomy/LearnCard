@@ -23,3 +23,7 @@ pnpm i @learncard/didkit-plugin
 ### Use Cases
 
 Anything related to issuing and signing VCs/VPs, as well as generating key material and DIDs!
+
+{% hint style="info" %}
+**For Node.js server applications**, consider using the [DIDKit Node (Native)](didkit-node.md) plugin instead. It provides the same API but with significantly better performance by using native code instead of WASM.
+{% endhint %}

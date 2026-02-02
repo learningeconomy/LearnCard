@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { 
-    Globe, 
-    Package, 
-    Code, 
-    Rocket, 
-    ArrowRight, 
-    ArrowLeft, 
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+    Globe,
+    Package,
+    Code,
+    Rocket,
+    ArrowRight,
+    ArrowLeft,
     ExternalLink,
     CheckCircle2,
     Plus,
@@ -52,18 +52,32 @@ import {
 
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
 
-import { StepProgress, CodeOutputPanel, GoLiveStep } from '../shared';
+import { StepProgress, CodeOutputPanel, GoLiveStep, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { useWallet, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
+import {
+    CredentialBuilder,
+    getBlankTemplate,
+    templateToJson,
+    jsonToTemplate,
+    type OBv3CredentialTemplate,
+} from '../../partner-onboarding/components/CredentialBuilder';
 import { useDeveloperPortal } from '../../useDeveloperPortal';
 import { ConsentFlowContractSelector } from '../../components/ConsentFlowContractSelector';
 import { CodeBlock } from '../../components/CodeBlock';
+import { TemplateListManager } from '../../components/TemplateListManager';
 import { PERMISSION_OPTIONS } from '../../types';
 import type { AppPermission, LaunchConfig, ExtendedAppStoreListing } from '../../types';
 import { AppPreviewModal } from '../../components/AppPreviewModal';
+import { getAppDidFromSlug } from '../../utils/appDid';
 import type { GuideProps } from '../GuidePage';
-import type { EmbedAppGuideConfig, EmbedAppFeatureConfig, LLMIntegrationMetadata, TemplateMetadata } from '../types';
+import type {
+    EmbedAppGuideConfig,
+    EmbedAppFeatureConfig,
+    LLMIntegrationMetadata,
+    TemplateMetadata,
+} from '../types';
 
 // URL Check types and helper
 interface UrlCheckResult {
@@ -88,9 +102,17 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
             results[0] = { ...results[0], status: 'pass', message: 'Using secure HTTPS' };
         } else if (parsed.protocol === 'http:') {
             if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
-                results[0] = { ...results[0], status: 'warn', message: 'HTTP allowed for localhost' };
+                results[0] = {
+                    ...results[0],
+                    status: 'warn',
+                    message: 'HTTP allowed for localhost',
+                };
             } else {
-                results[0] = { ...results[0], status: 'fail', message: 'HTTPS required for production' };
+                results[0] = {
+                    ...results[0],
+                    status: 'fail',
+                    message: 'HTTPS required for production',
+                };
             }
         } else {
             results[0] = { ...results[0], status: 'fail', message: 'Invalid protocol' };
@@ -124,13 +146,25 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
         if (corsHeader === '*' || corsHeader) {
             results[2] = { ...results[2], status: 'pass', message: `CORS: ${corsHeader}` };
         } else {
-            results[2] = { ...results[2], status: 'warn', message: 'CORS header not visible (may still work)' };
+            results[2] = {
+                ...results[2],
+                status: 'warn',
+                message: 'CORS header not visible (may still work)',
+            };
         }
     } catch (err) {
         if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
             // CORS block or network error
-            results[1] = { ...results[1], status: 'warn', message: 'Blocked by CORS or unreachable' };
-            results[2] = { ...results[2], status: 'fail', message: 'CORS not configured or blocking' };
+            results[1] = {
+                ...results[1],
+                status: 'warn',
+                message: 'Blocked by CORS or unreachable',
+            };
+            results[2] = {
+                ...results[2],
+                status: 'fail',
+                message: 'CORS not configured or blocking',
+            };
         } else if (err instanceof DOMException && err.name === 'AbortError') {
             results[1] = { ...results[1], status: 'fail', message: 'Request timed out (10s)' };
             results[2] = { ...results[2], status: 'pending', message: 'Could not check' };
@@ -144,7 +178,10 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
 };
 
 // URL Check Results Component
-const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean }> = ({ results, isChecking }) => {
+const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean }> = ({
+    results,
+    isChecking,
+}) => {
     const getIcon = (status: UrlCheckResult['status']) => {
         switch (status) {
             case 'checking':
@@ -177,12 +214,17 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
     const hasFailed = results.some(r => r.status === 'fail');
 
     return (
-        <div className={`p-4 rounded-xl border ${
-            isChecking ? 'bg-gray-50 border-gray-200' :
-            allPassed ? 'bg-emerald-50 border-emerald-200' :
-            hasFailed ? 'bg-red-50 border-red-200' :
-            'bg-gray-50 border-gray-200'
-        }`}>
+        <div
+            className={`p-4 rounded-xl border ${
+                isChecking
+                    ? 'bg-gray-50 border-gray-200'
+                    : allPassed
+                    ? 'bg-emerald-50 border-emerald-200'
+                    : hasFailed
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-gray-50 border-gray-200'
+            }`}
+        >
             <div className="flex items-center gap-2 mb-3">
                 {isChecking ? (
                     <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
@@ -194,16 +236,24 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
                     <Search className="w-5 h-5 text-gray-400" />
                 )}
 
-                <h4 className={`font-medium ${
-                    isChecking ? 'text-gray-700' :
-                    allPassed ? 'text-emerald-800' :
-                    hasFailed ? 'text-red-800' :
-                    'text-gray-700'
-                }`}>
-                    {isChecking ? 'Checking your URL...' :
-                     allPassed ? 'Looking good!' :
-                     hasFailed ? 'Some issues found' :
-                     'URL Check Results'}
+                <h4
+                    className={`font-medium ${
+                        isChecking
+                            ? 'text-gray-700'
+                            : allPassed
+                            ? 'text-emerald-800'
+                            : hasFailed
+                            ? 'text-red-800'
+                            : 'text-gray-700'
+                    }`}
+                >
+                    {isChecking
+                        ? 'Checking your URL...'
+                        : allPassed
+                        ? 'Looking good!'
+                        : hasFailed
+                        ? 'Some issues found'
+                        : 'URL Check Results'}
                 </h4>
             </div>
 
@@ -213,22 +263,33 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
                         {getCheckIcon(result.id)}
 
                         <div className="flex-1">
-                            <span className="text-sm font-medium text-gray-700">{result.label}</span>
+                            <span className="text-sm font-medium text-gray-700">
+                                {result.label}
+                            </span>
                         </div>
 
                         <div className="flex items-center gap-2">
                             {result.message && (
-                                <span className={`text-xs ${
-                                    result.status === 'pass' ? 'text-emerald-600' :
-                                    result.status === 'fail' ? 'text-red-600' :
-                                    result.status === 'warn' ? 'text-amber-600' :
-                                    'text-gray-500'
-                                }`}>
+                                <span
+                                    className={`text-xs ${
+                                        result.status === 'pass'
+                                            ? 'text-emerald-600'
+                                            : result.status === 'fail'
+                                            ? 'text-red-600'
+                                            : result.status === 'warn'
+                                            ? 'text-amber-600'
+                                            : 'text-gray-500'
+                                    }`}
+                                >
                                     {result.message}
                                 </span>
                             )}
 
-                            {getIcon(isChecking && result.status === 'pending' ? 'checking' : result.status)}
+                            {getIcon(
+                                isChecking && result.status === 'pending'
+                                    ? 'checking'
+                                    : result.status
+                            )}
                         </div>
                     </div>
                 ))}
@@ -242,7 +303,8 @@ const UrlCheckResults: React.FC<{ results: UrlCheckResult[]; isChecking: boolean
 
             {!isChecking && allPassed && (
                 <p className="mt-3 text-xs text-emerald-600">
-                    Your URL passed basic checks. You may still need to configure iframe headers (X-Frame-Options).
+                    Your URL passed basic checks. You may still need to configure iframe headers
+                    (X-Frame-Options).
                 </p>
             )}
         </div>
@@ -267,7 +329,8 @@ const FEATURES: Feature[] = [
     {
         id: 'issue-credentials',
         title: 'Issue Credentials',
-        description: 'Award badges, certificates, or achievements to your users when they complete actions in your app.',
+        description:
+            'Award badges, certificates, or achievements to your users when they complete actions in your app.',
         icon: <Award className="w-6 h-6" />,
         requiresSetup: true,
         setupDescription: 'Create Templates, Consent Flow',
@@ -276,7 +339,8 @@ const FEATURES: Feature[] = [
     {
         id: 'peer-badges',
         title: 'Peer-to-Peer Badges',
-        description: 'Let users send badges to each other within your app using your credential templates.',
+        description:
+            'Let users send badges to each other within your app using your credential templates.',
         icon: <Send className="w-6 h-6" />,
         requiresSetup: true,
         setupDescription: 'Create Boost Templates',
@@ -285,7 +349,8 @@ const FEATURES: Feature[] = [
     {
         id: 'request-credentials',
         title: 'Request Credentials',
-        description: 'Ask users to share credentials with your app for verification or gated access.',
+        description:
+            'Ask users to share credentials with your app for verification or gated access.',
         icon: <FileSearch className="w-6 h-6" />,
         requiresSetup: true,
         setupDescription: 'Configure Search Query',
@@ -294,7 +359,8 @@ const FEATURES: Feature[] = [
     {
         id: 'request-data-consent',
         title: 'Request Data Consent',
-        description: 'Ask users for permission to access specific data fields or write data back to their profile via a ConsentFlow contract.',
+        description:
+            'Ask users for permission to access specific data fields or write data back to their profile via a ConsentFlow contract.',
         icon: <ShieldCheck className="w-6 h-6" />,
         requiresSetup: true,
         setupDescription: 'Define Consent Contract',
@@ -303,7 +369,8 @@ const FEATURES: Feature[] = [
     {
         id: 'launch-feature',
         title: 'Launch Feature',
-        description: 'Trigger native LearnCard tools directly from your app. Open the QR scanner, start an AI session, or display the profile card.',
+        description:
+            'Trigger native LearnCard tools directly from your app. Open the QR scanner, start an AI session, or display the profile card.',
         icon: <Play className="w-6 h-6" />,
         requiresSetup: true,
         setupDescription: 'Configure Feature Settings',
@@ -312,7 +379,8 @@ const FEATURES: Feature[] = [
     {
         id: 'display-pathways',
         title: 'Display Pathways',
-        description: 'Visualize a user\'s journey. Show completed steps and what credentials they need to reach a goal.',
+        description:
+            "Visualize a user's journey. Show completed steps and what credentials they need to reach a goal.",
         icon: <Map className="w-6 h-6" />,
         requiresSetup: true,
         setupDescription: 'Define Pathway/Map Structure',
@@ -322,7 +390,8 @@ const FEATURES: Feature[] = [
     {
         id: 'launch-ai-assistant',
         title: 'Launch AI Assistant',
-        description: 'Embed a custom AI chat or tutor experience. Configure preset prompts and context for "Math Tutor" or "Career Coach" style interactions.',
+        description:
+            'Embed a custom AI chat or tutor experience. Configure preset prompts and context for "Math Tutor" or "Career Coach" style interactions.',
         icon: <Bot className="w-6 h-6" />,
         requiresSetup: true,
         setupDescription: 'Define AI Prompt & Context',
@@ -333,6 +402,7 @@ const FEATURES: Feature[] = [
 
 const STEPS = [
     { id: 'getting-started', title: 'Getting Started' },
+    { id: 'signing-authority', title: 'Set Up Signing' },
     { id: 'choose-features', title: 'Choose Features' },
     { id: 'feature-setup', title: 'Feature Setup' },
     { id: 'your-app', title: 'Your App' },
@@ -350,7 +420,11 @@ const GettingStartedStep: React.FC<{
 
     // Listing management
     const { useListingsForIntegration, useCreateListing } = useDeveloperPortal();
-    const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(selectedIntegration?.id || null);
+    const {
+        data: listings,
+        isLoading: isLoadingListings,
+        refetch: refetchListings,
+    } = useListingsForIntegration(selectedIntegration?.id || null);
     const createListingMutation = useCreateListing();
     const [isCreatingListing, setIsCreatingListing] = useState(false);
     const [newListingName, setNewListingName] = useState('');
@@ -401,9 +475,7 @@ const GettingStartedStep: React.FC<{
 
     const initCode = `import { createPartnerConnect } from '@learncard/partner-connect';
 
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Get user identity (SSO - no login needed!)
 const identity = await learnCard.requestIdentity();
@@ -451,23 +523,24 @@ console.log('User:', identity.profile.displayName);`;
                             {/* App Listings */}
                             {listings && listings.length > 0 && (
                                 <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
-                                    {listings.map((listing) => {
-                                        const isSelected = selectedListing?.listing_id === listing.listing_id;
+                                    {listings.map(listing => {
+                                        const isSelected =
+                                            selectedListing?.listing_id === listing.listing_id;
 
                                         return (
                                             <button
                                                 key={listing.listing_id}
                                                 onClick={() => setSelectedListing(listing)}
                                                 className={`w-full flex items-center gap-4 p-4 text-left transition-all ${
-                                                    isSelected
-                                                        ? 'bg-cyan-50'
-                                                        : 'hover:bg-gray-50'
+                                                    isSelected ? 'bg-cyan-50' : 'hover:bg-gray-50'
                                                 }`}
                                             >
                                                 {/* App Icon */}
-                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                    isSelected ? 'bg-cyan-100' : 'bg-gray-100'
-                                                }`}>
+                                                <div
+                                                    className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        isSelected ? 'bg-cyan-100' : 'bg-gray-100'
+                                                    }`}
+                                                >
                                                     {listing.icon_url ? (
                                                         <img
                                                             src={listing.icon_url}
@@ -475,13 +548,25 @@ console.log('User:', identity.profile.displayName);`;
                                                             className="w-10 h-10 rounded-lg object-cover"
                                                         />
                                                     ) : (
-                                                        <Layout className={`w-6 h-6 ${isSelected ? 'text-cyan-600' : 'text-gray-400'}`} />
+                                                        <Layout
+                                                            className={`w-6 h-6 ${
+                                                                isSelected
+                                                                    ? 'text-cyan-600'
+                                                                    : 'text-gray-400'
+                                                            }`}
+                                                        />
                                                     )}
                                                 </div>
 
                                                 {/* App Details */}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className={`font-semibold truncate ${isSelected ? 'text-cyan-700' : 'text-gray-800'}`}>
+                                                    <p
+                                                        className={`font-semibold truncate ${
+                                                            isSelected
+                                                                ? 'text-cyan-700'
+                                                                : 'text-gray-800'
+                                                        }`}
+                                                    >
                                                         {listing.display_name}
                                                     </p>
 
@@ -490,24 +575,35 @@ console.log('User:', identity.profile.displayName);`;
                                                     </p>
 
                                                     <div className="flex items-center gap-2 mt-1">
-                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                                            listing.app_listing_status === 'LISTED' 
-                                                                ? 'bg-emerald-100 text-emerald-700'
-                                                                : listing.app_listing_status === 'PENDING_REVIEW'
-                                                                ? 'bg-amber-100 text-amber-700'
-                                                                : 'bg-gray-100 text-gray-600'
-                                                        }`}>
-                                                            {listing.app_listing_status === 'LISTED' ? 'Live' : listing.app_listing_status === 'PENDING_REVIEW' ? 'In Review' : 'Draft'}
+                                                        <span
+                                                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                                listing.app_listing_status ===
+                                                                'LISTED'
+                                                                    ? 'bg-emerald-100 text-emerald-700'
+                                                                    : listing.app_listing_status ===
+                                                                      'PENDING_REVIEW'
+                                                                    ? 'bg-amber-100 text-amber-700'
+                                                                    : 'bg-gray-100 text-gray-600'
+                                                            }`}
+                                                        >
+                                                            {listing.app_listing_status === 'LISTED'
+                                                                ? 'Live'
+                                                                : listing.app_listing_status ===
+                                                                  'PENDING_REVIEW'
+                                                                ? 'In Review'
+                                                                : 'Draft'}
                                                         </span>
                                                     </div>
                                                 </div>
 
                                                 {/* Selection Indicator */}
-                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                                                    isSelected
-                                                        ? 'border-cyan-500 bg-cyan-500'
-                                                        : 'border-gray-300'
-                                                }`}>
+                                                <div
+                                                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                                        isSelected
+                                                            ? 'border-cyan-500 bg-cyan-500'
+                                                            : 'border-gray-300'
+                                                    }`}
+                                                >
                                                     {isSelected && (
                                                         <Check className="w-4 h-4 text-white" />
                                                     )}
@@ -542,11 +638,11 @@ console.log('User:', identity.profile.displayName);`;
                                         <input
                                             type="text"
                                             value={newListingName}
-                                            onChange={(e) => setNewListingName(e.target.value)}
+                                            onChange={e => setNewListingName(e.target.value)}
                                             placeholder="My Awesome App"
                                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             autoFocus
-                                            onKeyDown={(e) => {
+                                            onKeyDown={e => {
                                                 if (e.key === 'Enter') handleCreateListing();
                                                 if (e.key === 'Escape') setIsCreatingListing(false);
                                             }}
@@ -556,7 +652,10 @@ console.log('User:', identity.profile.displayName);`;
                                     <div className="flex gap-2">
                                         <button
                                             onClick={handleCreateListing}
-                                            disabled={!newListingName.trim() || createListingMutation.isPending}
+                                            disabled={
+                                                !newListingName.trim() ||
+                                                createListingMutation.isPending
+                                            }
                                             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
                                         >
                                             {createListingMutation.isPending ? (
@@ -570,7 +669,10 @@ console.log('User:', identity.profile.displayName);`;
                                         </button>
 
                                         <button
-                                            onClick={() => { setIsCreatingListing(false); setNewListingName(''); }}
+                                            onClick={() => {
+                                                setIsCreatingListing(false);
+                                                setNewListingName('');
+                                            }}
                                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                                         >
                                             Cancel
@@ -605,7 +707,8 @@ console.log('User:', identity.profile.displayName);`;
                     <CodeBlock code={installCode} />
 
                     <p className="text-xs text-gray-500">
-                        Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code> or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
+                        Also works with <code className="bg-gray-100 px-1 rounded">yarn add</code>{' '}
+                        or <code className="bg-gray-100 px-1 rounded">pnpm add</code>
                     </p>
                 </div>
             </div>
@@ -625,7 +728,10 @@ console.log('User:', identity.profile.displayName);`;
 
                     <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                         <p className="text-sm text-cyan-800">
-                            <strong>That's it!</strong> Users are already logged in when inside the wallet, so <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code> returns instantly with their profile.
+                            <strong>That's it!</strong> Users are already logged in when inside the
+                            wallet, so{' '}
+                            <code className="bg-cyan-100 px-1 rounded">requestIdentity()</code>{' '}
+                            returns instantly with their profile.
                         </p>
                     </div>
                 </div>
@@ -650,7 +756,177 @@ console.log('User:', identity.profile.displayName);`;
     );
 };
 
-// Step 1: Choose Features (the hub)
+// Step 1: Signing Authority
+const SigningAuthorityStep: React.FC<{
+    onComplete: () => void;
+    onBack: () => void;
+    appSlug?: string;
+}> = ({ onComplete, onBack, appSlug }) => {
+    const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+
+    const [loading, setLoading] = useState(true);
+    const [creating, setCreating] = useState(false);
+    const [primarySA, setPrimarySA] = useState<{ name: string; endpoint: string } | null>(null);
+    const issuerDid = appSlug ? getAppDidFromSlug(appSlug) : undefined;
+
+    const fetchSigningAuthority = useCallback(async () => {
+        try {
+            setLoading(true);
+            const wallet = await initWallet();
+            const primary = await wallet.invoke.getPrimaryRegisteredSigningAuthority();
+
+            if (primary?.relationship) {
+                setPrimarySA({
+                    name: primary.relationship.name,
+                    endpoint: primary.signingAuthority?.endpoint ?? '',
+                });
+            } else {
+                setPrimarySA(null);
+            }
+        } catch (err) {
+            console.error('Failed to fetch signing authority:', err);
+            setPrimarySA(null);
+        } finally {
+            setLoading(false);
+        }
+    }, [initWallet]);
+
+    useEffect(() => {
+        fetchSigningAuthority();
+    }, []);
+
+    const createSigningAuthority = async () => {
+        try {
+            setCreating(true);
+            const wallet = await initWallet();
+
+            const ownerDid = appSlug ? getAppDidFromSlug(appSlug) : undefined;
+            const authority = await wallet.invoke.createSigningAuthority('default-sa', ownerDid);
+
+            if (!authority) {
+                throw new Error('Failed to create signing authority');
+            }
+
+            await wallet.invoke.registerSigningAuthority(
+                authority.endpoint!,
+                authority.name,
+                authority.did!
+            );
+
+            await wallet.invoke.setPrimaryRegisteredSigningAuthority(
+                authority.endpoint!,
+                authority.name
+            );
+
+            presentToast('Signing authority created!', { hasDismissButton: true });
+            fetchSigningAuthority();
+        } catch (err) {
+            console.error('Failed to create signing authority:', err);
+            presentToast('Failed to create signing authority', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const hasSigningAuthority = primarySA !== null;
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    Set Up Signing Authority
+                </h3>
+
+                <p className="text-gray-600">
+                    A signing authority cryptographically signs your credentials, making them
+                    verifiable. This proves the credentials actually came from you.
+                </p>
+            </div>
+
+            {issuerDid && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p className="text-xs text-slate-500">App issuer DID</p>
+                    <code className="text-xs text-slate-700 break-all">{issuerDid}</code>
+                </div>
+            )}
+
+            {/* Status */}
+            <StatusIndicator
+                status={loading ? 'loading' : hasSigningAuthority ? 'ready' : 'warning'}
+                label={
+                    loading
+                        ? 'Checking...'
+                        : hasSigningAuthority
+                        ? 'Signing authority configured'
+                        : 'No signing authority found'
+                }
+                description={
+                    hasSigningAuthority
+                        ? `Using: ${primarySA?.name}`
+                        : 'Create one to sign credentials'
+                }
+            />
+
+            {/* Create button if needed */}
+            {!loading && !hasSigningAuthority && (
+                <button
+                    onClick={createSigningAuthority}
+                    disabled={creating}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                >
+                    {creating ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Creating...
+                        </>
+                    ) : (
+                        <>
+                            <Shield className="w-4 h-4" />
+                            Create Signing Authority
+                        </>
+                    )}
+                </button>
+            )}
+
+            {/* Info about what it does */}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <h4 className="font-medium text-blue-800 mb-2">What does this do?</h4>
+
+                <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Creates a cryptographic key pair for signing</li>
+                    <li>• Registers the key with LearnCard's verification network</li>
+                    <li>• Allows anyone to verify credentials you issue</li>
+                </ul>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    disabled={!hasSigningAuthority}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    Continue
+                    <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Step 2: Choose Features (the hub)
 const ChooseFeaturesStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
@@ -671,19 +947,51 @@ const ChooseFeaturesStep: React.FC<{
 
     const getColorClasses = (color: string, isSelected: boolean, isComingSoon: boolean = false) => {
         const colors: Record<string, { border: string; bg: string; icon: string }> = {
-            cyan: { border: 'border-cyan-500', bg: 'bg-cyan-50', icon: 'text-cyan-600 bg-cyan-100' },
-            violet: { border: 'border-violet-500', bg: 'bg-violet-50', icon: 'text-violet-600 bg-violet-100' },
-            purple: { border: 'border-purple-500', bg: 'bg-purple-50', icon: 'text-purple-600 bg-purple-100' },
-            emerald: { border: 'border-emerald-500', bg: 'bg-emerald-50', icon: 'text-emerald-600 bg-emerald-100' },
-            amber: { border: 'border-amber-500', bg: 'bg-amber-50', icon: 'text-amber-600 bg-amber-100' },
-            rose: { border: 'border-rose-500', bg: 'bg-rose-50', icon: 'text-rose-600 bg-rose-100' },
-            indigo: { border: 'border-indigo-500', bg: 'bg-indigo-50', icon: 'text-indigo-600 bg-indigo-100' },
+            cyan: {
+                border: 'border-cyan-500',
+                bg: 'bg-cyan-50',
+                icon: 'text-cyan-600 bg-cyan-100',
+            },
+            violet: {
+                border: 'border-violet-500',
+                bg: 'bg-violet-50',
+                icon: 'text-violet-600 bg-violet-100',
+            },
+            purple: {
+                border: 'border-purple-500',
+                bg: 'bg-purple-50',
+                icon: 'text-purple-600 bg-purple-100',
+            },
+            emerald: {
+                border: 'border-emerald-500',
+                bg: 'bg-emerald-50',
+                icon: 'text-emerald-600 bg-emerald-100',
+            },
+            amber: {
+                border: 'border-amber-500',
+                bg: 'bg-amber-50',
+                icon: 'text-amber-600 bg-amber-100',
+            },
+            rose: {
+                border: 'border-rose-500',
+                bg: 'bg-rose-50',
+                icon: 'text-rose-600 bg-rose-100',
+            },
+            indigo: {
+                border: 'border-indigo-500',
+                bg: 'bg-indigo-50',
+                icon: 'text-indigo-600 bg-indigo-100',
+            },
         };
 
         const c = colors[color] || colors.cyan;
 
         if (isComingSoon) {
-            return { border: 'border-gray-200 border-dashed', bg: 'bg-gray-50', icon: 'text-gray-400 bg-gray-100' };
+            return {
+                border: 'border-gray-200 border-dashed',
+                bg: 'bg-gray-50',
+                icon: 'text-gray-400 bg-gray-100',
+            };
         }
 
         return isSelected
@@ -691,14 +999,16 @@ const ChooseFeaturesStep: React.FC<{
             : { border: 'border-gray-200', bg: 'bg-white', icon: 'text-gray-500 bg-gray-100' };
     };
 
-    const hasFeatureWithSetup = selectedFeatures.some(id => 
-        FEATURES.find(f => f.id === id)?.requiresSetup
+    const hasFeatureWithSetup = selectedFeatures.some(
+        id => FEATURES.find(f => f.id === id)?.requiresSetup
     );
 
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">What do you want to build?</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    What do you want to build?
+                </h3>
 
                 <p className="text-gray-600">
                     Select the features you want to add to your app. You can always add more later.
@@ -717,10 +1027,16 @@ const ChooseFeaturesStep: React.FC<{
                             key={feature.id}
                             onClick={() => toggleFeature(feature.id)}
                             disabled={isComingSoon}
-                            className={`flex flex-col items-start p-5 border-2 rounded-2xl text-left transition-all ${colors.border} ${colors.bg} ${isComingSoon ? 'cursor-not-allowed opacity-75' : 'hover:shadow-md'}`}
+                            className={`flex flex-col items-start p-5 border-2 rounded-2xl text-left transition-all ${
+                                colors.border
+                            } ${colors.bg} ${
+                                isComingSoon ? 'cursor-not-allowed opacity-75' : 'hover:shadow-md'
+                            }`}
                         >
                             <div className="w-full flex items-start justify-between mb-3">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors.icon}`}>
+                                <div
+                                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors.icon}`}
+                                >
                                     {feature.icon}
                                 </div>
 
@@ -729,36 +1045,58 @@ const ChooseFeaturesStep: React.FC<{
                                         Coming Soon
                                     </span>
                                 ) : (
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                        isSelected ? 'border-current bg-current' : 'border-gray-300'
-                                    }`}>
+                                    <div
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                            isSelected
+                                                ? 'border-current bg-current'
+                                                : 'border-gray-300'
+                                        }`}
+                                    >
                                         {isSelected && <Check className="w-4 h-4 text-white" />}
                                     </div>
                                 )}
                             </div>
 
-                            <h4 className={`font-semibold mb-1 ${isComingSoon ? 'text-gray-500' : 'text-gray-800'}`}>{feature.title}</h4>
+                            <h4
+                                className={`font-semibold mb-1 ${
+                                    isComingSoon ? 'text-gray-500' : 'text-gray-800'
+                                }`}
+                            >
+                                {feature.title}
+                            </h4>
 
-                            <p className={`text-sm mb-3 ${isComingSoon ? 'text-gray-400' : 'text-gray-600'}`}>{feature.description}</p>
+                            <p
+                                className={`text-sm mb-3 ${
+                                    isComingSoon ? 'text-gray-400' : 'text-gray-600'
+                                }`}
+                            >
+                                {feature.description}
+                            </p>
 
                             {feature.requiresSetup && !isComingSoon && (
                                 <div className="flex items-center gap-1.5 mt-auto">
                                     <Layers className="w-3.5 h-3.5 text-gray-400" />
-                                    <span className="text-xs text-gray-500">Requires: {feature.setupDescription}</span>
+                                    <span className="text-xs text-gray-500">
+                                        Requires: {feature.setupDescription}
+                                    </span>
                                 </div>
                             )}
 
                             {!feature.requiresSetup && !isComingSoon && (
                                 <div className="flex items-center gap-1.5 mt-auto">
                                     <Zap className="w-3.5 h-3.5 text-emerald-500" />
-                                    <span className="text-xs text-emerald-600 font-medium">Ready to use</span>
+                                    <span className="text-xs text-emerald-600 font-medium">
+                                        Ready to use
+                                    </span>
                                 </div>
                             )}
 
                             {isComingSoon && (
                                 <div className="flex items-center gap-1.5 mt-auto">
                                     <Sparkles className="w-3.5 h-3.5 text-gray-400" />
-                                    <span className="text-xs text-gray-400">Requires: {feature.setupDescription}</span>
+                                    <span className="text-xs text-gray-400">
+                                        Requires: {feature.setupDescription}
+                                    </span>
                                 </div>
                             )}
                         </button>
@@ -770,7 +1108,8 @@ const ChooseFeaturesStep: React.FC<{
             {selectedFeatures.length > 0 && (
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                     <h4 className="font-medium text-gray-800 mb-2">
-                        Selected: {selectedFeatures.length} feature{selectedFeatures.length !== 1 ? 's' : ''}
+                        Selected: {selectedFeatures.length} feature
+                        {selectedFeatures.length !== 1 ? 's' : ''}
                     </h4>
 
                     <div className="flex flex-wrap gap-2">
@@ -778,7 +1117,10 @@ const ChooseFeaturesStep: React.FC<{
                             const feature = FEATURES.find(f => f.id === id);
 
                             return feature ? (
-                                <span key={id} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-sm text-gray-700">
+                                <span
+                                    key={id}
+                                    className="px-3 py-1 bg-white border border-gray-200 rounded-full text-sm text-gray-700"
+                                >
                                     {feature.title}
                                 </span>
                             ) : null;
@@ -827,10 +1169,23 @@ const SetupWebsiteStep: React.FC<{
     appType: AppType;
     selectedFramework: string;
     setSelectedFramework: (framework: string) => void;
-}> = ({ onComplete, onBack, appUrl, setAppUrl, appType, selectedFramework, setSelectedFramework }) => {
+}> = ({
+    onComplete,
+    onBack,
+    appUrl,
+    setAppUrl,
+    appType,
+    selectedFramework,
+    setSelectedFramework,
+}) => {
     const frameworks = [
         { id: 'react', name: 'React', icon: '⚛️', cmd: 'npx create-react-app my-learncard-app' },
-        { id: 'next', name: 'Next.js', icon: '▲', cmd: 'npx create-next-app@latest my-learncard-app' },
+        {
+            id: 'next',
+            name: 'Next.js',
+            icon: '▲',
+            cmd: 'npx create-next-app@latest my-learncard-app',
+        },
         { id: 'vite', name: 'Vite', icon: '⚡', cmd: 'npm create vite@latest my-learncard-app' },
         { id: 'vue', name: 'Vue', icon: '💚', cmd: 'npm create vue@latest my-learncard-app' },
     ];
@@ -843,13 +1198,16 @@ const SetupWebsiteStep: React.FC<{
                     <h3 className="text-xl font-semibold text-gray-800 mb-2">Create Your App</h3>
 
                     <p className="text-gray-600">
-                        Choose a framework and we'll give you the commands to get started with a pre-configured setup.
+                        Choose a framework and we'll give you the commands to get started with a
+                        pre-configured setup.
                     </p>
                 </div>
 
                 {/* Framework selector */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Choose a framework</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Choose a framework
+                    </label>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {frameworks.map(fw => (
@@ -875,7 +1233,9 @@ const SetupWebsiteStep: React.FC<{
                         <CodeOutputPanel
                             title="1. Create your project"
                             snippets={{
-                                typescript: `# Create a new ${frameworks.find(f => f.id === selectedFramework)?.name} project
+                                typescript: `# Create a new ${
+                                    frameworks.find(f => f.id === selectedFramework)?.name
+                                } project
 ${frameworks.find(f => f.id === selectedFramework)?.cmd}
 
 cd my-learncard-app`,
@@ -933,11 +1293,14 @@ export default defineConfig({
 
                         {(selectedFramework === 'react' || selectedFramework === 'vue') && (
                             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                <h4 className="font-medium text-amber-800 mb-2">Configure headers on your server</h4>
+                                <h4 className="font-medium text-amber-800 mb-2">
+                                    Configure headers on your server
+                                </h4>
 
                                 <p className="text-sm text-amber-700">
-                                    When you deploy, you'll need to configure your hosting provider to add these headers.
-                                    Most providers (Vercel, Netlify, etc.) support this in their config files.
+                                    When you deploy, you'll need to configure your hosting provider
+                                    to add these headers. Most providers (Vercel, Netlify, etc.)
+                                    support this in their config files.
                                 </p>
                             </div>
                         )}
@@ -946,12 +1309,14 @@ export default defineConfig({
 
                 {/* App name input */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">App Name (for reference)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        App Name (for reference)
+                    </label>
 
                     <input
                         type="text"
                         value={appUrl}
-                        onChange={(e) => setAppUrl(e.target.value)}
+                        onChange={e => setAppUrl(e.target.value)}
                         placeholder="My LearnCard App"
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500"
                     />
@@ -1013,11 +1378,13 @@ export default defineConfig({
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Configure Your Existing App</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    Configure Your Existing App
+                </h3>
 
                 <p className="text-gray-600">
-                    Your app will run inside an iframe in the LearnCard wallet. Enter your URL and we'll 
-                    check if it's ready for embedding.
+                    Your app will run inside an iframe in the LearnCard wallet. Enter your URL and
+                    we'll check if it's ready for embedding.
                 </p>
             </div>
 
@@ -1032,7 +1399,7 @@ export default defineConfig({
                         onChange={handleUrlChange}
                         placeholder="https://your-app.com"
                         className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        onKeyDown={(e) => {
+                        onKeyDown={e => {
                             if (e.key === 'Enter' && appUrl.trim()) {
                                 handleCheckUrl();
                             }
@@ -1059,9 +1426,7 @@ export default defineConfig({
             </div>
 
             {/* URL Check Results */}
-            {checkResults && (
-                <UrlCheckResults results={checkResults} isChecking={isChecking} />
-            )}
+            {checkResults && <UrlCheckResults results={checkResults} isChecking={isChecking} />}
 
             {/* Required headers */}
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
@@ -1119,7 +1484,10 @@ def add_headers(response):
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
                             <strong className="text-gray-700">Blank iframe?</strong>
-                            <span className="text-gray-600"> — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN</span>
+                            <span className="text-gray-600">
+                                {' '}
+                                — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN
+                            </span>
                         </div>
                     </div>
 
@@ -1135,7 +1503,10 @@ def add_headers(response):
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
                             <strong className="text-gray-700">CORS errors?</strong>
-                            <span className="text-gray-600"> — Add Access-Control-Allow-Origin header</span>
+                            <span className="text-gray-600">
+                                {' '}
+                                — Add Access-Control-Allow-Origin header
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -1174,7 +1545,8 @@ const InstallSdkStep: React.FC<{
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Install the SDK</h3>
 
                 <p className="text-gray-600">
-                    The Partner Connect SDK lets your embedded app communicate with the LearnCard wallet.
+                    The Partner Connect SDK lets your embedded app communicate with the LearnCard
+                    wallet.
                 </p>
             </div>
 
@@ -1261,9 +1633,7 @@ const InitializeStep: React.FC<{
     const initCode = `import { createPartnerConnect } from '@learncard/partner-connect';
 
 // Initialize the SDK
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Request user identity (like SSO)
 const identity = await learnCard.requestIdentity();
@@ -1278,28 +1648,27 @@ console.log('User Profile:', identity.profile);
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Initialize the SDK</h3>
 
                 <p className="text-gray-600">
-                    Set up the SDK when your app loads. You can immediately request the user's identity — 
-                    no login required since they're already in the wallet.
+                    Set up the SDK when your app loads. You can immediately request the user's
+                    identity — no login required since they're already in the wallet.
                 </p>
             </div>
 
-            <CodeOutputPanel
-                title="Initialization Code"
-                snippets={{ typescript: initCode }}
-            />
+            <CodeOutputPanel title="Initialization Code" snippets={{ typescript: initCode }} />
 
             {/* Identity response example */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <h4 className="font-medium text-gray-800 mb-2">Example Response</h4>
 
-                <CodeBlock code={`{
+                <CodeBlock
+                    code={`{
   "did": "did:web:network.learncard.com:users:abc123",
   "profile": {
     "displayName": "John Doe",
     "profileId": "johndoe",
     "image": "https://..."
   }
-}`} />
+}`}
+                />
             </div>
 
             {/* Navigation */}
@@ -1333,7 +1702,40 @@ interface BoostTemplate {
     category?: string;
     image?: string;
     createdAt?: string;
+    templateAlias?: string;
+    variables?: string[];
 }
+
+// Managed Template type for prompt-claim-template mode
+interface ManagedTemplate {
+    boostUri: string;
+    name: string;
+    templateAlias: string;
+    aliasEdited: boolean;
+    variables: string[];
+    isAddedToListing: boolean;
+    credential: Record<string, unknown>;
+    image?: string;
+}
+
+// Helper: Generate templateAlias from name
+const generateTemplateAlias = (name: string): string => {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 50)
+        .replace(/^-|-$/g, '');
+};
+
+// Helper: Extract template variables ({{varName}}) from credential
+const extractTemplateVariables = (credential: Record<string, unknown>): string[] => {
+    const jsonStr = JSON.stringify(credential);
+    const matches = jsonStr.match(/\{\{([^}]+)\}\}/g) || [];
+    const uniqueVars = [...new Set(matches.map(m => m.replace(/[{}]/g, '')))];
+    return uniqueVars;
+};
 
 // Template Manager Component - supports both initiateTemplateIssue and send() styles
 type TemplateCodeStyle = 'initiateTemplateIssue' | 'send';
@@ -1344,7 +1746,13 @@ const TemplateManager: React.FC<{
     codeStyle?: TemplateCodeStyle;
     contractUri?: string;
     integrationId?: string;
-}> = ({ appListingId, appName, codeStyle = 'initiateTemplateIssue', contractUri, integrationId }) => {
+}> = ({
+    appListingId,
+    appName,
+    codeStyle = 'initiateTemplateIssue',
+    contractUri,
+    integrationId,
+}) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
@@ -1364,21 +1772,20 @@ const TemplateManager: React.FC<{
     // Helper to fetch templates
     const fetchTemplatesForListing = async (listingId: string): Promise<BoostTemplate[]> => {
         const wallet = await initWalletRef.current();
-        const result = await wallet.invoke.getPaginatedBoosts({ 
+        const result = await wallet.invoke.getPaginatedBoosts({
             limit: 100,
-            query: { meta: { appListingId: listingId } }
+            query: { meta: { appListingId: listingId } },
         });
 
-        return (result?.records || [])
-            .map((boost: Record<string, unknown>) => ({
-                uri: boost.uri as string,
-                name: boost.name as string || 'Untitled Template',
-                description: boost.description as string,
-                type: boost.type as string,
-                category: boost.category as string,
-                image: boost.image as string,
-                createdAt: boost.createdAt as string,
-            }));
+        return (result?.records || []).map((boost: Record<string, unknown>) => ({
+            uri: boost.uri as string,
+            name: (boost.name as string) || 'Untitled Template',
+            description: boost.description as string,
+            type: boost.type as string,
+            category: boost.category as string,
+            image: boost.image as string,
+            createdAt: boost.createdAt as string,
+        }));
     };
 
     // Fetch templates when appListingId changes
@@ -1394,12 +1801,12 @@ const TemplateManager: React.FC<{
         setIsLoading(true);
 
         fetchTemplatesForListing(appListingId)
-            .then((boostTemplates) => {
+            .then(boostTemplates => {
                 if (!cancelled) {
                     setTemplates(boostTemplates);
                 }
             })
-            .catch((err) => {
+            .catch(err => {
                 console.error('Failed to fetch templates:', err);
                 if (!cancelled) {
                     setTemplates([]);
@@ -1446,19 +1853,28 @@ const TemplateManager: React.FC<{
 
             // The OBv3CredentialBuilder now outputs properly structured credentials
             // Just issue it directly
-            const vc = await wallet.invoke.issueCredential(credential as Parameters<typeof wallet.invoke.issueCredential>[0]);
-            console.log("Issued credential:", vc);
+            const vc = await wallet.invoke.issueCredential(
+                credential as Parameters<typeof wallet.invoke.issueCredential>[0]
+            );
+            console.log('Issued credential:', vc);
             // Create the boost with public issuance permission
             const boostMetadata = {
                 name: (credential.name as string) || 'Template',
-                type: ((credential.credentialSubject as Record<string, unknown>)?.achievement as Record<string, unknown>)?.achievementType as string || 'Achievement',
+                type:
+                    ((
+                        (credential.credentialSubject as Record<string, unknown>)
+                            ?.achievement as Record<string, unknown>
+                    )?.achievementType as string) || 'Achievement',
                 category: 'achievement',
                 meta: { appListingId, integrationId }, // Store both app listing ID and integration ID for filtering
                 defaultPermissions: {
                     canIssue: true, // Public template - anyone can issue
                 },
             };
-            const boostUri = await wallet.invoke.createBoost(vc, boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]);
+            const boostUri = await wallet.invoke.createBoost(
+                vc,
+                boostMetadata as unknown as Parameters<typeof wallet.invoke.createBoost>[1]
+            );
 
             presentToast('Template created successfully!', { type: ToastTypeEnum.Success });
 
@@ -1524,16 +1940,17 @@ if (result.success) {
     };
 
     // Generate JSON summary of all templates
-    const getJsonSummary = () => JSON.stringify(
-        templates.map(t => ({
-            boostUri: t.uri,
-            name: t.name,
-            description: t.description || '',
-            image: t.image || '',
-        })),
-        null,
-        2
-    );
+    const getJsonSummary = () =>
+        JSON.stringify(
+            templates.map(t => ({
+                boostUri: t.uri,
+                name: t.name,
+                description: t.description || '',
+                image: t.image || '',
+            })),
+            null,
+            2
+        );
 
     // Copy JSON summary
     const handleCopyJson = async () => {
@@ -1584,7 +2001,8 @@ console.log('Available templates:', templates);`;
                         <h4 className="font-medium text-amber-800 mb-1">App Listing Required</h4>
 
                         <p className="text-sm text-amber-700">
-                            To create and manage boost templates, select an integration and app listing above.
+                            To create and manage boost templates, select an integration and app
+                            listing above.
                         </p>
                     </div>
                 </div>
@@ -1686,9 +2104,9 @@ console.log('Available templates:', templates);`;
                                 {/* Template image */}
                                 <div className="w-12 h-12 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                                     {template.image ? (
-                                        <img 
-                                            src={template.image} 
-                                            alt={template.name} 
+                                        <img
+                                            src={template.image}
+                                            alt={template.name}
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (
@@ -1747,7 +2165,9 @@ console.log('Available templates:', templates);`;
                             {/* Code example (collapsed by default, could expand) */}
                             <div className="mt-3 pt-3 border-t border-gray-100">
                                 <div className="mb-2">
-                                    <span className="text-xs font-medium text-gray-500">Use in your app:</span>
+                                    <span className="text-xs font-medium text-gray-500">
+                                        Use in your app:
+                                    </span>
                                 </div>
 
                                 <CodeBlock code={getCodeExample(template.uri)} />
@@ -1767,24 +2187,35 @@ console.log('Available templates:', templates);`;
                         <div className="flex items-center gap-3">
                             <Server className="w-5 h-5 text-gray-500" />
                             <div className="text-left">
-                                <h5 className="font-medium text-gray-700">Advanced: Server-Side Integration</h5>
-                                <p className="text-xs text-gray-500">Retrieve templates programmatically from your backend</p>
+                                <h5 className="font-medium text-gray-700">
+                                    Advanced: Server-Side Integration
+                                </h5>
+                                <p className="text-xs text-gray-500">
+                                    Retrieve templates programmatically from your backend
+                                </p>
                             </div>
                         </div>
 
-                        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                        <ChevronDown
+                            className={`w-5 h-5 text-gray-400 transition-transform ${
+                                showAdvanced ? 'rotate-180' : ''
+                            }`}
+                        />
                     </button>
 
                     {showAdvanced && (
                         <div className="p-4 border-t border-gray-200 bg-white space-y-4">
                             <p className="text-sm text-gray-600">
-                                Use this server-side function to dynamically retrieve all boost templates for your app listing.
-                                This is useful for building template pickers or syncing templates to your database.
+                                Use this server-side function to dynamically retrieve all boost
+                                templates for your app listing. This is useful for building template
+                                pickers or syncing templates to your database.
                             </p>
 
                             <div>
                                 <div className="mb-2">
-                                    <span className="text-xs font-medium text-gray-500">Server-side code (Node.js/TypeScript):</span>
+                                    <span className="text-xs font-medium text-gray-500">
+                                        Server-side code (Node.js/TypeScript):
+                                    </span>
                                 </div>
 
                                 <CodeBlock code={getServerSideCode()} maxHeight="max-h-80" />
@@ -1853,15 +2284,19 @@ const UseApiStep: React.FC<{
     const [newListingName, setNewListingName] = useState('');
 
     // Developer portal hooks
-    const { 
-        useIntegrations, 
-        useCreateIntegration, 
-        useListingsForIntegration,
-        useCreateListing,
-    } = useDeveloperPortal();
-    const { data: integrations, isLoading: isLoadingIntegrations, refetch: refetchIntegrations } = useIntegrations();
+    const { useIntegrations, useCreateIntegration, useListingsForIntegration, useCreateListing } =
+        useDeveloperPortal();
+    const {
+        data: integrations,
+        isLoading: isLoadingIntegrations,
+        refetch: refetchIntegrations,
+    } = useIntegrations();
     const createIntegrationMutation = useCreateIntegration();
-    const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(selectedIntegration?.id || null);
+    const {
+        data: listings,
+        isLoading: isLoadingListings,
+        refetch: refetchListings,
+    } = useListingsForIntegration(selectedIntegration?.id || null);
     const createListingMutation = useCreateListing();
 
     // No auto-selection of integration - user selects via header dropdown
@@ -1924,7 +2359,8 @@ const UseApiStep: React.FC<{
             category: 'auth',
             icon: <User className="w-4 h-4" />,
             shortDescription: 'SSO authentication',
-            description: 'Request the user\'s identity for single sign-on. Since the user is already authenticated in the LearnCard wallet, this instantly returns their DID and profile information — no login flow required.',
+            description:
+                "Request the user's identity for single sign-on. Since the user is already authenticated in the LearnCard wallet, this instantly returns their DID and profile information — no login flow required.",
             parameters: [],
             returns: {
                 type: 'Promise<Identity>',
@@ -1941,9 +2377,7 @@ const UseApiStep: React.FC<{
             },
             code: `import { createPartnerConnect } from '@learncard/partner-connect';
 
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app'
-});
+const learnCard = createPartnerConnect();
 
 // Get the authenticated user's identity
 const identity = await learnCard.requestIdentity();
@@ -1967,7 +2401,8 @@ const userId = identity.did;`,
             category: 'credentials',
             icon: <Send className="w-4 h-4" />,
             shortDescription: 'Issue a credential',
-            description: 'Send a Verifiable Credential directly to the user\'s wallet. The user will see a prompt to accept the credential. Use this for course completions, achievements, certificates, and more.',
+            description:
+                "Send a Verifiable Credential directly to the user's wallet. The user will see a prompt to accept the credential. Use this for course completions, achievements, certificates, and more.",
             parameters: [
                 {
                     name: 'credential',
@@ -2020,7 +2455,8 @@ if (result.success) {
             category: 'credentials',
             icon: <FileSearch className="w-4 h-4" />,
             shortDescription: 'Query user credentials',
-            description: 'Request access to search the user\'s credential wallet. The user will see a consent prompt and can choose which credentials to share. Great for verification flows or importing existing credentials.',
+            description:
+                "Request access to search the user's credential wallet. The user will see a consent prompt and can choose which credentials to share. Great for verification flows or importing existing credentials.",
             parameters: [
                 {
                     name: 'query',
@@ -2072,7 +2508,8 @@ if (result.credentials.length > 0) {
             category: 'credentials',
             icon: <Key className="w-4 h-4" />,
             shortDescription: 'Get credential by ID',
-            description: 'Request a specific credential by its ID. Useful when you know exactly which credential you need, such as re-verifying a previously shared credential.',
+            description:
+                'Request a specific credential by its ID. Useful when you know exactly which credential you need, such as re-verifying a previously shared credential.',
             parameters: [
                 {
                     name: 'credentialId',
@@ -2113,7 +2550,7 @@ if (result.credential) {
             tips: [
                 'Store credential IDs to re-verify later',
                 'User must still approve sharing the credential',
-                'Returns null if credential doesn\'t exist in user\'s wallet',
+                "Returns null if credential doesn't exist in user's wallet",
             ],
         },
         {
@@ -2122,7 +2559,8 @@ if (result.credential) {
             category: 'credentials',
             icon: <FileText className="w-4 h-4" />,
             shortDescription: 'Issue from template',
-            description: 'Issue a credential using a pre-defined boost template. Templates are configured in the LearnCard dashboard and ensure consistent credential formatting. Best for recurring credential types.',
+            description:
+                'Issue a credential using a pre-defined boost template. Templates are configured in the LearnCard dashboard and ensure consistent credential formatting. Best for recurring credential types.',
             parameters: [
                 {
                     name: 'templateUri',
@@ -2171,7 +2609,8 @@ if (result.success) {
             category: 'navigation',
             icon: <Navigation className="w-4 h-4" />,
             shortDescription: 'Navigate host app',
-            description: 'Navigate the LearnCard wallet to a specific feature or page. This allows your app to integrate with wallet features like viewing credentials, managing contacts, or accessing settings.',
+            description:
+                'Navigate the LearnCard wallet to a specific feature or page. This allows your app to integrate with wallet features like viewing credentials, managing contacts, or accessing settings.',
             parameters: [
                 {
                     name: 'path',
@@ -2210,7 +2649,7 @@ await learnCard.launchFeature('/credential/abc123', 'View credential details');
 // /profile    - User profile
 // /activity   - Activity feed`,
             tips: [
-                'Use this to complement your app\'s features with wallet features',
+                "Use this to complement your app's features with wallet features",
                 'The description appears as a toast or transition message',
                 'Navigation happens within the wallet, not your iframe',
             ],
@@ -2222,7 +2661,8 @@ await learnCard.launchFeature('/credential/abc123', 'View credential details');
             category: 'consent',
             icon: <ClipboardCheck className="w-4 h-4" />,
             shortDescription: 'Request permissions',
-            description: 'Request user consent for specific permissions or data access. Consent is tied to a contract URI that defines what access is being granted. Use this for ongoing data access agreements.',
+            description:
+                'Request user consent for specific permissions or data access. Consent is tied to a contract URI that defines what access is being granted. Use this for ongoing data access agreements.',
             parameters: [
                 {
                     name: 'contractUri',
@@ -2264,7 +2704,7 @@ if (result.granted) {
     showLimitedFeatures();
 }`,
             tips: [
-                'Be clear about what access you\'re requesting',
+                "Be clear about what access you're requesting",
                 'Users can revoke consent at any time',
                 'Store consent IDs to track active agreements',
             ],
@@ -2275,11 +2715,16 @@ if (result.granted) {
 
     const getCategoryColor = (category: string) => {
         switch (category) {
-            case 'auth': return 'text-violet-600 bg-violet-100';
-            case 'credentials': return 'text-cyan-600 bg-cyan-100';
-            case 'navigation': return 'text-amber-600 bg-amber-100';
-            case 'consent': return 'text-emerald-600 bg-emerald-100';
-            default: return 'text-gray-600 bg-gray-100';
+            case 'auth':
+                return 'text-violet-600 bg-violet-100';
+            case 'credentials':
+                return 'text-cyan-600 bg-cyan-100';
+            case 'navigation':
+                return 'text-amber-600 bg-amber-100';
+            case 'consent':
+                return 'text-emerald-600 bg-emerald-100';
+            default:
+                return 'text-gray-600 bg-gray-100';
         }
     };
 
@@ -2287,10 +2732,13 @@ if (result.granted) {
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Partner Connect API Reference</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    Partner Connect API Reference
+                </h3>
 
                 <p className="text-gray-600">
-                    Complete API for communicating with the LearnCard wallet. Select a method to see detailed documentation and code examples.
+                    Complete API for communicating with the LearnCard wallet. Select a method to see
+                    detailed documentation and code examples.
                 </p>
             </div>
 
@@ -2319,7 +2767,11 @@ if (result.granted) {
                                                     : 'hover:bg-gray-50 text-gray-700'
                                             }`}
                                         >
-                                            <span className={`p-1.5 rounded-md ${getCategoryColor(method.category)}`}>
+                                            <span
+                                                className={`p-1.5 rounded-md ${getCategoryColor(
+                                                    method.category
+                                                )}`}
+                                            >
                                                 {method.icon}
                                             </span>
 
@@ -2349,7 +2801,11 @@ if (result.granted) {
                     {/* Method header */}
                     <div className="p-5 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl">
                         <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-xl ${getCategoryColor(selectedMethod.category)}`}>
+                            <div
+                                className={`p-3 rounded-xl ${getCategoryColor(
+                                    selectedMethod.category
+                                )}`}
+                            >
                                 {selectedMethod.icon}
                             </div>
 
@@ -2375,9 +2831,11 @@ if (result.granted) {
 
                             <div className="border border-gray-200 rounded-xl overflow-hidden">
                                 {selectedMethod.parameters.map((param, idx) => (
-                                    <div 
+                                    <div
                                         key={param.name}
-                                        className={`p-4 ${idx > 0 ? 'border-t border-gray-200' : ''}`}
+                                        className={`p-4 ${
+                                            idx > 0 ? 'border-t border-gray-200' : ''
+                                        }`}
                                     >
                                         <div className="flex items-start gap-3">
                                             <code className="px-2 py-1 bg-gray-100 rounded text-sm font-mono text-gray-800">
@@ -2446,7 +2904,10 @@ if (result.granted) {
 
                             <ul className="space-y-1.5">
                                 {selectedMethod.tips.map((tip, idx) => (
-                                    <li key={idx} className="flex items-start gap-2 text-sm text-amber-700">
+                                    <li
+                                        key={idx}
+                                        className="flex items-start gap-2 text-sm text-amber-700"
+                                    >
                                         <ChevronRight className="w-4 h-4 flex-shrink-0 mt-0.5" />
                                         {tip}
                                     </li>
@@ -2473,8 +2934,8 @@ if (result.granted) {
                                 <button
                                     onClick={() => setShowTemplateManager(!showTemplateManager)}
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                        showTemplateManager 
-                                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                                        showTemplateManager
+                                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                             : 'bg-cyan-500 text-white hover:bg-cyan-600'
                                     }`}
                                 >
@@ -2494,7 +2955,11 @@ if (result.granted) {
                                                 onClick={() => refetchIntegrations()}
                                                 className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                             >
-                                                <RefreshCw className={`w-3 h-3 ${isLoadingIntegrations ? 'animate-spin' : ''}`} />
+                                                <RefreshCw
+                                                    className={`w-3 h-3 ${
+                                                        isLoadingIntegrations ? 'animate-spin' : ''
+                                                    }`}
+                                                />
                                                 Refresh
                                             </button>
                                         </div>
@@ -2502,11 +2967,13 @@ if (result.granted) {
                                         {isLoadingIntegrations ? (
                                             <div className="flex items-center gap-2 text-gray-500">
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                <span className="text-sm">Loading integrations...</span>
+                                                <span className="text-sm">
+                                                    Loading integrations...
+                                                </span>
                                             </div>
                                         ) : integrations && integrations.length > 0 ? (
                                             <div className="flex flex-wrap gap-2">
-                                                {integrations.map((integration) => (
+                                                {integrations.map(integration => (
                                                     <button
                                                         key={integration.id}
                                                         onClick={() => {
@@ -2514,7 +2981,8 @@ if (result.granted) {
                                                             setSelectedListing(null);
                                                         }}
                                                         className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                            selectedIntegration?.id === integration.id
+                                                            selectedIntegration?.id ===
+                                                            integration.id
                                                                 ? 'bg-cyan-500 text-white'
                                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                         }`}
@@ -2524,7 +2992,9 @@ if (result.granted) {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <p className="text-sm text-gray-500">No integrations found</p>
+                                            <p className="text-sm text-gray-500">
+                                                No integrations found
+                                            </p>
                                         )}
 
                                         {/* Create new integration */}
@@ -2533,21 +3003,32 @@ if (result.granted) {
                                                 <input
                                                     type="text"
                                                     value={newIntegrationName}
-                                                    onChange={(e) => setNewIntegrationName(e.target.value)}
+                                                    onChange={e =>
+                                                        setNewIntegrationName(e.target.value)
+                                                    }
                                                     placeholder="Integration name"
                                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleCreateIntegration();
-                                                        if (e.key === 'Escape') setIsCreatingIntegration(false);
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter')
+                                                            handleCreateIntegration();
+                                                        if (e.key === 'Escape')
+                                                            setIsCreatingIntegration(false);
                                                     }}
                                                     autoFocus
                                                 />
                                                 <button
                                                     onClick={handleCreateIntegration}
-                                                    disabled={!newIntegrationName.trim() || createIntegrationMutation.isPending}
+                                                    disabled={
+                                                        !newIntegrationName.trim() ||
+                                                        createIntegrationMutation.isPending
+                                                    }
                                                     className="px-3 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 disabled:opacity-50"
                                                 >
-                                                    {createIntegrationMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+                                                    {createIntegrationMutation.isPending ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        'Create'
+                                                    )}
                                                 </button>
                                                 <button
                                                     onClick={() => setIsCreatingIntegration(false)}
@@ -2578,7 +3059,11 @@ if (result.granted) {
                                                     onClick={() => refetchListings()}
                                                     className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                                 >
-                                                    <RefreshCw className={`w-3 h-3 ${isLoadingListings ? 'animate-spin' : ''}`} />
+                                                    <RefreshCw
+                                                        className={`w-3 h-3 ${
+                                                            isLoadingListings ? 'animate-spin' : ''
+                                                        }`}
+                                                    />
                                                     Refresh
                                                 </button>
                                             </div>
@@ -2586,29 +3071,40 @@ if (result.granted) {
                                             {isLoadingListings ? (
                                                 <div className="flex items-center gap-2 text-gray-500">
                                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                                    <span className="text-sm">Loading app listings...</span>
+                                                    <span className="text-sm">
+                                                        Loading app listings...
+                                                    </span>
                                                 </div>
                                             ) : listings && listings.length > 0 ? (
                                                 <div className="flex flex-wrap gap-2">
-                                                    {listings.map((listing) => (
+                                                    {listings.map(listing => (
                                                         <button
                                                             key={listing.listing_id}
-                                                            onClick={() => setSelectedListing(listing)}
+                                                            onClick={() =>
+                                                                setSelectedListing(listing)
+                                                            }
                                                             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                                                                selectedListing?.listing_id === listing.listing_id
+                                                                selectedListing?.listing_id ===
+                                                                listing.listing_id
                                                                     ? 'bg-cyan-500 text-white'
                                                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                             }`}
                                                         >
                                                             {listing.icon_url && (
-                                                                <img src={listing.icon_url} alt="" className="w-5 h-5 rounded" />
+                                                                <img
+                                                                    src={listing.icon_url}
+                                                                    alt=""
+                                                                    className="w-5 h-5 rounded"
+                                                                />
                                                             )}
                                                             {listing.display_name}
                                                         </button>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <p className="text-sm text-gray-500">No app listings for this integration</p>
+                                                <p className="text-sm text-gray-500">
+                                                    No app listings for this integration
+                                                </p>
                                             )}
 
                                             {/* Create new listing */}
@@ -2617,21 +3113,32 @@ if (result.granted) {
                                                     <input
                                                         type="text"
                                                         value={newListingName}
-                                                        onChange={(e) => setNewListingName(e.target.value)}
+                                                        onChange={e =>
+                                                            setNewListingName(e.target.value)
+                                                        }
                                                         placeholder="App name"
                                                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') handleCreateListing();
-                                                            if (e.key === 'Escape') setIsCreatingListing(false);
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter')
+                                                                handleCreateListing();
+                                                            if (e.key === 'Escape')
+                                                                setIsCreatingListing(false);
                                                         }}
                                                         autoFocus
                                                     />
                                                     <button
                                                         onClick={handleCreateListing}
-                                                        disabled={!newListingName.trim() || createListingMutation.isPending}
+                                                        disabled={
+                                                            !newListingName.trim() ||
+                                                            createListingMutation.isPending
+                                                        }
                                                         className="px-3 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 disabled:opacity-50"
                                                     >
-                                                        {createListingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+                                                        {createListingMutation.isPending ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                        ) : (
+                                                            'Create'
+                                                        )}
                                                     </button>
                                                     <button
                                                         onClick={() => setIsCreatingListing(false)}
@@ -2657,14 +3164,15 @@ if (result.granted) {
                                         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                                             <p className="text-sm text-emerald-700">
                                                 <CheckCircle2 className="w-4 h-4 inline mr-1" />
-                                                Managing templates for <strong>{selectedListing.display_name}</strong>
+                                                Managing templates for{' '}
+                                                <strong>{selectedListing.display_name}</strong>
                                             </p>
                                         </div>
                                     )}
 
                                     {/* Template Manager */}
-                                    <TemplateManager 
-                                        appListingId={selectedListing?.listing_id} 
+                                    <TemplateManager
+                                        appListingId={selectedListing?.listing_id}
                                         appName={selectedListing?.display_name}
                                         integrationId={selectedIntegration?.id}
                                     />
@@ -2683,11 +3191,14 @@ if (result.granted) {
                     </div>
 
                     <div className="flex-1">
-                        <h4 className="text-lg font-semibold text-gray-800 mb-1">Ready to build!</h4>
+                        <h4 className="text-lg font-semibold text-gray-800 mb-1">
+                            Ready to build!
+                        </h4>
 
                         <p className="text-gray-600 text-sm mb-4">
-                            You now have everything you need to build a powerful embedded LearnCard app. 
-                            Check out the full documentation for advanced features and best practices.
+                            You now have everything you need to build a powerful embedded LearnCard
+                            app. Check out the full documentation for advanced features and best
+                            practices.
                         </p>
 
                         <div className="flex flex-wrap gap-3">
@@ -2742,7 +3253,17 @@ const FeatureSetupStep: React.FC<{
     setFeatureSetupState: (state: Record<string, Record<string, unknown>>) => void;
     selectedListing: AppStoreListing | null;
     integrationId?: string;
-}> = ({ onComplete, onBack, selectedFeatures, currentFeatureIndex, setCurrentFeatureIndex, featureSetupState, setFeatureSetupState, selectedListing, integrationId }) => {
+}> = ({
+    onComplete,
+    onBack,
+    selectedFeatures,
+    currentFeatureIndex,
+    setCurrentFeatureIndex,
+    featureSetupState,
+    setFeatureSetupState,
+    selectedListing,
+    integrationId,
+}) => {
     // Get features that require setup
     const featuresNeedingSetup = selectedFeatures
         .map(id => FEATURES.find(f => f.id === id))
@@ -2852,13 +3373,15 @@ const FeatureSetupStep: React.FC<{
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
                     {featuresNeedingSetup.map((feature, index) => (
                         <React.Fragment key={feature.id}>
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
-                                index === currentFeatureIndex
-                                    ? 'bg-cyan-100 text-cyan-700'
-                                    : index < currentFeatureIndex
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'text-gray-400'
-                            }`}>
+                            <div
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
+                                    index === currentFeatureIndex
+                                        ? 'bg-cyan-100 text-cyan-700'
+                                        : index < currentFeatureIndex
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : 'text-gray-400'
+                                }`}
+                            >
                                 {index < currentFeatureIndex ? (
                                     <CheckCircle2 className="w-4 h-4" />
                                 ) : (
@@ -2880,8 +3403,8 @@ const FeatureSetupStep: React.FC<{
     );
 };
 
-// Issue Credentials Setup - Two modes: Prompt to Claim vs Sync to Wallet
-type IssueMode = 'prompt-claim' | 'sync-wallet';
+// Issue Credentials Setup - Three modes
+type IssueMode = 'prompt-claim' | 'prompt-claim-template' | 'sync-wallet';
 
 const IssueCredentialsSetup: React.FC<{
     onComplete: () => void;
@@ -2891,13 +3414,23 @@ const IssueCredentialsSetup: React.FC<{
     featureSetupState: Record<string, Record<string, unknown>>;
     setFeatureSetupState: (state: Record<string, Record<string, unknown>>) => void;
     integrationId?: string;
-}> = ({ onComplete, onBack, isLastFeature, selectedListing, featureSetupState, setFeatureSetupState, integrationId }) => {
+}> = ({
+    onComplete,
+    onBack,
+    isLastFeature,
+    selectedListing,
+    featureSetupState,
+    setFeatureSetupState,
+    integrationId,
+}) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
-    // Get saved mode from feature state or default
+    // Get saved mode from feature state or default to 'prompt-claim-template' (recommended)
     const savedState = featureSetupState['issue-credentials'] || {};
-    const [mode, setMode] = useState<IssueMode>((savedState.mode as IssueMode) || 'prompt-claim');
+    const [mode, setMode] = useState<IssueMode>(
+        (savedState.mode as IssueMode) || 'prompt-claim-template'
+    );
 
     // Prompt to Claim state
     const [showCredentialBuilder, setShowCredentialBuilder] = useState(false);
@@ -2911,7 +3444,9 @@ const IssueCredentialsSetup: React.FC<{
     const [signingAuthorityFetched, setSigningAuthorityFetched] = useState(false);
     const [signingAuthorityCreating, setSigningAuthorityCreating] = useState(false);
     const [primarySA, setPrimarySA] = useState<{ name: string; endpoint: string } | null>(null);
-    const [contractUri, setContractUri] = useState<string>((savedState.contractUri as string) || '');
+    const [contractUri, setContractUri] = useState<string>(
+        (savedState.contractUri as string) || ''
+    );
 
     // Save state when it changes
     useEffect(() => {
@@ -2961,7 +3496,10 @@ const IssueCredentialsSetup: React.FC<{
             setSigningAuthorityCreating(true);
             const wallet = await initWallet();
 
-            const authority = await wallet.invoke.createSigningAuthority('default-sa');
+            const ownerDid = selectedListing?.slug
+                ? getAppDidFromSlug(selectedListing.slug)
+                : undefined;
+            const authority = await wallet.invoke.createSigningAuthority('default-sa', ownerDid);
 
             if (!authority) {
                 throw new Error('Failed to create signing authority');
@@ -2986,7 +3524,10 @@ const IssueCredentialsSetup: React.FC<{
             presentToast('Signing authority created!', { hasDismissButton: true });
         } catch (err) {
             console.error('Failed to create signing authority:', err);
-            presentToast('Failed to create signing authority', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            presentToast('Failed to create signing authority', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setSigningAuthorityCreating(false);
         }
@@ -3016,7 +3557,11 @@ const credential = {
         "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
     ],
     "type": ["VerifiableCredential", "OpenBadgeCredential"],
-    "name": "${credential ? (credential as Record<string, unknown>).name || 'Your Credential' : 'Your Credential'}",
+    "name": "${
+        credential
+            ? (credential as Record<string, unknown>).name || 'Your Credential'
+            : 'Your Credential'
+    }",
     "issuer": {
         "id": "YOUR_ISSUER_DID", // Your organization's DID
         "name": "Your Organization"
@@ -3026,7 +3571,11 @@ const credential = {
         "type": ["AchievementSubject"],
         "achievement": {
             "type": ["Achievement"],
-            "name": "${credential ? (credential as Record<string, unknown>).name || 'Achievement Name' : 'Achievement Name'}",
+            "name": "${
+                credential
+                    ? (credential as Record<string, unknown>).name || 'Achievement Name'
+                    : 'Achievement Name'
+            }",
             "description": "Description of the achievement"
         }
     }
@@ -3080,7 +3629,31 @@ console.log('Credential synced:', result);`;
             </div>
 
             {/* Mode Toggle */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+                <button
+                    onClick={() => setMode('prompt-claim-template')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all relative ${
+                        mode === 'prompt-claim-template'
+                            ? 'border-emerald-500 bg-emerald-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                >
+                    <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-emerald-500 text-white text-xs font-medium rounded-full">
+                        Recommended
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-5 h-5 text-emerald-600" />
+                        <span className="font-semibold text-gray-800">Use Templates</span>
+                    </div>
+
+                    <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• Easiest to set up</li>
+                        <li>• Simple SDK integration</li>
+                        <li>• Auto-generated aliases</li>
+                    </ul>
+                </button>
+
                 <button
                     onClick={() => setMode('prompt-claim')}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
@@ -3091,13 +3664,13 @@ console.log('Credential synced:', result);`;
                 >
                     <div className="flex items-center gap-2 mb-2">
                         <Send className="w-5 h-5 text-cyan-600" />
-                        <span className="font-semibold text-gray-800">Prompt User to Claim</span>
+                        <span className="font-semibold text-gray-800">Manual Build</span>
                     </div>
 
                     <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• Good for issuing a few credentials</li>
-                        <li>• User accepts each one individually</li>
-                        <li>• Limited built-in tracking</li>
+                        <li>• Full control over VC</li>
+                        <li>• Build credentials in code</li>
+                        <li>• More complex setup</li>
                     </ul>
                 </button>
 
@@ -3115,12 +3688,67 @@ console.log('Credential synced:', result);`;
                     </div>
 
                     <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• Good for any number of credentials</li>
-                        <li>• Seamless sync after consent</li>
-                        <li>• Full tracking and analytics</li>
+                        <li>• Consent flow required</li>
+                        <li>• Seamless sync</li>
+                        <li>• Full analytics</li>
                     </ul>
                 </button>
             </div>
+
+            {/* Prompt to Claim Template Mode (Recommended) */}
+            {mode === 'prompt-claim-template' && (
+                <div className="space-y-6">
+                    {/* Info Banner */}
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex gap-3">
+                        <Info className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+
+                        <div className="text-sm text-emerald-700">
+                            <p className="font-medium mb-1">How Template-Based Issuance Works</p>
+
+                            <p>
+                                Create credential templates here, and we&apos;ll automatically
+                                generate a{' '}
+                                <code className="px-1 py-0.5 bg-emerald-100 rounded text-xs">
+                                    templateAlias
+                                </code>{' '}
+                                for each one. Then use{' '}
+                                <code className="px-1 py-0.5 bg-emerald-100 rounded text-xs">
+                                    sendCredential({'{'} templateAlias {'}'})
+                                </code>{' '}
+                                in your app to issue credentials.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* App Listing Check */}
+                    {!selectedListing ? (
+                        <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+
+                                <div>
+                                    <h4 className="font-medium text-amber-800 mb-1">
+                                        App Listing Required
+                                    </h4>
+
+                                    <p className="text-sm text-amber-700">
+                                        Please select an app listing in Step 1 (Getting Started)
+                                        before creating templates.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <TemplateListManager
+                            listingId={selectedListing.listing_id}
+                            integrationId={integrationId}
+                            featureType="issue-credentials"
+                            showCodeSnippets={true}
+                            editable={true}
+                        />
+                    )}
+                </div>
+            )}
 
             {/* Prompt to Claim Mode */}
             {mode === 'prompt-claim' && (
@@ -3141,7 +3769,8 @@ console.log('Credential synced:', result);`;
                                         <div className="flex items-center gap-2">
                                             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                                             <span className="font-medium text-emerald-800">
-                                                {(credential as Record<string, unknown>).name as string || 'Credential Ready'}
+                                                {((credential as Record<string, unknown>)
+                                                    .name as string) || 'Credential Ready'}
                                             </span>
                                         </div>
 
@@ -3179,7 +3808,8 @@ console.log('Credential synced:', result);`;
 
                             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                 <p className="text-sm text-amber-800">
-                                    <strong>Important:</strong> Step 3 (issuing) must happen on your server with your API key to sign the credential properly.
+                                    <strong>Important:</strong> Step 3 (issuing) must happen on your
+                                    server with your API key to sign the credential properly.
                                 </p>
                             </div>
                         </div>
@@ -3200,18 +3830,24 @@ console.log('Credential synced:', result);`;
                         </div>
 
                         <div className="ml-10">
-                            {(signingAuthorityLoading || !signingAuthorityFetched) ? (
+                            {signingAuthorityLoading || !signingAuthorityFetched ? (
                                 <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-xl">
                                     <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-                                    <span className="text-sm text-gray-500">Checking signing authority...</span>
+                                    <span className="text-sm text-gray-500">
+                                        Checking signing authority...
+                                    </span>
                                 </div>
                             ) : primarySA ? (
                                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                                     <div className="flex items-center gap-2">
                                         <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                                         <div>
-                                            <p className="font-medium text-emerald-800">Signing authority ready</p>
-                                            <p className="text-xs text-emerald-600">Using: {primarySA.name}</p>
+                                            <p className="font-medium text-emerald-800">
+                                                Signing authority ready
+                                            </p>
+                                            <p className="text-xs text-emerald-600">
+                                                Using: {primarySA.name}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -3219,7 +3855,8 @@ console.log('Credential synced:', result);`;
                                 <div className="space-y-3">
                                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                                         <p className="text-sm text-amber-800 mb-3">
-                                            A signing authority is needed to cryptographically sign credentials.
+                                            A signing authority is needed to cryptographically sign
+                                            credentials.
                                         </p>
 
                                         <button
@@ -3256,7 +3893,8 @@ console.log('Credential synced:', result);`;
 
                         <div className="ml-10 space-y-3">
                             <p className="text-sm text-gray-600">
-                                Create a consent contract that requests &apos;write&apos; permission to sync credentials to the user&apos;s wallet.
+                                Create a consent contract that requests &apos;write&apos; permission
+                                to sync credentials to the user&apos;s wallet.
                             </p>
 
                             <ConsentFlowContractSelector
@@ -3268,7 +3906,9 @@ console.log('Credential synced:', result);`;
                                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                                     <div className="flex items-center gap-2">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                        <span className="text-sm text-emerald-800">Contract selected</span>
+                                        <span className="text-sm text-emerald-800">
+                                            Contract selected
+                                        </span>
                                     </div>
                                 </div>
                             )}
@@ -3281,7 +3921,9 @@ console.log('Credential synced:', result);`;
                             <div className="w-7 h-7 bg-violet-100 text-violet-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                                 3
                             </div>
-                            <h4 className="font-semibold text-gray-800">Credential Templates (Boosts)</h4>
+                            <h4 className="font-semibold text-gray-800">
+                                Credential Templates (Boosts)
+                            </h4>
                         </div>
 
                         <div className="ml-10">
@@ -3338,7 +3980,7 @@ console.log('Credential synced:', result);`;
                 </button>
             </div>
 
-            {/* Credential Builder Modal */}
+            {/* Credential Builder Modal (for prompt-claim mode) */}
             <OBv3CredentialBuilder
                 isOpen={showCredentialBuilder}
                 onClose={() => setShowCredentialBuilder(false)}
@@ -3366,7 +4008,9 @@ const RequestCredentialsSetup: React.FC<{
 
     // Query mode state
     const [queryTitle, setQueryTitle] = useState<string>((savedState.queryTitle as string) || '');
-    const [queryReason, setQueryReason] = useState<string>((savedState.queryReason as string) || '');
+    const [queryReason, setQueryReason] = useState<string>(
+        (savedState.queryReason as string) || ''
+    );
 
     // Save state when it changes
     useEffect(() => {
@@ -3519,7 +4163,7 @@ try {
                                 <input
                                     type="text"
                                     value={queryTitle}
-                                    onChange={(e) => setQueryTitle(e.target.value)}
+                                    onChange={e => setQueryTitle(e.target.value)}
                                     placeholder="e.g., Certificate, Badge, Diploma"
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
                                 />
@@ -3537,7 +4181,7 @@ try {
                                 <input
                                     type="text"
                                     value={queryReason}
-                                    onChange={(e) => setQueryReason(e.target.value)}
+                                    onChange={e => setQueryReason(e.target.value)}
                                     placeholder="e.g., To verify your qualifications for this role"
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
                                 />
@@ -3568,10 +4212,20 @@ try {
                         <h4 className="font-medium text-amber-800 mb-2">How it works</h4>
 
                         <ol className="text-sm text-amber-700 space-y-1">
-                            <li><strong>1.</strong> Your app requests credentials matching the title</li>
-                            <li><strong>2.</strong> User sees which credentials match and selects which to share</li>
-                            <li><strong>3.</strong> You receive a signed Verifiable Presentation with the credentials</li>
-                            <li><strong>4.</strong> Verify the presentation to confirm authenticity</li>
+                            <li>
+                                <strong>1.</strong> Your app requests credentials matching the title
+                            </li>
+                            <li>
+                                <strong>2.</strong> User sees which credentials match and selects
+                                which to share
+                            </li>
+                            <li>
+                                <strong>3.</strong> You receive a signed Verifiable Presentation
+                                with the credentials
+                            </li>
+                            <li>
+                                <strong>4.</strong> Verify the presentation to confirm authenticity
+                            </li>
                         </ol>
                     </div>
                 </div>
@@ -3591,21 +4245,31 @@ try {
 
                         <div className="ml-10 p-4 bg-gray-50 border border-gray-200 rounded-xl">
                             <p className="text-sm text-gray-700 mb-3">
-                                Request a specific credential when you already know its ID from a previous interaction:
+                                Request a specific credential when you already know its ID from a
+                                previous interaction:
                             </p>
 
                             <ul className="text-sm text-gray-600 space-y-2">
                                 <li className="flex items-start gap-2">
                                     <span className="font-medium text-orange-600">•</span>
-                                    <span><strong>Re-verification:</strong> Ask for the same credential again</span>
+                                    <span>
+                                        <strong>Re-verification:</strong> Ask for the same
+                                        credential again
+                                    </span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <span className="font-medium text-orange-600">•</span>
-                                    <span><strong>Saved reference:</strong> You stored the ID when they first shared it</span>
+                                    <span>
+                                        <strong>Saved reference:</strong> You stored the ID when
+                                        they first shared it
+                                    </span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <span className="font-medium text-orange-600">•</span>
-                                    <span><strong>Deep linking:</strong> They clicked a link with a specific credential</span>
+                                    <span>
+                                        <strong>Deep linking:</strong> They clicked a link with a
+                                        specific credential
+                                    </span>
                                 </li>
                             </ul>
                         </div>
@@ -3632,7 +4296,10 @@ try {
                         <ul className="text-sm text-orange-700 space-y-1">
                             <li>• Store credential IDs securely when users first share them</li>
                             <li>• Handle the case where the user no longer has the credential</li>
-                            <li>• Provide a fallback to search if the specific credential isn&apos;t available</li>
+                            <li>
+                                • Provide a fallback to search if the specific credential isn&apos;t
+                                available
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -3666,17 +4333,21 @@ const RequestDataConsentSetup: React.FC<{
     onBack: () => void;
     isLastFeature: boolean;
     featureSetupState: Record<string, Record<string, unknown>>;
-    setFeatureSetupState: React.Dispatch<React.SetStateAction<Record<string, Record<string, unknown>>>>;
+    setFeatureSetupState: React.Dispatch<
+        React.SetStateAction<Record<string, Record<string, unknown>>>
+    >;
 }> = ({ onComplete, onBack, isLastFeature, featureSetupState, setFeatureSetupState }) => {
     // Get saved state
     const savedState = featureSetupState['request-data-consent'] || {};
-    const [contractUri, setContractUri] = useState<string>((savedState.contractUri as string) || '');
+    const [contractUri, setContractUri] = useState<string>(
+        (savedState.contractUri as string) || ''
+    );
 
     // Save state when contractUri changes
     useEffect(() => {
         setFeatureSetupState(prev => ({
             ...prev,
-            'request-data-consent': { ...prev['request-data-consent'], contractUri }
+            'request-data-consent': { ...prev['request-data-consent'], contractUri },
         }));
     }, [contractUri, setFeatureSetupState]);
 
@@ -3738,7 +4409,8 @@ console.log('Credential sent:', result);`;
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Request Data Consent</h3>
 
                 <p className="text-gray-600">
-                    Ask users for permission to access specific data fields or write data back to their profile via a ConsentFlow contract.
+                    Ask users for permission to access specific data fields or write data back to
+                    their profile via a ConsentFlow contract.
                 </p>
             </div>
 
@@ -3749,14 +4421,13 @@ console.log('Credential sent:', result);`;
                         1
                     </div>
 
-                    <h4 className="font-semibold text-gray-800">Select or Create a Consent Contract</h4>
+                    <h4 className="font-semibold text-gray-800">
+                        Select or Create a Consent Contract
+                    </h4>
                 </div>
 
                 <div className="ml-10">
-                    <ConsentFlowContractSelector
-                        value={contractUri}
-                        onChange={setContractUri}
-                    />
+                    <ConsentFlowContractSelector value={contractUri} onChange={setContractUri} />
                 </div>
             </div>
 
@@ -3791,7 +4462,8 @@ console.log('Credential sent:', result);`;
 
                 <div className="ml-10">
                     <p className="text-sm text-gray-600 mb-3">
-                        On your server, initialize with your API key to read shared credentials and send new ones.
+                        On your server, initialize with your API key to read shared credentials and
+                        send new ones.
                     </p>
 
                     <CodeBlock code={serverCode} maxHeight="max-h-96" />
@@ -3803,10 +4475,19 @@ console.log('Credential sent:', result);`;
                 <h4 className="font-medium text-emerald-800 mb-2">How ConsentFlow Works</h4>
 
                 <ol className="text-sm text-emerald-700 space-y-1">
-                    <li><strong>1.</strong> You define a contract specifying what data you need access to</li>
-                    <li><strong>2.</strong> User reviews and approves (or declines) the request</li>
-                    <li><strong>3.</strong> You receive a consent ID for future data operations</li>
-                    <li><strong>4.</strong> Use the consent ID to read/write data per contract terms</li>
+                    <li>
+                        <strong>1.</strong> You define a contract specifying what data you need
+                        access to
+                    </li>
+                    <li>
+                        <strong>2.</strong> User reviews and approves (or declines) the request
+                    </li>
+                    <li>
+                        <strong>3.</strong> You receive a consent ID for future data operations
+                    </li>
+                    <li>
+                        <strong>4.</strong> Use the consent ID to read/write data per contract terms
+                    </li>
                 </ol>
             </div>
 
@@ -3857,9 +4538,27 @@ const LAUNCHABLE_FEATURES: FeatureCategory[] = [
         icon: <Navigation className="w-4 h-4" />,
         color: 'blue',
         features: [
-            { id: 'passport', path: '/passport', title: 'Wallet / Passport', description: 'Main credential wallet view', icon: <FolderOpen className="w-4 h-4" /> },
-            { id: 'boost', path: '/boost', title: 'Boost Manager', description: 'Badge/boost management', icon: <Award className="w-4 h-4" /> },
-            { id: 'launchpad', path: '/launchpad', title: 'App Launchpad', description: 'App discovery hub', icon: <Rocket className="w-4 h-4" /> },
+            {
+                id: 'passport',
+                path: '/passport',
+                title: 'Wallet / Passport',
+                description: 'Main credential wallet view',
+                icon: <FolderOpen className="w-4 h-4" />,
+            },
+            {
+                id: 'boost',
+                path: '/boost',
+                title: 'Boost Manager',
+                description: 'Badge/boost management',
+                icon: <Award className="w-4 h-4" />,
+            },
+            {
+                id: 'launchpad',
+                path: '/launchpad',
+                title: 'App Launchpad',
+                description: 'App discovery hub',
+                icon: <Rocket className="w-4 h-4" />,
+            },
         ],
     },
     {
@@ -3868,18 +4567,48 @@ const LAUNCHABLE_FEATURES: FeatureCategory[] = [
         icon: <User className="w-4 h-4" />,
         color: 'violet',
         features: [
-            { id: 'ids', path: '/ids', title: 'IDs & DIDs', description: 'User identity management', icon: <Key className="w-4 h-4" /> },
-            { id: 'connect', path: '/connect', title: 'Connect', description: 'Connect with others', icon: <LinkIcon className="w-4 h-4" /> },
-            { 
-                id: 'connect-profile', 
-                path: '/connect/:profileId', 
-                title: 'Connect with User', 
+            {
+                id: 'ids',
+                path: '/ids',
+                title: 'IDs & DIDs',
+                description: 'User identity management',
+                icon: <Key className="w-4 h-4" />,
+            },
+            {
+                id: 'connect',
+                path: '/connect',
+                title: 'Connect',
+                description: 'Connect with others',
+                icon: <LinkIcon className="w-4 h-4" />,
+            },
+            {
+                id: 'connect-profile',
+                path: '/connect/:profileId',
+                title: 'Connect with User',
                 description: 'Connect with a specific user',
                 icon: <User className="w-4 h-4" />,
-                params: [{ name: 'profileId', description: 'Profile ID to connect with', placeholder: 'user-profile-id' }]
+                params: [
+                    {
+                        name: 'profileId',
+                        description: 'Profile ID to connect with',
+                        placeholder: 'user-profile-id',
+                    },
+                ],
             },
-            { id: 'contacts', path: '/contacts', title: 'Address Book', description: 'All contacts', icon: <FileText className="w-4 h-4" /> },
-            { id: 'contacts-search', path: '/contacts/search', title: 'Search Contacts', description: 'Search for contacts', icon: <Search className="w-4 h-4" /> },
+            {
+                id: 'contacts',
+                path: '/contacts',
+                title: 'Address Book',
+                description: 'All contacts',
+                icon: <FileText className="w-4 h-4" />,
+            },
+            {
+                id: 'contacts-search',
+                path: '/contacts/search',
+                title: 'Search Contacts',
+                description: 'Search for contacts',
+                icon: <Search className="w-4 h-4" />,
+            },
         ],
     },
     {
@@ -3888,19 +4617,61 @@ const LAUNCHABLE_FEATURES: FeatureCategory[] = [
         icon: <Award className="w-4 h-4" />,
         color: 'amber',
         features: [
-            { id: 'achievements', path: '/achievements', title: 'Achievements', description: 'View achievements', icon: <Award className="w-4 h-4" /> },
-            { id: 'accomplishments', path: '/accomplishments', title: 'Accomplishments', description: 'View accomplishments', icon: <CheckCircle2 className="w-4 h-4" /> },
-            { id: 'skills', path: '/skills', title: 'Skills', description: 'Skills inventory', icon: <Zap className="w-4 h-4" /> },
-            { id: 'learninghistory', path: '/learninghistory', title: 'Learning History', description: 'Educational timeline', icon: <FileText className="w-4 h-4" /> },
-            { id: 'workhistory', path: '/workhistory', title: 'Work History', description: 'Employment records', icon: <FileText className="w-4 h-4" /> },
-            { id: 'memberships', path: '/memberships', title: 'Memberships', description: 'Organization memberships', icon: <User className="w-4 h-4" /> },
-            { 
-                id: 'claim-boost', 
-                path: '/claim/boost', 
-                title: 'Claim Boost', 
+            {
+                id: 'achievements',
+                path: '/achievements',
+                title: 'Achievements',
+                description: 'View achievements',
+                icon: <Award className="w-4 h-4" />,
+            },
+            {
+                id: 'accomplishments',
+                path: '/accomplishments',
+                title: 'Accomplishments',
+                description: 'View accomplishments',
+                icon: <CheckCircle2 className="w-4 h-4" />,
+            },
+            {
+                id: 'skills',
+                path: '/skills',
+                title: 'Skills',
+                description: 'Skills inventory',
+                icon: <Zap className="w-4 h-4" />,
+            },
+            {
+                id: 'learninghistory',
+                path: '/learninghistory',
+                title: 'Learning History',
+                description: 'Educational timeline',
+                icon: <FileText className="w-4 h-4" />,
+            },
+            {
+                id: 'workhistory',
+                path: '/workhistory',
+                title: 'Work History',
+                description: 'Employment records',
+                icon: <FileText className="w-4 h-4" />,
+            },
+            {
+                id: 'memberships',
+                path: '/memberships',
+                title: 'Memberships',
+                description: 'Organization memberships',
+                icon: <User className="w-4 h-4" />,
+            },
+            {
+                id: 'claim-boost',
+                path: '/claim/boost',
+                title: 'Claim Boost',
                 description: 'Claim a boost by URI',
                 icon: <Sparkles className="w-4 h-4" />,
-                params: [{ name: 'uri', description: 'Boost URI to claim', placeholder: 'urn:lc:boost:abc123' }]
+                params: [
+                    {
+                        name: 'uri',
+                        description: 'Boost URI to claim',
+                        placeholder: 'urn:lc:boost:abc123',
+                    },
+                ],
             },
         ],
     },
@@ -3910,10 +4681,34 @@ const LAUNCHABLE_FEATURES: FeatureCategory[] = [
         icon: <Bot className="w-4 h-4" />,
         color: 'emerald',
         features: [
-            { id: 'chats', path: '/chats', title: 'AI Chat', description: 'Open AI chat interface', icon: <Bot className="w-4 h-4" /> },
-            { id: 'ai-insights', path: '/ai/insights', title: 'AI Insights', description: 'AI-powered insights', icon: <Zap className="w-4 h-4" /> },
-            { id: 'ai-topics', path: '/ai/topics', title: 'AI Topics', description: 'Browse AI session topics', icon: <Layers className="w-4 h-4" /> },
-            { id: 'ai-sessions', path: '/ai/sessions', title: 'AI Sessions', description: 'View AI session history', icon: <FileText className="w-4 h-4" /> },
+            {
+                id: 'chats',
+                path: '/chats',
+                title: 'AI Chat',
+                description: 'Open AI chat interface',
+                icon: <Bot className="w-4 h-4" />,
+            },
+            {
+                id: 'ai-insights',
+                path: '/ai/insights',
+                title: 'AI Insights',
+                description: 'AI-powered insights',
+                icon: <Zap className="w-4 h-4" />,
+            },
+            {
+                id: 'ai-topics',
+                path: '/ai/topics',
+                title: 'AI Topics',
+                description: 'Browse AI session topics',
+                icon: <Layers className="w-4 h-4" />,
+            },
+            {
+                id: 'ai-sessions',
+                path: '/ai/sessions',
+                title: 'AI Sessions',
+                description: 'View AI session history',
+                icon: <FileText className="w-4 h-4" />,
+            },
         ],
     },
     {
@@ -3922,22 +4717,32 @@ const LAUNCHABLE_FEATURES: FeatureCategory[] = [
         icon: <Rocket className="w-4 h-4" />,
         color: 'cyan',
         features: [
-            { id: 'launchpad-main', path: '/launchpad', title: 'App Launchpad', description: 'Browse all apps', icon: <Rocket className="w-4 h-4" /> },
-            { 
-                id: 'app-embed', 
-                path: '/apps/:appId', 
-                title: 'Open App', 
+            {
+                id: 'launchpad-main',
+                path: '/launchpad',
+                title: 'App Launchpad',
+                description: 'Browse all apps',
+                icon: <Rocket className="w-4 h-4" />,
+            },
+            {
+                id: 'app-embed',
+                path: '/apps/:appId',
+                title: 'Open App',
                 description: 'Launch an embedded app fullscreen',
                 icon: <Monitor className="w-4 h-4" />,
-                params: [{ name: 'appId', description: 'App ID to launch', placeholder: 'my-app-id' }]
+                params: [
+                    { name: 'appId', description: 'App ID to launch', placeholder: 'my-app-id' },
+                ],
             },
-            { 
-                id: 'app-listing', 
-                path: '/app/:listingId', 
-                title: 'App Details', 
+            {
+                id: 'app-listing',
+                path: '/app/:listingId',
+                title: 'App Details',
                 description: 'View app listing page',
                 icon: <FileText className="w-4 h-4" />,
-                params: [{ name: 'listingId', description: 'Listing ID', placeholder: 'listing-123' }]
+                params: [
+                    { name: 'listingId', description: 'Listing ID', placeholder: 'listing-123' },
+                ],
             },
         ],
     },
@@ -3947,7 +4752,13 @@ const LAUNCHABLE_FEATURES: FeatureCategory[] = [
         icon: <AlertCircle className="w-4 h-4" />,
         color: 'rose',
         features: [
-            { id: 'notifications', path: '/notifications', title: 'Notifications', description: 'View all notifications', icon: <AlertCircle className="w-4 h-4" /> },
+            {
+                id: 'notifications',
+                path: '/notifications',
+                title: 'Notifications',
+                description: 'View all notifications',
+                icon: <AlertCircle className="w-4 h-4" />,
+            },
         ],
     },
     {
@@ -3956,13 +4767,55 @@ const LAUNCHABLE_FEATURES: FeatureCategory[] = [
         icon: <Shield className="w-4 h-4" />,
         color: 'gray',
         features: [
-            { id: 'admin-tools', path: '/admin-tools', title: 'Admin Dashboard', description: 'Admin tools home', icon: <Shield className="w-4 h-4" /> },
-            { id: 'managed-boosts', path: '/admin-tools/view-managed-boosts', title: 'Managed Boosts', description: 'View all managed boosts', icon: <Award className="w-4 h-4" /> },
-            { id: 'bulk-import', path: '/admin-tools/bulk-import', title: 'Bulk Import', description: 'Bulk boost import', icon: <Layers className="w-4 h-4" /> },
-            { id: 'service-profiles', path: '/admin-tools/service-profiles', title: 'Service Profiles', description: 'Manage service profiles', icon: <User className="w-4 h-4" /> },
-            { id: 'manage-contracts', path: '/admin-tools/manage-contracts', title: 'Consent Contracts', description: 'Manage consent contracts', icon: <FileText className="w-4 h-4" /> },
-            { id: 'signing-authorities', path: '/admin-tools/signing-authorities', title: 'Signing Authorities', description: 'Manage signing authorities', icon: <Key className="w-4 h-4" /> },
-            { id: 'api-tokens', path: '/admin-tools/api-tokens', title: 'API Tokens', description: 'Manage API tokens', icon: <Lock className="w-4 h-4" /> },
+            {
+                id: 'admin-tools',
+                path: '/admin-tools',
+                title: 'Admin Dashboard',
+                description: 'Admin tools home',
+                icon: <Shield className="w-4 h-4" />,
+            },
+            {
+                id: 'managed-boosts',
+                path: '/admin-tools/view-managed-boosts',
+                title: 'Managed Boosts',
+                description: 'View all managed boosts',
+                icon: <Award className="w-4 h-4" />,
+            },
+            {
+                id: 'bulk-import',
+                path: '/admin-tools/bulk-import',
+                title: 'Bulk Import',
+                description: 'Bulk boost import',
+                icon: <Layers className="w-4 h-4" />,
+            },
+            {
+                id: 'service-profiles',
+                path: '/admin-tools/service-profiles',
+                title: 'Service Profiles',
+                description: 'Manage service profiles',
+                icon: <User className="w-4 h-4" />,
+            },
+            {
+                id: 'manage-contracts',
+                path: '/admin-tools/manage-contracts',
+                title: 'Consent Contracts',
+                description: 'Manage consent contracts',
+                icon: <FileText className="w-4 h-4" />,
+            },
+            {
+                id: 'signing-authorities',
+                path: '/admin-tools/signing-authorities',
+                title: 'Signing Authorities',
+                description: 'Manage signing authorities',
+                icon: <Key className="w-4 h-4" />,
+            },
+            {
+                id: 'api-tokens',
+                path: '/admin-tools/api-tokens',
+                title: 'API Tokens',
+                description: 'Manage API tokens',
+                icon: <Lock className="w-4 h-4" />,
+            },
         ],
     },
     {
@@ -3971,7 +4824,13 @@ const LAUNCHABLE_FEATURES: FeatureCategory[] = [
         icon: <User className="w-4 h-4" />,
         color: 'pink',
         features: [
-            { id: 'families', path: '/families', title: 'Family Management', description: 'Manage family members', icon: <User className="w-4 h-4" /> },
+            {
+                id: 'families',
+                path: '/families',
+                title: 'Family Management',
+                description: 'Manage family members',
+                icon: <User className="w-4 h-4" />,
+            },
         ],
     },
 ];
@@ -3981,7 +4840,9 @@ const LaunchFeatureSetup: React.FC<{
     onBack: () => void;
     isLastFeature: boolean;
     featureSetupState: Record<string, Record<string, unknown>>;
-    setFeatureSetupState: React.Dispatch<React.SetStateAction<Record<string, Record<string, unknown>>>>;
+    setFeatureSetupState: React.Dispatch<
+        React.SetStateAction<Record<string, Record<string, unknown>>>
+    >;
 }> = ({ onComplete, onBack, isLastFeature, featureSetupState, setFeatureSetupState }) => {
     // Get saved state
     const savedState = featureSetupState['launch-feature'] || {};
@@ -3996,25 +4857,21 @@ const LaunchFeatureSetup: React.FC<{
     );
 
     // Get all selected features
-    const selectedFeatures = LAUNCHABLE_FEATURES
-        .flatMap(cat => cat.features)
-        .filter(f => selectedFeatureIds.includes(f.id));
+    const selectedFeatures = LAUNCHABLE_FEATURES.flatMap(cat => cat.features).filter(f =>
+        selectedFeatureIds.includes(f.id)
+    );
 
     // Toggle feature selection
     const toggleFeature = (featureId: string) => {
-        setSelectedFeatureIds(prev => 
-            prev.includes(featureId) 
-                ? prev.filter(id => id !== featureId)
-                : [...prev, featureId]
+        setSelectedFeatureIds(prev =>
+            prev.includes(featureId) ? prev.filter(id => id !== featureId) : [...prev, featureId]
         );
     };
 
     // Toggle category expansion
     const toggleCategory = (categoryId: string) => {
         setExpandedCategories(prev =>
-            prev.includes(categoryId)
-                ? prev.filter(id => id !== categoryId)
-                : [...prev, categoryId]
+            prev.includes(categoryId) ? prev.filter(id => id !== categoryId) : [...prev, categoryId]
         );
     };
 
@@ -4022,12 +4879,12 @@ const LaunchFeatureSetup: React.FC<{
     useEffect(() => {
         setFeatureSetupState(prev => ({
             ...prev,
-            'launch-feature': { 
-                ...prev['launch-feature'], 
+            'launch-feature': {
+                ...prev['launch-feature'],
                 selectedFeatureIds,
                 expandedCategories,
-                paramValues
-            }
+                paramValues,
+            },
         }));
     }, [selectedFeatureIds, expandedCategories, paramValues, setFeatureSetupState]);
 
@@ -4058,14 +4915,54 @@ await learnCard.launchFeature('${path}');`;
 
     const getCategoryColorClasses = (color: string, isExpanded: boolean) => {
         const colors: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-            blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'text-blue-600' },
-            violet: { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-800', icon: 'text-violet-600' },
-            amber: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', icon: 'text-amber-600' },
-            emerald: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', icon: 'text-emerald-600' },
-            cyan: { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-800', icon: 'text-cyan-600' },
-            rose: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-800', icon: 'text-rose-600' },
-            gray: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-800', icon: 'text-gray-600' },
-            pink: { bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-800', icon: 'text-pink-600' },
+            blue: {
+                bg: 'bg-blue-50',
+                border: 'border-blue-200',
+                text: 'text-blue-800',
+                icon: 'text-blue-600',
+            },
+            violet: {
+                bg: 'bg-violet-50',
+                border: 'border-violet-200',
+                text: 'text-violet-800',
+                icon: 'text-violet-600',
+            },
+            amber: {
+                bg: 'bg-amber-50',
+                border: 'border-amber-200',
+                text: 'text-amber-800',
+                icon: 'text-amber-600',
+            },
+            emerald: {
+                bg: 'bg-emerald-50',
+                border: 'border-emerald-200',
+                text: 'text-emerald-800',
+                icon: 'text-emerald-600',
+            },
+            cyan: {
+                bg: 'bg-cyan-50',
+                border: 'border-cyan-200',
+                text: 'text-cyan-800',
+                icon: 'text-cyan-600',
+            },
+            rose: {
+                bg: 'bg-rose-50',
+                border: 'border-rose-200',
+                text: 'text-rose-800',
+                icon: 'text-rose-600',
+            },
+            gray: {
+                bg: 'bg-gray-50',
+                border: 'border-gray-200',
+                text: 'text-gray-800',
+                icon: 'text-gray-600',
+            },
+            pink: {
+                bg: 'bg-pink-50',
+                border: 'border-pink-200',
+                text: 'text-pink-800',
+                icon: 'text-pink-600',
+            },
         };
 
         return colors[color] || colors.gray;
@@ -4077,7 +4974,8 @@ await learnCard.launchFeature('${path}');`;
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Launch Native Features</h3>
 
                 <p className="text-gray-600">
-                    Navigate users to any LearnCard screen directly from your app. Select a category and feature to configure.
+                    Navigate users to any LearnCard screen directly from your app. Select a category
+                    and feature to configure.
                 </p>
             </div>
 
@@ -4103,31 +5001,50 @@ await learnCard.launchFeature('${path}');`;
                     {LAUNCHABLE_FEATURES.map(category => {
                         const isExpanded = expandedCategories.includes(category.id);
                         const colors = getCategoryColorClasses(category.color, isExpanded);
-                        const selectedCount = category.features.filter(f => selectedFeatureIds.includes(f.id)).length;
+                        const selectedCount = category.features.filter(f =>
+                            selectedFeatureIds.includes(f.id)
+                        ).length;
 
                         return (
-                            <div key={category.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                            <div
+                                key={category.id}
+                                className="border border-gray-200 rounded-xl overflow-hidden"
+                            >
                                 <button
                                     onClick={() => toggleCategory(category.id)}
                                     className={`w-full flex items-center justify-between p-3 text-left transition-colors ${
-                                        isExpanded || selectedCount > 0 ? colors.bg : 'bg-white hover:bg-gray-50'
+                                        isExpanded || selectedCount > 0
+                                            ? colors.bg
+                                            : 'bg-white hover:bg-gray-50'
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                            isExpanded || selectedCount > 0 ? colors.bg : 'bg-gray-100'
-                                        } ${colors.icon}`}>
+                                        <div
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                isExpanded || selectedCount > 0
+                                                    ? colors.bg
+                                                    : 'bg-gray-100'
+                                            } ${colors.icon}`}
+                                        >
                                             {category.icon}
                                         </div>
 
                                         <div>
-                                            <span className={`font-medium ${isExpanded || selectedCount > 0 ? colors.text : 'text-gray-700'}`}>
+                                            <span
+                                                className={`font-medium ${
+                                                    isExpanded || selectedCount > 0
+                                                        ? colors.text
+                                                        : 'text-gray-700'
+                                                }`}
+                                            >
                                                 {category.title}
                                             </span>
 
                                             <span className="text-xs text-gray-400 ml-2">
                                                 {selectedCount > 0 ? (
-                                                    <span className={colors.text}>{selectedCount} selected</span>
+                                                    <span className={colors.text}>
+                                                        {selectedCount} selected
+                                                    </span>
                                                 ) : (
                                                     `${category.features.length} available`
                                                 )}
@@ -4135,14 +5052,20 @@ await learnCard.launchFeature('${path}');`;
                                         </div>
                                     </div>
 
-                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                    <ChevronDown
+                                        className={`w-4 h-4 text-gray-400 transition-transform ${
+                                            isExpanded ? 'rotate-180' : ''
+                                        }`}
+                                    />
                                 </button>
 
                                 {isExpanded && (
                                     <div className="border-t border-gray-100 p-2 bg-white">
                                         <div className="space-y-1">
                                             {category.features.map(feature => {
-                                                const isSelected = selectedFeatureIds.includes(feature.id);
+                                                const isSelected = selectedFeatureIds.includes(
+                                                    feature.id
+                                                );
 
                                                 return (
                                                     <label
@@ -4156,27 +5079,44 @@ await learnCard.launchFeature('${path}');`;
                                                         <input
                                                             type="checkbox"
                                                             checked={isSelected}
-                                                            onChange={() => toggleFeature(feature.id)}
+                                                            onChange={() =>
+                                                                toggleFeature(feature.id)
+                                                            }
                                                             className={`w-4 h-4 mt-0.5 rounded ${colors.text}`}
                                                         />
 
-                                                        <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${
-                                                            isSelected ? colors.icon + ' ' + colors.bg : 'text-gray-400 bg-gray-100'
-                                                        }`}>
+                                                        <div
+                                                            className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${
+                                                                isSelected
+                                                                    ? colors.icon + ' ' + colors.bg
+                                                                    : 'text-gray-400 bg-gray-100'
+                                                            }`}
+                                                        >
                                                             {feature.icon}
                                                         </div>
 
                                                         <div className="min-w-0 flex-1">
-                                                            <p className={`text-sm font-medium ${isSelected ? colors.text : 'text-gray-700'}`}>
+                                                            <p
+                                                                className={`text-sm font-medium ${
+                                                                    isSelected
+                                                                        ? colors.text
+                                                                        : 'text-gray-700'
+                                                                }`}
+                                                            >
                                                                 {feature.title}
                                                             </p>
 
-                                                            <p className="text-xs text-gray-400">{feature.description}</p>
+                                                            <p className="text-xs text-gray-400">
+                                                                {feature.description}
+                                                            </p>
 
                                                             {feature.params && (
                                                                 <span className="inline-flex items-center gap-1 mt-1 text-xs text-gray-400">
                                                                     <Code className="w-3 h-3" />
-                                                                    {feature.params.length} param{feature.params.length !== 1 ? 's' : ''}
+                                                                    {feature.params.length} param
+                                                                    {feature.params.length !== 1
+                                                                        ? 's'
+                                                                        : ''}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -4204,37 +5144,46 @@ await learnCard.launchFeature('${path}');`;
                     </div>
 
                     <div className="ml-10 space-y-4">
-                        {selectedFeatures.filter(f => f.params && f.params.length > 0).map(feature => (
-                            <div key={feature.id} className="p-3 bg-gray-50 rounded-lg space-y-3">
-                                <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                    {feature.icon}
-                                    {feature.title}
-                                </div>
-
-                                {feature.params?.map(param => (
-                                    <div key={param.name}>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            {param.name}
-                                            <span className="font-normal text-gray-400 ml-1">— {param.description}</span>
-                                        </label>
-
-                                        <input
-                                            type="text"
-                                            value={paramValues[feature.id]?.[param.name] || ''}
-                                            onChange={(e) => setParamValues(prev => ({ 
-                                                ...prev, 
-                                                [feature.id]: { 
-                                                    ...prev[feature.id], 
-                                                    [param.name]: e.target.value 
-                                                } 
-                                            }))}
-                                            placeholder={param.placeholder}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        />
+                        {selectedFeatures
+                            .filter(f => f.params && f.params.length > 0)
+                            .map(feature => (
+                                <div
+                                    key={feature.id}
+                                    className="p-3 bg-gray-50 rounded-lg space-y-3"
+                                >
+                                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                        {feature.icon}
+                                        {feature.title}
                                     </div>
-                                ))}
-                            </div>
-                        ))}
+
+                                    {feature.params?.map(param => (
+                                        <div key={param.name}>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                {param.name}
+                                                <span className="font-normal text-gray-400 ml-1">
+                                                    — {param.description}
+                                                </span>
+                                            </label>
+
+                                            <input
+                                                type="text"
+                                                value={paramValues[feature.id]?.[param.name] || ''}
+                                                onChange={e =>
+                                                    setParamValues(prev => ({
+                                                        ...prev,
+                                                        [feature.id]: {
+                                                            ...prev[feature.id],
+                                                            [param.name]: e.target.value,
+                                                        },
+                                                    }))
+                                                }
+                                                placeholder={param.placeholder}
+                                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
                     </div>
                 </div>
             )}
@@ -4253,7 +5202,7 @@ await learnCard.launchFeature('${path}');`;
                     {selectedFeatures.length > 0 && (
                         <div className="mb-3 flex flex-wrap gap-2">
                             {selectedFeatures.map(feature => (
-                                <span 
+                                <span
                                     key={feature.id}
                                     className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-700"
                                 >
@@ -4273,7 +5222,10 @@ await learnCard.launchFeature('${path}');`;
                 <h4 className="font-medium text-purple-800 mb-2">Tips</h4>
 
                 <ul className="text-sm text-purple-700 space-y-1">
-                    <li>• <code className="bg-purple-100 px-1 rounded">launchFeature</code> navigates users to any LearnCard screen</li>
+                    <li>
+                        • <code className="bg-purple-100 px-1 rounded">launchFeature</code>{' '}
+                        navigates users to any LearnCard screen
+                    </li>
                     <li>• Parameters are passed as URL params or path segments</li>
                     <li>• Admin tools are only accessible to users with admin permissions</li>
                     <li>• Results indicate success/failure of the navigation</li>
@@ -4302,7 +5254,7 @@ await learnCard.launchFeature('${path}');`;
     );
 };
 
-// Peer-to-Peer Badges Setup (for initiateTemplateIssuance)
+// Peer-to-Peer Badges Setup (for initiateTemplateIssue)
 const PeerBadgesSetup: React.FC<{
     onComplete: () => void;
     onBack: () => void;
@@ -4313,10 +5265,13 @@ const PeerBadgesSetup: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Peer-to-Peer Badges</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    Set Up Peer-to-Peer Badges
+                </h3>
 
                 <p className="text-gray-600">
-                    Create badge templates that users can send to each other using <code className="bg-gray-100 px-1 rounded">initiateTemplateIssuance</code>.
+                    Create badge templates that users can send to each other using{' '}
+                    <code className="bg-gray-100 px-1 rounded">initiateTemplateIssue</code>.
                 </p>
             </div>
 
@@ -4326,8 +5281,12 @@ const PeerBadgesSetup: React.FC<{
                     <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-5 h-5 text-violet-600" />
                         <div>
-                            <p className="text-sm font-medium text-violet-800">Creating templates for: {selectedListing.display_name}</p>
-                            <p className="text-xs text-violet-600">You selected this app in Step 1</p>
+                            <p className="text-sm font-medium text-violet-800">
+                                Creating templates for: {selectedListing.display_name}
+                            </p>
+                            <p className="text-xs text-violet-600">
+                                You selected this app in Step 1
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -4340,11 +5299,20 @@ const PeerBadgesSetup: React.FC<{
                 <ol className="space-y-2 text-sm text-gray-600">
                     <li className="flex items-start gap-2">
                         <span className="font-medium text-violet-600">1.</span>
-                        <span>You create badge templates below (e.g., "Thank You", "Great Job", "Team Player")</span>
+                        <span>
+                            You create badge templates below (e.g., "Thank You", "Great Job", "Team
+                            Player")
+                        </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="font-medium text-violet-600">2.</span>
-                        <span>In your app, call <code className="bg-gray-100 px-1 rounded">initiateTemplateIssuance</code> with a template URI</span>
+                        <span>
+                            In your app, call{' '}
+                            <code className="bg-gray-100 px-1 rounded">
+                                initiateTemplateIssue
+                            </code>{' '}
+                            with a template URI
+                        </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="font-medium text-violet-600">3.</span>
@@ -4355,10 +5323,12 @@ const PeerBadgesSetup: React.FC<{
 
             {/* Template Manager */}
             {selectedListing ? (
-                <TemplateManager
-                    appListingId={selectedListing.listing_id}
-                    appName={selectedListing.display_name}
+                <TemplateListManager
+                    listingId={selectedListing.listing_id}
                     integrationId={integrationId}
+                    featureType="peer-badges"
+                    showCodeSnippets={true}
+                    editable={true}
                 />
             ) : (
                 <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
@@ -4400,7 +5370,14 @@ const YourAppStep: React.FC<{
     selectedListing: AppStoreListing | null;
     featureSetupState: Record<string, Record<string, unknown>>;
     integrationId?: string;
-}> = ({ onBack, onComplete, selectedFeatures, selectedListing, featureSetupState, integrationId }) => {
+}> = ({
+    onBack,
+    onComplete,
+    selectedFeatures,
+    selectedListing,
+    featureSetupState,
+    integrationId,
+}) => {
     const { useUpdateListing } = useDeveloperPortal();
     const updateMutation = useUpdateListing();
     const { presentToast } = useToast();
@@ -4433,52 +5410,90 @@ const YourAppStep: React.FC<{
         const fetchAllTemplates = async () => {
             try {
                 const wallet = await initWallet();
-                const allTemplates: BoostTemplate[] = [];
-                const seenUris = new Set<string>();
+                const issueTemplates: BoostTemplate[] = [];
+                const peerTemplates: BoostTemplate[] = [];
 
-                // Helper to add templates without duplicates
-                const addTemplates = (records: Record<string, unknown>[]) => {
-                    for (const boost of records) {
-                        const uri = boost.uri as string;
-
-                        if (!seenUris.has(uri)) {
-                            seenUris.add(uri);
-                            allTemplates.push({
-                                uri,
-                                name: boost.name as string || 'Untitled Template',
-                                description: boost.description as string,
-                                type: boost.type as string,
-                                category: boost.category as string,
-                                image: boost.image as string,
-                                createdAt: boost.createdAt as string,
-                            });
-                        }
-                    }
+                // Helper to extract variables from credential JSON
+                const extractVariables = (credential: Record<string, unknown>): string[] => {
+                    const jsonStr = JSON.stringify(credential);
+                    const matches = jsonStr.match(/\{\{(\w+)\}\}/g) || [];
+                    return [...new Set(matches.map(m => m.replace(/\{\{|\}\}/g, '')))];
                 };
 
-                // Fetch by appListingId
+                // Fetch issue-credentials templates via getAppBoosts (has templateAlias)
                 if (selectedListing?.listing_id) {
-                    const byListing = await wallet.invoke.getPaginatedBoosts({
-                        limit: 100,
-                        query: { meta: { appListingId: selectedListing.listing_id } }
-                    });
-                    addTemplates(byListing?.records || []);
-                }
+                    try {
+                        const appBoosts = await wallet.invoke.getAppBoosts(
+                            selectedListing.listing_id
+                        );
 
-                // Fetch by integrationId
-                if (integrationId) {
-                    const byIntegration = await wallet.invoke.getPaginatedBoosts({
-                        limit: 100,
-                        query: { meta: { integrationId } }
-                    });
-                    addTemplates(byIntegration?.records || []);
+                        for (const link of appBoosts || []) {
+                            try {
+                                const fullBoost = await wallet.invoke.getBoost(link.boostUri);
+                                const credential =
+                                    (fullBoost?.boost as Record<string, unknown>) || {};
+
+                                issueTemplates.push({
+                                    uri: link.boostUri,
+                                    name:
+                                        fullBoost?.name ||
+                                        (credential?.name as string) ||
+                                        'Untitled Template',
+                                    description: (credential?.description as string) || '',
+                                    type: fullBoost?.type as string,
+                                    category: fullBoost?.category as string,
+                                    templateAlias: link.templateAlias,
+                                    variables: extractVariables(credential),
+                                });
+                            } catch (e) {
+                                console.warn('Failed to fetch boost:', link.boostUri, e);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Failed to fetch app boosts:', e);
+                    }
+
+                    // Fetch peer-badges templates via featureType metadata
+                    try {
+                        const peerBoostsResult = await wallet.invoke.getPaginatedBoosts({
+                            limit: 50,
+                            query: {
+                                meta: {
+                                    appListingId: selectedListing.listing_id,
+                                    featureType: 'peer-badges',
+                                },
+                            },
+                        });
+
+                        for (const boost of peerBoostsResult?.records || []) {
+                            try {
+                                const uri = boost.uri as string;
+                                const fullBoost = await wallet.invoke.getBoost(uri);
+                                const credential =
+                                    (fullBoost?.boost as Record<string, unknown>) || {};
+
+                                peerTemplates.push({
+                                    uri,
+                                    name:
+                                        fullBoost?.name ||
+                                        (boost.name as string) ||
+                                        'Untitled Template',
+                                    description: (credential?.description as string) || '',
+                                    type: fullBoost?.type as string,
+                                    category: fullBoost?.category as string,
+                                });
+                            } catch (e) {
+                                console.warn('Failed to fetch peer boost:', boost.uri, e);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Failed to fetch peer badges:', e);
+                    }
                 }
 
                 if (!cancelled) {
-                    // All templates can be used for peer badges
-                    setPeerBadgeTemplates(allTemplates);
-                    // All templates can also be used for issue-credentials sync mode
-                    setIssueCredentialTemplates(allTemplates);
+                    setPeerBadgeTemplates(peerTemplates);
+                    setIssueCredentialTemplates(issueTemplates);
                 }
             } catch (err) {
                 console.error('Failed to fetch templates:', err);
@@ -4506,8 +5521,8 @@ const YourAppStep: React.FC<{
     // Parse existing launch config from listing
     const existingConfig: LaunchConfig = (() => {
         try {
-            return selectedListing?.launch_config_json 
-                ? JSON.parse(selectedListing.launch_config_json) 
+            return selectedListing?.launch_config_json
+                ? JSON.parse(selectedListing.launch_config_json)
                 : {};
         } catch {
             return {};
@@ -4537,7 +5552,7 @@ const YourAppStep: React.FC<{
         }
 
         if (selectedFeatures.includes('request-credentials')) {
-            const mode = requestCredentialsState.mode as string || 'query';
+            const mode = (requestCredentialsState.mode as string) || 'query';
             if (mode === 'query') {
                 permissions.add('credential_search');
             } else {
@@ -4588,7 +5603,12 @@ const YourAppStep: React.FC<{
             permissions: requiredPermissions,
             contractUri: consentContractUri || undefined,
         };
-    }, [computeRequiredPermissions, selectedFeatures, requestDataConsentState.contractUri, existingConfig.url]);
+    }, [
+        computeRequiredPermissions,
+        selectedFeatures,
+        requestDataConsentState.contractUri,
+        existingConfig.url,
+    ]);
 
     // Check for config mismatch on mount
     useEffect(() => {
@@ -4599,7 +5619,7 @@ const YourAppStep: React.FC<{
         const existingContractUri = existingConfig.contractUri || '';
 
         // Check if permissions are different
-        const permissionsDifferent = 
+        const permissionsDifferent =
             newConfig.permissions?.length !== existingPermissions.length ||
             newConfig.permissions?.some(p => !existingPermissions.includes(p)) ||
             existingPermissions.some(p => !newConfig.permissions?.includes(p));
@@ -4626,6 +5646,7 @@ const YourAppStep: React.FC<{
 
             await updateMutation.mutateAsync({
                 listingId: selectedListing.listing_id,
+                integrationId,
                 updates: {
                     launch_config_json: JSON.stringify(newConfig, null, 2),
                 },
@@ -4641,9 +5662,9 @@ const YourAppStep: React.FC<{
             setShowConfigMismatchPrompt(false);
         } catch (error) {
             console.error('Failed to update config:', error);
-            presentToast('Failed to update configuration', { 
-                type: ToastTypeEnum.Error, 
-                hasDismissButton: true 
+            presentToast('Failed to update configuration', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         } finally {
             setIsSaving(false);
@@ -4664,6 +5685,7 @@ const YourAppStep: React.FC<{
 
             await updateMutation.mutateAsync({
                 listingId: selectedListing.listing_id,
+                integrationId,
                 updates: {
                     launch_config_json: JSON.stringify(newConfig, null, 2),
                 },
@@ -4673,9 +5695,9 @@ const YourAppStep: React.FC<{
             setShowConfigEditor(false);
         } catch (error) {
             console.error('Failed to save config:', error);
-            presentToast('Failed to save configuration', { 
-                type: ToastTypeEnum.Error, 
-                hasDismissButton: true 
+            presentToast('Failed to save configuration', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
             });
         } finally {
             setIsSaving(false);
@@ -4685,9 +5707,7 @@ const YourAppStep: React.FC<{
     // Toggle permission
     const togglePermission = (permission: AppPermission) => {
         setSelectedPermissions(prev =>
-            prev.includes(permission)
-                ? prev.filter(p => p !== permission)
-                : [...prev, permission]
+            prev.includes(permission) ? prev.filter(p => p !== permission) : [...prev, permission]
         );
     };
 
@@ -4707,7 +5727,9 @@ const YourAppStep: React.FC<{
             display_name: selectedListing.display_name,
             tagline: selectedListing.tagline || '',
             full_description: selectedListing.full_description || '',
-            icon_url: selectedListing.icon_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=Preview',
+            icon_url:
+                selectedListing.icon_url ||
+                'https://placehold.co/128x128/e2e8f0/64748b?text=Preview',
             launch_type: 'EMBEDDED_IFRAME',
             launch_config_json: JSON.stringify(launchConfig),
             app_listing_status: 'DRAFT',
@@ -4719,7 +5741,8 @@ const YourAppStep: React.FC<{
             android_app_store_id: (selectedListing as ExtendedAppStoreListing).android_app_store_id,
             highlights: (selectedListing as ExtendedAppStoreListing).highlights,
             screenshots: (selectedListing as ExtendedAppStoreListing).screenshots,
-            hero_background_color: (selectedListing as ExtendedAppStoreListing).hero_background_color,
+            hero_background_color: (selectedListing as ExtendedAppStoreListing)
+                .hero_background_color,
         };
 
         newModal(
@@ -4728,6 +5751,8 @@ const YourAppStep: React.FC<{
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
     };
+
+    const generatedAtRef = useRef(new Date().toISOString());
 
     // Generate comprehensive code based on selected features and their configuration
     const generateCode = () => {
@@ -4754,6 +5779,8 @@ const YourAppStep: React.FC<{
                 issueCredentials: issueCredentialTemplates.map(t => ({
                     uri: t.uri,
                     name: t.name,
+                    templateAlias: t.templateAlias,
+                    variables: t.variables,
                     description: t.description,
                     type: t.type,
                 })),
@@ -4763,7 +5790,7 @@ const YourAppStep: React.FC<{
                 issueCredentials: issueContractUri,
             },
             permissions: computeRequiredPermissions(),
-            generatedAt: new Date().toISOString(),
+            generatedAt: generatedAtRef.current,
         };
 
         // ===================
@@ -4777,10 +5804,12 @@ const YourAppStep: React.FC<{
  * App: ${selectedListing?.display_name || 'Your App Name'}
  * Listing ID: ${selectedListing?.listing_id || 'NOT_SET'}
  * Integration ID: ${integrationId || 'NOT_SET'}
- * Generated: ${new Date().toISOString()}
+ * Generated: ${generatedAtRef.current}
  * 
  * Features configured:
- * ${selectedFeatures.map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`).join('\n * ')}
+ * ${selectedFeatures
+     .map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`)
+     .join('\n * ')}
  * 
  * ================================================================
  * LLM INTEGRATION METADATA
@@ -4789,14 +5818,29 @@ const YourAppStep: React.FC<{
  * Use these values directly - no placeholders to replace!
  * 
  * @llm-config
-${JSON.stringify(llmMetadata, null, 2).split('\n').map(line => ' * ' + line).join('\n')}
+${JSON.stringify(llmMetadata, null, 2)
+    .split('\n')
+    .map(line => ' * ' + line)
+    .join('\n')}
  * 
  * ================================================================
  * QUICK REFERENCE
  * ================================================================
- * ${peerBadgeTemplates.length > 0 ? `Peer Badge Templates: ${peerBadgeTemplates.length} available` : 'Peer Badge Templates: None configured'}
- * ${dataConsentContractUri ? `Data Consent Contract: ${dataConsentContractUri}` : 'Data Consent Contract: Not configured'}
- * ${issueContractUri ? `Issue Credentials Contract: ${issueContractUri}` : 'Issue Credentials Contract: Not configured'}
+ * ${
+     peerBadgeTemplates.length > 0
+         ? `Peer Badge Templates: ${peerBadgeTemplates.length} available`
+         : 'Peer Badge Templates: None configured'
+ }
+ * ${
+     dataConsentContractUri
+         ? `Data Consent Contract: ${dataConsentContractUri}`
+         : 'Data Consent Contract: Not configured'
+ }
+ * ${
+     issueContractUri
+         ? `Issue Credentials Contract: ${issueContractUri}`
+         : 'Issue Credentials Contract: Not configured'
+ }
  * 
  * Prerequisites:
  *   1. Install the SDK: npm install @learncard/partner-connect
@@ -4823,9 +5867,7 @@ import { createPartnerConnect } from '@learncard/partner-connect';`);
 // SDK INITIALIZATION
 // ============================================================
 // Create the partner connection to communicate with LearnCard
-const learnCard = createPartnerConnect({
-    hostOrigin: 'https://learncard.app', // LearnCard app origin
-});`);
+const learnCard = createPartnerConnect();`);
 
         // ===================
         // USER IDENTITY
@@ -4855,10 +5897,10 @@ async function getUserIdentity() {
         // ISSUE CREDENTIALS
         // ===================
         if (selectedFeatures.includes('issue-credentials')) {
-            const mode = issueCredentialsState.mode as string || 'prompt-claim';
+            const mode = (issueCredentialsState.mode as string) || 'prompt-claim';
             const credential = issueCredentialsState.credential as Record<string, unknown> | null;
-            const credentialName = credential?.name as string || 'Your Credential';
-            const contractUri = issueCredentialsState.contractUri as string || '';
+            const credentialName = (credential?.name as string) || 'Your Credential';
+            const contractUri = (issueCredentialsState.contractUri as string) || '';
 
             if (mode === 'prompt-claim') {
                 sections.push(`
@@ -4920,89 +5962,107 @@ async function issueCredentialToUser() {
     }
 }`);
             } else {
-                // sync-wallet mode - use actual template URIs if available
-                const firstTemplate = issueCredentialTemplates[0];
-                const templateUri = firstTemplate?.uri || 'urn:lc:boost:YOUR_TEMPLATE_URI';
-                const templateNote = firstTemplate 
-                    ? `Using template: "${firstTemplate.name}" (${templateUri})`
-                    : 'No templates configured - create one in the setup step';
+                // sync-wallet mode - use templates with aliases
+                const contractUri = (issueCredentialsState.contractUri as string) || '';
 
-                // Generate template list for server-side code
-                const templateListJson = issueCredentialTemplates.length > 0
-                    ? JSON.stringify(issueCredentialTemplates.map(t => ({
+                // Generate template config with aliases and variables
+                const templateConfigJson = JSON.stringify(
+                    issueCredentialTemplates.map(t => ({
+                        templateAlias: t.templateAlias,
                         uri: t.uri,
                         name: t.name,
                         description: t.description || '',
-                    })), null, 4)
-                    : '[]';
+                        variables: t.variables || [],
+                    })),
+                    null,
+                    4
+                );
 
-                sections.push(`
-// ============================================================
-// ISSUE CREDENTIALS - Sync to Wallet (Server-Side)
-// ============================================================
-// Mode: Silently sync credentials to user's wallet via consent
-// 
-// How it works:
-//   1. User grants consent via ConsentFlow contract
-//   2. Your SERVER issues credentials using your signing authority
-//   3. Credentials appear in user's wallet automatically
-//
-// Contract URI: ${contractUri || 'NOT_CONFIGURED'}
-// ${templateNote}
-//
-// IMPORTANT: This requires server-side code with your signing authority
+                // Generate example functions for each template
+                const templateFunctions = issueCredentialTemplates
+                    .map(t => {
+                        const hasVars = t.variables && t.variables.length > 0;
+                        const templateDataParam = hasVars
+                            ? `{\n${t
+                                  .variables!.map(
+                                      v => `        ${v}: 'value', // Replace with actual value`
+                                  )
+                                  .join('\n')}\n    }`
+                            : '// No template variables needed';
 
-// Available credential templates for issuance:
-const CREDENTIAL_TEMPLATES = ${templateListJson};
-
-// --- CLIENT-SIDE: Request consent from user ---
-async function requestUserConsent() {
-    const result = await learnCard.requestConsent({
-        contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}',
+                        if (hasVars) {
+                            return `
+// Issue "${t.name}" credential
+async function issue${
+                                t.templateAlias
+                                    ?.replace(/-/g, '_')
+                                    .replace(/^./, c => c.toUpperCase()) || 'Credential'
+                            }(templateData: Record<string, string>) {
+    const result = await learnCard.sendCredential({
+        templateAlias: '${t.templateAlias}',
+        templateData,
     });
     
-    if (result.granted) {
-        // Notify your server that consent was granted
-        await fetch('/api/consent-granted', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: result.userId,
-                contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}'
-            })
-        });
-        return true;
+    if (result.credentialUri) {
+        console.log('Credential issued:', result.credentialUri);
     }
-    return false;
-}
-
-// --- SERVER-SIDE CODE (Node.js) ---
-// This code runs on YOUR server, not in the embedded app
-/*
-import { initLearnCard } from '@learncard/init';
-
-// Initialize LearnCard with your signing authority
-const learnCard = await initLearnCard({
-    network: true,
-    seed: process.env.LEARNCARD_SEED, // Your secure seed phrase
-});
-
-// Issue credential to user via consent contract
-async function issueCredentialViaConsent(recipientProfileId: string, templateUri?: string) {
-    const result = await learnCard.invoke.send({
-        type: 'boost',
-        recipient: recipientProfileId,
-        templateUri: templateUri || '${templateUri}',
-        contractUri: '${contractUri || 'urn:lc:contract:YOUR_CONTRACT_URI'}',
-    });
-    
-    console.log('Credential issued:', result);
     return result;
 }
 
-// Example: Issue credential using first available template
-// await issueCredentialViaConsent('user-profile-id', CREDENTIAL_TEMPLATES[0]?.uri);
-*/`);
+// Example usage:
+// await issue${
+                                t.templateAlias
+                                    ?.replace(/-/g, '_')
+                                    .replace(/^./, c => c.toUpperCase()) || 'Credential'
+                            }(${templateDataParam});`;
+                        } else {
+                            return `
+// Issue "${t.name}" credential (no template variables)
+async function issue${
+                                t.templateAlias
+                                    ?.replace(/-/g, '_')
+                                    .replace(/^./, c => c.toUpperCase()) || 'Credential'
+                            }() {
+    const result = await learnCard.sendCredential({
+        templateAlias: '${t.templateAlias}',
+    });
+    
+    if (result.credentialUri) {
+        console.log('Credential issued:', result.credentialUri);
+    }
+    return result;
+}`;
+                        }
+                    })
+                    .join('\n');
+
+                sections.push(`
+// ============================================================
+// ISSUE CREDENTIALS - Using Templates
+// ============================================================
+// Contract URI: ${contractUri || 'NOT_CONFIGURED'}
+// Templates configured: ${issueCredentialTemplates.length}
+
+const CREDENTIAL_TEMPLATES = ${templateConfigJson};
+${templateFunctions}
+
+// Generic function to issue any template by alias
+async function issueCredentialByAlias(templateAlias: string, templateData?: Record<string, string>) {
+    const template = CREDENTIAL_TEMPLATES.find(t => t.templateAlias === templateAlias);
+    if (!template) {
+        throw new Error(\`Template not found: \${templateAlias}. Available: \${CREDENTIAL_TEMPLATES.map(t => t.templateAlias).join(', ')}\`);
+    }
+    
+    const result = await learnCard.sendCredential({
+        templateAlias,
+        ...(templateData && { templateData }),
+    });
+    
+    if (result.credentialUri) {
+        console.log('Credential issued:', result.credentialUri);
+    }
+    return result;
+}`);
             }
         }
 
@@ -5011,19 +6071,20 @@ async function issueCredentialViaConsent(recipientProfileId: string, templateUri
         // ===================
         if (selectedFeatures.includes('peer-badges')) {
             // Generate template configuration from actual templates
-            const templateConfigJson = peerBadgeTemplates.length > 0
-                ? JSON.stringify(
-                    peerBadgeTemplates.map(t => ({
-                        id: t.uri.split(':').pop() || t.uri, // Extract short ID for easier reference
-                        uri: t.uri,
-                        name: t.name,
-                        description: t.description || '',
-                        type: t.type || 'achievement',
-                    })),
-                    null,
-                    4
-                )
-                : `[
+            const templateConfigJson =
+                peerBadgeTemplates.length > 0
+                    ? JSON.stringify(
+                          peerBadgeTemplates.map(t => ({
+                              id: t.uri.split(':').pop() || t.uri, // Extract short ID for easier reference
+                              uri: t.uri,
+                              name: t.name,
+                              description: t.description || '',
+                              type: t.type || 'achievement',
+                          })),
+                          null,
+                          4
+                      )
+                    : `[
     {
         "id": "example-badge",
         "uri": "urn:lc:boost:YOUR_TEMPLATE_URI",
@@ -5038,7 +6099,7 @@ async function issueCredentialViaConsent(recipientProfileId: string, templateUri
 // PEER-TO-PEER BADGES - Template Configuration
 // ============================================================
 // Your available badge templates that users can send to each other.
-// Each template has a unique URI that you pass to initiateTemplateIssuance.
+// Each template has a unique URI that you pass to initiateTemplateIssue.
 //
 // LLM INTEGRATION NOTE: Use these template URIs when calling sendPeerBadge().
 // Match the badge type to the user's intent (e.g., "thank you" -> gratitude badge).
@@ -5046,7 +6107,7 @@ async function issueCredentialViaConsent(recipientProfileId: string, templateUri
 const PEER_BADGE_TEMPLATES = ${templateConfigJson};
 
 // Helper to find a template by name or type
-function findTemplate(query: string) {
+function findPeerBadgeTemplate(query: string) {
     const q = query.toLowerCase();
     return PEER_BADGE_TEMPLATES.find(t => 
         t.name.toLowerCase().includes(q) || 
@@ -5061,7 +6122,7 @@ function findTemplate(query: string) {
 // Let users send badges to each other within your app
 // 
 // How it works:
-//   1. Your app calls initiateTemplateIssuance with a template URI
+//   1. Your app calls initiateTemplateIssue with a template URI
 //   2. User selects a recipient from their contacts
 //   3. Badge is sent from your app on behalf of the user
 
@@ -5071,9 +6132,7 @@ function findTemplate(query: string) {
  */
 async function sendPeerBadge(templateUri: string) {
     try {
-        await learnCard.initiateTemplateIssuance({
-            boostUri: templateUri,
-        });
+        await learnCard.initiateTemplateIssue(templateUri);
         
         console.log('Peer badge flow initiated with template:', templateUri);
     } catch (error) {
@@ -5087,7 +6146,7 @@ async function sendPeerBadge(templateUri: string) {
  * @param searchQuery - Search term to find a matching template (e.g., "thank you", "great job")
  */
 async function sendPeerBadgeByName(searchQuery: string) {
-    const template = findTemplate(searchQuery);
+    const template = findPeerBadgeTemplate(searchQuery);
     
     if (!template) {
         throw new Error(\`No template found matching: \${searchQuery}. Available: \${PEER_BADGE_TEMPLATES.map(t => t.name).join(', ')}\`);
@@ -5105,9 +6164,10 @@ async function sendPeerBadgeByName(searchQuery: string) {
         // REQUEST CREDENTIALS
         // ===================
         if (selectedFeatures.includes('request-credentials')) {
-            const mode = requestCredentialsState.mode as string || 'query';
-            const queryTitle = requestCredentialsState.queryTitle as string || 'Certificate';
-            const queryReason = requestCredentialsState.queryReason as string || 'To verify your qualifications';
+            const mode = (requestCredentialsState.mode as string) || 'query';
+            const queryTitle = (requestCredentialsState.queryTitle as string) || 'Certificate';
+            const queryReason =
+                (requestCredentialsState.queryReason as string) || 'To verify your qualifications';
 
             if (mode === 'query') {
                 sections.push(`
@@ -5206,8 +6266,8 @@ async function requestCredentialById(credentialId: string) {
         // REQUEST DATA CONSENT
         // ===================
         if (selectedFeatures.includes('request-data-consent')) {
-            const contractUri = requestDataConsentState.contractUri as string || '';
-            
+            const contractUri = (requestDataConsentState.contractUri as string) || '';
+
             sections.push(`
 // ============================================================
 // REQUEST DATA CONSENT
@@ -5291,13 +6351,14 @@ async function writeCredentialViaConsent(recipientProfileId: string) {
         // LAUNCH FEATURE
         // ===================
         if (selectedFeatures.includes('launch-feature')) {
-            const selectedFeatureIds = launchFeatureState.selectedFeatureIds as string[] || [];
-            const paramValues = launchFeatureState.paramValues as Record<string, Record<string, string>> || {};
-            
+            const selectedFeatureIds = (launchFeatureState.selectedFeatureIds as string[]) || [];
+            const paramValues =
+                (launchFeatureState.paramValues as Record<string, Record<string, string>>) || {};
+
             // Get all selected launchable features
-            const selectedLaunchFeatures = LAUNCHABLE_FEATURES
-                .flatMap(cat => cat.features)
-                .filter(f => selectedFeatureIds.includes(f.id));
+            const selectedLaunchFeatures = LAUNCHABLE_FEATURES.flatMap(cat => cat.features).filter(
+                f => selectedFeatureIds.includes(f.id)
+            );
 
             // Generate code for each selected feature
             const featureFunctions = selectedLaunchFeatures.map(feature => {
@@ -5320,9 +6381,10 @@ async function ${funcName}() {
 }`;
             });
 
-            const featureList = selectedLaunchFeatures.length > 0
-                ? selectedLaunchFeatures.map(f => `//   - ${f.title} (${f.path})`).join('\n')
-                : '//   No features selected';
+            const featureList =
+                selectedLaunchFeatures.length > 0
+                    ? selectedLaunchFeatures.map(f => `//   - ${f.title} (${f.path})`).join('\n')
+                    : '//   No features selected';
 
             sections.push(`
 // ============================================================
@@ -5369,7 +6431,24 @@ initializeApp();`);
         return sections.join('\n');
     };
 
-    const code = generateCode();
+    const code = useMemo(generateCode, [
+        selectedListing?.display_name,
+        selectedListing?.listing_id,
+        integrationId,
+        selectedFeatures,
+        peerBadgeTemplates,
+        issueCredentialTemplates,
+        issueCredentialsState.mode,
+        issueCredentialsState.credential,
+        issueCredentialsState.contractUri,
+        requestCredentialsState.mode,
+        requestCredentialsState.queryTitle,
+        requestCredentialsState.queryReason,
+        requestDataConsentState.contractUri,
+        launchFeatureState.selectedFeatureIds,
+        launchFeatureState.paramValues,
+        computeRequiredPermissions,
+    ]);
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(code);
@@ -5389,8 +6468,15 @@ initializeApp();`);
             differences.push({
                 type: 'permissions_added',
                 label: 'New permissions required',
-                from: existingPermissions.length > 0 ? existingPermissions.map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p).join(', ') : 'None',
-                to: newPerms.map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p).join(', '),
+                from:
+                    existingPermissions.length > 0
+                        ? existingPermissions
+                              .map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p)
+                              .join(', ')
+                        : 'None',
+                to: newPerms
+                    .map(p => PERMISSION_OPTIONS.find(o => o.value === p)?.label || p)
+                    .join(', '),
             });
         }
 
@@ -5421,25 +6507,34 @@ initializeApp();`);
                             </div>
 
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-800">Update App Configuration?</h3>
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                    Update App Configuration?
+                                </h3>
 
                                 <p className="text-sm text-gray-600 mt-1">
-                                    Your selected features require different permissions than your app currently has configured.
+                                    Your selected features require different permissions than your
+                                    app currently has configured.
                                 </p>
                             </div>
                         </div>
 
                         <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Changes needed:</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                Changes needed:
+                            </p>
 
                             {configDifferences.map((diff, idx) => (
                                 <div key={idx} className="text-sm">
                                     <p className="font-medium text-gray-700">{diff.label}</p>
 
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-gray-400 line-through text-xs">{diff.from}</span>
+                                        <span className="text-gray-400 line-through text-xs">
+                                            {diff.from}
+                                        </span>
                                         <ArrowRight className="w-3 h-3 text-gray-400" />
-                                        <span className="text-emerald-600 font-medium text-xs">{diff.to}</span>
+                                        <span className="text-emerald-600 font-medium text-xs">
+                                            {diff.to}
+                                        </span>
                                     </div>
                                 </div>
                             ))}
@@ -5474,8 +6569,9 @@ initializeApp();`);
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Integration Code</h3>
 
                 <p className="text-gray-600">
-                    Here&apos;s your complete integration code with {selectedFeatures.length} feature{selectedFeatures.length !== 1 ? 's' : ''} configured.
-                    Copy this code to get started or share with your development team.
+                    Here&apos;s your complete integration code with {selectedFeatures.length}{' '}
+                    feature{selectedFeatures.length !== 1 ? 's' : ''} configured. Copy this code to
+                    get started or share with your development team.
                 </p>
             </div>
 
@@ -5496,8 +6592,12 @@ initializeApp();`);
                         </div>
 
                         <div>
-                            <p className="font-semibold text-gray-800">{selectedListing.display_name}</p>
-                            <p className="text-sm text-gray-500">App ID: {selectedListing.listing_id}</p>
+                            <p className="font-semibold text-gray-800">
+                                {selectedListing.display_name}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                                App ID: {selectedListing.listing_id}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -5512,7 +6612,10 @@ initializeApp();`);
                         const feature = FEATURES.find(f => f.id === id);
 
                         return feature ? (
-                            <span key={id} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-sm text-emerald-700">
+                            <span
+                                key={id}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-sm text-emerald-700"
+                            >
                                 <CheckCircle2 className="w-4 h-4" />
                                 {feature.title}
                             </span>
@@ -5540,14 +6643,20 @@ initializeApp();`);
                         </div>
                     </div>
 
-                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showConfigEditor ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                        className={`w-5 h-5 text-gray-400 transition-transform ${
+                            showConfigEditor ? 'rotate-180' : ''
+                        }`}
+                    />
                 </button>
 
                 {showConfigEditor && (
                     <div className="p-4 border-t border-gray-200 space-y-5">
                         {/* Embed URL */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-1">Embed URL</label>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Embed URL
+                            </label>
 
                             <input
                                 type="url"
@@ -5569,19 +6678,26 @@ initializeApp();`);
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
-                                Based on your selected features, these permissions are required. You can add more if needed.
+                                Based on your selected features, these permissions are required. You
+                                can add more if needed.
                             </p>
 
                             <div className="space-y-2">
                                 {PERMISSION_OPTIONS.map(permission => {
-                                    const isRequired = computeRequiredPermissions().includes(permission.value);
-                                    const isSelected = selectedPermissions.includes(permission.value);
+                                    const isRequired = computeRequiredPermissions().includes(
+                                        permission.value
+                                    );
+                                    const isSelected = selectedPermissions.includes(
+                                        permission.value
+                                    );
 
                                     return (
                                         <label
                                             key={permission.value}
                                             className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
-                                                isSelected ? 'bg-cyan-50 border border-cyan-200' : 'bg-gray-50 hover:bg-gray-100'
+                                                isSelected
+                                                    ? 'bg-cyan-50 border border-cyan-200'
+                                                    : 'bg-gray-50 hover:bg-gray-100'
                                             }`}
                                         >
                                             <input
@@ -5617,14 +6733,19 @@ initializeApp();`);
                         {/* Consent Flow Contract */}
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Consent Flow Contract <span className="text-gray-400 font-normal">(Optional)</span>
+                                Consent Flow Contract{' '}
+                                <span className="text-gray-400 font-normal">(Optional)</span>
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
                                 Request data sharing permissions when users install your app.
-                                {selectedFeatures.includes('request-data-consent') && (requestDataConsentState.contractUri as string) && (
-                                    <span className="text-cyan-600"> Auto-filled from your Request Data Consent setup.</span>
-                                )}
+                                {selectedFeatures.includes('request-data-consent') &&
+                                    (requestDataConsentState.contractUri as string) && (
+                                        <span className="text-cyan-600">
+                                            {' '}
+                                            Auto-filled from your Request Data Consent setup.
+                                        </span>
+                                    )}
                             </p>
 
                             <ConsentFlowContractSelector
@@ -5661,7 +6782,9 @@ initializeApp();`);
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h4 className="text-sm font-medium text-indigo-800">Test Your Integration</h4>
+                            <h4 className="text-sm font-medium text-indigo-800">
+                                Test Your Integration
+                            </h4>
 
                             <p className="text-xs text-indigo-600 mt-0.5">
                                 Preview your app and validate partner-connect API calls
@@ -5682,7 +6805,9 @@ initializeApp();`);
             {/* Code output */}
             <div>
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Complete Integration Code</span>
+                    <span className="text-sm font-medium text-gray-700">
+                        Complete Integration Code
+                    </span>
 
                     <button
                         onClick={handleCopy}
@@ -5713,8 +6838,14 @@ initializeApp();`);
                 </h4>
 
                 <ul className="space-y-1 text-sm text-amber-700">
-                    <li>• Replace all <code className="bg-amber-100 px-1 rounded">TODO</code> placeholders with your actual values</li>
-                    <li>• Server-side code (in comments) should run on YOUR server, not in the embedded app</li>
+                    <li>
+                        • Replace all <code className="bg-amber-100 px-1 rounded">TODO</code>{' '}
+                        placeholders with your actual values
+                    </li>
+                    <li>
+                        • Server-side code (in comments) should run on YOUR server, not in the
+                        embedded app
+                    </li>
                     <li>• Store sensitive values (seeds, API keys) in environment variables</li>
                     <li>• Test in the LearnCard sandbox before going live</li>
                 </ul>
@@ -5778,7 +6909,9 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
     const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(null);
     const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
     const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
-    const [featureSetupState, setFeatureSetupState] = useState<Record<string, Record<string, unknown>>>({});
+    const [featureSetupState, setFeatureSetupState] = useState<
+        Record<string, Record<string, unknown>>
+    >({});
     const [hasRestoredState, setHasRestoredState] = useState(false);
 
     // ============================================================
@@ -5797,7 +6930,9 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
 
             // Restore feature config
             if (savedConfig.featureConfig) {
-                setFeatureSetupState(savedConfig.featureConfig as Record<string, Record<string, unknown>>);
+                setFeatureSetupState(
+                    savedConfig.featureConfig as Record<string, Record<string, unknown>>
+                );
             }
 
             // Restore selected listing (need to find it in the listings array)
@@ -5837,8 +6972,8 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
     }, [guideState.currentStep]);
 
     // Check if we should skip feature setup step
-    const featuresNeedingSetup = selectedFeatures.filter(id => 
-        FEATURES.find(f => f.id === id)?.requiresSetup
+    const featuresNeedingSetup = selectedFeatures.filter(
+        id => FEATURES.find(f => f.id === id)?.requiresSetup
     );
 
     // Reset feature index when features change to prevent out-of-bounds issues
@@ -5873,7 +7008,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
             // Skip feature setup, go directly to your app
             guideState.markStepComplete('choose-features');
             guideState.markStepComplete('feature-setup');
-            guideState.goToStep(3);
+            guideState.goToStep(4);
         } else {
             handleStepComplete('choose-features');
         }
@@ -5893,6 +7028,15 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
 
             case 1:
                 return (
+                    <SigningAuthorityStep
+                        onComplete={() => handleStepComplete('signing-authority')}
+                        onBack={guideState.prevStep}
+                        appSlug={selectedListing?.slug}
+                    />
+                );
+
+            case 2:
+                return (
                     <ChooseFeaturesStep
                         onComplete={handleChooseFeaturesComplete}
                         onBack={guideState.prevStep}
@@ -5901,13 +7045,13 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                     />
                 );
 
-            case 2:
-                // If no features need setup, skip to step 3
+            case 3:
+                // If no features need setup, skip to step 4
                 if (featuresNeedingSetup.length === 0) {
                     // Auto-advance to next step
                     setTimeout(() => {
                         guideState.markStepComplete('feature-setup');
-                        guideState.goToStep(3);
+                        guideState.goToStep(4);
                     }, 0);
                     return null;
                 }
@@ -5926,7 +7070,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                     />
                 );
 
-            case 3:
+            case 4:
                 return (
                     <YourAppStep
                         onBack={guideState.prevStep}
@@ -5938,7 +7082,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                     />
                 );
 
-            case 4:
+            case 5:
                 return (
                     <GoLiveStep
                         integration={selectedIntegration}
@@ -5946,8 +7090,11 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                         onBack={guideState.prevStep}
                         completedItems={[
                             'SDK installed and configured',
+                            'Signing authority configured',
                             'App listing created',
-                            `${selectedFeatures.length} feature${selectedFeatures.length !== 1 ? 's' : ''} configured`,
+                            `${selectedFeatures.length} feature${
+                                selectedFeatures.length !== 1 ? 's' : ''
+                            } configured`,
                             'Integration code generated',
                         ]}
                         title="Ready to Go Live!"

@@ -2,6 +2,7 @@ import {
     LCNNotificationTypeEnumValidator,
     LCNNotificationTypeEnum,
     LCNNotification,
+    LCNNotificationData,
     LCNProfile,
 } from '@learncard/types';
 
@@ -9,13 +10,15 @@ export const getTestNotification = (
     to: string | LCNProfile,
     from: string | LCNProfile,
     type: LCNNotificationTypeEnum = LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
-    sent?: string
+    sent?: string,
+    data?: LCNNotificationData
 ): LCNNotification => {
-    let test = {
+    let test: LCNNotification = {
         to: typeof to === 'string' ? { did: to } : to,
         from: typeof from === 'string' ? { did: from } : from,
         type,
         ...(sent && { sent }),
+        ...(data && { data }),
     };
 
     return test;

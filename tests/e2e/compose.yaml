@@ -1,14 +1,16 @@
 services:
     brain:
-        image: welibrary/lcn-brain-service
+        image: learncard-monorepo-local
         build:
             context: ../../
-            dockerfile: services/learn-card-network/brain-service/Dockerfile.local
+            dockerfile: Dockerfile.monorepo
 
         expose:
             - 4000
         ports:
             - '4000:4000'
+
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
 
         depends_on:
             neo4j:
@@ -36,6 +38,9 @@ services:
 
             IS_OFFLINE: true
             IS_E2E_TEST: true
+            SKIP_DIDKIT_NAPI: '1'
+
+            DOMAIN_NAME: localhost%3A4000
 
             NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
             NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
@@ -54,16 +59,20 @@ services:
             SKILLS_PROVIDER_BASE_URL: ${SKILLS_PROVIDER_BASE_URL:-http://localhost:4000}
             SKILLS_PROVIDER_API_KEY: ${SKILLS_PROVIDER_API_KEY:-notARealKey}
 
+            APP_STORE_ADMIN_PROFILE_IDS: ${APP_STORE_ADMIN_PROFILE_IDS:-testa}
+
     cloud:
-        image: welibrary/lcn-cloud-service
+        image: learncard-monorepo-local
         build:
             context: ../../
-            dockerfile: services/learn-card-network/learn-cloud-service/Dockerfile.local
+            dockerfile: Dockerfile.monorepo
 
         expose:
             - 4100
         ports:
             - '4100:4100'
+
+        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && pnpm dev']
 
         depends_on:
             - mongodb
@@ -82,6 +91,7 @@ services:
             PORT: 4100
 
             LEARN_CLOUD_SEED: b
+            SKIP_DIDKIT_NAPI: '1'
 
             LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
             LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
@@ -97,15 +107,17 @@ services:
             JWT_SIGNING_KEY: test
 
     signing:
-        image: welibrary/simple-signing-service
+        image: learncard-monorepo-local
         build:
             context: ../../
-            dockerfile: services/learn-card-network/simple-signing-service/Dockerfile.local
+            dockerfile: Dockerfile.monorepo
 
         expose:
             - 4200
         ports:
             - '4200:4200'
+
+        command: ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && pnpm dev']
 
         depends_on:
             - mongodb
@@ -124,6 +136,7 @@ services:
             PORT: 4200
 
             IS_OFFLINE: true
+            SKIP_DIDKIT_NAPI: '1'
 
             SEED: c
             AUTHORIZED_DIDS: did:web:localhost%3A4000

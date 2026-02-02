@@ -28,6 +28,7 @@ export const logCredentialSent = async (params: {
     credentialUri?: string;
     inboxCredentialId?: string;
     integrationId?: string;
+    listingId?: string;
     source: CredentialActivitySourceType;
     metadata?: Record<string, unknown>;
 }): Promise<string> => {

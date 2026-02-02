@@ -136,6 +136,19 @@ export const getLCAPlugin = async (
                         filters,
                     }) as any;
                 },
+                queryNotifications: async (_learnCard, query, options = {}) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.notifications.queryNotifications.query({
+                        query,
+                        options: {
+                            limit: options.limit ?? 20,
+                            cursor: options.cursor,
+                            sort: options.sort ?? 'REVERSE_CHRONOLOGICAL',
+                        },
+                    }) as any;
+                },
                 markAllNotificationsRead: async _learnCard => {
                     await initialized;
                     await updateLearnCard(_learnCard);
@@ -151,12 +164,13 @@ export const getLCAPlugin = async (
                         meta,
                     });
                 },
-                createSigningAuthority: async (_learnCard, name) => {
+                createSigningAuthority: async (_learnCard, name, ownerDid) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
                     return client.signingAuthority.createSigningAuthority.mutate({
                         name,
+                        ownerDid,
                     });
                 },
                 getSigningAuthorities: async _learnCard => {
@@ -459,6 +473,10 @@ export const getLCAPlugin = async (
                     return false;
                 },
                 getNotifications: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return false;
+                },
+                queryNotifications: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return false;
                 },

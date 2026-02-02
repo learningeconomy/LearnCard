@@ -4,6 +4,9 @@ import { neogma } from '@instance';
 
 import { Integration, IntegrationInstance } from './Integration';
 import { Profile, ProfileInstance } from './Profile';
+import { Boost, BoostInstance } from './Boost';
+import { Credential, CredentialInstance } from './Credential';
+import { SigningAuthority, SigningAuthorityInstance } from './SigningAuthority';
 import {
     FlatAppStoreListingType,
     AppListingStatus,
@@ -19,6 +22,36 @@ export type AppStoreListingRelationships = {
         { listing_id: string; installed_at: string },
         { listing_id: string; installed_at: string }
     >;
+    hasBoost: ModelRelatedNodesI<
+        typeof Boost,
+        BoostInstance,
+        { templateAlias: string; createdAt: string },
+        { templateAlias: string; createdAt: string }
+    >;
+    credentialSent: ModelRelatedNodesI<
+        typeof Credential,
+        CredentialInstance,
+        {
+            to: string;
+            date: string;
+            metadata?: Record<string, unknown>;
+            activityId?: string;
+            integrationId?: string;
+        },
+        {
+            to: string;
+            date: string;
+            metadata?: Record<string, unknown>;
+            activityId?: string;
+            integrationId?: string;
+        }
+    >;
+    usesSigningAuthority: ModelRelatedNodesI<
+        typeof SigningAuthority,
+        SigningAuthorityInstance,
+        { name: string; did: string; isPrimary?: boolean },
+        { name: string; did: string; isPrimary?: boolean }
+    >;
 };
 
 export type AppStoreListingInstance = NeogmaInstance<
@@ -26,14 +59,12 @@ export type AppStoreListingInstance = NeogmaInstance<
     AppStoreListingRelationships
 >;
 
-export const AppStoreListing = ModelFactory<
-    FlatAppStoreListingType,
-    AppStoreListingRelationships
->(
+export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreListingRelationships>(
     {
         label: 'AppStoreListing',
         schema: {
             listing_id: { type: 'string', required: true, uniqueItems: true },
+            slug: { type: 'string', required: false, uniqueItems: true },
             display_name: { type: 'string', required: true },
             tagline: { type: 'string', required: true },
             full_description: { type: 'string', required: true },
@@ -74,6 +105,43 @@ export const AppStoreListing = ModelFactory<
                     installed_at: {
                         property: 'installed_at',
                         schema: { type: 'string', required: true },
+                    },
+                },
+            },
+            hasBoost: {
+                model: Boost,
+                direction: 'out',
+                name: 'HAS_BOOST',
+                properties: {
+                    templateAlias: {
+                        property: 'templateAlias',
+                        schema: { type: 'string', required: true },
+                    },
+                    createdAt: {
+                        property: 'createdAt',
+                        schema: { type: 'string', required: true },
+                    },
+                },
+            },
+            credentialSent: {
+                model: Credential,
+                direction: 'out',
+                name: 'CREDENTIAL_SENT',
+                properties: {
+                    to: { property: 'to', schema: { type: 'string', required: true } },
+                    date: { property: 'date', schema: { type: 'string', required: true } },
+                },
+            },
+            usesSigningAuthority: {
+                model: SigningAuthority,
+                direction: 'out',
+                name: 'USES_SIGNING_AUTHORITY',
+                properties: {
+                    name: { property: 'name', schema: { type: 'string', required: true } },
+                    did: { property: 'did', schema: { type: 'string', required: true } },
+                    isPrimary: {
+                        property: 'isPrimary',
+                        schema: { type: 'boolean', required: false },
                     },
                 },
             },

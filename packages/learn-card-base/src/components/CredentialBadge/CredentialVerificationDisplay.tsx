@@ -7,6 +7,7 @@ import UnknownCertIcon from 'learn-card-base/svgs/UnknownCertIcon';
 import UntrustedCertIcon from 'learn-card-base/svgs/UntrustedCertIcon';
 import { AchievementCredential, VC, CredentialInfo } from '@learncard/types';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
+import { isAppDidWeb } from '@learncard/helpers';
 
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
@@ -34,6 +35,7 @@ const VERIFIER_STATES = {
     selfVerified: 'Self Issued',
     trustedVerifier: 'Trusted Issuer',
     unknownVerifier: 'Unknown Issuer',
+    appIssuer: 'App Issuer',
     untrustedVerifier: 'Untrusted Issuer',
 } as const;
 type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
@@ -44,6 +46,7 @@ type CredentialVerificationDisplayProps = {
     iconClassName?: string;
     showText?: boolean;
     managedBoost?: boolean;
+    unknownVerifierTitle?: string;
 };
 
 export const CredentialVerificationDisplay: React.FC<CredentialVerificationDisplayProps> = ({
@@ -52,6 +55,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     iconClassName = '',
     showText = false,
     managedBoost = false,
+    unknownVerifierTitle,
 }) => {
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
@@ -65,8 +69,20 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     } = getInfoFromCredential(credential, 'MMM dd, yyyy', { uppercaseDate: false });
     const issuerDid =
         typeof credential?.issuer === 'string' ? credential?.issuer : credential?.issuer?.id;
+    const isAppIssuer = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
+
+    // For Scouts: if we have a role-based title (e.g., "Verified Scout"), treat as trusted
+    const hasRoleBasedTitle = !!unknownVerifierTitle;
+
+    const registrySourceAsState =
+        knownDIDRegistry?.source === 'trusted'
+            ? VERIFIER_STATES.trustedVerifier
+            : knownDIDRegistry?.source === 'untrusted'
+            ? VERIFIER_STATES.untrustedVerifier
+            : VERIFIER_STATES.unknownVerifier;
+
     if (
         ((managedBoost && credential?.issuer === issuerDid) ||
             (!managedBoost && credentialSubject?.id === issuerDid)) &&
@@ -76,28 +92,25 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
+    } else if (registrySourceAsState === VERIFIER_STATES.untrustedVerifier) {
+        verifierState = VERIFIER_STATES.untrustedVerifier;
+    } else if (hasRoleBasedTitle || registrySourceAsState === VERIFIER_STATES.trustedVerifier) {
+        // If we have a role-based title OR we are already trusted in the registry, treat as trusted verifier
+        verifierState = VERIFIER_STATES.trustedVerifier;
     } else {
-        if (knownDIDRegistry?.source === 'trusted') {
-            verifierState = VERIFIER_STATES.trustedVerifier;
-        } else if (knownDIDRegistry?.source === 'untrusted') {
-            verifierState = VERIFIER_STATES.untrustedVerifier;
-        } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
-        } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
-        }
+        verifierState = isAppIssuer ? VERIFIER_STATES.appIssuer : VERIFIER_STATES.unknownVerifier;
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
     if (isSelfVerified) {
         if (showText) {
             return (
-                <p
-                    className={`text-green-dark flex items-center font-poppins font-[500] text-base uppercase ${className}`}
+                <div
+                    className={`text-green-dark flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
                 >
-                    <SelfVerifiedCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} />{' '}
-                    Self Issued
-                </p>
+                    <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
+                    <span className="whitespace-nowrap">Self Issued</span>
+                </div>
             );
         }
         return <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
@@ -105,13 +118,14 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
 
     if (verifierState === VERIFIER_STATES.trustedVerifier) {
         if (showText) {
+            const displayText = unknownVerifierTitle ?? 'Trusted Issuer';
             return (
-                <p
-                    className={`text-blue-light flex items-center font-poppins font-[500] text-base uppercase ${className}`}
+                <div
+                    className={`text-green-600 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
                 >
-                    <TrustedCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} />{' '}
-                    Trusted Issuer
-                </p>
+                    <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
+                    <span className="whitespace-nowrap">{displayText}</span>
+                </div>
             );
         }
         return <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
@@ -127,26 +141,42 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
 
         if (showText) {
             return (
-                <p
-                    className={`text-orange-500 flex items-center font-poppins font-[500] text-base uppercase ${className}`}
+                <div
+                    className={`text-orange-500 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
                 >
-                    <UnknownCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} />{' '}
-                    Unknown Issuer
-                </p>
+                    <UnknownCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
+                    <span className="whitespace-nowrap">
+                        {unknownVerifierTitle ?? VERIFIER_STATES.unknownVerifier}
+                    </span>
+                </div>
             );
         }
 
         return <UnknownCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
     }
-    if (verifierState === VERIFIER_STATES.untrustedVerifier) {
+    if (verifierState === VERIFIER_STATES.appIssuer) {
         if (showText) {
             return (
                 <p
-                    className={`text-red-mastercard flex items-center font-poppins font-[500] text-base uppercase ${className}`}
+                    className={`text-cyan-600 flex items-center font-poppins font-[500] text-base uppercase ${className}`}
                 >
-                    <UntrustedCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} />{' '}
-                    Untrusted Issuer
+                    <TrustedCertIcon className={`w-[22px] h-[22px] mr-1 ${iconClassName}`} /> App
+                    Issuer
                 </p>
+            );
+        }
+
+        return <TrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;
+    }
+    if (verifierState === VERIFIER_STATES.untrustedVerifier) {
+        if (showText) {
+            return (
+                <div
+                    className={`text-red-mastercard flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${className}`}
+                >
+                    <UntrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />
+                    <span className="whitespace-nowrap">Untrusted Issuer</span>
+                </div>
             );
         }
         return <UntrustedCertIcon className={`w-[22px] h-[22px] ${iconClassName}`} />;

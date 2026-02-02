@@ -1,6 +1,6 @@
 {
     "name": "@learncard/init",
-    "version": "2.2.5",
+    "version": "2.3.0",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -53,6 +53,7 @@
         "@learncard/crypto-plugin": "workspace:*",
         "@learncard/didkey-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/didkit-plugin-node": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/dynamic-loader-plugin": "workspace:*",
         "@learncard/encryption-plugin": "workspace:*",

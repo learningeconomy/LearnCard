@@ -35,7 +35,7 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
                 </IonRow>
                 {title && <IonToolbar color="#fffff">{title}</IonToolbar>}
             </IonHeader>
-            <IonContent color="grayscale-100">
+            <IonContent color="white">
                 <IonGrid className="ion-padding">
                     <BoostCMSAppearanceBadgeList
                         state={state}

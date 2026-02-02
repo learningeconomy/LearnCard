@@ -81,7 +81,7 @@ export const TroopsCMSWrapper: React.FC<TroopsCMSWrapperProps> = ({
         if (grandParentUri && resolvedGrandParent) {
             mapGrandParentIntoState(state, setState, resolvedGrandParent, viewMode, parentUri);
         }
-    }, [viewMode]);
+    }, [viewMode, parentUri, parentBoost, grandParentUri, resolvedGrandParent]);
 
     // Member management
     const { scoutRecipients, leaderRecipients, currentBoostRecipients } = useTroopMembers(

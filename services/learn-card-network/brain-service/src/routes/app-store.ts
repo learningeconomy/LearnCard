@@ -1,16 +1,22 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import type { JWE, UnsignedVC, VC } from '@learncard/types';
+import { isVC2Format } from '@learncard/helpers';
 
 import { t, openRoute, profileRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { logCredentialSent } from '@helpers/activity.helpers';
+import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
 import { createAppStoreListing } from '@accesslayer/app-store-listing/create';
 import {
     readAppStoreListingById,
+    readAppStoreListingBySlug,
+    readAppStoreListingByIdOrSlug,
     getListingsForIntegration,
     countListingsForIntegration,
     getListedApps,
@@ -23,20 +29,46 @@ import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
     associateListingWithIntegration,
     installAppForProfile,
+    associateBoostWithListing,
 } from '@accesslayer/app-store-listing/relationships/create';
-import { uninstallAppForProfile } from '@accesslayer/app-store-listing/relationships/delete';
+import {
+    uninstallAppForProfile,
+    removeBoostFromListing,
+} from '@accesslayer/app-store-listing/relationships/delete';
 import {
     getIntegrationForListing,
     countProfilesInstalledApp,
+    hasProfileInstalledApp,
+    getBoostForListingByTemplateAlias,
+    getBoostsForListing,
+    hasTemplateAliasForListing,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { readIntegrationById } from '@accesslayer/integration/read';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
+import {
+    getPrimarySigningAuthorityForListing,
+    getPrimarySigningAuthorityForIntegration,
+    getPrimarySigningAuthorityForUser,
+    getSigningAuthoritiesForListing,
+    getSigningAuthorityForUserByName,
+} from '@accesslayer/signing-authority/relationships/read';
+import { associateListingWithSigningAuthority } from '@accesslayer/app-store-listing/relationships/create';
 import {
     AppListingStatus,
     LaunchType,
     PromotionLevel,
     AppStoreListingValidator,
 } from 'types/app-store-listing';
+import type {
+    AppStoreListingCreateType,
+    AppStoreListingType,
+    AppStoreListingUpdateType,
+} from 'types/app-store-listing';
+import { getBoostByUri } from '@accesslayer/boost/read';
+import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
+import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import { getAppDidWeb, getDidWeb } from '@helpers/did.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -117,15 +149,14 @@ const jsonStringValidator = z.string().refine(isValidJson, {
     message: 'Must be valid JSON',
 });
 
-const safeImageUrlValidator = z.string().url().refine(
-    url => isAllowedImageUrl(url),
-    { message: 'Image URL must be from an allowed domain' }
-);
+const safeImageUrlValidator = z
+    .string()
+    .url()
+    .refine(url => isAllowedImageUrl(url), { message: 'Image URL must be from an allowed domain' });
 
-const safeContentValidator = z.string().refine(
-    text => !containsSuspiciousContent(text),
-    { message: 'Content contains potentially unsafe patterns' }
-);
+const safeContentValidator = z.string().refine(text => !containsSuspiciousContent(text), {
+    message: 'Content contains potentially unsafe patterns',
+});
 
 // =============================================================================
 // ZOD VALIDATORS FOR API
@@ -133,14 +164,20 @@ const safeContentValidator = z.string().refine(
 
 // Base schema without superRefine (so we can use .partial() and .omit())
 const AppStoreListingBaseSchema = z.object({
-    display_name: z.string().min(1).max(100).refine(
-        text => !containsSuspiciousContent(text),
-        { message: 'Display name contains potentially unsafe patterns' }
-    ),
-    tagline: z.string().min(1).max(200).refine(
-        text => !containsSuspiciousContent(text),
-        { message: 'Tagline contains potentially unsafe patterns' }
-    ),
+    display_name: z
+        .string()
+        .min(1)
+        .max(100)
+        .refine(text => !containsSuspiciousContent(text), {
+            message: 'Display name contains potentially unsafe patterns',
+        }),
+    tagline: z
+        .string()
+        .min(1)
+        .max(200)
+        .refine(text => !containsSuspiciousContent(text), {
+            message: 'Tagline contains potentially unsafe patterns',
+        }),
     full_description: safeContentValidator.pipe(z.string().min(1).max(5000)),
     icon_url: safeImageUrlValidator,
     app_listing_status: AppListingStatus,
@@ -153,18 +190,31 @@ const AppStoreListingBaseSchema = z.object({
     android_app_store_id: z.string().max(100).optional(),
     privacy_policy_url: z.string().url().optional(),
     terms_url: z.string().url().optional(),
-    highlights: z.array(z.string().max(200).refine(
-        text => !containsSuspiciousContent(text),
-        { message: 'Highlight contains potentially unsafe patterns' }
-    )).max(10).optional(),
+    highlights: z
+        .array(
+            z
+                .string()
+                .max(200)
+                .refine(text => !containsSuspiciousContent(text), {
+                    message: 'Highlight contains potentially unsafe patterns',
+                })
+        )
+        .max(10)
+        .optional(),
     screenshots: z.array(safeImageUrlValidator).max(10).optional(),
-    hero_background_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, {
-        message: 'Must be a valid hex color (e.g., #FF5733)',
-    }).optional(),
+    hero_background_color: z
+        .string()
+        .regex(/^#[0-9A-Fa-f]{6}$/, {
+            message: 'Must be a valid hex color (e.g., #FF5733)',
+        })
+        .optional(),
 });
 
 // Iframe URL validation refinement (applied to schemas that include launch_type)
-const iframeUrlRefinement = (data: { launch_type?: string; launch_config_json?: string }, ctx: z.RefinementCtx) => {
+const iframeUrlRefinement = (
+    data: { launch_type?: string; launch_config_json?: string },
+    ctx: z.RefinementCtx
+) => {
     if (data.launch_type === 'EMBEDDED_IFRAME' && data.launch_config_json) {
         try {
             const config = JSON.parse(data.launch_config_json);
@@ -182,26 +232,43 @@ const iframeUrlRefinement = (data: { launch_type?: string; launch_config_json?: 
     }
 };
 
-// Helper to transform listing for API response (JSON strings -> arrays)
-const transformListingForResponse = (listing: any) => {
-    const result = { ...listing };
+type AppStoreListingResponse<T extends AppStoreListingType> = Omit<
+    T,
+    'highlights_json' | 'screenshots_json'
+> & {
+    highlights?: string[];
+    screenshots?: string[];
+};
 
-    if (result.highlights_json) {
+type ListingStorageInput<T extends Record<string, unknown>> = Omit<
+    T,
+    'highlights' | 'screenshots'
+> & {
+    highlights_json?: string;
+    screenshots_json?: string;
+};
+
+// Helper to transform listing for API response (JSON strings -> arrays)
+const transformListingForResponse = <T extends AppStoreListingType & Record<string, unknown>>(
+    listing: T
+): AppStoreListingResponse<T> => {
+    const { highlights_json, screenshots_json, ...rest } = listing;
+    const result = { ...rest } as AppStoreListingResponse<T>;
+
+    if (highlights_json) {
         try {
-            result.highlights = JSON.parse(result.highlights_json);
+            result.highlights = JSON.parse(highlights_json);
         } catch {
             result.highlights = [];
         }
-        delete result.highlights_json;
     }
 
-    if (result.screenshots_json) {
+    if (screenshots_json) {
         try {
-            result.screenshots = JSON.parse(result.screenshots_json);
+            result.screenshots = JSON.parse(screenshots_json);
         } catch {
             result.screenshots = [];
         }
-        delete result.screenshots_json;
     }
 
     return result;
@@ -209,12 +276,14 @@ const transformListingForResponse = (listing: any) => {
 
 // Helper to transform input for storage (arrays -> JSON strings)
 // Validates that arrays are properly formatted before stringifying
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const transformInputForStorage = (input: any): any => {
-    const result = { ...input };
+const transformInputForStorage = <T extends Record<string, unknown>>(
+    input: T
+): ListingStorageInput<T> => {
+    const { highlights, screenshots, ...rest } = input;
+    const result = { ...rest } as ListingStorageInput<T>;
 
-    if (result.highlights !== undefined) {
-        if (!Array.isArray(result.highlights)) {
+    if (highlights !== undefined) {
+        if (!Array.isArray(highlights)) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'highlights must be an array of strings',
@@ -222,7 +291,7 @@ const transformInputForStorage = (input: any): any => {
         }
 
         // Validate each highlight is a string
-        const validHighlights = result.highlights.every(
+        const validHighlights = highlights.every(
             (h: unknown): h is string => typeof h === 'string'
         );
 
@@ -233,12 +302,11 @@ const transformInputForStorage = (input: any): any => {
             });
         }
 
-        result.highlights_json = JSON.stringify(result.highlights);
-        delete result.highlights;
+        result.highlights_json = JSON.stringify(highlights);
     }
 
-    if (result.screenshots !== undefined) {
-        if (!Array.isArray(result.screenshots)) {
+    if (screenshots !== undefined) {
+        if (!Array.isArray(screenshots)) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'screenshots must be an array of URLs',
@@ -246,7 +314,7 @@ const transformInputForStorage = (input: any): any => {
         }
 
         // Validate each screenshot is a valid URL string
-        const validScreenshots = result.screenshots.every((s: unknown): s is string => {
+        const validScreenshots = screenshots.every((s: unknown): s is string => {
             if (typeof s !== 'string') return false;
 
             try {
@@ -264,23 +332,25 @@ const transformInputForStorage = (input: any): any => {
             });
         }
 
-        result.screenshots_json = JSON.stringify(result.screenshots);
-        delete result.screenshots;
+        result.screenshots_json = JSON.stringify(screenshots);
     }
 
     return result;
 };
 
 // Regular update validator - excludes admin-only fields, all fields optional
-const AppStoreListingUpdateInputValidator = AppStoreListingBaseSchema
-    .omit({ app_listing_status: true, promotion_level: true })
+const AppStoreListingUpdateInputValidator = AppStoreListingBaseSchema.omit({
+    app_listing_status: true,
+    promotion_level: true,
+})
     .partial()
     .superRefine(iframeUrlRefinement);
 
 // Create validator - new listings start as DRAFT, no promotion level
-const AppStoreListingCreateInputValidator = AppStoreListingBaseSchema
-    .omit({ app_listing_status: true, promotion_level: true })
-    .superRefine(iframeUrlRefinement);
+const AppStoreListingCreateInputValidator = AppStoreListingBaseSchema.omit({
+    app_listing_status: true,
+    promotion_level: true,
+}).superRefine(iframeUrlRefinement);
 
 // Extended validator that includes the transformed array fields for API responses
 const AppStoreListingResponseValidator = AppStoreListingValidator.extend({
@@ -370,6 +440,189 @@ const getListingOrThrow = async (listingId: string) => {
     return listing;
 };
 
+// Helper to handle send-credential app event
+const handleSendCredentialEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const templateAlias = event.templateAlias as string | undefined;
+    const templateData = event.templateData as Record<string, unknown> | undefined;
+
+    if (!templateAlias) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
+    }
+
+    // Get the boost associated with this app (templateAlias maps to internal boost)
+    const boostResult = await getBoostForListingByTemplateAlias(
+        listingId,
+        templateAlias,
+        ctx.domain
+    );
+    if (!boostResult) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+    }
+
+    const { boost, boostUri } = boostResult;
+
+    if (isDraftBoost(boost)) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Draft boosts cannot be issued',
+        });
+    }
+
+    const listing = await readAppStoreListingById(listingId);
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+    }
+
+    // Get the integration that owns this listing
+    const integration = await getIntegrationForListing(listingId);
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+
+    // Get integration owner for signing
+    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
+    if (!integrationOwner) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+    }
+
+    // Get signing authority for the listing, falling back to legacy integration SA or owner SA
+    const listingSa = await getPrimarySigningAuthorityForListing(listing);
+    const integrationSa = listingSa
+        ? undefined
+        : await getPrimarySigningAuthorityForIntegration(integration.id);
+    const ownerSa =
+        listingSa || integrationSa
+            ? undefined
+            : await getPrimarySigningAuthorityForUser(integrationOwner);
+    const sa = listingSa ?? integrationSa ?? ownerSa;
+
+    if (!sa) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No signing authority configured for this app',
+        });
+    }
+
+    // Get the target profile (the user making the request)
+    const targetProfile = await getProfilesByProfileIds([profile.profileId]);
+    if (!targetProfile.length) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
+
+    const target = targetProfile[0];
+
+    if (!target) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
+
+    // Build unsigned credential from boost template
+    let unsignedVc: UnsignedVC;
+
+    try {
+        let boostJsonString = boost.boost;
+
+        if (templateData && Object.keys(templateData).length > 0) {
+            boostJsonString = renderBoostTemplate(boostJsonString, templateData);
+        }
+
+        unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+
+        if (isVC2Format(unsignedVc)) {
+            unsignedVc.validFrom = new Date().toISOString();
+        } else {
+            unsignedVc.issuanceDate = new Date().toISOString();
+        }
+
+        const issuerDid = listing.slug
+            ? getAppDidWeb(ctx.domain, listing.slug)
+            : getDidWeb(ctx.domain, integrationOwner.profileId);
+        unsignedVc.issuer =
+            unsignedVc.issuer && typeof unsignedVc.issuer === 'object'
+                ? { ...unsignedVc.issuer, id: issuerDid }
+                : { id: issuerDid };
+
+        const targetDid = getDidWeb(ctx.domain, target.profileId);
+
+        if (Array.isArray(unsignedVc.credentialSubject)) {
+            unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
+                ...subject,
+                id: targetDid,
+            }));
+        } else {
+            unsignedVc.credentialSubject = {
+                ...unsignedVc.credentialSubject,
+                id: targetDid,
+            };
+        }
+
+        if (unsignedVc?.type?.includes('BoostCredential')) {
+            unsignedVc.boostId = boostUri;
+        }
+    } catch (e) {
+        console.error('Failed to parse boost', e);
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to parse boost template',
+        });
+    }
+
+    // Issue via signing authority
+    let credential: VC | JWE;
+
+    try {
+        credential = await issueCredentialWithSigningAuthority(
+            integrationOwner,
+            unsignedVc,
+            sa,
+            ctx.domain,
+            true,
+            listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined
+        );
+    } catch (e) {
+        console.error('Failed to issue VC with signing authority', e);
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Could not issue credential with signing authority',
+        });
+    }
+
+    // Log credential activity FIRST to get activityId for chaining
+    const activityId = await logCredentialSent({
+        actorProfileId: integrationOwner.profileId,
+        recipientType: 'profile',
+        recipientIdentifier: target.profileId,
+        recipientProfileId: target.profileId,
+        boostUri,
+        integrationId: integration.id,
+        listingId,
+        source: 'sendBoost',
+        metadata: { listingId, templateAlias },
+    });
+
+    // Send to user's wallet
+    const credentialUri = await sendBoost({
+        from: integrationOwner,
+        to: target,
+        boost,
+        credential,
+        domain: ctx.domain,
+        skipNotification: false,
+        activityId,
+        integrationId: integration.id,
+        listingId,
+    });
+
+    return {
+        credentialUri,
+        boostUri,
+    };
+};
+
 export const appStoreRouter = t.router({
     // ==================== Integration Owner Routes ====================
 
@@ -396,13 +649,19 @@ export const appStoreRouter = t.router({
             await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
 
             // New listings always start as DRAFT with STANDARD promotion
-            const storageData = transformInputForStorage({
+            const listingInput = {
                 ...input.listing,
                 app_listing_status: 'DRAFT',
                 promotion_level: 'STANDARD',
-            });
+            } as AppStoreListingCreateType;
 
-            const listing = await createAppStoreListing(storageData);
+            const storageData = transformInputForStorage<AppStoreListingCreateType>(listingInput);
+
+            const slug = await getAvailableAppSlug(storageData.display_name);
+            const listing = await createAppStoreListing({
+                ...storageData,
+                slug,
+            });
 
             await associateListingWithIntegration(listing.listing_id, input.integrationId);
 
@@ -514,9 +773,119 @@ export const appStoreRouter = t.router({
                 ctx.user.profile.profileId
             );
 
-            const storageUpdates = transformInputForStorage(input.updates);
+            const storageUpdates = transformInputForStorage<
+                AppStoreListingUpdateType & { slug?: string }
+            >({
+                ...input.updates,
+            });
+
+            if (!listing.slug) {
+                const displayName = storageUpdates.display_name ?? listing.display_name;
+                storageUpdates.slug = await getAvailableAppSlug(displayName, listing.listing_id);
+            }
 
             return updateAppStoreListing(listing, storageUpdates);
+        }),
+
+    associateListingWithSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/associate-with-signing-authority',
+                tags: ['App Store'],
+                summary: 'Associate Listing with Signing Authority',
+                description: 'Associate an App Store Listing with a Signing Authority',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                endpoint: z.string(),
+                name: z
+                    .string()
+                    .max(15)
+                    .regex(/^[a-z0-9-]+$/, {
+                        message:
+                            'The input string must contain only lowercase letters, numbers, and hyphens.',
+                    }),
+                did: z.string(),
+                isPrimary: z.boolean().optional(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listingId, endpoint, name, did, isPrimary } = input;
+
+            const { listing } = await verifyListingOwnership(listingId, ctx.user.profile.profileId);
+
+            const existingSa = await getSigningAuthorityForUserByName(
+                ctx.user.profile,
+                endpoint,
+                name
+            );
+            if (!existingSa) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message:
+                        'Signing Authority not found or owned by user. Please register the signing authority with your profile before associating with a listing.',
+                });
+            }
+
+            const existingSas = await getSigningAuthoritiesForListing(listing);
+            const setAsPrimary = isPrimary ?? existingSas.length === 0;
+
+            await associateListingWithSigningAuthority(listing.listing_id, endpoint, {
+                name,
+                did,
+                isPrimary: setAsPrimary,
+            });
+
+            return true;
+        }),
+
+    getListingSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/listing/{listingId}/signing-authority',
+                tags: ['App Store'],
+                summary: 'Get Listing Signing Authority',
+                description: 'Get the primary signing authority for an App Store Listing',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(
+            z
+                .object({
+                    endpoint: z.string(),
+                    name: z.string(),
+                    did: z.string(),
+                    isPrimary: z.boolean(),
+                })
+                .optional()
+        )
+        .query(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            const primarySa = await getPrimarySigningAuthorityForListing(listing);
+
+            if (!primarySa) {
+                return undefined;
+            }
+
+            return {
+                endpoint: primarySa.signingAuthority.endpoint,
+                name: primarySa.relationship.name,
+                did: primarySa.relationship.did,
+                isPrimary: primarySa.relationship.isPrimary ?? true,
+            };
         }),
 
     submitForReview: profileRoute
@@ -547,7 +916,9 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            const result = await updateAppStoreListing(listing, { app_listing_status: 'PENDING_REVIEW' });
+            const result = await updateAppStoreListing(listing, {
+                app_listing_status: 'PENDING_REVIEW',
+            });
 
             // Notify all App Store admins about the new submission
             if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
@@ -661,6 +1032,29 @@ export const appStoreRouter = t.router({
             return transformListingForResponse(listing);
         }),
 
+    getPublicListingBySlug: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'GET',
+                path: '/app-store/public/listing/slug/{slug}',
+                tags: ['App Store'],
+                summary: 'Get Public App Listing by Slug',
+                description: 'Get a publicly listed app by slug',
+            },
+        })
+        .input(z.object({ slug: z.string() }))
+        .output(AppStoreListingResponseValidator.optional())
+        .query(async ({ input }) => {
+            const listing = await readAppStoreListingBySlug(input.slug);
+
+            if (!listing) {
+                return undefined;
+            }
+
+            return transformListingForResponse(listing);
+        }),
+
     getListingInstallCount: openRoute
         .meta({
             openapi: {
@@ -704,7 +1098,10 @@ export const appStoreRouter = t.router({
             const listing = await readAppStoreListingById(input.listingId);
 
             if (!listing || listing.app_listing_status !== 'LISTED') {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found or not available' });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Listing not found or not available',
+                });
             }
 
             const alreadyInstalled = await checkIfProfileInstalledApp(
@@ -828,6 +1225,191 @@ export const appStoreRouter = t.router({
             return checkIfProfileInstalledApp(ctx.user.profile.profileId, input.listingId);
         }),
 
+    // ==================== App Boost Management Routes ====================
+
+    addBoostToListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/boost/add',
+                tags: ['App Store'],
+                summary: 'Add Boost to Listing',
+                description: 'Associate a boost with an app listing for credential issuance',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                boostUri: z.string(),
+                templateAlias: z
+                    .string()
+                    .min(1)
+                    .max(50)
+                    .regex(/^[a-z0-9-]+$/, {
+                        message: 'templateAlias must be lowercase alphanumeric with hyphens only',
+                    }),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            const boost = await getBoostByUri(input.boostUri);
+            if (!boost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+            }
+
+            const exists = await hasTemplateAliasForListing(input.listingId, input.templateAlias);
+            if (exists) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'A boost with this templateAlias already exists for this listing',
+                });
+            }
+
+            // Auto-setup signing authority for listing if not already configured
+            const existingSa = await getPrimarySigningAuthorityForListing(listing);
+            if (!existingSa) {
+                // Try to use the user's primary signing authority
+                const userSa = await getPrimarySigningAuthorityForUser(ctx.user.profile);
+                if (userSa) {
+                    await associateListingWithSigningAuthority(
+                        listing.listing_id,
+                        userSa.signingAuthority.endpoint,
+                        {
+                            name: userSa.relationship.name,
+                            did: userSa.relationship.did,
+                            isPrimary: true,
+                        }
+                    );
+                }
+            }
+
+            return associateBoostWithListing(input.listingId, input.boostUri, input.templateAlias);
+        }),
+
+    removeBoostFromListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/boost/remove',
+                tags: ['App Store'],
+                summary: 'Remove Boost from Listing',
+                description: 'Remove a boost association from an app listing',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                templateAlias: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            await verifyListingOwnership(input.listingId, ctx.user.profile.profileId);
+
+            const exists = await hasTemplateAliasForListing(input.listingId, input.templateAlias);
+            if (!exists) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Boost not found for this listing',
+                });
+            }
+
+            return removeBoostFromListing(input.listingId, input.templateAlias);
+        }),
+
+    getBoostsForListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/listing/{listingId}/boosts',
+                tags: ['App Store'],
+                summary: 'Get Boosts for Listing',
+                description: 'Get all boosts associated with an app listing',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(
+            z.array(
+                z.object({
+                    templateAlias: z.string(),
+                    boostUri: z.string(),
+                })
+            )
+        )
+        .query(async ({ input, ctx }) => {
+            await verifyListingOwnership(input.listingId, ctx.user.profile.profileId);
+
+            return getBoostsForListing(input.listingId, ctx.domain);
+        }),
+
+    // ==================== Generic App Event Route ====================
+
+    appEvent: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/event',
+                tags: ['App Store'],
+                summary: 'Process App Event',
+                description: 'Process a generic event from an installed app',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                event: z.record(z.string(), z.unknown()),
+            })
+        )
+        .output(z.record(z.string(), z.unknown()))
+        .mutation(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+            const { listingId, event } = input;
+
+            const listing = await readAppStoreListingByIdOrSlug(listingId);
+
+            if (!listing) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+            }
+
+            const resolvedListingId = listing.listing_id;
+
+            // Check if user has this app installed OR owns the integration (for testing)
+            const isInstalled = await hasProfileInstalledApp(profile.profileId, resolvedListingId);
+
+            if (!isInstalled) {
+                // Check if user owns the integration - allows testing without installation
+                const integration = await getIntegrationForListing(resolvedListingId);
+                const isOwner = integration
+                    ? await isIntegrationAssociatedWithProfile(integration.id, profile.profileId)
+                    : false;
+                if (!isOwner) {
+                    throw new TRPCError({ code: 'FORBIDDEN', message: 'App not installed' });
+                }
+            }
+
+            // Route based on event type
+            const eventType = event.type as string | undefined;
+
+            if (eventType === 'send-credential') {
+                return handleSendCredentialEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
+        }),
+
     // ==================== Admin Routes ====================
 
     adminUpdateListingStatus: profileRoute
@@ -855,7 +1437,9 @@ export const appStoreRouter = t.router({
             const listing = await getListingOrThrow(input.listingId);
             const previousStatus = listing.app_listing_status;
 
-            const result = await updateAppStoreListing(listing, { app_listing_status: input.status });
+            const result = await updateAppStoreListing(listing, {
+                app_listing_status: input.status,
+            });
 
             // Send notification to the listing owner if status changed
             if (previousStatus !== input.status) {
@@ -965,11 +1549,13 @@ export const appStoreRouter = t.router({
             const limit = input?.limit ?? 25;
 
             // Get listings with optional status filter, or all statuses if not specified
+            // Admin can see all listings including demoted ones
             const results = await getListedApps({
                 limit: limit + 1,
                 cursor: input?.cursor,
                 status: input?.status,
                 includeAllStatuses: !input?.status, // Include all if no specific status filter
+                excludeDemoted: false, // Admin can see demoted listings
             });
 
             const hasMore = results.length > limit;

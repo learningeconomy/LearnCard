@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_boosts_request_query_uri import BoostGetBoostsRequestQueryUri
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,11 +27,11 @@ class BoostGetChildrenProfileManagersRequestQuery(BaseModel):
     """
     BoostGetChildrenProfileManagersRequestQuery
     """ # noqa: E501
-    id: Optional[BoostGetBoostsRequestQueryUri] = None
-    display_name: Optional[BoostGetBoostsRequestQueryUri] = Field(default=None, alias="displayName")
-    short_bio: Optional[BoostGetBoostsRequestQueryUri] = Field(default=None, alias="shortBio")
-    bio: Optional[BoostGetBoostsRequestQueryUri] = None
-    email: Optional[BoostGetBoostsRequestQueryUri] = None
+    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    display_name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="displayName")
+    short_bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="shortBio")
+    bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    email: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
     __properties: ClassVar[List[str]] = ["id", "displayName", "shortBio", "bio", "email"]
 
     model_config = ConfigDict(
@@ -100,11 +100,11 @@ class BoostGetChildrenProfileManagersRequestQuery(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "id": BoostGetBoostsRequestQueryUri.from_dict(obj["id"]) if obj.get("id") is not None else None,
-            "displayName": BoostGetBoostsRequestQueryUri.from_dict(obj["displayName"]) if obj.get("displayName") is not None else None,
-            "shortBio": BoostGetBoostsRequestQueryUri.from_dict(obj["shortBio"]) if obj.get("shortBio") is not None else None,
-            "bio": BoostGetBoostsRequestQueryUri.from_dict(obj["bio"]) if obj.get("bio") is not None else None,
-            "email": BoostGetBoostsRequestQueryUri.from_dict(obj["email"]) if obj.get("email") is not None else None
+            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["id"]) if obj.get("id") is not None else None,
+            "displayName": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["displayName"]) if obj.get("displayName") is not None else None,
+            "shortBio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["shortBio"]) if obj.get("shortBio") is not None else None,
+            "bio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["bio"]) if obj.get("bio") is not None else None,
+            "email": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["email"]) if obj.get("email") is not None else None
         })
         return _obj
 

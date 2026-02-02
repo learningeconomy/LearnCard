@@ -9,6 +9,7 @@ import {
     getIssuerDid,
     getIssuerName,
     getProfileIdFromLCNDidWeb,
+    getAppSlugFromDidWeb,
     getIssuerImage,
     getCredentialSubjectName,
     getSubjectImage,
@@ -20,11 +21,16 @@ import {
     getCredentialSubjectAchievementData,
     getEndorsements,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { isAppDidWeb } from '@learncard/helpers';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 
 import useCurrentUser from './useGetCurrentUser';
 import useGetCurrentLCNUser from './useGetCurrentLCNUser';
-import { useGetDid, useGetProfile } from 'learn-card-base/react-query/queries/queries';
+import {
+    useGetDid,
+    useGetProfile,
+    useGetAppStoreListingBySlug,
+} from 'learn-card-base/react-query/queries/queries';
 
 import { UnsignedAchievementCredential, UnsignedVC, VC } from '@learncard/types';
 import {
@@ -60,6 +66,8 @@ export const useGetVCInfo = (
     // --- Basic VC fields ---
     const credentialSubject = getCredentialSubject(vc);
     const issuerDid = getIssuerDid(vc);
+    const issuerAppSlug = getAppSlugFromDidWeb(issuerDid);
+    const issuerIsApp = isAppDidWeb(issuerDid);
 
     // --- Initial values ---
     let issuerName = getIssuerName(vc);
@@ -67,6 +75,7 @@ export const useGetVCInfo = (
     let issueeDid = credentialSubject?.id ?? '';
     let issueeName = getCredentialSubjectName(vc);
     let subjectProfileImageElement: React.ReactNode;
+    let issuerLink: string | undefined;
 
     // --- Profile lookups ---
     const issuerProfileId = getProfileIdFromLCNDidWeb(issuerDid);
@@ -75,7 +84,12 @@ export const useGetVCInfo = (
         Boolean(issuerProfileId)
     );
 
-    const issueeProfileId = getProfileIdFromLCNDidWeb(issueeName);
+    const { data: issuerAppListing, isLoading: issuerAppLoading } = useGetAppStoreListingBySlug(
+        issuerAppSlug,
+        Boolean(issuerAppSlug)
+    );
+
+    const issueeProfileId = getProfileIdFromLCNDidWeb(issueeDid);
     const { data: issueeProfile, isLoading: issueeProfileLoading } = useGetProfile(
         issueeProfileId!,
         Boolean(issueeProfileId)
@@ -86,7 +100,25 @@ export const useGetVCInfo = (
     // ========================================================================
     const isCurrentUserIssuer =
         issuerDid === currentUserDidKey || issuerDid === currentLCNUser?.did;
-    if (issuerProfileId) {
+    if (issuerAppSlug) {
+        issuerName =
+            issuerAppListing?.display_name || (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
+        issuerLink = issuerAppListing?.listing_id
+            ? `/app/${issuerAppListing.listing_id}`
+            : undefined;
+
+        issuerProfileImageElement = issuerAppListing?.icon_url ? (
+            <UserProfilePicture
+                user={{ name: issuerName, image: issuerAppListing.icon_url }}
+                customImageClass="w-full h-full object-cover"
+                customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
+            />
+        ) : (
+            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
+                {getEmojiFromDidString(issuerDid!)}
+            </div>
+        );
+    } else if (issuerProfileId) {
         // Issuer has LCN profile
         issuerName =
             issuerProfile?.displayName || (issuerProfileLoading ? 'Loading...' : issuerDid);
@@ -168,8 +200,13 @@ export const useGetVCInfo = (
         }
     }
 
-    // If subject is not current user, fallback again for image
-    if (currentUser && issueeDid !== currentUserDidKey && issueeDid !== currentLCNUser?.did) {
+    // If subject is not current user, fallback again for image if not already resolved
+    if (
+        currentUser &&
+        issueeDid !== currentUserDidKey &&
+        issueeDid !== currentLCNUser?.did &&
+        !issueeProfile
+    ) {
         issueeName = getCredentialSubjectName(vc)!;
         const subjectImage = getSubjectImage(vc);
 
@@ -314,6 +351,9 @@ export const useGetVCInfo = (
         issuerProfileImageElement,
         issuerProfile,
         issuerDid,
+        issuerLink,
+        issuerIsApp,
+        issuerAppListing,
         isCurrentUserIssuer,
 
         // subject

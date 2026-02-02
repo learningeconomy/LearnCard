@@ -15,6 +15,7 @@ import {
     getCategoryLightColor,
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from '@learncard/helpers';
 
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
@@ -39,6 +40,9 @@ type MeritBadgeFrontFaceProps = {
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
     customBodyContentSlot?: React.ReactNode;
+    unknownVerifierTitle?: string;
+    hideAwardedTo?: boolean;
+    hideFrontFaceDetails?: boolean;
 };
 
 export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
@@ -56,6 +60,9 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     showDetailsBtn = false,
     formattedDisplayType,
     customBodyContentSlot,
+    unknownVerifierTitle,
+    hideAwardedTo: hideAwardedToProp,
+    hideFrontFaceDetails,
 }) => {
     const {
         title = '',
@@ -105,21 +112,31 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
+    const hideAwardedTo =
+        hideAwardedToProp ??
+        (issueeName?.includes('did:key') || issueeName?.includes('did:example:123'));
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
+    } else if (unknownVerifierTitle) {
+        verifierState = VERIFIER_STATES.trustedVerifier;
     } else {
         if (knownDIDRegistry?.source === 'trusted') {
             verifierState = VERIFIER_STATES.trustedVerifier;
         } else if (knownDIDRegistry?.source === 'untrusted') {
             verifierState = VERIFIER_STATES.untrustedVerifier;
         } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         }
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
@@ -240,6 +257,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             <div className="absolute bottom-0 w-[calc(100%-26px)] flex justify-center">
                 <VerifierStateBadgeAndText
                     verifierState={verifierState}
+                    unknownVerifierTitle={unknownVerifierTitle}
                     className="bg-white px-[5px] pb-[5px]"
                 />
             </div>

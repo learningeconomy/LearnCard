@@ -19,8 +19,10 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.boost_create_boost_request_claim_permissions import BoostCreateBoostRequestClaimPermissions
 from openapi_client.models.boost_create_boost_request_credential import BoostCreateBoostRequestCredential
+from openapi_client.models.boost_send_request_template_skills_inner import BoostSendRequestTemplateSkillsInner
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -37,7 +39,9 @@ class BoostCreateBoostRequest(BaseModel):
     allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     credential: BoostCreateBoostRequestCredential
     claim_permissions: Optional[BoostCreateBoostRequestClaimPermissions] = Field(default=None, alias="claimPermissions")
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "credential", "claimPermissions"]
+    default_permissions: Optional[BoostCreateBoostRequestClaimPermissions] = Field(default=None, alias="defaultPermissions")
+    skills: Optional[Annotated[List[BoostSendRequestTemplateSkillsInner], Field(min_length=1)]] = None
+    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "credential", "claimPermissions", "defaultPermissions", "skills"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -45,8 +49,8 @@ class BoostCreateBoostRequest(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['DRAFT', 'LIVE']):
-            raise ValueError("must be one of enum values ('DRAFT', 'LIVE')")
+        if value not in set(['DRAFT', 'PROVISIONAL', 'LIVE']):
+            raise ValueError("must be one of enum values ('DRAFT', 'PROVISIONAL', 'LIVE')")
         return value
 
     model_config = ConfigDict(
@@ -94,6 +98,31 @@ class BoostCreateBoostRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of claim_permissions
         if self.claim_permissions:
             _dict['claimPermissions'] = self.claim_permissions.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of default_permissions
+        if self.default_permissions:
+            _dict['defaultPermissions'] = self.default_permissions.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in skills (list)
+        _items = []
+        if self.skills:
+            for _item_skills in self.skills:
+                if _item_skills:
+                    _items.append(_item_skills.to_dict())
+            _dict['skills'] = _items
+        # set to None if name (nullable) is None
+        # and model_fields_set contains the field
+        if self.name is None and "name" in self.model_fields_set:
+            _dict['name'] = None
+
+        # set to None if type (nullable) is None
+        # and model_fields_set contains the field
+        if self.type is None and "type" in self.model_fields_set:
+            _dict['type'] = None
+
+        # set to None if category (nullable) is None
+        # and model_fields_set contains the field
+        if self.category is None and "category" in self.model_fields_set:
+            _dict['category'] = None
+
         return _dict
 
     @classmethod
@@ -114,7 +143,9 @@ class BoostCreateBoostRequest(BaseModel):
             "meta": obj.get("meta"),
             "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
             "credential": BoostCreateBoostRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
-            "claimPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None
+            "claimPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
+            "defaultPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["defaultPermissions"]) if obj.get("defaultPermissions") is not None else None,
+            "skills": [BoostSendRequestTemplateSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None
         })
         return _obj
 

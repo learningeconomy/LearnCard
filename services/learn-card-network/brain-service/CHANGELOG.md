@@ -1,5 +1,121 @@
 # @learncard/network-brain-service
 
+## 3.10.1
+
+### Patch Changes
+
+-   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Serve app did:web documents and app issuer relationships.
+
+    The brain service now resolves did:web:<host>:app:<slug> documents and
+    tracks listing-issued credentials so app issuers can be recognized in
+    the UI and activity graph.
+
+## 3.10.0
+
+### Minor Changes
+
+-   [#936](https://github.com/learningeconomy/LearnCard/pull/936) [`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - ## New Native DIDKit Plugin (`@learncard/didkit-plugin-node`)
+
+    Adds a high-performance native Node.js DIDKit plugin using Rust and N-API, providing **~18x faster cold starts** compared to the WASM version.
+
+    ### Key Features
+
+    -   **Native Performance**: Eliminates WASM compilation overhead on cold starts (~1100ms → ~60ms)
+    -   **Cross-Platform Binaries**: Prebuilt for Linux (x64/arm64, glibc/musl), macOS (x64/arm64), and Windows (x64)
+    -   **Drop-in Replacement**: API-compatible with `@learncard/didkit-plugin`
+    -   **JWE Support**: Full JWE and DAG-JWE encryption/decryption
+    -   **Async Operations**: All crypto operations run on separate thread pool, non-blocking
+
+    ### Usage
+
+    ```typescript
+    import { initLearnCard } from '@learncard/init';
+
+    // Use native plugin instead of WASM
+    const learnCard = await initLearnCard({
+        seed: 'your-seed',
+        didkit: 'node', // <-- new option
+    });
+    ```
+
+    ### When to Use
+
+    -   ✅ Serverless functions (AWS Lambda, Vercel)
+    -   ✅ Node.js servers (Express, Fastify, NestJS)
+    -   ✅ CLI tools and scripts
+    -   ✅ High-throughput credential processing
+
+    ### Service Updates
+
+    All LearnCard Network services (brain-service, learn-cloud-service, simple-signing-service) now use the native plugin in Docker/Lambda environments for improved cold start performance.
+
+### Patch Changes
+
+-   Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
+    -   @learncard/didkit-plugin-node@0.2.0
+    -   @learncard/didkit-plugin@1.7.0
+    -   @learncard/vc-plugin@1.4.0
+
+## 3.9.6
+
+### Patch Changes
+
+-   [#952](https://github.com/learningeconomy/LearnCard/pull/952) [`e41a15b2b2850fc3c562b254b3aef707d34e5437`](https://github.com/learningeconomy/LearnCard/commit/e41a15b2b2850fc3c562b254b3aef707d34e5437) Thanks [@Custard7](https://github.com/Custard7)! - fix: Encrypt for Recipient with SA
+
+## 3.9.5
+
+### Patch Changes
+
+-   [#945](https://github.com/learningeconomy/LearnCard/pull/945) [`a0e5a30dab11f0dcc0a23a6ddeeda999c37e0b89`](https://github.com/learningeconomy/LearnCard/commit/a0e5a30dab11f0dcc0a23a6ddeeda999c37e0b89) Thanks [@Custard7](https://github.com/Custard7)! - fix: Demoted Apps Missing from admin list
+
+## 3.9.4
+
+### Patch Changes
+
+-   [#931](https://github.com/learningeconomy/LearnCard/pull/931) [`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - ## App Store Credential Issuance
+
+    Embedded apps in the LearnCard App Store can now issue credentials directly to users via the `sendAppEvent` postMessage API.
+
+    ### Features
+
+    -   **New `send-credential` app event**: Embedded apps can call `sendAppEvent({ type: 'send-credential', boostId, templateData })` to issue credentials from pre-configured boost templates
+    -   **Credential Claim Modal**: When a credential is issued, users see a claim modal with a preview of the credential and can accept it into their wallet
+    -   **Notification Integration**: Credentials create notifications that can be claimed later if dismissed, and are marked as completed when claimed
+    -   **Auto Signing Authority Setup**: When adding a boost to an app listing, the backend automatically configures the signing authority using the developer's primary SA
+    -   **Credentials Step in App Submission**: Developers can now add credential templates (boosts) to their app listings during the submission wizard
+
+    ### API
+
+    ```typescript
+    // From an embedded app
+    const result = await learnCard.sendAppEvent({
+        type: 'send-credential',
+        boostId: 'course-completion', // Boost ID configured in app listing
+        templateData: {
+            /* optional dynamic data */
+        },
+    });
+    // Returns: { credentialUri, boostUri }
+    ```
+
+    ### Documentation
+
+    Added new guide: "Connect an Embedded App" in How-To Guides > Connect Systems
+
+-   Updated dependencies [[`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025)]:
+    -   @learncard/types@5.11.3
+    -   @learncard/core@9.4.4
+    -   @learncard/helpers@1.2.4
+    -   @learncard/did-web-plugin@1.1.4
+    -   @learncard/didkey-plugin@1.1.4
+    -   @learncard/didkit-plugin@1.6.4
+    -   @learncard/encryption-plugin@1.1.4
+    -   @learncard/learn-card-plugin@1.2.4
+    -   @learncard/vc-plugin@1.3.4
+    -   @learncard/vc-templates-plugin@1.1.4
+    -   @learncard/crypto-plugin@1.1.4
+    -   @learncard/expiration-plugin@1.2.4
+
 ## 3.9.3
 
 ### Patch Changes

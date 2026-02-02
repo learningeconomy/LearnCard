@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**categories** | [**Dict[str, StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue]**](StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue.md) |  | [optional] 
+**categories** | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]**](ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.md) |  | [optional] 
 
 ## Example
 

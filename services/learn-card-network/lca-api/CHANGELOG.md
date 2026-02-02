@@ -1,5 +1,47 @@
 # @welibraryos/lca-api-service
 
+## 1.1.10
+
+### Patch Changes
+
+-   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow creating signing authorities for a non-self DID.
+
+    This is used for app issuer DIDs and remains secure because the target DID
+    must still publish the signing authority key in its DID document before
+    it can be used to issue credentials.
+
+## 1.1.9
+
+### Patch Changes
+
+-   [`175a828f712da5b44eeb3c242e8fd604736df073`](https://github.com/learningeconomy/LearnCard/commit/175a828f712da5b44eeb3c242e8fd604736df073) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add debug logging
+
+## 1.1.8
+
+### Patch Changes
+
+-   [`c04ff8e86677b7f88fb2858be2b9b3f8bb28f427`](https://github.com/learningeconomy/LearnCard/commit/c04ff8e86677b7f88fb2858be2b9b3f8bb28f427) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Deployed Lambda issue
+
+## 1.1.7
+
+### Patch Changes
+
+-   Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
+    -   @learncard/didkit-plugin-node@0.2.0
+    -   @learncard/init@2.3.0
+    -   @learncard/didkit-plugin@1.7.0
+
+## 1.1.6
+
+### Patch Changes
+
+-   Updated dependencies [[`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025)]:
+    -   @learncard/types@5.11.3
+    -   @learncard/core@9.4.4
+    -   @learncard/init@2.2.6
+    -   @learncard/did-web-plugin@1.1.4
+    -   @learncard/didkit-plugin@1.6.4
+
 ## 1.1.5
 
 ### Patch Changes

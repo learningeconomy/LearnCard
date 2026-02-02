@@ -39,7 +39,10 @@ class TestCredentialReceivedCredentials200ResponseInner(unittest.TestCase):
                 to = '',
                 var_from = '',
                 sent = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
-                received = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f')
+                received = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                metadata = {
+                    'key' : null
+                    }
             )
         else:
             return CredentialReceivedCredentials200ResponseInner(

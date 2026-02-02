@@ -71,6 +71,16 @@ class ContractsGetAllCredentialsForTermsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if cursor (nullable) is None
+        # and model_fields_set contains the field
+        if self.cursor is None and "cursor" in self.model_fields_set:
+            _dict['cursor'] = None
+
+        # set to None if sort (nullable) is None
+        # and model_fields_set contains the field
+        if self.sort is None and "sort" in self.model_fields_set:
+            _dict['sort'] = None
+
         return _dict
 
     @classmethod
