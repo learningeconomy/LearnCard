@@ -53,12 +53,17 @@ export const getReceivedCredentialsForProfile = async (
         ],
     });
 
-    const query =
+    const fromQuery =
         from && from.length > 0
             ? matchQuery.where(
                 new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
             )
             : matchQuery;
+
+    // Filter out revoked credentials
+    const query = fromQuery.raw(
+        'WHERE received.status IS NULL OR received.status <> "revoked"'
+    );
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
@@ -252,4 +257,38 @@ export const getCredentialInstanceForBoostAndProfile = async (
     }
 
     return Credential.findOne({ where: { id: results[0]!.credential.id } });
+};
+
+/**
+ * Get all credential URIs that have been revoked for a specific profile.
+ * This is used by the frontend to sync and remove revoked credentials from the learn-cloud index.
+ */
+export const getRevokedCredentialUrisForProfile = async (
+    domain: string,
+    profile: ProfileType
+): Promise<string[]> => {
+    const results = convertQueryResultToPropertiesObjectArray<{
+        credential: CredentialType;
+    }>(
+        await new QueryBuilder()
+            .match({
+                related: [
+                    { identifier: 'credential', model: Credential },
+                    {
+                        ...Credential.getRelationshipByAlias('credentialReceived'),
+                        identifier: 'received',
+                    },
+                    {
+                        identifier: 'profile',
+                        model: Profile,
+                        where: { profileId: profile.profileId },
+                    },
+                ],
+            })
+            .where('received.status = "revoked"')
+            .return('credential')
+            .run()
+    );
+
+    return results.map(({ credential }) => getCredentialUri(credential.id, domain));
 };
