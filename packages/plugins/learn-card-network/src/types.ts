@@ -671,13 +671,22 @@ export type LearnCardNetworkPluginMethods = {
     countIntegrations: (options?: { query?: LCNIntegrationQueryType }) => Promise<number>;
     updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
     deleteIntegration: (id: string) => Promise<boolean>;
-    associateIntegrationWithSigningAuthority: (
-        integrationId: string,
+    associateListingWithSigningAuthority: (
+        listingId: string,
         endpoint: string,
         name: string,
         did: string,
         isPrimary?: boolean
     ) => Promise<boolean>;
+    getListingSigningAuthority: (listingId: string) => Promise<
+        | {
+              endpoint: string;
+              name: string;
+              did: string;
+              isPrimary: boolean;
+          }
+        | undefined
+    >;
 
     // App Store
     createAppStoreListing: (
@@ -704,6 +713,7 @@ export type LearnCardNetworkPluginMethods = {
         promotionLevel?: PromotionLevel;
     }) => Promise<PaginatedAppStoreListings>;
     getPublicAppStoreListing: (listingId: string) => Promise<AppStoreListing | undefined>;
+    getPublicAppStoreListingBySlug: (slug: string) => Promise<AppStoreListing | undefined>;
     getAppStoreListingInstallCount: (listingId: string) => Promise<number>;
 
     installApp: (listingId: string) => Promise<boolean>;

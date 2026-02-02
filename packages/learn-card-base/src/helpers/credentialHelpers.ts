@@ -26,7 +26,7 @@ import {
     replaceUnderscoresWithWhiteSpace,
 } from './boostCustomTypeHelpers';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from 'learn-card-base/components/boost/boostOptions/boostOptions';
-import { LCN_DID_WEB_REGEX } from 'learn-card-base/constants/regexes';
+import { LCN_APP_DID_WEB_REGEX, LCN_DID_WEB_REGEX } from 'learn-card-base/constants/regexes';
 import {
     BoostCategoryOptionsEnum,
     CredentialCategoryEnum,
@@ -645,6 +645,13 @@ export const getIssuerImage = (credential: UnsignedVC) => {
 export const getProfileIdFromLCNDidWeb = (did?: string) => {
     return did?.match(LCN_DID_WEB_REGEX)?.[2];
 };
+
+export const getAppSlugFromDidWeb = (did?: string) => {
+    return did?.match(LCN_APP_DID_WEB_REGEX)?.[1];
+};
+
+// Re-export isAppDidWeb from @learncard/helpers to maintain single source of truth
+export { isAppDidWeb } from '@learncard/helpers';
 const getFallBackImage = (credCategory: string) => {
     if (credCategory === 'Skill') return 'https://cdn.filestackcontent.com/pzfIWTKQTAuuzvLrySGX';
     if (credCategory === 'Experiences')

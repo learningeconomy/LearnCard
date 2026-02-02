@@ -14,20 +14,3 @@ export const associateIntegrationWithProfile = async (
 
     return true;
 };
-
-export const associateIntegrationWithSigningAuthority = async (
-    integrationId: string,
-    signingAuthorityEndpoint: string,
-    props: { name: string; did: string; isPrimary?: boolean }
-): Promise<boolean> => {
-    await Integration.relateTo({
-        alias: 'usesSigningAuthority',
-        where: {
-            source: { id: integrationId },
-            target: { endpoint: signingAuthorityEndpoint },
-        },
-        properties: props,
-    });
-
-    return true;
-};

@@ -116,6 +116,7 @@ export function getConfigForGuideType(guideType?: string): DashboardConfig {
                 showAppConfig: false,
                 showTemplates: false,
                 showContracts: true,
+                showBranding: false,
             };
 
         case 'consent-flow':
