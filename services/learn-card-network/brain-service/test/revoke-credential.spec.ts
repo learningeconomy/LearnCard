@@ -146,14 +146,14 @@ describe('Revoke Boost Recipient', () => {
         });
     });
 
-    it('should return NOT_FOUND when trying to revoke from non-existent boost', async () => {
+    it('should return BAD_REQUEST when trying to revoke with invalid boost URI format', async () => {
         await expect(
             userA.clients.fullAuth.boost.revokeBoostRecipient({
                 boostUri: 'lc:boost:non-existent',
                 recipientProfileId: 'userb',
             })
         ).rejects.toMatchObject({
-            code: 'NOT_FOUND',
+            code: 'BAD_REQUEST',
         });
     });
 });
@@ -236,5 +236,201 @@ describe('Revoke with Claim Hooks', () => {
             uri: targetUri,
         });
         expect(revokedPermissions.canIssue).toBeFalsy();
+    });
+});
+
+describe('Revoke with AUTO_CONNECT Claim Hooks', () => {
+    let claimUri: string;
+    let targetUri: string;
+
+    beforeAll(async () => {
+        userA = await getUser();
+        userB = await getUser('b'.repeat(64));
+    });
+
+    beforeEach(async () => {
+        await Profile.delete({ detach: true, where: {} });
+        await Credential.delete({ detach: true, where: {} });
+        await Boost.delete({ detach: true, where: {} });
+        await ClaimHook.delete({ detach: true, where: {} });
+        await Role.delete({ detach: true, where: {} });
+
+        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+        // Create claim boost and target boost
+        claimUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+        });
+        targetUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+        });
+
+        // Set up AUTO_CONNECT claim hook
+        await userA.clients.fullAuth.claimHook.createClaimHook({
+            hook: {
+                type: 'AUTO_CONNECT',
+                data: {
+                    claimUri,
+                    targetUri,
+                },
+            },
+        });
+    });
+
+    afterAll(async () => {
+        await Profile.delete({ detach: true, where: {} });
+        await Credential.delete({ detach: true, where: {} });
+        await Boost.delete({ detach: true, where: {} });
+    });
+
+    it('should remove AUTO_CONNECT_RECIPIENT relationship when revoking', async () => {
+        // Send and accept the claim boost
+        await sendBoost(
+            { profileId: 'usera', user: userA },
+            { profileId: 'userb', user: userB },
+            claimUri,
+            true
+        );
+
+        // Verify AUTO_CONNECT_RECIPIENT was created by checking the query directly
+        // The relationship should exist on the target boost pointing to userB
+        const { neogma } = await import('@instance');
+        
+        const beforeResult = await neogma.queryRunner.run(
+            `MATCH (b:Boost)-[:AUTO_CONNECT_RECIPIENT]->(p:Profile {profileId: 'userb'})
+             WHERE b.id = $boostId
+             RETURN count(*) as count`,
+            { boostId: targetUri.split(':').pop() }
+        );
+        expect(beforeResult.records[0]?.get('count').toNumber()).toBe(1);
+
+        // Revoke the credential
+        await userA.clients.fullAuth.boost.revokeBoostRecipient({
+            boostUri: claimUri,
+            recipientProfileId: 'userb',
+        });
+
+        // Verify AUTO_CONNECT_RECIPIENT was removed
+        const afterResult = await neogma.queryRunner.run(
+            `MATCH (b:Boost)-[:AUTO_CONNECT_RECIPIENT]->(p:Profile {profileId: 'userb'})
+             WHERE b.id = $boostId
+             RETURN count(*) as count`,
+            { boostId: targetUri.split(':').pop() }
+        );
+        expect(afterResult.records[0]?.get('count').toNumber()).toBe(0);
+    });
+});
+
+describe('Revoke with autoConnectRecipients', () => {
+    let boostUri: string;
+
+    beforeAll(async () => {
+        userA = await getUser();
+        userB = await getUser('b'.repeat(64));
+    });
+
+    beforeEach(async () => {
+        await Profile.delete({ detach: true, where: {} });
+        await Credential.delete({ detach: true, where: {} });
+        await Boost.delete({ detach: true, where: {} });
+        await ClaimHook.delete({ detach: true, where: {} });
+        await Role.delete({ detach: true, where: {} });
+
+        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+        // Create boost with autoConnectRecipients enabled
+        boostUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            autoConnectRecipients: true,
+        });
+    });
+
+    afterAll(async () => {
+        await Profile.delete({ detach: true, where: {} });
+        await Credential.delete({ detach: true, where: {} });
+        await Boost.delete({ detach: true, where: {} });
+    });
+
+    // Helper to check connections via direct Neo4j query
+    const getConnectionCount = async (fromProfileId: string, toProfileId: string): Promise<number> => {
+        const { neogma } = await import('@instance');
+        const result = await neogma.queryRunner.run(
+            `MATCH (a:Profile {profileId: $fromId})-[r:CONNECTED_WITH]-(b:Profile {profileId: $toId})
+             RETURN count(r) as count`,
+            { fromId: fromProfileId, toId: toProfileId }
+        );
+        return result.records[0]?.get('count').toNumber() ?? 0;
+    };
+
+    it('should remove CONNECTED_WITH relationship when revoking credential from boost with autoConnectRecipients', async () => {
+        // Send and accept the boost
+        await sendBoost(
+            { profileId: 'usera', user: userA },
+            { profileId: 'userb', user: userB },
+            boostUri,
+            true
+        );
+
+        // Verify connection was created
+        const countBefore = await getConnectionCount('usera', 'userb');
+        expect(countBefore).toBeGreaterThan(0);
+
+        // Revoke the credential
+        await userA.clients.fullAuth.boost.revokeBoostRecipient({
+            boostUri,
+            recipientProfileId: 'userb',
+        });
+
+        // Verify connection was removed (if it was the only source)
+        const countAfter = await getConnectionCount('usera', 'userb');
+        expect(countAfter).toBe(0);
+    });
+
+    it('should preserve CONNECTED_WITH if it has other sources', async () => {
+        // Create a second boost with autoConnectRecipients
+        const secondBoostUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            autoConnectRecipients: true,
+        });
+
+        // Send both boosts to userB
+        await sendBoost(
+            { profileId: 'usera', user: userA },
+            { profileId: 'userb', user: userB },
+            boostUri,
+            true
+        );
+        await sendBoost(
+            { profileId: 'usera', user: userA },
+            { profileId: 'userb', user: userB },
+            secondBoostUri,
+            true
+        );
+
+        // Verify connection exists
+        const countBefore = await getConnectionCount('usera', 'userb');
+        expect(countBefore).toBeGreaterThan(0);
+
+        // Revoke only the first credential
+        await userA.clients.fullAuth.boost.revokeBoostRecipient({
+            boostUri,
+            recipientProfileId: 'userb',
+        });
+
+        // Connection should still exist (from second boost)
+        const countAfterFirst = await getConnectionCount('usera', 'userb');
+        expect(countAfterFirst).toBeGreaterThan(0);
+
+        // Revoke the second credential
+        await userA.clients.fullAuth.boost.revokeBoostRecipient({
+            boostUri: secondBoostUri,
+            recipientProfileId: 'userb',
+        });
+
+        // Now connection should be gone
+        const countFinal = await getConnectionCount('usera', 'userb');
+        expect(countFinal).toBe(0);
     });
 });
