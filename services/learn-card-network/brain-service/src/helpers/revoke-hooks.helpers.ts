@@ -1,4 +1,4 @@
-import { QueryBuilder, BindParam } from 'neogma';
+import { QueryBuilder } from 'neogma';
 
 import { CredentialInstance, Credential, Boost, Profile, ClaimHook, Role } from '@models';
 import { ProfileType } from 'types/profile';
@@ -142,7 +142,6 @@ const processAdminRevokeHooks = async (
  * 
  * @param profile The profile whose credential is being revoked
  * @param credential The credential instance being revoked
- */
 /**
  * Remove/Cleanup CONNECTED_WITH relationships for the revoked profile that were sourced from the boost.
  */
@@ -160,25 +159,41 @@ const processConnectionRevoke = async (
     const sourceKey = getBoostConnectionSourceKey(boostId);
     console.log('[processConnectionRevoke] Removing connections for profile', profile.profileId, 'with sourceKey', sourceKey);
 
-    // Use raw Cypher for reliability (avoiding QueryBuilder issues with OPTIONAL MATCH + WHERE)
+    const { neogma } = await import('@instance');
+
+    // First, check what connections exist for this profile with this source key
+    const debugQuery = `
+        MATCH (p:Profile {profileId: $profileId})-[r:CONNECTED_WITH]-(other:Profile)
+        WHERE r.sources IS NOT NULL AND $sourceKey IN r.sources
+        RETURN other.profileId as otherProfileId, r.sources as sources
+    `;
+    const debugResult = await neogma.queryRunner.run(debugQuery, { 
+        profileId: profile.profileId,
+        sourceKey 
+    });
+    console.log('[processConnectionRevoke] Found', debugResult.records.length, 'connections with sourceKey');
+    debugResult.records.forEach(r => {
+        console.log('[processConnectionRevoke] - Connection to:', r.get('otherProfileId'), 'sources:', r.get('sources'));
+    });
+
+    // Now remove the source key and delete empty connections
     const cypher = `
         MATCH (p:Profile {profileId: $profileId})-[r:CONNECTED_WITH]-(other:Profile)
         WHERE r.sources IS NOT NULL AND $sourceKey IN r.sources
         SET r.sources = [x IN r.sources WHERE x <> $sourceKey]
-        WITH r
+        WITH r, other
         WHERE size(r.sources) = 0
         DELETE r
         RETURN count(r) as deletedCount
     `;
 
-    const { neogma } = await import('@instance');
     const result = await neogma.queryRunner.run(cypher, { 
         profileId: profile.profileId,
         sourceKey 
     });
     
-    const deletedCount = result.records[0]?.get('deletedCount') ?? 0;
-    console.log('[processConnectionRevoke] Deleted', deletedCount, 'connection(s)');
+    const deletedCount = result.records[0]?.get('deletedCount');
+    console.log('[processConnectionRevoke] Deleted', deletedCount, 'connection(s) that had only this source');
 };
 
 export const processRevokeHooks = async (
