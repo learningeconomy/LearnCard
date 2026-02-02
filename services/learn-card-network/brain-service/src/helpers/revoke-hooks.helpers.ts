@@ -144,43 +144,74 @@ const processAdminRevokeHooks = async (
  * @param credential The credential instance being revoked
 /**
  * Remove/Cleanup CONNECTED_WITH relationships for the revoked profile that were sourced from the boost.
+ * This mirrors the connection creation logic from ensureConnectionsForCredentialAcceptance.
+ * We need to remove connections from:
+ * - The direct boost (if autoConnectRecipients=true)
+ * - All parent boosts with autoConnectRecipients=true
+ * - All boosts targeted by AUTO_CONNECT claim hooks on the direct boost
  */
 const processConnectionRevoke = async (
     profile: ProfileType,
     credential: CredentialInstance
 ): Promise<void> => {
-    const boostId = await getBoostIdForCredentialInstance(credential);
-    if (!boostId) {
-        console.log('[processConnectionRevoke] No boostId found for credential', credential.id);
+    const { neogma } = await import('@instance');
+    
+    // Get all boost IDs that could have created connections for this credential
+    // This mirrors the logic in ensureConnectionsForCredentialAcceptance
+    const boostIdsQuery = `
+        // Get the claim boost
+        MATCH (c:Credential { id: $credentialId })-[:INSTANCE_OF]->(cb:Boost)
+        
+        // Collect direct boost if autoConnectRecipients is true
+        WITH cb, CASE WHEN cb.autoConnectRecipients = true THEN [cb.id] ELSE [] END as directIds
+        
+        // Collect parent boosts with autoConnectRecipients=true
+        OPTIONAL MATCH (pb:Boost)-[:PARENT_OF*1..]->(cb)
+        WHERE pb.autoConnectRecipients = true
+        WITH cb, directIds, COLLECT(DISTINCT pb.id) as parentIds
+        
+        // Collect boosts from AUTO_CONNECT claim hooks
+        OPTIONAL MATCH (cb)<-[:HOOK_FOR]-(ch:ClaimHook { type: 'AUTO_CONNECT' })-[:TARGET]->(tb:Boost)
+        WITH directIds, parentIds, COLLECT(DISTINCT tb.id) as hookIds
+        
+        // Return all unique boost IDs
+        RETURN directIds + parentIds + hookIds as boostIds
+    `;
+
+    const boostIdsResult = await neogma.queryRunner.run(boostIdsQuery, { 
+        credentialId: credential.id 
+    });
+    
+    const boostIds: string[] = boostIdsResult.records[0]?.get('boostIds') || [];
+    
+    if (boostIds.length === 0) {
+        console.log('[processConnectionRevoke] No eligible boosts found for credential', credential.id);
         return;
     }
 
-    // Pattern is `boost:${boostId}`.
-    const sourceKey = getBoostConnectionSourceKey(boostId);
-    console.log('[processConnectionRevoke] Removing connections for profile', profile.profileId, 'with sourceKey', sourceKey);
+    const sourceKeys = boostIds.map(id => getBoostConnectionSourceKey(id));
+    console.log('[processConnectionRevoke] Removing connections for profile', profile.profileId, 'with sourceKeys', sourceKeys);
 
-    const { neogma } = await import('@instance');
-
-    // First, check what connections exist for this profile with this source key
+    // First, check what connections exist for this profile with any of these source keys
     const debugQuery = `
         MATCH (p:Profile {profileId: $profileId})-[r:CONNECTED_WITH]-(other:Profile)
-        WHERE r.sources IS NOT NULL AND $sourceKey IN r.sources
+        WHERE r.sources IS NOT NULL AND ANY(key IN $sourceKeys WHERE key IN r.sources)
         RETURN other.profileId as otherProfileId, r.sources as sources
     `;
     const debugResult = await neogma.queryRunner.run(debugQuery, { 
         profileId: profile.profileId,
-        sourceKey 
+        sourceKeys 
     });
-    console.log('[processConnectionRevoke] Found', debugResult.records.length, 'connections with sourceKey');
+    console.log('[processConnectionRevoke] Found', debugResult.records.length, 'connections with matching sourceKeys');
     debugResult.records.forEach(r => {
         console.log('[processConnectionRevoke] - Connection to:', r.get('otherProfileId'), 'sources:', r.get('sources'));
     });
 
-    // Now remove the source key and delete empty connections
+    // Now remove all matching source keys and delete connections that become empty
     const cypher = `
         MATCH (p:Profile {profileId: $profileId})-[r:CONNECTED_WITH]-(other:Profile)
-        WHERE r.sources IS NOT NULL AND $sourceKey IN r.sources
-        SET r.sources = [x IN r.sources WHERE x <> $sourceKey]
+        WHERE r.sources IS NOT NULL AND ANY(key IN $sourceKeys WHERE key IN r.sources)
+        SET r.sources = [x IN r.sources WHERE NOT x IN $sourceKeys]
         WITH r, other
         WHERE size(r.sources) = 0
         DELETE r
@@ -189,11 +220,11 @@ const processConnectionRevoke = async (
 
     const result = await neogma.queryRunner.run(cypher, { 
         profileId: profile.profileId,
-        sourceKey 
+        sourceKeys 
     });
     
     const deletedCount = result.records[0]?.get('deletedCount');
-    console.log('[processConnectionRevoke] Deleted', deletedCount, 'connection(s) that had only this source');
+    console.log('[processConnectionRevoke] Deleted', deletedCount, 'connection(s) that had only these sources');
 };
 
 export const processRevokeHooks = async (
