@@ -752,6 +752,7 @@ export type PaginatedContractCredentials = z.infer<typeof PaginatedContractCrede
 
 export const LCNNotificationTypeEnumValidator = z.enum([
     'CONNECTION_REQUEST',
+    'CONNECTION_REQUEST_EXPIRED_INVITE',
     'CONNECTION_ACCEPTED',
     'CREDENTIAL_RECEIVED',
     'CREDENTIAL_ACCEPTED',
