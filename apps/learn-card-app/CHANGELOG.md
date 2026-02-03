@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.94.20
+
+### Patch Changes
+
+-   [#965](https://github.com/learningeconomy/LearnCard/pull/965) [`4e87c9cee7fdab315f95f367b66752883cb4575d`](https://github.com/learningeconomy/LearnCard/commit/4e87c9cee7fdab315f95f367b66752883cb4575d) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1478] Archive All button does not archive for my account
+
+-   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Resolve app DIDs in credential UI and show app issuer details.
+
+    Credentials issued by App Store listings now map app did:web values to
+    app names/icons (with a link back to the app), and display the "App Issuer"
+    verification state where appropriate.
+
+-   [#966](https://github.com/learningeconomy/LearnCard/pull/966) [`b694f1a6373938a831f9187317c1d5bbcd5049cd`](https://github.com/learningeconomy/LearnCard/commit/b694f1a6373938a831f9187317c1d5bbcd5049cd) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1538] Fix age 13 gating validation logic and add LaunchDarkly school code bypass
+
+-   [#963](https://github.com/learningeconomy/LearnCard/pull/963) [`73fde2a26a5b2a9cf35578db72d1e8347a704028`](https://github.com/learningeconomy/LearnCard/commit/73fde2a26a5b2a9cf35578db72d1e8347a704028) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: fix app listing cutoff on ios
+
+-   Updated dependencies [[`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6), [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6)]:
+    -   @learncard/lca-api-plugin@1.1.10
+    -   @learncard/react@2.9.9
+
 ## 1.94.19
 
 ### Patch Changes

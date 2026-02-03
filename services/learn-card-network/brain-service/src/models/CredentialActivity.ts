@@ -4,6 +4,7 @@ import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
+import { AppStoreListing, AppStoreListingInstance } from './AppStoreListing';
 
 export type CredentialActivityEventType = 
     | 'CREATED'
@@ -42,6 +43,7 @@ export type CredentialActivityType = {
 
 export type CredentialActivityRelationships = {
     performedBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    performedByListing: ModelRelatedNodesI<typeof AppStoreListing, AppStoreListingInstance>;
     forBoost: ModelRelatedNodesI<typeof Boost, BoostInstance>;
     toRecipient: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
 };
@@ -89,6 +91,11 @@ export const CredentialActivity = ModelFactory<
                 model: Profile,
                 direction: 'in',
                 name: 'PERFORMED',
+            },
+            performedByListing: {
+                model: AppStoreListing,
+                direction: 'in',
+                name: 'PERFORMED_BY_LISTING',
             },
             forBoost: {
                 model: Boost,

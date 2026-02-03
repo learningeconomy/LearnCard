@@ -1,7 +1,7 @@
 import { QueryBuilder } from 'neogma';
 import { v4 as uuid } from 'uuid';
 
-import { CredentialActivity, Profile, Boost } from '@models';
+import { CredentialActivity, Profile, Boost, AppStoreListing } from '@models';
 import { LogCredentialActivityParams } from 'types/activity';
 import { getIdFromUri } from '@helpers/uri.helpers';
 
@@ -41,6 +41,10 @@ export const createCredentialActivity = async (
 
     await createPerformedByRelationship(params.actorProfileId, id);
 
+    if (params.listingId) {
+        await createPerformedByListingRelationship(params.listingId, id);
+    }
+
     if (params.boostUri) {
         try {
             const boostId = getIdFromUri(params.boostUri);
@@ -76,6 +80,25 @@ const createPerformedByRelationship = async (
             identifier: 'activity',
         })
         .create('(profile)-[:PERFORMED]->(activity)')
+        .run();
+};
+
+const createPerformedByListingRelationship = async (
+    listingId: string,
+    activityId: string
+): Promise<void> => {
+    await new QueryBuilder()
+        .match({
+            model: AppStoreListing,
+            where: { listing_id: listingId },
+            identifier: 'listing',
+        })
+        .match({
+            model: CredentialActivity,
+            where: { id: activityId },
+            identifier: 'activity',
+        })
+        .create('(listing)-[:PERFORMED_BY_LISTING]->(activity)')
         .run();
 };
 

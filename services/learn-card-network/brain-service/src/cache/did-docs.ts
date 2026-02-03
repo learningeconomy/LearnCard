@@ -17,6 +17,18 @@ export const deleteDidDocForProfile = async (profileId: string) => {
     return cache.delete([getDidDocCacheKey(profileId)]);
 };
 
+export const getDidDocCacheKeyForApp = (slug: string): string => `app-did-doc:${slug}`;
+
+export const getDidDocForApp = async (slug: string): Promise<DidDocument> => {
+    const result = await cache.get(getDidDocCacheKeyForApp(slug), true);
+
+    return result && JSON.parse(result);
+};
+
+export const setDidDocForApp = async (slug: string, doc: DidDocument) => {
+    return cache.set(getDidDocCacheKeyForApp(slug), JSON.stringify(doc));
+};
+
 export const getManagerDidDocCacheKey = (id: string): string => `manager-did-doc:${id}`;
 
 export const getDidDocForProfileManager = async (id: string): Promise<DidDocument> => {

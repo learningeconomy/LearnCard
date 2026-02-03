@@ -22,6 +22,40 @@ export const readAppStoreListingById = async (
     return inflateObject<AppStoreListingType>(listing as any);
 };
 
+export const readAppStoreListingBySlug = async (
+    slug: string
+): Promise<AppStoreListingType | null> => {
+    const result = await new QueryBuilder(new BindParam({ slug }))
+        .match({ model: AppStoreListing, identifier: 'listing', where: { slug } })
+        .return('listing')
+        .limit(1)
+        .run();
+
+    const listing = result.records[0]?.get('listing')?.properties;
+
+    if (!listing) return null;
+
+    return inflateObject<AppStoreListingType>(listing as any);
+};
+
+export const readAppStoreListingByIdOrSlug = async (
+    value: string
+): Promise<AppStoreListingType | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing)
+         WHERE listing.listing_id = $value OR listing.slug = $value
+         RETURN listing
+         LIMIT 1`,
+        { value }
+    );
+
+    const listing = result.records[0]?.get('listing')?.properties;
+
+    if (!listing) return null;
+
+    return inflateObject<AppStoreListingType>(listing as any);
+};
+
 export const getListingsForIntegration = async (
     integrationId: string,
     { limit, cursor }: { limit: number; cursor?: string }

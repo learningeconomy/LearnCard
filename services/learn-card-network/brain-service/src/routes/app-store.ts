@@ -1,18 +1,22 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNNotificationTypeEnumValidator, UnsignedVC } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 
 import { t, openRoute, profileRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
+import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
 import { createAppStoreListing } from '@accesslayer/app-store-listing/create';
 import {
     readAppStoreListingById,
+    readAppStoreListingBySlug,
+    readAppStoreListingByIdOrSlug,
     getListingsForIntegration,
     countListingsForIntegration,
     getListedApps,
@@ -42,21 +46,29 @@ import {
 import { readIntegrationById } from '@accesslayer/integration/read';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
+    getPrimarySigningAuthorityForListing,
     getPrimarySigningAuthorityForIntegration,
     getPrimarySigningAuthorityForUser,
+    getSigningAuthoritiesForListing,
+    getSigningAuthorityForUserByName,
 } from '@accesslayer/signing-authority/relationships/read';
-import { associateIntegrationWithSigningAuthority } from '@accesslayer/integration/relationships/create';
+import { associateListingWithSigningAuthority } from '@accesslayer/app-store-listing/relationships/create';
 import {
     AppListingStatus,
     LaunchType,
     PromotionLevel,
     AppStoreListingValidator,
 } from 'types/app-store-listing';
+import type {
+    AppStoreListingCreateType,
+    AppStoreListingType,
+    AppStoreListingUpdateType,
+} from 'types/app-store-listing';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getDidWeb } from '@helpers/did.helpers';
+import { getAppDidWeb, getDidWeb } from '@helpers/did.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -220,26 +232,43 @@ const iframeUrlRefinement = (
     }
 };
 
-// Helper to transform listing for API response (JSON strings -> arrays)
-const transformListingForResponse = (listing: any) => {
-    const result = { ...listing };
+type AppStoreListingResponse<T extends AppStoreListingType> = Omit<
+    T,
+    'highlights_json' | 'screenshots_json'
+> & {
+    highlights?: string[];
+    screenshots?: string[];
+};
 
-    if (result.highlights_json) {
+type ListingStorageInput<T extends Record<string, unknown>> = Omit<
+    T,
+    'highlights' | 'screenshots'
+> & {
+    highlights_json?: string;
+    screenshots_json?: string;
+};
+
+// Helper to transform listing for API response (JSON strings -> arrays)
+const transformListingForResponse = <T extends AppStoreListingType & Record<string, unknown>>(
+    listing: T
+): AppStoreListingResponse<T> => {
+    const { highlights_json, screenshots_json, ...rest } = listing;
+    const result = { ...rest } as AppStoreListingResponse<T>;
+
+    if (highlights_json) {
         try {
-            result.highlights = JSON.parse(result.highlights_json);
+            result.highlights = JSON.parse(highlights_json);
         } catch {
             result.highlights = [];
         }
-        delete result.highlights_json;
     }
 
-    if (result.screenshots_json) {
+    if (screenshots_json) {
         try {
-            result.screenshots = JSON.parse(result.screenshots_json);
+            result.screenshots = JSON.parse(screenshots_json);
         } catch {
             result.screenshots = [];
         }
-        delete result.screenshots_json;
     }
 
     return result;
@@ -247,12 +276,14 @@ const transformListingForResponse = (listing: any) => {
 
 // Helper to transform input for storage (arrays -> JSON strings)
 // Validates that arrays are properly formatted before stringifying
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const transformInputForStorage = (input: any): any => {
-    const result = { ...input };
+const transformInputForStorage = <T extends Record<string, unknown>>(
+    input: T
+): ListingStorageInput<T> => {
+    const { highlights, screenshots, ...rest } = input;
+    const result = { ...rest } as ListingStorageInput<T>;
 
-    if (result.highlights !== undefined) {
-        if (!Array.isArray(result.highlights)) {
+    if (highlights !== undefined) {
+        if (!Array.isArray(highlights)) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'highlights must be an array of strings',
@@ -260,7 +291,7 @@ const transformInputForStorage = (input: any): any => {
         }
 
         // Validate each highlight is a string
-        const validHighlights = result.highlights.every(
+        const validHighlights = highlights.every(
             (h: unknown): h is string => typeof h === 'string'
         );
 
@@ -271,12 +302,11 @@ const transformInputForStorage = (input: any): any => {
             });
         }
 
-        result.highlights_json = JSON.stringify(result.highlights);
-        delete result.highlights;
+        result.highlights_json = JSON.stringify(highlights);
     }
 
-    if (result.screenshots !== undefined) {
-        if (!Array.isArray(result.screenshots)) {
+    if (screenshots !== undefined) {
+        if (!Array.isArray(screenshots)) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'screenshots must be an array of URLs',
@@ -284,7 +314,7 @@ const transformInputForStorage = (input: any): any => {
         }
 
         // Validate each screenshot is a valid URL string
-        const validScreenshots = result.screenshots.every((s: unknown): s is string => {
+        const validScreenshots = screenshots.every((s: unknown): s is string => {
             if (typeof s !== 'string') return false;
 
             try {
@@ -302,8 +332,7 @@ const transformInputForStorage = (input: any): any => {
             });
         }
 
-        result.screenshots_json = JSON.stringify(result.screenshots);
-        delete result.screenshots;
+        result.screenshots_json = JSON.stringify(screenshots);
     }
 
     return result;
@@ -444,19 +473,15 @@ const handleSendCredentialEvent = async (
         });
     }
 
+    const listing = await readAppStoreListingById(listingId);
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+    }
+
     // Get the integration that owns this listing
     const integration = await getIntegrationForListing(listingId);
     if (!integration) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
-    }
-
-    // Get signing authority for the integration
-    const sa = await getPrimarySigningAuthorityForIntegration(integration);
-    if (!sa) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'No signing authority configured for this app',
-        });
     }
 
     // Get integration owner for signing
@@ -465,9 +490,33 @@ const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
     }
 
+    // Get signing authority for the listing, falling back to legacy integration SA or owner SA
+    const listingSa = await getPrimarySigningAuthorityForListing(listing);
+    const integrationSa = listingSa
+        ? undefined
+        : await getPrimarySigningAuthorityForIntegration(integration.id);
+    const ownerSa =
+        listingSa || integrationSa
+            ? undefined
+            : await getPrimarySigningAuthorityForUser(integrationOwner);
+    const sa = listingSa ?? integrationSa ?? ownerSa;
+
+    if (!sa) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No signing authority configured for this app',
+        });
+    }
+
     // Get the target profile (the user making the request)
     const targetProfile = await getProfilesByProfileIds([profile.profileId]);
     if (!targetProfile.length) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
+
+    const target = targetProfile[0];
+
+    if (!target) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
     }
 
@@ -489,13 +538,15 @@ const handleSendCredentialEvent = async (
             unsignedVc.issuanceDate = new Date().toISOString();
         }
 
-        const issuerDid = getDidWeb(ctx.domain, integrationOwner.profileId);
+        const issuerDid = listing.slug
+            ? getAppDidWeb(ctx.domain, listing.slug)
+            : getDidWeb(ctx.domain, integrationOwner.profileId);
         unsignedVc.issuer =
             unsignedVc.issuer && typeof unsignedVc.issuer === 'object'
                 ? { ...unsignedVc.issuer, id: issuerDid }
                 : { id: issuerDid };
 
-        const targetDid = getDidWeb(ctx.domain, targetProfile[0]!.profileId);
+        const targetDid = getDidWeb(ctx.domain, target.profileId);
 
         if (Array.isArray(unsignedVc.credentialSubject)) {
             unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
@@ -521,14 +572,16 @@ const handleSendCredentialEvent = async (
     }
 
     // Issue via signing authority
-    let credential;
+    let credential: VC | JWE;
 
     try {
         credential = await issueCredentialWithSigningAuthority(
             integrationOwner,
             unsignedVc,
             sa,
-            ctx.domain
+            ctx.domain,
+            true,
+            listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined
         );
     } catch (e) {
         console.error('Failed to issue VC with signing authority', e);
@@ -542,10 +595,11 @@ const handleSendCredentialEvent = async (
     const activityId = await logCredentialSent({
         actorProfileId: integrationOwner.profileId,
         recipientType: 'profile',
-        recipientIdentifier: targetProfile[0]!.profileId,
-        recipientProfileId: targetProfile[0]!.profileId,
+        recipientIdentifier: target.profileId,
+        recipientProfileId: target.profileId,
         boostUri,
         integrationId: integration.id,
+        listingId,
         source: 'sendBoost',
         metadata: { listingId, templateAlias },
     });
@@ -553,13 +607,14 @@ const handleSendCredentialEvent = async (
     // Send to user's wallet
     const credentialUri = await sendBoost({
         from: integrationOwner,
-        to: targetProfile[0]!,
+        to: target,
         boost,
         credential,
         domain: ctx.domain,
         skipNotification: false,
         activityId,
         integrationId: integration.id,
+        listingId,
     });
 
     return {
@@ -594,13 +649,19 @@ export const appStoreRouter = t.router({
             await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
 
             // New listings always start as DRAFT with STANDARD promotion
-            const storageData = transformInputForStorage({
+            const listingInput = {
                 ...input.listing,
                 app_listing_status: 'DRAFT',
                 promotion_level: 'STANDARD',
-            });
+            } as AppStoreListingCreateType;
 
-            const listing = await createAppStoreListing(storageData);
+            const storageData = transformInputForStorage<AppStoreListingCreateType>(listingInput);
+
+            const slug = await getAvailableAppSlug(storageData.display_name);
+            const listing = await createAppStoreListing({
+                ...storageData,
+                slug,
+            });
 
             await associateListingWithIntegration(listing.listing_id, input.integrationId);
 
@@ -712,9 +773,119 @@ export const appStoreRouter = t.router({
                 ctx.user.profile.profileId
             );
 
-            const storageUpdates = transformInputForStorage(input.updates);
+            const storageUpdates = transformInputForStorage<
+                AppStoreListingUpdateType & { slug?: string }
+            >({
+                ...input.updates,
+            });
+
+            if (!listing.slug) {
+                const displayName = storageUpdates.display_name ?? listing.display_name;
+                storageUpdates.slug = await getAvailableAppSlug(displayName, listing.listing_id);
+            }
 
             return updateAppStoreListing(listing, storageUpdates);
+        }),
+
+    associateListingWithSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/associate-with-signing-authority',
+                tags: ['App Store'],
+                summary: 'Associate Listing with Signing Authority',
+                description: 'Associate an App Store Listing with a Signing Authority',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                endpoint: z.string(),
+                name: z
+                    .string()
+                    .max(15)
+                    .regex(/^[a-z0-9-]+$/, {
+                        message:
+                            'The input string must contain only lowercase letters, numbers, and hyphens.',
+                    }),
+                did: z.string(),
+                isPrimary: z.boolean().optional(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listingId, endpoint, name, did, isPrimary } = input;
+
+            const { listing } = await verifyListingOwnership(listingId, ctx.user.profile.profileId);
+
+            const existingSa = await getSigningAuthorityForUserByName(
+                ctx.user.profile,
+                endpoint,
+                name
+            );
+            if (!existingSa) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message:
+                        'Signing Authority not found or owned by user. Please register the signing authority with your profile before associating with a listing.',
+                });
+            }
+
+            const existingSas = await getSigningAuthoritiesForListing(listing);
+            const setAsPrimary = isPrimary ?? existingSas.length === 0;
+
+            await associateListingWithSigningAuthority(listing.listing_id, endpoint, {
+                name,
+                did,
+                isPrimary: setAsPrimary,
+            });
+
+            return true;
+        }),
+
+    getListingSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/listing/{listingId}/signing-authority',
+                tags: ['App Store'],
+                summary: 'Get Listing Signing Authority',
+                description: 'Get the primary signing authority for an App Store Listing',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(
+            z
+                .object({
+                    endpoint: z.string(),
+                    name: z.string(),
+                    did: z.string(),
+                    isPrimary: z.boolean(),
+                })
+                .optional()
+        )
+        .query(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            const primarySa = await getPrimarySigningAuthorityForListing(listing);
+
+            if (!primarySa) {
+                return undefined;
+            }
+
+            return {
+                endpoint: primarySa.signingAuthority.endpoint,
+                name: primarySa.relationship.name,
+                did: primarySa.relationship.did,
+                isPrimary: primarySa.relationship.isPrimary ?? true,
+            };
         }),
 
     submitForReview: profileRoute
@@ -855,6 +1026,29 @@ export const appStoreRouter = t.router({
             const listing = await readAppStoreListingById(input.listingId);
 
             if (!listing || listing.app_listing_status !== 'LISTED') {
+                return undefined;
+            }
+
+            return transformListingForResponse(listing);
+        }),
+
+    getPublicListingBySlug: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'GET',
+                path: '/app-store/public/listing/slug/{slug}',
+                tags: ['App Store'],
+                summary: 'Get Public App Listing by Slug',
+                description: 'Get a publicly listed app by slug',
+            },
+        })
+        .input(z.object({ slug: z.string() }))
+        .output(AppStoreListingResponseValidator.optional())
+        .query(async ({ input }) => {
+            const listing = await readAppStoreListingBySlug(input.slug);
+
+            if (!listing) {
                 return undefined;
             }
 
@@ -1060,7 +1254,7 @@ export const appStoreRouter = t.router({
         )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            const { integration } = await verifyListingOwnership(
+            const { listing } = await verifyListingOwnership(
                 input.listingId,
                 ctx.user.profile.profileId
             );
@@ -1078,14 +1272,14 @@ export const appStoreRouter = t.router({
                 });
             }
 
-            // Auto-setup signing authority for integration if not already configured
-            const existingSa = await getPrimarySigningAuthorityForIntegration(integration);
+            // Auto-setup signing authority for listing if not already configured
+            const existingSa = await getPrimarySigningAuthorityForListing(listing);
             if (!existingSa) {
                 // Try to use the user's primary signing authority
                 const userSa = await getPrimarySigningAuthorityForUser(ctx.user.profile);
                 if (userSa) {
-                    await associateIntegrationWithSigningAuthority(
-                        integration.id,
+                    await associateListingWithSigningAuthority(
+                        listing.listing_id,
                         userSa.signingAuthority.endpoint,
                         {
                             name: userSa.relationship.name,
@@ -1184,12 +1378,20 @@ export const appStoreRouter = t.router({
             const { profile } = ctx.user;
             const { listingId, event } = input;
 
+            const listing = await readAppStoreListingByIdOrSlug(listingId);
+
+            if (!listing) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+            }
+
+            const resolvedListingId = listing.listing_id;
+
             // Check if user has this app installed OR owns the integration (for testing)
-            const isInstalled = await hasProfileInstalledApp(profile.profileId, listingId);
+            const isInstalled = await hasProfileInstalledApp(profile.profileId, resolvedListingId);
 
             if (!isInstalled) {
                 // Check if user owns the integration - allows testing without installation
-                const integration = await getIntegrationForListing(listingId);
+                const integration = await getIntegrationForListing(resolvedListingId);
                 const isOwner = integration
                     ? await isIntegrationAssociatedWithProfile(integration.id, profile.profileId)
                     : false;
@@ -1202,7 +1404,7 @@ export const appStoreRouter = t.router({
             const eventType = event.type as string | undefined;
 
             if (eventType === 'send-credential') {
-                return handleSendCredentialEvent(ctx, profile, listingId, event);
+                return handleSendCredentialEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
