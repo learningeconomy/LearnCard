@@ -120,6 +120,44 @@ export const AddContactView: React.FC<{
         }
     };
 
+    const handleExpiredInviteConnectionRequest = async (
+        e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+        profileId: string
+    ) => {
+        e.stopPropagation();
+        const wallet = await initWallet();
+
+        const { prompted } = await gate();
+        if (prompted) return;
+
+        setLoading(true);
+        try {
+            const connectionReq = await (wallet as any)?.invoke?.connectWithExpiredInvite(
+                profileId
+            );
+            if (connectionReq) {
+                presentToast('Connection Request sent', {
+                    hasDismissButton: true,
+                });
+            }
+            console.log('expiredInviteConnectionReq', connectionReq);
+            setLoading(false);
+            setConnectionRequested(true);
+            if (closeModal) handleCancel?.();
+        } catch (err) {
+            // @ts-ignore
+            presentToast(err?.message ?? 'An error ocurred, unable to send connection request.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            // @ts-ignore
+            if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
+            // @ts-ignore
+            console.log('expiredInviteConnectionReq::error', err?.message);
+            setLoading(false);
+        }
+    };
+
     const handleAcceptInvite = async (
         e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
         profileId: string
@@ -152,7 +190,7 @@ export const AddContactView: React.FC<{
                 newModal(
                     <ExpiredInviteLink
                         user={user}
-                        handleConnectionRequest={handleConnectionRequest}
+                        handleConnectionRequest={handleExpiredInviteConnectionRequest}
                     />,
                     {},
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }

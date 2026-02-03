@@ -28,8 +28,9 @@ class ProfileSigningAuthorities200ResponseInnerRelationship(BaseModel):
     ProfileSigningAuthorities200ResponseInnerRelationship
     """ # noqa: E501
     name: Annotated[str, Field(strict=True, max_length=15)]
-    did: StrictStr
+    did: Optional[StrictStr]
     is_primary: Optional[StrictBool] = Field(default=None, alias="isPrimary")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["name", "did", "isPrimary"]
 
     @field_validator('name')
@@ -69,8 +70,10 @@ class ProfileSigningAuthorities200ResponseInnerRelationship(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -78,6 +81,16 @@ class ProfileSigningAuthorities200ResponseInnerRelationship(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if did (nullable) is None
+        # and model_fields_set contains the field
+        if self.did is None and "did" in self.model_fields_set:
+            _dict['did'] = None
+
         return _dict
 
     @classmethod
@@ -94,6 +107,11 @@ class ProfileSigningAuthorities200ResponseInnerRelationship(BaseModel):
             "did": obj.get("did"),
             "isPrimary": obj.get("isPrimary")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

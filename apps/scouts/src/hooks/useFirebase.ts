@@ -155,9 +155,10 @@ export const useFirebase = () => {
             const signInWithGoogleRes = await FirebaseAuthentication.signInWithGoogle();
             const { user } = await FirebaseAuthentication.getCurrentUser();
 
-            setInitLoading(true);
-
             if (signInWithGoogleRes.user && user) {
+                // Show loading AFTER the popup closes and we have credentials
+                setInitLoading(true);
+                
                 const { token } = await FirebaseAuthentication.getIdToken();
 
                 authStore.set.typeOfLogin(SocialLoginTypes.google);
@@ -184,6 +185,9 @@ export const useFirebase = () => {
                     });
                     return refreshedToken;
                 });
+                // Loading state is cleared by web3Auth CONNECTED event
+            } else {
+                setInitLoading(false);
             }
         } catch (error) {
             setInitLoading(false);
@@ -621,14 +625,17 @@ export const useFirebase = () => {
             const user = firebaseAuth.currentUser;
 
             if (user) {
+                // Show loading AFTER the popup closes and we have credentials
+                setInitLoading(true);
+                
                 // get current firebase user idToken
-                const token = await firebaseAuth.currentUser.getIdToken();
                 authStore.set.typeOfLogin(SocialLoginTypes.apple);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
+                const token = await user.getIdToken();
+
                 if (token) {
-                    setInitLoading(true);
                     await web3AuthSfaFirebaseLogin(
                         token,
                         user?.uid,
@@ -637,7 +644,11 @@ export const useFirebase = () => {
                             return refreshedToken;
                         }
                     );
+                } else {
+                    setInitLoading(false);
                 }
+            } else {
+                setInitLoading(false);
             }
         } else {
             try {
@@ -645,9 +656,11 @@ export const useFirebase = () => {
 
                 const result = await signInWithPopup(firebaseAuth, provider);
                 if (!result) {
-                    setInitLoading(false);
                     return;
                 }
+                
+                // Show loading AFTER the popup closes
+                setInitLoading(true);
                 const credential = OAuthProvider.credentialFromResult(result);
                 const user = result?.user;
 
@@ -658,7 +671,6 @@ export const useFirebase = () => {
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
                     if (token) {
-                        setInitLoading(true);
                         await web3AuthSfaFirebaseLogin(
                             token,
                             user?.uid,
@@ -667,7 +679,11 @@ export const useFirebase = () => {
                                 return refreshedToken;
                             }
                         );
+                    } else {
+                        setInitLoading(false);
                     }
+                } else {
+                    setInitLoading(false);
                 }
             } catch (error) {
                 setInitLoading(false);

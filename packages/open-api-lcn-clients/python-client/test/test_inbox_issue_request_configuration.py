@@ -40,6 +40,9 @@ class TestInboxIssueRequestConfiguration(unittest.TestCase):
                     name = '', ),
                 webhook_url = '',
                 expires_in_days = 1,
+                template_data = {
+                    'key' : null
+                    },
                 delivery = openapi_client.models.inbox_issue_request_configuration_delivery.inbox_issue_request_configuration_delivery(
                     suppress = True, 
                     template = openapi_client.models.inbox_issue_request_configuration_delivery_template.inbox_issue_request_configuration_delivery_template(

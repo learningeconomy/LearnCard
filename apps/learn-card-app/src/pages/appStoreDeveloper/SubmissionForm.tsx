@@ -273,7 +273,11 @@ const SubmissionForm: React.FC = () => {
             };
             let savedListingId: string;
             if (isEditMode && listingId) {
-                await updateMutation.mutateAsync({ listingId, updates: listingData });
+                await updateMutation.mutateAsync({
+                    listingId,
+                    integrationId,
+                    updates: listingData,
+                });
                 savedListingId = listingId;
             } else if (integrationId) {
                 savedListingId = await createMutation.mutateAsync({
@@ -326,7 +330,11 @@ const SubmissionForm: React.FC = () => {
                 hero_background_color: formData.hero_background_color,
             };
             if (isEditMode && listingId) {
-                await updateMutation.mutateAsync({ listingId, updates: listingData });
+                await updateMutation.mutateAsync({
+                    listingId,
+                    integrationId,
+                    updates: listingData,
+                });
                 newListingId = listingId;
             } else if (integrationId) {
                 newListingId = await createMutation.mutateAsync({

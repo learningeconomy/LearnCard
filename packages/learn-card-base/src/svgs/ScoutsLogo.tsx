@@ -19,4 +19,3 @@ export const ScoutsLogo: React.FC<{ className: string }> = ({ className }) => {
 };
 
 export default ScoutsLogo;
-s;

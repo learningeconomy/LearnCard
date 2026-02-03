@@ -9,10 +9,106 @@ import type {
     AppListingStatus,
     PromotionLevel,
 } from '@learncard/types';
+import { getAppDidFromSlug } from './utils/appDid';
+
+// Type for integration signing authority info
+export type ListingSigningAuthorityInfo = {
+    endpoint: string;
+    name: string;
+    did: string;
+    isPrimary: boolean;
+};
 
 export const useDeveloperPortal = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+
+    const APP_SIGNING_AUTHORITY_PREFIX = 'app-';
+    const MAX_SIGNING_AUTHORITY_NAME_LENGTH = 15;
+
+    const buildAppSigningAuthorityName = (slug: string): string => {
+        const normalized = slug.replace(/[^a-z0-9-]/g, '');
+        const trimmed = normalized.slice(
+            0,
+            MAX_SIGNING_AUTHORITY_NAME_LENGTH - APP_SIGNING_AUTHORITY_PREFIX.length
+        );
+        const base = trimmed || 'app';
+
+        return `${APP_SIGNING_AUTHORITY_PREFIX}${base}`.slice(0, MAX_SIGNING_AUTHORITY_NAME_LENGTH);
+    };
+
+    const buildFallbackSigningAuthorityName = (baseName: string): string => {
+        const suffix = `-${Math.floor(Math.random() * 1000)}`;
+        const trimmed = baseName.slice(0, MAX_SIGNING_AUTHORITY_NAME_LENGTH - suffix.length);
+        const base = trimmed || 'app';
+
+        return `${base}${suffix}`.slice(0, MAX_SIGNING_AUTHORITY_NAME_LENGTH);
+    };
+
+    const ensureAppSigningAuthority = async (listingId: string): Promise<void> => {
+        const wallet = await initWallet();
+        const listing = await wallet.invoke.getAppStoreListing(listingId);
+
+        if (!listing?.slug) return;
+
+        const appDid = getAppDidFromSlug(listing.slug);
+        const baseName = buildAppSigningAuthorityName(listing.slug);
+
+        const createAuthority = async (name: string) => {
+            try {
+                const created = await wallet.invoke.createSigningAuthority(name, appDid);
+
+                return created || null;
+            } catch (error) {
+                console.warn('Failed to create app signing authority', error);
+                // Re-throw error for critical failures that would prevent credential issuance
+                if (
+                    error instanceof Error &&
+                    (error.message.includes('unauthorized') ||
+                        error.message.includes('forbidden') ||
+                        error.message.includes('authentication'))
+                ) {
+                    throw error;
+                }
+                return null;
+            }
+        };
+
+        const authority =
+            (await createAuthority(baseName)) ||
+            (await createAuthority(buildFallbackSigningAuthorityName(baseName)));
+
+        if (!authority?.endpoint || !authority?.name || !authority?.did) {
+            console.error(
+                'Failed to create signing authority for app. Credential issuance will fail.'
+            );
+            throw new Error(
+                'Unable to create app signing authority - required for credential issuance'
+            );
+        }
+
+        try {
+            await wallet.invoke.registerSigningAuthority(
+                authority.endpoint,
+                authority.name,
+                authority.did
+            );
+
+            await wallet.invoke.associateListingWithSigningAuthority(
+                listingId,
+                authority.endpoint,
+                authority.name,
+                authority.did,
+                true
+            );
+        } catch (error) {
+            console.error('Failed to register app signing authority', error);
+            // Registration/association failures are critical - they prevent credential issuance
+            throw new Error(
+                'Failed to register app signing authority - credential issuance will not work'
+            );
+        }
+    };
 
     // ========== Integration Hooks ==========
 
@@ -61,7 +157,9 @@ export const useDeveloperPortal = () => {
             onSuccess: (_data, variables) => {
                 // Invalidate both the list and the specific integration query
                 queryClient.invalidateQueries({ queryKey: ['developer', 'integrations'] });
-                queryClient.invalidateQueries({ queryKey: ['developer', 'integration', variables.id] });
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'integration', variables.id],
+                });
             },
         });
     };
@@ -80,6 +178,27 @@ export const useDeveloperPortal = () => {
                 return integration ?? null;
             },
             enabled: !!integrationId,
+            staleTime: 1000 * 60 * 2,
+        });
+    };
+
+    // Query for listing's signing authority
+    const useListingSigningAuthority = (listingId: string | null) => {
+        return useQuery({
+            queryKey: ['developer', 'listing-sa', listingId],
+            queryFn: async (): Promise<ListingSigningAuthorityInfo | null> => {
+                if (!listingId) return null;
+
+                const wallet = await initWallet();
+
+                try {
+                    const sa = await wallet.invoke.getListingSigningAuthority(listingId);
+                    return sa ?? null;
+                } catch {
+                    return null;
+                }
+            },
+            enabled: !!listingId,
             staleTime: 1000 * 60 * 2,
         });
     };
@@ -134,10 +253,14 @@ export const useDeveloperPortal = () => {
             }): Promise<string> => {
                 const wallet = await initWallet();
 
-                return wallet.invoke.createAppStoreListing(
+                const listingId = await wallet.invoke.createAppStoreListing(
                     integrationId,
                     listing as AppStoreListingCreateType
                 );
+
+                await ensureAppSigningAuthority(listingId);
+
+                return listingId;
             },
             onSuccess: (_, { integrationId }) => {
                 queryClient.invalidateQueries({
@@ -154,16 +277,24 @@ export const useDeveloperPortal = () => {
             mutationFn: async ({
                 listingId,
                 updates,
+                integrationId,
             }: {
                 listingId: string;
                 updates: AppStoreListingUpdateType | Record<string, unknown>;
+                integrationId?: string;
             }): Promise<boolean> => {
                 const wallet = await initWallet();
 
-                return wallet.invoke.updateAppStoreListing(
+                const result = await wallet.invoke.updateAppStoreListing(
                     listingId,
                     updates as AppStoreListingUpdateType
                 );
+
+                if (integrationId) {
+                    await ensureAppSigningAuthority(listingId);
+                }
+
+                return result;
             },
             onSuccess: () => {
                 queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
@@ -278,10 +409,63 @@ export const useDeveloperPortal = () => {
         });
     };
 
+    // ========== App DID Upgrade Hooks ==========
+
+    // Mutation to upgrade a legacy app to use app DIDs
+    const useUpgradeAppToAppDid = () => {
+        return useMutation({
+            mutationFn: async ({ listingId }: { listingId: string }): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                // Step 1: Get current listing
+                const listing = await wallet.invoke.getAppStoreListing(listingId);
+                if (!listing) {
+                    throw new Error('Listing not found');
+                }
+
+                // Step 2: If listing has no slug, trigger slug generation by updating with current name
+                // The backend auto-generates a slug when updating a listing that doesn't have one
+                if (!listing.slug) {
+                    await wallet.invoke.updateAppStoreListing(listingId, {
+                        display_name: listing.display_name,
+                    });
+                }
+
+                // Step 3: Use ensureAppSigningAuthority to create and associate app-specific SA
+                await ensureAppSigningAuthority(listingId);
+
+                return true;
+            },
+            onSuccess: () => {
+                // Invalidate all relevant queries to refresh data
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listing'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listing-sa'] });
+            },
+        });
+    };
+
+    // Helper to check if an app needs upgrading to app DIDs
+    const checkAppNeedsUpgrade = (
+        listing: AppStoreListing | null | undefined,
+        signingAuthority: ListingSigningAuthorityInfo | null | undefined
+    ): boolean => {
+        if (!listing) return false;
+
+        // Case 1: No slug means legacy app
+        if (!listing.slug) return true;
+
+        // Case 2: Has slug but missing signing authority
+        if (!signingAuthority) return true;
+
+        return false;
+    };
+
     return {
         // Integration hooks
         useIntegrations,
         useIntegration,
+        useListingSigningAuthority,
         useCreateIntegration,
         useUpdateIntegration,
 
@@ -298,6 +482,10 @@ export const useDeveloperPortal = () => {
         useAdminListings,
         useAdminUpdateStatus,
         useAdminUpdatePromotion,
+
+        // App DID upgrade
+        useUpgradeAppToAppDid,
+        checkAppNeedsUpgrade,
     };
 };
 

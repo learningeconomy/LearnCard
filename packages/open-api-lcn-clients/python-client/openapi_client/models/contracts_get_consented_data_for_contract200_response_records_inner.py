@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.contracts_get_consented_data_for_contract200_response_records_inner_credentials import ContractsGetConsentedDataForContract200ResponseRecordsInnerCredentials
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,8 +28,9 @@ class ContractsGetConsentedDataForContract200ResponseRecordsInner(BaseModel):
     ContractsGetConsentedDataForContract200ResponseRecordsInner
     """ # noqa: E501
     credentials: ContractsGetConsentedDataForContract200ResponseRecordsInnerCredentials
-    personal: Dict[str, StrictStr]
-    var_date: StrictStr = Field(alias="date")
+    personal: Dict[str, Optional[StrictStr]]
+    var_date: Optional[StrictStr] = Field(alias="date")
+    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["credentials", "personal", "date"]
 
     model_config = ConfigDict(
@@ -62,8 +63,10 @@ class ContractsGetConsentedDataForContract200ResponseRecordsInner(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -74,6 +77,16 @@ class ContractsGetConsentedDataForContract200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of credentials
         if self.credentials:
             _dict['credentials'] = self.credentials.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
+        # set to None if var_date (nullable) is None
+        # and model_fields_set contains the field
+        if self.var_date is None and "var_date" in self.model_fields_set:
+            _dict['date'] = None
+
         return _dict
 
     @classmethod
@@ -90,6 +103,11 @@ class ContractsGetConsentedDataForContract200ResponseRecordsInner(BaseModel):
             "personal": obj.get("personal"),
             "date": obj.get("date")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 

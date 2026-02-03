@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -26,8 +26,8 @@ class ClaimHookCreateClaimHookRequestHookOneOf1Data(BaseModel):
     """
     ClaimHookCreateClaimHookRequestHookOneOf1Data
     """ # noqa: E501
-    claim_uri: StrictStr = Field(alias="claimUri")
-    target_uri: StrictStr = Field(alias="targetUri")
+    claim_uri: Optional[StrictStr] = Field(alias="claimUri")
+    target_uri: Optional[StrictStr] = Field(alias="targetUri")
     __properties: ClassVar[List[str]] = ["claimUri", "targetUri"]
 
     model_config = ConfigDict(
@@ -69,6 +69,16 @@ class ClaimHookCreateClaimHookRequestHookOneOf1Data(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if claim_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.claim_uri is None and "claim_uri" in self.model_fields_set:
+            _dict['claimUri'] = None
+
+        # set to None if target_uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.target_uri is None and "target_uri" in self.model_fields_set:
+            _dict['targetUri'] = None
+
         return _dict
 
     @classmethod

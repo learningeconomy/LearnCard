@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_send_boost_request_options import BoostSendBoostRequestOptions
+from openapi_client.models.credential_accept_credential_request_options import CredentialAcceptCredentialRequestOptions
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,8 +27,8 @@ class CredentialAcceptCredentialRequest(BaseModel):
     """
     CredentialAcceptCredentialRequest
     """ # noqa: E501
-    uri: StrictStr
-    options: Optional[BoostSendBoostRequestOptions] = None
+    uri: Optional[StrictStr]
+    options: Optional[CredentialAcceptCredentialRequestOptions] = None
     __properties: ClassVar[List[str]] = ["uri", "options"]
 
     model_config = ConfigDict(
@@ -73,6 +73,11 @@ class CredentialAcceptCredentialRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
         return _dict
 
     @classmethod
@@ -86,7 +91,7 @@ class CredentialAcceptCredentialRequest(BaseModel):
 
         _obj = cls.model_validate({
             "uri": obj.get("uri"),
-            "options": BoostSendBoostRequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None
+            "options": CredentialAcceptCredentialRequestOptions.from_dict(obj["options"]) if obj.get("options") is not None else None
         })
         return _obj
 

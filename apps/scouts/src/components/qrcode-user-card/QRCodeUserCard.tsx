@@ -28,6 +28,7 @@ import UserProfileSetup from '../user-profile/UserProfileSetup';
 import { useWeb3AuthSFA } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
+import useLogout from '../../hooks/useLogout';
 
 import authStore from 'learn-card-base/stores/authStore';
 
@@ -56,11 +57,11 @@ const QrCodeUserCard: React.FC<{
         useIsCurrentUserLCNUser();
     const { data: currentLCNUser } = useGetProfile();
     const checkIfUserInNetwork = useCheckIfUserInNetwork();
+    const { handleLogout: logoutHook } = useLogout();
 
     const [photo, setPhoto] = useState<string | undefined>(currentUser?.profileImage);
 
     const [connections, setConnections] = useState<AddressBookContact[]>([]);
-    const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -88,7 +89,7 @@ const QrCodeUserCard: React.FC<{
             <UserProfileSetup
                 title="My Account"
                 handleCloseModal={() => closeEditModal()}
-                showCloseButton={true}
+                showCancelButton={true}
                 handleLogout={() => handleLogout()}
                 showNetworkSettings={true}
                 showNotificationsModal={false}
@@ -147,58 +148,7 @@ const QrCodeUserCard: React.FC<{
     }, []);
 
     const handleLogout = async () => {
-        setIsLoggingOut(true);
-        const typeOfLogin = authStore?.get?.typeOfLogin();
-        const nativeSocialLogins = [
-            SocialLoginTypes.apple,
-            SocialLoginTypes.sms,
-            SocialLoginTypes.passwordless,
-            SocialLoginTypes.google,
-        ];
-
-        const redirectUrl =
-            IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                ? LOGIN_REDIRECTS[branding].redirectUrl
-                : LOGIN_REDIRECTS[branding].devRedirectUrl;
-
-        setTimeout(async () => {
-            try {
-                const deviceToken = authStore?.get?.deviceToken();
-                if (deviceToken) {
-                    try {
-                        await pushUtilities.revokePushToken(initWallet, deviceToken);
-                    } catch (e) {
-                        console.error('Error revoking push token', e);
-                    }
-                }
-
-                await firebaseAuth.signOut(); // sign out of web layer
-                if (nativeSocialLogins.includes(typeOfLogin as any) && Capacitor.isNativePlatform()) {
-                    try {
-                        await FirebaseAuthentication?.signOut?.();
-                    } catch (e) {
-                        console.log('firebase::signout::error', e);
-                    }
-                }
-
-                try {
-                    await clearDB();
-                    await queryClient.resetQueries();
-                } catch (e) {
-                    console.error(e);
-                }
-
-                await logout(redirectUrl);
-            } catch (e) {
-                console.error('There was an issue logging out', e);
-                setIsLoggingOut(false);
-                handleQRCodeCardModal();
-                presentToast('Oops, we had an issue logging out.', {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
-            }
-        }, 1000);
+        logoutHook(branding);
     };
 
     const handleScan = async () => {
@@ -226,7 +176,6 @@ const QrCodeUserCard: React.FC<{
 
     return (
         <section className="pt-9 pb-4">
-            <IonLoading mode="ios" message="Logging out..." isOpen={isLoggingOut} />
             <div className="flex w-full flex-col items-center justify-center">
                 <ProfilePicture
                     customContainerClass="flex justify-center items-center h-[80px] w-[80px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-4xl min-w-[80px] min-h-[80px]"

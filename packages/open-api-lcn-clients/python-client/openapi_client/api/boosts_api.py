@@ -19,19 +19,29 @@ from typing_extensions import Annotated
 from pydantic import StrictBool, StrictFloat, StrictInt, StrictStr
 from typing import List, Optional, Union
 from openapi_client.models.boost_add_boost_admin_request import BoostAddBoostAdminRequest
+from openapi_client.models.boost_align_boost_skills_request import BoostAlignBoostSkillsRequest
+from openapi_client.models.boost_attach_framework_to_boost_request import BoostAttachFrameworkToBoostRequest
+from openapi_client.models.boost_claim_boost_with_link_request import BoostClaimBoostWithLinkRequest
 from openapi_client.models.boost_count_boost_children_request import BoostCountBoostChildrenRequest
+from openapi_client.models.boost_count_boost_parents_request import BoostCountBoostParentsRequest
 from openapi_client.models.boost_count_boost_siblings_request import BoostCountBoostSiblingsRequest
 from openapi_client.models.boost_count_familial_boosts_request import BoostCountFamilialBoostsRequest
 from openapi_client.models.boost_create_boost_request import BoostCreateBoostRequest
 from openapi_client.models.boost_create_child_boost_request import BoostCreateChildBoostRequest
+from openapi_client.models.boost_detach_framework_from_boost_request import BoostDetachFrameworkFromBoostRequest
 from openapi_client.models.boost_generate_claim_link200_response import BoostGenerateClaimLink200Response
 from openapi_client.models.boost_generate_claim_link_request import BoostGenerateClaimLinkRequest
 from openapi_client.models.boost_get_boost200_response import BoostGetBoost200Response
 from openapi_client.models.boost_get_boost200_response_claim_permissions import BoostGetBoost200ResponseClaimPermissions
 from openapi_client.models.boost_get_boost_admins200_response import BoostGetBoostAdmins200Response
 from openapi_client.models.boost_get_boost_admins_request import BoostGetBoostAdminsRequest
+from openapi_client.models.boost_get_boost_alignments200_response_inner import BoostGetBoostAlignments200ResponseInner
 from openapi_client.models.boost_get_boost_children_request import BoostGetBoostChildrenRequest
+from openapi_client.models.boost_get_boost_frameworks200_response import BoostGetBoostFrameworks200Response
+from openapi_client.models.boost_get_boost_frameworks_request import BoostGetBoostFrameworksRequest
+from openapi_client.models.boost_get_boost_parents_request import BoostGetBoostParentsRequest
 from openapi_client.models.boost_get_boost_recipients200_response_inner import BoostGetBoostRecipients200ResponseInner
+from openapi_client.models.boost_get_boost_recipients_with_children_count_request import BoostGetBoostRecipientsWithChildrenCountRequest
 from openapi_client.models.boost_get_boost_siblings_request import BoostGetBoostSiblingsRequest
 from openapi_client.models.boost_get_boosts200_response_inner import BoostGetBoosts200ResponseInner
 from openapi_client.models.boost_get_boosts_request import BoostGetBoostsRequest
@@ -41,13 +51,21 @@ from openapi_client.models.boost_get_connected_boost_recipients_request import B
 from openapi_client.models.boost_get_familial_boosts_request import BoostGetFamilialBoostsRequest
 from openapi_client.models.boost_get_paginated_boost_recipients200_response import BoostGetPaginatedBoostRecipients200Response
 from openapi_client.models.boost_get_paginated_boost_recipients_request import BoostGetPaginatedBoostRecipientsRequest
+from openapi_client.models.boost_get_paginated_boost_recipients_with_children200_response import BoostGetPaginatedBoostRecipientsWithChildren200Response
+from openapi_client.models.boost_get_paginated_boost_recipients_with_children_request import BoostGetPaginatedBoostRecipientsWithChildrenRequest
 from openapi_client.models.boost_get_paginated_boosts200_response import BoostGetPaginatedBoosts200Response
 from openapi_client.models.boost_get_paginated_boosts_request import BoostGetPaginatedBoostsRequest
+from openapi_client.models.boost_get_skills_available_for_boost200_response_inner import BoostGetSkillsAvailableForBoost200ResponseInner
 from openapi_client.models.boost_make_boost_parent_request import BoostMakeBoostParentRequest
+from openapi_client.models.boost_remove_boost_admin_request import BoostRemoveBoostAdminRequest
+from openapi_client.models.boost_remove_boost_parent_request import BoostRemoveBoostParentRequest
+from openapi_client.models.boost_search_skills_available_for_boost200_response import BoostSearchSkillsAvailableForBoost200Response
+from openapi_client.models.boost_search_skills_available_for_boost_request import BoostSearchSkillsAvailableForBoostRequest
 from openapi_client.models.boost_send_boost_request import BoostSendBoostRequest
 from openapi_client.models.boost_send_boost_via_signing_authority_request import BoostSendBoostViaSigningAuthorityRequest
 from openapi_client.models.boost_update_boost_permissions_request import BoostUpdateBoostPermissionsRequest
 from openapi_client.models.boost_update_boost_request import BoostUpdateBoostRequest
+from openapi_client.models.boost_update_other_boost_permissions_request import BoostUpdateOtherBoostPermissionsRequest
 
 from openapi_client.api_client import ApiClient, RequestSerialized
 from openapi_client.api_response import ApiResponse
@@ -354,9 +372,581 @@ class BoostsApi:
 
 
     @validate_call
+    def boost_align_boost_skills(
+        self,
+        boost_align_boost_skills_request: BoostAlignBoostSkillsRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> bool:
+        """Align skills to boost
+
+        Ensures ALIGNED_TO relationships from a boost to Skill nodes. Requires boost admin.
+
+        :param boost_align_boost_skills_request: (required)
+        :type boost_align_boost_skills_request: BoostAlignBoostSkillsRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_align_boost_skills_serialize(
+            boost_align_boost_skills_request=boost_align_boost_skills_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def boost_align_boost_skills_with_http_info(
+        self,
+        boost_align_boost_skills_request: BoostAlignBoostSkillsRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[bool]:
+        """Align skills to boost
+
+        Ensures ALIGNED_TO relationships from a boost to Skill nodes. Requires boost admin.
+
+        :param boost_align_boost_skills_request: (required)
+        :type boost_align_boost_skills_request: BoostAlignBoostSkillsRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_align_boost_skills_serialize(
+            boost_align_boost_skills_request=boost_align_boost_skills_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def boost_align_boost_skills_without_preload_content(
+        self,
+        boost_align_boost_skills_request: BoostAlignBoostSkillsRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Align skills to boost
+
+        Ensures ALIGNED_TO relationships from a boost to Skill nodes. Requires boost admin.
+
+        :param boost_align_boost_skills_request: (required)
+        :type boost_align_boost_skills_request: BoostAlignBoostSkillsRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_align_boost_skills_serialize(
+            boost_align_boost_skills_request=boost_align_boost_skills_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _boost_align_boost_skills_serialize(
+        self,
+        boost_align_boost_skills_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if boost_align_boost_skills_request is not None:
+            _body_params = boost_align_boost_skills_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/boost/align-skills',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def boost_attach_framework_to_boost(
+        self,
+        boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> bool:
+        """Attach framework to boost
+
+        Ensures a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
+
+        :param boost_attach_framework_to_boost_request: (required)
+        :type boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_attach_framework_to_boost_serialize(
+            boost_attach_framework_to_boost_request=boost_attach_framework_to_boost_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def boost_attach_framework_to_boost_with_http_info(
+        self,
+        boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[bool]:
+        """Attach framework to boost
+
+        Ensures a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
+
+        :param boost_attach_framework_to_boost_request: (required)
+        :type boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_attach_framework_to_boost_serialize(
+            boost_attach_framework_to_boost_request=boost_attach_framework_to_boost_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def boost_attach_framework_to_boost_without_preload_content(
+        self,
+        boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Attach framework to boost
+
+        Ensures a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
+
+        :param boost_attach_framework_to_boost_request: (required)
+        :type boost_attach_framework_to_boost_request: BoostAttachFrameworkToBoostRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_attach_framework_to_boost_serialize(
+            boost_attach_framework_to_boost_request=boost_attach_framework_to_boost_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _boost_attach_framework_to_boost_serialize(
+        self,
+        boost_attach_framework_to_boost_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if boost_attach_framework_to_boost_request is not None:
+            _body_params = boost_attach_framework_to_boost_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/boost/attach-framework',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def boost_claim_boost_with_link(
         self,
-        boost_generate_claim_link200_response: BoostGenerateClaimLink200Response,
+        boost_claim_boost_with_link_request: BoostClaimBoostWithLinkRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -374,8 +964,8 @@ class BoostsApi:
 
         Claims a boost using a claim link, including a challenge
 
-        :param boost_generate_claim_link200_response: (required)
-        :type boost_generate_claim_link200_response: BoostGenerateClaimLink200Response
+        :param boost_claim_boost_with_link_request: (required)
+        :type boost_claim_boost_with_link_request: BoostClaimBoostWithLinkRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -399,7 +989,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_claim_boost_with_link_serialize(
-            boost_generate_claim_link200_response=boost_generate_claim_link200_response,
+            boost_claim_boost_with_link_request=boost_claim_boost_with_link_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -427,7 +1017,7 @@ class BoostsApi:
     @validate_call
     def boost_claim_boost_with_link_with_http_info(
         self,
-        boost_generate_claim_link200_response: BoostGenerateClaimLink200Response,
+        boost_claim_boost_with_link_request: BoostClaimBoostWithLinkRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -445,8 +1035,8 @@ class BoostsApi:
 
         Claims a boost using a claim link, including a challenge
 
-        :param boost_generate_claim_link200_response: (required)
-        :type boost_generate_claim_link200_response: BoostGenerateClaimLink200Response
+        :param boost_claim_boost_with_link_request: (required)
+        :type boost_claim_boost_with_link_request: BoostClaimBoostWithLinkRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -470,7 +1060,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_claim_boost_with_link_serialize(
-            boost_generate_claim_link200_response=boost_generate_claim_link200_response,
+            boost_claim_boost_with_link_request=boost_claim_boost_with_link_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -498,7 +1088,7 @@ class BoostsApi:
     @validate_call
     def boost_claim_boost_with_link_without_preload_content(
         self,
-        boost_generate_claim_link200_response: BoostGenerateClaimLink200Response,
+        boost_claim_boost_with_link_request: BoostClaimBoostWithLinkRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -516,8 +1106,8 @@ class BoostsApi:
 
         Claims a boost using a claim link, including a challenge
 
-        :param boost_generate_claim_link200_response: (required)
-        :type boost_generate_claim_link200_response: BoostGenerateClaimLink200Response
+        :param boost_claim_boost_with_link_request: (required)
+        :type boost_claim_boost_with_link_request: BoostClaimBoostWithLinkRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -541,7 +1131,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_claim_boost_with_link_serialize(
-            boost_generate_claim_link200_response=boost_generate_claim_link200_response,
+            boost_claim_boost_with_link_request=boost_claim_boost_with_link_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -564,7 +1154,7 @@ class BoostsApi:
 
     def _boost_claim_boost_with_link_serialize(
         self,
-        boost_generate_claim_link200_response,
+        boost_claim_boost_with_link_request,
         _request_auth,
         _content_type,
         _headers,
@@ -590,8 +1180,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_generate_claim_link200_response is not None:
-            _body_params = boost_generate_claim_link200_response
+        if boost_claim_boost_with_link_request is not None:
+            _body_params = boost_claim_boost_with_link_request
 
 
         # set the HTTP header `Accept`
@@ -928,7 +1518,7 @@ class BoostsApi:
     @validate_call
     def boost_count_boost_parents(
         self,
-        boost_count_boost_children_request: BoostCountBoostChildrenRequest,
+        boost_count_boost_parents_request: BoostCountBoostParentsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -946,8 +1536,8 @@ class BoostsApi:
 
         This endpoint counts the parents of a particular boost
 
-        :param boost_count_boost_children_request: (required)
-        :type boost_count_boost_children_request: BoostCountBoostChildrenRequest
+        :param boost_count_boost_parents_request: (required)
+        :type boost_count_boost_parents_request: BoostCountBoostParentsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -971,7 +1561,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_count_boost_parents_serialize(
-            boost_count_boost_children_request=boost_count_boost_children_request,
+            boost_count_boost_parents_request=boost_count_boost_parents_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -999,7 +1589,7 @@ class BoostsApi:
     @validate_call
     def boost_count_boost_parents_with_http_info(
         self,
-        boost_count_boost_children_request: BoostCountBoostChildrenRequest,
+        boost_count_boost_parents_request: BoostCountBoostParentsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1017,8 +1607,8 @@ class BoostsApi:
 
         This endpoint counts the parents of a particular boost
 
-        :param boost_count_boost_children_request: (required)
-        :type boost_count_boost_children_request: BoostCountBoostChildrenRequest
+        :param boost_count_boost_parents_request: (required)
+        :type boost_count_boost_parents_request: BoostCountBoostParentsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1042,7 +1632,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_count_boost_parents_serialize(
-            boost_count_boost_children_request=boost_count_boost_children_request,
+            boost_count_boost_parents_request=boost_count_boost_parents_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1070,7 +1660,7 @@ class BoostsApi:
     @validate_call
     def boost_count_boost_parents_without_preload_content(
         self,
-        boost_count_boost_children_request: BoostCountBoostChildrenRequest,
+        boost_count_boost_parents_request: BoostCountBoostParentsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -1088,8 +1678,8 @@ class BoostsApi:
 
         This endpoint counts the parents of a particular boost
 
-        :param boost_count_boost_children_request: (required)
-        :type boost_count_boost_children_request: BoostCountBoostChildrenRequest
+        :param boost_count_boost_parents_request: (required)
+        :type boost_count_boost_parents_request: BoostCountBoostParentsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -1113,7 +1703,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_count_boost_parents_serialize(
-            boost_count_boost_children_request=boost_count_boost_children_request,
+            boost_count_boost_parents_request=boost_count_boost_parents_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -1136,7 +1726,7 @@ class BoostsApi:
 
     def _boost_count_boost_parents_serialize(
         self,
-        boost_count_boost_children_request,
+        boost_count_boost_parents_request,
         _request_auth,
         _content_type,
         _headers,
@@ -1162,8 +1752,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_count_boost_children_request is not None:
-            _body_params = boost_count_boost_children_request
+        if boost_count_boost_parents_request is not None:
+            _body_params = boost_count_boost_parents_request
 
 
         # set the HTTP header `Accept`
@@ -2920,6 +3510,292 @@ class BoostsApi:
 
 
     @validate_call
+    def boost_detach_framework_from_boost(
+        self,
+        boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> bool:
+        """Detach framework from boost
+
+        Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
+
+        :param boost_detach_framework_from_boost_request: (required)
+        :type boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_detach_framework_from_boost_serialize(
+            boost_detach_framework_from_boost_request=boost_detach_framework_from_boost_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def boost_detach_framework_from_boost_with_http_info(
+        self,
+        boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[bool]:
+        """Detach framework from boost
+
+        Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
+
+        :param boost_detach_framework_from_boost_request: (required)
+        :type boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_detach_framework_from_boost_serialize(
+            boost_detach_framework_from_boost_request=boost_detach_framework_from_boost_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def boost_detach_framework_from_boost_without_preload_content(
+        self,
+        boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Detach framework from boost
+
+        Removes a USES_FRAMEWORK relationship from a boost to a SkillFramework. Requires boost admin.
+
+        :param boost_detach_framework_from_boost_request: (required)
+        :type boost_detach_framework_from_boost_request: BoostDetachFrameworkFromBoostRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_detach_framework_from_boost_serialize(
+            boost_detach_framework_from_boost_request=boost_detach_framework_from_boost_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "bool",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _boost_detach_framework_from_boost_serialize(
+        self,
+        boost_detach_framework_from_boost_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if boost_detach_framework_from_boost_request is not None:
+            _body_params = boost_detach_framework_from_boost_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/boost/detach-framework',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def boost_generate_claim_link(
         self,
         boost_generate_claim_link_request: BoostGenerateClaimLinkRequest,
@@ -3770,6 +4646,284 @@ class BoostsApi:
 
 
     @validate_call
+    def boost_get_boost_alignments(
+        self,
+        uri: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> List[BoostGetBoostAlignments200ResponseInner]:
+        """Get OBv3 alignments for a boost
+
+        Returns OBv3 alignment entries based on the boost's linked framework and aligned skills. Requires issue permission.
+
+        :param uri: (required)
+        :type uri: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_boost_alignments_serialize(
+            uri=uri,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetBoostAlignments200ResponseInner]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def boost_get_boost_alignments_with_http_info(
+        self,
+        uri: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[List[BoostGetBoostAlignments200ResponseInner]]:
+        """Get OBv3 alignments for a boost
+
+        Returns OBv3 alignment entries based on the boost's linked framework and aligned skills. Requires issue permission.
+
+        :param uri: (required)
+        :type uri: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_boost_alignments_serialize(
+            uri=uri,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetBoostAlignments200ResponseInner]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def boost_get_boost_alignments_without_preload_content(
+        self,
+        uri: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get OBv3 alignments for a boost
+
+        Returns OBv3 alignment entries based on the boost's linked framework and aligned skills. Requires issue permission.
+
+        :param uri: (required)
+        :type uri: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_boost_alignments_serialize(
+            uri=uri,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetBoostAlignments200ResponseInner]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _boost_get_boost_alignments_serialize(
+        self,
+        uri,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        if uri is not None:
+            
+            _query_params.append(('uri', uri))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/boost/alignments',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def boost_get_boost_children(
         self,
         boost_get_boost_children_request: BoostGetBoostChildrenRequest,
@@ -4056,9 +5210,295 @@ class BoostsApi:
 
 
     @validate_call
+    def boost_get_boost_frameworks(
+        self,
+        boost_get_boost_frameworks_request: BoostGetBoostFrameworksRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> BoostGetBoostFrameworks200Response:
+        """List frameworks used by a boost (paginated)
+
+        Returns frameworks aligned to a boost via USES_FRAMEWORK with pagination and optional query filtering. Requires boost admin.
+
+        :param boost_get_boost_frameworks_request: (required)
+        :type boost_get_boost_frameworks_request: BoostGetBoostFrameworksRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_boost_frameworks_serialize(
+            boost_get_boost_frameworks_request=boost_get_boost_frameworks_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "BoostGetBoostFrameworks200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def boost_get_boost_frameworks_with_http_info(
+        self,
+        boost_get_boost_frameworks_request: BoostGetBoostFrameworksRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[BoostGetBoostFrameworks200Response]:
+        """List frameworks used by a boost (paginated)
+
+        Returns frameworks aligned to a boost via USES_FRAMEWORK with pagination and optional query filtering. Requires boost admin.
+
+        :param boost_get_boost_frameworks_request: (required)
+        :type boost_get_boost_frameworks_request: BoostGetBoostFrameworksRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_boost_frameworks_serialize(
+            boost_get_boost_frameworks_request=boost_get_boost_frameworks_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "BoostGetBoostFrameworks200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def boost_get_boost_frameworks_without_preload_content(
+        self,
+        boost_get_boost_frameworks_request: BoostGetBoostFrameworksRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """List frameworks used by a boost (paginated)
+
+        Returns frameworks aligned to a boost via USES_FRAMEWORK with pagination and optional query filtering. Requires boost admin.
+
+        :param boost_get_boost_frameworks_request: (required)
+        :type boost_get_boost_frameworks_request: BoostGetBoostFrameworksRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_boost_frameworks_serialize(
+            boost_get_boost_frameworks_request=boost_get_boost_frameworks_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "BoostGetBoostFrameworks200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _boost_get_boost_frameworks_serialize(
+        self,
+        boost_get_boost_frameworks_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if boost_get_boost_frameworks_request is not None:
+            _body_params = boost_get_boost_frameworks_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/boost/frameworks',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def boost_get_boost_parents(
         self,
-        boost_get_boost_children_request: BoostGetBoostChildrenRequest,
+        boost_get_boost_parents_request: BoostGetBoostParentsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4076,8 +5516,8 @@ class BoostsApi:
 
         This endpoint gets the parents of a particular boost
 
-        :param boost_get_boost_children_request: (required)
-        :type boost_get_boost_children_request: BoostGetBoostChildrenRequest
+        :param boost_get_boost_parents_request: (required)
+        :type boost_get_boost_parents_request: BoostGetBoostParentsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4101,7 +5541,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_get_boost_parents_serialize(
-            boost_get_boost_children_request=boost_get_boost_children_request,
+            boost_get_boost_parents_request=boost_get_boost_parents_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4129,7 +5569,7 @@ class BoostsApi:
     @validate_call
     def boost_get_boost_parents_with_http_info(
         self,
-        boost_get_boost_children_request: BoostGetBoostChildrenRequest,
+        boost_get_boost_parents_request: BoostGetBoostParentsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4147,8 +5587,8 @@ class BoostsApi:
 
         This endpoint gets the parents of a particular boost
 
-        :param boost_get_boost_children_request: (required)
-        :type boost_get_boost_children_request: BoostGetBoostChildrenRequest
+        :param boost_get_boost_parents_request: (required)
+        :type boost_get_boost_parents_request: BoostGetBoostParentsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4172,7 +5612,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_get_boost_parents_serialize(
-            boost_get_boost_children_request=boost_get_boost_children_request,
+            boost_get_boost_parents_request=boost_get_boost_parents_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4200,7 +5640,7 @@ class BoostsApi:
     @validate_call
     def boost_get_boost_parents_without_preload_content(
         self,
-        boost_get_boost_children_request: BoostGetBoostChildrenRequest,
+        boost_get_boost_parents_request: BoostGetBoostParentsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -4218,8 +5658,8 @@ class BoostsApi:
 
         This endpoint gets the parents of a particular boost
 
-        :param boost_get_boost_children_request: (required)
-        :type boost_get_boost_children_request: BoostGetBoostChildrenRequest
+        :param boost_get_boost_parents_request: (required)
+        :type boost_get_boost_parents_request: BoostGetBoostParentsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -4243,7 +5683,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_get_boost_parents_serialize(
-            boost_get_boost_children_request=boost_get_boost_children_request,
+            boost_get_boost_parents_request=boost_get_boost_parents_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -4266,7 +5706,7 @@ class BoostsApi:
 
     def _boost_get_boost_parents_serialize(
         self,
-        boost_get_boost_children_request,
+        boost_get_boost_parents_request,
         _request_auth,
         _content_type,
         _headers,
@@ -4292,8 +5732,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_get_boost_children_request is not None:
-            _body_params = boost_get_boost_children_request
+        if boost_get_boost_parents_request is not None:
+            _body_params = boost_get_boost_parents_request
 
 
         # set the HTTP header `Accept`
@@ -5231,6 +6671,292 @@ class BoostsApi:
         return self.api_client.param_serialize(
             method='GET',
             resource_path='/boost/recipients',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def boost_get_boost_recipients_with_children_count(
+        self,
+        boost_get_boost_recipients_with_children_count_request: BoostGetBoostRecipientsWithChildrenCountRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> float:
+        """Count boost recipients with children
+
+        This endpoint counts distinct recipients of a boost and all its children boosts
+
+        :param boost_get_boost_recipients_with_children_count_request: (required)
+        :type boost_get_boost_recipients_with_children_count_request: BoostGetBoostRecipientsWithChildrenCountRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_boost_recipients_with_children_count_serialize(
+            boost_get_boost_recipients_with_children_count_request=boost_get_boost_recipients_with_children_count_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "float",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def boost_get_boost_recipients_with_children_count_with_http_info(
+        self,
+        boost_get_boost_recipients_with_children_count_request: BoostGetBoostRecipientsWithChildrenCountRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[float]:
+        """Count boost recipients with children
+
+        This endpoint counts distinct recipients of a boost and all its children boosts
+
+        :param boost_get_boost_recipients_with_children_count_request: (required)
+        :type boost_get_boost_recipients_with_children_count_request: BoostGetBoostRecipientsWithChildrenCountRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_boost_recipients_with_children_count_serialize(
+            boost_get_boost_recipients_with_children_count_request=boost_get_boost_recipients_with_children_count_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "float",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def boost_get_boost_recipients_with_children_count_without_preload_content(
+        self,
+        boost_get_boost_recipients_with_children_count_request: BoostGetBoostRecipientsWithChildrenCountRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Count boost recipients with children
+
+        This endpoint counts distinct recipients of a boost and all its children boosts
+
+        :param boost_get_boost_recipients_with_children_count_request: (required)
+        :type boost_get_boost_recipients_with_children_count_request: BoostGetBoostRecipientsWithChildrenCountRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_boost_recipients_with_children_count_serialize(
+            boost_get_boost_recipients_with_children_count_request=boost_get_boost_recipients_with_children_count_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "float",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _boost_get_boost_recipients_with_children_count_serialize(
+        self,
+        boost_get_boost_recipients_with_children_count_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if boost_get_boost_recipients_with_children_count_request is not None:
+            _body_params = boost_get_boost_recipients_with_children_count_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/boost/recipients-with-children/count',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -6403,7 +8129,7 @@ class BoostsApi:
     @validate_call
     def boost_get_connected_boost_recipients(
         self,
-        uri: StrictStr,
+        uri: Optional[StrictStr],
         boost_get_connected_boost_recipients_request: BoostGetConnectedBoostRecipientsRequest,
         _request_timeout: Union[
             None,
@@ -6478,7 +8204,7 @@ class BoostsApi:
     @validate_call
     def boost_get_connected_boost_recipients_with_http_info(
         self,
-        uri: StrictStr,
+        uri: Optional[StrictStr],
         boost_get_connected_boost_recipients_request: BoostGetConnectedBoostRecipientsRequest,
         _request_timeout: Union[
             None,
@@ -6553,7 +8279,7 @@ class BoostsApi:
     @validate_call
     def boost_get_connected_boost_recipients_without_preload_content(
         self,
-        uri: StrictStr,
+        uri: Optional[StrictStr],
         boost_get_connected_boost_recipients_request: BoostGetConnectedBoostRecipientsRequest,
         _request_timeout: Union[
             None,
@@ -7567,6 +9293,292 @@ class BoostsApi:
 
 
     @validate_call
+    def boost_get_paginated_boost_recipients_with_children(
+        self,
+        boost_get_paginated_boost_recipients_with_children_request: BoostGetPaginatedBoostRecipientsWithChildrenRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> BoostGetPaginatedBoostRecipientsWithChildren200Response:
+        """Get boost recipients with children
+
+        This endpoint gets the recipients of a boost and all its children boosts
+
+        :param boost_get_paginated_boost_recipients_with_children_request: (required)
+        :type boost_get_paginated_boost_recipients_with_children_request: BoostGetPaginatedBoostRecipientsWithChildrenRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_paginated_boost_recipients_with_children_serialize(
+            boost_get_paginated_boost_recipients_with_children_request=boost_get_paginated_boost_recipients_with_children_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "BoostGetPaginatedBoostRecipientsWithChildren200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def boost_get_paginated_boost_recipients_with_children_with_http_info(
+        self,
+        boost_get_paginated_boost_recipients_with_children_request: BoostGetPaginatedBoostRecipientsWithChildrenRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[BoostGetPaginatedBoostRecipientsWithChildren200Response]:
+        """Get boost recipients with children
+
+        This endpoint gets the recipients of a boost and all its children boosts
+
+        :param boost_get_paginated_boost_recipients_with_children_request: (required)
+        :type boost_get_paginated_boost_recipients_with_children_request: BoostGetPaginatedBoostRecipientsWithChildrenRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_paginated_boost_recipients_with_children_serialize(
+            boost_get_paginated_boost_recipients_with_children_request=boost_get_paginated_boost_recipients_with_children_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "BoostGetPaginatedBoostRecipientsWithChildren200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def boost_get_paginated_boost_recipients_with_children_without_preload_content(
+        self,
+        boost_get_paginated_boost_recipients_with_children_request: BoostGetPaginatedBoostRecipientsWithChildrenRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Get boost recipients with children
+
+        This endpoint gets the recipients of a boost and all its children boosts
+
+        :param boost_get_paginated_boost_recipients_with_children_request: (required)
+        :type boost_get_paginated_boost_recipients_with_children_request: BoostGetPaginatedBoostRecipientsWithChildrenRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_paginated_boost_recipients_with_children_serialize(
+            boost_get_paginated_boost_recipients_with_children_request=boost_get_paginated_boost_recipients_with_children_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "BoostGetPaginatedBoostRecipientsWithChildren200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _boost_get_paginated_boost_recipients_with_children_serialize(
+        self,
+        boost_get_paginated_boost_recipients_with_children_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if boost_get_paginated_boost_recipients_with_children_request is not None:
+            _body_params = boost_get_paginated_boost_recipients_with_children_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/boost/recipients-with-children/paginated',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def boost_get_paginated_boosts(
         self,
         boost_get_paginated_boosts_request: Optional[BoostGetPaginatedBoostsRequest] = None,
@@ -7837,6 +9849,284 @@ class BoostsApi:
         return self.api_client.param_serialize(
             method='POST',
             resource_path='/boost/paginated',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def boost_get_skills_available_for_boost(
+        self,
+        uri: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> List[BoostGetSkillsAvailableForBoost200ResponseInner]:
+        """List available skills for a boost
+
+        Returns skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.
+
+        :param uri: (required)
+        :type uri: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_skills_available_for_boost_serialize(
+            uri=uri,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetSkillsAvailableForBoost200ResponseInner]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def boost_get_skills_available_for_boost_with_http_info(
+        self,
+        uri: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[List[BoostGetSkillsAvailableForBoost200ResponseInner]]:
+        """List available skills for a boost
+
+        Returns skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.
+
+        :param uri: (required)
+        :type uri: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_skills_available_for_boost_serialize(
+            uri=uri,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetSkillsAvailableForBoost200ResponseInner]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def boost_get_skills_available_for_boost_without_preload_content(
+        self,
+        uri: StrictStr,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """List available skills for a boost
+
+        Returns skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.
+
+        :param uri: (required)
+        :type uri: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_get_skills_available_for_boost_serialize(
+            uri=uri,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "List[BoostGetSkillsAvailableForBoost200ResponseInner]",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '404': "ErrorNOTFOUND",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _boost_get_skills_available_for_boost_serialize(
+        self,
+        uri,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        if uri is not None:
+            
+            _query_params.append(('uri', uri))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/boost/skills/available',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,
@@ -8141,7 +10431,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_admin(
         self,
-        boost_add_boost_admin_request: BoostAddBoostAdminRequest,
+        boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -8159,8 +10449,8 @@ class BoostsApi:
 
         This route removes an  admin from a boost
 
-        :param boost_add_boost_admin_request: (required)
-        :type boost_add_boost_admin_request: BoostAddBoostAdminRequest
+        :param boost_remove_boost_admin_request: (required)
+        :type boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -8184,7 +10474,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_admin_serialize(
-            boost_add_boost_admin_request=boost_add_boost_admin_request,
+            boost_remove_boost_admin_request=boost_remove_boost_admin_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -8212,7 +10502,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_admin_with_http_info(
         self,
-        boost_add_boost_admin_request: BoostAddBoostAdminRequest,
+        boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -8230,8 +10520,8 @@ class BoostsApi:
 
         This route removes an  admin from a boost
 
-        :param boost_add_boost_admin_request: (required)
-        :type boost_add_boost_admin_request: BoostAddBoostAdminRequest
+        :param boost_remove_boost_admin_request: (required)
+        :type boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -8255,7 +10545,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_admin_serialize(
-            boost_add_boost_admin_request=boost_add_boost_admin_request,
+            boost_remove_boost_admin_request=boost_remove_boost_admin_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -8283,7 +10573,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_admin_without_preload_content(
         self,
-        boost_add_boost_admin_request: BoostAddBoostAdminRequest,
+        boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -8301,8 +10591,8 @@ class BoostsApi:
 
         This route removes an  admin from a boost
 
-        :param boost_add_boost_admin_request: (required)
-        :type boost_add_boost_admin_request: BoostAddBoostAdminRequest
+        :param boost_remove_boost_admin_request: (required)
+        :type boost_remove_boost_admin_request: BoostRemoveBoostAdminRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -8326,7 +10616,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_admin_serialize(
-            boost_add_boost_admin_request=boost_add_boost_admin_request,
+            boost_remove_boost_admin_request=boost_remove_boost_admin_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -8349,7 +10639,7 @@ class BoostsApi:
 
     def _boost_remove_boost_admin_serialize(
         self,
-        boost_add_boost_admin_request,
+        boost_remove_boost_admin_request,
         _request_auth,
         _content_type,
         _headers,
@@ -8375,8 +10665,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_add_boost_admin_request is not None:
-            _body_params = boost_add_boost_admin_request
+        if boost_remove_boost_admin_request is not None:
+            _body_params = boost_remove_boost_admin_request
 
 
         # set the HTTP header `Accept`
@@ -8427,7 +10717,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_parent(
         self,
-        boost_make_boost_parent_request: BoostMakeBoostParentRequest,
+        boost_remove_boost_parent_request: BoostRemoveBoostParentRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -8445,8 +10735,8 @@ class BoostsApi:
 
         This endpoint removes a parent/child relationship between two boosts
 
-        :param boost_make_boost_parent_request: (required)
-        :type boost_make_boost_parent_request: BoostMakeBoostParentRequest
+        :param boost_remove_boost_parent_request: (required)
+        :type boost_remove_boost_parent_request: BoostRemoveBoostParentRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -8470,7 +10760,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_parent_serialize(
-            boost_make_boost_parent_request=boost_make_boost_parent_request,
+            boost_remove_boost_parent_request=boost_remove_boost_parent_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -8498,7 +10788,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_parent_with_http_info(
         self,
-        boost_make_boost_parent_request: BoostMakeBoostParentRequest,
+        boost_remove_boost_parent_request: BoostRemoveBoostParentRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -8516,8 +10806,8 @@ class BoostsApi:
 
         This endpoint removes a parent/child relationship between two boosts
 
-        :param boost_make_boost_parent_request: (required)
-        :type boost_make_boost_parent_request: BoostMakeBoostParentRequest
+        :param boost_remove_boost_parent_request: (required)
+        :type boost_remove_boost_parent_request: BoostRemoveBoostParentRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -8541,7 +10831,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_parent_serialize(
-            boost_make_boost_parent_request=boost_make_boost_parent_request,
+            boost_remove_boost_parent_request=boost_remove_boost_parent_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -8569,7 +10859,7 @@ class BoostsApi:
     @validate_call
     def boost_remove_boost_parent_without_preload_content(
         self,
-        boost_make_boost_parent_request: BoostMakeBoostParentRequest,
+        boost_remove_boost_parent_request: BoostRemoveBoostParentRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -8587,8 +10877,8 @@ class BoostsApi:
 
         This endpoint removes a parent/child relationship between two boosts
 
-        :param boost_make_boost_parent_request: (required)
-        :type boost_make_boost_parent_request: BoostMakeBoostParentRequest
+        :param boost_remove_boost_parent_request: (required)
+        :type boost_remove_boost_parent_request: BoostRemoveBoostParentRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -8612,7 +10902,7 @@ class BoostsApi:
         """ # noqa: E501
 
         _param = self._boost_remove_boost_parent_serialize(
-            boost_make_boost_parent_request=boost_make_boost_parent_request,
+            boost_remove_boost_parent_request=boost_remove_boost_parent_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -8635,7 +10925,7 @@ class BoostsApi:
 
     def _boost_remove_boost_parent_serialize(
         self,
-        boost_make_boost_parent_request,
+        boost_remove_boost_parent_request,
         _request_auth,
         _content_type,
         _headers,
@@ -8661,8 +10951,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_make_boost_parent_request is not None:
-            _body_params = boost_make_boost_parent_request
+        if boost_remove_boost_parent_request is not None:
+            _body_params = boost_remove_boost_parent_request
 
 
         # set the HTTP header `Accept`
@@ -8711,9 +11001,295 @@ class BoostsApi:
 
 
     @validate_call
+    def boost_search_skills_available_for_boost(
+        self,
+        boost_search_skills_available_for_boost_request: BoostSearchSkillsAvailableForBoostRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> BoostSearchSkillsAvailableForBoost200Response:
+        """Search available skills for a boost
+
+        Returns a flattened, paginated list of skills matching the search query. Supports $regex and $in operators. Searches skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.
+
+        :param boost_search_skills_available_for_boost_request: (required)
+        :type boost_search_skills_available_for_boost_request: BoostSearchSkillsAvailableForBoostRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_search_skills_available_for_boost_serialize(
+            boost_search_skills_available_for_boost_request=boost_search_skills_available_for_boost_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "BoostSearchSkillsAvailableForBoost200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def boost_search_skills_available_for_boost_with_http_info(
+        self,
+        boost_search_skills_available_for_boost_request: BoostSearchSkillsAvailableForBoostRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[BoostSearchSkillsAvailableForBoost200Response]:
+        """Search available skills for a boost
+
+        Returns a flattened, paginated list of skills matching the search query. Supports $regex and $in operators. Searches skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.
+
+        :param boost_search_skills_available_for_boost_request: (required)
+        :type boost_search_skills_available_for_boost_request: BoostSearchSkillsAvailableForBoostRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_search_skills_available_for_boost_serialize(
+            boost_search_skills_available_for_boost_request=boost_search_skills_available_for_boost_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "BoostSearchSkillsAvailableForBoost200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def boost_search_skills_available_for_boost_without_preload_content(
+        self,
+        boost_search_skills_available_for_boost_request: BoostSearchSkillsAvailableForBoostRequest,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """Search available skills for a boost
+
+        Returns a flattened, paginated list of skills matching the search query. Supports $regex and $in operators. Searches skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.
+
+        :param boost_search_skills_available_for_boost_request: (required)
+        :type boost_search_skills_available_for_boost_request: BoostSearchSkillsAvailableForBoostRequest
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._boost_search_skills_available_for_boost_serialize(
+            boost_search_skills_available_for_boost_request=boost_search_skills_available_for_boost_request,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "BoostSearchSkillsAvailableForBoost200Response",
+            '400': "ErrorBADREQUEST",
+            '401': "ErrorUNAUTHORIZED",
+            '403': "ErrorFORBIDDEN",
+            '500': "ErrorINTERNALSERVERERROR",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _boost_search_skills_available_for_boost_serialize(
+        self,
+        boost_search_skills_available_for_boost_request,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+        if boost_search_skills_available_for_boost_request is not None:
+            _body_params = boost_search_skills_available_for_boost_request
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+        # set the HTTP header `Content-Type`
+        if _content_type:
+            _header_params['Content-Type'] = _content_type
+        else:
+            _default_content_type = (
+                self.api_client.select_header_content_type(
+                    [
+                        'application/json'
+                    ]
+                )
+            )
+            if _default_content_type is not None:
+                _header_params['Content-Type'] = _default_content_type
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'Authorization'
+        ]
+
+        return self.api_client.param_serialize(
+            method='POST',
+            resource_path='/boost/skills/search',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
     def boost_send_boost(
         self,
-        profile_id: StrictStr,
+        profile_id: Optional[StrictStr],
         boost_send_boost_request: BoostSendBoostRequest,
         _request_timeout: Union[
             None,
@@ -8788,7 +11364,7 @@ class BoostsApi:
     @validate_call
     def boost_send_boost_with_http_info(
         self,
-        profile_id: StrictStr,
+        profile_id: Optional[StrictStr],
         boost_send_boost_request: BoostSendBoostRequest,
         _request_timeout: Union[
             None,
@@ -8863,7 +11439,7 @@ class BoostsApi:
     @validate_call
     def boost_send_boost_without_preload_content(
         self,
-        profile_id: StrictStr,
+        profile_id: Optional[StrictStr],
         boost_send_boost_request: BoostSendBoostRequest,
         _request_timeout: Union[
             None,
@@ -9888,7 +12464,7 @@ class BoostsApi:
     def boost_update_other_boost_permissions(
         self,
         profile_id: StrictStr,
-        boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest,
+        boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -9908,8 +12484,8 @@ class BoostsApi:
 
         :param profile_id: (required)
         :type profile_id: str
-        :param boost_update_boost_permissions_request: (required)
-        :type boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest
+        :param boost_update_other_boost_permissions_request: (required)
+        :type boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -9934,7 +12510,7 @@ class BoostsApi:
 
         _param = self._boost_update_other_boost_permissions_serialize(
             profile_id=profile_id,
-            boost_update_boost_permissions_request=boost_update_boost_permissions_request,
+            boost_update_other_boost_permissions_request=boost_update_other_boost_permissions_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -9963,7 +12539,7 @@ class BoostsApi:
     def boost_update_other_boost_permissions_with_http_info(
         self,
         profile_id: StrictStr,
-        boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest,
+        boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -9983,8 +12559,8 @@ class BoostsApi:
 
         :param profile_id: (required)
         :type profile_id: str
-        :param boost_update_boost_permissions_request: (required)
-        :type boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest
+        :param boost_update_other_boost_permissions_request: (required)
+        :type boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -10009,7 +12585,7 @@ class BoostsApi:
 
         _param = self._boost_update_other_boost_permissions_serialize(
             profile_id=profile_id,
-            boost_update_boost_permissions_request=boost_update_boost_permissions_request,
+            boost_update_other_boost_permissions_request=boost_update_other_boost_permissions_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -10038,7 +12614,7 @@ class BoostsApi:
     def boost_update_other_boost_permissions_without_preload_content(
         self,
         profile_id: StrictStr,
-        boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest,
+        boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -10058,8 +12634,8 @@ class BoostsApi:
 
         :param profile_id: (required)
         :type profile_id: str
-        :param boost_update_boost_permissions_request: (required)
-        :type boost_update_boost_permissions_request: BoostUpdateBoostPermissionsRequest
+        :param boost_update_other_boost_permissions_request: (required)
+        :type boost_update_other_boost_permissions_request: BoostUpdateOtherBoostPermissionsRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -10084,7 +12660,7 @@ class BoostsApi:
 
         _param = self._boost_update_other_boost_permissions_serialize(
             profile_id=profile_id,
-            boost_update_boost_permissions_request=boost_update_boost_permissions_request,
+            boost_update_other_boost_permissions_request=boost_update_other_boost_permissions_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -10108,7 +12684,7 @@ class BoostsApi:
     def _boost_update_other_boost_permissions_serialize(
         self,
         profile_id,
-        boost_update_boost_permissions_request,
+        boost_update_other_boost_permissions_request,
         _request_auth,
         _content_type,
         _headers,
@@ -10136,8 +12712,8 @@ class BoostsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if boost_update_boost_permissions_request is not None:
-            _body_params = boost_update_boost_permissions_request
+        if boost_update_other_boost_permissions_request is not None:
+            _body_params = boost_update_other_boost_permissions_request
 
 
         # set the HTTP header `Accept`
