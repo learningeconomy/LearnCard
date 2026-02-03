@@ -44,8 +44,6 @@ if (isSentryEnabled) {
         replaysSessionSampleRate: 0.1,
         replaysOnErrorSampleRate: 1.0,
     });
-} else {
-    console.log('Sentry is not enabled for this environment: ', SENTRY_ENV);
 }
 
 export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
@@ -57,6 +55,10 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                 if (options.debug) console.debug('Identify user! 🎸', currentUser);
                 getDID()
                     .then(did => {
+                        if (typeof did !== 'string' || did.trim() === '') {
+                            return;
+                        }
+
                         const user = {
                             id: did,
                             //username: currentUser?.name, // TODO: Hash name
