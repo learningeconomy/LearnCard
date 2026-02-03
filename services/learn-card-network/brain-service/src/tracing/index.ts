@@ -23,30 +23,52 @@ export const trace = <T>(
     name: string,
     fn: () => Promise<T>,
     data?: Record<string, unknown>
-): Promise<T> => manager.trace(op, name, fn, data);
+): Promise<T> => {
+    return manager.trace(op, name, fn, data);
+};
 
 /**
  * Trace a database operation.
  */
-export const traceDb = <T>(name: string, fn: () => Promise<T>, data?: Record<string, unknown>): Promise<T> =>
-    trace('db', name, fn, data);
+export const traceDb = <T>(
+    name: string,
+    fn: () => Promise<T>,
+    data?: Record<string, unknown>
+): Promise<T> => {
+    return trace('db', name, fn, data);
+};
 
 /**
  * Trace an HTTP client operation.
  */
-export const traceHttp = <T>(name: string, fn: () => Promise<T>, data?: Record<string, unknown>): Promise<T> =>
-    trace('http', name, fn, data);
+export const traceHttp = <T>(
+    name: string,
+    fn: () => Promise<T>,
+    data?: Record<string, unknown>
+): Promise<T> => {
+    return trace('http', name, fn, data);
+};
 
 /**
  * Trace a cryptographic operation.
  */
-export const traceCrypto = <T>(name: string, fn: () => Promise<T>, data?: Record<string, unknown>): Promise<T> =>
-    trace('crypto', name, fn, data);
+export const traceCrypto = <T>(
+    name: string,
+    fn: () => Promise<T>,
+    data?: Record<string, unknown>
+): Promise<T> => {
+    return trace('crypto', name, fn, data);
+};
 
 /**
  * Trace an internal/business logic operation.
  */
-export const traceInternal = <T>(name: string, fn: () => Promise<T>, data?: Record<string, unknown>): Promise<T> =>
-    trace('internal', name, fn, data);
+export const traceInternal = <T>(
+    name: string,
+    fn: () => Promise<T>,
+    data?: Record<string, unknown>
+): Promise<T> => {
+    return trace('internal', name, fn, data);
+};
 
 export type { TracingProvider, SpanContext, SpanResult, SpanStatus } from './types';
