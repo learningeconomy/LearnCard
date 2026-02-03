@@ -67,6 +67,8 @@ import BoostCMSMediaDisplayWarning from './boostCMSForms/boostCMSMedia/BoostCMSM
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessConfirmation';
+import BoostCMSRecoveryPrompt from './BoostCMSRecoveryPrompt';
+import useBoostCMSAutosave from '../../../hooks/useBoostCMSAutosave';
 
 import BoostCMSAchievementTypeSelectorButton from './boostCMSForms/boostCMSAppearance/BoostCMSAchievementTypeSelectorButton';
 
@@ -114,6 +116,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import BoostCMSMediaOptions from './boostCMSForms/boostCMSMedia/BoostCMSMediaOptions';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
+import { useRef } from 'react';
 
 const FamilyCMS = lazyWithRetry(() => import('../../familyCMS/FamilyCMS'));
 
@@ -225,6 +228,82 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const isAwardDisplay = displayType === BoostCMSAppearanceDisplayTypeEnum.Award;
     const isMediaDisplay = displayType === BoostCMSAppearanceDisplayTypeEnum.Media;
     const issueToLength = state?.issueTo?.length;
+
+    // Autosave hook - saves progress to localStorage and can recover from interruptions
+    const {
+        hasRecoveredState,
+        recoveredState,
+        clearRecoveredState,
+        saveToLocal,
+        clearLocalSave,
+        isAutosaving,
+    } = useBoostCMSAutosave({
+        enabled: !propBoostCMSState, // Disable autosave if editing an existing boost
+        boostCategoryType: _boostCategoryType,
+        boostSubCategoryType: _boostSubCategoryType,
+    });
+
+    // Track if recovery prompt has been shown
+    const hasShownRecoveryRef = useRef(false);
+    const recoveryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Show recovery prompt if we have recovered state
+    // Delay slightly to avoid race conditions with other mount effects that might call closeModal
+    useEffect(() => {
+        if (hasRecoveredState && recoveredState && !hasShownRecoveryRef.current) {
+            hasShownRecoveryRef.current = true;
+
+            // Clear any existing timeout
+            if (recoveryTimeoutRef.current) {
+                clearTimeout(recoveryTimeoutRef.current);
+            }
+
+            // Delay showing the modal to let other mount effects settle
+            recoveryTimeoutRef.current = setTimeout(() => {
+                const handleRecover = () => {
+                    setState(recoveredState);
+                    setDisplayType(
+                        recoveredState.appearance?.displayType ||
+                            BoostCMSAppearanceDisplayTypeEnum.Certificate
+                    );
+                    closeModal();
+                };
+
+                const handleDiscard = () => {
+                    clearRecoveredState();
+                    closeModal();
+                };
+
+                newModal(
+                    <BoostCMSRecoveryPrompt
+                        recoveredState={recoveredState}
+                        onRecover={handleRecover}
+                        onDiscard={handleDiscard}
+                    />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                );
+            }, 300);
+        }
+
+        return () => {
+            if (recoveryTimeoutRef.current) {
+                clearTimeout(recoveryTimeoutRef.current);
+            }
+        };
+    }, [hasRecoveredState, recoveredState, clearRecoveredState, newModal, closeModal]);
+
+    // Save state to localStorage whenever it changes
+    useEffect(() => {
+        // Only save if we have meaningful content, not loading from props, and boost hasn't been published yet
+        if (
+            !propBoostCMSState &&
+            !publishedBoostUri &&
+            (state.basicInfo.name || state.basicInfo.description)
+        ) {
+            saveToLocal(state);
+        }
+    }, [state, saveToLocal, propBoostCMSState, publishedBoostUri]);
 
     useEffect(() => {
         const initializeWallet = async () => {
@@ -541,6 +620,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
 
             if (boostUri) {
+                // Clear autosave since we successfully saved to server
+                clearLocalSave();
+
                 setIsSaveLoading(false);
                 presentToast(`Boost saved successfully`, {
                     duration: 3000,
@@ -591,6 +673,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
             setIsPublishLoading(false);
             if (boostUri) {
+                // Clear autosave since we successfully published
+                clearLocalSave();
+
                 logAnalyticsEvent('boostCMS_publish_live', {
                     timestamp: Date.now(),
                     action: 'publish_live',
@@ -852,15 +937,19 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         loadingText = 'Publishing boost...';
     } else if (isSaveLoading) {
         loadingText = 'Saving boost...';
+    } else if (isAutosaving) {
+        loadingText = 'Auto-saving...';
     } else if (stylePackLoading) {
         loadingText = 'Loading boost...';
     }
 
     return (
         <IonPage>
-            {(isLoading || isSaveLoading || isPublishLoading || stylePackLoading) && (
-                <BoostLoader text={loadingText} darkBackground />
-            )}
+            {(isLoading ||
+                isSaveLoading ||
+                isPublishLoading ||
+                isAutosaving ||
+                stylePackLoading) && <BoostLoader text={loadingText} darkBackground />}
 
             <BoostCMSHeader
                 boostUserType={_boostUserType}
