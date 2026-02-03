@@ -4,6 +4,9 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Keyboard, Navigation, Pagination, Scrollbar, Swiper as SwiperInterface } from 'swiper';
 import { Capacitor } from '@capacitor/core';
 
+import { useTheme } from '../../theme/hooks/useTheme';
+import { ColorSetEnum } from '../../theme/colors/index';
+
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import LearnCardTextLogo from '../../assets/images/learncard-text-logo.svg';
 
@@ -16,6 +19,10 @@ import 'swiper/css/scrollbar';
 import '@ionic/react/css/ionic-swiper.css';
 
 const IntroSlides: React.FC = () => {
+    const { getColorSet } = useTheme();
+    const { firstSlideBackground, secondSlideBackground, thirdSlideBackground, textColors } =
+        getColorSet(ColorSetEnum.introSlides);
+
     // ref storing swiper instance
     const [slidesRef, setSlidesRef] = useState<SwiperInterface>();
 
@@ -55,28 +62,28 @@ const IntroSlides: React.FC = () => {
                         onReachEnd={() => slideReachEnd()}
                         onSwiper={swiper => setSlidesRef(swiper)}
                     >
-                        <SwiperSlide className="bg-[#818CF8]">
+                        <SwiperSlide className={`bg-${firstSlideBackground}`}>
                             <LearnCardSlide1
                                 handlePrevSlide={handlePrevSlide}
                                 handleNextSlide={handleNextSlide}
                                 showDesktopNav={!isNativePlatform}
                             />
                         </SwiperSlide>
-                        <SwiperSlide className="bg-[#22D3EE]">
+                        <SwiperSlide className={`bg-${secondSlideBackground}`}>
                             <LearnCardSlide2
                                 handlePrevSlide={handlePrevSlide}
                                 handleNextSlide={handleNextSlide}
                                 showDesktopNav={!isNativePlatform}
                             />
                         </SwiperSlide>
-                        <SwiperSlide className="bg-[#84CC16]">
+                        <SwiperSlide className={`bg-${thirdSlideBackground}`}>
                             <LearnCardSlide3
                                 handlePrevSlide={handlePrevSlide}
                                 handleNextSlide={handleNextSlide}
                                 showDesktopNav={!isNativePlatform}
                             />
                         </SwiperSlide>
-                        <SwiperSlide className="bg-[#818CF8]">
+                        <SwiperSlide className={`bg-${firstSlideBackground}`}>
                             <LearnCardSlide4
                                 handlePrevSlide={handlePrevSlide}
                                 handleNextSlide={handleNextSlide}
@@ -138,6 +145,9 @@ const LearnCardSlide1: React.FC<LearnCardSlideProps> = ({
     handlePrevSlide,
     showDesktopNav,
 }) => {
+    const { getColorSet } = useTheme();
+    const { textColors } = getColorSet(ColorSetEnum.introSlides);
+
     return (
         <>
             <section className="base-gradient flex flex-col items-center justify-center">
@@ -152,7 +162,9 @@ const LearnCardSlide1: React.FC<LearnCardSlideProps> = ({
                     />
                 )}
                 {!showDesktopNav && (
-                    <p className="text-white  font-montserrat px-[15px] py-[8px]">
+                    <p
+                        className={`font-montserrat px-[15px] py-[8px] text-${textColors.secondary}`}
+                    >
                         Swipe to continue
                     </p>
                 )}
@@ -166,13 +178,20 @@ const LearnCardSlide2: React.FC<LearnCardSlideProps> = ({
     handlePrevSlide,
     showDesktopNav,
 }) => {
+    const { getColorSet } = useTheme();
+    const { textColors } = getColorSet(ColorSetEnum.introSlides);
+
     return (
         <>
             <section className="font-medium font-rubik flex flex-col items-center justify-center blue-gradient">
-                <h1 className="text-3xl text-white font-normal font-poppins mt-[10px] px-[10px]">
+                <h1
+                    className={`text-3xl font-normal font-poppins mt-[10px] px-[10px] text-${textColors.primary}`}
+                >
                     Earn & Send Boosts
                 </h1>
-                <p className="text-small text-white font-montserrat mt-[15px] px-[20px]">
+                <p
+                    className={`text-small font-montserrat mt-[15px] px-[20px] text-${textColors.primary}`}
+                >
                     Boosts help to recognize skills, talents, participation and contributions.
                 </p>
             </section>
@@ -184,7 +203,7 @@ const LearnCardSlide2: React.FC<LearnCardSlideProps> = ({
                     />
                 )}
                 {!showDesktopNav && (
-                    <p className="text-white font-montserrat px-[15px] py-[8px]">
+                    <p className={`font-montserrat px-[15px] py-[8px] text-${textColors.primary}`}>
                         Swipe to continue
                     </p>
                 )}
@@ -198,13 +217,20 @@ const LearnCardSlide3: React.FC<LearnCardSlideProps> = ({
     handlePrevSlide,
     showDesktopNav,
 }) => {
+    const { getColorSet } = useTheme();
+    const { textColors } = getColorSet(ColorSetEnum.introSlides);
+
     return (
         <>
             <section className="font-medium font-rubik flex flex-col items-center justify-center green-gradient">
-                <h1 className="text-3xl text-white font-normal font-poppins mt-[10px]">
+                <h1
+                    className={`text-3xl font-normal font-poppins mt-[10px] text-${textColors.primary}`}
+                >
                     You Own Your LearnCard
                 </h1>
-                <p className="text-small text-white font-montserrat mt-[15px] px-[20px]">
+                <p
+                    className={`text-small font-montserrat mt-[15px] px-[20px] text-${textColors.primary}`}
+                >
                     LearnCard is your lifelong learning and work portfolio. You own your data and
                     decide how to share it.
                 </p>
@@ -217,7 +243,7 @@ const LearnCardSlide3: React.FC<LearnCardSlideProps> = ({
                     />
                 )}
                 {!showDesktopNav && (
-                    <p className="text-white font-montserrat px-[15px] py-[8px]">
+                    <p className={`font-montserrat px-[15px] py-[8px] text-${textColors.primary}`}>
                         Swipe to continue
                     </p>
                 )}
