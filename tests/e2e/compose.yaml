@@ -8,14 +8,9 @@ services:
         expose:
             - 4000
         ports:
-            - "4000:4000"
+            - '4000:4000'
 
-        command:
-            [
-                "sh",
-                "-c",
-                "cd services/learn-card-network/brain-service && pnpm dev",
-            ]
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
 
         depends_on:
             neo4j:
@@ -31,7 +26,7 @@ services:
             - learn-card
 
         extra_hosts:
-            - "localhost:host-gateway"
+            - 'localhost:host-gateway'
 
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
@@ -43,7 +38,9 @@ services:
 
             IS_OFFLINE: true
             IS_E2E_TEST: true
-            SKIP_DIDKIT_NAPI: "1"
+            SKIP_DIDKIT_NAPI: '1'
+
+            DOMAIN_NAME: localhost%3A4000
 
             NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
             NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
@@ -73,14 +70,9 @@ services:
         expose:
             - 4100
         ports:
-            - "4100:4100"
+            - '4100:4100'
 
-        command:
-            [
-                "sh",
-                "-c",
-                "cd services/learn-card-network/learn-cloud-service && pnpm dev",
-            ]
+        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && pnpm dev']
 
         depends_on:
             - mongodb
@@ -90,7 +82,7 @@ services:
             - learn-card
 
         extra_hosts:
-            - "localhost:host-gateway"
+            - 'localhost:host-gateway'
 
         volumes:
             - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
@@ -99,7 +91,7 @@ services:
             PORT: 4100
 
             LEARN_CLOUD_SEED: b
-            SKIP_DIDKIT_NAPI: "1"
+            SKIP_DIDKIT_NAPI: '1'
 
             LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
             LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
@@ -123,14 +115,9 @@ services:
         expose:
             - 4200
         ports:
-            - "4200:4200"
+            - '4200:4200'
 
-        command:
-            [
-                "sh",
-                "-c",
-                "cd services/learn-card-network/simple-signing-service && pnpm dev",
-            ]
+        command: ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && pnpm dev']
 
         depends_on:
             - mongodb
@@ -140,7 +127,7 @@ services:
             - learn-card
 
         extra_hosts:
-            - "localhost:host-gateway"
+            - 'localhost:host-gateway'
 
         volumes:
             - ../../services/learn-card-network/simple-signing-service/src:/app/services/learn-card-network/simple-signing-service/src
@@ -149,7 +136,7 @@ services:
             PORT: 4200
 
             IS_OFFLINE: true
-            SKIP_DIDKIT_NAPI: "1"
+            SKIP_DIDKIT_NAPI: '1'
 
             SEED: c
             AUTHORIZED_DIDS: did:web:localhost%3A4000
@@ -163,13 +150,13 @@ services:
     neo4j:
         image: neo4j:latest
         ports:
-            - "7687:7687"
-            - "7474:7474"
+            - '7687:7687'
+            - '7474:7474'
         healthcheck:
             test:
                 [
-                    "CMD-SHELL",
-                    "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1",
+                    'CMD-SHELL',
+                    'wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1',
                 ]
             interval: 10s
             timeout: 5s
@@ -186,7 +173,7 @@ services:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
         ports:
-            - "6379:${REDIS_PORT:-6379}"
+            - '6379:${REDIS_PORT:-6379}'
         networks:
             - learn-card
 
@@ -196,7 +183,7 @@ services:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
         ports:
-            - "6380:6379"
+            - '6380:6379'
         networks:
             - learn-card
 
@@ -206,21 +193,21 @@ services:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
         ports:
-            - "6381:6379"
+            - '6381:6379'
         networks:
             - learn-card
 
     mongodb:
         command:
             [
-                "--replSet",
-                "rs0",
-                "--bind_ip_all",
-                "--port",
-                "27017",
-                "--quiet",
-                "--logpath",
-                "/var/log/mongodb/mongod.log",
+                '--replSet',
+                'rs0',
+                '--bind_ip_all',
+                '--port',
+                '27017',
+                '--quiet',
+                '--logpath',
+                '/var/log/mongodb/mongod.log',
             ]
         image: mongo:latest
         expose:
@@ -228,7 +215,7 @@ services:
         ports:
             - 27017:27017
         extra_hosts:
-            - "localhost:host-gateway"
+            - 'localhost:host-gateway'
         healthcheck:
             test: >
                 mongosh --host localhost --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
@@ -245,7 +232,7 @@ services:
         expose:
             - 9324
         ports:
-            - "9324:9324"
+            - '9324:9324'
         networks:
             - learn-card
 
@@ -258,7 +245,7 @@ services:
             POSTGRES_PASSWORD: lrsql_password
             POSTGRES_DB: lrsql_db
         ports:
-            - "5432:5432"
+            - '5432:5432'
 
     lrs:
         image: yetanalytics/lrsql:latest
@@ -267,9 +254,9 @@ services:
         networks:
             - learn-card
         extra_hosts:
-            - "localhost:host-gateway"
+            - 'localhost:host-gateway'
         ports:
-            - "8080:8080"
+            - '8080:8080'
         depends_on:
             - postgres
             - cloud
@@ -285,7 +272,7 @@ services:
 
             LRSQL_OIDC_ISSUER: http://cloud:4100
             LRSQL_OIDC_AUDIENCE: http://lrs:8080/xapi
-            LRSQL_OIDC_SCOPE_PREFIX: "lrs:"
+            LRSQL_OIDC_SCOPE_PREFIX: 'lrs:'
 
             # If Postgres is too slow to start, increase this
             LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000

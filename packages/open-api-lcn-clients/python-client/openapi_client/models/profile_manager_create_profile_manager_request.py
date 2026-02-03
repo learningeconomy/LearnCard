@@ -73,6 +73,21 @@ class ProfileManagerCreateProfileManagerRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if email (nullable) is None
+        # and model_fields_set contains the field
+        if self.email is None and "email" in self.model_fields_set:
+            _dict['email'] = None
+
+        # set to None if image (nullable) is None
+        # and model_fields_set contains the field
+        if self.image is None and "image" in self.model_fields_set:
+            _dict['image'] = None
+
+        # set to None if hero_image (nullable) is None
+        # and model_fields_set contains the field
+        if self.hero_image is None and "hero_image" in self.model_fields_set:
+            _dict['heroImage'] = None
+
         return _dict
 
     @classmethod

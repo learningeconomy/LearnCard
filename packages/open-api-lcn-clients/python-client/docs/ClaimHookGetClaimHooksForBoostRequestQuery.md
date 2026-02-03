@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**type** | [**BoostGetBoostsRequestQueryUri**](BoostGetBoostsRequestQueryUri.md) |  | [optional] 
-**data** | [**ClaimHookGetClaimHooksForBoostRequestQueryData**](ClaimHookGetClaimHooksForBoostRequestQueryData.md) |  | [optional] 
+**type** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |  | 
+**data** | [**ClaimHookGetClaimHooksForBoostRequestQueryData**](ClaimHookGetClaimHooksForBoostRequestQueryData.md) |  | 
 
 ## Example
 

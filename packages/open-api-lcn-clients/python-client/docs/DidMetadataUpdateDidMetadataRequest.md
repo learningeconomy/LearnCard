@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**updates** | [**DidMetadataAddDidMetadataRequest**](DidMetadataAddDidMetadataRequest.md) |  | 
+**updates** | [**DidMetadataUpdateDidMetadataRequestUpdates**](DidMetadataUpdateDidMetadataRequestUpdates.md) |  | 
 
 ## Example
 

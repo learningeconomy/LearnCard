@@ -13,6 +13,7 @@ export const updateAppStoreListing = async (
 ): Promise<boolean> => {
     const updatesToPersist: Partial<FlatAppStoreListingType> = {};
 
+    if (typeof updates.slug !== 'undefined') updatesToPersist.slug = updates.slug;
     if (typeof updates.display_name !== 'undefined')
         updatesToPersist.display_name = updates.display_name;
     if (typeof updates.tagline !== 'undefined') updatesToPersist.tagline = updates.tagline;

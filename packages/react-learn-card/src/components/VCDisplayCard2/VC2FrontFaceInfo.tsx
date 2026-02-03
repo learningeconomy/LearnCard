@@ -8,6 +8,7 @@ import {
     getInfoFromCredential,
     getNameFromProfile,
 } from '../../helpers/credential.helpers';
+import { isAppDidWeb } from '@learncard/helpers';
 import { truncateWithEllipsis } from '../../helpers/string.helpers';
 import { Profile, VC } from '@learncard/types';
 import VerifierStateBadgeAndText, {
@@ -53,11 +54,10 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
- 
+
     const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
     });
-
 
     const getImageElement = (
         imageUrl: string,
@@ -90,6 +90,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
 
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
+    const isAppIssuerDid = isAppDidWeb(issuerDid);
 
     let verifierState: VerifierState;
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
@@ -104,9 +105,13 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         } else if (knownDIDRegistry?.source === 'untrusted') {
             verifierState = VERIFIER_STATES.untrustedVerifier;
         } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
+            verifierState = isAppIssuerDid
+                ? VERIFIER_STATES.appIssuer
+                : VERIFIER_STATES.unknownVerifier;
         }
     }
 

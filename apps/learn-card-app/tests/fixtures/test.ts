@@ -1,6 +1,15 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, BrowserContext } from '@playwright/test';
+import { mockDidKitWasmForContext } from '../route.helpers';
 
-export const test = base.extend<{ forEachTest: void }>({
+export const test = base.extend<{ forEachTest: void; context: BrowserContext }>({
+    // Override context fixture to apply WASM interception automatically
+    context: async ({ context }, use) => {
+        // Intercept DIDKit WASM requests to serve local file instead of CDN
+        // This significantly speeds up test startup by avoiding ~9MB network fetch
+        await mockDidKitWasmForContext(context);
+        await use(context);
+    },
+
     forEachTest: [
         async ({ request, browser }, use) => {
             await use();

@@ -35,14 +35,18 @@ class TestInboxIssueRequest(unittest.TestCase):
         model = InboxIssueRequest()
         if include_optional:
             return InboxIssueRequest(
-                recipient = None,
+                recipient = openapi_client.models.inbox_issue_request_recipient.inbox_issue_request_recipient(),
                 credential = None,
+                template_uri = '',
                 configuration = openapi_client.models.inbox_issue_request_configuration.inbox_issue_request_configuration(
                     signing_authority = openapi_client.models.inbox_issue_request_configuration_signing_authority.inbox_issue_request_configuration_signingAuthority(
                         endpoint = '', 
                         name = '', ), 
                     webhook_url = '', 
                     expires_in_days = 1, 
+                    template_data = {
+                        'key' : null
+                        }, 
                     delivery = openapi_client.models.inbox_issue_request_configuration_delivery.inbox_issue_request_configuration_delivery(
                         suppress = True, 
                         template = openapi_client.models.inbox_issue_request_configuration_delivery_template.inbox_issue_request_configuration_delivery_template(
@@ -59,8 +63,7 @@ class TestInboxIssueRequest(unittest.TestCase):
             )
         else:
             return InboxIssueRequest(
-                recipient = None,
-                credential = None,
+                recipient = openapi_client.models.inbox_issue_request_recipient.inbox_issue_request_recipient(),
         )
         """
 

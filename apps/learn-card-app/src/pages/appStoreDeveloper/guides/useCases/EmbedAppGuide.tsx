@@ -70,6 +70,7 @@ import { TemplateListManager } from '../../components/TemplateListManager';
 import { PERMISSION_OPTIONS } from '../../types';
 import type { AppPermission, LaunchConfig, ExtendedAppStoreListing } from '../../types';
 import { AppPreviewModal } from '../../components/AppPreviewModal';
+import { getAppDidFromSlug } from '../../utils/appDid';
 import type { GuideProps } from '../GuidePage';
 import type {
     EmbedAppGuideConfig,
@@ -759,13 +760,15 @@ console.log('User:', identity.profile.displayName);`;
 const SigningAuthorityStep: React.FC<{
     onComplete: () => void;
     onBack: () => void;
-}> = ({ onComplete, onBack }) => {
+    appSlug?: string;
+}> = ({ onComplete, onBack, appSlug }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
     const [primarySA, setPrimarySA] = useState<{ name: string; endpoint: string } | null>(null);
+    const issuerDid = appSlug ? getAppDidFromSlug(appSlug) : undefined;
 
     const fetchSigningAuthority = useCallback(async () => {
         try {
@@ -798,7 +801,8 @@ const SigningAuthorityStep: React.FC<{
             setCreating(true);
             const wallet = await initWallet();
 
-            const authority = await wallet.invoke.createSigningAuthority('default-sa');
+            const ownerDid = appSlug ? getAppDidFromSlug(appSlug) : undefined;
+            const authority = await wallet.invoke.createSigningAuthority('default-sa', ownerDid);
 
             if (!authority) {
                 throw new Error('Failed to create signing authority');
@@ -842,6 +846,13 @@ const SigningAuthorityStep: React.FC<{
                     verifiable. This proves the credentials actually came from you.
                 </p>
             </div>
+
+            {issuerDid && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p className="text-xs text-slate-500">App issuer DID</p>
+                    <code className="text-xs text-slate-700 break-all">{issuerDid}</code>
+                </div>
+            )}
 
             {/* Status */}
             <StatusIndicator
@@ -3485,7 +3496,10 @@ const IssueCredentialsSetup: React.FC<{
             setSigningAuthorityCreating(true);
             const wallet = await initWallet();
 
-            const authority = await wallet.invoke.createSigningAuthority('default-sa');
+            const ownerDid = selectedListing?.slug
+                ? getAppDidFromSlug(selectedListing.slug)
+                : undefined;
+            const authority = await wallet.invoke.createSigningAuthority('default-sa', ownerDid);
 
             if (!authority) {
                 throw new Error('Failed to create signing authority');
@@ -5632,6 +5646,7 @@ const YourAppStep: React.FC<{
 
             await updateMutation.mutateAsync({
                 listingId: selectedListing.listing_id,
+                integrationId,
                 updates: {
                     launch_config_json: JSON.stringify(newConfig, null, 2),
                 },
@@ -5670,6 +5685,7 @@ const YourAppStep: React.FC<{
 
             await updateMutation.mutateAsync({
                 listingId: selectedListing.listing_id,
+                integrationId,
                 updates: {
                     launch_config_json: JSON.stringify(newConfig, null, 2),
                 },
@@ -7015,6 +7031,7 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
                     <SigningAuthorityStep
                         onComplete={() => handleStepComplete('signing-authority')}
                         onBack={guideState.prevStep}
+                        appSlug={selectedListing?.slug}
                     />
                 );
 

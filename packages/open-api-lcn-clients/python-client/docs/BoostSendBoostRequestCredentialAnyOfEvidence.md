@@ -5,8 +5,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**type** | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.md) |  | 
 **id** | **str** |  | [optional] 
+**type** | **List[str]** |  | 
+**name** | **str** |  | [optional] 
+**narrative** | **str** |  | [optional] 
+**description** | **str** |  | [optional] 
+**genre** | **str** |  | [optional] 
+**audience** | **str** |  | [optional] 
 
 ## Example
 

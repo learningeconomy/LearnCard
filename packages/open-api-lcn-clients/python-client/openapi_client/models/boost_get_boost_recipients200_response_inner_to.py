@@ -42,9 +42,13 @@ class BoostGetBoostRecipients200ResponseInnerTo(BaseModel):
     type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
     notifications_webhook: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="URL to send notifications to.", alias="notificationsWebhook")
     display: Optional[BoostGetBoostRecipients200ResponseInnerToDisplay] = None
+    highlighted_credentials: Optional[Annotated[List[Optional[StrictStr]], Field(max_length=5)]] = Field(default=None, description="Up to 5 unique boost URIs to highlight on the profile.", alias="highlightedCredentials")
     role: Optional[StrictStr] = Field(default='', description="Role of the profile: e.g. \"teacher\", \"student\".")
     dob: Optional[StrictStr] = Field(default='', description="Date of birth of the profile: e.g. \"1990-01-01\".")
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "did", "isPrivate", "email", "image", "heroImage", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "role", "dob"]
+    country: Optional[StrictStr] = Field(default=None, description="Country for the profile.")
+    approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
+    additional_properties: Dict[str, Any] = {}
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "did", "isPrivate", "email", "image", "heroImage", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "approved"]
 
     @field_validator('notifications_webhook')
     def notifications_webhook_validate_regular_expression(cls, value):
@@ -52,8 +56,8 @@ class BoostGetBoostRecipients200ResponseInnerTo(BaseModel):
         if value is None:
             return value
 
-        if not re.match(r"^http", value):
-            raise ValueError(r"must validate the regular expression /^http/")
+        if not re.match(r"^http.*", value):
+            raise ValueError(r"must validate the regular expression /^http.*/")
         return value
 
     model_config = ConfigDict(
@@ -86,8 +90,10 @@ class BoostGetBoostRecipients200ResponseInnerTo(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
+        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
+            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -98,6 +104,11 @@ class BoostGetBoostRecipients200ResponseInnerTo(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of display
         if self.display:
             _dict['display'] = self.display.to_dict()
+        # puts key-value pairs in additional_properties in the top level
+        if self.additional_properties is not None:
+            for _key, _value in self.additional_properties.items():
+                _dict[_key] = _value
+
         return _dict
 
     @classmethod
@@ -124,9 +135,17 @@ class BoostGetBoostRecipients200ResponseInnerTo(BaseModel):
             "type": obj.get("type"),
             "notificationsWebhook": obj.get("notificationsWebhook"),
             "display": BoostGetBoostRecipients200ResponseInnerToDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
+            "highlightedCredentials": obj.get("highlightedCredentials"),
             "role": obj.get("role") if obj.get("role") is not None else '',
-            "dob": obj.get("dob") if obj.get("dob") is not None else ''
+            "dob": obj.get("dob") if obj.get("dob") is not None else '',
+            "country": obj.get("country"),
+            "approved": obj.get("approved")
         })
+        # store additional fields in additional_properties
+        for _key in obj.keys():
+            if _key not in cls.__properties:
+                _obj.additional_properties[_key] = obj.get(_key)
+
         return _obj
 
 
