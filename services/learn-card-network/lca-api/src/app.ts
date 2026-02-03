@@ -9,6 +9,7 @@ import { firebaseRouter } from '@routes/firebase';
 import { analyticsRouter } from '@routes/analytics';
 export { createContext } from '@routes';
 import { preferencesRouter } from '@routes/preferences';
+import { keysRouter } from '@routes/keys';
 
 export const appRouter = t.router({
     notifications: notificationsRouter,
@@ -20,5 +21,6 @@ export const appRouter = t.router({
     firebase: firebaseRouter,
     analytics: analyticsRouter,
     preferences: preferencesRouter,
+    keys: keysRouter,
 });
 export type AppRouter = typeof appRouter;
