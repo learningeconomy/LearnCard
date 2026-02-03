@@ -100,7 +100,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     return (
         <IonPage className="h-full w-full">
             <IonHeader>
-                <IonToolbar>
+                <IonToolbar color="light">
                     <div className="flex items-center justify-between px-4 py-2 bg-white border-b">
                         <h2 className="text-xl font-semibold">{appName}</h2>
                         <div className="flex items-center gap-2">
