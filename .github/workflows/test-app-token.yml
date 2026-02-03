@@ -1,0 +1,14 @@
+name: Test App Token
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App Token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.E2E_RUNNER_APP_ID }}
+          private-key: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
+      - run: echo "Token generated successfully!"
