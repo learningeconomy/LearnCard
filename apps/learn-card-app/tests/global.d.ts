@@ -6,3 +6,4 @@ declare var LCN_URL: string | undefined;
 declare var CLOUD_URL: string | undefined;
 declare var API_URL: string | undefined;
 declare var GOOGLE_MAPS_API_KEY: string | undefined;
+declare var DEFAULT_THEME: string;

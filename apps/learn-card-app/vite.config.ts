@@ -58,6 +58,9 @@ export default defineConfig(({ mode }) => {
             WEB3AUTH_TESTNET_CLIENT_ID: env.WEB3AUTH_TESTNET_CLIENT_ID
                 ? JSON.stringify(env.WEB3AUTH_TESTNET_CLIENT_ID)
                 : 'undefined',
+            DEFAULT_THEME: process.env.DEFAULT_THEME
+                ? `"${process.env.DEFAULT_THEME}"`
+                : '"colorful"',
         },
         resolve: {
             alias: {
