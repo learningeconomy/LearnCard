@@ -1,4 +1,5 @@
 import { atom } from 'nanostores';
+import { LEARNCARD_AI_URL } from 'learn-card-base';
 import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 import { auth } from './authStore';
 import { showErrorModal } from './ErrorModalStore';
@@ -18,7 +19,7 @@ export const sessionEnded = atom(false);
 export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
 
-export const BACKEND_URL = 'https://api.learncloud.ai';
+export const BACKEND_URL = LEARNCARD_AI_URL;
 
 interface TopicCredential {
     uri: string;
