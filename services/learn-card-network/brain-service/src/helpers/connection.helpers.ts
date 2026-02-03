@@ -1,6 +1,10 @@
 import { Op, QueryBuilder, Where } from 'neogma';
 import { neogma } from '@instance';
-import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from '@learncard/types';
+import {
+    LCNProfileConnectionStatusEnum,
+    LCNNotificationTypeEnumValidator,
+    LCNNotificationTypeEnum,
+} from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { Profile } from '@models';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
@@ -394,7 +398,9 @@ export const disconnectProfiles = async (
  */
 export const requestConnection = async (
     source: ProfileType,
-    target: ProfileType
+    target: ProfileType,
+    notificationType: LCNNotificationTypeEnum = LCNNotificationTypeEnumValidator.enum
+        .CONNECTION_REQUEST
 ): Promise<boolean> => {
     const pendingRequestFromTarget =
         (
@@ -441,13 +447,21 @@ export const requestConnection = async (
         where: { source: { profileId: source.profileId }, target: { profileId: target.profileId } },
     });
 
+    const isExpiredInviteRequest =
+        notificationType ===
+        LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST_EXPIRED_INVITE;
+
     await addNotificationToQueue({
-        type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+        type: notificationType,
         to: target,
         from: source,
         message: {
-            title: 'New Connection Request',
-            body: `${source.displayName} has sent you a connection request!`,
+            title: isExpiredInviteRequest
+                ? 'Connection Request (Expired Invite)'
+                : 'New Connection Request',
+            body: isExpiredInviteRequest
+                ? `${source.displayName} tried to connect with an expired link and has sent you a connection request.`
+                : `${source.displayName} has sent you a connection request!`,
         },
     });
 
