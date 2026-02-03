@@ -83,6 +83,16 @@ export const placeholdersSchema = z.object({
     placeholders: placeholderCategoryMapSchema,
 });
 
+export const introSlidesColorsSchema = z.object({
+    firstSlideBackground: z.string(),
+    secondSlideBackground: z.string(),
+    thirdSlideBackground: z.string(),
+    textColors: z.object({
+        primary: z.string(),
+        secondary: z.string(),
+    }),
+});
+
 export const defaultColorsSchema = z.object({
     primaryColor: z.string(),
     primaryColorShade: z.string(),
@@ -101,6 +111,7 @@ export const ThemeColorsSchema = z
         sideMenu: SideMenuColorsSchema.describe('SideMenu color mappings'),
         navbar: NavBarColorsSchema.describe('NavBar color mappings'),
         placeholders: placeholderCategoryMapSchema.describe('Placeholders'),
+        introSlides: introSlidesColorsSchema.describe('Intro Slides colors'),
         defaults: defaultColorsSchema.describe('Default color mappings'),
     })
     .catchall(CategoryColorSchema)
@@ -112,6 +123,7 @@ export const ThemeColorsSchema = z
                 key === 'sideMenu' ||
                 key === 'navbar' ||
                 key === 'placeholders' ||
+                key === 'introSlides' ||
                 key === 'defaults'
             )
                 continue;
