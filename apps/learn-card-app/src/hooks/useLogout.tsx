@@ -13,6 +13,8 @@ import {
     LOGIN_REDIRECTS,
     SocialLoginTypes,
     useWeb3AuthSFA,
+    useSSSKeyManager,
+    shouldUseSSSKeyManager,
     useToast,
     useWallet,
     ToastTypeEnum,
@@ -26,12 +28,17 @@ const useLogout = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const { clearDB } = useSQLiteStorage();
-    const { logout, loggingOut: web3AuthLoggingOut } = useWeb3AuthSFA();
+    const { logout: web3AuthLogout, loggingOut: web3AuthLoggingOut } = useWeb3AuthSFA();
+    const { logout: sssLogout, loggingOut: sssLoggingOut } = useSSSKeyManager();
+    const useSSS = shouldUseSSSKeyManager();
 
     const { closeAllModals } = useModal();
     const { presentToast } = useToast();
 
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+
+    const logout = useSSS ? sssLogout : web3AuthLogout;
+    const providerLoggingOut = useSSS ? sssLoggingOut : web3AuthLoggingOut;
 
     const handleLogout = async (
         branding: BrandingEnum,
@@ -115,7 +122,7 @@ const useLogout = () => {
         closeAllModals();
     };
 
-    return { handleLogout, isLoggingOut: isLoggingOut || web3AuthLoggingOut };
+    return { handleLogout, isLoggingOut: isLoggingOut || providerLoggingOut };
 };
 
 export default useLogout;

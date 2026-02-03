@@ -1,6 +1,20 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
+
+import {
+    createSSSKeyManager,
+    splitPrivateKey,
+    reconstructFromShares,
+    storeDeviceShare,
+    getDeviceShare,
+    hasDeviceShare,
+    clearAllShares,
+    generateEd25519PrivateKey,
+    bytesToHex,
+    type AuthProvider,
+    type SSSKeyManager,
+} from '@learncard/sss-key-manager';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
@@ -27,15 +41,7 @@ export interface SSSConfig {
     serverUrl: string;
 }
 
-export interface AuthProviderAdapter {
-    getIdToken(): Promise<string>;
-    getCurrentUser(): Promise<{
-        id: string;
-        email?: string;
-        phone?: string;
-    } | null>;
-    getProviderType(): 'firebase' | 'supertokens' | 'keycloak' | 'oidc';
-}
+export type AuthProviderAdapter = AuthProvider;
 
 export const useSSSKeyManager = (config?: SSSConfig) => {
     const [loggingOut, setLoggingOut] = useState(false);
@@ -106,7 +112,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
         }
     }, [serverUrl, getAuthHeaders]);
 
-    const connect = useCallback(async (authProvider: AuthProviderAdapter): Promise<string | null> => {
+    const connect = useCallback(async (authProvider: AuthProvider): Promise<string | null> => {
         try {
             setConnecting(true);
             setError(null);
@@ -117,10 +123,18 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
                 throw new Error('No authenticated user');
             }
 
+            const deviceShareExists = await hasDeviceShare();
+            if (!deviceShareExists) {
+                console.log('No device share found - user needs to set up or recover');
+                setConnecting(false);
+                setInitLoading(false);
+                return null;
+            }
+
             const serverResponse = await fetchAuthShare(authProvider);
 
             if (!serverResponse || !serverResponse.authShare) {
-                console.log('No SSS shares found - user needs to set up or migrate');
+                console.log('No SSS shares found on server - user needs to set up or migrate');
                 setConnecting(false);
                 setInitLoading(false);
                 return null;
@@ -133,18 +147,20 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
                 return null;
             }
 
-            // For now, we'll need the @learncard/sss-key-manager package to do the actual reconstruction
-            // This is a placeholder that shows the integration pattern
-            console.log('SSS reconstruction would happen here with device share + auth share');
+            const deviceShare = await getDeviceShare();
+            if (!deviceShare) {
+                throw new Error('Failed to retrieve device share');
+            }
 
-            // In production, this would be:
-            // const deviceShare = await getDeviceShare();
-            // const privateKey = await reconstructPrivateKey(deviceShare, serverResponse.authShare.encryptedData);
+            const authShareData = serverResponse.authShare.encryptedData;
+            const privateKey = await reconstructFromShares([deviceShare, authShareData]);
+
+            await finalizeLogin(privateKey);
 
             setConnecting(false);
             setInitLoading(false);
 
-            return null; // Would return privateKey
+            return privateKey;
         } catch (e) {
             const message = e instanceof Error ? e.message : 'Unknown error';
             setError(message);
@@ -154,8 +170,39 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
         }
     }, [fetchAuthShare, setInitLoading]);
 
+    const finalizeLogin = useCallback(async (privateKey: string) => {
+        const firebaseCurrentUser = firebaseAuthStore.get.currentUser();
+
+        const sqliteUserPayload = {
+            uid: firebaseCurrentUser?.uid ?? '',
+            email: firebaseCurrentUser?.email ?? '',
+            phoneNumber: firebaseCurrentUser?.phoneNumber ?? '',
+            name: firebaseCurrentUser?.displayName ?? '',
+            profileImage: firebaseCurrentUser?.photoUrl ?? '',
+            privateKey,
+            baseColor: getRandomBaseColor(),
+        };
+
+        await setCurrentUser(sqliteUserPayload);
+
+        if (privateKey) {
+            try {
+                await setPlatformPrivateKey(privateKey);
+            } catch (e) {
+                console.warn('Failed to set secure PK', e);
+            }
+        }
+
+        const wallet = await initWallet(privateKey);
+        if (wallet) {
+            walletStore.set.wallet(wallet);
+            currentUserStore.set.currentUser({ ...sqliteUserPayload });
+            await pushUtilities.syncPushToken();
+        }
+    }, [setCurrentUser, initWallet]);
+
     const setupWithPrivateKey = useCallback(async (
-        authProvider: AuthProviderAdapter,
+        authProvider: AuthProvider,
         privateKey: string,
         primaryDid: string
     ) => {
@@ -163,40 +210,21 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             setConnecting(true);
             setError(null);
 
-            // For now, placeholder for SSS split
-            // In production:
-            // const shares = await splitPrivateKey(privateKey);
-            // await storeDeviceShare(shares.deviceShare);
-            // await storeAuthShare(authProvider, { encryptedData: shares.authShare, ... }, primaryDid);
+            const shares = await splitPrivateKey(privateKey);
 
-            const firebaseCurrentUser = firebaseAuthStore.get.currentUser();
+            await storeDeviceShare(shares.deviceShare);
 
-            const sqliteUserPayload = {
-                uid: firebaseCurrentUser?.uid ?? '',
-                email: firebaseCurrentUser?.email ?? '',
-                phoneNumber: firebaseCurrentUser?.phoneNumber ?? '',
-                name: firebaseCurrentUser?.displayName ?? '',
-                profileImage: firebaseCurrentUser?.photoUrl ?? '',
-                privateKey,
-                baseColor: getRandomBaseColor(),
-            };
+            await storeAuthShare(
+                authProvider,
+                {
+                    encryptedData: shares.authShare,
+                    encryptedDek: '',
+                    iv: '',
+                },
+                primaryDid
+            );
 
-            await setCurrentUser(sqliteUserPayload);
-
-            if (privateKey) {
-                try {
-                    await setPlatformPrivateKey(privateKey);
-                } catch (e) {
-                    console.warn('Failed to set secure PK', e);
-                }
-            }
-
-            const wallet = await initWallet(privateKey);
-            if (wallet) {
-                walletStore.set.wallet(wallet);
-                currentUserStore.set.currentUser({ ...sqliteUserPayload });
-                await pushUtilities.syncPushToken();
-            }
+            await finalizeLogin(privateKey);
 
             setConnecting(false);
         } catch (e) {
@@ -205,10 +233,10 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             setConnecting(false);
             throw e;
         }
-    }, [storeAuthShare, setCurrentUser, initWallet]);
+    }, [storeAuthShare, finalizeLogin]);
 
     const migrateFromWeb3Auth = useCallback(async (
-        authProvider: AuthProviderAdapter,
+        authProvider: AuthProvider,
         privateKey: string,
         primaryDid: string
     ) => {

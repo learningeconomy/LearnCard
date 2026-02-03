@@ -162,6 +162,7 @@ describe('Key Manager', () => {
         getCurrentUser: async () => ({
             id: 'user-123',
             email: 'test@example.com',
+            providerType: 'firebase' as const,
         }),
         getProviderType: () => 'firebase' as const,
         signOut: async () => {},

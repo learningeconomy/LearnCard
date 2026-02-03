@@ -21,6 +21,7 @@
         "@radix-ui/react-popover": "1.0.7",
         "@radix-ui/react-slot": "1.0.2",
         "@learncard/helpers": "workspace:*",
+        "@learncard/sss-key-manager": "workspace:*",
         "@udecode/zustood": "1.1.1",
         "@web3auth/base": "^9.7.0",
         "@web3auth/ethereum-provider": "^9.7.0",

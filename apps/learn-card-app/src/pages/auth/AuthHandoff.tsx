@@ -6,7 +6,7 @@ import { useVerifyNetworkHandoffToken } from 'learn-card-base/react-query/mutati
 
 import { LoadingPageDumb } from '../loadingPage/LoadingPage';
 import { useFirebase } from '../../hooks/useFirebase';
-import { firebaseAuthStore, useWeb3AuthSFA } from 'learn-card-base';
+import { firebaseAuthStore, useWeb3AuthSFA, useSSSKeyManager, shouldUseSSSKeyManager } from 'learn-card-base';
 import jwtDecode from 'jwt-decode';
 
 const shouldSkipLogout = (verifiedToken?: string, currentFirebaseUser?: any) => {
@@ -56,7 +56,10 @@ const AuthHandoff: React.FC = () => {
     const query = usePathQuery();
     const history = useHistory();
     const { logout: web3AuthLogout } = useWeb3AuthSFA();
+    const { logout: sssLogout } = useSSSKeyManager();
+    const useSSS = shouldUseSSSKeyManager();
 
+    const logout = useSSS ? sssLogout : web3AuthLogout;
     const currentFirebaseUser = firebaseAuthStore.get.currentUser();
 
     const { mutateAsync: verifyNetworkHandoffToken } = useVerifyNetworkHandoffToken();
@@ -76,7 +79,7 @@ const AuthHandoff: React.FC = () => {
 
                 if (response?.token) {
                     if (!shouldSkipLogout(response.validatedNetworkHandoffToken, currentFirebaseUser)) {
-                        await web3AuthLogout('');
+                        await logout('');
                     }
 
                     await signInWithCustomFirebaseToken(response.token);

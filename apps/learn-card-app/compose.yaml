@@ -22,6 +22,8 @@ services:
       LCN_API_URL: http://localhost:4000/api
       CLOUD_URL: http://localhost:4100/trpc
       API_URL: http://localhost:5100/trpc
+      REACT_APP_KEY_DERIVATION_PROVIDER: sss
+      REACT_APP_SSS_SERVER_URL: http://localhost:5200
 
   delete-service:
     build: ../../services/playwright-delete-service

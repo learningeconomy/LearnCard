@@ -27,6 +27,8 @@ import {
     firebaseAuthStore,
     useWeb3AuthSFA,
     useWeb3Auth,
+    useSSSKeyManager,
+    shouldUseSSSKeyManager,
     LOGIN_REDIRECTS,
     useModal,
     ModalTypes,
@@ -50,10 +52,12 @@ export const useFirebase = () => {
     });
     const { web3AuthSFAInit } = useWeb3AuthSFA();
     const { web3AuthInit } = useWeb3Auth();
+    const { connect: sssConnect, setupWithPrivateKey: sssSetup } = useSSSKeyManager();
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
+    const useSSS = shouldUseSSSKeyManager();
     const setInitLoading = authStore.set.initLoading;
 
     const presentGoogleHelpModal = (message?: string) => {
@@ -94,12 +98,66 @@ export const useFirebase = () => {
         }
     };
 
+    const createFirebaseAuthProvider = (
+        getIdToken: (forceRefresh?: boolean) => Promise<string>,
+        userUid: string,
+        email?: string,
+        phone?: string
+    ) => ({
+        getIdToken: async () => getIdToken(false),
+        getCurrentUser: async () => ({
+            id: userUid,
+            email: email || undefined,
+            phone: phone || undefined,
+        }),
+        getProviderType: () => 'firebase' as const,
+        signOut: async () => {},
+    });
+
+    const sssFirebaseLogin = async (
+        token: string,
+        userUid: string,
+        getIdToken: (forceRefresh?: boolean) => Promise<string>,
+        email?: string,
+        phone?: string
+    ) => {
+        try {
+            const authProvider = createFirebaseAuthProvider(getIdToken, userUid, email, phone);
+
+            const privateKey = await sssConnect(authProvider);
+
+            if (privateKey) {
+                closeModal();
+            } else {
+                console.log('SSS: No existing key found, user may need setup or migration');
+                setInitLoading(false);
+            }
+        } catch (error) {
+            setInitLoading(false);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.log('sssFirebaseLogin::error', errorMessage);
+            presentAlert(errorMessage);
+        }
+    };
+
     const web3AuthSfaFirebaseLogin = async (
         token: string,
         userUid: string,
         getIdToken: (forceRefresh?: boolean) => Promise<string>,
         suppressError?: boolean
     ) => {
+        if (useSSS) {
+            const firebaseUser = firebaseAuthStore.get.currentUser();
+            await sssFirebaseLogin(
+                token,
+                userUid,
+                getIdToken,
+                firebaseUser?.email || undefined,
+                firebaseUser?.phoneNumber || undefined
+            );
+            return;
+        }
+
         const web3Auth = await web3AuthSFAInit();
 
         if (!web3Auth) {
@@ -121,13 +179,8 @@ export const useFirebase = () => {
             console.log('web3AuthSfa::error', errorMessage);
 
             if (errorMessage.includes('User has already enabled mfa')) {
-                // !! if the user has enabled mfa
-                // !! fallback to using the web3auth no-modal sdk
-                const refreshedToken = await getIdToken(true); // * need fresh token to initialize web3AuthMfaFallbackLogin flow
+                const refreshedToken = await getIdToken(true);
                 await web3AuthMfaFallbackLogin(refreshedToken);
-
-                // !! if the user has enabled mfa
-                // !! fallback to using the web3auth no-modal sdk
             } else {
                 if (errorMessage && !suppressError) presentAlert(errorMessage);
             }
