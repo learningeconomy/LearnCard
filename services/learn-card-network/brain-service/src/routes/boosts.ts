@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
+import { traceDb, traceInternal } from '@tracing';
 
 import {
     BoostValidator as ConsumerBoostValidator,
@@ -790,7 +791,9 @@ export const boostsRouter = t.router({
             if (input.signedCredential) {
                 signedVc = input.signedCredential;
             } else {
-                const signingAuthority = await getPrimarySigningAuthorityForUser(profile);
+                const signingAuthority = await traceDb('getPrimarySigningAuthorityForUser', () =>
+                    getPrimarySigningAuthorityForUser(profile)
+                );
 
                 if (!signingAuthority) {
                     throw new TRPCError({
@@ -803,11 +806,13 @@ export const boostsRouter = t.router({
                 let unsignedVc: UnsignedVC;
 
                 try {
-                    unsignedVc = await prepareCredentialFromBoost(boost, boostUri, domain, {
-                        templateData: input.templateData as Record<string, unknown>,
-                        issuerDid: signingAuthority.relationship.did,
-                        recipientDid: getDidWeb(domain, targetProfile.profileId),
-                    });
+                    unsignedVc = await traceInternal('prepareCredentialFromBoost', () =>
+                        prepareCredentialFromBoost(boost, boostUri, domain, {
+                            templateData: input.templateData as Record<string, unknown>,
+                            issuerDid: signingAuthority.relationship.did,
+                            recipientDid: getDidWeb(domain, targetProfile.profileId),
+                        })
+                    );
                 } catch (e) {
                     console.error('Failed to prepare boost credential', e);
                     throw new TRPCError({
