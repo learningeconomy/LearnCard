@@ -1,12 +1,29 @@
 import React, { useState } from 'react';
 
 import { IonSpinner } from '@ionic/react';
-import { ChevronLeft, ChevronRight, Shield, Trash2, Settings, BookOpen, PenTool, ExternalLink } from 'lucide-react';
+import {
+    ChevronLeft,
+    ChevronRight,
+    Shield,
+    Trash2,
+    Settings,
+    BookOpen,
+    PenTool,
+    ExternalLink,
+    Activity,
+} from 'lucide-react';
 import { PaginatedConsentFlowTerms } from '@learncard/types';
 
-import { useModal, ModalTypes, useWithdrawConsent, contractCategoryNameToCategoryMetadata, useWallet } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useWithdrawConsent,
+    contractCategoryNameToCategoryMetadata,
+    useWallet,
+} from 'learn-card-base';
 
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
+import XApiDataFeedModal from './XApiDataFeedModal';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
 type ManageDataSharingModalProps = {
@@ -110,20 +127,18 @@ const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({ contract, o
 
     // Count only accepted permissions (where sharing !== false)
     const acceptedReadCount = contract.terms?.read?.credentials?.categories
-        ? Object.entries(contract.terms.read.credentials.categories)
-            .filter(([_, config]) => {
-                const cfg = config as { sharing?: boolean };
-                return cfg.sharing !== false;
-            }).length
+        ? Object.entries(contract.terms.read.credentials.categories).filter(([_, config]) => {
+              const cfg = config as { sharing?: boolean };
+              return cfg.sharing !== false;
+          }).length
         : 0;
 
     const acceptedWriteCount = contract.terms?.write?.credentials?.categories
-        ? Object.entries(contract.terms.write.credentials.categories)
-            .filter(([_, config]) => {
-                if (typeof config === 'boolean') return config;
-                const cfg = config as { sharing?: boolean };
-                return cfg.sharing !== false;
-            }).length
+        ? Object.entries(contract.terms.write.credentials.categories).filter(([_, config]) => {
+              if (typeof config === 'boolean') return config;
+              const cfg = config as { sharing?: boolean };
+              return cfg.sharing !== false;
+          }).length
         : 0;
 
     let permissionText = '';
@@ -169,10 +184,7 @@ type ContractDetailViewProps = {
     onUpdate?: () => void;
 };
 
-const ContractDetailView: React.FC<ContractDetailViewProps> = ({
-    contract,
-    onUpdate,
-}) => {
+const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpdate }) => {
     const contractDetails = contract.contract;
     const { closeModal, closeAllModals, newModal } = useModal();
     const { initWallet } = useWallet();
@@ -182,7 +194,9 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({
         closeModal();
     };
 
-    const { mutateAsync: withdrawConsent, isPending: isWithdrawing } = useWithdrawConsent(contract.uri);
+    const { mutateAsync: withdrawConsent, isPending: isWithdrawing } = useWithdrawConsent(
+        contract.uri
+    );
     const [showConfirmRevoke, setShowConfirmRevoke] = useState(false);
     const [isOpening, setIsOpening] = useState(false);
 
@@ -203,6 +217,18 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({
                 ownerDid={contractDetails.owner?.did}
             />,
             {},
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
+
+    const handleViewDataFeed = () => {
+        newModal(
+            <XApiDataFeedModal
+                contractUri={contract.uri}
+                contractName={name}
+                onBack={closeModal}
+            />,
+            { sectionClassName: '!p-0 !bg-transparent !shadow-none' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -268,9 +294,7 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({
                     </div>
 
                     <div>
-                        <h3 className="text-lg font-semibold text-grayscale-900">
-                            Revoke Access?
-                        </h3>
+                        <h3 className="text-lg font-semibold text-grayscale-900">Revoke Access?</h3>
 
                         <p className="text-sm text-grayscale-600 mt-2">
                             <span className="font-medium">{name}</span> will no longer be able to
@@ -353,6 +377,14 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({
                 )}
 
                 <button
+                    onClick={handleViewDataFeed}
+                    className="w-full py-3 bg-violet-100 text-violet-700 rounded-full font-medium flex items-center justify-center gap-2"
+                >
+                    <Activity className="w-4 h-4" />
+                    xAPI Data Feed
+                </button>
+
+                <button
                     onClick={handleEditPermissions}
                     className="w-full py-3 bg-grayscale-100 text-grayscale-700 rounded-full font-medium flex items-center justify-center gap-2"
                 >
@@ -376,21 +408,21 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
     // Filter to only show categories where sharing is enabled (matching AppInstallConsentModal logic)
     const acceptedReadCategories = contract.terms?.read?.credentials?.categories
         ? Object.entries(contract.terms.read.credentials.categories)
-            .filter(([_, config]) => {
-                const cfg = config as { sharing?: boolean };
-                return cfg.sharing !== false;
-            })
-            .map(([category]) => category)
+              .filter(([_, config]) => {
+                  const cfg = config as { sharing?: boolean };
+                  return cfg.sharing !== false;
+              })
+              .map(([category]) => category)
         : [];
 
     const acceptedWriteCategories = contract.terms?.write?.credentials?.categories
         ? Object.entries(contract.terms.write.credentials.categories)
-            .filter(([_, config]) => {
-                if (typeof config === 'boolean') return config;
-                const cfg = config as { sharing?: boolean };
-                return cfg.sharing !== false;
-            })
-            .map(([category]) => category)
+              .filter(([_, config]) => {
+                  if (typeof config === 'boolean') return config;
+                  const cfg = config as { sharing?: boolean };
+                  return cfg.sharing !== false;
+              })
+              .map(([category]) => category)
         : [];
 
     const hasReadCategories = acceptedReadCategories.length > 0;
