@@ -43,7 +43,7 @@ export const NotificationUserAcceptedBoostCard: React.FC<
                         />
                     </div>
                 )}
-                {customThumbComponent && { customThumbComponent }}
+                {customThumbComponent}
             </div>
             <div className="flex flex-col justify-center items-start relative w-full">
                 <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
