@@ -20,11 +20,37 @@ import '@ionic/react/css/ionic-swiper.css';
 
 const IntroSlides: React.FC = () => {
     const { getColorSet } = useTheme();
-    const { firstSlideBackground, secondSlideBackground, thirdSlideBackground, textColors } =
-        getColorSet(ColorSetEnum.introSlides);
+    const {
+        firstSlideBackground,
+        secondSlideBackground,
+        thirdSlideBackground,
+        pagination: paginationColors,
+    } = getColorSet(ColorSetEnum.introSlides);
 
     // ref storing swiper instance
     const [slidesRef, setSlidesRef] = useState<SwiperInterface>();
+    const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+
+    const paginationStyles = `
+        .intro-slides-pagination .swiper-pagination-bullet {
+            background-color: ${paginationColors.secondary};
+            opacity: 0.5;
+        }
+        .intro-slides-pagination .swiper-pagination-bullet-active {
+            background-color: ${
+                activeSlideIndex === 0 || activeSlideIndex === 3
+                    ? 'white'
+                    : paginationColors.primary
+            } !important;
+            opacity: 1;
+        }
+        .intro-slides-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+    `;
 
     const pagination = {
         el: '.swiper-pagination',
@@ -38,6 +64,10 @@ const IntroSlides: React.FC = () => {
         }, 1500);
     };
 
+    const handleSlideChange = (swiper: any) => {
+        setActiveSlideIndex(swiper.activeIndex);
+    };
+
     const handlePrevSlide = () => {
         slidesRef?.slidePrev();
     };
@@ -49,52 +79,56 @@ const IntroSlides: React.FC = () => {
     const isNativePlatform = Capacitor?.isNativePlatform();
 
     return (
-        <IonPage>
-            <IonContent fullscreen>
-                <div style={{ position: 'relative', height: '100%' }}>
-                    <Swiper
-                        modules={[Keyboard, Pagination, Scrollbar, IonicSlides, Navigation]}
-                        keyboard={true}
-                        pagination={pagination}
-                        grabCursor={true}
-                        scrollbar={true}
-                        className={'h-full'}
-                        onReachEnd={() => slideReachEnd()}
-                        onSwiper={swiper => setSlidesRef(swiper)}
-                    >
-                        <SwiperSlide className={`bg-${firstSlideBackground}`}>
-                            <LearnCardSlide1
-                                handlePrevSlide={handlePrevSlide}
-                                handleNextSlide={handleNextSlide}
-                                showDesktopNav={!isNativePlatform}
-                            />
-                        </SwiperSlide>
-                        <SwiperSlide className={`bg-${secondSlideBackground}`}>
-                            <LearnCardSlide2
-                                handlePrevSlide={handlePrevSlide}
-                                handleNextSlide={handleNextSlide}
-                                showDesktopNav={!isNativePlatform}
-                            />
-                        </SwiperSlide>
-                        <SwiperSlide className={`bg-${thirdSlideBackground}`}>
-                            <LearnCardSlide3
-                                handlePrevSlide={handlePrevSlide}
-                                handleNextSlide={handleNextSlide}
-                                showDesktopNav={!isNativePlatform}
-                            />
-                        </SwiperSlide>
-                        <SwiperSlide className={`bg-${firstSlideBackground}`}>
-                            <LearnCardSlide4
-                                handlePrevSlide={handlePrevSlide}
-                                handleNextSlide={handleNextSlide}
-                                showDesktopNav={!isNativePlatform}
-                            />
-                        </SwiperSlide>
-                    </Swiper>
-                </div>
-                <div className="swiper-pagination"></div>
-            </IonContent>
-        </IonPage>
+        <>
+            <style>{paginationStyles}</style>
+            <IonPage>
+                <IonContent fullscreen>
+                    <div style={{ position: 'relative', height: '100%' }}>
+                        <Swiper
+                            modules={[Keyboard, Pagination, Scrollbar, IonicSlides, Navigation]}
+                            keyboard={true}
+                            pagination={pagination}
+                            grabCursor={true}
+                            scrollbar={true}
+                            className={'h-full'}
+                            onReachEnd={() => slideReachEnd()}
+                            onSwiper={swiper => setSlidesRef(swiper)}
+                            onSlideChange={handleSlideChange}
+                        >
+                            <SwiperSlide className={`bg-${firstSlideBackground}`}>
+                                <LearnCardSlide1
+                                    handlePrevSlide={handlePrevSlide}
+                                    handleNextSlide={handleNextSlide}
+                                    showDesktopNav={!isNativePlatform}
+                                />
+                            </SwiperSlide>
+                            <SwiperSlide className={`bg-${secondSlideBackground}`}>
+                                <LearnCardSlide2
+                                    handlePrevSlide={handlePrevSlide}
+                                    handleNextSlide={handleNextSlide}
+                                    showDesktopNav={!isNativePlatform}
+                                />
+                            </SwiperSlide>
+                            <SwiperSlide className={`bg-${thirdSlideBackground}`}>
+                                <LearnCardSlide3
+                                    handlePrevSlide={handlePrevSlide}
+                                    handleNextSlide={handleNextSlide}
+                                    showDesktopNav={!isNativePlatform}
+                                />
+                            </SwiperSlide>
+                            <SwiperSlide className={`bg-${firstSlideBackground}`}>
+                                <LearnCardSlide4
+                                    handlePrevSlide={handlePrevSlide}
+                                    handleNextSlide={handleNextSlide}
+                                    showDesktopNav={!isNativePlatform}
+                                />
+                            </SwiperSlide>
+                        </Swiper>
+                    </div>
+                    <div className="swiper-pagination intro-slides-pagination"></div>
+                </IonContent>
+            </IonPage>
+        </>
     );
 };
 

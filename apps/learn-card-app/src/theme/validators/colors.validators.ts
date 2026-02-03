@@ -91,6 +91,10 @@ export const introSlidesColorsSchema = z.object({
         primary: z.string(),
         secondary: z.string(),
     }),
+    pagination: z.object({
+        primary: z.string(),
+        secondary: z.string(),
+    }),
 });
 
 export const defaultColorsSchema = z.object({

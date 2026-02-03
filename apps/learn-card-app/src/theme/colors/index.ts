@@ -60,6 +60,10 @@ export type IntroSlidesColors = {
         primary: string;
         secondary: string;
     };
+    pagination: {
+        primary: string;
+        secondary: string;
+    };
 };
 
 export type PlaceholderCategoryKey = CredentialCategoryEnum | 'defaults';
@@ -378,6 +382,10 @@ export const colors = {
                 primary: 'white',
                 secondary: 'white',
             },
+            pagination: {
+                primary: 'white',
+                secondary: '#E2E3E9', // grayscale-400
+            },
         },
 
         defaults: {
@@ -589,6 +597,10 @@ export const colors = {
             textColors: {
                 primary: 'grayscale-900',
                 secondary: 'white',
+            },
+            pagination: {
+                primary: '#3B82F6', // blue-500
+                secondary: '#A8ACBD', // grayscale-400
             },
         },
 
