@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_consent_to_contract_request_terms import ContractsConsentToContractRequestTerms
+from openapi_client.models.contracts_update_consented_contract_terms_request_terms import ContractsUpdateConsentedContractTermsRequestTerms
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,8 +27,8 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
     """
     ContractsUpdateConsentedContractTermsRequest
     """ # noqa: E501
-    uri: StrictStr
-    terms: ContractsConsentToContractRequestTerms
+    uri: Optional[StrictStr]
+    terms: ContractsUpdateConsentedContractTermsRequestTerms
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
     __properties: ClassVar[List[str]] = ["uri", "terms", "expiresAt", "oneTime"]
@@ -75,6 +75,16 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
+        # set to None if expires_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.expires_at is None and "expires_at" in self.model_fields_set:
+            _dict['expiresAt'] = None
+
         return _dict
 
     @classmethod
@@ -88,7 +98,7 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
 
         _obj = cls.model_validate({
             "uri": obj.get("uri"),
-            "terms": ContractsConsentToContractRequestTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "terms": ContractsUpdateConsentedContractTermsRequestTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime")
         })

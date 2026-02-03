@@ -20,11 +20,12 @@ import re  # noqa: F401
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import List, Optional
 from openapi_client.models.boost_send_boost_request_credential_any_of_proof_any_of import BoostSendBoostRequestCredentialAnyOfProofAnyOf
+from openapi_client.models.boost_send_boost_request_credential_any_of_proof_any_of1_inner import BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner
 from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
 from typing_extensions import Literal, Self
 from pydantic import Field
 
-BOOSTSENDBOOSTREQUESTCREDENTIALANYOFPROOF_ANY_OF_SCHEMAS = ["BoostSendBoostRequestCredentialAnyOfProofAnyOf", "List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]"]
+BOOSTSENDBOOSTREQUESTCREDENTIALANYOFPROOF_ANY_OF_SCHEMAS = ["BoostSendBoostRequestCredentialAnyOfProofAnyOf", "List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]"]
 
 class BoostSendBoostRequestCredentialAnyOfProof(BaseModel):
     """
@@ -33,13 +34,13 @@ class BoostSendBoostRequestCredentialAnyOfProof(BaseModel):
 
     # data type: BoostSendBoostRequestCredentialAnyOfProofAnyOf
     anyof_schema_1_validator: Optional[BoostSendBoostRequestCredentialAnyOfProofAnyOf] = None
-    # data type: List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]
-    anyof_schema_2_validator: Optional[List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]] = None
+    # data type: List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]
+    anyof_schema_2_validator: Optional[List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]] = None
     if TYPE_CHECKING:
-        actual_instance: Optional[Union[BoostSendBoostRequestCredentialAnyOfProofAnyOf, List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]]] = None
+        actual_instance: Optional[Union[BoostSendBoostRequestCredentialAnyOfProofAnyOf, List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]]] = None
     else:
         actual_instance: Any = None
-    any_of_schemas: Set[str] = { "BoostSendBoostRequestCredentialAnyOfProofAnyOf", "List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]" }
+    any_of_schemas: Set[str] = { "BoostSendBoostRequestCredentialAnyOfProofAnyOf", "List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]" }
 
     model_config = {
         "validate_assignment": True,
@@ -66,7 +67,7 @@ class BoostSendBoostRequestCredentialAnyOfProof(BaseModel):
         else:
             return v
 
-        # validate data type: List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]
+        # validate data type: List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]
         try:
             instance.anyof_schema_2_validator = v
             return v
@@ -74,7 +75,7 @@ class BoostSendBoostRequestCredentialAnyOfProof(BaseModel):
             error_messages.append(str(e))
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in BoostSendBoostRequestCredentialAnyOfProof with anyOf schemas: BoostSendBoostRequestCredentialAnyOfProofAnyOf, List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting the actual_instance in BoostSendBoostRequestCredentialAnyOfProof with anyOf schemas: BoostSendBoostRequestCredentialAnyOfProofAnyOf, List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -93,7 +94,7 @@ class BoostSendBoostRequestCredentialAnyOfProof(BaseModel):
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
-        # deserialize data into List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]
+        # deserialize data into List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]
         try:
             # validation
             instance.anyof_schema_2_validator = json.loads(json_str)
@@ -105,7 +106,7 @@ class BoostSendBoostRequestCredentialAnyOfProof(BaseModel):
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into BoostSendBoostRequestCredentialAnyOfProof with anyOf schemas: BoostSendBoostRequestCredentialAnyOfProofAnyOf, List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into BoostSendBoostRequestCredentialAnyOfProof with anyOf schemas: BoostSendBoostRequestCredentialAnyOfProofAnyOf, List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -119,7 +120,7 @@ class BoostSendBoostRequestCredentialAnyOfProof(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostSendBoostRequestCredentialAnyOfProofAnyOf, List[BoostSendBoostRequestCredentialAnyOfProofAnyOf]]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostSendBoostRequestCredentialAnyOfProofAnyOf, List[BoostSendBoostRequestCredentialAnyOfProofAnyOf1Inner]]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

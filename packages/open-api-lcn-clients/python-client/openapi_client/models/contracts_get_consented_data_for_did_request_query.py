@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_boosts_request_query_uri import BoostGetBoostsRequestQueryUri
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 from openapi_client.models.contracts_get_consented_data_for_contract_request_query_credentials import ContractsGetConsentedDataForContractRequestQueryCredentials
 from typing import Optional, Set
 from typing_extensions import Self
@@ -30,7 +30,7 @@ class ContractsGetConsentedDataForDidRequestQuery(BaseModel):
     """ # noqa: E501
     credentials: Optional[ContractsGetConsentedDataForContractRequestQueryCredentials] = None
     personal: Optional[Dict[str, StrictBool]] = None
-    id: Optional[BoostGetBoostsRequestQueryUri] = None
+    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
     __properties: ClassVar[List[str]] = ["credentials", "personal", "id"]
 
     model_config = ConfigDict(
@@ -92,7 +92,7 @@ class ContractsGetConsentedDataForDidRequestQuery(BaseModel):
         _obj = cls.model_validate({
             "credentials": ContractsGetConsentedDataForContractRequestQueryCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": obj.get("personal"),
-            "id": BoostGetBoostsRequestQueryUri.from_dict(obj["id"]) if obj.get("id") is not None else None
+            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["id"]) if obj.get("id") is not None else None
         })
         return _obj
 

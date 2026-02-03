@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_update_boost_request_updates import BoostUpdateBoostRequestUpdates
 from typing import Optional, Set
 from typing_extensions import Self
@@ -27,7 +27,7 @@ class BoostUpdateBoostRequest(BaseModel):
     """
     BoostUpdateBoostRequest
     """ # noqa: E501
-    uri: StrictStr
+    uri: Optional[StrictStr]
     updates: BoostUpdateBoostRequestUpdates
     __properties: ClassVar[List[str]] = ["uri", "updates"]
 
@@ -73,6 +73,11 @@ class BoostUpdateBoostRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of updates
         if self.updates:
             _dict['updates'] = self.updates.to_dict()
+        # set to None if uri (nullable) is None
+        # and model_fields_set contains the field
+        if self.uri is None and "uri" in self.model_fields_set:
+            _dict['uri'] = None
+
         return _dict
 
     @classmethod

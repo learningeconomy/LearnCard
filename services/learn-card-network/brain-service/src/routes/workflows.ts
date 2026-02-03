@@ -322,7 +322,7 @@ async function handlePresentationForClaim(
     /** Get the holder profile by DID
         const holderProfile = await getProfileByDid(holderDid);
         if (!holderProfile) {
-            console.log("Holder has a profile! ", holderProfile)
+            // Process holder profile if available
         }
     */
 

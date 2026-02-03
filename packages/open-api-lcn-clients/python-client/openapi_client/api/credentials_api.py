@@ -16,9 +16,8 @@ from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
-from pydantic import Field, StrictBool, StrictStr
+from pydantic import StrictBool, StrictInt, StrictStr
 from typing import List, Optional
-from typing_extensions import Annotated
 from openapi_client.models.credential_accept_credential_request import CredentialAcceptCredentialRequest
 from openapi_client.models.credential_received_credentials200_response_inner import CredentialReceivedCredentials200ResponseInner
 from openapi_client.models.credential_send_credential_request import CredentialSendCredentialRequest
@@ -608,7 +607,7 @@ class CredentialsApi:
     @validate_call
     def credential_incoming_credentials(
         self,
-        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
+        limit: Optional[StrictInt] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -684,7 +683,7 @@ class CredentialsApi:
     @validate_call
     def credential_incoming_credentials_with_http_info(
         self,
-        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
+        limit: Optional[StrictInt] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -760,7 +759,7 @@ class CredentialsApi:
     @validate_call
     def credential_incoming_credentials_without_preload_content(
         self,
-        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
+        limit: Optional[StrictInt] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -903,7 +902,7 @@ class CredentialsApi:
     @validate_call
     def credential_received_credentials(
         self,
-        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
+        limit: Optional[StrictInt] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -979,7 +978,7 @@ class CredentialsApi:
     @validate_call
     def credential_received_credentials_with_http_info(
         self,
-        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
+        limit: Optional[StrictInt] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -1055,7 +1054,7 @@ class CredentialsApi:
     @validate_call
     def credential_received_credentials_without_preload_content(
         self,
-        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
+        limit: Optional[StrictInt] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -1499,7 +1498,7 @@ class CredentialsApi:
     @validate_call
     def credential_sent_credentials(
         self,
-        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
+        limit: Optional[StrictInt] = None,
         to: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -1575,7 +1574,7 @@ class CredentialsApi:
     @validate_call
     def credential_sent_credentials_with_http_info(
         self,
-        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
+        limit: Optional[StrictInt] = None,
         to: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -1651,7 +1650,7 @@ class CredentialsApi:
     @validate_call
     def credential_sent_credentials_without_preload_content(
         self,
-        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
+        limit: Optional[StrictInt] = None,
         to: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,

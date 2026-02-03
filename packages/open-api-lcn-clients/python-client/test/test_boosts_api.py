@@ -33,6 +33,20 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_align_boost_skills(self) -> None:
+        """Test case for boost_align_boost_skills
+
+        Align skills to boost
+        """
+        pass
+
+    def test_boost_attach_framework_to_boost(self) -> None:
+        """Test case for boost_attach_framework_to_boost
+
+        Attach framework to boost
+        """
+        pass
+
     def test_boost_claim_boost_with_link(self) -> None:
         """Test case for boost_claim_boost_with_link
 
@@ -96,6 +110,13 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_detach_framework_from_boost(self) -> None:
+        """Test case for boost_detach_framework_from_boost
+
+        Detach framework from boost
+        """
+        pass
+
     def test_boost_generate_claim_link(self) -> None:
         """Test case for boost_generate_claim_link
 
@@ -117,10 +138,24 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_get_boost_alignments(self) -> None:
+        """Test case for boost_get_boost_alignments
+
+        Get OBv3 alignments for a boost
+        """
+        pass
+
     def test_boost_get_boost_children(self) -> None:
         """Test case for boost_get_boost_children
 
         Get boost children
+        """
+        pass
+
+    def test_boost_get_boost_frameworks(self) -> None:
+        """Test case for boost_get_boost_frameworks
+
+        List frameworks used by a boost (paginated)
         """
         pass
 
@@ -149,6 +184,13 @@ class TestBoostsApi(unittest.TestCase):
         """Test case for boost_get_boost_recipients
 
         Get boost recipients
+        """
+        pass
+
+    def test_boost_get_boost_recipients_with_children_count(self) -> None:
+        """Test case for boost_get_boost_recipients_with_children_count
+
+        Count boost recipients with children
         """
         pass
 
@@ -208,10 +250,24 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_get_paginated_boost_recipients_with_children(self) -> None:
+        """Test case for boost_get_paginated_boost_recipients_with_children
+
+        Get boost recipients with children
+        """
+        pass
+
     def test_boost_get_paginated_boosts(self) -> None:
         """Test case for boost_get_paginated_boosts
 
         Get boosts
+        """
+        pass
+
+    def test_boost_get_skills_available_for_boost(self) -> None:
+        """Test case for boost_get_skills_available_for_boost
+
+        List available skills for a boost
         """
         pass
 
@@ -233,6 +289,13 @@ class TestBoostsApi(unittest.TestCase):
         """Test case for boost_remove_boost_parent
 
         Remove Boost Parent
+        """
+        pass
+
+    def test_boost_search_skills_available_for_boost(self) -> None:
+        """Test case for boost_search_skills_available_for_boost
+
+        Search available skills for a boost
         """
         pass
 

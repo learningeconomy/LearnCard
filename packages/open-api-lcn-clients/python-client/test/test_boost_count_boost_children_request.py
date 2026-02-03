@@ -36,17 +36,8 @@ class TestBoostCountBoostChildrenRequest(unittest.TestCase):
         if include_optional:
             return BoostCountBoostChildrenRequest(
                 uri = '',
-                query = openapi_client.models.boost_get_boosts_request_query.boost_getBoosts_request_query(
-                    uri = null, 
-                    name = null, 
-                    type = null, 
-                    category = null, 
-                    meta = {
-                        'key' : null
-                        }, 
-                    status = null, 
-                    auto_connect_recipients = True, ),
-                number_of_generations = 1.337
+                query = None,
+                number_of_generations = None
             )
         else:
             return BoostCountBoostChildrenRequest(

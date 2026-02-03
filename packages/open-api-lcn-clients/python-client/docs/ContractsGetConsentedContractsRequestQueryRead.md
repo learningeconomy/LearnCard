@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **anonymize** | **bool** |  | [optional] 
 **credentials** | [**ContractsGetConsentedContractsRequestQueryReadCredentials**](ContractsGetConsentedContractsRequestQueryReadCredentials.md) |  | [optional] 
-**personal** | **Dict[str, str]** |  | [optional] 
+**personal** | **Dict[str, Optional[str]]** |  | [optional] 
 
 ## Example
 

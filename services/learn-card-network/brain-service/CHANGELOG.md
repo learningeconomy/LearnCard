@@ -1,5 +1,15 @@
 # @learncard/network-brain-service
 
+## 3.10.1
+
+### Patch Changes
+
+-   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Serve app did:web documents and app issuer relationships.
+
+    The brain service now resolves did:web:<host>:app:<slug> documents and
+    tracks listing-issued credentials so app issuers can be recognized in
+    the UI and activity graph.
+
 ## 3.10.0
 
 ### Minor Changes

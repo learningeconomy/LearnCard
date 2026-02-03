@@ -35,12 +35,21 @@ class TestBoostSendBoostRequestCredentialAnyOfEvidence(unittest.TestCase):
         model = BoostSendBoostRequestCredentialAnyOfEvidence()
         if include_optional:
             return BoostSendBoostRequestCredentialAnyOfEvidence(
-                type = None,
-                id = ''
+                id = '',
+                type = [
+                    ''
+                    ],
+                name = '',
+                narrative = '',
+                description = '',
+                genre = '',
+                audience = ''
             )
         else:
             return BoostSendBoostRequestCredentialAnyOfEvidence(
-                type = None,
+                type = [
+                    ''
+                    ],
         )
         """
 

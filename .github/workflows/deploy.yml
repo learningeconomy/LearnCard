@@ -8,9 +8,9 @@ on:
         inputs:
             # Environment selection
             target-environment:
-                description: "Target Environment"
+                description: 'Target Environment'
                 required: true
-                default: "staging"
+                default: 'staging'
                 type: choice
                 options:
                     - staging
@@ -18,32 +18,32 @@ on:
                     - scouts
             # Component selection - which things to deploy
             deploy-brain-service:
-                description: "Deploy Brain Service (Network API)"
+                description: 'Deploy Brain Service (Network API)'
                 required: false
                 default: false
                 type: boolean
             deploy-learn-cloud:
-                description: "Deploy LearnCloud (Storage API)"
+                description: 'Deploy LearnCloud (Storage API)'
                 required: false
                 default: false
                 type: boolean
             deploy-lca-api:
-                description: "Deploy LCA API Service"
+                description: 'Deploy LCA API Service'
                 required: false
                 default: false
                 type: boolean
             deploy-frontend:
-                description: "Deploy Frontend (Netlify + CapGo)"
+                description: 'Deploy Frontend (Netlify + CapGo)'
                 required: false
                 default: false
                 type: boolean
             publish-npm:
-                description: "Publish NPM Packages"
+                description: 'Publish NPM Packages'
                 required: false
                 default: false
                 type: boolean
             push-docker:
-                description: "Push Docker Images"
+                description: 'Push Docker Images'
                 required: false
                 default: false
                 type: boolean
@@ -321,32 +321,32 @@ jobs:
             - name: Deploy Brain Service Lambda
               run: pnpm exec nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
         env:
-          CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
-          POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
-          SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
-          SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
-          SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
-          SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-          SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
-          APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
-          SEED: ${{ secrets.SEED }}
-          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-          NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
-          NEO4J_URI: ${{ secrets.NEO4J_URI }}
-          NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
-          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
-          POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
-          MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
-          MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
-          SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
-          SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
-          LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
+            CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
+            POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
+            SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
+            SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
+            SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
+            SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
+            SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
+            APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
+            SEED: ${{ secrets.SEED }}
+            DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+            NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
+            NEO4J_URI: ${{ secrets.NEO4J_URI }}
+            NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
+            NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+            POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
+            MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
+            MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
+            SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+            SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+            SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+            SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+            SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
+            SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
+            SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
+            LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
 
     deploy-learn-cloud:
         name: Deploy LearnCloud (Storage API)
@@ -538,7 +538,7 @@ jobs:
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
                   WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
                   WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
-                  SKIP_DIDKIT_NAPI: "1"
+                  SKIP_DIDKIT_NAPI: '1'
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
@@ -675,10 +675,10 @@ jobs:
               uses: ./.github/actions/setup
 
             - name: Build packages
-              run: pnpm exec nx run-many --target=build --exclude docs
+              run: pnpm exec nx run-many --target=build --exclude docs --exclude didkit-plugin-node
 
             - name: Publish to NPM
-              run: pnpm publish -r --no-git-checks
+              run: pnpm publish -r --no-git-checks --filter=!@learncard/didkit-plugin-node
 
     # ============================================================================
     # CHANGESET PR MANAGEMENT (only on non-release, non-manual pushes)
@@ -691,10 +691,18 @@ jobs:
             needs.determine-affected.outputs.is_manual != 'true'
         runs-on: ubuntu-latest
         steps:
+            # - name: Generate GitHub App Token
+            #   id: app-token
+            #   uses: actions/create-github-app-token@v2
+            #   with:
+            #       app-id: ${{ secrets.E2E_RUNNER_APP_ID }}
+            #       private-key: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
+
             - name: Checkout Repo
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
+                  # token: ${{ steps.app-token.outputs.token }}
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
@@ -702,7 +710,8 @@ jobs:
             - name: Create Release Pull Request
               uses: changesets/action@v1
               with:
-                  commit: "chore(release): version packages"
-                  title: "chore(release): version packages"
+                  commit: 'chore(release): version packages'
+                  title: 'chore(release): version packages'
               env:
+                  # GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
