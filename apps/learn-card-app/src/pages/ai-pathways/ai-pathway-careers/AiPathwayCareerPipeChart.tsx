@@ -8,14 +8,14 @@ import { Wages } from 'learn-card-base/types/careerOneStop';
 const MEDIAN_BUCKET = 4;
 
 export const AiPathwayCareerPipeChart: React.FC<{ wages: Wages }> = ({ wages }) => {
-    const { NationalWagesList } = wages;
+    const { NationalWagesList = [] } = wages;
     const [_rate, yearly] = NationalWagesList;
 
     const data = buildSalaryPipeData(yearly);
 
-    const minSalary = yearly?.Pct10;
-    const medianSalary = yearly?.Median;
-    const maxSalary = yearly?.Pct90;
+    const minSalary = yearly?.Pct10 ?? 0;
+    const medianSalary = yearly?.Median ?? 0;
+    const maxSalary = yearly?.Pct90 ?? 0;
 
     return (
         <div className="w-full relative">
