@@ -452,10 +452,6 @@ export const sendBoost = async ({
             }
 
             boostUri = getCredentialUri(credentialInstance.id, domain);
-
-            if (process.env.NODE_ENV !== 'test') {
-                console.log('🚀 sendBoost:boost sent uncertified', boostUri);
-            }
         }
 
         if (typeof boostUri === 'string') {
@@ -475,9 +471,6 @@ export const sendBoost = async ({
                     })
                 );
 
-                if (process.env.NODE_ENV !== 'test') {
-                    console.log('🚀 sendBoost:notification sent! ✅');
-                }
             }
 
             return boostUri;

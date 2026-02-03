@@ -27,15 +27,6 @@ export async function issueCredentialWithSigningAuthority(
 ): Promise<VC | JWE> {
     return trace('signing-authority', 'issueCredentialWithSigningAuthority', async () => {
         try {
-            if (!IS_TEST_ENVIRONMENT) {
-                console.log(
-                    'Issuing Credential with SA',
-                    JSON.stringify({
-                        credential,
-                        signingAuthorityForUser,
-                    })
-                );
-            }
 
             if (IS_TEST_ENVIRONMENT) {
                 return await _mockIssueCredentialWithSigningAuthority(credential);
@@ -48,8 +39,6 @@ export async function issueCredentialWithSigningAuthority(
             );
 
             const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
-
-            if (!IS_TEST_ENVIRONMENT) console.log('Issuer Endpoint: ', issuerEndpoint);
 
             const subjectId = Array.isArray(credential?.credentialSubject)
                 ? credential?.credentialSubject[0]?.id
@@ -96,8 +85,6 @@ export async function issueCredentialWithSigningAuthority(
             clearTimeout(timeoutId);
 
             const res = await trace('internal', 'parseResponse', () => response.json());
-
-            if (!IS_TEST_ENVIRONMENT) console.log('RESPONSE: ', res);
 
             if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
                 throw new Error(res);

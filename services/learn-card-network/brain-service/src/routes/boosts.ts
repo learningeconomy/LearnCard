@@ -522,10 +522,6 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, credential, uri, options } = input;
 
-            if (process.env.NODE_ENV !== 'test') {
-                console.log('🚀 BEGIN - Send Boost', JSON.stringify(input));
-            }
-
             const targetProfile = await getProfileByProfileId(profileId);
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
 
