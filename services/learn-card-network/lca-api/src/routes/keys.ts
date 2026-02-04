@@ -18,7 +18,7 @@ import {
     ServerEncryptedShareValidator,
     EncryptedShareValidator,
     type ContactMethod,
-} from '@models/UserKey';
+} from '@models';
 
 const AuthProviderTypeValidator = z.enum(['firebase', 'supertokens', 'keycloak', 'oidc']);
 
@@ -63,7 +63,7 @@ export const keysRouter = t.router({
                 recoveryMethods: z.array(
                     z.object({
                         type: z.enum(['password', 'passkey', 'backup']),
-                        createdAt: z.date(),
+                        createdAt: z.string(),
                         credentialId: z.string().optional(),
                     })
                 ),
@@ -84,16 +84,20 @@ export const keysRouter = t.router({
                 id: user.id,
             });
 
+            const recoveryMethods = (userKey.recoveryMethods ?? [])
+                .filter(rm => rm && rm.type && rm.createdAt)
+                .map(rm => ({
+                    type: rm.type,
+                    createdAt: rm.createdAt instanceof Date ? rm.createdAt.toISOString() : String(rm.createdAt),
+                    ...(rm.credentialId ? { credentialId: rm.credentialId } : {}),
+                }));
+
             return {
                 authShare: userKey.authShare ?? null,
                 primaryDid: userKey.primaryDid ?? null,
-                securityLevel: userKey.securityLevel,
-                recoveryMethods: userKey.recoveryMethods.map(rm => ({
-                    type: rm.type,
-                    createdAt: rm.createdAt,
-                    credentialId: rm.credentialId,
-                })),
-                keyProvider: userKey.keyProvider,
+                securityLevel: userKey.securityLevel ?? 'basic',
+                recoveryMethods,
+                keyProvider: userKey.keyProvider ?? 'sss',
             };
         }),
 
@@ -190,7 +194,7 @@ export const keysRouter = t.router({
                 return null;
             }
 
-            const recoveryMethod = userKey.recoveryMethods.find(rm => {
+            const recoveryMethod = (userKey.recoveryMethods ?? []).find(rm => {
                 if (rm.type !== input.type) return false;
                 if (input.type === 'passkey' && input.credentialId) {
                     return rm.credentialId === input.credentialId;
@@ -223,8 +227,8 @@ export const keysRouter = t.router({
     deleteUserKey: openRoute
         .meta({
             openapi: {
-                method: 'DELETE',
-                path: '/keys',
+                method: 'POST',
+                path: '/keys/delete',
                 tags: ['Keys'],
                 summary: 'Delete user key and all associated data',
             },

@@ -15,6 +15,25 @@ export interface VerifiedUser {
 export type AuthProviderType = 'firebase' | 'supertokens' | 'keycloak' | 'oidc';
 
 export async function verifyFirebaseToken(token: string): Promise<VerifiedUser> {
+    // E2E test bypass - parse mock JWT without Firebase verification
+    if (process.env.IS_E2E_TEST === 'true') {
+        try {
+            const parts = token.split('.');
+            const payloadPart = parts[1];
+            if (parts.length >= 2 && payloadPart) {
+                const payload = JSON.parse(Buffer.from(payloadPart, 'base64url').toString());
+                return {
+                    id: payload.sub || payload.uid || 'e2e-test-user',
+                    email: payload.email,
+                    phone: payload.phone_number,
+                    providerType: 'firebase',
+                };
+            }
+        } catch {
+            // Fall through to normal verification
+        }
+    }
+
     try {
         const decodedToken = await admin.auth().verifyIdToken(token);
 
@@ -33,7 +52,7 @@ export async function verifyFirebaseToken(token: string): Promise<VerifiedUser> 
     }
 }
 
-export async function verifySuperTokensToken(token: string): Promise<VerifiedUser> {
+export async function verifySuperTokensToken(_token: string): Promise<VerifiedUser> {
     // SuperTokens verification would go here
     // For now, throw an error indicating it's not yet implemented
     // In production, this would call SuperTokens SDK to verify the session
@@ -43,7 +62,7 @@ export async function verifySuperTokensToken(token: string): Promise<VerifiedUse
     });
 }
 
-export async function verifyKeycloakToken(token: string): Promise<VerifiedUser> {
+export async function verifyKeycloakToken(_token: string): Promise<VerifiedUser> {
     // Keycloak verification would go here
     // This would use the existing verifyKeycloakToken from firebase.helpers.ts
     // but return a VerifiedUser instead of creating a Firebase user
@@ -53,7 +72,7 @@ export async function verifyKeycloakToken(token: string): Promise<VerifiedUser> 
     });
 }
 
-export async function verifyOidcToken(token: string): Promise<VerifiedUser> {
+export async function verifyOidcToken(_token: string): Promise<VerifiedUser> {
     // Generic OIDC verification
     throw new TRPCError({
         code: 'NOT_IMPLEMENTED',

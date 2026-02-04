@@ -147,6 +147,41 @@ services:
             REDIS_HOST: redis3
             REDIS_PORT: 6379
 
+    lca-api:
+        image: lca-api-service
+        build:
+            context: ../../
+            dockerfile: services/learn-card-network/lca-api/Dockerfile
+
+        expose:
+            - 5200
+        ports:
+            - '5200:5200'
+
+        depends_on:
+            mongodb:
+                condition: service_healthy
+            redis3:
+                condition: service_started
+
+        networks:
+            - learn-card
+
+        extra_hosts:
+            - 'localhost:host-gateway'
+
+        environment:
+            PORT: 5200
+            IS_OFFLINE: true
+            IS_E2E_TEST: true
+            SEED: d
+            AUTHORIZED_DIDS: did:web:localhost%3A4000
+            MONGO_URI: ${LCA_API_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
+            MONGO_DB_NAME: ${LCA_API_MONGO_DB_NAME:-lca-api-e2e}
+            REDIS_URL: redis3
+            REDIS_PORT: 6379
+            METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-test-key}
+
     neo4j:
         image: neo4j:latest
         ports:
