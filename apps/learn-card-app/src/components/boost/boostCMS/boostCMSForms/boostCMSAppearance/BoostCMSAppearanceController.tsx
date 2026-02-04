@@ -23,6 +23,7 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import CertRibbon from 'apps/learn-card-app/src/components/svgs/CertRibbon';
+import CredentialMediaBadge from 'learn-card-base/components/CredentialBadge/CredentialMediaBadge';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
 
@@ -106,6 +107,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
 
     let controllerContainerStyles = '';
     let imageStyles = '';
+    let backgroundImageStyles = '';
     if (isBadgeDisplayType) {
         controllerContainerStyles = `relative flex items-center justify-center w-[170px] h-[170px] rounded-full border-white border-solid border-4 bg-${color} z-50`;
         imageStyles = 'w-[60%] h-[60%]';
@@ -120,7 +122,27 @@ const BoostCMSAppearanceController: React.FC<BoostCMSAppearanceControllerProps> 
         controllerContainerStyles =
             'relative flex items-center justify-center w-[170px] h-[155px] rounded-[25px] border-white border-solid border-4 bg-white z-50 overflow-hidden';
         imageStyles = 'w-[100%] h-[100%] object-contain !rounded-[25px]';
+        backgroundImageStyles = '!min-h-[150px] !max-h-[150px] !rounded-none';
     }
+
+    if (isMediaDisplayType) {
+        return (
+            <div className="flex items-center justify-center w-full relative">
+                <div className={controllerContainerStyles}>
+                    <CredentialMediaBadge
+                        category={state?.basicInfo.type as CredentialCategoryEnum}
+                        attachments={state?.mediaAttachments}
+                        showIcon={false}
+                        boostType={state?.basicInfo?.type as CredentialCategoryEnum}
+                        backgroundImageStyles={backgroundImageStyles}
+                        backgroundColor="#E2E3E9"
+                        showCMSPlaceholder
+                    />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex items-center justify-center w-full relative">
             <div className={controllerContainerStyles}>
