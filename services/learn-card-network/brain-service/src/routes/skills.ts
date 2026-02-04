@@ -230,6 +230,17 @@ export const skillsRouter = t.router({
             const normalizedQuery = query.trim();
             if (!normalizedQuery) return [];
 
+            const escapedQuery = normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const textRegex = new RegExp(escapedQuery, 'i');
+            const fallbackQuery = {
+                $or: [
+                    { id: { $regex: textRegex } },
+                    { statement: { $regex: textRegex } },
+                    { description: { $regex: textRegex } },
+                    { code: { $regex: textRegex } },
+                ],
+            };
+
             const provider = getSkillsProvider();
             let results: any[] = [];
             try {
@@ -239,7 +250,7 @@ export const skillsRouter = t.router({
             } catch {
                 const fallback = await searchSkillsInFramework(
                     frameworkId,
-                    normalizedQuery,
+                    fallbackQuery,
                     limit,
                     null
                 );
@@ -249,7 +260,7 @@ export const skillsRouter = t.router({
             if (!results || results.length === 0) {
                 const fallback = await searchSkillsInFramework(
                     frameworkId,
-                    normalizedQuery,
+                    fallbackQuery,
                     limit,
                     null
                 );
