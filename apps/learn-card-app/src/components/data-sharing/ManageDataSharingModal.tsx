@@ -228,7 +228,7 @@ const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract, onUpd
                 contractName={name}
                 onBack={closeModal}
             />,
-            { sectionClassName: '!p-0 !bg-transparent !shadow-none' },
+            { sectionClassName: '!p-0 !shadow-none' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
