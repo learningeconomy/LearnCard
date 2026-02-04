@@ -402,7 +402,7 @@ const AppListingPage: React.FC = () => {
                     hideFullScreenButton={listing.launch_type === 'EMBEDDED_IFRAME'}
                 />,
                 {},
-                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.Right }
             );
         } else if (listing.launch_type === 'DIRECT_LINK' && launchConfig.url) {
             window.open(launchConfig.url, '_blank');
