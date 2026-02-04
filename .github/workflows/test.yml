@@ -93,7 +93,7 @@ jobs:
             cd ~/learncard-e2e-runner
             git pull origin main
             ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
-            ./scripts/run-tests.sh
+            SKIP_DIDKIT_NAPI=1 ./scripts/run-tests.sh
 
       - name: Download Playwright report from EC2
         if: always()
