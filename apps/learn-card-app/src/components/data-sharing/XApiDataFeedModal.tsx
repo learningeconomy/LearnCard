@@ -296,8 +296,16 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
         console.log('vpToken length:', vpToken?.length);
 
         console.log('vpToken', vpToken);
-        // Determine endpoint based on contract network (localhost vs production)
-        const endpoint = 'http://localhost:4100/xapi';
+        const endpoint =
+            typeof LEARN_CLOUD_XAPI_URL === 'string'
+                ? LEARN_CLOUD_XAPI_URL
+                : typeof CLOUD_URL === 'string'
+                ? CLOUD_URL.replace(/\/trpc\/?$/, '/xapi')
+                : undefined;
+
+        if (!endpoint) {
+            throw new Error('LEARN_CLOUD_XAPI_URL is not configured');
+        }
 
         console.log('📝 Sending xAPI statement to:', endpoint);
         console.log('Contract URI:', contractUri);
