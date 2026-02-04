@@ -14,12 +14,8 @@ import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
 import LaunchPad from './pages/launchPad/LaunchPad';
-const EmbedAppFullScreen = lazyWithRetry(
-    () => import('./pages/launchPad/EmbedAppFullScreen')
-);
-const AppListingPage = lazyWithRetry(
-    () => import('./pages/launchPad/AppListingPage')
-);
+const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
+const AppListingPage = lazyWithRetry(() => import('./pages/launchPad/AppListingPage'));
 const NotificationsPage = lazyWithRetry(
     () => import('./pages/notificationsPage/NotificationsPage')
 );
@@ -68,9 +64,7 @@ const WalletServiceWorker = lazyWithRetry(
     () => import('./pages/walletServiceWorker/WalletServiceWorker')
 );
 const ClaimBoost = lazyWithRetry(() => import('./pages/claimBoost/ClaimBoost'));
-const ApproveAccount = lazyWithRetry(
-    () => import('./pages/approveAccount/ApproveAccount')
-);
+const ApproveAccount = lazyWithRetry(() => import('./pages/approveAccount/ApproveAccount'));
 
 import SocialBadgesPage from './pages/socialBadgesPage/SocialBadgesPage';
 
@@ -95,11 +89,11 @@ const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 const DeveloperPortalRoutes = lazyWithRetry(
     () => import('./pages/appStoreDeveloper/DeveloperPortalRoutes')
 );
-const AppStoreAdminDashboard = lazyWithRetry(
-    () => import('./pages/appStoreAdmin/AdminDashboard')
-);
-const DeveloperPortalProvider = lazyWithRetry(
-    () => import('./pages/appStoreDeveloper/DeveloperPortalContext').then(m => ({ default: m.DeveloperPortalProvider }))
+const AppStoreAdminDashboard = lazyWithRetry(() => import('./pages/appStoreAdmin/AdminDashboard'));
+const DeveloperPortalProvider = lazyWithRetry(() =>
+    import('./pages/appStoreDeveloper/DeveloperPortalContext').then(m => ({
+        default: m.DeveloperPortalProvider,
+    }))
 );
 
 // Wrapper to provide DeveloperPortalContext for admin dashboard
@@ -182,9 +176,16 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
 
                         {/* App Store Developer Portal - all routes wrapped in context provider */}
-                        <PrivateRoute path="/app-store/developer" component={DeveloperPortalRoutes} />
-                        
-                        <PrivateRoute exact path="/app-store/admin" component={AppStoreAdminWithProvider} />
+                        <PrivateRoute
+                            path="/app-store/developer"
+                            component={DeveloperPortalRoutes}
+                        />
+
+                        <PrivateRoute
+                            exact
+                            path="/app-store/admin"
+                            component={AppStoreAdminWithProvider}
+                        />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         <PrivateRoute exact path="/contacts" component={AddressBook} />
@@ -219,7 +220,6 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/store" component={CredentialStorage} />
                         <PrivateRoute exact path="/exchange" component={CredentialExchange} />
                         <PrivateRoute exact path="/get" component={CredentialStorageGet} />
-                        <PrivateRoute exact path="/data-feed" component={PostConsentFlowDataFeed} />
 
                         <PrivateRoute
                             exact
@@ -275,11 +275,7 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
                         <SentryRoute exact path="/invite" component={InvitePage} />
                         <SentryRoute exact path="/claim/boost" component={ClaimBoost} />
-                        <SentryRoute
-                            exact
-                            path="/approve-account"
-                            component={ApproveAccount}
-                        />
+                        <SentryRoute exact path="/approve-account" component={ApproveAccount} />
                         <SentryRoute
                             exact
                             path="/claim/from-dashboard"
