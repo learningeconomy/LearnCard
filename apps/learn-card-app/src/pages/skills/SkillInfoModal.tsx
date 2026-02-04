@@ -1,11 +1,20 @@
 import React from 'react';
 
-import { useModal, useGetSkill } from 'learn-card-base';
+import {
+    useModal,
+    useGetSkill,
+    useGetSelfAssignedSkillsBoost,
+    useGetBoostSkills,
+} from 'learn-card-base';
 
+import { IonFooter } from '@ionic/react';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillDetails from './SkillDetails';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
-import { IonFooter } from '@ionic/react';
+import SkillProficiencyBar, {
+    SkillLevel,
+    SkillProficiencyBarModeEnum,
+} from './SkillProficiencyBar';
 
 import {
     ApiSkillNode,
@@ -23,10 +32,14 @@ const SkillInfoModal: React.FC<SkillInfoModalProps> = ({ frameworkId, skillId, c
     const { closeModal } = useModal();
 
     const { data: alignmentData } = useGetSkill(frameworkId ?? '', skillId ?? '');
+    const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
+    const { data: sasBoostSkills } = useGetBoostSkills(sasBoostData?.uri);
 
     const alignment = alignmentData
         ? convertApiSkillNodeToSkillTreeNode(alignmentData as ApiSkillNode)
         : undefined;
+
+    const sasLevel = sasBoostSkills?.find(s => s.id === skillId)?.proficiencyLevel;
 
     const isTier = false;
 
@@ -96,6 +109,14 @@ const SkillInfoModal: React.FC<SkillInfoModalProps> = ({ frameworkId, skillId, c
                                         <p className="text-grayscale-700 font-poppins text-[16px] tracking-[-0.25px]">
                                             {alignment?.targetDescription}
                                         </p>
+                                    )}
+                                    {Boolean(sasLevel) && sasLevel !== SkillLevel.Hidden && (
+                                        <div className="border-t-[1px] border-grayscale-200 pt-[20px] flex flex-col gap-[5px] items-start w-full">
+                                            <SkillProficiencyBar
+                                                proficiencyLevel={sasLevel}
+                                                mode={SkillProficiencyBarModeEnum.Display}
+                                            />
+                                        </div>
                                     )}
                                 </div>
                             )}
