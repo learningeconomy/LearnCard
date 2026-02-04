@@ -275,6 +275,9 @@ importers:
       '@learncard/react':
         specifier: workspace:^
         version: link:../../packages/react-learn-card
+      '@learncard/sss-key-manager':
+        specifier: workspace:*
+        version: link:../../packages/sss-key-manager
       '@nanostores/react':
         specifier: ^0.8.4
         version: 0.8.4(nanostores@0.11.4)(react@18.3.1)
@@ -4098,6 +4101,9 @@ importers:
       '@learncard/init':
         specifier: workspace:*
         version: link:../../packages/learn-card-init
+      '@learncard/lca-api-plugin':
+        specifier: workspace:*
+        version: link:../../packages/plugins/lca-api-plugin
       '@learncard/simple-signing-plugin':
         specifier: workspace:*
         version: link:../../packages/plugins/simple-signing-plugin

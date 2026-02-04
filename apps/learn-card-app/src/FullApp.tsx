@@ -29,6 +29,7 @@ import Toast from 'learn-card-base/components/toast/Toast';
 
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
+import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
 import localforage from 'localforage';
 
 const history = createBrowserHistory();
@@ -183,6 +184,7 @@ const FullApp: React.FC = () => {
                                         <p>Feedback</p>
                                     </button>
                                 )}
+                                <AuthKeyDebugWidget />
                             </IonApp>
                         </ModalsProvider>
                     </ExternalAuthServiceProvider>
