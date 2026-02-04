@@ -114,8 +114,10 @@ export async function getEdlinkCompletions(accessToken: string): Promise<EdlinkC
     );
 
     const courseCompletions: EdlinkCourseCompletion[] = enrollments
-        .filter(e => e.state === 'completed')
+        .filter(e => e.state === 'completed' && e.person?.id && e.class?.id)
         .map(e => ({
+            classId: e.class!.id,
+            personId: e.person!.id,
             personName: e.person?.display_name || `${e.person?.first_name} ${e.person?.last_name}`,
             personEmail: e.person?.email || null,
             className: e.class?.name || 'Unknown',
@@ -166,10 +168,17 @@ export async function getEdlinkCompletions(accessToken: string): Promise<EdlinkC
                                         const personId = sub.person_id || sub.person?.id;
                                         const person = personId ? people.get(personId) : null;
 
-                                        // Skip teachers
+                                        // Skip teachers and submissions without person ID
                                         if (person?.roles?.includes('teacher')) return null;
+                                        if (!personId) return null;
 
                                         return {
+                                            // IDs for tracking/deduplication
+                                            classId: cls.id,
+                                            assignmentId: assignment.id,
+                                            submissionId: sub.id,
+                                            personId,
+                                            // Display data
                                             className: cls.name,
                                             assignmentTitle: assignment.title,
                                             personName:
@@ -179,7 +188,7 @@ export async function getEdlinkCompletions(accessToken: string): Promise<EdlinkC
                                             grade: sub.grade,
                                         };
                                     })
-                                    .filter((c): c is EdlinkAssignmentCompletion => c !== null);
+                                    .filter((c): c is NonNullable<typeof c> => c !== null);
                             } catch {
                                 return [];
                             }
@@ -206,5 +215,43 @@ export async function getEdlinkCompletions(accessToken: string): Promise<EdlinkC
         },
         courseCompletions,
         assignmentCompletions,
+    };
+}
+
+/**
+ * Creates an unsigned OpenBadgeCredential for an assignment completion.
+ * This follows the OBv3 format used by learnCard.invoke.send({ type: 'boost', template: {...} })
+ */
+export function createAssignmentCompletionCredential(
+    completion: EdlinkAssignmentCompletion,
+    issuerDid: string
+): Record<string, unknown> {
+    const gradeDisplay = completion.grade != null ? `${completion.grade}%` : 'Completed';
+
+    return {
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: issuerDid,
+        name: `Assignment Completed: ${completion.assignmentTitle}`,
+        credentialSubject: {
+            type: ['AchievementSubject'],
+            achievement: {
+                type: ['Achievement'],
+                name: completion.assignmentTitle,
+                description: `Completed assignment '${completion.assignmentTitle}' in ${completion.className}`,
+                criteria: {
+                    narrative: 'Successfully completed and submitted the assignment.',
+                },
+            },
+            result: [
+                {
+                    type: ['Result'],
+                    value: gradeDisplay,
+                },
+            ],
+        },
     };
 }

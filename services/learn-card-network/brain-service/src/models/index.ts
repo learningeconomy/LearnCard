@@ -257,6 +257,14 @@ if (shouldCreateIndices)
                 'CREATE INDEX installs_installed_at_idx IF NOT EXISTS FOR ()-[r:INSTALLS]-() ON (r.installed_at)'
             ),
 
+            // EdlinkIssuedCredential indexes
+            neogma.queryRunner.run(
+                'CREATE INDEX edlink_issued_credential_submission_idx IF NOT EXISTS FOR (e:EdlinkIssuedCredential) ON (e.submissionId)'
+            ),
+            neogma.queryRunner.run(
+                'CREATE INDEX edlink_issued_credential_status_idx IF NOT EXISTS FOR (e:EdlinkIssuedCredential) ON (e.status)'
+            ),
+
             // CredentialActivity indexes
             neogma.queryRunner.run(
                 'CREATE INDEX credential_activity_id_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.id)'
@@ -312,3 +320,4 @@ export * from './Integration';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
 export * from './EdlinkConnection';
+export * from './EdlinkIssuedCredential';

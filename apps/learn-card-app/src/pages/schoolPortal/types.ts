@@ -16,6 +16,10 @@ export interface LMSConnection {
     status: ConnectionStatus;
     connectedAt: string;
     accessToken?: string;
+    // Auto-issuance fields
+    ownerProfileId?: string;
+    autoIssueCredentials?: boolean;
+    lastPolledAt?: string;
 }
 
 // =============================================================================

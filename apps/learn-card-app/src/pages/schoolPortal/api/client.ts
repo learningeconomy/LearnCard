@@ -23,6 +23,12 @@ type EdlinkRouter = {
         getCompletions: {
             query: (input: { connectionId: string }) => Promise<EdlinkCompletionsResponse>;
         };
+        deleteIssuedCredential: {
+            mutate: (input: { id: string }) => Promise<boolean>;
+        };
+        deleteAllIssuedCredentials: {
+            mutate: (input: { connectionId: string }) => Promise<number>;
+        };
     };
 };
 

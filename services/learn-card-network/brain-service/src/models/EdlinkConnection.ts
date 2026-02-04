@@ -12,6 +12,10 @@ export type EdlinkConnectionProps = {
     institutionName: string;
     status: string;
     connectedAt: string;
+    // Auto-issuance fields
+    ownerProfileId?: string;
+    autoIssueCredentials?: boolean;
+    lastPolledAt?: string;
 };
 
 export type EdlinkConnectionRelationships = Record<string, never>;
@@ -34,6 +38,10 @@ export const EdlinkConnection = ModelFactory<EdlinkConnectionProps, EdlinkConnec
             institutionName: { type: 'string', required: true },
             status: { type: 'string', required: true },
             connectedAt: { type: 'string', required: true },
+            // Auto-issuance fields
+            ownerProfileId: { type: 'string', required: false },
+            autoIssueCredentials: { type: 'boolean', required: false },
+            lastPolledAt: { type: 'string', required: false },
         },
         primaryKeyField: 'id',
     },

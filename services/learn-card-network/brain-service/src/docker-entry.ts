@@ -18,6 +18,7 @@ import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { sendNotification } from '@helpers/notifications.helpers';
 import { LCNNotificationValidator } from '@learncard/types';
+import { startEdlinkPolling } from '@services/edlink-polling.service';
 
 const server = Fastify({ maxParamLength: 5000 });
 
@@ -151,3 +152,6 @@ if (pollUrl) {
         setInterval(receiveMessage, 10_000);
     })();
 }
+
+// Start Ed.link polling service for automatic credential issuance
+startEdlinkPolling();
