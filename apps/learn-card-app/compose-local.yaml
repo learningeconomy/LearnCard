@@ -224,7 +224,7 @@ services:
             interval: 10s
             timeout: 10s
             retries: 10
-            start_period: 90s
+            start_period: 120s
         environment:
             NEO4J_AUTH: none
         networks:
