@@ -118,6 +118,8 @@ jobs:
 
       - name: Install Workspace dependencies
         run: pnpm i && pnpm exec nx build learn-card-app
+        env:
+          SKIP_DIDKIT_NAPI: "1"
 
       - name: Install dependencies
         working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
@@ -225,6 +227,8 @@ jobs:
 
       - name: Install Workspace dependencies
         run: pnpm i && pnpm exec nx build learn-card-app
+        env:
+          SKIP_DIDKIT_NAPI: "1"
 
       - name: Install dependencies
         working-directory: ${{ vars.APP_WORKING_DIRECTORY }}

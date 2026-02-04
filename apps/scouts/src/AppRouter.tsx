@@ -65,7 +65,7 @@ const getBackgroundGradientForNavbar = ({ path }: NavbarGradientProps): string =
     return gradientMap[path] || '';
 };
 
-const AppRouter: React.FC = () => {
+const AppRouter: React.FC<{ initLoading?: boolean }> = ({ initLoading }) => {
     const { web3AuthInit } = useWeb3Auth();
     const { verifySignInLinkAndLogin } = useFirebase();
     const history = useHistory();
@@ -203,7 +203,7 @@ const AppRouter: React.FC = () => {
 
     return (
         <>
-            <LoginOverlay isOpen={showLoginOverlay} />
+            <LoginOverlay isOpen={!!showLoginOverlay || !!initLoading} />
             <div id="app-router" style={{ display: showScanner ? 'none' : 'block' }}>
                 <IonSplitPane
                     contentId="main"

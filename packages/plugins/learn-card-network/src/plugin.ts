@@ -367,6 +367,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.profile.connectWith.mutate({ profileId });
             },
+            connectWithExpiredInvite: async (_learnCard, profileId) => {
+                await ensureUser();
+
+                return client.profile.connectWithExpiredInvite.mutate({ profileId });
+            },
             cancelConnectionRequest: async (_learnCard, profileId) => {
                 await ensureUser();
 
