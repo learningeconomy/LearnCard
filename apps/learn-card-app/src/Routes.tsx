@@ -80,9 +80,6 @@ const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
 const LoginWithSeed = lazyWithRetry(() => import('./pages/hidden/LoginWithSeed'));
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
-const PostConsentFlowDataFeed = lazyWithRetry(
-    () => import('./pages/launchPad/PostConsentFlowDataFeed')
-);
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 
 // App Store Developer Portal
