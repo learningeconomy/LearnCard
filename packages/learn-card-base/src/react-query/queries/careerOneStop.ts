@@ -4,10 +4,12 @@ import _ from 'lodash';
 import type { OccupationDetailsResponse } from '../../types/careerOneStop';
 import { useWallet } from 'learn-card-base';
 
+import { LEARNCARD_AI_URL } from 'learn-card-base';
+
 const fetchOccupationDetailsForKeyword = async (
     keyword: string
 ): Promise<OccupationDetailsResponse[]> => {
-    const res = await fetch(`http://localhost:3001/insights/occupations`, {
+    const res = await fetch(`${LEARNCARD_AI_URL}/insights/occupations`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -40,7 +42,7 @@ const fetchSalariesForKeyword = async ({
     keyword: string;
     locations: string[];
 }) => {
-    const res = await fetch(`http://localhost:3001/insights/salaries`, {
+    const res = await fetch(`${LEARNCARD_AI_URL}/insights/salaries`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -85,7 +87,7 @@ export const useSalariesForKeyword = ({ keyword }: { keyword: string | null }) =
 };
 
 const fetchTrainingProgramsByKeyword = async (keyword: string): Promise<any> => {
-    const res = await fetch(`http://localhost:3001/insights/training-programs`, {
+    const res = await fetch(`${LEARNCARD_AI_URL}/insights/training-programs`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -102,7 +104,7 @@ const fetchTrainingProgramsByKeyword = async (keyword: string): Promise<any> => 
 };
 
 const fetchOpenSyllabusCoursesBySchool = async (schoolName: string): Promise<any> => {
-    const res = await fetch(`http://localhost:3001/insights/courses`, {
+    const res = await fetch(`${LEARNCARD_AI_URL}/insights/courses`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -116,6 +118,36 @@ const fetchOpenSyllabusCoursesBySchool = async (schoolName: string): Promise<any
     }
 
     return res.json();
+};
+
+export const fetchCareerOneStopVideo = async (videoCode: string): Promise<any> => {
+    const res = await fetch(`${LEARNCARD_AI_URL}/insights/video`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ videoCode }),
+    });
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to fetch training programs');
+    }
+
+    return res.json();
+};
+
+export const useCareerOneStopVideo = (videoCode: string | null) => {
+    return useQuery({
+        queryKey: ['career-one-stop-video', videoCode],
+        queryFn: async () => {
+            if (!videoCode) {
+                throw new Error('Video code is required');
+            }
+            return fetchCareerOneStopVideo(videoCode);
+        },
+        enabled: Boolean(videoCode),
+    });
 };
 
 /**

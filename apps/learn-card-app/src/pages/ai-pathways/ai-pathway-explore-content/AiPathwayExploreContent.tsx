@@ -3,13 +3,24 @@ import React from 'react';
 import AiPathwayContentList from './AiPathwayContentList';
 import AiPathwayContentListItemSkeleton from './AiPathwayContentItemSkeletonLoader';
 
-import { CAREER_ONE_STOP_VIDEOS } from 'learn-card-base/helpers/careerOneStop.helpers';
 import { AiPathwayContent } from './ai-pathway-content.helpers';
 
 const AiPathwayExploreContent: React.FC<{
     occupations?: any[];
     isLoading?: boolean;
 }> = ({ occupations = [], isLoading = false }) => {
+    const contentItems: AiPathwayContent[] = occupations?.map((occupation, index) => {
+        const videoCode = occupation?.Video?.[0]?.VideoCode?.replace(/[^0-9]/g, '');
+
+        return {
+            id: occupation?.OnetCode,
+            title: occupation?.OnetTitle,
+            description: occupation?.OnetDescription,
+            videoCode: videoCode,
+            source: 'CareerOneStop',
+        };
+    });
+
     if (isLoading) {
         return (
             <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center px-4">
@@ -32,20 +43,7 @@ const AiPathwayExploreContent: React.FC<{
         );
     }
 
-    const contentItems: AiPathwayContent[] = occupations?.map((occupation, index) => {
-        const videoCode = occupation?.Video?.[0]?.VideoCode?.replace(/[^0-9]/g, '');
-
-        const { youtubeUrl } = CAREER_ONE_STOP_VIDEOS.find(v => v.VideoCode === videoCode) || {};
-        return {
-            id: occupation?.OnetCode,
-            title: occupation?.OnetTitle,
-            description: occupation?.OnetDescription,
-            source: 'Youtube',
-            url: youtubeUrl || '',
-        };
-    });
-
-    if (!isLoading && (!contentItems || contentItems.length === 0)) return null;
+    if (!isLoading && (!occupations || occupations.length === 0)) return null;
 
     return (
         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center px-4">

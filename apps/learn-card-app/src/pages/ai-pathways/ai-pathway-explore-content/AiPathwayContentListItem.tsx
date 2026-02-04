@@ -13,6 +13,7 @@ import {
 } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import { useCareerOneStopVideo } from 'learn-card-base/react-query/queries/careerOneStop';
 
 import { AiPathwayContent } from './ai-pathway-content.helpers';
 
@@ -23,22 +24,30 @@ const AiPathwayContentListItem: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
     const { newModal } = useModal({ mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel });
 
+    const { data: video } = useCareerOneStopVideo(content.videoCode || '');
+
     const [metaData, setMetaData] = useState<VideoMetadata | null>(null);
 
     const handleGetVideoMetadata = async () => {
-        const metadata = await getVideoMetadata(content.url || '');
+        const metadata = await getVideoMetadata(video?.youtubeUrl || '');
         setMetaData(metadata);
     };
 
     const handleViewCourse = () => {
-        newModal(<AiPathwayContentPreview content={content} />, undefined, {
-            desktop: ModalTypes.Right,
-            mobile: ModalTypes.Right,
-        });
+        newModal(
+            <AiPathwayContentPreview content={{ ...content, url: video?.youtubeUrl }} />,
+            undefined,
+            {
+                desktop: ModalTypes.Right,
+                mobile: ModalTypes.Right,
+            }
+        );
     };
 
     useEffect(() => {
-        handleGetVideoMetadata();
+        if (video?.youtubeUrl) {
+            handleGetVideoMetadata();
+        }
     }, [content]);
 
     const mediaHeight = 'min-h-[80px] max-h-[80px]';
