@@ -1,5 +1,15 @@
 # learn-card-base
 
+## 0.1.14
+
+### Patch Changes
+
+-   [#968](https://github.com/learningeconomy/LearnCard/pull/968) [`01572c1731b01c60926e1e1ff4db95ddf08e6e9e`](https://github.com/learningeconomy/LearnCard/commit/01572c1731b01c60926e1e1ff4db95ddf08e6e9e) Thanks [@Custard7](https://github.com/Custard7)! - chore: Silence and Fix Warnings/Errors
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.5
+    -   @learncard/lca-api-plugin@1.1.11
+
 ## 0.1.13
 
 ### Patch Changes

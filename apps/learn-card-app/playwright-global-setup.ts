@@ -1,5 +1,6 @@
 import { chromium, firefox, FullConfig } from '@playwright/test';
 import { locatorExists } from './tests/test.helpers';
+import { mockDidKitWasmForContext } from './tests/route.helpers';
 
 export const globalSetup = async (config: FullConfig) => {
     // Run headed if DEBUG_SETUP=true OR if tests are run with --headed flag
@@ -13,6 +14,11 @@ export const globalSetup = async (config: FullConfig) => {
 
     const browser = await browserType.launch({ headless: !isHeaded, slowMo: isHeaded ? 500 : 0 });
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
+
+    // Intercept DIDKit WASM requests to serve local file instead of CDN
+    // This significantly speeds up test startup by avoiding ~9MB network fetch
+    await mockDidKitWasmForContext(context);
+
     const page = await context.newPage();
 
     console.log('[GlobalSetup] Navigating to:', config.webServer?.url);
@@ -86,6 +92,10 @@ export const globalSetup = async (config: FullConfig) => {
     }
 
     const context2 = await browser.newContext({ ignoreHTTPSErrors: true });
+
+    // Intercept DIDKit WASM requests for second context as well
+    await mockDidKitWasmForContext(context2);
+
     const page2 = await context2.newPage();
     await page2.goto(`${config.webServer?.url!}/hidden/seed`);
     await page2.getByRole('textbox').fill('2'.repeat(64));
