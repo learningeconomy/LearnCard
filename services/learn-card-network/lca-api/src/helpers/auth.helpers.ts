@@ -15,21 +15,28 @@ export interface VerifiedUser {
 export type AuthProviderType = 'firebase' | 'supertokens' | 'keycloak' | 'oidc';
 
 export async function verifyFirebaseToken(token: string): Promise<VerifiedUser> {
-    // E2E test bypass - parse mock JWT without Firebase verification
-    if (process.env.IS_E2E_TEST === 'true') {
+    // E2E test or offline bypass - parse JWT without Firebase Admin verification
+    if (process.env.IS_E2E_TEST === 'true' || process.env.IS_OFFLINE === 'true') {
         try {
             const parts = token.split('.');
             const payloadPart = parts[1];
             if (parts.length >= 2 && payloadPart) {
-                const payload = JSON.parse(Buffer.from(payloadPart, 'base64url').toString());
+                // Try base64url first, then regular base64
+                let payload;
+                try {
+                    payload = JSON.parse(Buffer.from(payloadPart, 'base64url').toString());
+                } catch {
+                    payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString());
+                }
                 return {
-                    id: payload.sub || payload.uid || 'e2e-test-user',
+                    id: payload.sub || payload.uid || payload.user_id || 'offline-user',
                     email: payload.email,
                     phone: payload.phone_number,
                     providerType: 'firebase',
                 };
             }
-        } catch {
+        } catch (e) {
+            console.warn('Failed to parse JWT in offline mode:', e);
             // Fall through to normal verification
         }
     }

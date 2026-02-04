@@ -19,6 +19,13 @@ import {
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 import useFirebaseAnalytics from './useFirebaseAnalytics';
+import {
+    emitAuthDebugEvent,
+    emitAuthSuccess,
+    emitAuthError,
+    emitAuthWarning,
+} from '../components/debug/authDebugEvents';
+import { generateEd25519PrivateKey } from '@learncard/sss-key-manager';
 import { useIonAlert } from '@ionic/react';
 
 import {
@@ -29,6 +36,7 @@ import {
     useWeb3Auth,
     useSSSKeyManager,
     shouldUseSSSKeyManager,
+    getKeyDerivationConfig,
     LOGIN_REDIRECTS,
     useModal,
     ModalTypes,
@@ -37,6 +45,7 @@ import {
     useToast,
     ToastTypeEnum,
 } from 'learn-card-base';
+import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
 import { auth } from '../firebase/firebase';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
@@ -52,7 +61,10 @@ export const useFirebase = () => {
     });
     const { web3AuthSFAInit } = useWeb3AuthSFA();
     const { web3AuthInit } = useWeb3Auth();
-    const { connect: sssConnect, setupWithPrivateKey: sssSetup } = useSSSKeyManager();
+    const keyDerivationConfig = getKeyDerivationConfig();
+    const { connect: sssConnect, setupWithPrivateKey: sssSetup, checkAuthShareExists } = useSSSKeyManager({
+        serverUrl: keyDerivationConfig.sssServerUrl || '',
+    });
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
     const { logAnalyticsEvent } = useFirebaseAnalytics();
@@ -114,6 +126,27 @@ export const useFirebase = () => {
         signOut: async () => {},
     });
 
+    const isNewFirebaseUser = (): boolean => {
+        const firebaseUser = firebaseAuthStore.get.currentUser();
+        // Check if user was created very recently (within last 30 seconds)
+        // This indicates a brand new user vs returning user
+        const creationTime = (firebaseUser as any)?.creationTime;
+        const lastSignInTime = (firebaseUser as any)?.lastSignInTime;
+
+        if (creationTime && lastSignInTime) {
+            const createdAt = new Date(creationTime).getTime();
+            const lastSignIn = new Date(lastSignInTime).getTime();
+            // If creation and last sign-in are within 30 seconds, user is new
+            const isNew = Math.abs(lastSignIn - createdAt) < 30000;
+            console.log(`SSS: User creation check - created: ${creationTime}, lastSignIn: ${lastSignInTime}, isNew: ${isNew}`);
+            return isNew;
+        }
+
+        // Fallback: if we can't determine, assume existing user (safer for migration)
+        console.log('SSS: Could not determine if user is new, assuming existing user');
+        return false;
+    };
+
     const sssFirebaseLogin = async (
         token: string,
         userUid: string,
@@ -122,19 +155,111 @@ export const useFirebase = () => {
         phone?: string
     ) => {
         try {
+            emitAuthDebugEvent('sss:connect_start', 'Starting SSS connection', {
+                data: { userUid, hasEmail: !!email, hasPhone: !!phone },
+            });
+
             const authProvider = createFirebaseAuthProvider(getIdToken, userUid, email, phone);
 
             const privateKey = await sssConnect(authProvider);
 
             if (privateKey) {
+                emitAuthSuccess('sss:connect_success', 'SSS connection successful - key reconstructed');
                 closeModal();
             } else {
-                console.log('SSS: No existing key found, user may need setup or migration');
-                setInitLoading(false);
+                // No SSS key found locally - check server for existing auth share
+                emitAuthDebugEvent('sss:server_check', 'Checking server for existing auth share...');
+
+                const serverStatus = await checkAuthShareExists(authProvider);
+
+                if (serverStatus.exists && serverStatus.isSSSMigrated) {
+                    // User already migrated to SSS but lost device share - needs recovery
+                    emitAuthWarning('sss:needs_recovery', 'User has SSS auth share on server but no device share - recovery needed');
+                    console.log('SSS: User already migrated but lost device share - recovery flow needed');
+                    // TODO: Implement recovery flow - for now, throw error
+                    throw new Error('SSS recovery needed: You have an existing SSS key but lost your device share. Please use recovery flow.');
+                }
+
+                const migrationEnabled = keyDerivationConfig.enableMigration;
+                const userIsNew = isNewFirebaseUser();
+                // Only migrate if: migration enabled, not a new user, AND no existing SSS migration
+                const shouldMigrate = migrationEnabled && !userIsNew && !serverStatus.isSSSMigrated;
+
+                emitAuthDebugEvent('sss:setup_check', `Migration check: enabled=${migrationEnabled}, isNewUser=${userIsNew}, hasAuthShare=${serverStatus.exists}, isSSSMigrated=${serverStatus.isSSSMigrated}, shouldMigrate=${shouldMigrate}`);
+
+                try {
+                    let keyToUse: string;
+
+                    if (shouldMigrate) {
+                        emitAuthDebugEvent('sss:migration_start', 'Existing user detected - migrating from Web3Auth');
+                        console.log('SSS: Migration enabled - deriving Web3Auth key');
+
+                        // Initialize Web3Auth SFA
+                        const web3Auth = await web3AuthSFAInit();
+                        if (!web3Auth) {
+                            throw new Error('Failed to initialize Web3Auth for migration');
+                        }
+
+                        // Connect with Firebase token to derive the key
+                        await web3Auth.connect({
+                            verifier: 'learncardapp-firebase',
+                            verifierId: userUid,
+                            idToken: token,
+                        });
+
+                        // Extract the private key from Web3Auth provider
+                        const provider = web3Auth.provider;
+                        if (!provider) {
+                            throw new Error('Web3Auth provider unavailable after connect');
+                        }
+
+                        const web3authPrivateKey = await provider.request({
+                            method: 'eth_private_key',
+                        }) as string;
+
+                        if (!web3authPrivateKey) {
+                            throw new Error('Failed to derive Web3Auth key for migration');
+                        }
+
+                        keyToUse = web3authPrivateKey;
+                        emitAuthDebugEvent('sss:migration_start', 'Web3Auth key derived successfully');
+                    } else {
+                        emitAuthDebugEvent('sss:setup_start', 'No SSS key found - generating new key');
+                        console.log('SSS: No existing key found, setting up new key');
+
+                        keyToUse = await generateEd25519PrivateKey();
+                    }
+
+                    emitAuthDebugEvent('sss:setup_start', 'Initializing wallet to get DID');
+
+                    const tempWallet = await getBespokeLearnCard(keyToUse);
+                    const primaryDid = tempWallet?.id.did() || '';
+
+                    if (!primaryDid) {
+                        throw new Error('Failed to get DID from wallet');
+                    }
+
+                    emitAuthDebugEvent('sss:setup_start', `Setting up SSS with DID: ${primaryDid.slice(0, 30)}...`);
+
+                    await sssSetup(authProvider, keyToUse, primaryDid);
+
+                    const successMsg = shouldMigrate
+                        ? 'SSS migration complete - Web3Auth key migrated to SSS'
+                        : 'SSS setup complete - new key created and split';
+                    emitAuthSuccess('sss:setup_success', successMsg);
+                    closeModal();
+                } catch (setupError) {
+                    const setupErrorMessage = setupError instanceof Error ? setupError.message : 'Unknown error';
+                    emitAuthError('sss:setup_error', `SSS setup failed: ${setupErrorMessage}`, setupError);
+                    console.error('SSS setup error:', setupErrorMessage);
+                    setInitLoading(false);
+                    presentAlert(setupErrorMessage);
+                }
             }
         } catch (error) {
             setInitLoading(false);
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            emitAuthError('sss:connect_error', `SSS connection failed: ${errorMessage}`, error);
             console.log('sssFirebaseLogin::error', errorMessage);
             presentAlert(errorMessage);
         }
@@ -146,6 +271,10 @@ export const useFirebase = () => {
         getIdToken: (forceRefresh?: boolean) => Promise<string>,
         suppressError?: boolean
     ) => {
+        emitAuthDebugEvent('auth:login_start', `Login flow started (SSS: ${useSSS})`, {
+            data: { useSSS, userUid },
+        });
+
         if (useSSS) {
             const firebaseUser = firebaseAuthStore.get.currentUser();
             await sssFirebaseLogin(
@@ -157,6 +286,8 @@ export const useFirebase = () => {
             );
             return;
         }
+
+        emitAuthDebugEvent('web3auth:init', 'Initializing Web3Auth SFA');
 
         const web3Auth = await web3AuthSFAInit();
 
@@ -211,6 +342,8 @@ export const useFirebase = () => {
 
         if (!firebaseAuth) return;
 
+        emitAuthDebugEvent('auth:login_start', 'Google login initiated');
+
         try {
             const signInWithGoogleRes = await FirebaseAuthentication.signInWithGoogle();
             const { user } = await FirebaseAuthentication.getCurrentUser();
@@ -223,6 +356,10 @@ export const useFirebase = () => {
                 authStore.set.typeOfLogin(SocialLoginTypes.google);
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
+
+                emitAuthSuccess('firebase:auth_state_change', 'Firebase Google auth successful', {
+                    data: { uid: user?.uid, email: user?.email },
+                });
 
                 logAnalyticsEvent('login', { method: SocialLoginTypes.google });
 
@@ -251,6 +388,8 @@ export const useFirebase = () => {
 
             const errorCode = error?.code;
             const errorMessage = error?.message;
+
+            emitAuthError('auth:login_error', `Google login failed: ${errorCode}`, error);
 
             if (
                 errorCode === 'auth/popup-closed-by-user' ||
@@ -366,6 +505,10 @@ export const useFirebase = () => {
 
         if (!firebaseAuth) return;
 
+        emitAuthDebugEvent('auth:login_start', 'Email link verification started', {
+            data: { email },
+        });
+
         if (Capacitor.isNativePlatform()) {
             // Get the email if available. This should be available if the user completes
             // the flow on the same device where they started it.
@@ -396,6 +539,10 @@ export const useFirebase = () => {
                             firebaseAuthStore.set.setFirebaseCurrentUser(user);
                             firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
+                            emitAuthSuccess('firebase:auth_state_change', 'Email link auth successful', {
+                                data: { uid: user?.uid },
+                            });
+
                             await web3AuthSfaFirebaseLogin(
                                 token,
                                 user?.uid,
@@ -411,6 +558,8 @@ export const useFirebase = () => {
                 setInitLoading(false);
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
+
+                emitAuthError('auth:login_error', `Email link login failed: ${errorCode}`, error);
 
                 if (errorCode) console.error('errorCode', errorCode);
                 if (errorMessage) {
@@ -471,6 +620,10 @@ export const useFirebase = () => {
 
         if (!firebaseAuth) return;
 
+        emitAuthDebugEvent('auth:login_start', 'SMS auth code requested', {
+            data: { phoneNumber: phoneNumber.slice(0, 4) + '****' },
+        });
+
         // ! https://firebase.google.com/docs/auth/web/phone-auth#integration-testing
         // ! Only fictional phone numbers can be used when testing locally
 
@@ -481,6 +634,7 @@ export const useFirebase = () => {
         signInWithPhoneNumber(firebaseAuth, phoneNumber, window.recaptchaVerifier)
             .then(confirmationResult => {
                 window.confirmationResult = confirmationResult;
+                emitAuthDebugEvent('auth:login_start', 'SMS code sent successfully');
                 successCallback();
             })
             .catch(error => {
@@ -488,6 +642,7 @@ export const useFirebase = () => {
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
 
+                emitAuthError('auth:login_error', `SMS send failed: ${errorCode}`, error);
                 errorCallback(errorCode);
 
                 console.error('errorCode', errorCode);
@@ -565,11 +720,17 @@ export const useFirebase = () => {
         successCallback: any,
         errorCallback: any
     ) => {
+        emitAuthDebugEvent('auth:login_start', 'Verifying SMS code');
+
         try {
             const result = await window?.confirmationResult?.confirm(code);
             const user = result?.user;
             const token = await result?.user?.getIdToken(true);
             authStore.set.typeOfLogin(SocialLoginTypes.sms);
+
+            emitAuthSuccess('firebase:auth_state_change', 'SMS verification successful', {
+                data: { uid: user?.uid },
+            });
             logAnalyticsEvent('login', { method: SocialLoginTypes.sms });
             firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
@@ -654,6 +815,8 @@ export const useFirebase = () => {
 
         if (!firebaseAuth) return;
 
+        emitAuthDebugEvent('auth:login_start', 'Apple login initiated');
+
         if (Capacitor.isNativePlatform()) {
             try {
                 let signInWithAppleResult = await FirebaseAuthentication.signInWithApple({
@@ -697,6 +860,10 @@ export const useFirebase = () => {
                 firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
                 firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
+                emitAuthSuccess('firebase:auth_state_change', 'Firebase Apple auth successful (native)', {
+                    data: { uid: user?.uid },
+                });
+
                 if (token) {
                     setInitLoading(true);
                     await web3AuthSfaFirebaseLogin(
@@ -727,6 +894,10 @@ export const useFirebase = () => {
                     logAnalyticsEvent('login', { method: SocialLoginTypes.apple });
                     firebaseAuthStore.set.setFirebaseCurrentUser(user);
 
+                    emitAuthSuccess('firebase:auth_state_change', 'Firebase Apple auth successful (web)', {
+                        data: { uid: user?.uid },
+                    });
+
                     if (token) {
                         setInitLoading(true);
                         await web3AuthSfaFirebaseLogin(
@@ -744,6 +915,8 @@ export const useFirebase = () => {
                 // Handle Errors here.
                 const errorCode = error?.code;
                 const errorMessage = error?.message;
+
+                emitAuthError('auth:login_error', `Apple login failed: ${errorCode}`, error);
 
                 const credential = OAuthProvider.credentialFromError(error);
 

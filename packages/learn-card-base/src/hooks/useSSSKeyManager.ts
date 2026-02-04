@@ -210,10 +210,13 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
             setConnecting(true);
             setError(null);
 
+            console.log('[sss] splitting private key', privateKey);
             const shares = await splitPrivateKey(privateKey);
 
+            console.log('[sss] storing device share', shares.deviceShare);
             await storeDeviceShare(shares.deviceShare);
 
+            console.log('[sss] storing auth share', shares.authShare);
             await storeAuthShare(
                 authProvider,
                 {
@@ -224,8 +227,10 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
                 primaryDid
             );
 
+            console.log('[sss] finalizing login');
             await finalizeLogin(privateKey);
 
+            console.log('[sss] setup complete');
             setConnecting(false);
         } catch (e) {
             const message = e instanceof Error ? e.message : 'Unknown error';
@@ -255,12 +260,37 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
         });
     }, [setupWithPrivateKey, serverUrl, getAuthHeaders]);
 
+    const checkAuthShareExists = useCallback(async (authProvider: AuthProvider): Promise<{ exists: boolean; isSSSMigrated: boolean }> => {
+        try {
+            const serverResponse = await fetchAuthShare(authProvider);
+
+            if (!serverResponse || !serverResponse.authShare) {
+                return { exists: false, isSSSMigrated: false };
+            }
+
+            // Check if user has already migrated to SSS
+            const isSSSMigrated = serverResponse.keyProvider === 'sss';
+
+            return { exists: true, isSSSMigrated };
+        } catch (e) {
+            console.error('Error checking auth share:', e);
+            return { exists: false, isSSSMigrated: false };
+        }
+    }, [fetchAuthShare]);
+
     const clearAllIndexedDB = async () => {
         try {
             const databases = await window.indexedDB.databases();
             databases.forEach(db => {
                 const dbName = db.name;
                 if (!dbName) return;
+
+                // Preserve SSS device share database across logouts
+                if (dbName === 'lcb-sss-keys') {
+                    console.log(`Preserving SSS device share database: ${dbName}`);
+                    return;
+                }
+
                 const request = window.indexedDB.deleteDatabase(dbName);
                 request.onsuccess = () => console.log(`Deleted database: ${dbName}`);
                 request.onerror = (e) => console.log(`Couldn't delete: ${dbName}`, e);
@@ -342,6 +372,7 @@ export const useSSSKeyManager = (config?: SSSConfig) => {
         connect,
         setupWithPrivateKey,
         migrateFromWeb3Auth,
+        checkAuthShareExists,
         logout,
         loggingOut,
         connecting,

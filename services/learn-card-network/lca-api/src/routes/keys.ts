@@ -119,6 +119,7 @@ export const keysRouter = t.router({
         )
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ input }) => {
+            console.log('storeAuthShare input', input);
             const { user, contactMethod } = await verifyAndGetContactMethod(input);
 
             await upsertUserKey(contactMethod, {

@@ -41,7 +41,11 @@ server.addHook('onRequest', (request, _reply, done) => {
     done();
 });
 
-server.register(fastifyCors);
+server.register(fastifyCors, {
+    origin: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+});
 
 server.register(fastifyTRPCPlugin, {
     prefix: '/trpc',

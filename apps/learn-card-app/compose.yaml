@@ -23,7 +23,7 @@ services:
       CLOUD_URL: http://localhost:4100/trpc
       API_URL: http://localhost:5100/trpc
       REACT_APP_KEY_DERIVATION_PROVIDER: sss
-      REACT_APP_SSS_SERVER_URL: http://localhost:5200
+      REACT_APP_SSS_SERVER_URL: http://localhost:5100
 
   delete-service:
     build: ../../services/playwright-delete-service
@@ -146,6 +146,7 @@ services:
       REDIS_URL: redis3
       REDIS_PORT: 6379
       METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
+      GOOGLE_APPLICATION_CREDENTIAL: ${GOOGLE_APPLICATION_CREDENTIAL:-}
 
   neo4j:
     image: neo4j:latest
