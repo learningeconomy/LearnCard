@@ -78,7 +78,14 @@ export const useXApiStatementsForContract = (contractUri: string) => {
             const params = new URLSearchParams({
                 agent: JSON.stringify(actor),
             });
-            const url = `https://cloud.learncard.com${pageParam || `/xapi/statements?${params}`}`;
+            const baseUrl =
+                typeof LEARN_CLOUD_XAPI_URL === 'string'
+                    ? LEARN_CLOUD_XAPI_URL
+                    : typeof CLOUD_URL === 'string'
+                    ? CLOUD_URL.replace(/\/trpc\/?$/, '/xapi')
+                    : 'https://cloud.learncard.com/xapi';
+
+            const url = pageParam || `${baseUrl}/statements?${params}`;
 
             const vpToken = (await wallet.invoke.getDidAuthVp({ proofFormat: 'jwt' })) as string;
 
