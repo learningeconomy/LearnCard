@@ -4,7 +4,7 @@ import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
-import SkillProgressBar, { SkillLevel } from './SkillProgressBar';
+import SkillProficiencyBar, { SkillLevel } from './SkillProficiencyBar';
 import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
 
 import { ModalTypes, useModal } from 'learn-card-base';
@@ -88,7 +88,7 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
                                 : 'max-h-0 opacity-0 -translate-y-1 pointer-events-none'
                         }`}
                     >
-                        <SkillProgressBar
+                        <SkillProficiencyBar
                             proficiencyLevel={proficiencyLevel}
                             onChange={onChangeProficiency}
                         />

@@ -24,7 +24,7 @@ import {
     ApiSkillNode,
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
-import { SkillLevel } from './SkillProgressBar';
+import { SkillLevel } from './SkillProficiencyBar';
 
 enum Step {
     Add,
@@ -119,7 +119,6 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
     const { data: sasBoost } = useGetBoost(sasBoostData?.uri);
     const { data: sasBoostSkills, isLoading: skillsLoading } = useGetBoostSkills(sasBoostData?.uri);
-
 
     useEffect(() => {
         if (sasBoostSkills) {
