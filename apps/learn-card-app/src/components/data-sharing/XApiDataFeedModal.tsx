@@ -13,198 +13,16 @@ import {
     FlaskConical,
     Eye,
 } from 'lucide-react';
-import {
-    useXApiStatementsForContract,
-    XAPIStatement,
-} from 'learn-card-base/hooks/useXApiStatementsForContract';
-import { useWallet } from 'learn-card-base';
+import { useXApiStatementsForContract } from 'learn-card-base/hooks/useXApiStatementsForContract';
+import { useCurrentUser, useWallet } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import Lottie from 'react-lottie-player';
 import { useGetDid } from 'learn-card-base/react-query/queries/queries';
-
-import Pulpo from '../../assets/lotties/cuteopulpo.json';
-import { writeTestXApiStatements } from '../../utils/testXApiStatements';
 
 type XApiDataFeedModalProps = {
     contractUri: string;
     contractName: string;
     onBack?: () => void;
 };
-
-const MOCK_STATEMENTS: XAPIStatement[] = [
-    {
-        id: 'mock-1',
-        actor: {
-            name: 'Test User',
-            account: { homePage: 'https://example.com', name: 'test-user' },
-        },
-        verb: { id: 'http://adlnet.gov/expapi/verbs/completed', display: { 'en-US': 'completed' } },
-        object: {
-            id: 'http://example.org/activities/intro-to-blockchain',
-            definition: {
-                name: { 'en-US': 'Introduction to Blockchain Technology' },
-                description: {
-                    'en-US':
-                        'A comprehensive overview of blockchain fundamentals, distributed ledgers, and cryptographic principles.',
-                },
-                type: 'http://adlnet.gov/expapi/activities/course',
-            },
-        },
-        result: { completion: true, success: true, score: { scaled: 0.92 } },
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock-2',
-        actor: {
-            name: 'Test User',
-            account: { homePage: 'https://example.com', name: 'test-user' },
-        },
-        verb: { id: 'http://adlnet.gov/expapi/verbs/passed', display: { 'en-US': 'passed' } },
-        object: {
-            id: 'http://example.org/activities/digital-credentials-assessment',
-            definition: {
-                name: { 'en-US': 'Digital Credentials Assessment' },
-                description: {
-                    'en-US':
-                        'Final assessment covering verifiable credentials, DIDs, and credential verification processes.',
-                },
-                type: 'http://adlnet.gov/expapi/activities/assessment',
-            },
-        },
-        result: { success: true, score: { scaled: 0.88 } },
-        timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock-3',
-        actor: {
-            name: 'Test User',
-            account: { homePage: 'https://example.com', name: 'test-user' },
-        },
-        verb: {
-            id: 'http://adlnet.gov/expapi/verbs/progressed',
-            display: { 'en-US': 'progressed' },
-        },
-        object: {
-            id: 'http://example.org/activities/decentralized-identity-course',
-            definition: {
-                name: { 'en-US': 'Decentralized Identity Fundamentals' },
-                description: {
-                    'en-US':
-                        'Learning path covering self-sovereign identity, DID methods, and privacy-preserving authentication.',
-                },
-                type: 'http://adlnet.gov/expapi/activities/course',
-            },
-        },
-        result: { completion: false, score: { scaled: 0.45 } },
-        timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock-4',
-        actor: {
-            name: 'Test User',
-            account: { homePage: 'https://example.com', name: 'test-user' },
-        },
-        verb: { id: 'http://adlnet.gov/expapi/verbs/failed', display: { 'en-US': 'failed' } },
-        object: {
-            id: 'http://example.org/activities/cryptography-quiz',
-            definition: {
-                name: { 'en-US': 'Applied Cryptography Quiz' },
-                description: {
-                    'en-US':
-                        'Quiz covering symmetric/asymmetric encryption, digital signatures, and hash functions.',
-                },
-                type: 'http://adlnet.gov/expapi/activities/assessment',
-            },
-        },
-        result: { success: false, score: { scaled: 0.42 } },
-        timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock-5',
-        actor: {
-            name: 'Test User',
-            account: { homePage: 'https://example.com', name: 'test-user' },
-        },
-        verb: { id: 'http://adlnet.gov/expapi/verbs/mastered', display: { 'en-US': 'mastered' } },
-        object: {
-            id: 'http://example.org/activities/credential-issuance',
-            definition: {
-                name: { 'en-US': 'Credential Issuance Best Practices' },
-                description: {
-                    'en-US':
-                        'Advanced techniques for issuing verifiable credentials with proper schemas and revocation support.',
-                },
-                type: 'http://adlnet.gov/expapi/activities/objective',
-            },
-        },
-        result: { success: true, completion: true, score: { scaled: 0.97 } },
-        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock-6',
-        actor: {
-            name: 'Test User',
-            account: { homePage: 'https://example.com', name: 'test-user' },
-        },
-        verb: { id: 'http://adlnet.gov/expapi/verbs/attempted', display: { 'en-US': 'attempted' } },
-        object: {
-            id: 'http://example.org/activities/smart-contract-workshop',
-            definition: {
-                name: { 'en-US': 'Smart Contract Development Workshop' },
-                description: {
-                    'en-US':
-                        'Hands-on workshop for building and deploying smart contracts on Ethereum.',
-                },
-                type: 'http://adlnet.gov/expapi/activities/simulation',
-            },
-        },
-        timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock-7',
-        actor: {
-            name: 'Test User',
-            account: { homePage: 'https://example.com', name: 'test-user' },
-        },
-        verb: { id: 'http://adlnet.gov/expapi/verbs/launched', display: { 'en-US': 'launched' } },
-        object: {
-            id: 'http://example.org/activities/learning-path-web3',
-            definition: {
-                name: { 'en-US': 'Web3 Developer Learning Path' },
-                description: {
-                    'en-US':
-                        'Comprehensive curriculum for becoming a Web3 developer, from basics to advanced topics.',
-                },
-                type: 'http://adlnet.gov/expapi/activities/course',
-            },
-        },
-        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock-8',
-        actor: {
-            name: 'Test User',
-            account: { homePage: 'https://example.com', name: 'test-user' },
-        },
-        verb: {
-            id: 'http://adlnet.gov/expapi/verbs/experienced',
-            display: { 'en-US': 'experienced' },
-        },
-        object: {
-            id: 'http://example.org/activities/wallet-demo',
-            definition: {
-                name: { 'en-US': 'Digital Wallet Interactive Demo' },
-                description: {
-                    'en-US':
-                        'Interactive demonstration of credential storage, presentation, and verification flows.',
-                },
-                type: 'http://adlnet.gov/expapi/activities/simulation',
-            },
-        },
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    },
-];
-
 interface XAPIStatement {
     actor: {
         objectType: 'Agent';
@@ -228,6 +46,11 @@ interface XAPIStatement {
             type: string;
         };
     };
+    result?: {
+        success?: boolean;
+        completion?: boolean;
+        extensions?: Record<string, string>;
+    };
     context?: {
         extensions?: Record<string, string>;
     };
@@ -242,7 +65,6 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
         useXApiStatementsForContract(contractUri);
     const { initWallet } = useWallet();
     const [isWritingTestData, setIsWritingTestData] = useState(false);
-    const [useMockData, setUseMockData] = useState(false);
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
     const onScreen = useOnScreen(infiniteScrollRef as any, '300px', [
         data?.pages?.[0]?.statements?.length,
@@ -252,50 +74,114 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
         if (onScreen && hasNextPage && !isFetching) fetchNextPage();
     }, [fetchNextPage, hasNextPage, onScreen, isFetching]);
 
-    const realStatements = data?.pages.flatMap(page => page?.statements ?? []) ?? [];
-    const allStatements = useMockData ? MOCK_STATEMENTS : realStatements;
+    const allStatements = data?.pages.flatMap(page => page?.statements ?? []) ?? [];
 
     const { data: currentUserDidKey } = useGetDid('key');
 
-    // Build statement dynamically using the contractUri prop
-    const attemptStatement: XAPIStatement | null = currentUserDidKey
-        ? {
-              actor: {
-                  objectType: 'Agent',
-                  name: currentUserDidKey,
-                  account: {
-                      homePage: 'https://www.w3.org/TR/did-core/',
+    const attemptStatement: XAPIStatement[] | null = currentUserDidKey
+        ? [
+              {
+                  actor: {
+                      objectType: 'Agent',
                       name: currentUserDidKey,
+                      account: {
+                          homePage: 'https://www.w3.org/TR/did-core/',
+                          name: currentUserDidKey,
+                      },
+                  },
+                  verb: {
+                      id: 'http://adlnet.gov/expapi/verbs/attempted',
+                      display: {
+                          'en-US': 'attempted',
+                      },
+                  },
+                  object: {
+                      id: 'http://yourgame.com/activities/level-1-challenge',
+                      definition: {
+                          name: { 'en-US': 'Level 1 Challenge' },
+                          description: { 'en-US': 'First challenge of the game' },
+                          type: 'http://adlnet.gov/expapi/activities/simulation',
+                      },
+                  },
+                  context: {
+                      extensions: {
+                          'https://learncard.com/xapi/extensions/contractUri': contractUri,
+                      },
                   },
               },
-              verb: {
-                  id: 'http://adlnet.gov/expapi/verbs/attempted',
-                  display: {
-                      'en-US': 'attempted',
+              {
+                  actor: {
+                      objectType: 'Agent',
+                      name: currentUserDidKey,
+                      account: {
+                          homePage: 'https://www.w3.org/TR/did-core/',
+                          name: currentUserDidKey,
+                      },
+                  },
+                  verb: {
+                      id: 'http://adlnet.gov/expapi/verbs/mastered',
+                      display: {
+                          'en-US': 'mastered',
+                      },
+                  },
+                  object: {
+                      id: 'http://yourgame.com/achievements/speed-runner',
+                      definition: {
+                          name: { 'en-US': 'Speed Runner' },
+                          description: { 'en-US': 'Completed level with exceptional speed' },
+                          type: 'http://adlnet.gov/expapi/activities/performance',
+                      },
+                  },
+                  result: {
+                      success: true,
+                      completion: true,
+                      extensions: {
+                          'http://yourgame.com/xapi/extensions/completion-time': '120_seconds',
+                          'http://yourgame.com/xapi/extensions/score': '95',
+                      },
+                  },
+                  context: {
+                      extensions: {
+                          'https://learncard.com/xapi/extensions/contractUri': contractUri,
+                      },
                   },
               },
-              object: {
-                  id: 'http://yourgame.com/activities/level-1-challenge',
-                  definition: {
-                      name: { 'en-US': 'Level 1 Challenge' },
-                      description: { 'en-US': 'First challenge of the game' },
-                      type: 'http://adlnet.gov/expapi/activities/simulation',
+              {
+                  actor: {
+                      objectType: 'Agent',
+                      name: currentUserDidKey,
+                      account: {
+                          homePage: 'https://www.w3.org/TR/did-core/',
+                          name: currentUserDidKey,
+                      },
+                  },
+                  verb: {
+                      id: 'http://adlnet.gov/expapi/verbs/mastered',
+                      display: {
+                          'en-US': 'mastered',
+                      },
+                  },
+                  object: {
+                      id: 'http://yourgame.com/achievements/speed-runner',
+                      definition: {
+                          name: { 'en-US': 'Speed Runner' },
+                          description: { 'en-US': 'Completed level with exceptional speed' },
+                          type: 'http://adlnet.gov/expapi/activities/performance',
+                      },
+                  },
+                  context: {
+                      extensions: {
+                          'https://learncard.com/xapi/extensions/contractUri': contractUri,
+                      },
                   },
               },
-              context: {
-                  extensions: {
-                      'https://learncard.com/xapi/extensions/contractUri': contractUri,
-                  },
-              },
-          }
+          ]
         : null;
+
     const sendXAPIStatement = async (statement: XAPIStatement) => {
         const wallet = await initWallet();
         const vpToken = await wallet?.invoke.getDidAuthVp({ proofFormat: 'jwt' });
-        console.log('vpToken type:', typeof vpToken);
-        console.log('vpToken length:', vpToken?.length);
 
-        console.log('vpToken', vpToken);
         const endpoint =
             typeof LEARN_CLOUD_XAPI_URL === 'string'
                 ? LEARN_CLOUD_XAPI_URL
@@ -306,10 +192,6 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
         if (!endpoint) {
             throw new Error('LEARN_CLOUD_XAPI_URL is not configured');
         }
-
-        console.log('📝 Sending xAPI statement to:', endpoint);
-        console.log('Contract URI:', contractUri);
-        console.log('Statement:', statement);
 
         const response = await fetch(`${endpoint}/statements`, {
             method: 'POST',
@@ -323,7 +205,6 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
 
         if (response.ok) {
             const data = await response.json();
-            console.log('✅ Statement created! ID:', data?.[0]);
         } else {
             const errorText = await response.text();
             console.error('❌ Failed:', response.status, errorText);
@@ -333,7 +214,6 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
 
     return (
         <div className="bg-white rounded-l-[20px] h-full w-full max-w-[450px] flex flex-col shadow-xl">
-            {/* Header */}
             <div className="flex items-center gap-3 p-4 border-b border-grayscale-100">
                 <button
                     onClick={onBack}
@@ -355,7 +235,6 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
                 </div>
             </div>
 
-            {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-12">
@@ -365,14 +244,9 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
                 )}
 
                 {!isLoading && allStatements.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <div className="w-[200px] h-[200px] mt-[-20px]">
-                            <Lottie
-                                loop
-                                animationData={Pulpo}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-16 h-16 rounded-full bg-grayscale-100 flex items-center justify-center mb-4">
+                            <Activity className="w-8 h-8 text-grayscale-400" />
                         </div>
                         <p className="text-grayscale-700 font-medium">No activity data yet</p>
                         <p className="text-sm text-grayscale-500 mt-1 max-w-[280px]">
@@ -398,7 +272,6 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
                 )}
             </div>
 
-            {/* Footer */}
             <div className="p-4 border-t border-grayscale-100 bg-grayscale-50">
                 <p className="text-xs text-grayscale-500 text-center mb-2">
                     Showing {allStatements.length} activit{allStatements.length === 1 ? 'y' : 'ies'}{' '}
@@ -408,18 +281,7 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
                 {/* DEV ONLY: Test buttons - Remove after testing */}
                 <div className="flex gap-2">
                     <button
-                        onClick={() => setUseMockData(!useMockData)}
-                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-colors ${
-                            useMockData
-                                ? 'bg-violet-500 text-white'
-                                : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
-                        }`}
-                    >
-                        <Eye className="w-3.5 h-3.5" />
-                        {useMockData ? 'Hide Mock Data' : 'Show Mock Data'}
-                    </button>
-                    <button
-                        onClick={() => attemptStatement && sendXAPIStatement(attemptStatement)}
+                        onClick={() => attemptStatement?.forEach(s => sendXAPIStatement(s))}
                         disabled={isWritingTestData}
                         className="flex-1 py-2 px-3 bg-amber-100 text-amber-700 rounded-lg text-xs font-medium flex items-center justify-center gap-2 hover:bg-amber-200 transition-colors disabled:opacity-50"
                     >
@@ -443,15 +305,15 @@ const StatementCard: React.FC<StatementCardProps> = ({ statement }) => {
     const objectName = statement.object?.definition?.name?.['en-US'] ?? 'Unknown Activity';
     const objectDescription = statement.object?.definition?.description?.['en-US'];
     const actorName = statement.actor?.name ?? 'Unknown User';
-    const timestamp = statement.timestamp ? formatTimestamp(statement.timestamp) : null;
+    const timestamp = statement?.timestamp ? formatTimestamp(statement?.timestamp) : null;
+    const { data: currentUserDidKey } = useGetDid('key');
+    const currentUser = useCurrentUser();
 
     const verbStyle = getVerbStyle(verbDisplay?.toLowerCase());
 
     return (
         <div className="bg-white border border-grayscale-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            {/* Main Content */}
             <div className="p-4">
-                {/* Verb Badge and Timestamp */}
                 <div className="flex items-center justify-between mb-3">
                     <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${verbStyle.bg} ${verbStyle.text}`}
@@ -467,28 +329,22 @@ const StatementCard: React.FC<StatementCardProps> = ({ statement }) => {
                         </span>
                     )}
                 </div>
-
-                {/* Activity Name */}
                 <h3 className="font-semibold text-grayscale-900 mb-1">{objectName}</h3>
 
-                {/* Description */}
                 {objectDescription && (
                     <p className="text-sm text-grayscale-600 mb-3 line-clamp-2">
                         {objectDescription}
                     </p>
                 )}
 
-                {/* Actor */}
                 <div className="flex items-center gap-2 text-xs text-grayscale-500">
                     <User className="w-3.5 h-3.5" />
-                    <span>{actorName}</span>
+                    <span>{actorName === currentUserDidKey ? currentUser?.name : actorName}</span>
                 </div>
 
-                {/* Result Info (if available) */}
-                {statement.result && <ResultDisplay result={statement.result} />}
+                {statement?.result && <ResultDisplay result={statement?.result} />}
             </div>
 
-            {/* Raw JSON Toggle */}
             <div className="border-t border-grayscale-100">
                 <button
                     onClick={() => setShowRawJson(!showRawJson)}
