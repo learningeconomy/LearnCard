@@ -22,8 +22,8 @@ import { issueToInbox } from '@helpers/inbox.helpers';
 import { getLearnCard, SeedLearnCard } from '@helpers/learnCard.helpers';
 import type { Context } from '@routes';
 
-// Domain for generating claim URLs
-const DOMAIN = process.env.DOMAIN || 'https://learncard.app';
+// Domain for generating credential URIs (matches other brain-service code)
+const DOMAIN = process.env.DOMAIN_NAME || 'localhost:4000';
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 

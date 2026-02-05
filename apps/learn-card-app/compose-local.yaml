@@ -212,6 +212,7 @@ services:
             POSTMARK_SERVER_TOKEN: ${POSTMARK_API_KEY:-}
             POSTMARK_FROM_EMAIL: ${POSTMARK_FROM_EMAIL:-learncard.com}
             POSTMARK_BRAND_NAME: ${POSTMARK_BRAND_NAME:-LearnCard}
+            POSTMARK_LOGIN_CODE_TEMPLATE_ID: ${POSTMARK_LOGIN_CODE_TEMPLATE_ID:-}
 
     neo4j:
         image: neo4j:latest
